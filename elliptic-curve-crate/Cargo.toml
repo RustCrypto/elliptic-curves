@@ -34,12 +34,10 @@ default-features = false
 
 [dev-dependencies]
 hex = "0.4"
-proptest = "0.9"
 
 [features]
 default = ["arithmetic", "getrandom", "weierstrass", "std", "zeroize"]
 arithmetic = ["weierstrass"]
-test-vectors = []
 weierstrass = []
 std = []
 

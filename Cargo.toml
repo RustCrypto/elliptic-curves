@@ -1,2 +1,7 @@
 [workspace]
-members = ["elliptic-curve-crate"]
+members = [
+    "elliptic-curve-crate",
+    "p256",
+    "p384",
+    "p521"
+]
