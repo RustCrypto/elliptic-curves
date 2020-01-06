@@ -15,6 +15,7 @@ keywords = ["crypto", "ecc", "nist"]
 version = "0.2.0"
 path = "../elliptic-curve-crate"
 default-features = false
+features = ["weierstrass"]
 
 [features]
 std = ["elliptic-curve/std"]

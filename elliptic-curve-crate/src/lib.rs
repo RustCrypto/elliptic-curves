@@ -23,9 +23,11 @@ extern crate std;
 pub use generic_array;
 
 pub mod error;
+pub mod scalar;
+pub mod secret_key;
 
 // TODO(tarcieri): other curve forms
 #[cfg(feature = "weierstrass")]
 pub mod weierstrass;
 
-pub use self::error::Error;
+pub use self::{error::Error, scalar::Scalar, secret_key::SecretKey};

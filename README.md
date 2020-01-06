@@ -50,3 +50,10 @@ dual licensed as above, without any additional terms or conditions.
 [deps-image]: https://deps.rs/repo/github/RustCrypto/elliptic-curves/status.svg
 [deps-link]: https://deps.rs/repo/github/RustCrypto/elliptic-curves
 [rustc-image]: https://img.shields.io/badge/rustc-1.37+-blue.svg
+
+[//]: # (crates)
+
+[`k256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/k256
+[`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
+[`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
+[`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p521
