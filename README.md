@@ -36,8 +36,8 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[build-image]: https://travis-ci.org/RustCrypto/elliptic-curve.svg?branch=master
-[build-link]: https://travis-ci.org/RustCrypto/elliptic-curve
-[deps-image]: https://deps.rs/repo/github/RustCrypto/elliptic-curve/status.svg
-[deps-link]: https://deps.rs/repo/github/RustCrypto/elliptic-curve
+[build-image]: https://travis-ci.com/RustCrypto/elliptic-curves.svg?branch=master
+[build-link]: https://travis-ci.com/RustCrypto/elliptic-curves
+[deps-image]: https://deps.rs/repo/github/RustCrypto/elliptic-curves/status.svg
+[deps-link]: https://deps.rs/repo/github/RustCrypto/elliptic-curves
 [rustc-image]: https://img.shields.io/badge/rustc-1.37+-blue.svg
