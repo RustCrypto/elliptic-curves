@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "elliptic-curve-crate",
+    "k256",
     "p256",
     "p384",
     "p521"
