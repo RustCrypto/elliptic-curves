@@ -47,5 +47,5 @@ dual licensed as above, without any additional terms or conditions.
 [docs-link]: https://docs.rs/elliptic-curve/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.37+-blue.svg
-[build-image]: https://travis-ci.org/RustCrypto/elliptic-curves.svg?branch=master
-[build-link]: https://travis-ci.org/RustCrypto/elliptic-curves
+[build-image]: https://travis-ci.com/RustCrypto/elliptic-curves.svg?branch=master
+[build-link]: https://travis-ci.com/RustCrypto/elliptic-curves
