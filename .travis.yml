@@ -1,0 +1,46 @@
+language: rust
+cache: cargo
+
+rust:
+  - 1.37.0
+  - stable
+  - beta
+  - nightly
+
+env:
+  global:
+    - RUSTFLAGS="-D warnings"
+
+script:
+  - cargo test --verbose --release
+  - cargo test --verbose --all-features --release
+  # Can't use `--no-default-features` with a workspace. See rust-lang/cargo#4753
+  - cd elliptic-curve-crate && cargo build --no-default-features --release
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - rust: nightly
+  include:
+    - name: "Rust: stable (thumbv7em-none-eabihf)"
+      rust: stable
+      install: rustup target add thumbv7em-none-eabi
+      script: ./build_nostd.sh
+    - name: "Rust: stable (wasm32-unknown-unknown)"
+      rust: stable
+      install: rustup target add wasm32-unknown-unknown
+      script: ./build_wasm.sh
+    - name: rustfmt
+      rust: stable
+      install: rustup component add rustfmt
+      script: cargo fmt --all -- --check
+    - name: clippy
+      install: rustup component add clippy
+      rust: stable
+      script: cargo clippy --all
+    - name: docs
+      script: cargo doc --all --no-deps
+
+branches:
+  only:
+    - master
