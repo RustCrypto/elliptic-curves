@@ -13,7 +13,7 @@ repository    = "https://github.com/RustCrypto/elliptic-curves/tree/master/ellip
 readme        = "README.md"
 edition       = "2018"
 categories    = ["cryptography", "no-std"]
-keywords      = ["ecc", "edwards", "elliptic", "montgomery", "weierstrass"]
+keywords      = ["crypto", "ecc", "elliptic", "weierstrass"]
 
 [dependencies.getrandom]
 version = "0.1"
@@ -36,8 +36,7 @@ default-features = false
 hex = "0.4"
 
 [features]
-default = ["arithmetic", "getrandom", "weierstrass", "std", "zeroize"]
-arithmetic = ["weierstrass"]
+default = ["getrandom", "std", "zeroize"]
 weierstrass = []
 std = []
 

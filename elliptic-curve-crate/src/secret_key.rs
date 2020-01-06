@@ -1,9 +1,8 @@
-//! Secret keys for Weierstrass curves: private scalars.
+//! Secret keys for elliptic curves: private scalars.
 
-use super::{Curve, Scalar};
-use crate::error::Error;
+use crate::{error::Error, scalar::Scalar};
 use core::convert::{TryFrom, TryInto};
-use generic_array::{typenum::Unsigned, GenericArray};
+use generic_array::{ArrayLength, GenericArray};
 
 #[cfg(feature = "getrandom")]
 use getrandom::getrandom;
@@ -12,16 +11,22 @@ use getrandom::getrandom;
 /// secret keys.
 ///
 /// Prevents accidental exposure and handles zeroization.
-pub struct SecretKey<C: Curve> {
-    /// Serialized private scalar value as bytes
-    bytes: Scalar<C>,
+pub struct SecretKey<ScalarSize>
+where
+    ScalarSize: ArrayLength<u8>,
+{
+    /// Private scalar value
+    scalar: Scalar<ScalarSize>,
 }
 
-impl<C: Curve> SecretKey<C> {
+impl<ScalarSize> SecretKey<ScalarSize>
+where
+    ScalarSize: ArrayLength<u8>,
+{
     /// Create a new secret key from a serialized scalar value
-    pub fn new(into_bytes: impl Into<GenericArray<u8, C::ScalarSize>>) -> Self {
+    pub fn new(bytes: GenericArray<u8, ScalarSize>) -> Self {
         Self {
-            bytes: into_bytes.into(),
+            scalar: Scalar::new(bytes),
         }
     }
 
@@ -36,34 +41,34 @@ impl<C: Curve> SecretKey<C> {
     pub fn generate() -> Self {
         let mut bytes = GenericArray::default();
         getrandom(bytes.as_mut_slice()).expect("RNG failure!");
-        Self { bytes }
+        Self::new(bytes)
     }
 
-    /// Expose the secret `Scalar<C>` value this `SecretKey` wraps
-    pub fn secret_scalar(&self) -> &Scalar<C> {
-        &self.bytes
-    }
-}
-
-impl<C: Curve> Clone for SecretKey<C> {
-    fn clone(&self) -> Self {
-        Self::new(self.bytes.clone())
+    /// Expose the secret [`Scalar`] value this [`SecretKey`] wraps
+    pub fn secret_scalar(&self) -> &Scalar<ScalarSize> {
+        &self.scalar
     }
 }
 
 #[cfg(feature = "zeroize")]
-impl<C: Curve> Drop for SecretKey<C> {
+impl<ScalarSize> Drop for SecretKey<ScalarSize>
+where
+    ScalarSize: ArrayLength<u8>,
+{
     fn drop(&mut self) {
         use zeroize::Zeroize;
-        self.bytes.as_mut().zeroize();
+        self.scalar.zeroize();
     }
 }
 
-impl<'a, C: Curve> TryFrom<&'a [u8]> for SecretKey<C> {
+impl<ScalarSize> TryFrom<&[u8]> for SecretKey<ScalarSize>
+where
+    ScalarSize: ArrayLength<u8>,
+{
     type Error = Error;
 
-    fn try_from(slice: &'a [u8]) -> Result<Self, Error> {
-        if slice.len() == C::ScalarSize::to_usize() {
+    fn try_from(slice: &[u8]) -> Result<Self, Error> {
+        if slice.len() == ScalarSize::to_usize() {
             Ok(Self::new(GenericArray::clone_from_slice(slice)))
         } else {
             Err(Error)
