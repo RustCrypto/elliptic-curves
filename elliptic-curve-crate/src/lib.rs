@@ -14,7 +14,7 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png",
-    html_root_url = "https://docs.rs/elliptic-curve/0.2.0"
+    html_root_url = "https://docs.rs/elliptic-curve/0.3.0"
 )]
 
 #[cfg(feature = "std")]
