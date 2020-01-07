@@ -12,6 +12,8 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png")]
 
+pub use elliptic_curve;
+
 use elliptic_curve::{generic_array::typenum::U48, weierstrass::Curve};
 
 /// NIST P-384 elliptic curve.

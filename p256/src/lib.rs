@@ -15,6 +15,8 @@
 #[cfg(feature = "arithmetic")]
 pub mod arithmetic;
 
+pub use elliptic_curve;
+
 use elliptic_curve::{generic_array::typenum::U32, weierstrass::Curve};
 
 /// NIST P-256 elliptic curve.
