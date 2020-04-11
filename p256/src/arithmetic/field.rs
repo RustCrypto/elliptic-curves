@@ -364,6 +364,26 @@ impl FieldElement {
         res
     }
 
+    /// Returns the multiplicative inverse of self, if self is non-zero.
+    pub fn invert(&self) -> CtOption<Self> {
+        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
+        // field, we can apply Fermat's Little Theorem:
+        //
+        //    a^p         ≡ a mod p
+        //    a^(p-1)     ≡ 1 mod p
+        //    a^(p-2) * a ≡ 1 mod p
+        //
+        // Thus inversion can be implemented with a single exponentiation.
+        let inverse = self.pow_vartime(&[
+            0xffff_ffff_ffff_fffd,
+            0x0000_0000_ffff_ffff,
+            0x0000_0000_0000_0000,
+            0xffff_ffff_0000_0001,
+        ]);
+
+        CtOption::new(inverse, !self.is_zero())
+    }
+
     /// Returns the square root of self mod p, or `None` if no square root exists.
     pub fn sqrt(&self) -> CtOption<Self> {
         // We need to find alpha such that alpha^2 = beta mod p. For secp256r1,
@@ -511,6 +531,18 @@ mod tests {
         let two = one + &one;
         let four = two.square();
         assert_eq!(two.pow_vartime(&[2, 0, 0, 0]), four);
+    }
+
+    #[test]
+    fn invert() {
+        assert!(bool::from(FieldElement::zero().invert().is_none()));
+
+        let one = FieldElement::one();
+        assert_eq!(one.invert().unwrap(), one);
+
+        let two = one + &one;
+        let inv_two = two.invert().unwrap();
+        assert_eq!(two * &inv_two, one);
     }
 
     #[test]
