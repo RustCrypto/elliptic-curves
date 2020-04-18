@@ -1,7 +1,7 @@
 //! Field arithmetic modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 
 use core::convert::TryInto;
-use core::ops::{Add, Mul, Neg, Sub};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "getrandom")]
@@ -429,6 +429,12 @@ impl Add<&FieldElement> for FieldElement {
     }
 }
 
+impl AddAssign<FieldElement> for FieldElement {
+    fn add_assign(&mut self, rhs: FieldElement) {
+        *self = FieldElement::add(self, &rhs);
+    }
+}
+
 impl Sub<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
@@ -445,6 +451,12 @@ impl Sub<&FieldElement> for FieldElement {
     }
 }
 
+impl SubAssign<FieldElement> for FieldElement {
+    fn sub_assign(&mut self, rhs: FieldElement) {
+        *self = FieldElement::subtract(self, &rhs);
+    }
+}
+
 impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
@@ -458,6 +470,12 @@ impl Mul<&FieldElement> for FieldElement {
 
     fn mul(self, other: &FieldElement) -> FieldElement {
         FieldElement::mul(&self, other)
+    }
+}
+
+impl MulAssign<FieldElement> for FieldElement {
+    fn mul_assign(&mut self, rhs: FieldElement) {
+        *self = FieldElement::mul(self, &rhs);
     }
 }
 
