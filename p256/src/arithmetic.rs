@@ -12,7 +12,7 @@ mod util;
 pub mod test_vectors;
 
 use core::convert::TryInto;
-use core::ops::Neg;
+use core::ops::{Add, AddAssign, Neg};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -215,12 +215,70 @@ impl ProjectivePoint {
             y: self.y * &zinv,
         })
     }
+
+    /// Returns `self + other`.
+    fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
+        // We implement the complete addition formula from Renes-Costello-Batina 2015
+        // (https://eprint.iacr.org/2015/1060 Algorithm 4). The comments after each line
+        // indicate which algorithm steps are being performed.
+
+        let xx = self.x * &other.x; // 1
+        let yy = self.y * &other.y; // 2
+        let zz = self.z * &other.z; // 3
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy); // 4, 5, 6, 7, 8
+        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) - &(yy + &zz); // 9, 10, 11, 12, 13
+        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) - &(xx + &zz); // 14, 15, 16, 17, 18
+
+        let bzz_part = xz_pairs - &(CURVE_EQUATION_B * &zz); // 19, 20
+        let bzz3_part = bzz_part.double() + &bzz_part; // 21, 22
+        let yy_m_bzz3 = yy - &bzz3_part; // 23
+        let yy_p_bzz3 = yy + &bzz3_part; // 24
+
+        let zz3 = zz.double() + &zz; // 26, 27
+        let bxz_part = (CURVE_EQUATION_B * &xz_pairs) - &(zz3 + &xx); // 25, 28, 29
+        let bxz3_part = bxz_part.double() + &bxz_part; // 30, 31
+        let xx3_m_zz3 = xx.double() + &xx - &zz3; // 32, 33, 34
+
+        ProjectivePoint {
+            x: (yy_p_bzz3 * &xy_pairs) - &(yz_pairs * &bxz3_part), // 35, 39, 40
+            y: (yy_p_bzz3 * &yy_m_bzz3) + &(xx3_m_zz3 * &bxz3_part), // 36, 37, 38
+            z: (yy_m_bzz3 * &yz_pairs) + &(xy_pairs * &xx3_m_zz3), // 41, 42, 43
+        }
+    }
+
+    /// Doubles this point.
+    pub fn double(&self) -> ProjectivePoint {
+        // Because we implemented complete addition, we can use it for doubling.
+        self.add(self)
+    }
+}
+
+impl Add<&ProjectivePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(self, other)
+    }
+}
+
+impl Add<&ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(&self, other)
+    }
+}
+
+impl AddAssign<ProjectivePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: ProjectivePoint) {
+        *self = ProjectivePoint::add(self, &rhs);
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{AffinePoint, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
-    use crate::PublicKey;
+    use crate::{arithmetic::test_vectors::group::ADD_TEST_VECTORS, PublicKey};
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";
@@ -322,5 +380,59 @@ mod tests {
         assert!(bool::from(
             ProjectivePoint::identity().to_affine().is_none()
         ));
+    }
+
+    #[test]
+    fn projective_identity_addition() {
+        let identity = ProjectivePoint::identity();
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!(identity + &generator, generator);
+        assert_eq!(generator + &identity, generator);
+    }
+
+    #[test]
+    fn test_vector_repeated_add() {
+        let generator = ProjectivePoint::generator();
+        let mut p = generator;
+
+        for i in 0..ADD_TEST_VECTORS.len() {
+            let affine = p.to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                ADD_TEST_VECTORS[i]
+            );
+
+            p = p + &generator;
+        }
+    }
+
+    #[test]
+    fn test_vector_double_generator() {
+        let generator = ProjectivePoint::generator();
+        let mut p = generator;
+
+        for i in 0..2 {
+            let affine = p.to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                ADD_TEST_VECTORS[i]
+            );
+
+            p = p.double();
+        }
+    }
+
+    #[test]
+    fn projective_add_vs_double() {
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!(generator + &generator, generator.double());
     }
 }
