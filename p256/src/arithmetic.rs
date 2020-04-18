@@ -320,6 +320,11 @@ impl ProjectivePoint {
     fn sub(&self, other: &ProjectivePoint) -> ProjectivePoint {
         self.add(&other.neg())
     }
+
+    /// Returns `self - other`.
+    fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
+        self.add_mixed(&other.neg())
+    }
 }
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
@@ -385,6 +390,28 @@ impl Sub<&ProjectivePoint> for ProjectivePoint {
 impl SubAssign<ProjectivePoint> for ProjectivePoint {
     fn sub_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::sub(self, &rhs);
+    }
+}
+
+impl Sub<&AffinePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(self, other)
+    }
+}
+
+impl Sub<&AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(&self, other)
+    }
+}
+
+impl SubAssign<AffinePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: AffinePoint) {
+        *self = ProjectivePoint::sub_mixed(self, &rhs);
     }
 }
 
@@ -597,9 +624,20 @@ mod tests {
 
     #[test]
     fn projective_add_and_sub() {
-        let generator = ProjectivePoint::generator();
+        let basepoint_affine = AffinePoint::from_pubkey(
+            &PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap(),
+        )
+        .unwrap();
+        let basepoint_projective = ProjectivePoint::generator();
 
-        assert_eq!((generator + &generator) - &generator, generator);
+        assert_eq!(
+            (basepoint_projective + &basepoint_projective) - &basepoint_projective,
+            basepoint_projective
+        );
+        assert_eq!(
+            (basepoint_projective + &basepoint_affine) - &basepoint_affine,
+            basepoint_projective
+        );
     }
 
     #[test]
