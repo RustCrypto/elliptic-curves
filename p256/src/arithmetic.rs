@@ -12,6 +12,7 @@ mod util;
 pub mod test_vectors;
 
 use core::convert::TryInto;
+use core::ops::Neg;
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -133,6 +134,17 @@ impl AffinePoint {
     }
 }
 
+impl Neg for AffinePoint {
+    type Output = AffinePoint;
+
+    fn neg(self) -> Self::Output {
+        AffinePoint {
+            x: self.x,
+            y: -self.y,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{AffinePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
@@ -208,5 +220,15 @@ mod tests {
             hex::encode(res.as_bytes()).to_uppercase(),
             UNCOMPRESSED_BASEPOINT
         );
+    }
+
+    #[test]
+    fn affine_negation() {
+        let basepoint = AffinePoint::from_pubkey(
+            &PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(-(-basepoint), basepoint);
     }
 }
