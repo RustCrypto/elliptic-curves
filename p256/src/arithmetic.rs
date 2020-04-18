@@ -145,9 +145,81 @@ impl Neg for AffinePoint {
     }
 }
 
+/// A point on the secp256r1 curve in projective coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct ProjectivePoint {
+    x: FieldElement,
+    y: FieldElement,
+    z: FieldElement,
+}
+
+impl From<AffinePoint> for ProjectivePoint {
+    fn from(p: AffinePoint) -> Self {
+        ProjectivePoint {
+            x: p.x,
+            y: p.y,
+            z: FieldElement::one(),
+        }
+    }
+}
+
+impl ConstantTimeEq for ProjectivePoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.to_affine().ct_eq(&other.to_affine())
+    }
+}
+
+impl PartialEq for ProjectivePoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl ProjectivePoint {
+    /// Returns the additive identity of P-256, also known as the "neutral element" or
+    /// "point at infinity".
+    pub const fn identity() -> ProjectivePoint {
+        ProjectivePoint {
+            x: FieldElement::zero(),
+            y: FieldElement::one(),
+            z: FieldElement::zero(),
+        }
+    }
+
+    /// Returns the base point of P-256.
+    pub fn generator() -> ProjectivePoint {
+        // NIST P-256 basepoint in affine coordinates:
+        // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
+        // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
+        ProjectivePoint {
+            x: FieldElement::from_bytes([
+                0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
+                0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
+                0xd8, 0x98, 0xc2, 0x96,
+            ])
+            .unwrap(),
+            y: FieldElement::from_bytes([
+                0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
+                0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
+                0x37, 0xbf, 0x51, 0xf5,
+            ])
+            .unwrap(),
+            z: FieldElement::one(),
+        }
+    }
+
+    /// Returns the affine representation of this point, or `None` if it is the identity.
+    pub fn to_affine(&self) -> CtOption<AffinePoint> {
+        self.z.invert().map(|zinv| AffinePoint {
+            x: self.x * &zinv,
+            y: self.y * &zinv,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{AffinePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
+    use super::{AffinePoint, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
     use crate::PublicKey;
 
     const CURVE_EQUATION_A_BYTES: &str =
@@ -230,5 +302,25 @@ mod tests {
         .unwrap();
 
         assert_eq!(-(-basepoint), basepoint);
+    }
+
+    #[test]
+    fn affine_to_projective() {
+        let basepoint_affine = AffinePoint::from_pubkey(
+            &PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap(),
+        )
+        .unwrap();
+        let basepoint_projective = ProjectivePoint::generator();
+
+        assert_eq!(
+            ProjectivePoint::from(basepoint_affine),
+            basepoint_projective,
+        );
+        assert_eq!(basepoint_projective.to_affine().unwrap(), basepoint_affine);
+
+        // The projective identity does not have an affine representation.
+        assert!(bool::from(
+            ProjectivePoint::identity().to_affine().is_none()
+        ));
     }
 }
