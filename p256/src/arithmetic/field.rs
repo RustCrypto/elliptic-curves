@@ -194,7 +194,7 @@ impl FieldElement {
     }
 
     /// Returns self - rhs mod p
-    pub const fn sub(&self, rhs: &Self) -> Self {
+    pub const fn subtract(&self, rhs: &Self) -> Self {
         Self::sub_inner(
             self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
             0,
@@ -433,7 +433,7 @@ impl Sub<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::sub(self, other)
+        FieldElement::subtract(self, other)
     }
 }
 
@@ -441,7 +441,7 @@ impl Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::sub(&self, other)
+        FieldElement::subtract(&self, other)
     }
 }
 
@@ -597,7 +597,7 @@ mod tests {
         ) {
             let a = FieldElement([a0, a1, a2, 0]);
             let b = FieldElement([b0, b1, b2, 0]);
-            assert_eq!(a.add(&b).sub(&a), b);
+            assert_eq!(a.add(&b).subtract(&a), b);
         }
     }
 }

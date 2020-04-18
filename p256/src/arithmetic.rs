@@ -21,9 +21,9 @@ use field::{FieldElement, MODULUS};
 
 /// a = -3
 const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
-    .sub(&FieldElement::one())
-    .sub(&FieldElement::one())
-    .sub(&FieldElement::one());
+    .subtract(&FieldElement::one())
+    .subtract(&FieldElement::one())
+    .subtract(&FieldElement::one());
 
 /// b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
 const CURVE_EQUATION_B: FieldElement = FieldElement([
