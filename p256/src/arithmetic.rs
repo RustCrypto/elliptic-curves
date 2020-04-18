@@ -2,8 +2,12 @@
 //!
 //! # Status
 //!
-//! Currently, no actual group operations are implemented. Only point compression and
-//! decompression is supported.
+//! Implemented:
+//! - Compression and decompression.
+//! - Addition and subtraction.
+//!
+//! Not yet implemented:
+//! - Scalar multiplication.
 
 mod field;
 mod util;
