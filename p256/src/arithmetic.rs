@@ -255,6 +255,35 @@ impl ProjectivePoint {
         }
     }
 
+    /// Returns `self + other`.
+    fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
+        // We implement the complete mixed addition formula from Renes-Costello-Batina
+        // 2015 (Algorithm 5). The comments after each line indicate which algorithm steps
+        // are being performed.
+
+        let xx = self.x * &other.x; // 1
+        let yy = self.y * &other.y; // 2
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy); // 3, 4, 5, 6, 7
+        let yz_pairs = (other.y * &self.z) + &self.y; // 8, 9 (t4)
+        let xz_pairs = (other.x * &self.z) + &self.x; // 10, 11 (y3)
+
+        let bz_part = xz_pairs - &(CURVE_EQUATION_B * &self.z); // 12, 13
+        let bz3_part = bz_part.double() + &bz_part; // 14, 15
+        let yy_m_bzz3 = yy - &bz3_part; // 16
+        let yy_p_bzz3 = yy + &bz3_part; // 17
+
+        let z3 = self.z.double() + &self.z; // 19, 20
+        let bxz_part = (CURVE_EQUATION_B * &xz_pairs) - &(z3 + &xx); // 18, 21, 22
+        let bxz3_part = bxz_part.double() + &bxz_part; // 23, 24
+        let xx3_m_zz3 = xx.double() + &xx - &z3; // 25, 26, 27
+
+        ProjectivePoint {
+            x: (yy_p_bzz3 * &xy_pairs) - &(yz_pairs * &bxz3_part), // 28, 32, 33
+            y: (yy_p_bzz3 * &yy_m_bzz3) + &(xx3_m_zz3 * &bxz3_part), // 29, 30, 31
+            z: (yy_m_bzz3 * &yz_pairs) + &(xy_pairs * &xx3_m_zz3), // 34, 35, 36
+        }
+    }
+
     /// Doubles this point.
     pub fn double(&self) -> ProjectivePoint {
         // We implement the exception-free point doubling formula from
@@ -312,6 +341,28 @@ impl Add<&ProjectivePoint> for ProjectivePoint {
 impl AddAssign<ProjectivePoint> for ProjectivePoint {
     fn add_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::add(self, &rhs);
+    }
+}
+
+impl Add<&AffinePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(self, other)
+    }
+}
+
+impl Add<&AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(&self, other)
+    }
+}
+
+impl AddAssign<AffinePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: AffinePoint) {
+        *self = ProjectivePoint::add_mixed(self, &rhs);
     }
 }
 
@@ -462,9 +513,47 @@ mod tests {
     }
 
     #[test]
+    fn projective_mixed_addition() {
+        let identity = ProjectivePoint::identity();
+        let basepoint_affine = AffinePoint::from_pubkey(
+            &PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap(),
+        )
+        .unwrap();
+        let basepoint_projective = ProjectivePoint::generator();
+
+        assert_eq!(identity + &basepoint_affine, basepoint_projective);
+        assert_eq!(
+            basepoint_projective + &basepoint_affine,
+            basepoint_projective + &basepoint_projective
+        );
+    }
+
+    #[test]
     fn test_vector_repeated_add() {
         let generator = ProjectivePoint::generator();
         let mut p = generator;
+
+        for i in 0..ADD_TEST_VECTORS.len() {
+            let affine = p.to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                ADD_TEST_VECTORS[i]
+            );
+
+            p = p + &generator;
+        }
+    }
+
+    #[test]
+    fn test_vector_repeated_add_mixed() {
+        let generator = AffinePoint::from_pubkey(
+            &PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap(),
+        )
+        .unwrap();
+        let mut p = ProjectivePoint::generator();
 
         for i in 0..ADD_TEST_VECTORS.len() {
             let affine = p.to_affine().unwrap();
