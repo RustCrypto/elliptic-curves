@@ -12,7 +12,7 @@ mod util;
 pub mod test_vectors;
 
 use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Neg};
+use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -216,6 +216,15 @@ impl ProjectivePoint {
         })
     }
 
+    /// Returns `-self`.
+    fn neg(&self) -> ProjectivePoint {
+        ProjectivePoint {
+            x: self.x,
+            y: self.y.neg(),
+            z: self.z,
+        }
+    }
+
     /// Returns `self + other`.
     fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
@@ -251,6 +260,11 @@ impl ProjectivePoint {
         // Because we implemented complete addition, we can use it for doubling.
         self.add(self)
     }
+
+    /// Returns `self - other`.
+    fn sub(&self, other: &ProjectivePoint) -> ProjectivePoint {
+        self.add(&other.neg())
+    }
 }
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
@@ -272,6 +286,36 @@ impl Add<&ProjectivePoint> for ProjectivePoint {
 impl AddAssign<ProjectivePoint> for ProjectivePoint {
     fn add_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::add(self, &rhs);
+    }
+}
+
+impl Sub<&ProjectivePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(self, other)
+    }
+}
+
+impl Sub<&ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(&self, other)
+    }
+}
+
+impl SubAssign<ProjectivePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: ProjectivePoint) {
+        *self = ProjectivePoint::sub(self, &rhs);
+    }
+}
+
+impl Neg for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn neg(self) -> ProjectivePoint {
+        ProjectivePoint::neg(&self)
     }
 }
 
@@ -434,5 +478,19 @@ mod tests {
         let generator = ProjectivePoint::generator();
 
         assert_eq!(generator + &generator, generator.double());
+    }
+
+    #[test]
+    fn projective_add_and_sub() {
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!((generator + &generator) - &generator, generator);
+    }
+
+    #[test]
+    fn projective_double_and_sub() {
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!(generator.double() - &generator, generator);
     }
 }
