@@ -1,4 +1,4 @@
-# RustCrypto seck256k1 crate
+# RustCrypto secp256k1 crate
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
