@@ -1,7 +1,7 @@
 //! Field arithmetic modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 
 use core::convert::TryInto;
-use core::ops::{Add, Mul, Sub};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "getrandom")]
@@ -188,8 +188,13 @@ impl FieldElement {
         )
     }
 
+    /// Returns 2*self.
+    pub const fn double(&self) -> Self {
+        self.add(self)
+    }
+
     /// Returns self - rhs mod p
-    pub const fn sub(&self, rhs: &Self) -> Self {
+    pub const fn subtract(&self, rhs: &Self) -> Self {
         Self::sub_inner(
             self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
             0,
@@ -364,6 +369,26 @@ impl FieldElement {
         res
     }
 
+    /// Returns the multiplicative inverse of self, if self is non-zero.
+    pub fn invert(&self) -> CtOption<Self> {
+        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
+        // field, we can apply Fermat's Little Theorem:
+        //
+        //    a^p         ≡ a mod p
+        //    a^(p-1)     ≡ 1 mod p
+        //    a^(p-2) * a ≡ 1 mod p
+        //
+        // Thus inversion can be implemented with a single exponentiation.
+        let inverse = self.pow_vartime(&[
+            0xffff_ffff_ffff_fffd,
+            0x0000_0000_ffff_ffff,
+            0x0000_0000_0000_0000,
+            0xffff_ffff_0000_0001,
+        ]);
+
+        CtOption::new(inverse, !self.is_zero())
+    }
+
     /// Returns the square root of self mod p, or `None` if no square root exists.
     pub fn sqrt(&self) -> CtOption<Self> {
         // We need to find alpha such that alpha^2 = beta mod p. For secp256r1,
@@ -404,11 +429,17 @@ impl Add<&FieldElement> for FieldElement {
     }
 }
 
+impl AddAssign<FieldElement> for FieldElement {
+    fn add_assign(&mut self, rhs: FieldElement) {
+        *self = FieldElement::add(self, &rhs);
+    }
+}
+
 impl Sub<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::sub(self, other)
+        FieldElement::subtract(self, other)
     }
 }
 
@@ -416,7 +447,13 @@ impl Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::sub(&self, other)
+        FieldElement::subtract(&self, other)
+    }
+}
+
+impl SubAssign<FieldElement> for FieldElement {
+    fn sub_assign(&mut self, rhs: FieldElement) {
+        *self = FieldElement::subtract(self, &rhs);
     }
 }
 
@@ -433,6 +470,20 @@ impl Mul<&FieldElement> for FieldElement {
 
     fn mul(self, other: &FieldElement) -> FieldElement {
         FieldElement::mul(&self, other)
+    }
+}
+
+impl MulAssign<FieldElement> for FieldElement {
+    fn mul_assign(&mut self, rhs: FieldElement) {
+        *self = FieldElement::mul(self, &rhs);
+    }
+}
+
+impl Neg for FieldElement {
+    type Output = FieldElement;
+
+    fn neg(self) -> FieldElement {
+        FieldElement::zero() - &self
     }
 }
 
@@ -496,6 +547,15 @@ mod tests {
     }
 
     #[test]
+    fn repeated_double() {
+        let mut r = FieldElement::one();
+        for i in 0..DBL_TEST_VECTORS.len() {
+            assert_eq!(hex::encode(r.to_bytes()), DBL_TEST_VECTORS[i]);
+            r = r.double();
+        }
+    }
+
+    #[test]
     fn repeated_mul() {
         let mut r = FieldElement::one();
         let two = r + &r;
@@ -506,11 +566,31 @@ mod tests {
     }
 
     #[test]
+    fn negation() {
+        let two = FieldElement::one().double();
+        let neg_two = -two;
+        assert_eq!(two + &neg_two, FieldElement::zero());
+        assert_eq!(-neg_two, two);
+    }
+
+    #[test]
     fn pow_vartime() {
         let one = FieldElement::one();
         let two = one + &one;
         let four = two.square();
         assert_eq!(two.pow_vartime(&[2, 0, 0, 0]), four);
+    }
+
+    #[test]
+    fn invert() {
+        assert!(bool::from(FieldElement::zero().invert().is_none()));
+
+        let one = FieldElement::one();
+        assert_eq!(one.invert().unwrap(), one);
+
+        let two = one + &one;
+        let inv_two = two.invert().unwrap();
+        assert_eq!(two * &inv_two, one);
     }
 
     #[test]
@@ -535,7 +615,7 @@ mod tests {
         ) {
             let a = FieldElement([a0, a1, a2, 0]);
             let b = FieldElement([b0, b1, b2, 0]);
-            assert_eq!(a.add(&b).sub(&a), b);
+            assert_eq!(a.add(&b).subtract(&a), b);
         }
     }
 }

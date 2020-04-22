@@ -2,8 +2,12 @@
 //!
 //! # Status
 //!
-//! Currently, no actual group operations are implemented. Only point compression and
-//! decompression is supported.
+//! Implemented:
+//! - Compression and decompression.
+//! - Addition and subtraction.
+//!
+//! Not yet implemented:
+//! - Scalar multiplication.
 
 mod field;
 mod util;
@@ -12,6 +16,7 @@ mod util;
 pub mod test_vectors;
 
 use core::convert::TryInto;
+use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -21,9 +26,9 @@ use field::{FieldElement, MODULUS};
 
 /// a = -3
 const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
-    .sub(&FieldElement::one())
-    .sub(&FieldElement::one())
-    .sub(&FieldElement::one());
+    .subtract(&FieldElement::one())
+    .subtract(&FieldElement::one())
+    .subtract(&FieldElement::one());
 
 /// b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
 const CURVE_EQUATION_B: FieldElement = FieldElement([
@@ -64,6 +69,27 @@ impl PartialEq for AffinePoint {
 impl Eq for AffinePoint {}
 
 impl AffinePoint {
+    /// Returns the base point of P-256.
+    pub fn generator() -> AffinePoint {
+        // NIST P-256 basepoint in affine coordinates:
+        // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
+        // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
+        AffinePoint {
+            x: FieldElement::from_bytes([
+                0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
+                0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
+                0xd8, 0x98, 0xc2, 0x96,
+            ])
+            .unwrap(),
+            y: FieldElement::from_bytes([
+                0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
+                0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
+                0x37, 0xbf, 0x51, 0xf5,
+            ])
+            .unwrap(),
+        }
+    }
+
     /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded `AffinePoint`.
     ///
     /// # Returns
@@ -133,10 +159,282 @@ impl AffinePoint {
     }
 }
 
+impl Neg for AffinePoint {
+    type Output = AffinePoint;
+
+    fn neg(self) -> Self::Output {
+        AffinePoint {
+            x: self.x,
+            y: -self.y,
+        }
+    }
+}
+
+/// A point on the secp256r1 curve in projective coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct ProjectivePoint {
+    x: FieldElement,
+    y: FieldElement,
+    z: FieldElement,
+}
+
+impl From<AffinePoint> for ProjectivePoint {
+    fn from(p: AffinePoint) -> Self {
+        ProjectivePoint {
+            x: p.x,
+            y: p.y,
+            z: FieldElement::one(),
+        }
+    }
+}
+
+impl ConstantTimeEq for ProjectivePoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.to_affine().ct_eq(&other.to_affine())
+    }
+}
+
+impl PartialEq for ProjectivePoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl ProjectivePoint {
+    /// Returns the additive identity of P-256, also known as the "neutral element" or
+    /// "point at infinity".
+    pub const fn identity() -> ProjectivePoint {
+        ProjectivePoint {
+            x: FieldElement::zero(),
+            y: FieldElement::one(),
+            z: FieldElement::zero(),
+        }
+    }
+
+    /// Returns the base point of P-256.
+    pub fn generator() -> ProjectivePoint {
+        AffinePoint::generator().into()
+    }
+
+    /// Returns the affine representation of this point, or `None` if it is the identity.
+    pub fn to_affine(&self) -> CtOption<AffinePoint> {
+        self.z.invert().map(|zinv| AffinePoint {
+            x: self.x * &zinv,
+            y: self.y * &zinv,
+        })
+    }
+
+    /// Returns `-self`.
+    fn neg(&self) -> ProjectivePoint {
+        ProjectivePoint {
+            x: self.x,
+            y: self.y.neg(),
+            z: self.z,
+        }
+    }
+
+    /// Returns `self + other`.
+    fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
+        // We implement the complete addition formula from Renes-Costello-Batina 2015
+        // (https://eprint.iacr.org/2015/1060 Algorithm 4). The comments after each line
+        // indicate which algorithm steps are being performed.
+
+        let xx = self.x * &other.x; // 1
+        let yy = self.y * &other.y; // 2
+        let zz = self.z * &other.z; // 3
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy); // 4, 5, 6, 7, 8
+        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) - &(yy + &zz); // 9, 10, 11, 12, 13
+        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) - &(xx + &zz); // 14, 15, 16, 17, 18
+
+        let bzz_part = xz_pairs - &(CURVE_EQUATION_B * &zz); // 19, 20
+        let bzz3_part = bzz_part.double() + &bzz_part; // 21, 22
+        let yy_m_bzz3 = yy - &bzz3_part; // 23
+        let yy_p_bzz3 = yy + &bzz3_part; // 24
+
+        let zz3 = zz.double() + &zz; // 26, 27
+        let bxz_part = (CURVE_EQUATION_B * &xz_pairs) - &(zz3 + &xx); // 25, 28, 29
+        let bxz3_part = bxz_part.double() + &bxz_part; // 30, 31
+        let xx3_m_zz3 = xx.double() + &xx - &zz3; // 32, 33, 34
+
+        ProjectivePoint {
+            x: (yy_p_bzz3 * &xy_pairs) - &(yz_pairs * &bxz3_part), // 35, 39, 40
+            y: (yy_p_bzz3 * &yy_m_bzz3) + &(xx3_m_zz3 * &bxz3_part), // 36, 37, 38
+            z: (yy_m_bzz3 * &yz_pairs) + &(xy_pairs * &xx3_m_zz3), // 41, 42, 43
+        }
+    }
+
+    /// Returns `self + other`.
+    fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
+        // We implement the complete mixed addition formula from Renes-Costello-Batina
+        // 2015 (Algorithm 5). The comments after each line indicate which algorithm steps
+        // are being performed.
+
+        let xx = self.x * &other.x; // 1
+        let yy = self.y * &other.y; // 2
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy); // 3, 4, 5, 6, 7
+        let yz_pairs = (other.y * &self.z) + &self.y; // 8, 9 (t4)
+        let xz_pairs = (other.x * &self.z) + &self.x; // 10, 11 (y3)
+
+        let bz_part = xz_pairs - &(CURVE_EQUATION_B * &self.z); // 12, 13
+        let bz3_part = bz_part.double() + &bz_part; // 14, 15
+        let yy_m_bzz3 = yy - &bz3_part; // 16
+        let yy_p_bzz3 = yy + &bz3_part; // 17
+
+        let z3 = self.z.double() + &self.z; // 19, 20
+        let bxz_part = (CURVE_EQUATION_B * &xz_pairs) - &(z3 + &xx); // 18, 21, 22
+        let bxz3_part = bxz_part.double() + &bxz_part; // 23, 24
+        let xx3_m_zz3 = xx.double() + &xx - &z3; // 25, 26, 27
+
+        ProjectivePoint {
+            x: (yy_p_bzz3 * &xy_pairs) - &(yz_pairs * &bxz3_part), // 28, 32, 33
+            y: (yy_p_bzz3 * &yy_m_bzz3) + &(xx3_m_zz3 * &bxz3_part), // 29, 30, 31
+            z: (yy_m_bzz3 * &yz_pairs) + &(xy_pairs * &xx3_m_zz3), // 34, 35, 36
+        }
+    }
+
+    /// Doubles this point.
+    pub fn double(&self) -> ProjectivePoint {
+        // We implement the exception-free point doubling formula from
+        // Renes-Costello-Batina 2015 (Algorithm 6). The comments after each line
+        // indicate which algorithm steps are being performed.
+
+        let xx = self.x.square(); // 1
+        let yy = self.y.square(); // 2
+        let zz = self.z.square(); // 3
+        let xy2 = (self.x * &self.y).double(); // 4, 5
+        let xz2 = (self.x * &self.z).double(); // 6, 7
+
+        let bzz_part = (CURVE_EQUATION_B * &zz) - &xz2; // 8, 9
+        let bzz3_part = bzz_part.double() + &bzz_part; // 10, 11
+        let yy_m_bzz3 = yy - &bzz3_part; // 12
+        let yy_p_bzz3 = yy + &bzz3_part; // 13
+        let y_frag = yy_p_bzz3 * &yy_m_bzz3; // 14
+        let x_frag = yy_m_bzz3 * &xy2; // 15
+
+        let zz3 = zz.double() + &zz; // 16, 17
+        let bxz2_part = (CURVE_EQUATION_B * &xz2) - &(zz3 + &xx); // 18, 19, 20
+        let bxz6_part = bxz2_part.double() + &bxz2_part; // 21, 22
+        let xx3_m_zz3 = xx.double() + &xx - &zz3; // 23, 24, 25
+
+        let y = y_frag + &(xx3_m_zz3 * &bxz6_part); // 26, 27
+        let yz2 = (self.y * &self.z).double(); // 28, 29
+        let x = x_frag - &(bxz6_part * &yz2); // 30, 31
+        let z = (yz2 * &yy).double().double(); // 32, 33, 34
+
+        ProjectivePoint { x, y, z }
+    }
+
+    /// Returns `self - other`.
+    fn sub(&self, other: &ProjectivePoint) -> ProjectivePoint {
+        self.add(&other.neg())
+    }
+
+    /// Returns `self - other`.
+    fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
+        self.add_mixed(&other.neg())
+    }
+}
+
+impl Add<&ProjectivePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(self, other)
+    }
+}
+
+impl Add<&ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(&self, other)
+    }
+}
+
+impl AddAssign<ProjectivePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: ProjectivePoint) {
+        *self = ProjectivePoint::add(self, &rhs);
+    }
+}
+
+impl Add<&AffinePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(self, other)
+    }
+}
+
+impl Add<&AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(&self, other)
+    }
+}
+
+impl AddAssign<AffinePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: AffinePoint) {
+        *self = ProjectivePoint::add_mixed(self, &rhs);
+    }
+}
+
+impl Sub<&ProjectivePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(self, other)
+    }
+}
+
+impl Sub<&ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(&self, other)
+    }
+}
+
+impl SubAssign<ProjectivePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: ProjectivePoint) {
+        *self = ProjectivePoint::sub(self, &rhs);
+    }
+}
+
+impl Sub<&AffinePoint> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(self, other)
+    }
+}
+
+impl Sub<&AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(&self, other)
+    }
+}
+
+impl SubAssign<AffinePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: AffinePoint) {
+        *self = ProjectivePoint::sub_mixed(self, &rhs);
+    }
+}
+
+impl Neg for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn neg(self) -> ProjectivePoint {
+        ProjectivePoint::neg(&self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{AffinePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
-    use crate::PublicKey;
+    use super::{AffinePoint, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
+    use crate::{arithmetic::test_vectors::group::ADD_TEST_VECTORS, PublicKey};
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";
@@ -163,22 +461,20 @@ mod tests {
     #[test]
     fn uncompressed_round_trip() {
         let pubkey = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let res: PublicKey = AffinePoint::from_pubkey(&pubkey)
-            .unwrap()
-            .to_uncompressed_pubkey()
-            .into();
+        let point = AffinePoint::from_pubkey(&pubkey).unwrap();
+        assert_eq!(point, AffinePoint::generator());
 
+        let res: PublicKey = point.to_uncompressed_pubkey().into();
         assert_eq!(res, pubkey);
     }
 
     #[test]
     fn compressed_round_trip() {
         let pubkey = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let res: PublicKey = AffinePoint::from_pubkey(&pubkey)
-            .unwrap()
-            .to_compressed_pubkey()
-            .into();
+        let point = AffinePoint::from_pubkey(&pubkey).unwrap();
+        assert_eq!(point, AffinePoint::generator());
 
+        let res: PublicKey = point.to_compressed_pubkey().into();
         assert_eq!(res, pubkey);
     }
 
@@ -208,5 +504,137 @@ mod tests {
             hex::encode(res.as_bytes()).to_uppercase(),
             UNCOMPRESSED_BASEPOINT
         );
+    }
+
+    #[test]
+    fn affine_negation() {
+        let basepoint = AffinePoint::generator();
+
+        assert_eq!(-(-basepoint), basepoint);
+    }
+
+    #[test]
+    fn affine_to_projective() {
+        let basepoint_affine = AffinePoint::generator();
+        let basepoint_projective = ProjectivePoint::generator();
+
+        assert_eq!(
+            ProjectivePoint::from(basepoint_affine),
+            basepoint_projective,
+        );
+        assert_eq!(basepoint_projective.to_affine().unwrap(), basepoint_affine);
+
+        // The projective identity does not have an affine representation.
+        assert!(bool::from(
+            ProjectivePoint::identity().to_affine().is_none()
+        ));
+    }
+
+    #[test]
+    fn projective_identity_addition() {
+        let identity = ProjectivePoint::identity();
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!(identity + &generator, generator);
+        assert_eq!(generator + &identity, generator);
+    }
+
+    #[test]
+    fn projective_mixed_addition() {
+        let identity = ProjectivePoint::identity();
+        let basepoint_affine = AffinePoint::generator();
+        let basepoint_projective = ProjectivePoint::generator();
+
+        assert_eq!(identity + &basepoint_affine, basepoint_projective);
+        assert_eq!(
+            basepoint_projective + &basepoint_affine,
+            basepoint_projective + &basepoint_projective
+        );
+    }
+
+    #[test]
+    fn test_vector_repeated_add() {
+        let generator = ProjectivePoint::generator();
+        let mut p = generator;
+
+        for i in 0..ADD_TEST_VECTORS.len() {
+            let affine = p.to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                ADD_TEST_VECTORS[i]
+            );
+
+            p = p + &generator;
+        }
+    }
+
+    #[test]
+    fn test_vector_repeated_add_mixed() {
+        let generator = AffinePoint::generator();
+        let mut p = ProjectivePoint::generator();
+
+        for i in 0..ADD_TEST_VECTORS.len() {
+            let affine = p.to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                ADD_TEST_VECTORS[i]
+            );
+
+            p = p + &generator;
+        }
+    }
+
+    #[test]
+    fn test_vector_double_generator() {
+        let generator = ProjectivePoint::generator();
+        let mut p = generator;
+
+        for i in 0..2 {
+            let affine = p.to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                ADD_TEST_VECTORS[i]
+            );
+
+            p = p.double();
+        }
+    }
+
+    #[test]
+    fn projective_add_vs_double() {
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!(generator + &generator, generator.double());
+    }
+
+    #[test]
+    fn projective_add_and_sub() {
+        let basepoint_affine = AffinePoint::generator();
+        let basepoint_projective = ProjectivePoint::generator();
+
+        assert_eq!(
+            (basepoint_projective + &basepoint_projective) - &basepoint_projective,
+            basepoint_projective
+        );
+        assert_eq!(
+            (basepoint_projective + &basepoint_affine) - &basepoint_affine,
+            basepoint_projective
+        );
+    }
+
+    #[test]
+    fn projective_double_and_sub() {
+        let generator = ProjectivePoint::generator();
+
+        assert_eq!(generator.double() - &generator, generator);
     }
 }
