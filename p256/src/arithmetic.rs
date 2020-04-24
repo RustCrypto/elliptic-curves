@@ -10,6 +10,7 @@
 //! - Scalar multiplication.
 
 mod field;
+mod scalar;
 mod util;
 
 #[cfg(any(feature = "test-vectors", test))]
