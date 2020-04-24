@@ -189,6 +189,16 @@ impl From<AffinePoint> for ProjectivePoint {
     }
 }
 
+impl ConditionallySelectable for ProjectivePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        ProjectivePoint {
+            x: FieldElement::conditional_select(&a.x, &b.x, choice),
+            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            z: FieldElement::conditional_select(&a.z, &b.z, choice),
+        }
+    }
+}
+
 impl ConstantTimeEq for ProjectivePoint {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.to_affine().ct_eq(&other.to_affine())
