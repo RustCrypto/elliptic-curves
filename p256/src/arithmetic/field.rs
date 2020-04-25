@@ -487,6 +487,14 @@ impl Neg for FieldElement {
     }
 }
 
+impl<'a> Neg for &'a FieldElement {
+    type Output = FieldElement;
+
+    fn neg(self) -> FieldElement {
+        FieldElement::zero() - self
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use proptest::{num::u64::ANY, prelude::*};

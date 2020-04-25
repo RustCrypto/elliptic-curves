@@ -382,6 +382,12 @@ impl AddAssign<ProjectivePoint> for ProjectivePoint {
     }
 }
 
+impl AddAssign<&ProjectivePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: &ProjectivePoint) {
+        *self = ProjectivePoint::add(self, rhs);
+    }
+}
+
 impl Add<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -423,6 +429,12 @@ impl Sub<&ProjectivePoint> for ProjectivePoint {
 impl SubAssign<ProjectivePoint> for ProjectivePoint {
     fn sub_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::sub(self, &rhs);
+    }
+}
+
+impl SubAssign<&ProjectivePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: &ProjectivePoint) {
+        *self = ProjectivePoint::sub(self, rhs);
     }
 }
 
@@ -481,6 +493,14 @@ impl Neg for ProjectivePoint {
 
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(&self)
+    }
+}
+
+impl<'a> Neg for &'a ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn neg(self) -> ProjectivePoint {
+        ProjectivePoint::neg(self)
     }
 }
 
