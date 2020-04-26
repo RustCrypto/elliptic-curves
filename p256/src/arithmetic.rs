@@ -10,13 +10,14 @@
 //! - Scalar multiplication.
 
 mod field;
+mod scalar;
 mod util;
 
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
 use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -188,6 +189,16 @@ impl From<AffinePoint> for ProjectivePoint {
     }
 }
 
+impl ConditionallySelectable for ProjectivePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        ProjectivePoint {
+            x: FieldElement::conditional_select(&a.x, &b.x, choice),
+            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            z: FieldElement::conditional_select(&a.z, &b.z, choice),
+        }
+    }
+}
+
 impl ConstantTimeEq for ProjectivePoint {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.to_affine().ct_eq(&other.to_affine())
@@ -333,6 +344,20 @@ impl ProjectivePoint {
     fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         self.add_mixed(&other.neg())
     }
+
+    /// Returns `[k] self`.
+    fn mul(&self, k: &scalar::Scalar) -> ProjectivePoint {
+        let mut ret = ProjectivePoint::identity();
+
+        for limb in k.0.iter().rev() {
+            for i in (0..64).rev() {
+                ret = ret.double();
+                ret.conditional_assign(&(ret + self), Choice::from(((limb >> i) & 1u64) as u8));
+            }
+        }
+
+        ret
+    }
 }
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
@@ -354,6 +379,12 @@ impl Add<&ProjectivePoint> for ProjectivePoint {
 impl AddAssign<ProjectivePoint> for ProjectivePoint {
     fn add_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::add(self, &rhs);
+    }
+}
+
+impl AddAssign<&ProjectivePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: &ProjectivePoint) {
+        *self = ProjectivePoint::add(self, rhs);
     }
 }
 
@@ -401,6 +432,12 @@ impl SubAssign<ProjectivePoint> for ProjectivePoint {
     }
 }
 
+impl SubAssign<&ProjectivePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: &ProjectivePoint) {
+        *self = ProjectivePoint::sub(self, rhs);
+    }
+}
+
 impl Sub<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -423,6 +460,34 @@ impl SubAssign<AffinePoint> for ProjectivePoint {
     }
 }
 
+impl Mul<&scalar::Scalar> for &ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, other: &scalar::Scalar) -> ProjectivePoint {
+        ProjectivePoint::mul(self, other)
+    }
+}
+
+impl Mul<&scalar::Scalar> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, other: &scalar::Scalar) -> ProjectivePoint {
+        ProjectivePoint::mul(&self, other)
+    }
+}
+
+impl MulAssign<scalar::Scalar> for ProjectivePoint {
+    fn mul_assign(&mut self, rhs: scalar::Scalar) {
+        *self = ProjectivePoint::mul(self, &rhs);
+    }
+}
+
+impl MulAssign<&scalar::Scalar> for ProjectivePoint {
+    fn mul_assign(&mut self, rhs: &scalar::Scalar) {
+        *self = ProjectivePoint::mul(self, rhs);
+    }
+}
+
 impl Neg for ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -431,10 +496,23 @@ impl Neg for ProjectivePoint {
     }
 }
 
+impl<'a> Neg for &'a ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn neg(self) -> ProjectivePoint {
+        ProjectivePoint::neg(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{AffinePoint, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
-    use crate::{arithmetic::test_vectors::group::ADD_TEST_VECTORS, PublicKey};
+    use core::convert::TryInto;
+
+    use super::{scalar::Scalar, AffinePoint, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
+    use crate::{
+        arithmetic::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
+        PublicKey,
+    };
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";
@@ -636,5 +714,31 @@ mod tests {
         let generator = ProjectivePoint::generator();
 
         assert_eq!(generator.double() - &generator, generator);
+    }
+
+    #[test]
+    fn test_vector_scalar_mult() {
+        let generator = ProjectivePoint::generator();
+
+        for (k, coords) in ADD_TEST_VECTORS
+            .iter()
+            .enumerate()
+            .map(|(k, coords)| (Scalar::from(k as u64 + 1), *coords))
+            .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
+                (
+                    Scalar::from_bytes(hex::decode(k).unwrap()[..].try_into().unwrap()).unwrap(),
+                    (x, y),
+                )
+            }))
+        {
+            let res = (generator * &k).to_affine().unwrap();
+            assert_eq!(
+                (
+                    hex::encode(res.x.to_bytes()).to_uppercase().as_str(),
+                    hex::encode(res.y.to_bytes()).to_uppercase().as_str(),
+                ),
+                coords,
+            );
+        }
     }
 }
