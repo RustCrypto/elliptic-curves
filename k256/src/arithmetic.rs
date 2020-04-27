@@ -226,9 +226,32 @@ impl ProjectivePoint {
     /// Returns `self + other`.
     fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
-        // (https://eprint.iacr.org/2015/1060 Algorithm 7). The comments after each line
-        // indicate which algorithm steps are being performed.
-        todo!("Implement this.");
+        // (https://eprint.iacr.org/2015/1060 Algorithm 7).
+
+        let xx = self.x * &other.x;
+        let yy = self.y * &other.y;
+        let zz = self.z * &other.z;
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy);
+        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) - &(yy + &zz);
+        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) - &(xx + &zz);
+
+        let bzz = CURVE_EQUATION_B * &zz;
+        let bzz3 = bzz.double() + &bzz;
+
+        let yy_m_bzz3 = yy - &bzz3;
+        let yy_p_bzz3 = yy + &bzz3;
+
+        let byz = CURVE_EQUATION_B * &yz_pairs;
+        let byz3 = byz.double() + &byz;
+
+        let xx3 = xx.double() + &xx;
+        let bxx9 = CURVE_EQUATION_B * &(xx3.double() + &xx3);
+
+        ProjectivePoint {
+            x: (xy_pairs * &yy_m_bzz3) - &(byz3 * &xz_pairs),
+            y: (yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs),
+            z: (yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs),
+        }
     }
 
     /// Returns `self + other`.
