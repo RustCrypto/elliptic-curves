@@ -265,9 +265,27 @@ impl ProjectivePoint {
     /// Doubles this point.
     fn double(&self) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
-        // (https://eprint.iacr.org/2015/1060 Algorithm 9). The comments after each line
-        // indicate which algorithm steps are being performed.
-        todo!("Implement this.");
+        // (https://eprint.iacr.org/2015/1060 Algorithm 9).
+
+        let yy = self.y.square();
+        let zz = self.z.square();
+        let xy2 = (self.x * &self.y).double();
+
+        let bzz = CURVE_EQUATION_B * &zz;
+        let bzz3 = bzz.double() + &bzz;
+        let bzz9 = bzz3.double() + &bzz3;
+
+        let yy_m_bzz9 = yy - &bzz9;
+        let yy_p_bzz3 = yy + &bzz3;
+
+        let yy_zz = yy * &zz;
+        let yy_zz8 = yy_zz.double().double().double();
+
+        ProjectivePoint {
+            x: xy2 * &yy_m_bzz9,
+            y: (yy_m_bzz9 * &yy_p_bzz3) + &(CURVE_EQUATION_B * &(yy_zz8.double() + &yy_zz8)),
+            z: yy_zz8 * &self.y,
+        }
     }
 
     /// Returns `self - other`.
