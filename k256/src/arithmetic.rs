@@ -257,9 +257,31 @@ impl ProjectivePoint {
     /// Returns `self + other`.
     fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
-        // (https://eprint.iacr.org/2015/1060 Algorithm 8). The comments after each line
-        // indicate which algorithm steps are being performed.
-        todo!("Implement this.");
+        // (https://eprint.iacr.org/2015/1060 Algorithm 8).
+
+        let xx = self.x * &other.x;
+        let yy = self.y * &other.y;
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy);
+        let yz_pairs = (other.y * &self.z) + &self.y;
+        let xz_pairs = (other.x * &self.z) + &self.x;
+
+        let bzz = CURVE_EQUATION_B * &self.z;
+        let bzz3 = bzz.double() + &bzz;
+
+        let yy_m_bzz3 = yy - &bzz3;
+        let yy_p_bzz3 = yy + &bzz3;
+
+        let byz = CURVE_EQUATION_B * &yz_pairs;
+        let byz3 = byz.double() + &byz;
+
+        let xx3 = xx.double() + &xx;
+        let bxx9 = CURVE_EQUATION_B * &(xx3.double() + &xx3);
+
+        ProjectivePoint {
+            x: (xy_pairs * &yy_m_bzz3) - &(byz3 * &xz_pairs),
+            y: (yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs),
+            z: (yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs),
+        }
     }
 
     /// Doubles this point.
@@ -448,10 +470,7 @@ mod tests {
     use core::convert::TryInto;
 
     use super::{AffinePoint, ProjectivePoint, CURVE_EQUATION_B};
-    use crate::{
-        arithmetic::test_vectors::group::{ADD_TEST_VECTORS},
-        PublicKey,
-    };
+    use crate::{arithmetic::test_vectors::group::ADD_TEST_VECTORS, PublicKey};
 
     const CURVE_EQUATION_B_BYTES: &str =
         "0000000000000000000000000000000000000000000000000000000000000007";
@@ -676,5 +695,4 @@ mod tests {
     //        );
     //    }
     //}
-
 }
