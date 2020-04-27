@@ -36,7 +36,7 @@ const R2: FieldElement = FieldElement([
 ]);
 
 /// INV = -(p^-1 mod 2^64) mod 2^64
-const INV: u64 = 0xd838091dd2253531;
+const INV: u64 = 0xd838_091d_d225_3531;
 
 /// An element in the finite field modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 // The internal representation is in little-endian order. Elements are always in
