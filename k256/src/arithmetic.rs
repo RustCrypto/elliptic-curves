@@ -12,6 +12,7 @@ mod util;
 pub mod test_vectors;
 
 use core::convert::TryInto;
+use core::ops::{Neg};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -74,7 +75,7 @@ impl AffinePoint {
             y: FieldElement::from_bytes([
                 0x48, 0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65, 0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11,
                 0x08, 0xa8, 0xfd, 0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19, 0x9c, 0x47, 0xd0, 0x8f,
-                0xfb, 0x10, 0xd4, 0xb8
+                0xfb, 0x10, 0xd4, 0xb8,
             ])
             .unwrap(),
         }
@@ -146,6 +147,81 @@ impl AffinePoint {
 
         UncompressedCurvePoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
+    }
+}
+
+impl Neg for AffinePoint {
+    type Output = AffinePoint;
+
+    fn neg(self) -> Self::Output {
+        AffinePoint {
+            x: self.x,
+            y: -self.y,
+        }
+    }
+}
+
+/// A point on the secp256k1 curve in projective coordinates.
+#[derive(Clone, Copy, Debug)]
+pub struct ProjectivePoint {
+    x: FieldElement,
+    y: FieldElement,
+    z: FieldElement,
+}
+
+impl From<AffinePoint> for ProjectivePoint {
+    fn from(p: AffinePoint) -> Self {
+        ProjectivePoint {
+            x: p.x,
+            y: p.y,
+            z: FieldElement::one(),
+        }
+    }
+}
+
+impl ConstantTimeEq for ProjectivePoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.to_affine().ct_eq(&other.to_affine())
+    }
+}
+
+impl PartialEq for ProjectivePoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl ProjectivePoint {
+    /// Returns the additive identity of SECP256k1, also known as the "neutral element" o
+    /// "point at infinity".
+    pub const fn identity() -> ProjectivePoint {
+        ProjectivePoint {
+            x: FieldElement::zero(),
+            y: FieldElement::one(),
+            z: FieldElement::zero(),
+        }
+    }
+
+    /// Returns the base point of SECP256k1.
+    pub fn generator() -> ProjectivePoint {
+        AffinePoint::generator().into()
+    }
+
+    /// Returns the affine representation of this point, or `None` if it is the identity.
+    pub fn to_affine(&self) -> CtOption<AffinePoint> {
+        self.z.invert().map(|zinv| AffinePoint {
+            x: self.x * &zinv,
+            y: self.y * &zinv,
+        })
+    }
+
+    /// Returns `-self`.
+    fn neg(&self) -> ProjectivePoint {
+        ProjectivePoint {
+            x: self.x,
+            y: self.y.neg(),
+            z: self.z,
+        }
     }
 }
 
