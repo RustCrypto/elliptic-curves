@@ -306,7 +306,7 @@ impl ProjectivePoint {
         ProjectivePoint {
             x: xy2 * &yy_m_bzz9,
             y: (yy_m_bzz9 * &yy_p_bzz3) + &(CURVE_EQUATION_B * &(yy_zz8.double() + &yy_zz8)),
-            z: yy_zz8 * &self.y,
+            z: ((yy * &self.y) * &self.z).double().double().double(),
         }
     }
 
@@ -646,6 +646,7 @@ mod tests {
         let generator = ProjectivePoint::generator();
 
         assert_eq!(generator + &generator, generator.double());
+        assert_eq!((generator + &generator) + &(generator + &generator), generator.double().double());
     }
 
     #[test]
