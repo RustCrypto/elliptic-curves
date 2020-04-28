@@ -557,6 +557,10 @@ impl<'a> Neg for &'a FieldElement {
 
 #[cfg(test)]
 mod tests {
+    use fiat_crypto::secp256k1_64::{
+        fiat_secp256k1_add, fiat_secp256k1_mul, fiat_secp256k1_opp, fiat_secp256k1_square,
+        fiat_secp256k1_sub,
+    };
     use proptest::{num::u64::ANY, prelude::*};
 
     use super::FieldElement;
@@ -684,6 +688,80 @@ mod tests {
             let a = FieldElement([a0, a1, a2, 0]);
             let b = FieldElement([b0, b1, b2, 0]);
             assert_eq!(a.add(&b).subtract(&a), b);
+        }
+
+        /// These tests fuzz the Field arithmetic implementation against
+        /// fiat-crypto.
+        #[test]
+        fn mul_with_fiat(
+            a0 in ANY,
+            a1 in ANY,
+            a2 in ANY,
+            b0 in ANY,
+            b1 in ANY,
+            b2 in ANY,
+        ) {
+            let mut out: [u64; 4] = [0; 4];
+            let a = [a0, a1, a2, 0];
+            let b = [b0, b1, b2, 0];
+            fiat_secp256k1_mul(&mut out, &a, &b);
+            assert_eq!(FieldElement(a).mul(&FieldElement(b)).0, out);
+        }
+
+        #[test]
+        fn square_with_fiat(
+            a0 in ANY,
+            a1 in ANY,
+            a2 in ANY,
+        ) {
+            let mut out: [u64; 4] = [0; 4];
+            let a = [a0, a1, a2, 0];
+            fiat_secp256k1_square(&mut out, &a);
+            assert_eq!(FieldElement(a).square().0, out);
+        }
+
+        #[test]
+        fn add_with_fiat(
+            a0 in ANY,
+            a1 in ANY,
+            a2 in ANY,
+            b0 in ANY,
+            b1 in ANY,
+            b2 in ANY,
+        ) {
+            let mut out: [u64; 4] = [0; 4];
+            let a = [a0, a1, a2, 0];
+            let b = [b0, b1, b2, 0];
+            fiat_secp256k1_add(&mut out, &a, &b);
+            assert_eq!(FieldElement(a).add(&FieldElement(b)).0, out);
+        }
+
+        #[test]
+        fn sub_with_fiat(
+            a0 in ANY,
+            a1 in ANY,
+            a2 in ANY,
+            b0 in ANY,
+            b1 in ANY,
+            b2 in ANY,
+        ) {
+            let mut out: [u64; 4] = [0; 4];
+            let a = [a0, a1, a2, 0];
+            let b = [b0, b1, b2, 0];
+            fiat_secp256k1_sub(&mut out, &a, &b);
+            assert_eq!(FieldElement(a).subtract(&FieldElement(b)).0, out);
+        }
+
+        #[test]
+        fn negate_with_fiat(
+            a0 in ANY,
+            a1 in ANY,
+            a2 in ANY,
+        ) {
+            let mut out: [u64; 4] = [0; 4];
+            let a = [a0, a1, a2, 0];
+            fiat_secp256k1_opp(&mut out, &a);
+            assert_eq!((-FieldElement(a)).0, out);
         }
     }
 }

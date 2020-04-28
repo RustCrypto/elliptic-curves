@@ -25,6 +25,7 @@ default-features = false
 [dev-dependencies]
 hex = "0.4"
 proptest = "0.9"
+fiat-crypto = "0.1.0"
 
 [features]
 default = ["arithmetic", "std"]
