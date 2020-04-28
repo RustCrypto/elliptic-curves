@@ -8,8 +8,8 @@ documentation = "https://docs.rs/elliptic-curve"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
 readme = "README.md"
 edition = "2018"
-categories = ["cryptography", "no-std"]
-keywords = ["crypto", "ecc", "nist"]
+categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
+keywords = ["bitcoin", "crypto", "ecc", "ethereum"]
 
 [dependencies.elliptic-curve]
 version = "0.3"
