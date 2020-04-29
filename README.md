@@ -1,7 +1,6 @@
 # RustCrypto: Elliptic Curves
 
 [![Build Status][build-image]][build-link]
-[![Dependency Status][deps-image]][deps-link]
 ![Rust Version][rustc-image]
 
 General purpose Elliptic Curve Cryptography (ECC) support, including types
@@ -50,8 +49,6 @@ dual licensed as above, without any additional terms or conditions.
 
 [build-image]: https://travis-ci.com/RustCrypto/elliptic-curves.svg?branch=master
 [build-link]: https://travis-ci.com/RustCrypto/elliptic-curves
-[deps-image]: https://deps.rs/repo/github/RustCrypto/elliptic-curves/status.svg
-[deps-link]: https://deps.rs/repo/github/RustCrypto/elliptic-curves
 [rustc-image]: https://img.shields.io/badge/rustc-1.37+-blue.svg
 
 [//]: # (crates)
