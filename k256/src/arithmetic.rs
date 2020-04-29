@@ -1,9 +1,4 @@
 //! A pure-Rust implementation of group operations on secp256k1.
-//!
-//! # Status
-//!
-//! Currently, no actual group operations are implemented. Only point compression and
-//! decompression is supported.
 
 mod field;
 mod scalar;
@@ -11,6 +6,8 @@ mod util;
 
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
+
+pub use self::scalar::Scalar;
 
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -332,7 +329,7 @@ impl ProjectivePoint {
     }
 
     /// Returns `[k] self`.
-    fn mul(&self, k: &scalar::Scalar) -> ProjectivePoint {
+    fn mul(&self, k: &Scalar) -> ProjectivePoint {
         let mut ret = ProjectivePoint::identity();
 
         for limb in k.0.iter().rev() {
@@ -446,30 +443,30 @@ impl SubAssign<AffinePoint> for ProjectivePoint {
     }
 }
 
-impl Mul<&scalar::Scalar> for &ProjectivePoint {
+impl Mul<&Scalar> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn mul(self, other: &scalar::Scalar) -> ProjectivePoint {
+    fn mul(self, other: &Scalar) -> ProjectivePoint {
         ProjectivePoint::mul(self, other)
     }
 }
 
-impl Mul<&scalar::Scalar> for ProjectivePoint {
+impl Mul<&Scalar> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn mul(self, other: &scalar::Scalar) -> ProjectivePoint {
+    fn mul(self, other: &Scalar) -> ProjectivePoint {
         ProjectivePoint::mul(&self, other)
     }
 }
 
-impl MulAssign<scalar::Scalar> for ProjectivePoint {
-    fn mul_assign(&mut self, rhs: scalar::Scalar) {
+impl MulAssign<Scalar> for ProjectivePoint {
+    fn mul_assign(&mut self, rhs: Scalar) {
         *self = ProjectivePoint::mul(self, &rhs);
     }
 }
 
-impl MulAssign<&scalar::Scalar> for ProjectivePoint {
-    fn mul_assign(&mut self, rhs: &scalar::Scalar) {
+impl MulAssign<&Scalar> for ProjectivePoint {
+    fn mul_assign(&mut self, rhs: &Scalar) {
         *self = ProjectivePoint::mul(self, rhs);
     }
 }
@@ -494,7 +491,7 @@ impl<'a> Neg for &'a ProjectivePoint {
 mod tests {
     use core::convert::TryInto;
 
-    use super::{scalar::Scalar, AffinePoint, ProjectivePoint, CURVE_EQUATION_B};
+    use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_B};
     use crate::{
         arithmetic::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         PublicKey,
