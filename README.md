@@ -23,7 +23,7 @@ NOTE: Some crates contain field/point arithmetic implementations gated under the
 
 ## Minimum Supported Rust Version
 
-All crates in this repository support Rust **1.37** or higher. In future minimum
+All crates in this repository support Rust **1.41** or higher. In future minimum
 supported Rust version can be changed, but it will be done with the minor
 version bump.
 
@@ -46,7 +46,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [build-image]: https://travis-ci.com/RustCrypto/elliptic-curves.svg?branch=master
 [build-link]: https://travis-ci.com/RustCrypto/elliptic-curves
-[rustc-image]: https://img.shields.io/badge/rustc-1.37+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.41+-blue.svg
 
 [//]: # (crates)
 
