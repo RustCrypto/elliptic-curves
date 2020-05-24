@@ -1,7 +1,4 @@
-# RustCrypto: Elliptic Curves
-
-[![Build Status][build-image]][build-link]
-![Rust Version][rustc-image]
+# RustCrypto: Elliptic Curves [![Build Status][build-image]][build-link] ![Rust Version][rustc-image]
 
 General purpose Elliptic Curve Cryptography (ECC) support, including types
 and traits for representing various elliptic curve forms, scalars, points,
