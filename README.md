@@ -21,6 +21,12 @@ easily used for bare-metal or WebAssembly programming.
 NOTE: Some crates contain field/point arithmetic implementations gated under the
 `arithmetic` cargo feature as noted above.
 
+### Other Curves
+
+#### Curve25519
+
+We recommend [curve25519-dalek] for a pure Rust Curve25519 library.
+
 ## Minimum Supported Rust Version
 
 All crates in this repository support Rust **1.41** or higher. In future minimum
@@ -52,3 +58,7 @@ dual licensed as above, without any additional terms or conditions.
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
 [`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
 [`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p521
+
+[//]: # (general links)
+
+[curve25519-dalek]: https://github.com/dalek-cryptography/curve25519-dalek
