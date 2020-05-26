@@ -45,10 +45,8 @@ impl Scalar {
     ///
     /// Returns None if the secret's underlying value does not represent a field element.
     pub fn from_secret(s: SecretKey) -> CtOption<Scalar> {
-        let mut buf = [0u8; 32];
-        buf.copy_from_slice(s.secret_scalar().as_ref());
         // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
-        Self::from_bytes(buf)
+        Self::from_bytes((*s.secret_scalar().as_ref()).into())
     }
 
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
