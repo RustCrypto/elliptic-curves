@@ -3,7 +3,7 @@
 use core::convert::TryInto;
 use subtle::{Choice, CtOption};
 
-use crate::arithmetic::util::sbb;
+use crate::{arithmetic::util::sbb, SecretKey};
 
 /// The number of 64-bit limbs used to represent a [`Scalar`].
 const LIMBS: usize = 4;
@@ -40,6 +40,15 @@ impl Scalar {
         Scalar([1, 0, 0, 0])
     }
 
+    /// Attempts to convert a `SecretKey` (defined in the more generic `elliptic_curve` crate) to a
+    /// `Scalar`
+    ///
+    /// Returns None if the secret's underlying value does not represent a field element.
+    pub fn from_secret(s: SecretKey) -> CtOption<Scalar> {
+        // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
+        Self::from_bytes((*s.secret_scalar().as_ref()).into())
+    }
+
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
@@ -73,4 +82,13 @@ impl Scalar {
         ret[24..32].copy_from_slice(&self.0[0].to_be_bytes());
         ret
     }
+}
+
+// Tests that a Scalar can be safely converted to a SecretKey and back
+#[test]
+fn from_ec_secret() {
+    let scalar = Scalar::one();
+    let secret = SecretKey::from_bytes(scalar.to_bytes()).unwrap();
+    let rederived_scalar = Scalar::from_secret(secret).unwrap();
+    assert_eq!(scalar.0, rederived_scalar.0);
 }
