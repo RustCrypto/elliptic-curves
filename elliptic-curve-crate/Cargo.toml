@@ -20,7 +20,7 @@ version = "0.1"
 optional = true
 
 [dependencies.generic-array]
-version = "0.12"
+version = "0.14"
 default-features = false
 
 [dependencies.subtle]
