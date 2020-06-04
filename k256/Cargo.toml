@@ -12,7 +12,7 @@ categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum"]
 
 [dependencies.elliptic-curve]
-version = "0.3"
+version = "0.4"
 path = "../elliptic-curve-crate"
 default-features = false
 features = ["weierstrass"]

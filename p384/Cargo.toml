@@ -12,7 +12,7 @@ categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist"]
 
 [dependencies.elliptic-curve]
-version = "0.3"
+version = "0.4"
 path = "../elliptic-curve-crate"
 default-features = false
 features = ["weierstrass"]
