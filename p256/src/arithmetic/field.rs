@@ -9,6 +9,9 @@ use getrandom::getrandom;
 
 use super::util::{adc, mac, sbb};
 
+/// The number of 64-bit limbs used to represent a [`FieldElement`].
+const LIMBS: usize = 4;
+
 /// Constant representing the modulus
 /// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 pub const MODULUS: FieldElement = FieldElement([
@@ -38,7 +41,7 @@ const R2: FieldElement = FieldElement([
 // The internal representation is in little-endian order. Elements are always in
 // Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(crate) [u64; 4]);
+pub struct FieldElement(pub(crate) [u64; LIMBS]);
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
@@ -112,7 +115,7 @@ impl FieldElement {
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
     pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
-        let mut w = [0u64; 4];
+        let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
         w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());

@@ -1,7 +1,16 @@
 //! A pure-Rust implementation of group operations on secp256r1.
 
+#[cfg(feature = "expose-arithmetic")]
+pub mod field;
+#[cfg(not(feature = "expose-arithmetic"))]
 mod field;
+#[cfg(feature = "expose-arithmetic")]
+pub mod scalar;
+#[cfg(not(feature = "expose-arithmetic"))]
 mod scalar;
+#[cfg(feature = "expose-arithmetic")]
+pub mod util;
+#[cfg(not(feature = "expose-arithmetic"))]
 mod util;
 
 #[cfg(any(feature = "test-vectors", test))]

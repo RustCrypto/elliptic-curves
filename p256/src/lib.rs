@@ -7,7 +7,7 @@
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
 
-#![no_std]
+#![cfg_attr(not(test), no_std)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png")]
 #![forbid(unsafe_code)]
