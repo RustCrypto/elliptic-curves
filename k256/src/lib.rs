@@ -1,4 +1,4 @@
-//! secp256k1 elliptic curve
+//! K-256 (secp256k1) elliptic curve
 //!
 //! ## Minimum Supported Rust Version
 //!
@@ -21,15 +21,17 @@ pub use elliptic_curve;
 
 use elliptic_curve::{generic_array::typenum::U32, weierstrass::Curve};
 
-/// secp256k1 elliptic curve.
+/// K-256 (secp256k1) elliptic curve.
 ///
-/// Specified in Certicom's SECG in SEC 2: Recommended Elliptic Curve Domain Parameters:
+/// Specified in Certicom's SECG in "SEC 2: Recommended Elliptic Curve Domain Parameters":
 ///
 /// <https://www.secg.org/sec2-v2.pdf>
 ///
 /// The curve's equation is `y² = x³ + 7` over a ~256-bit prime field.
 ///
-/// It's primarily notable for its use in Bitcoin and other cryptocurrencies.
+/// It's primarily notable for usage in Bitcoin and other cryptocurrencies,
+/// particularly in conjunction with the Elliptic Curve Digital Signature
+/// Algorithm (ECDSA).
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Secp256k1;
 

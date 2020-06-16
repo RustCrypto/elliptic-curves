@@ -1,4 +1,4 @@
-# RustCrypto NIST P-521 crate
+# RustCrypto: NIST P-521 (secp521r1) elliptic curve
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -6,7 +6,16 @@
 ![Rust Version][rustc-image]
 [![Build Status][build-image]][build-link]
 
+NIST P-521 elliptic curve (a.k.a. secp521r1) types.
+
 [Documentation][docs-link]
+
+## Stub!
+
+This crate is a placeholder for implementing NIST P-521 in terms of traits
+from the [`elliptic-curve`] crate, however no actual implementation work has
+been done yet. If you are actually interested in P-521 support, please open
+an issue about it.
 
 ## Minimum Supported Rust Version
 
@@ -45,3 +54,7 @@ dual licensed as above, without any additional terms or conditions.
 [rustc-image]: https://img.shields.io/badge/rustc-1.41+-blue.svg
 [build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/p521/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow%3Ap521
+
+[//]: # (general links)
+
+[`elliptic-curve`]: https://github.com/RustCrypto/elliptic-curves/tree/master/elliptic-curve-crate
