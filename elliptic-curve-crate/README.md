@@ -1,4 +1,4 @@
-# `elliptic-curve` crate
+# RustCrypto: Elliptic Curve Traits
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]

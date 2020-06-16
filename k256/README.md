@@ -17,11 +17,11 @@ multiplication, which can be used to implement protocols such as [ECDH].
 
 ## About K-256 (secp256k1)
 
-Typically referred to as "[secp256k1]", K-256 is a Koblitz curve.
+K-256 is a Koblitz curve typically referred to as "[secp256k1]".
 The "K-256" name follows NIST notation where P = prime fields,
 B = binary fields, and K = Koblitz curves (defined over F₂).
 
-The curve is specified as "secp256k1" by Certicom's SECG in
+The curve is specified as `secp256k1` by Certicom's SECG in
 "SEC 2: Recommended Elliptic Curve Domain Parameters":
 
 <https://www.secg.org/sec2-v2.pdf>
