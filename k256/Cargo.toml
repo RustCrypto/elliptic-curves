@@ -1,6 +1,6 @@
 [package]
 name = "k256"
-description = "secp256k1 elliptic curve"
+description = "K-256 (secp256k1) elliptic curve"
 version = "0.3.0"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -9,7 +9,7 @@ repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
 readme = "README.md"
 edition = "2018"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
-keywords = ["bitcoin", "crypto", "ecc", "ethereum"]
+keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
 [dependencies.elliptic-curve]
 version = "0.4"
