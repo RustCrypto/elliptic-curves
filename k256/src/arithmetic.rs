@@ -11,10 +11,13 @@ pub use self::scalar::Scalar;
 
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use elliptic_curve::generic_array::GenericArray;
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::{
+    generic_array::GenericArray,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    weierstrass::FixedBaseScalarMul,
+};
 
-use crate::{CompressedPoint, PublicKey, UncompressedPoint};
+use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 
 /// b = 7 in Montgomery form (aR mod p, where R = 2**256.
@@ -124,25 +127,55 @@ impl AffinePoint {
         }
     }
 
+    /// Returns a [`PublicKey`] with the SEC-1 compressed encoding of this point.
+    pub fn to_compressed_pubkey(&self) -> PublicKey {
+        PublicKey::Compressed(self.clone().into())
+    }
+
+    /// Returns a [`PublicKey`] with the SEC-1 uncompressed encoding of this point.
+    pub fn to_uncompressed_pubkey(&self) -> PublicKey {
+        PublicKey::Uncompressed(self.clone().into())
+    }
+}
+
+impl From<AffinePoint> for CompressedPoint {
     /// Returns the SEC-1 compressed encoding of this point.
-    pub fn to_compressed_pubkey(&self) -> CompressedPoint {
+    fn from(affine_point: AffinePoint) -> CompressedPoint {
         let mut encoded = [0; 33];
-        encoded[0] = if self.y.is_odd().into() { 0x03 } else { 0x02 };
-        encoded[1..33].copy_from_slice(&self.x.to_bytes());
+        encoded[0] = if affine_point.y.is_odd().into() {
+            0x03
+        } else {
+            0x02
+        };
+        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
 
         CompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
     }
+}
 
+impl From<AffinePoint> for UncompressedPoint {
     /// Returns the SEC-1 uncompressed encoding of this point.
-    pub fn to_uncompressed_pubkey(&self) -> UncompressedPoint {
+    fn from(affine_point: AffinePoint) -> UncompressedPoint {
         let mut encoded = [0; 65];
         encoded[0] = 0x04;
-        encoded[1..33].copy_from_slice(&self.x.to_bytes());
-        encoded[33..65].copy_from_slice(&self.y.to_bytes());
+        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
+        encoded[33..65].copy_from_slice(&affine_point.y.to_bytes());
 
         UncompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
+    }
+}
+
+impl FixedBaseScalarMul for Secp256k1 {
+    /// Elliptic curve point type
+    type Point = AffinePoint;
+
+    /// Multiply the given scalar by the generator point for this elliptic
+    /// curve.
+    fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
+        Scalar::from_bytes((*scalar_bytes).into())
+            .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
     }
 }
 
@@ -492,9 +525,13 @@ mod tests {
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_B};
     use crate::{
-        arithmetic::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
-        PublicKey,
+        arithmetic::test_vectors::{
+            group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
+            mul_base::MUL_BASE_TEST_VECTORS,
+        },
+        PublicKey, ScalarBytes, Secp256k1, UncompressedPoint,
     };
+    use elliptic_curve::weierstrass::FixedBaseScalarMul;
 
     const CURVE_EQUATION_B_BYTES: &str =
         "0000000000000000000000000000000000000000000000000000000000000007";
@@ -721,6 +758,22 @@ mod tests {
                 ),
                 coords,
             );
+        }
+    }
+
+    #[test]
+    fn fixed_base_scalar_mul() {
+        for vector in MUL_BASE_TEST_VECTORS {
+            let m = hex::decode(&vector.m).unwrap();
+            let x = hex::decode(&vector.x).unwrap();
+            let y = hex::decode(&vector.y).unwrap();
+
+            let point =
+                UncompressedPoint::from(Secp256k1::mul_base(ScalarBytes::from_slice(&m)).unwrap())
+                    .into_bytes();
+
+            assert_eq!(x, &point[1..=32]);
+            assert_eq!(y, &point[33..]);
         }
     }
 }

@@ -17,8 +17,8 @@ path = "../elliptic-curve-crate"
 default-features = false
 features = ["weierstrass"]
 
-[dependencies.subtle]
-version = "2.2.2"
+[dependencies.zeroize]
+version = "1"
 optional = true
 default-features = false
 
@@ -28,7 +28,7 @@ proptest = "0.9"
 
 [features]
 default = ["arithmetic", "std"]
-arithmetic = ["subtle"]
+arithmetic = []
 test-vectors = []
 std = ["elliptic-curve/std"]
 

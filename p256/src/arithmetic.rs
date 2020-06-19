@@ -11,10 +11,13 @@ pub use self::scalar::Scalar;
 
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use elliptic_curve::generic_array::GenericArray;
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::{
+    generic_array::GenericArray,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    weierstrass::FixedBaseScalarMul,
+};
 
-use crate::{CompressedPoint, PublicKey, UncompressedPoint};
+use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 
 /// a = -3
@@ -130,25 +133,55 @@ impl AffinePoint {
         }
     }
 
+    /// Returns a [`PublicKey`] with the SEC-1 compressed encoding of this point.
+    pub fn to_compressed_pubkey(&self) -> PublicKey {
+        PublicKey::Compressed(self.clone().into())
+    }
+
+    /// Returns a [`PublicKey`] with the SEC-1 uncompressed encoding of this point.
+    pub fn to_uncompressed_pubkey(&self) -> PublicKey {
+        PublicKey::Uncompressed(self.clone().into())
+    }
+}
+
+impl From<AffinePoint> for CompressedPoint {
     /// Returns the SEC-1 compressed encoding of this point.
-    pub fn to_compressed_pubkey(&self) -> CompressedPoint {
+    fn from(affine_point: AffinePoint) -> CompressedPoint {
         let mut encoded = [0; 33];
-        encoded[0] = if self.y.is_odd().into() { 0x03 } else { 0x02 };
-        encoded[1..33].copy_from_slice(&self.x.to_bytes());
+        encoded[0] = if affine_point.y.is_odd().into() {
+            0x03
+        } else {
+            0x02
+        };
+        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
 
         CompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
     }
+}
 
+impl From<AffinePoint> for UncompressedPoint {
     /// Returns the SEC-1 uncompressed encoding of this point.
-    pub fn to_uncompressed_pubkey(&self) -> UncompressedPoint {
+    fn from(affine_point: AffinePoint) -> UncompressedPoint {
         let mut encoded = [0; 65];
         encoded[0] = 0x04;
-        encoded[1..33].copy_from_slice(&self.x.to_bytes());
-        encoded[33..65].copy_from_slice(&self.y.to_bytes());
+        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
+        encoded[33..65].copy_from_slice(&affine_point.y.to_bytes());
 
         UncompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
+    }
+}
+
+impl FixedBaseScalarMul for NistP256 {
+    /// Elliptic curve point type
+    type Point = AffinePoint;
+
+    /// Multiply the given scalar by the generator point for this elliptic
+    /// curve.
+    fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
+        Scalar::from_bytes((*scalar_bytes).into())
+            .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
     }
 }
 
@@ -498,6 +531,9 @@ impl<'a> Neg for &'a ProjectivePoint {
 
 #[cfg(test)]
 mod tests {
+    // TODO(tarcieri): test `FixedBaseScalarMul` impl
+    // See the `fixed_base_scalar_mul` in `k256` crate's `arithmetic.rs` for an example
+
     use core::convert::TryInto;
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B};
