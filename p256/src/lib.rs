@@ -48,8 +48,14 @@ impl Curve for NistP256 {
     type ScalarSize = U32;
 }
 
-/// NIST P-256 secret keys
-pub type SecretKey = elliptic_curve::SecretKey<<NistP256 as Curve>::ScalarSize>;
+/// NIST P-256 Secret Key
+pub type SecretKey = elliptic_curve::SecretKey<U32>;
 
-/// NIST P-256 public keys
+/// NIST P-256 Public Key
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP256>;
+
+/// NIST P-256 Compressed Curve Point
+pub type CompressedCurvePoint = elliptic_curve::weierstrass::CompressedCurvePoint<NistP256>;
+
+/// NIST P-256 Uncompressed Curve Point
+pub type UncompressedCurvePoint = elliptic_curve::weierstrass::UncompressedCurvePoint<NistP256>;
