@@ -15,10 +15,6 @@ edition       = "2018"
 categories    = ["cryptography", "no-std"]
 keywords      = ["crypto", "ecc", "elliptic", "weierstrass"]
 
-[dependencies.getrandom]
-version = "0.1"
-optional = true
-
 [dependencies.generic-array]
 version = "0.14"
 default-features = false
@@ -36,7 +32,7 @@ default-features = false
 hex = "0.4"
 
 [features]
-default = ["getrandom", "std", "zeroize"]
+default = []
 weierstrass = []
 std = []
 

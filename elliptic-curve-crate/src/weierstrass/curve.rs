@@ -8,13 +8,13 @@ use generic_array::{
 
 /// Elliptic curve in short Weierstrass form
 pub trait Curve: Clone + Debug + Default + Eq + Ord + Send + Sync {
-    /// Size of an integer modulo p (i.e. the curve's order) when serialized
-    /// as octets (i.e. bytes).
+    /// Size of [`ScalarBytes`] for this curve, i.e. a serialized integer
+    /// modulo p (i.e. the curve's order).
     type ScalarSize: ArrayLength<u8> + Add + Add<U1> + Eq + Ord + Unsigned;
 }
 
-/// Alias for [`Scalar`] type for a given Weierstrass curve
-pub type Scalar<C> = crate::scalar::Scalar<<C as Curve>::ScalarSize>;
+/// Alias for [`ScalarBytes`] type for a given Weierstrass curve
+pub type ScalarBytes<C> = crate::ScalarBytes<<C as Curve>::ScalarSize>;
 
 /// Alias for [`SecretKey`] type for a given Weierstrass curve
 pub type SecretKey<C> = crate::secret_key::SecretKey<<C as Curve>::ScalarSize>;
