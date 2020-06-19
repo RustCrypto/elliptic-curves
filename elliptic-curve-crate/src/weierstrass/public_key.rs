@@ -110,8 +110,6 @@ impl<C: Curve> PublicKey<C>
 where
     C: FixedBaseScalarMul,
     <C::ScalarSize as Add>::Output: Add<U1>,
-    CompressedCurvePoint<C>: From<C::Point>,
-    UncompressedCurvePoint<C>: From<C::Point>,
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
@@ -124,9 +122,9 @@ where
     ) -> CtOption<Self> {
         C::mul_base(secret_key.secret_scalar()).map(|affine_point| {
             if compress {
-                PublicKey::Compressed(affine_point.into())
+                CompressedCurvePoint::from_affine_point(affine_point).into()
             } else {
-                PublicKey::Uncompressed(affine_point.into())
+                UncompressedCurvePoint::from_affine_point(affine_point).into()
             }
         })
     }

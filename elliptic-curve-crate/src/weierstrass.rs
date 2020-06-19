@@ -10,7 +10,7 @@ pub use point::{
 };
 pub use public_key::PublicKey;
 
-use crate::{consts::U1, ScalarBytes};
+use crate::{consts::U1, coordinates::AffineCoordinates, ScalarBytes};
 use core::ops::Add;
 use generic_array::ArrayLength;
 use subtle::{ConditionallySelectable, CtOption};
@@ -19,13 +19,11 @@ use subtle::{ConditionallySelectable, CtOption};
 pub trait FixedBaseScalarMul: Curve
 where
     <Self::ScalarSize as Add>::Output: Add<U1>,
-    CompressedCurvePoint<Self>: From<Self::Point>,
-    UncompressedCurvePoint<Self>: From<Self::Point>,
     CompressedPointSize<Self::ScalarSize>: ArrayLength<u8>,
     UncompressedPointSize<Self::ScalarSize>: ArrayLength<u8>,
 {
-    /// Elliptic curve point type
-    type Point: ConditionallySelectable + Default;
+    /// Affine point type for this elliptic curve
+    type Point: AffineCoordinates + ConditionallySelectable + Default;
 
     /// Multiply the given scalar by the generator point for this elliptic
     /// curve.

@@ -1,5 +1,6 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
+use crate::ScalarBytes;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -552,6 +553,12 @@ impl<'a> Neg for &'a FieldElement {
 
     fn neg(self) -> FieldElement {
         FieldElement::zero() - self
+    }
+}
+
+impl From<FieldElement> for ScalarBytes {
+    fn from(fe: FieldElement) -> Self {
+        fe.to_bytes().into()
     }
 }
 

@@ -7,8 +7,12 @@
 //! <https://www.secg.org/sec1-v2.pdf>
 
 use super::Curve;
+use crate::coordinates::AffineCoordinates;
 use core::ops::Add;
-use generic_array::{typenum::U1, ArrayLength, GenericArray};
+use generic_array::{
+    typenum::{Unsigned, U1},
+    ArrayLength, GenericArray,
+};
 
 /// Size of a compressed elliptic curve point for the given curve when
 /// serialized using `Elliptic-Curve-Point-to-Octet-String` encoding
@@ -39,7 +43,23 @@ impl<C: Curve> CompressedCurvePoint<C>
 where
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
-    /// Create a new compressed elliptic curve point
+    /// Compress and serialize an affine point on an elliptic curve
+    pub fn from_affine_point<P>(affine_point: P) -> Self
+    where
+        P: AffineCoordinates,
+    {
+        // Is the y-coordinate odd in the SEC-1 sense: `self mod 2 == 1`?
+        let is_y_odd = affine_point.y().as_ref().last().expect("last byte") & 1 == 1;
+
+        let mut encoded = GenericArray::default();
+        encoded[0] = if is_y_odd { 0x03 } else { 0x02 };
+        encoded[1..].copy_from_slice(&affine_point.x());
+
+        Self::from_bytes(encoded).expect("we encoded it correctly")
+    }
+
+    /// Deserialize a compressed elliptic curve point from the SEC-1 compressed
+    /// encoding (`Elliptic-Curve-Point-to-Octet-String`)
     pub fn from_bytes<B>(into_bytes: B) -> Option<Self>
     where
         B: Into<GenericArray<u8, CompressedPointSize<C::ScalarSize>>>,
@@ -114,7 +134,22 @@ where
     <C::ScalarSize as Add>::Output: Add<U1>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
-    /// Create a new uncompressed elliptic curve point
+    /// Serialize an affine point on an elliptic curve
+    pub fn from_affine_point<P>(affine_point: P) -> Self
+    where
+        P: AffineCoordinates,
+    {
+        let scalar_size = C::ScalarSize::to_usize();
+        let mut encoded = GenericArray::default();
+        encoded[0] = 0x04;
+        encoded[1..(scalar_size + 1)].copy_from_slice(&affine_point.x());
+        encoded[(scalar_size + 1)..].copy_from_slice(&affine_point.y());
+
+        UncompressedCurvePoint::from_bytes(encoded).expect("we encoded it correctly")
+    }
+
+    /// Deserialize a compressed elliptic curve point from the SEC-1 uncompressed
+    /// encoding (`Elliptic-Curve-Point-to-Octet-String`)
     pub fn from_bytes<B>(into_bytes: B) -> Option<Self>
     where
         B: Into<GenericArray<u8, UncompressedPointSize<C::ScalarSize>>>,

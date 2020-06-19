@@ -12,7 +12,8 @@ pub use self::scalar::Scalar;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    generic_array::GenericArray,
+    consts::U32,
+    coordinates::AffineCoordinates,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FixedBaseScalarMul,
 };
@@ -144,41 +145,33 @@ impl AffinePoint {
     }
 }
 
-impl From<AffinePoint> for CompressedCurvePoint {
-    /// Returns the SEC-1 compressed encoding of this point.
-    fn from(affine_point: AffinePoint) -> CompressedCurvePoint {
-        let mut encoded = [0; 33];
-        encoded[0] = if affine_point.y.is_odd().into() {
-            0x03
-        } else {
-            0x02
-        };
-        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
+impl AffineCoordinates for AffinePoint {
+    type ScalarSize = U32;
 
-        CompressedCurvePoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
-            .expect("we encoded it correctly")
+    fn x(&self) -> ScalarBytes {
+        self.x.into()
+    }
+
+    fn y(&self) -> ScalarBytes {
+        self.y.into()
+    }
+}
+
+impl From<AffinePoint> for CompressedCurvePoint {
+    fn from(point: AffinePoint) -> CompressedCurvePoint {
+        CompressedCurvePoint::from_affine_point(point)
     }
 }
 
 impl From<AffinePoint> for UncompressedCurvePoint {
-    /// Returns the SEC-1 uncompressed encoding of this point.
-    fn from(affine_point: AffinePoint) -> UncompressedCurvePoint {
-        let mut encoded = [0; 65];
-        encoded[0] = 0x04;
-        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
-        encoded[33..65].copy_from_slice(&affine_point.y.to_bytes());
-
-        UncompressedCurvePoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
-            .expect("we encoded it correctly")
+    fn from(point: AffinePoint) -> UncompressedCurvePoint {
+        UncompressedCurvePoint::from_affine_point(point)
     }
 }
 
 impl FixedBaseScalarMul for Secp256k1 {
-    /// Elliptic curve point type
     type Point = AffinePoint;
 
-    /// Multiply the given scalar by the generator point for this elliptic
-    /// curve.
     fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
         Scalar::from_bytes((*scalar_bytes).into())
             .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
