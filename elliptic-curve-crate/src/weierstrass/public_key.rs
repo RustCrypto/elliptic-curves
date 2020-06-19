@@ -1,16 +1,21 @@
 //! Public keys for Weierstrass curves: wrapper around compressed or
 //! uncompressed elliptic curve points.
 
-use super::point::{
-    CompressedCurvePoint, CompressedPointSize, UncompressedCurvePoint, UncompressedPointSize,
-};
 use super::Curve;
+use super::{
+    point::{
+        CompressedCurvePoint, CompressedPointSize, UncompressedCurvePoint, UncompressedPointSize,
+    },
+    FixedBaseScalarMul,
+};
+use crate::SecretKey;
 use core::fmt::{self, Debug};
 use core::ops::Add;
 use generic_array::{
     typenum::{Unsigned, U1},
     ArrayLength, GenericArray,
 };
+use subtle::CtOption;
 
 /// Size of an untagged point for given elliptic curve.
 // TODO(tarcieri): const generics
@@ -98,6 +103,32 @@ where
             PublicKey::Compressed(ref point) => point.as_bytes(),
             PublicKey::Uncompressed(ref point) => point.as_bytes(),
         }
+    }
+}
+
+impl<C: Curve> PublicKey<C>
+where
+    C: FixedBaseScalarMul,
+    <C::ScalarSize as Add>::Output: Add<U1>,
+    CompressedCurvePoint<C>: From<C::Point>,
+    UncompressedCurvePoint<C>: From<C::Point>,
+    CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+    UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+{
+    /// Compute the [`PublicKey`] for the provided [`SecretKey`].
+    ///
+    /// The `compress` flag requests point compression.
+    pub fn from_secret_key(
+        secret_key: &SecretKey<C::ScalarSize>,
+        compress: bool,
+    ) -> CtOption<Self> {
+        C::mul_base(secret_key.secret_scalar()).map(|affine_point| {
+            if compress {
+                PublicKey::Compressed(affine_point.into())
+            } else {
+                PublicKey::Uncompressed(affine_point.into())
+            }
+        })
     }
 }
 

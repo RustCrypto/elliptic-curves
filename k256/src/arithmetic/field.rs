@@ -2,7 +2,7 @@
 
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "getrandom")]
 use getrandom::getrandom;

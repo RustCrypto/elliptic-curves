@@ -54,6 +54,11 @@ pub type SecretKey = elliptic_curve::SecretKey<U32>;
 /// NIST P-256 Public Key
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP256>;
 
+/// NIST P-256 Scalar Bytes.
+///
+/// Byte array containing a serialized scalar value (i.e. an integer)
+pub type ScalarBytes = elliptic_curve::ScalarBytes<U32>;
+
 /// NIST P-256 Compressed Curve Point
 pub type CompressedCurvePoint = elliptic_curve::weierstrass::CompressedCurvePoint<NistP256>;
 

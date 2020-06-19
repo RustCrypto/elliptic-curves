@@ -40,14 +40,19 @@ impl Curve for Secp256k1 {
     type ScalarSize = U32;
 }
 
-/// K-256 (secp256k1) Secret Key
+/// K-256 (secp256k1) Secret Key.
 pub type SecretKey = elliptic_curve::SecretKey<U32>;
 
-/// K-256 (secp256k1) Public Key
+/// K-256 (secp256k1) Public Key.
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<Secp256k1>;
 
-/// K-256 Compressed Curve Point
+/// K-256 Scalar Bytes.
+///
+/// Byte array containing a serialized scalar value (i.e. an integer)
+pub type ScalarBytes = elliptic_curve::ScalarBytes<U32>;
+
+/// K-256 Compressed Curve Point.
 pub type CompressedCurvePoint = elliptic_curve::weierstrass::CompressedCurvePoint<Secp256k1>;
 
-/// K-256 Uncompressed Curve Point
+/// K-256 Uncompressed Curve Point.
 pub type UncompressedCurvePoint = elliptic_curve::weierstrass::UncompressedCurvePoint<Secp256k1>;
