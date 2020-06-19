@@ -14,8 +14,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use super::{NistP256, PublicKey};
-use elliptic_curve::weierstrass::{CompressedCurvePoint, UncompressedCurvePoint};
+use crate::{CompressedCurvePoint, PublicKey, UncompressedCurvePoint};
 use field::{FieldElement, MODULUS};
 
 /// a = -3
@@ -132,7 +131,7 @@ impl AffinePoint {
     }
 
     /// Returns the SEC-1 compressed encoding of this point.
-    pub fn to_compressed_pubkey(&self) -> CompressedCurvePoint<NistP256> {
+    pub fn to_compressed_pubkey(&self) -> CompressedCurvePoint {
         let mut encoded = [0; 33];
         encoded[0] = if self.y.is_odd().into() { 0x03 } else { 0x02 };
         encoded[1..33].copy_from_slice(&self.x.to_bytes());
@@ -142,7 +141,7 @@ impl AffinePoint {
     }
 
     /// Returns the SEC-1 uncompressed encoding of this point.
-    pub fn to_uncompressed_pubkey(&self) -> UncompressedCurvePoint<NistP256> {
+    pub fn to_uncompressed_pubkey(&self) -> UncompressedCurvePoint {
         let mut encoded = [0; 65];
         encoded[0] = 0x04;
         encoded[1..33].copy_from_slice(&self.x.to_bytes());

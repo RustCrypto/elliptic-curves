@@ -44,8 +44,14 @@ impl Curve for NistP384 {
     type ScalarSize = U48;
 }
 
-/// NIST P-384 secret keys
-pub type SecretKey = elliptic_curve::SecretKey<<NistP384 as Curve>::ScalarSize>;
+/// NIST P-384 Secret Key
+pub type SecretKey = elliptic_curve::SecretKey<U48>;
 
-/// NIST P-384 public keys
+/// NIST P-384 Public Key
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP384>;
+
+/// NIST P-384 Compressed Curve Point
+pub type CompressedCurvePoint = elliptic_curve::weierstrass::CompressedCurvePoint<NistP384>;
+
+/// NIST P-384 Uncompressed Curve Point
+pub type UncompressedCurvePoint = elliptic_curve::weierstrass::UncompressedCurvePoint<NistP384>;
