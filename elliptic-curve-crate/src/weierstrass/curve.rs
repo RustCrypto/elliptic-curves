@@ -6,6 +6,9 @@ use generic_array::{
     ArrayLength,
 };
 
+#[cfg(docsrs)]
+use crate::ScalarBytes;
+
 /// Elliptic curve in short Weierstrass form
 pub trait Curve: Clone + Debug + Default + Eq + Ord + Send + Sync {
     /// Size of [`ScalarBytes`] for this curve, i.e. a serialized integer

@@ -10,6 +10,7 @@
 //! done with a minor version bump.
 
 #![no_std]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc(
@@ -20,6 +21,9 @@
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "rand_core")]
+pub use rand_core;
+
 pub mod error;
 pub mod secret_key;
 
@@ -28,6 +32,7 @@ pub use subtle;
 
 // TODO(tarcieri): other curve forms
 #[cfg(feature = "weierstrass")]
+#[cfg_attr(docsrs, doc(cfg(feature = "weierstrass")))]
 pub mod weierstrass;
 
 pub use self::{error::Error, secret_key::SecretKey};

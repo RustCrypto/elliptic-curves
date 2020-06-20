@@ -1,11 +1,18 @@
-//! Secret keys for elliptic curves: private scalars.
+//! Secret keys for elliptic curves (i.e. private scalars)
+//!
+//! The [`SecretKey`] type wraps the [`ScalarBytes`] byte array type with
+//! a wrapper designed to prevent unintentional exposure of the scalar
+//! value (e.g. via `Debug` or other logging).
+//!
+//! When the `zeroize` feature of this crate is enabled, it also handles
+//! zeroing it out of memory securely on drop.
 
 use crate::{error::Error, ScalarBytes};
 use core::{
     convert::{TryFrom, TryInto},
     fmt,
 };
-use generic_array::{ArrayLength, GenericArray};
+use generic_array::ArrayLength;
 
 /// Secret keys.
 ///
@@ -13,7 +20,8 @@ use generic_array::{ArrayLength, GenericArray};
 /// scalar values.
 ///
 /// This type wraps a (serialized) scalar value, helping to prevent accidental
-/// exposure and securely erasing the value from memory when dropped.
+/// exposure and securely erasing the value from memory when dropped
+/// (when the `zeroize` feature of this crate is enabled).
 pub struct SecretKey<ScalarSize>
 where
     ScalarSize: ArrayLength<u8>,
@@ -27,7 +35,7 @@ where
     ScalarSize: ArrayLength<u8>,
 {
     /// Create a new secret key from a serialized scalar value
-    pub fn new(bytes: GenericArray<u8, ScalarSize>) -> Self {
+    pub fn new(bytes: ScalarBytes<ScalarSize>) -> Self {
         Self { scalar: bytes }
     }
 
@@ -36,7 +44,7 @@ where
         bytes.as_ref().try_into()
     }
 
-    /// Expose the secret [`Scalar`] value this [`SecretKey`] wraps
+    /// Expose the secret [`ScalarBytes`] value this [`SecretKey`] wraps
     pub fn secret_scalar(&self) -> &ScalarBytes<ScalarSize> {
         &self.scalar
     }
@@ -51,7 +59,7 @@ where
     fn try_from(slice: &[u8]) -> Result<Self, Error> {
         if slice.len() == ScalarSize::to_usize() {
             Ok(SecretKey {
-                scalar: GenericArray::clone_from_slice(slice),
+                scalar: ScalarBytes::clone_from_slice(slice),
             })
         } else {
             Err(Error)

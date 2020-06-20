@@ -19,6 +19,15 @@ use elliptic_curve::{
 use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 
+#[cfg(feature = "rand")]
+use crate::SecretKey;
+
+#[cfg(feature = "rand")]
+use elliptic_curve::{
+    rand_core::{CryptoRng, RngCore},
+    weierstrass::GenerateSecretKey,
+};
+
 /// b = 7 in Montgomery form (aR mod p, where R = 2**256.
 const CURVE_EQUATION_B: FieldElement = FieldElement([
     0x0000_0007_0000_1ab7,
@@ -509,6 +518,24 @@ impl<'a> Neg for &'a ProjectivePoint {
     }
 }
 
+#[cfg(feature = "rand")]
+impl GenerateSecretKey for Secp256k1 {
+    fn generate_secret_key(rng: &mut (impl CryptoRng + RngCore)) -> SecretKey {
+        let mut bytes = [0u8; 32];
+
+        // "Generate-and-Pray": create random 32-byte strings, and test if they
+        // are accepted by Scalar::from_bytes
+        // TODO(tarcieri): use a modular reduction instead?
+        loop {
+            rng.fill_bytes(&mut bytes);
+
+            if Scalar::from_bytes(bytes).is_some().into() {
+                return SecretKey::new(bytes.into());
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use core::convert::TryInto;
@@ -765,5 +792,15 @@ mod tests {
             assert_eq!(x, &point[1..=32]);
             assert_eq!(y, &point[33..]);
         }
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn generate_secret_key() {
+        use elliptic_curve::weierstrass::GenerateSecretKey;
+        let key = Secp256k1::generate_secret_key(&mut rand_core::OsRng);
+
+        // Sanity check
+        assert!(!key.secret_scalar().iter().all(|b| *b == 0))
     }
 }

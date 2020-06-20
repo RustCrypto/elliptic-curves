@@ -60,6 +60,7 @@ version = "0.4.0"
 dependencies = [
  "generic-array",
  "hex",
+ "rand_core 0.5.1",
  "subtle",
  "zeroize",
 ]
@@ -116,6 +117,7 @@ dependencies = [
  "fiat-crypto",
  "hex",
  "proptest",
+ "rand_core 0.5.1",
  "zeroize",
 ]
 
@@ -147,6 +149,7 @@ dependencies = [
  "elliptic-curve",
  "hex",
  "proptest",
+ "rand_core 0.5.1",
  "zeroize",
 ]
 

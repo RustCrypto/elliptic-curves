@@ -1,4 +1,4 @@
-//! Elliptic curve error types (opaque)
+//! Error type
 
 use core::fmt::{self, Display};
 

@@ -23,13 +23,15 @@ optional = true
 default-features = false
 
 [dev-dependencies]
+fiat-crypto = "0.1.0"
 hex = "0.4"
 proptest = "0.9"
-fiat-crypto = "0.1.0"
+rand_core = { version = "0.5", features = ["getrandom" ]}
 
 [features]
 default = ["arithmetic", "std"]
 arithmetic = []
+rand = ["elliptic-curve/rand_core"]
 test-vectors = []
 std = ["elliptic-curve/std"]
 

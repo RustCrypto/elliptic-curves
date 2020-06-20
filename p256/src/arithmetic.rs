@@ -19,6 +19,15 @@ use elliptic_curve::{
 use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 
+#[cfg(feature = "rand")]
+use crate::SecretKey;
+
+#[cfg(feature = "rand")]
+use elliptic_curve::{
+    rand_core::{CryptoRng, RngCore},
+    weierstrass::GenerateSecretKey,
+};
+
 /// a = -3
 const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
     .subtract(&FieldElement::one())
@@ -519,6 +528,24 @@ impl<'a> Neg for &'a ProjectivePoint {
     }
 }
 
+#[cfg(feature = "rand")]
+impl GenerateSecretKey for NistP256 {
+    fn generate_secret_key(rng: &mut (impl CryptoRng + RngCore)) -> SecretKey {
+        let mut bytes = [0u8; 32];
+
+        // "Generate-and-Pray": create random 32-byte strings, and test if they
+        // are accepted by Scalar::from_bytes
+        // TODO(tarcieri): use a modular reduction instead?
+        loop {
+            rng.fill_bytes(&mut bytes);
+
+            if Scalar::from_bytes(bytes).is_some().into() {
+                return SecretKey::new(bytes.into());
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     // TODO(tarcieri): test `FixedBaseScalarMul` impl
@@ -758,5 +785,16 @@ mod tests {
                 coords,
             );
         }
+    }
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn generate_secret_key() {
+        use crate::NistP256;
+        use elliptic_curve::weierstrass::GenerateSecretKey;
+        let key = NistP256::generate_secret_key(&mut rand_core::OsRng);
+
+        // Sanity check
+        assert!(!key.secret_scalar().iter().all(|b| *b == 0))
     }
 }
