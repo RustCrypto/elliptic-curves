@@ -55,7 +55,7 @@ pub type SecretKey = elliptic_curve::SecretKey<U32>;
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP256>;
 
 /// NIST P-256 Compressed Curve Point
-pub type CompressedCurvePoint = elliptic_curve::weierstrass::CompressedCurvePoint<NistP256>;
+pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<NistP256>;
 
 /// NIST P-256 Uncompressed Curve Point
-pub type UncompressedCurvePoint = elliptic_curve::weierstrass::UncompressedCurvePoint<NistP256>;
+pub type UncompressedPoint = elliptic_curve::weierstrass::UncompressedPoint<NistP256>;

@@ -14,7 +14,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::generic_array::GenericArray;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use crate::{CompressedCurvePoint, PublicKey, UncompressedCurvePoint};
+use crate::{CompressedPoint, PublicKey, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 
 /// b = 7 in Montgomery form (aR mod p, where R = 2**256.
@@ -125,23 +125,23 @@ impl AffinePoint {
     }
 
     /// Returns the SEC-1 compressed encoding of this point.
-    pub fn to_compressed_pubkey(&self) -> CompressedCurvePoint {
+    pub fn to_compressed_pubkey(&self) -> CompressedPoint {
         let mut encoded = [0; 33];
         encoded[0] = if self.y.is_odd().into() { 0x03 } else { 0x02 };
         encoded[1..33].copy_from_slice(&self.x.to_bytes());
 
-        CompressedCurvePoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
+        CompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
     }
 
     /// Returns the SEC-1 uncompressed encoding of this point.
-    pub fn to_uncompressed_pubkey(&self) -> UncompressedCurvePoint {
+    pub fn to_uncompressed_pubkey(&self) -> UncompressedPoint {
         let mut encoded = [0; 65];
         encoded[0] = 0x04;
         encoded[1..33].copy_from_slice(&self.x.to_bytes());
         encoded[33..65].copy_from_slice(&self.y.to_bytes());
 
-        UncompressedCurvePoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
+        UncompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
             .expect("we encoded it correctly")
     }
 }

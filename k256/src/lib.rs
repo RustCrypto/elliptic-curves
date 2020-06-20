@@ -47,7 +47,7 @@ pub type SecretKey = elliptic_curve::SecretKey<U32>;
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<Secp256k1>;
 
 /// K-256 Compressed Curve Point
-pub type CompressedCurvePoint = elliptic_curve::weierstrass::CompressedCurvePoint<Secp256k1>;
+pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<Secp256k1>;
 
 /// K-256 Uncompressed Curve Point
-pub type UncompressedCurvePoint = elliptic_curve::weierstrass::UncompressedCurvePoint<Secp256k1>;
+pub type UncompressedPoint = elliptic_curve::weierstrass::UncompressedPoint<Secp256k1>;
