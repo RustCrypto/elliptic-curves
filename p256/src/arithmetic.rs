@@ -12,7 +12,6 @@ pub use self::scalar::Scalar;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    generic_array::GenericArray,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FixedBaseScalarMul,
 };
@@ -147,29 +146,20 @@ impl AffinePoint {
 impl From<AffinePoint> for CompressedPoint {
     /// Returns the SEC-1 compressed encoding of this point.
     fn from(affine_point: AffinePoint) -> CompressedPoint {
-        let mut encoded = [0; 33];
-        encoded[0] = if affine_point.y.is_odd().into() {
-            0x03
-        } else {
-            0x02
-        };
-        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
-
-        CompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
-            .expect("we encoded it correctly")
+        CompressedPoint::from_affine_coords(
+            &affine_point.x.to_bytes().into(),
+            &affine_point.y.to_bytes().into(),
+        )
     }
 }
 
 impl From<AffinePoint> for UncompressedPoint {
     /// Returns the SEC-1 uncompressed encoding of this point.
     fn from(affine_point: AffinePoint) -> UncompressedPoint {
-        let mut encoded = [0; 65];
-        encoded[0] = 0x04;
-        encoded[1..33].copy_from_slice(&affine_point.x.to_bytes());
-        encoded[33..65].copy_from_slice(&affine_point.y.to_bytes());
-
-        UncompressedPoint::from_bytes(GenericArray::clone_from_slice(&encoded[..]))
-            .expect("we encoded it correctly")
+        UncompressedPoint::from_affine_coords(
+            &affine_point.x.to_bytes().into(),
+            &affine_point.y.to_bytes().into(),
+        )
     }
 }
 
