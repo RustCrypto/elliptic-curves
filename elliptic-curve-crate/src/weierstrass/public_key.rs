@@ -2,7 +2,7 @@
 //! uncompressed elliptic curve points.
 
 use super::point::{
-    CompressedCurvePoint, CompressedPointSize, UncompressedCurvePoint, UncompressedPointSize,
+    CompressedPoint, CompressedPointSize, UncompressedPoint, UncompressedPointSize,
 };
 use super::Curve;
 use core::fmt::{self, Debug};
@@ -25,10 +25,10 @@ where
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
     /// Compressed Weierstrass elliptic curve point
-    Compressed(CompressedCurvePoint<C>),
+    Compressed(CompressedPoint<C>),
 
     /// Uncompressed Weierstrass elliptic curve point
-    Uncompressed(UncompressedCurvePoint<C>),
+    Uncompressed(UncompressedPoint<C>),
 }
 
 impl<C: Curve> PublicKey<C>
@@ -50,11 +50,11 @@ where
 
         if length == <CompressedPointSize<C::ScalarSize>>::to_usize() {
             let array = GenericArray::clone_from_slice(slice);
-            let point = CompressedCurvePoint::from_bytes(array)?;
+            let point = CompressedPoint::from_bytes(array)?;
             Some(PublicKey::Compressed(point))
         } else if length == <UncompressedPointSize<C::ScalarSize>>::to_usize() {
             let array = GenericArray::clone_from_slice(slice);
-            let point = UncompressedCurvePoint::from_bytes(array)?;
+            let point = UncompressedPoint::from_bytes(array)?;
             Some(PublicKey::Uncompressed(point))
         } else {
             None
@@ -71,7 +71,7 @@ where
     where
         B: Into<GenericArray<u8, CompressedPointSize<C::ScalarSize>>>,
     {
-        CompressedCurvePoint::from_bytes(into_bytes).map(PublicKey::Compressed)
+        CompressedPoint::from_bytes(into_bytes).map(PublicKey::Compressed)
     }
 
     /// Decode public key from a raw uncompressed point serialized
@@ -88,7 +88,7 @@ where
         tagged_bytes.as_mut_slice()[0] = 0x04;
         tagged_bytes.as_mut_slice()[1..].copy_from_slice(bytes.as_ref());
 
-        PublicKey::Uncompressed(UncompressedCurvePoint::from_bytes(tagged_bytes).unwrap())
+        PublicKey::Uncompressed(UncompressedPoint::from_bytes(tagged_bytes).unwrap())
     }
 
     /// Obtain public key as a byte array reference
@@ -134,24 +134,24 @@ where
     }
 }
 
-impl<C: Curve> From<CompressedCurvePoint<C>> for PublicKey<C>
+impl<C: Curve> From<CompressedPoint<C>> for PublicKey<C>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
-    fn from(point: CompressedCurvePoint<C>) -> Self {
+    fn from(point: CompressedPoint<C>) -> Self {
         PublicKey::Compressed(point)
     }
 }
 
-impl<C: Curve> From<UncompressedCurvePoint<C>> for PublicKey<C>
+impl<C: Curve> From<UncompressedPoint<C>> for PublicKey<C>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
-    fn from(point: UncompressedCurvePoint<C>) -> Self {
+    fn from(point: UncompressedPoint<C>) -> Self {
         PublicKey::Uncompressed(point)
     }
 }

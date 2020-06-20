@@ -27,7 +27,7 @@ pub type UncompressedPointSize<ScalarSize> = <<ScalarSize as Add>::Output as Add
 ///
 /// <https://www.secg.org/sec1-v2.pdf>
 #[derive(Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct CompressedCurvePoint<C: Curve>
+pub struct CompressedPoint<C: Curve>
 where
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
@@ -35,7 +35,7 @@ where
     bytes: GenericArray<u8, CompressedPointSize<C::ScalarSize>>,
 }
 
-impl<C: Curve> CompressedCurvePoint<C>
+impl<C: Curve> CompressedPoint<C>
 where
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
@@ -67,7 +67,7 @@ where
     }
 }
 
-impl<C: Curve> AsRef<[u8]> for CompressedCurvePoint<C>
+impl<C: Curve> AsRef<[u8]> for CompressedPoint<C>
 where
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
@@ -77,14 +77,14 @@ where
     }
 }
 
-impl<C: Curve> Copy for CompressedCurvePoint<C>
+impl<C: Curve> Copy for CompressedPoint<C>
 where
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
     <CompressedPointSize<C::ScalarSize> as ArrayLength<u8>>::ArrayType: Copy,
 {
 }
 
-impl<C: Curve> Clone for CompressedCurvePoint<C>
+impl<C: Curve> Clone for CompressedPoint<C>
 where
     CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
 {
@@ -100,7 +100,7 @@ where
 ///
 /// <https://www.secg.org/sec1-v2.pdf>
 #[derive(Eq, Hash, PartialEq, PartialOrd, Ord)]
-pub struct UncompressedCurvePoint<C: Curve>
+pub struct UncompressedPoint<C: Curve>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
@@ -109,7 +109,7 @@ where
     bytes: GenericArray<u8, UncompressedPointSize<C::ScalarSize>>,
 }
 
-impl<C: Curve> UncompressedCurvePoint<C>
+impl<C: Curve> UncompressedPoint<C>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
@@ -141,7 +141,7 @@ where
     }
 }
 
-impl<C: Curve> AsRef<[u8]> for UncompressedCurvePoint<C>
+impl<C: Curve> AsRef<[u8]> for UncompressedPoint<C>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
@@ -152,7 +152,7 @@ where
     }
 }
 
-impl<C: Curve> Copy for UncompressedCurvePoint<C>
+impl<C: Curve> Copy for UncompressedPoint<C>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
@@ -160,7 +160,7 @@ where
 {
 }
 
-impl<C: Curve> Clone for UncompressedCurvePoint<C>
+impl<C: Curve> Clone for UncompressedPoint<C>
 where
     <C::ScalarSize as Add>::Output: Add<U1>,
     UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,

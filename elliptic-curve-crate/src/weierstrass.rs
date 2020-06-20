@@ -5,7 +5,5 @@ pub mod point;
 pub mod public_key;
 
 pub use curve::{Curve, ScalarBytes};
-pub use point::{
-    CompressedCurvePoint, CompressedPointSize, UncompressedCurvePoint, UncompressedPointSize,
-};
+pub use point::{CompressedPoint, CompressedPointSize, UncompressedPoint, UncompressedPointSize};
 pub use public_key::PublicKey;
