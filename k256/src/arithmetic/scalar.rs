@@ -1,7 +1,10 @@
 //! Scalar field arithmetic.
 
 use core::convert::TryInto;
-use subtle::{Choice, CtOption};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, CtOption};
+
+#[cfg(feature = "zeroize")]
+use zeroize::Zeroize;
 
 use crate::arithmetic::util::sbb;
 
@@ -20,7 +23,7 @@ const MODULUS: [u64; LIMBS] = [
 /// An element in the finite field modulo n.
 // TODO: This currently uses native representation internally, but will probably move to
 // Montgomery representation later.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Scalar(pub(crate) [u64; LIMBS]);
 
 impl From<u64> for Scalar {
@@ -72,5 +75,23 @@ impl Scalar {
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
         ret[24..32].copy_from_slice(&self.0[0].to_be_bytes());
         ret
+    }
+}
+
+impl ConditionallySelectable for Scalar {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Scalar([
+            u64::conditional_select(&a.0[0], &b.0[0], choice),
+            u64::conditional_select(&a.0[1], &b.0[1], choice),
+            u64::conditional_select(&a.0[2], &b.0[2], choice),
+            u64::conditional_select(&a.0[3], &b.0[3], choice),
+        ])
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for Scalar {
+    fn zeroize(&mut self) {
+        self.0.as_mut().zeroize()
     }
 }

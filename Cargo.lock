@@ -116,7 +116,7 @@ dependencies = [
  "fiat-crypto",
  "hex",
  "proptest",
- "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -147,7 +147,7 @@ dependencies = [
  "elliptic-curve",
  "hex",
  "proptest",
- "subtle",
+ "zeroize",
 ]
 
 [[package]]

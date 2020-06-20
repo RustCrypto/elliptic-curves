@@ -20,10 +20,11 @@
 #[cfg(feature = "std")]
 extern crate std;
 
-pub use generic_array::{self, typenum::consts};
-
 pub mod error;
 pub mod secret_key;
+
+pub use generic_array::{self, typenum::consts};
+pub use subtle;
 
 // TODO(tarcieri): other curve forms
 #[cfg(feature = "weierstrass")]
@@ -31,5 +32,5 @@ pub mod weierstrass;
 
 pub use self::{error::Error, secret_key::SecretKey};
 
-/// Byte array containing a serialized scalar value
+/// Byte array containing a serialized scalar value (i.e. an integer)
 pub type ScalarBytes<Size> = generic_array::GenericArray<u8, Size>;

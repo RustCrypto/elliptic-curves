@@ -1,10 +1,11 @@
 //! Public keys for Weierstrass curves: wrapper around compressed or
 //! uncompressed elliptic curve points.
 
-use super::point::{
-    CompressedPoint, CompressedPointSize, UncompressedPoint, UncompressedPointSize,
+use super::{
+    point::{CompressedPoint, CompressedPointSize, UncompressedPoint, UncompressedPointSize},
+    Curve, FixedBaseScalarMul,
 };
-use super::Curve;
+use crate::SecretKey;
 use core::fmt::{self, Debug};
 use core::ops::Add;
 use generic_array::{
@@ -97,6 +98,35 @@ where
         match self {
             PublicKey::Compressed(ref point) => point.as_bytes(),
             PublicKey::Uncompressed(ref point) => point.as_bytes(),
+        }
+    }
+}
+
+impl<C: Curve> PublicKey<C>
+where
+    C: FixedBaseScalarMul,
+    <C::ScalarSize as Add>::Output: Add<U1>,
+    CompressedPoint<C>: From<C::Point>,
+    UncompressedPoint<C>: From<C::Point>,
+    CompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+    UncompressedPointSize<C::ScalarSize>: ArrayLength<u8>,
+{
+    /// Compute the [`PublicKey`] for the provided [`SecretKey`].
+    ///
+    /// The `compress` flag requests point compression.
+    pub fn from_secret_key(secret_key: &SecretKey<C::ScalarSize>, compress: bool) -> Option<Self> {
+        let ct_option = C::mul_base(secret_key.secret_scalar());
+
+        if ct_option.is_some().into() {
+            let affine_point = ct_option.unwrap();
+
+            if compress {
+                Some(PublicKey::Compressed(affine_point.into()))
+            } else {
+                Some(PublicKey::Uncompressed(affine_point.into()))
+            }
+        } else {
+            None
         }
     }
 }

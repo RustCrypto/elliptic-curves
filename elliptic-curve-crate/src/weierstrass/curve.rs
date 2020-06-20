@@ -13,8 +13,5 @@ pub trait Curve: Clone + Debug + Default + Eq + Ord + Send + Sync {
     type ScalarSize: ArrayLength<u8> + Add + Add<U1> + Eq + Ord + Unsigned;
 }
 
-/// Alias for [`ScalarBytes`] type for a given Weierstrass curve
-pub type ScalarBytes<C> = crate::ScalarBytes<<C as Curve>::ScalarSize>;
-
 /// Alias for [`SecretKey`] type for a given Weierstrass curve
 pub type SecretKey<C> = crate::secret_key::SecretKey<<C as Curve>::ScalarSize>;
