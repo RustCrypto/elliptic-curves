@@ -25,10 +25,12 @@ default-features = false
 [dev-dependencies]
 hex = "0.4"
 proptest = "0.9"
+rand_core = { version = "0.5", features = ["getrandom" ]}
 
 [features]
 default = ["arithmetic", "std"]
 arithmetic = []
+rand = ["elliptic-curve/rand_core"]
 test-vectors = []
 std = ["elliptic-curve/std"]
 
