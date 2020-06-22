@@ -16,6 +16,8 @@
 #[cfg(feature = "arithmetic")]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub mod arithmetic;
+/// ECDSA signatures.
+pub mod signature;
 
 pub use elliptic_curve;
 

@@ -54,7 +54,7 @@ const CURVE_EQUATION_B: FieldElement = FieldElement([
 /// A point on the secp256r1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct AffinePoint {
-    x: FieldElement,
+    pub(crate) x: FieldElement,
     y: FieldElement,
 }
 
