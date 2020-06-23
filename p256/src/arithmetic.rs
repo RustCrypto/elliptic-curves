@@ -1,13 +1,8 @@
 //! A pure-Rust implementation of group operations on secp256r1.
 
 mod field;
-mod scalar;
+pub(crate) mod scalar;
 mod util;
-
-#[cfg(any(feature = "test-vectors", test))]
-pub mod test_vectors;
-
-pub use self::scalar::Scalar;
 
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -18,6 +13,7 @@ use elliptic_curve::{
 
 use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint};
 use field::{FieldElement, MODULUS};
+use scalar::Scalar;
 
 #[cfg(feature = "rand")]
 use crate::SecretKey;
@@ -44,6 +40,7 @@ const CURVE_EQUATION_B: FieldElement = FieldElement([
 
 /// A point on the secp256r1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct AffinePoint {
     x: FieldElement,
     y: FieldElement,
@@ -197,6 +194,7 @@ impl Neg for AffinePoint {
 
 /// A point on the secp256r1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
@@ -555,7 +553,7 @@ mod tests {
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B};
     use crate::{
-        arithmetic::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
+        test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         PublicKey,
     };
 

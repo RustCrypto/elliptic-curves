@@ -500,7 +500,7 @@ mod tests {
     use proptest::{num::u64::ANY, prelude::*};
 
     use super::FieldElement;
-    use crate::arithmetic::test_vectors::field::DBL_TEST_VECTORS;
+    use crate::test_vectors::field::DBL_TEST_VECTORS;
 
     #[test]
     fn zero_is_additive_identity() {
