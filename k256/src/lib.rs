@@ -14,10 +14,16 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 
 #[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub mod arithmetic;
+mod arithmetic;
+
+#[cfg(any(feature = "test-vectors", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
+pub mod test_vectors;
 
 pub use elliptic_curve;
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 use elliptic_curve::{generic_array::typenum::U32, weierstrass::Curve};
 

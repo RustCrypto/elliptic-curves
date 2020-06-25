@@ -24,6 +24,7 @@ const MODULUS: [u64; LIMBS] = [
 // TODO: This currently uses native representation internally, but will probably move to
 // Montgomery representation later.
 #[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(pub(crate) [u64; LIMBS]);
 
 impl From<u64> for Scalar {
