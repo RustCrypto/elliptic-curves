@@ -12,7 +12,7 @@ use elliptic_curve::{
 };
 
 use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
-use field::{FieldElement, MODULUS};
+use field::{FieldElement};
 use scalar::Scalar;
 
 #[cfg(feature = "rand")]
@@ -24,13 +24,18 @@ use elliptic_curve::{
     weierstrass::GenerateSecretKey,
 };
 
-/// b = 7 in Montgomery form (aR mod p, where R = 2**256.
+
+const CURVE_EQUATION_B_SINGLE: u64 = 7u64;
+
+
 const CURVE_EQUATION_B: FieldElement = FieldElement([
-    0x0000_0007_0000_1ab7,
+    CURVE_EQUATION_B_SINGLE,
+    0x0000_0000_0000_0000,
     0x0000_0000_0000_0000,
     0x0000_0000_0000_0000,
     0x0000_0000_0000_0000,
 ]);
+
 
 /// A point on the secp256k1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -104,7 +109,7 @@ impl AffinePoint {
 
                     beta.map(|beta| {
                         let y = FieldElement::conditional_select(
-                            &(MODULUS - &beta),
+                            &beta.negate(1), // FIXME: check magnitude
                             &beta,
                             // beta.is_odd() == y_is_odd
                             !(beta.is_odd() ^ y_is_odd),
@@ -140,6 +145,13 @@ impl AffinePoint {
     /// Returns a [`PublicKey`] with the SEC-1 uncompressed encoding of this point.
     pub fn to_uncompressed_pubkey(&self) -> PublicKey {
         PublicKey::Uncompressed(self.clone().into())
+    }
+
+    pub fn normalize(&self) -> AffinePoint {
+        AffinePoint {
+            x: self.x.normalize(),
+            y: self.y.normalize()
+        }
     }
 }
 
@@ -181,7 +193,7 @@ impl Neg for AffinePoint {
     fn neg(self) -> Self::Output {
         AffinePoint {
             x: self.x,
-            y: -self.y,
+            y: self.y.negate(1).normalize_weak(), // FIXME: check magnitude
         }
     }
 }
@@ -255,7 +267,7 @@ impl ProjectivePoint {
     fn neg(&self) -> ProjectivePoint {
         ProjectivePoint {
             x: self.x,
-            y: self.y.neg(),
+            y: self.y.negate(1).normalize_weak(), // FIXME: check magnitude
             z: self.z,
         }
     }
@@ -265,29 +277,37 @@ impl ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 7).
 
-        let xx = self.x * &other.x;
-        let yy = self.y * &other.y;
-        let zz = self.z * &other.z;
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy);
-        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) - &(yy + &zz);
-        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) - &(xx + &zz);
+        let xx = self.x * &other.x; // m1
+        let yy = self.y * &other.y; // m1
+        let zz = self.z * &other.z; // m1
+        let n_xx_yy = (xx + &yy).negate(2); // m3
+        let n_yy_zz = (yy + &zz).negate(2); // m3
+        let n_xx_zz = (xx + &zz).negate(2); // m3
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &n_xx_yy; // m4
+        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) + &n_yy_zz; // m4
+        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) + &n_xx_zz; // m4
 
-        let bzz = CURVE_EQUATION_B * &zz;
-        let bzz3 = bzz.double() + &bzz;
+        // TODO: would it be faster to do a multiplication by a FieldElement(B)?
+        let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE); // m7
+        let bzz3 = (bzz.double() + &bzz).normalize_weak(); // m1
 
-        let yy_m_bzz3 = yy - &bzz3;
-        let yy_p_bzz3 = yy + &bzz3;
+        let yy_m_bzz3 = yy + &bzz3.negate(1); // m3
+        let yy_p_bzz3 = yy + &bzz3; // m2
 
-        let byz = CURVE_EQUATION_B * &yz_pairs;
-        let byz3 = byz.double() + &byz;
+        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE); // m28
+        let byz3 = (byz.double() + &byz).normalize_weak(); // m1
 
-        let xx3 = xx.double() + &xx;
-        let bxx9 = CURVE_EQUATION_B * &(xx3.double() + &xx3);
+        let xx3 = xx.double() + &xx; // m3
+        let bxx9 = (xx3.double() + &xx3).mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak(); // m1
+
+        let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
+        let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
+        let new_z = ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak();
 
         ProjectivePoint {
-            x: (xy_pairs * &yy_m_bzz3) - &(byz3 * &xz_pairs),
-            y: (yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs),
-            z: (yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs),
+            x: new_x,
+            y: new_y,
+            z: new_z,
         }
     }
 
@@ -296,16 +316,18 @@ impl ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 8).
 
+        // FIXME: check magnitudes
+
         let xx = self.x * &other.x;
         let yy = self.y * &other.y;
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy);
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &(xx + &yy).negate(1);
         let yz_pairs = (other.y * &self.z) + &self.y;
         let xz_pairs = (other.x * &self.z) + &self.x;
 
         let bzz = CURVE_EQUATION_B * &self.z;
         let bzz3 = bzz.double() + &bzz;
 
-        let yy_m_bzz3 = yy - &bzz3;
+        let yy_m_bzz3 = yy + &bzz3.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
 
         let byz = CURVE_EQUATION_B * &yz_pairs;
@@ -315,7 +337,7 @@ impl ProjectivePoint {
         let bxx9 = CURVE_EQUATION_B * &(xx3.double() + &xx3);
 
         ProjectivePoint {
-            x: (xy_pairs * &yy_m_bzz3) - &(byz3 * &xz_pairs),
+            x: (xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1),
             y: (yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs),
             z: (yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs),
         }
@@ -326,24 +348,25 @@ impl ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 9).
 
-        let yy = self.y.square();
-        let zz = self.z.square();
-        let xy2 = (self.x * &self.y).double();
+        let yy = self.y.square(); // m1
+        let zz = self.z.square(); // m1
+        let xy2 = (self.x * &self.y).double(); // m2
 
-        let bzz = CURVE_EQUATION_B * &zz;
-        let bzz3 = bzz.double() + &bzz;
-        let bzz9 = bzz3.double() + &bzz3;
+        let bzz = &zz.mul_single(CURVE_EQUATION_B_SINGLE); // m7
+        let bzz3 = (bzz.double() + &bzz).normalize_weak(); // m1
+        let bzz9 = (bzz3.double() + &bzz3).normalize_weak(); // m1
 
-        let yy_m_bzz9 = yy - &bzz9;
-        let yy_p_bzz3 = yy + &bzz3;
+        let yy_m_bzz9 = yy + &bzz9.negate(1); // m3
+        let yy_p_bzz3 = yy + &bzz3; // m2
 
-        let yy_zz = yy * &zz;
-        let yy_zz8 = yy_zz.double().double().double();
+        let yy_zz = yy * &zz; // m1
+        let yy_zz8 = yy_zz.double().double().double(); // m8
+        let t = (yy_zz8.double() + &yy_zz8).mul_single(CURVE_EQUATION_B_SINGLE);
 
         ProjectivePoint {
             x: xy2 * &yy_m_bzz9,
-            y: (yy_m_bzz9 * &yy_p_bzz3) + &(CURVE_EQUATION_B * &(yy_zz8.double() + &yy_zz8)),
-            z: ((yy * &self.y) * &self.z).double().double().double(),
+            y: ((yy_m_bzz9 * &yy_p_bzz3) + &t).normalize_weak(),
+            z: ((yy * &self.y) * &self.z).double().double().double().normalize_weak(),
         }
     }
 
@@ -369,6 +392,14 @@ impl ProjectivePoint {
         }
 
         ret
+    }
+
+    pub fn normalize(&self) -> ProjectivePoint {
+        ProjectivePoint {
+            x: self.x.normalize(),
+            y: self.y.normalize(),
+            z: self.z.normalize()
+        }
     }
 }
 
@@ -721,11 +752,13 @@ mod tests {
     fn projective_add_vs_double() {
         let generator = ProjectivePoint::generator();
 
-        assert_eq!(generator + &generator, generator.double());
-        assert_eq!(
-            (generator + &generator) + &(generator + &generator),
-            generator.double().double()
-        );
+        let r1 = (generator + &generator).normalize();
+        let r2 = generator.double().normalize();
+        assert_eq!(r1, r2);
+
+        let r1 = ((generator + &generator) + &(generator + &generator)).normalize();
+        let r2 = generator.double().double().normalize();
+        assert_eq!(r1, r2);
     }
 
     #[test]
@@ -765,7 +798,7 @@ mod tests {
                 )
             }))
         {
-            let res = (generator * &k).to_affine().unwrap();
+            let res = (generator * &k).to_affine().unwrap().normalize();
             assert_eq!(
                 (
                     hex::encode(res.x.to_bytes()).to_uppercase().as_str(),
