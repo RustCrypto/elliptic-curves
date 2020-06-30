@@ -117,7 +117,6 @@ dependencies = [
  "fiat-crypto",
  "hex",
  "proptest",
- "rand_core 0.5.1",
  "zeroize",
 ]
 
@@ -149,7 +148,6 @@ dependencies = [
  "elliptic-curve",
  "hex",
  "proptest",
- "rand_core 0.5.1",
  "zeroize",
 ]
 
