@@ -1,7 +1,7 @@
 //! Scalar field arithmetic.
 
 use core::convert::TryInto;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, CtOption};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
@@ -18,6 +18,14 @@ const MODULUS: [u64; LIMBS] = [
     0xBAAE_DCE6_AF48_A03B,
     0xFFFF_FFFF_FFFF_FFFE,
     0xFFFF_FFFF_FFFF_FFFF,
+];
+
+/// Constant representing the modulus / 2
+const FRAC_MODULUS_2: [u64; LIMBS] = [
+    0xDFE9_2F46_681B_20A0,
+    0x5D57_6E73_57A4_501D,
+    0xFFFF_FFFF_FFFF_FFFF,
+    0x7FFF_FFFF_FFFF_FFFF,
 ];
 
 /// An element in the finite field modulo n.
@@ -77,6 +85,15 @@ impl Scalar {
         ret[24..32].copy_from_slice(&self.0[0].to_be_bytes());
         ret
     }
+
+    /// Is this scalar greater than or equal to n / 2?
+    pub fn is_high(&self) -> Choice {
+        let (_, borrow) = sbb(self.0[0], FRAC_MODULUS_2[0], 0);
+        let (_, borrow) = sbb(self.0[1], FRAC_MODULUS_2[1], borrow);
+        let (_, borrow) = sbb(self.0[2], FRAC_MODULUS_2[2], borrow);
+        let (_, borrow) = sbb(self.0[3], FRAC_MODULUS_2[3], borrow);
+        (borrow & 1).ct_eq(&0)
+    }
 }
 
 impl ConditionallySelectable for Scalar {
@@ -94,5 +111,33 @@ impl ConditionallySelectable for Scalar {
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {
         self.0.as_mut().zeroize()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Scalar, FRAC_MODULUS_2, MODULUS};
+
+    #[test]
+    fn is_high() {
+        // 0 is not high
+        let high: bool = Scalar::zero().is_high().into();
+        assert!(!high);
+
+        // FRAC_MODULUS_2 - 1 is not high
+        let mut scalar = Scalar(FRAC_MODULUS_2);
+        scalar.0[3] -= 1;
+        let high: bool = scalar.is_high().into();
+        assert!(!high);
+
+        // FRAC_MODULUS_2 is high
+        let high: bool = Scalar(FRAC_MODULUS_2).is_high().into();
+        assert!(high);
+
+        // MODULUS - 1 is high
+        let mut scalar = Scalar(MODULUS);
+        scalar.0[3] -= 1;
+        let high: bool = scalar.is_high().into();
+        assert!(high);
     }
 }
