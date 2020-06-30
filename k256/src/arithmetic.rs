@@ -537,7 +537,6 @@ impl GenerateSecretKey for Secp256k1 {
 #[cfg(test)]
 mod tests {
     use core::convert::TryInto;
-    use elliptic_curve::rand_core::OsRng;
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_B};
     use crate::{
@@ -796,7 +795,7 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn generate_secret_key() {
-        use elliptic_curve::weierstrass::GenerateSecretKey;
+        use elliptic_curve::{rand_core::OsRng, weierstrass::GenerateSecretKey};
         let key = Secp256k1::generate_secret_key(&mut OsRng);
 
         // Sanity check
