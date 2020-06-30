@@ -1,6 +1,6 @@
 //! Scalar field arithmetic.
 
-use core::convert::TryInto;
+use core::{convert::TryInto, ops::Neg};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
@@ -107,6 +107,20 @@ impl ConditionallySelectable for Scalar {
     }
 }
 
+impl Neg for Scalar {
+    type Output = Scalar;
+
+    fn neg(self) -> Scalar {
+        let (w0, borrow) = sbb(MODULUS[0], self.0[0], 0);
+        let (w1, borrow) = sbb(MODULUS[1], self.0[1], borrow);
+        let (w2, borrow) = sbb(MODULUS[2], self.0[2], borrow);
+        let (w3, _) = sbb(MODULUS[3], self.0[3], borrow);
+
+        let is_zero = self.0.ct_eq(&[0u64; LIMBS]);
+        Scalar::conditional_select(&Scalar([w0, w1, w2, w3]), &Scalar::zero(), is_zero)
+    }
+}
+
 #[cfg(feature = "zeroize")]
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {
@@ -116,7 +130,10 @@ impl Zeroize for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::{Scalar, FRAC_MODULUS_2, MODULUS};
+    use super::{Scalar, FRAC_MODULUS_2, LIMBS, MODULUS};
+
+    /// n - 1
+    const MODULUS_MINUS_ONE: [u64; LIMBS] = [MODULUS[0] - 1, MODULUS[1], MODULUS[2], MODULUS[3]];
 
     #[test]
     fn is_high() {
@@ -139,5 +156,22 @@ mod tests {
         scalar.0[3] -= 1;
         let high: bool = scalar.is_high().into();
         assert!(high);
+    }
+
+    #[test]
+    fn negate() {
+        let zero_neg = -Scalar::zero();
+        assert_eq!(zero_neg.0, [0u64; LIMBS]);
+
+        let one_neg = -Scalar::one();
+        assert_eq!(one_neg.0, MODULUS_MINUS_ONE);
+
+        let frac_modulus_2_neg = -Scalar(FRAC_MODULUS_2);
+        let mut frac_modulus_2_plus_one = FRAC_MODULUS_2;
+        frac_modulus_2_plus_one[0] += 1;
+        assert_eq!(frac_modulus_2_neg.0, frac_modulus_2_plus_one);
+
+        let modulus_minus_one_neg = -Scalar(MODULUS_MINUS_ONE);
+        assert_eq!(modulus_minus_one_neg.0, Scalar::one().0);
     }
 }
