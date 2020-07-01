@@ -24,7 +24,7 @@ default-features = false
 
 [dev-dependencies]
 hex = "0.4"
-proptest = "0.9"
+proptest = "0.10"
 
 [features]
 default = ["arithmetic", "std"]
