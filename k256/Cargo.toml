@@ -23,7 +23,8 @@ optional = true
 default-features = false
 
 [dev-dependencies]
-fiat-crypto = "0.1.0"
+num-bigint = "0.3"
+num-traits = "0.2"
 hex = "0.4"
 proptest = "0.10"
 

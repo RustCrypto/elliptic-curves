@@ -213,11 +213,10 @@ impl MulAssign<FieldElement> for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use fiat_crypto::secp256k1_64::{
-        fiat_secp256k1_add, fiat_secp256k1_mul, fiat_secp256k1_opp, fiat_secp256k1_square,
-        fiat_secp256k1_sub,
-    };
-    use proptest::{num::u64::ANY, prelude::*};
+    use proptest::{prelude::*};
+    use num_bigint::{BigUint, ToBigUint};
+    use num_traits::cast::{ToPrimitive};
+    use num_traits::{Zero};
 
     use super::FieldElement;
     use crate::test_vectors::field::DBL_TEST_VECTORS;
@@ -321,90 +320,125 @@ mod tests {
         assert_eq!(four.sqrt().unwrap().normalize(), two.normalize());
     }
 
+    fn field_element_modulus() -> BigUint {
+        (1.to_biguint().unwrap() << 256)
+        - (1.to_biguint().unwrap() << 32)
+        - (977.to_biguint().unwrap())
+    }
+
+    impl FieldElement {
+
+        fn from_biguint(x: &BigUint) -> Self {
+            let mask = BigUint::from(u64::MAX);
+            let w0 = (x & &mask).to_u64().unwrap();
+            let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
+            let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
+            let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
+            FieldElement::from_words([w0, w1, w2, w3]).unwrap()
+        }
+
+        fn to_biguint(&self) -> BigUint {
+            let words = self.to_words();
+            let res = words[0].to_biguint().unwrap()
+                    + (words[1].to_biguint().unwrap() << 64)
+                    + (words[2].to_biguint().unwrap() << 128)
+                    + (words[3].to_biguint().unwrap() << 192);
+            res
+        }
+    }
+
+    prop_compose! {
+        fn field_element()(words in any::<[u64; 4]>()) -> BigUint {
+            let mut res = words[0].to_biguint().unwrap()
+                        + (words[1].to_biguint().unwrap() << 64)
+                        + (words[2].to_biguint().unwrap() << 128)
+                        + (words[3].to_biguint().unwrap() << 192);
+            let m = field_element_modulus();
+            if res >= m {
+                res -= m;
+            }
+            res
+        }
+    }
+
     proptest! {
 
-        /// These tests fuzz the Field arithmetic implementation against
-        /// fiat-crypto.
-        /*
         #[test]
-        fn mul_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
+        fn fuzzy_add(
+            a in field_element(),
+            b in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            let b = [b0, b1, b2, 0];
-            fiat_secp256k1_mul(&mut out, &a, &b);
-            let a_f = FieldElement::from_words(a).unwrap();
-            let b_f = FieldElement::from_words(b).unwrap();
-            assert_eq!(a_f.mul(&b_f).normalize().to_words(), out);
+            let res_ref_bi = (&a + &b) % field_element_modulus();
+            let res_ref = FieldElement::from_biguint(&res_ref_bi);
+            let a_f = FieldElement::from_biguint(&a);
+            let b_f = FieldElement::from_biguint(&b);
+            let res_test = (a_f + &b_f).normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn square_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
+        fn fuzzy_mul(
+            a in field_element(),
+            b in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            fiat_secp256k1_square(&mut out, &a);
-            let a_f = FieldElement::from_words(a).unwrap();
-            assert_eq!(a_f.square().normalize().to_words(), out);
-        }
-        */
-
-        #[test]
-        fn add_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
-        ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            let b = [b0, b1, b2, 0];
-            fiat_secp256k1_add(&mut out, &a, &b);
-            let a_f = FieldElement::from_words(a).unwrap();
-            let b_f = FieldElement::from_words(b).unwrap();
-            assert_eq!(a_f.add(&b_f).normalize().to_words(), out);
+            let res_ref_bi = (&a * &b) % field_element_modulus();
+            let res_ref = FieldElement::from_biguint(&res_ref_bi);
+            let a_f = FieldElement::from_biguint(&a);
+            let b_f = FieldElement::from_biguint(&b);
+            let res_test = (a_f * &b_f).normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn sub_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
+        fn fuzzy_square(
+            a in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            let b = [b0, b1, b2, 0];
-            fiat_secp256k1_sub(&mut out, &a, &b);
-            let a_f = FieldElement::from_words(a).unwrap();
-            let b_f = FieldElement::from_words(b).unwrap();
-            assert_eq!((a_f + &b_f.negate(1)).to_words(), out);
+            let res_ref_bi = (&a * &a) % field_element_modulus();
+            let res_ref = FieldElement::from_biguint(&res_ref_bi);
+            let a_f = FieldElement::from_biguint(&a);
+            let res_test = a_f.square().normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn negate_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
+        fn fuzzy_negate(
+            a in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            fiat_secp256k1_opp(&mut out, &a);
-            let a_f = FieldElement::from_words(a).unwrap();
-            assert_eq!((a_f.negate(1)).to_words(), out);
+            let m = field_element_modulus();
+            let res_ref_bi = (&m - &a) % &m;
+            let res_ref = FieldElement::from_biguint(&res_ref_bi);
+            let a_f = FieldElement::from_biguint(&a);
+            let res_test = a_f.negate(1).normalize();
+            assert_eq!(res_test, res_ref);
+        }
+
+        #[test]
+        fn fuzzy_sqrt(
+            a in field_element()
+        ) {
+            let m = field_element_modulus();
+            let sqr_bi = (&a * &a) % &m;
+            let sqr_f = FieldElement::from_biguint(&sqr_bi);
+            let res_ref1 = FieldElement::from_biguint(&a);
+            let possible_sqrt = (&m - &a) % &m;
+            let res_ref2 = FieldElement::from_biguint(&possible_sqrt);
+            let res_test = sqr_f.sqrt().unwrap().normalize();
+            // FIXME: is there a rule which square root is returned?
+            assert!(res_test == res_ref1 || res_test == res_ref2);
+        }
+
+        #[test]
+        fn fuzzy_invert(
+            mut a in field_element()
+        ) {
+            if (&a).is_zero() {
+                a = 1.to_biguint().unwrap();
+            }
+            let a_f = FieldElement::from_biguint(&a);
+            let inv_f = a_f.invert().unwrap().normalize();
+            let inv = inv_f.to_biguint();
+            let m = field_element_modulus();
+            assert_eq!((&inv * &a) % &m, 1.to_biguint().unwrap());
         }
     }
 }
