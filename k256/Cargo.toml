@@ -28,8 +28,9 @@ hex = "0.4"
 proptest = "0.10"
 
 [features]
-default = ["arithmetic", "std"]
+default = ["arithmetic", "std", "field-5x52"]
 arithmetic = []
+field-5x52 = []
 rand = ["elliptic-curve/rand_core"]
 test-vectors = []
 std = ["elliptic-curve/std"]

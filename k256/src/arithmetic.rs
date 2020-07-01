@@ -1,5 +1,8 @@
 //! A pure-Rust implementation of group operations on secp256k1.
 
+#[cfg(feature = "field-5x52")]
+mod field_5x52;
+
 mod field;
 pub(crate) mod scalar;
 mod util;
