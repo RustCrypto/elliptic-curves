@@ -550,7 +550,6 @@ mod tests {
     // See the `fixed_base_scalar_mul` in `k256` crate's `arithmetic.rs` for an example
 
     use core::convert::TryInto;
-    use elliptic_curve::rand_core::OsRng;
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B};
     use crate::{
@@ -790,7 +789,8 @@ mod tests {
     #[test]
     fn generate_secret_key() {
         use crate::NistP256;
-        use elliptic_curve::weierstrass::GenerateSecretKey;
+        use elliptic_curve::{rand_core::OsRng, weierstrass::GenerateSecretKey};
+
         let key = NistP256::generate_secret_key(&mut OsRng);
 
         // Sanity check
