@@ -11,6 +11,10 @@ edition = "2018"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
+[dependencies]
+num-bigint = "0.3"
+num-traits = "0.2"
+
 [dependencies.elliptic-curve]
 version = "0.4"
 path = "../elliptic-curve-crate"
@@ -23,8 +27,6 @@ optional = true
 default-features = false
 
 [dev-dependencies]
-num-bigint = "0.3"
-num-traits = "0.2"
 hex = "0.4"
 proptest = "0.10"
 

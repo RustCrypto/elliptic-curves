@@ -1,5 +1,8 @@
 //! Scalar field arithmetic.
 
+use num_bigint::{BigUint, ToBigUint};
+use num_traits::cast::{ToPrimitive};
+
 use core::{convert::TryInto, ops::Neg};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -13,12 +16,22 @@ const LIMBS: usize = 4;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-const MODULUS: [u64; LIMBS] = [
+pub const MODULUS: [u64; LIMBS] = [
     0xBFD2_5E8C_D036_4141,
     0xBAAE_DCE6_AF48_A03B,
     0xFFFF_FFFF_FFFF_FFFE,
     0xFFFF_FFFF_FFFF_FFFF,
 ];
+
+
+/* Limbs of 2^256 minus the secp256k1 order. */
+pub const NEG_MODULUS: [u64; LIMBS] = [
+    !MODULUS[0] + 1,
+    !MODULUS[1],
+    1,
+    0
+];
+
 
 /// Constant representing the modulus / 2
 const FRAC_MODULUS_2: [u64; LIMBS] = [
@@ -28,6 +41,57 @@ const FRAC_MODULUS_2: [u64; LIMBS] = [
     0x7FFF_FFFF_FFFF_FFFF,
 ];
 
+
+/** Add a to the number defined by (c0,c1,c2). c2 must never overflow. */
+fn sumadd(a: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
+    let new_c0 = c0.wrapping_add(a);                  /* overflow is handled on the next line */
+    let over: u64 = if new_c0 < a { 1 } else { 0 };
+    let new_c1 = c1.wrapping_add(over);                 /* overflow is handled on the next line */
+    let new_c2 = c2 + if new_c1 < over { 1 } else { 0 };  /* never overflows by contract */
+    (new_c0, new_c1, new_c2)
+}
+
+
+/** Add a to the number defined by (c0,c1). c1 must never overflow, c2 must be zero. */
+fn sumadd_fast(a: u64, c0: u64, c1: u64) -> (u64, u64) {
+    let new_c0 = c0.wrapping_add(a);                 /* overflow is handled on the next line */
+    let new_c1 = c1 + if new_c0 < a { 1 } else { 0 };  /* never overflows by contract (verified the next line) */
+    debug_assert!((new_c1 != 0) | (new_c0 >= a));
+    (new_c0, new_c1)
+}
+
+
+/** Add a*b to the number defined by (c0,c1,c2). c2 must never overflow. */
+fn muladd(a: u64, b: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
+    let t = (a as u128) * (b as u128);
+    let th = (t >> 64) as u64; /* at most 0xFFFFFFFFFFFFFFFE */
+    let tl = t as u64;
+
+    let new_c0 = c0.wrapping_add(tl);                 /* overflow is handled on the next line */
+    let new_th = th + if new_c0 < tl { 1 } else { 0 };  /* at most 0xFFFFFFFFFFFFFFFF */
+    let new_c1 = c1.wrapping_add(new_th);                 /* overflow is handled on the next line */
+    let new_c2 = c2 + if new_c1 < new_th { 1 } else { 0 };  /* never overflows by contract (verified in the next line) */
+    debug_assert!((new_c1 >= new_th) || (new_c2 != 0));
+    (new_c0, new_c1, new_c2)
+}
+
+
+/** Add a*b to the number defined by (c0,c1). c1 must never overflow. */
+fn muladd_fast(a: u64, b: u64, c0: u64, c1: u64) -> (u64, u64) {
+
+    let t = (a as u128) * (b as u128);
+    let th = (t >> 64) as u64; /* at most 0xFFFFFFFFFFFFFFFE */
+    let tl = t as u64;
+
+    let new_c0 = c0.wrapping_add(tl); /* overflow is handled on the next line */
+    // FIXME: constant time
+    let new_th = th + if new_c0 < tl { 1 } else { 0 };  /* at most 0xFFFFFFFFFFFFFFFF */
+    let new_c1 = c1 + new_th; /* never overflows by contract (verified in the next line) */
+    debug_assert!(new_c1 >= new_th);
+    (new_c0, new_c1)
+}
+
+
 /// An element in the finite field modulo n.
 // TODO: This currently uses native representation internally, but will probably move to
 // Montgomery representation later.
@@ -35,9 +99,40 @@ const FRAC_MODULUS_2: [u64; LIMBS] = [
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(pub(crate) [u64; LIMBS]);
 
+
+#[derive(Clone, Copy, Debug, Default)]
+pub struct WideScalar([u64; 8]);
+
+
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
         Scalar([k, 0, 0, 0])
+    }
+}
+
+impl From<&BigUint> for Scalar {
+    fn from(x: &BigUint) -> Self {
+        let mask = BigUint::from(u64::MAX);
+        let w0 = (x & &mask).to_u64().unwrap();
+        let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
+        let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
+        let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
+        Scalar::from_words([w0, w1, w2, w3]).unwrap()
+    }
+}
+
+impl From<&BigUint> for WideScalar {
+    fn from(x: &BigUint) -> Self {
+        let mask = BigUint::from(u64::MAX);
+        let w0 = (x & &mask).to_u64().unwrap();
+        let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
+        let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
+        let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
+        let w4 = ((x >> 256) as BigUint & &mask).to_u64().unwrap();
+        let w5 = ((x >> 320) as BigUint & &mask).to_u64().unwrap();
+        let w6 = ((x >> 384) as BigUint & &mask).to_u64().unwrap();
+        let w7 = ((x >> 448) as BigUint & &mask).to_u64().unwrap();
+        WideScalar([w0, w1, w2, w3, w4, w5, w6, w7])
     }
 }
 
@@ -65,6 +160,10 @@ impl Scalar {
         w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
         w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
 
+        Self::from_words(w)
+    }
+
+    pub fn from_words(w: [u64; 4]) -> CtOption<Self> {
         // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
         // value of 2^64 - 1.
         let (_, borrow) = sbb(w[0], MODULUS[0], 0);
@@ -99,7 +198,163 @@ impl Scalar {
         let (_, borrow) = sbb(self.0[3], FRAC_MODULUS_2[3], borrow);
         (borrow & 1).ct_eq(&0)
     }
+
+    pub fn to_biguint(&self) -> BigUint {
+        self.0[0].to_biguint().unwrap()
+            + (self.0[1].to_biguint().unwrap() << 64)
+            + (self.0[2].to_biguint().unwrap() << 128)
+            + (self.0[3].to_biguint().unwrap() << 192)
+    }
+
+    pub fn mul_wide(&self, rhs: &Scalar) -> WideScalar {
+        /* 160 bit accumulator. */
+
+        let c0 = 0;
+        let c1 = 0;
+        let c2 = 0;
+
+        /* l[0..7] = a[0..3] * b[0..3]. */
+        // FIXME: `muladd()` always receives c2 == 0; can we optimize that?
+        let (c0, c1) = muladd_fast(self.0[0], rhs.0[0], c0, c1);
+        let (l0, c0, c1) = (c0, c1, 0);
+        let (c0, c1, c2) = muladd(self.0[0], rhs.0[1], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[1], rhs.0[0], c0, c1, c2);
+        let (l1, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = muladd(self.0[0], rhs.0[2], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[1], rhs.0[1], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[2], rhs.0[0], c0, c1, c2);
+        let (l2, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = muladd(self.0[0], rhs.0[3], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[1], rhs.0[2], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[2], rhs.0[1], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[3], rhs.0[0], c0, c1, c2);
+        let (l3, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = muladd(self.0[1], rhs.0[3], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[2], rhs.0[2], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[3], rhs.0[1], c0, c1, c2);
+        let (l4, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = muladd(self.0[2], rhs.0[3], c0, c1, c2);
+        let (c0, c1, c2) = muladd(self.0[3], rhs.0[2], c0, c1, c2);
+        let (l5, c0, c1, _c2) = (c0, c1, c2, 0);
+        let (c0, c1) = muladd_fast(self.0[3], rhs.0[3], c0, c1);
+        let (l6, c0, _c1) = (c0, c1, 0);
+        let l7 = c0;
+
+        WideScalar([l0, l1, l2, l3, l4, l5, l6, l7])
+    }
+
+    pub fn mul(&self, rhs: &Scalar) -> Scalar {
+        let wide_res = self.mul_wide(rhs);
+        wide_res.reduce()
+    }
+
+    pub fn get_overflow(&self) -> u8 {
+        let mut yes = 0u8;
+        let mut no = 0u8;
+        // FIXME: use subtle here
+        no |= (self.0[3] < MODULUS[3]) as u8; /* No need for a > check. */
+        no |= (self.0[2] < MODULUS[2]) as u8;
+        yes |= (self.0[2] > MODULUS[2]) as u8 & !no;
+        no |= (self.0[1] < MODULUS[1]) as u8;
+        yes |= (self.0[1] > MODULUS[1]) as u8 & !no;
+        yes |= (self.0[0] >= MODULUS[0]) as u8 & !no;
+        yes
+    }
+
+    pub fn reduce(&self, overflow: u8) -> Scalar {
+        debug_assert!(overflow <= 1);
+
+        // FIXME: use conditional select here
+        let mut t = (self.0[0] as u128) + ((overflow as u64 * NEG_MODULUS[0]) as u128);
+        let r0 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64; t >>= 64;
+        t += (self.0[1] as u128) + ((overflow as u64 * NEG_MODULUS[1]) as u128);
+        let r1 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64; t >>= 64;
+        t += (self.0[2] as u128) + ((overflow as u64 * NEG_MODULUS[2]) as u128);
+        let r2 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64; t >>= 64;
+        t += self.0[3] as u128;
+        let r3 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        // TODO: the original returned overflow here, do we need it?
+
+        Scalar([r0, r1, r2, r3])
+    }
 }
+
+
+impl WideScalar {
+
+    pub fn reduce(&self) -> Scalar {
+
+        let n0 = self.0[4];
+        let n1 = self.0[5];
+        let n2 = self.0[6];
+        let n3 = self.0[7];
+
+        /* Reduce 512 bits into 385. */
+        /* m[0..6] = self[0..3] + n[0..3] * NEG_MODULUS. */
+        // FIXME: some functions receive 0 as arguments; can it be optimized?
+        let c0 = self.0[0]; let c1 = 0; let c2 = 0;
+        let (c0, c1) = muladd_fast(n0, NEG_MODULUS[0], c0, c1);
+        let (m0, c0, c1) = (c0, c1, 0);
+        let (c0, c1) = sumadd_fast(self.0[1], c0, c1);
+        let (c0, c1, c2) = muladd(n1, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n0, NEG_MODULUS[1], c0, c1, c2);
+        let (m1, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = sumadd(self.0[2], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n2, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n1, NEG_MODULUS[1], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(n0, c0, c1, c2);
+        let (m2, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = sumadd(self.0[3], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n3, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n2, NEG_MODULUS[1], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(n1, c0, c1, c2);
+        let (m3, c0, c1, c2) = (c0, c1, c2, 0);
+        let (c0, c1, c2) = muladd(n3, NEG_MODULUS[1], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(n2, c0, c1, c2);
+        let (m4, c0, c1, _c2) = (c0, c1, c2, 0);
+        let (c0, c1) = sumadd_fast(n3, c0, c1);
+        let (m5, c0, _c1) = (c0, c1, 0);
+        debug_assert!(c0 <= 1);
+        let m6 = c0; // FIXME: as u32 in the original, but it's used in muladd() anyway;
+
+        /* Reduce 385 bits into 258. */
+        /* p[0..4] = m[0..3] + m[4..6] * NEG_MODULUS. */
+        let c0 = m0; let c1 = 0; let c2 = 0;
+        let (c0, c1) = muladd_fast(m4, NEG_MODULUS[0], c0, c1);
+        let (p0, c0, c1) = (c0, c1, 0);
+        let (c0, c1) = sumadd_fast(m1, c0, c1);
+        let (c0, c1, c2) = muladd(m5, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(m4, NEG_MODULUS[1], c0, c1, c2);
+        let (p1, c0, c1) = (c0, c1, 0);
+        let (c0, c1, c2) = sumadd(m2, c0, c1, c2);
+        let (c0, c1, c2) = muladd(m6, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(m5, NEG_MODULUS[1], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(m4, c0, c1, c2);
+        let (p2, c0, c1, _c2) = (c0, c1, c2, 0);
+        let (c0, c1) = sumadd_fast(m3, c0, c1);
+        let (c0, c1) = muladd_fast(m6, NEG_MODULUS[1], c0, c1);
+        let (c0, c1) = sumadd_fast(m5, c0, c1);
+        let (p3, c0, _c1) = (c0, c1, 0);
+        let p4 = c0 + m6; // FIXME: as u32 in the original, but it has to be converted later anyway;
+        debug_assert!(p4 <= 2);
+
+        /* Reduce 258 bits into 256. */
+        /* r[0..3] = p[0..3] + p[4] * NEG_MODULUS. */
+        let mut c = (p0 as u128) + (NEG_MODULUS[0] as u128) * (p4 as u128);
+        let r0 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        c += (p1 as u128) + (NEG_MODULUS[1] as u128) * (p4 as u128);
+        let r1 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        c += (p2 as u128) + (p4 as u128);
+        let r2 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        c += p3 as u128;
+        let r3 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+
+        /* Final reduction of r. */
+        let s = Scalar([r0, r1, r2, r3]);
+        s.reduce((c as u8) + s.get_overflow())
+    }
+}
+
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
@@ -112,11 +367,44 @@ impl ConditionallySelectable for Scalar {
     }
 }
 
+
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        self.0[0].ct_eq(&other.0[0])
+            & self.0[1].ct_eq(&other.0[1])
+            & self.0[2].ct_eq(&other.0[2])
+            & self.0[3].ct_eq(&other.0[3])
     }
 }
+
+
+impl PartialEq for Scalar {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+
+impl ConstantTimeEq for WideScalar {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0[0].ct_eq(&other.0[0])
+            & self.0[1].ct_eq(&other.0[1])
+            & self.0[2].ct_eq(&other.0[2])
+            & self.0[3].ct_eq(&other.0[3])
+            & self.0[4].ct_eq(&other.0[4])
+            & self.0[5].ct_eq(&other.0[5])
+            & self.0[6].ct_eq(&other.0[6])
+            & self.0[7].ct_eq(&other.0[7])
+    }
+}
+
+
+impl PartialEq for WideScalar {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
 
 impl Neg for Scalar {
     type Output = Scalar;
@@ -139,7 +427,9 @@ impl Zeroize for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::{Scalar, FRAC_MODULUS_2, LIMBS, MODULUS};
+    use super::{Scalar, WideScalar, FRAC_MODULUS_2, LIMBS, MODULUS};
+    use proptest::{prelude::*};
+    use num_bigint::{BigUint, ToBigUint};
 
     /// n - 1
     const MODULUS_MINUS_ONE: [u64; LIMBS] = [MODULUS[0] - 1, MODULUS[1], MODULUS[2], MODULUS[3]];
@@ -182,5 +472,56 @@ mod tests {
 
         let modulus_minus_one_neg = -Scalar(MODULUS_MINUS_ONE);
         assert_eq!(modulus_minus_one_neg.0, Scalar::one().0);
+    }
+
+    fn words_to_biguint(words: &[u64; 4]) -> BigUint {
+        words[0].to_biguint().unwrap()
+            + (words[1].to_biguint().unwrap() << 64)
+            + (words[2].to_biguint().unwrap() << 128)
+            + (words[3].to_biguint().unwrap() << 192)
+    }
+
+    fn scalar_modulus() -> BigUint {
+        words_to_biguint(&MODULUS)
+    }
+
+    prop_compose! {
+        fn scalar()(words in any::<[u64; 4]>()) -> BigUint {
+            let mut res = words_to_biguint(&words);
+            let m = scalar_modulus();
+            if res >= m {
+                res -= m;
+            }
+            res
+        }
+    }
+
+    proptest! {
+
+        #[test]
+        fn fuzzy_mul_wide(a in scalar(), b in scalar()) {
+            let a_s = Scalar::from(&a);
+            let b_s = Scalar::from(&b);
+
+            let res_ref_bi = &a * &b;
+            let res_ref = WideScalar::from(&res_ref_bi);
+            let res_test = a_s.mul_wide(&b_s);
+
+            assert_eq!(res_ref, res_test);
+        }
+
+
+        #[test]
+        fn fuzzy_mul(a in scalar(), b in scalar()) {
+            let a_s = Scalar::from(&a);
+            let b_s = Scalar::from(&b);
+
+            let res_ref_bi = (&a * &b) % &scalar_modulus();
+            let res_ref = Scalar::from(&res_ref_bi);
+            let res_test = a_s.mul(&b_s);
+
+            assert_eq!(res_ref, res_test);
+        }
+
     }
 }
