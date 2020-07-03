@@ -1,5 +1,6 @@
 //! Scalar field arithmetic.
 
+use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign};
 use num_bigint::{BigUint, ToBigUint};
 use num_traits::cast::{ToPrimitive};
 
@@ -204,6 +205,50 @@ impl Scalar {
             + (self.0[1].to_biguint().unwrap() << 64)
             + (self.0[2].to_biguint().unwrap() << 128)
             + (self.0[3].to_biguint().unwrap() << 192)
+    }
+
+    // FIXME: use subtle
+    fn is_zero(&self) -> u8 {
+        return ((self.0[0] | self.0[1] | self.0[2] | self.0[3]) == 0) as u8;
+    }
+
+    pub fn negate(&self) -> Self {
+        // FIXME: use subtle
+        let nonzero = (0xFFFFFFFFFFFFFFFFu64 * (self.is_zero() == 0) as u64) as u128;
+        let mut t = (!self.0[0]) as u128 + (MODULUS[0] + 1) as u128;
+        let r0 = t & nonzero; t >>= 64;
+        t += (!self.0[1]) as u128 + MODULUS[1] as u128;
+        let r1 = t & nonzero; t >>= 64;
+        t += (!self.0[2]) as u128 + MODULUS[2] as u128;
+        let r2 = t & nonzero; t >>= 64;
+        t += (!self.0[3]) as u128 + MODULUS[3] as u128;
+        let r3 = t & nonzero;
+        Scalar([r0 as u64, r1 as u64, r2 as u64, r3 as u64])
+    }
+
+    // TODO: compare performance with the old implementation from FieldElement, based on adc()
+    pub fn add(&self, rhs: &Scalar) -> Scalar {
+        let mut t = (self.0[0] as u128) + (rhs.0[0] as u128);
+        let r0 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        t += (self.0[1] as u128) + (rhs.0[1] as u128);
+        let r1 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        t += (self.0[2] as u128) + (rhs.0[2] as u128);
+        let r2 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        t += (self.0[3] as u128) + (rhs.0[3] as u128);
+        let r3 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        let r = Scalar([r0 as u64, r1 as u64, r2 as u64, r3 as u64]);
+        let overflow = t as u8 + r.get_overflow();
+        debug_assert!(overflow == 0 || overflow == 1);
+
+        // FIXME: a scalar should be normalized on creation; use from_words() or seomthing?
+        r.reduce(overflow)
+
+        // TODO: the original returned overflow here, do we need it?
+    }
+
+    // TODO: see if a separate sub() implementation is faster
+    pub fn sub(&self, rhs: &Scalar) -> Scalar {
+        self.add(&rhs.negate())
     }
 
     pub fn mul_wide(&self, rhs: &Scalar) -> WideScalar {
@@ -417,6 +462,84 @@ impl Neg for Scalar {
         Scalar::conditional_select(&Scalar([w0, w1, w2, w3]), &Scalar::zero(), self.is_zero())
     }
 }
+
+
+impl Add<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: &Scalar) -> Scalar {
+        Scalar::add(self, other)
+    }
+}
+
+impl Add<Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: Scalar) -> Scalar {
+        Scalar::add(self, &other)
+    }
+}
+
+impl Add<&Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: &Scalar) -> Scalar {
+        Scalar::add(&self, other)
+    }
+}
+
+impl AddAssign<Scalar> for Scalar {
+    fn add_assign(&mut self, rhs: Scalar) {
+        *self = Scalar::add(self, &rhs);
+    }
+}
+
+
+impl Sub<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn sub(self, other: &Scalar) -> Scalar {
+        Scalar::sub(self, other)
+    }
+}
+
+impl Sub<&Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn sub(self, other: &Scalar) -> Scalar {
+        Scalar::sub(&self, other)
+    }
+}
+
+impl SubAssign<Scalar> for Scalar {
+    fn sub_assign(&mut self, rhs: Scalar) {
+        *self = Scalar::sub(self, &rhs);
+    }
+}
+
+
+impl Mul<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: &Scalar) -> Scalar {
+        Scalar::mul(self, other)
+    }
+}
+
+impl Mul<&Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: &Scalar) -> Scalar {
+        Scalar::mul(&self, other)
+    }
+}
+
+impl MulAssign<Scalar> for Scalar {
+    fn mul_assign(&mut self, rhs: Scalar) {
+        *self = Scalar::mul(self, &rhs);
+    }
+}
+
 
 #[cfg(feature = "zeroize")]
 impl Zeroize for Scalar {
