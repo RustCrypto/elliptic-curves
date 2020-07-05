@@ -1,6 +1,6 @@
 //! Scalar field arithmetic.
 
-use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Shr};
 use num_bigint::{BigUint, ToBigUint};
 use num_traits::cast::{ToPrimitive};
 
@@ -111,6 +111,14 @@ impl From<u64> for Scalar {
     }
 }
 
+
+impl From<u32> for Scalar {
+    fn from(k: u32) -> Self {
+        Scalar([k as u64, 0, 0, 0])
+    }
+}
+
+
 impl From<&BigUint> for Scalar {
     fn from(x: &BigUint) -> Self {
         let mask = BigUint::from(u64::MAX);
@@ -146,6 +154,10 @@ impl Scalar {
     /// Returns the multiplicative identity.
     pub const fn one() -> Scalar {
         Scalar([1, 0, 0, 0])
+    }
+
+    pub fn truncate_to_u32(&self) -> u32 {
+        self.0[0] as u32
     }
 
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
@@ -321,6 +333,53 @@ impl Scalar {
         // TODO: the original returned overflow here, do we need it?
 
         Scalar([r0, r1, r2, r3])
+    }
+
+    pub fn rshift(&self, shift: usize) -> Scalar {
+
+        let full_shifts = shift >> 6;
+        let small_shift = shift & 0x3f;
+
+        let mut res: [u64; 4] = [0, 0, 0, 0];
+
+        if shift > 256 {
+            return Scalar(res);
+        }
+
+        if small_shift == 0 {
+            for i in 0..(4 - full_shifts) {
+               res[i] = self.0[i + full_shifts];
+            }
+        }
+        else {
+            for i in 0..(4 - full_shifts) {
+                let mut lo = self.0[i + full_shifts] >> small_shift;
+                if i < 3 - full_shifts {
+                    lo |= self.0[i + full_shifts + 1] << (64 - small_shift);
+                }
+                res[i] = lo;
+            }
+        }
+
+        Scalar(res)
+    }
+}
+
+
+impl Shr<usize> for Scalar {
+    type Output = Self;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        self.rshift(rhs)
+    }
+}
+
+
+impl Shr<usize> for &Scalar {
+    type Output = Scalar;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        self.rshift(rhs)
     }
 }
 
@@ -646,5 +705,15 @@ mod tests {
             assert_eq!(res_ref, res_test);
         }
 
+        #[test]
+        fn fuzzy_rshift(a in scalar(), b in 0usize..512) {
+            let a_s = Scalar::from(&a);
+
+            let res_ref_bi = &a >> b;
+            let res_ref = Scalar::from(&res_ref_bi);
+            let res_test = a_s >> b;
+
+            assert_eq!(res_ref, res_test);
+        }
     }
 }

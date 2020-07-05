@@ -385,16 +385,27 @@ impl ProjectivePoint {
 
     /// Returns `[k] self`.
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
-        let mut ret = ProjectivePoint::identity();
 
-        for limb in k.0.iter().rev() {
-            for i in (0..64).rev() {
-                ret = ret.double();
-                ret.conditional_assign(&(ret + self), Choice::from(((limb >> i) & 1u64) as u8));
-            }
+        // corresponds to di = [1, 3, 5, ..., 2^(w-1)-1, -2^(w-1)-1, ..., -3, -1]
+        let mut precomp = [ProjectivePoint::identity(); MUL_PRECOMP_SIZE];
+        let mask = (1u32 << LOG_MUL_WINDOW_SIZE) - 1u32;
+
+        precomp[0] = ProjectivePoint::identity();
+        precomp[1] = self.clone();
+        for i in 2..MUL_PRECOMP_SIZE {
+            precomp[i] = precomp[i-1] + self;
         }
 
-        ret
+        let mut acc = ProjectivePoint::identity();
+        for idx in (0..MUL_STEPS).rev() {
+            for _j in 0..LOG_MUL_WINDOW_SIZE {
+                acc = acc.double();
+            }
+            let di = (k >> (idx * LOG_MUL_WINDOW_SIZE)).truncate_to_u32() & mask;
+            acc += precomp[di as usize];
+        }
+
+        acc
     }
 
     pub fn normalize(&self) -> ProjectivePoint {
@@ -405,6 +416,12 @@ impl ProjectivePoint {
         }
     }
 }
+
+
+const LOG_MUL_WINDOW_SIZE: usize = 4;
+const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1; // 64
+const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE; // 16
+
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
