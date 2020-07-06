@@ -1,30 +1,85 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
+
 use core::ops::{Add, AddAssign, Mul, MulAssign};
-use elliptic_curve::subtle::{ConstantTimeEq, CtOption};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "rand")]
 use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
 
-#[cfg(feature = "field-5x52")]
-pub use super::field_5x52::{FieldElement};
+pub use super::field_impl::{FieldElementImpl};
 
 
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Default for FieldElement {
-    fn default() -> Self {
-        FieldElement::zero()
-    }
-}
+#[derive(Clone, Copy, Debug)]
+pub struct FieldElement(FieldElementImpl);
 
 
 impl FieldElement {
+
+    pub const fn zero() -> Self {
+        Self(FieldElementImpl::zero())
+    }
+
+    /// Returns the multiplicative identity.
+    pub const fn one() -> Self {
+        Self(FieldElementImpl::one())
+    }
+
+    pub fn is_zero(&self) -> Choice {
+        self.0.is_zero()
+    }
+
+    pub fn is_odd(&self) -> Choice {
+        self.0.is_odd()
+    }
+
+    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
+        Self(FieldElementImpl::from_words_unchecked(words))
+    }
+
+    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
+        let value = FieldElementImpl::from_words(words);
+        CtOption::map(value, |x| { Self(x) })
+    }
+
+    pub fn to_words(&self) -> [u64; 4] {
+        self.0.normalize().to_words()
+    }
+
+    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+        let value = FieldElementImpl::from_bytes(bytes);
+        CtOption::map(value, |x| { Self(x) })
+    }
+
+    /// Returns the SEC-1 encoding of this field element.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        self.0.normalize().to_bytes()
+    }
+
+    pub fn negate(&self, magnitude: u32) -> Self {
+        Self(self.0.negate(magnitude))
+    }
+
+    pub fn normalize(&self) -> Self {
+        Self(self.0.normalize())
+    }
+
+    pub fn normalize_weak(&self) -> Self {
+        Self(self.0.normalize_weak())
+    }
+
+    pub fn mul_single(&self, rhs: u32) -> Self {
+        Self(self.0.mul_single(rhs))
+    }
+
+    pub fn double(&self) -> Self {
+        Self(self.0.double())
+    }
+
+    pub fn square(&self) -> Self {
+        Self(self.0.square())
+    }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
@@ -32,11 +87,13 @@ impl FieldElement {
         // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
         // [1], [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        let mut x2 = self.square();
-        x2 = x2.mul(self);
+        let a = &(self.0);
+
+        let mut x2 = a.square();
+        x2 = x2.mul(a);
 
         let mut x3 = x2.square();
-        x3 = x3.mul(self);
+        x3 = x3.mul(a);
 
         let mut x6 = x3;
         for _j in 0..3 { x6 = x6.square(); }
@@ -80,13 +137,14 @@ impl FieldElement {
         for _j in 0..23 { t1 = t1.square(); }
         t1 = t1.mul(&x22);
         for _j in 0..5 { t1 = t1.square(); }
-        t1 = t1.mul(self);
+        t1 = t1.mul(a);
         for _j in 0..3 { t1 = t1.square(); }
         t1 = t1.mul(&x2);
         for _j in 0..2 { t1 = t1.square(); }
-        t1 = t1.mul(self);
+        t1 = t1.mul(a);
 
-        CtOption::new(t1, !self.is_zero())
+        // FIXME: change to `a.normalizes_to_zero()`
+        CtOption::new(FieldElement(t1), !a.normalize().is_zero())
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
@@ -106,11 +164,13 @@ impl FieldElement {
         // { 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
         // 1, [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        let mut x2 = self.square();
-        x2 = x2.mul(self);
+        let a = &(self.0);
+
+        let mut x2 = a.square();
+        x2 = x2.mul(a);
 
         let mut x3 = x2.square();
-        x3 = x3.mul(self);
+        x3 = x3.mul(a);
 
         let mut x6 = x3;
         for _j in 0..3 { x6 = x6.square(); }
@@ -159,17 +219,46 @@ impl FieldElement {
         let sqrt = t1.square();
 
         CtOption::new(
-            sqrt,
-            (&sqrt * &sqrt).normalize().ct_eq(&self.normalize()), // Only return Some if it's the square root.
+            FieldElement(sqrt),
+            (sqrt.mul(&sqrt)).normalize().ct_eq(&a.normalize()), // Only return Some if it's the square root.
         )
     }
 }
+
+
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.ct_eq(&(other.0)).into()
+    }
+}
+
+
+impl Default for FieldElement {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
+
+impl ConditionallySelectable for FieldElement {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self(FieldElementImpl::conditional_select(&(a.0), &(b.0), choice))
+    }
+}
+
+
+impl ConstantTimeEq for FieldElement {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&(other.0))
+    }
+}
+
 
 impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(self, other)
+        FieldElement(self.0.add(&(other.0)))
     }
 }
 
@@ -177,13 +266,13 @@ impl Add<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(&self, other)
+        FieldElement(self.0.add(&(other.0)))
     }
 }
 
 impl AddAssign<FieldElement> for FieldElement {
     fn add_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::add(self, &rhs);
+        *self = *self + &rhs;
     }
 }
 
@@ -192,7 +281,7 @@ impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::mul(self, other)
+        FieldElement(self.0.mul(&(other.0)))
     }
 }
 
@@ -200,13 +289,14 @@ impl Mul<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::mul(&self, other)
+        FieldElement(self.0.mul(&(other.0)))
     }
 }
 
+
 impl MulAssign<FieldElement> for FieldElement {
     fn mul_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::mul(self, &rhs);
+        *self = *self * &rhs;
     }
 }
 
@@ -225,14 +315,14 @@ mod tests {
     fn zero_is_additive_identity() {
         let zero = FieldElement::zero();
         let one = FieldElement::one();
-        assert_eq!(zero.add(&zero), zero);
-        assert_eq!(one.add(&zero), one);
+        assert_eq!((zero + &zero).normalize(), zero);
+        assert_eq!((one + &zero).normalize(), one);
     }
 
     #[test]
     fn one_is_multiplicative_identity() {
         let one = FieldElement::one();
-        assert_eq!(one.mul(&one), one);
+        assert_eq!((one * &one).normalize(), one);
     }
 
     #[test]
@@ -287,7 +377,7 @@ mod tests {
         let mut r = FieldElement::one();
         let two = r + &r;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(hex::encode(r.to_bytes()), DBL_TEST_VECTORS[i]);
+            assert_eq!(hex::encode(r.normalize().to_bytes()), DBL_TEST_VECTORS[i]);
             r = r * &two;
         }
     }

@@ -6,12 +6,12 @@ use getrandom::getrandom;
 
 
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(crate) [u64; 5]);
+pub struct FieldElement5x52(pub(crate) [u64; 5]);
 
 
-impl ConditionallySelectable for FieldElement {
-    fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
-        FieldElement([
+impl ConditionallySelectable for FieldElement5x52 {
+    fn conditional_select(a: &FieldElement5x52, b: &FieldElement5x52, choice: Choice) -> FieldElement5x52 {
+        FieldElement5x52([
             u64::conditional_select(&a.0[0], &b.0[0], choice),
             u64::conditional_select(&a.0[1], &b.0[1], choice),
             u64::conditional_select(&a.0[2], &b.0[2], choice),
@@ -22,7 +22,7 @@ impl ConditionallySelectable for FieldElement {
 }
 
 
-impl ConstantTimeEq for FieldElement {
+impl ConstantTimeEq for FieldElement5x52 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0[0].ct_eq(&other.0[0])
             & self.0[1].ct_eq(&other.0[1])
@@ -33,15 +33,15 @@ impl ConstantTimeEq for FieldElement {
 }
 
 
-impl FieldElement {
+impl FieldElement5x52 {
     /// Returns the zero element.
-    pub const fn zero() -> FieldElement {
-        FieldElement([0, 0, 0, 0, 0])
+    pub const fn zero() -> FieldElement5x52 {
+        FieldElement5x52([0, 0, 0, 0, 0])
     }
 
     /// Returns the multiplicative identity.
-    pub const fn one() -> FieldElement {
-        FieldElement([1, 0, 0, 0, 0])
+    pub const fn one() -> FieldElement5x52 {
+        FieldElement5x52([1, 0, 0, 0, 0])
     }
 
     /// Returns a uniformly-random element within the field.
@@ -52,7 +52,7 @@ impl FieldElement {
         // negligible bias from the uniform distribution.
         let mut buf = [0; 64];
         getrandom(&mut buf).unwrap();
-        FieldElement::from_bytes_wide(buf)
+        FieldElement5x52::from_bytes_wide(buf)
     }*/
 
     /// Attempts to parse the given byte array as an SEC-1-encoded field element.
@@ -113,7 +113,7 @@ impl FieldElement {
             & (w[3] & w[2] & w[1]).ct_eq(&0xFFFFFFFFFFFFFu64)
             & Choice::from(if w[0] >= 0xFFFFEFFFFFC2Fu64 { 1u8 } else { 0u8 }); // FIXME: make constant time
 
-        CtOption::new(FieldElement(w), !overflow)
+        CtOption::new(FieldElement5x52(w), !overflow)
     }
 
     /// Returns the SEC-1 encoding of this field element.
@@ -176,7 +176,7 @@ impl FieldElement {
         // ... except for a possible carry at bit 48 of t4 (i.e. bit 256 of the field element)
         debug_assert!(t4 >> 49 == 0);
 
-        FieldElement([t0, t1, t2, t3, t4])
+        FieldElement5x52([t0, t1, t2, t3, t4])
     }
 
     pub fn normalize(&self) -> Self {
@@ -223,7 +223,7 @@ impl FieldElement {
         // Mask off the possible multiple of 2^256 from the final reduction
         t4 &= 0x0FFFFFFFFFFFFu64;
 
-        FieldElement([t0, t1, t2, t3, t4])
+        FieldElement5x52([t0, t1, t2, t3, t4])
     }
 
     pub fn to_words(&self) -> [u64; 4] {
@@ -243,41 +243,45 @@ impl FieldElement {
         ret
     }
 
-    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
-        let mut w = [0u64; 5];
+    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
+        let w0 = words[0] & 0xFFFFFFFFFFFFFu64;
+        let w1 = (words[0] >> 52) | ((words[1] & 0xFFFFFFFFFFu64) << 12);
+        let w2 = (words[1] >> 40) | ((words[2] & 0xFFFFFFFu64) << 24);
+        let w3 = (words[2] >> 28) | ((words[3] & 0xFFFFu64) << 36);
+        let w4 = words[3] >> 16;
+        Self([w0, w1, w2, w3, w4])
+    }
 
-        w[0] = words[0] & 0xFFFFFFFFFFFFFu64;
-        w[1] = (words[0] >> 52) | ((words[1] & 0xFFFFFFFFFFu64) << 12);
-        w[2] = (words[1] >> 40) | ((words[2] & 0xFFFFFFFu64) << 24);
-        w[3] = (words[2] >> 28) | ((words[3] & 0xFFFFu64) << 36);
-        w[4] = words[3] >> 16;
+    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
+
+        let res = Self::from_words_unchecked(words);
 
         // Alternatively we can subtract modulus and check if we end up with a nonzero borrow,
         // like in the previous version. Check which if faster.
         let overflow =
-            w[4].ct_eq(&0x0FFFFFFFFFFFFu64)
-            & (w[3] & w[2] & w[1]).ct_eq(&0xFFFFFFFFFFFFFu64)
-            & Choice::from(if w[0] >= 0xFFFFEFFFFFC2Fu64 { 1u8 } else { 0u8 }); // FIXME: make constant time
+            res.0[4].ct_eq(&0x0FFFFFFFFFFFFu64)
+            & (res.0[3] & res.0[2] & res.0[1]).ct_eq(&0xFFFFFFFFFFFFFu64)
+            & Choice::from(if res.0[0] >= 0xFFFFEFFFFFC2Fu64 { 1u8 } else { 0u8 }); // FIXME: make constant time
 
-        debug_assert!(verify_bits(w[0], 52));
-        debug_assert!(verify_bits(w[1], 52));
-        debug_assert!(verify_bits(w[2], 52));
-        debug_assert!(verify_bits(w[3], 52));
-        debug_assert!(verify_bits(w[4], 48));
+        debug_assert!(verify_bits(res.0[0], 52));
+        debug_assert!(verify_bits(res.0[1], 52));
+        debug_assert!(verify_bits(res.0[2], 52));
+        debug_assert!(verify_bits(res.0[3], 52));
+        debug_assert!(verify_bits(res.0[4], 48));
 
-        CtOption::new(FieldElement(w), !overflow)
+        CtOption::new(res, !overflow)
     }
 
-    /// Determine if this `FieldElement` is zero.
+    /// Determine if this `FieldElement5x52` is zero.
     ///
     /// # Returns
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&FieldElement::zero())
+        self.ct_eq(&FieldElement5x52::zero())
     }
 
-    /// Determine if this `FieldElement` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement5x52` is odd in the SEC-1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///
@@ -286,18 +290,19 @@ impl FieldElement {
         (self.0[0] as u8 & 1).into()
     }
 
-    pub const fn negate(&self, magnitude: u64) -> Self {
-        let r0 = 0xFFFFEFFFFFC2Fu64 * 2 * (magnitude + 1) - self.0[0];
-        let r1 = 0xFFFFFFFFFFFFFu64 * 2 * (magnitude + 1) - self.0[1];
-        let r2 = 0xFFFFFFFFFFFFFu64 * 2 * (magnitude + 1) - self.0[2];
-        let r3 = 0xFFFFFFFFFFFFFu64 * 2 * (magnitude + 1) - self.0[3];
-        let r4 = 0x0FFFFFFFFFFFFu64 * 2 * (magnitude + 1) - self.0[4];
-        FieldElement([r0, r1, r2, r3, r4])
+    pub const fn negate(&self, magnitude: u32) -> Self {
+        let m = (magnitude + 1) as u64;
+        let r0 = 0xFFFFEFFFFFC2Fu64 * 2 * m - self.0[0];
+        let r1 = 0xFFFFFFFFFFFFFu64 * 2 * m - self.0[1];
+        let r2 = 0xFFFFFFFFFFFFFu64 * 2 * m - self.0[2];
+        let r3 = 0xFFFFFFFFFFFFFu64 * 2 * m - self.0[3];
+        let r4 = 0x0FFFFFFFFFFFFu64 * 2 * m - self.0[4];
+        FieldElement5x52([r0, r1, r2, r3, r4])
     }
 
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
-        FieldElement([
+        FieldElement5x52([
             self.0[0] + rhs.0[0],
             self.0[1] + rhs.0[1],
             self.0[2] + rhs.0[2],
@@ -311,13 +316,14 @@ impl FieldElement {
         self.add(self)
     }
 
-    pub const fn mul_single(&self, rhs: u64) -> Self {
-        FieldElement([
-            self.0[0] * rhs,
-            self.0[1] * rhs,
-            self.0[2] * rhs,
-            self.0[3] * rhs,
-            self.0[4] * rhs,
+    pub const fn mul_single(&self, rhs: u32) -> Self {
+        let rhs_u64 = rhs as u64;
+        FieldElement5x52([
+            self.0[0] * rhs_u64,
+            self.0[1] * rhs_u64,
+            self.0[2] * rhs_u64,
+            self.0[3] * rhs_u64,
+            self.0[4] * rhs_u64,
             ])
     }
 
@@ -454,7 +460,7 @@ impl FieldElement {
         //debug_assert!(verify_bits(r4, 49));
         // [r4 r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
 
-        FieldElement([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
+        FieldElement5x52([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
     }
 
     /// Returns self * self mod p
@@ -581,6 +587,13 @@ impl FieldElement {
         debug_assert!(verify_bits_128(r4, 49));
         // [r4 r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
 
-        FieldElement([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
+        FieldElement5x52([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
+    }
+}
+
+
+impl Default for FieldElement5x52 {
+    fn default() -> Self {
+        Self::zero()
     }
 }
