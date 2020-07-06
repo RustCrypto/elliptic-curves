@@ -4,6 +4,11 @@ use super::util::{verify_bits, verify_bits_128};
 #[cfg(feature = "getrandom")]
 use getrandom::getrandom;
 
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
+#[cfg(test)]
+use super::util::{u64_array_to_biguint, biguint_to_u64_array};
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement5x52(pub(crate) [u64; 5]);
@@ -595,5 +600,22 @@ impl FieldElement5x52 {
 impl Default for FieldElement5x52 {
     fn default() -> Self {
         Self::zero()
+    }
+}
+
+
+#[cfg(test)]
+impl From<&BigUint> for FieldElement5x52 {
+    fn from(x: &BigUint) -> Self {
+        let words = biguint_to_u64_array(x);
+        FieldElement5x52::from_words(words).unwrap()
+    }
+}
+
+
+#[cfg(test)]
+impl ToBigUint for FieldElement5x52 {
+    fn to_biguint(&self) -> Option<BigUint> {
+        Some(u64_array_to_biguint(&(self.to_words())))
     }
 }

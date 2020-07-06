@@ -1,8 +1,13 @@
 //! Scalar field arithmetic.
 
 use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Shr};
+
+#[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
+#[cfg(test)]
 use num_traits::cast::{ToPrimitive};
+#[cfg(test)]
+use super::util::{u64_array_to_biguint, biguint_to_u64_array};
 
 use core::{convert::TryInto, ops::Neg};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -119,17 +124,25 @@ impl From<u32> for Scalar {
 }
 
 
+#[cfg(test)]
 impl From<&BigUint> for Scalar {
     fn from(x: &BigUint) -> Self {
-        let mask = BigUint::from(u64::MAX);
-        let w0 = (x & &mask).to_u64().unwrap();
-        let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
-        let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
-        let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
-        Scalar::from_words([w0, w1, w2, w3]).unwrap()
+        let words = biguint_to_u64_array(x);
+        debug_assert!(x < &Scalar::modulus_as_biguint());
+        Scalar::from_words(words).unwrap()
     }
 }
 
+
+#[cfg(test)]
+impl ToBigUint for Scalar {
+    fn to_biguint(&self) -> Option<BigUint> {
+        Some(u64_array_to_biguint(&(self.0)))
+    }
+}
+
+
+#[cfg(test)]
 impl From<&BigUint> for WideScalar {
     fn from(x: &BigUint) -> Self {
         let mask = BigUint::from(u64::MAX);
@@ -210,13 +223,6 @@ impl Scalar {
         let (_, borrow) = sbb(self.0[2], FRAC_MODULUS_2[2], borrow);
         let (_, borrow) = sbb(self.0[3], FRAC_MODULUS_2[3], borrow);
         (borrow & 1).ct_eq(&0)
-    }
-
-    pub fn to_biguint(&self) -> BigUint {
-        self.0[0].to_biguint().unwrap()
-            + (self.0[1].to_biguint().unwrap() << 64)
-            + (self.0[2].to_biguint().unwrap() << 128)
-            + (self.0[3].to_biguint().unwrap() << 192)
     }
 
     // FIXME: use subtle
@@ -362,6 +368,11 @@ impl Scalar {
         }
 
         Scalar(res)
+    }
+
+    #[cfg(test)]
+    pub fn modulus_as_biguint() -> BigUint {
+        Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 }
 
@@ -610,8 +621,9 @@ impl Zeroize for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, WideScalar, FRAC_MODULUS_2, LIMBS, MODULUS};
+    use crate::arithmetic::util::{u64_array_to_biguint};
     use proptest::{prelude::*};
-    use num_bigint::{BigUint, ToBigUint};
+    use num_bigint::{ToBigUint};
 
     /// n - 1
     const MODULUS_MINUS_ONE: [u64; LIMBS] = [MODULUS[0] - 1, MODULUS[1], MODULUS[2], MODULUS[3]];
@@ -656,25 +668,16 @@ mod tests {
         assert_eq!(modulus_minus_one_neg.0, Scalar::one().0);
     }
 
-    fn words_to_biguint(words: &[u64; 4]) -> BigUint {
-        words[0].to_biguint().unwrap()
-            + (words[1].to_biguint().unwrap() << 64)
-            + (words[2].to_biguint().unwrap() << 128)
-            + (words[3].to_biguint().unwrap() << 192)
-    }
-
-    fn scalar_modulus() -> BigUint {
-        words_to_biguint(&MODULUS)
-    }
-
     prop_compose! {
-        fn scalar()(words in any::<[u64; 4]>()) -> BigUint {
-            let mut res = words_to_biguint(&words);
-            let m = scalar_modulus();
+        fn scalar()(words in any::<[u64; 4]>()) -> Scalar {
+            let mut res = u64_array_to_biguint(&words);
+            let m = Scalar::modulus_as_biguint();
+            // Modulus is 256 bit long, same as the maximum `res`,
+            // so this is guaranteed to land us in the correct range.
             if res >= m {
                 res -= m;
             }
-            res
+            Scalar::from(&res)
         }
     }
 
@@ -682,36 +685,35 @@ mod tests {
 
         #[test]
         fn fuzzy_mul_wide(a in scalar(), b in scalar()) {
-            let a_s = Scalar::from(&a);
-            let b_s = Scalar::from(&b);
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+            let res_bi = &a_bi * &b_bi;
 
-            let res_ref_bi = &a * &b;
-            let res_ref = WideScalar::from(&res_ref_bi);
-            let res_test = a_s.mul_wide(&b_s);
+            let res_ref = WideScalar::from(&res_bi);
+            let res_test = a.mul_wide(&b);
 
             assert_eq!(res_ref, res_test);
         }
 
-
         #[test]
         fn fuzzy_mul(a in scalar(), b in scalar()) {
-            let a_s = Scalar::from(&a);
-            let b_s = Scalar::from(&b);
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
 
-            let res_ref_bi = (&a * &b) % &scalar_modulus();
-            let res_ref = Scalar::from(&res_ref_bi);
-            let res_test = a_s.mul(&b_s);
+            let res_bi = (&a_bi * &b_bi) % &Scalar::modulus_as_biguint();
+            let res_ref = Scalar::from(&res_bi);
+            let res_test = a.mul(&b);
 
             assert_eq!(res_ref, res_test);
         }
 
         #[test]
         fn fuzzy_rshift(a in scalar(), b in 0usize..512) {
-            let a_s = Scalar::from(&a);
+            let a_bi = a.to_biguint().unwrap();
 
-            let res_ref_bi = &a >> b;
-            let res_ref = Scalar::from(&res_ref_bi);
-            let res_test = a_s >> b;
+            let res_bi = &a_bi >> b;
+            let res_ref = Scalar::from(&res_bi);
+            let res_test = a >> b;
 
             assert_eq!(res_ref, res_test);
         }

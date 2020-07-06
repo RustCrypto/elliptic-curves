@@ -1,5 +1,10 @@
 //! Helper functions.
 
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
+#[cfg(test)]
+use num_traits::cast::{ToPrimitive};
+
 /// Computes a - (b + borrow), returning the result along with the new borrow.
 #[inline(always)]
 pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
@@ -15,4 +20,24 @@ pub fn verify_bits(x: u64, b: u64) -> bool {
 
 pub fn verify_bits_128(x: u128, b: u64) -> bool {
     (x >> b) == 0
+}
+
+
+#[cfg(test)]
+pub fn u64_array_to_biguint(words: &[u64; 4]) -> BigUint {
+    words[0].to_biguint().unwrap()
+        + (words[1].to_biguint().unwrap() << 64)
+        + (words[2].to_biguint().unwrap() << 128)
+        + (words[3].to_biguint().unwrap() << 192)
+}
+
+
+#[cfg(test)]
+pub fn biguint_to_u64_array(x: &BigUint) -> [u64; 4] {
+    let mask = BigUint::from(u64::MAX);
+    let w0 = (x & &mask).to_u64().unwrap();
+    let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
+    let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
+    let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
+    [w0, w1, w2, w3]
 }

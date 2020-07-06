@@ -5,10 +5,13 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "field-5x52")]
 pub use super::field_5x52::FieldElement5x52 as FieldElementImpl;
 
-
 #[cfg(debug_assertions)]
 #[cfg(feature = "field-5x52")]
 use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
+
+#[cfg(debug_assertions)]
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
 
 
 #[cfg(debug_assertions)]
@@ -165,5 +168,24 @@ impl FieldElementImpl {
 impl Default for FieldElementImpl {
     fn default() -> Self {
         Self::zero()
+    }
+}
+
+
+#[cfg(debug_assertions)]
+#[cfg(test)]
+impl From<&BigUint> for FieldElementImpl {
+    fn from(x: &BigUint) -> Self {
+        Self::new_normalized(&FieldElementUnsafeImpl::from(x))
+    }
+}
+
+
+#[cfg(debug_assertions)]
+#[cfg(test)]
+impl ToBigUint for FieldElementImpl {
+    fn to_biguint(&self) -> Option<BigUint> {
+        debug_assert!(self.normalized);
+        self.value.to_biguint()
     }
 }

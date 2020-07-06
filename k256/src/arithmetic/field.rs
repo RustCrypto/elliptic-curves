@@ -7,6 +7,8 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "rand")]
 use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
 
 pub use super::field_impl::{FieldElementImpl};
 
@@ -223,6 +225,11 @@ impl FieldElement {
             (sqrt.mul(&sqrt)).normalize().ct_eq(&a.normalize()), // Only return Some if it's the square root.
         )
     }
+
+    #[cfg(test)]
+    pub fn modulus_as_biguint() -> BigUint {
+        Self::one().negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
+    }
 }
 
 
@@ -302,14 +309,30 @@ impl MulAssign<FieldElement> for FieldElement {
 
 
 #[cfg(test)]
+impl From<&BigUint> for FieldElement {
+    fn from(x: &BigUint) -> Self {
+        debug_assert!(x < &Self::modulus_as_biguint());
+        Self(FieldElementImpl::from(x))
+    }
+}
+
+
+#[cfg(test)]
+impl ToBigUint for FieldElement {
+    fn to_biguint(&self) -> Option<BigUint> {
+        self.normalize().0.to_biguint()
+    }
+}
+
+
+#[cfg(test)]
 mod tests {
     use proptest::{prelude::*};
-    use num_bigint::{BigUint, ToBigUint};
-    use num_traits::cast::{ToPrimitive};
-    use num_traits::{Zero};
+    use num_bigint::{ToBigUint};
 
     use super::FieldElement;
     use crate::test_vectors::field::DBL_TEST_VECTORS;
+    use crate::arithmetic::util::u64_array_to_biguint;
 
     #[test]
     fn zero_is_additive_identity() {
@@ -410,44 +433,16 @@ mod tests {
         assert_eq!(four.sqrt().unwrap().normalize(), two.normalize());
     }
 
-    fn field_element_modulus() -> BigUint {
-        (1.to_biguint().unwrap() << 256)
-        - (1.to_biguint().unwrap() << 32)
-        - (977.to_biguint().unwrap())
-    }
-
-    impl FieldElement {
-
-        fn from_biguint(x: &BigUint) -> Self {
-            let mask = BigUint::from(u64::MAX);
-            let w0 = (x & &mask).to_u64().unwrap();
-            let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
-            let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
-            let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
-            FieldElement::from_words([w0, w1, w2, w3]).unwrap()
-        }
-
-        fn to_biguint(&self) -> BigUint {
-            let words = self.to_words();
-            let res = words[0].to_biguint().unwrap()
-                    + (words[1].to_biguint().unwrap() << 64)
-                    + (words[2].to_biguint().unwrap() << 128)
-                    + (words[3].to_biguint().unwrap() << 192);
-            res
-        }
-    }
-
     prop_compose! {
-        fn field_element()(words in any::<[u64; 4]>()) -> BigUint {
-            let mut res = words[0].to_biguint().unwrap()
-                        + (words[1].to_biguint().unwrap() << 64)
-                        + (words[2].to_biguint().unwrap() << 128)
-                        + (words[3].to_biguint().unwrap() << 192);
-            let m = field_element_modulus();
+        fn field_element()(words in any::<[u64; 4]>()) -> FieldElement {
+            let mut res = u64_array_to_biguint(&words);
+            let m = FieldElement::modulus_as_biguint();
+            // Modulus is 256 bit long, same as the maximum `res`,
+            // so this is guaranteed to land us in the correct range.
             if res >= m {
                 res -= m;
             }
-            res
+            FieldElement::from(&res)
         }
     }
 
@@ -458,11 +453,11 @@ mod tests {
             a in field_element(),
             b in field_element()
         ) {
-            let res_ref_bi = (&a + &b) % field_element_modulus();
-            let res_ref = FieldElement::from_biguint(&res_ref_bi);
-            let a_f = FieldElement::from_biguint(&a);
-            let b_f = FieldElement::from_biguint(&b);
-            let res_test = (a_f + &b_f).normalize();
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+            let res_bi = (&a_bi + &b_bi) % FieldElement::modulus_as_biguint();
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = (&a + &b).normalize();
             assert_eq!(res_test, res_ref);
         }
 
@@ -471,11 +466,11 @@ mod tests {
             a in field_element(),
             b in field_element()
         ) {
-            let res_ref_bi = (&a * &b) % field_element_modulus();
-            let res_ref = FieldElement::from_biguint(&res_ref_bi);
-            let a_f = FieldElement::from_biguint(&a);
-            let b_f = FieldElement::from_biguint(&b);
-            let res_test = (a_f * &b_f).normalize();
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+            let res_bi = (&a_bi * &b_bi) % FieldElement::modulus_as_biguint();
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = (&a * &b).normalize();
             assert_eq!(res_test, res_ref);
         }
 
@@ -483,10 +478,10 @@ mod tests {
         fn fuzzy_square(
             a in field_element()
         ) {
-            let res_ref_bi = (&a * &a) % field_element_modulus();
-            let res_ref = FieldElement::from_biguint(&res_ref_bi);
-            let a_f = FieldElement::from_biguint(&a);
-            let res_test = a_f.square().normalize();
+            let a_bi = a.to_biguint().unwrap();
+            let res_bi = (&a_bi * &a_bi) % FieldElement::modulus_as_biguint();
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = a.square().normalize();
             assert_eq!(res_test, res_ref);
         }
 
@@ -494,11 +489,11 @@ mod tests {
         fn fuzzy_negate(
             a in field_element()
         ) {
-            let m = field_element_modulus();
-            let res_ref_bi = (&m - &a) % &m;
-            let res_ref = FieldElement::from_biguint(&res_ref_bi);
-            let a_f = FieldElement::from_biguint(&a);
-            let res_test = a_f.negate(1).normalize();
+            let m = FieldElement::modulus_as_biguint();
+            let a_bi = a.to_biguint().unwrap();
+            let res_bi = (&m - &a_bi) % &m;
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = a.negate(1).normalize();
             assert_eq!(res_test, res_ref);
         }
 
@@ -506,29 +501,29 @@ mod tests {
         fn fuzzy_sqrt(
             a in field_element()
         ) {
-            let m = field_element_modulus();
-            let sqr_bi = (&a * &a) % &m;
-            let sqr_f = FieldElement::from_biguint(&sqr_bi);
-            let res_ref1 = FieldElement::from_biguint(&a);
-            let possible_sqrt = (&m - &a) % &m;
-            let res_ref2 = FieldElement::from_biguint(&possible_sqrt);
-            let res_test = sqr_f.sqrt().unwrap().normalize();
+            let m = FieldElement::modulus_as_biguint();
+            let a_bi = a.to_biguint().unwrap();
+            let sqr_bi = (&a_bi * &a_bi) % &m;
+            let sqr = FieldElement::from(&sqr_bi);
+
+            let res_ref1 = a;
+            let possible_sqrt = (&m - &a_bi) % &m;
+            let res_ref2 = FieldElement::from(&possible_sqrt);
+            let res_test = sqr.sqrt().unwrap().normalize();
             // FIXME: is there a rule which square root is returned?
             assert!(res_test == res_ref1 || res_test == res_ref2);
         }
 
         #[test]
         fn fuzzy_invert(
-            mut a in field_element()
+            a in field_element()
         ) {
-            if (&a).is_zero() {
-                a = 1.to_biguint().unwrap();
-            }
-            let a_f = FieldElement::from_biguint(&a);
-            let inv_f = a_f.invert().unwrap().normalize();
-            let inv = inv_f.to_biguint();
-            let m = field_element_modulus();
-            assert_eq!((&inv * &a) % &m, 1.to_biguint().unwrap());
+            let a = if bool::from(a.is_zero()) { FieldElement::one() } else { a };
+            let a_bi = a.to_biguint().unwrap();
+            let inv = a.invert().unwrap().normalize();
+            let inv_bi = inv.to_biguint().unwrap();
+            let m = FieldElement::modulus_as_biguint();
+            assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
         }
     }
 }
