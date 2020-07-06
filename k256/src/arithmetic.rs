@@ -845,9 +845,13 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "nightly-bench")]
     extern crate test;
+
+    #[cfg(feature = "nightly-bench")]
     use test::Bencher;
 
+    #[cfg(feature = "nightly-bench")]
     #[bench]
     fn bench_mul(b: &mut Bencher) {
         let p = ProjectivePoint::generator();

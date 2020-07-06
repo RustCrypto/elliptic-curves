@@ -12,7 +12,8 @@
 #![doc(html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png")]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
-#![feature(test)]
+
+#![cfg_attr(feature = "nightly-bench", feature(test))]
 
 #[cfg(feature = "arithmetic")]
 mod arithmetic;

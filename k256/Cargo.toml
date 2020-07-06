@@ -34,6 +34,7 @@ proptest = "0.10"
 default = ["arithmetic", "std", "field-5x52"]
 arithmetic = []
 field-5x52 = []
+nightly-bench = []
 rand = ["elliptic-curve/rand_core"]
 test-vectors = []
 std = ["elliptic-curve/std"]
