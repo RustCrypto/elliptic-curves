@@ -4,7 +4,11 @@
 mod field_5x52;
 mod field_impl;
 mod field;
+
+#[cfg(feature = "scalar-4x64")]
+mod scalar_4x64;
 pub(crate) mod scalar;
+
 mod util;
 
 use core::convert::TryInto;
@@ -810,7 +814,7 @@ mod tests {
         for (k, coords) in ADD_TEST_VECTORS
             .iter()
             .enumerate()
-            .map(|(k, coords)| (Scalar::from(k as u64 + 1), *coords))
+            .map(|(k, coords)| (Scalar::from(k as u32 + 1), *coords))
             .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
                 (
                     Scalar::from_bytes(hex::decode(k).unwrap()[..].try_into().unwrap()).unwrap(),
