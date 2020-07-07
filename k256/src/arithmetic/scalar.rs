@@ -9,7 +9,7 @@ use num_traits::cast::{ToPrimitive};
 #[cfg(test)]
 use super::util::{u64_array_to_biguint, biguint_to_u64_array};
 
-#[cfg(feature = "scalar-4x64")]
+#[cfg(not(feature = "scalar-32bit"))]
 pub use super::scalar_4x64::Scalar4x64 as ScalarImpl;
 
 use core::{convert::TryInto, ops::Neg};

@@ -29,11 +29,10 @@ num-bigint = "0.3"
 num-traits = "0.2"
 
 [features]
-default = ["arithmetic", "std", "field-5x52", "scalar-4x64"]
+default = ["arithmetic", "std"]
 arithmetic = []
-field-5x52 = []
-field-10x26 = []
-scalar-4x64 = []
+field-32bit = []
+scalar-32bit = []
 nightly-bench = []
 rand = ["elliptic-curve/rand_core"]
 test-vectors = []
