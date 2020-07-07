@@ -2,6 +2,10 @@
 
 #[cfg(feature = "field-5x52")]
 mod field_5x52;
+
+#[cfg(feature = "field-10x26")]
+mod field_10x26;
+
 mod field_impl;
 mod field;
 
@@ -287,6 +291,7 @@ impl ProjectivePoint {
         let xx = self.x * &other.x; // m1
         let yy = self.y * &other.y; // m1
         let zz = self.z * &other.z; // m1
+
         let n_xx_yy = (xx + &yy).negate(2); // m3
         let n_yy_zz = (yy + &zz).negate(2); // m3
         let n_xx_zz = (xx + &zz).negate(2); // m3
@@ -301,11 +306,11 @@ impl ProjectivePoint {
         let yy_m_bzz3 = yy + &bzz3.negate(1); // m3
         let yy_p_bzz3 = yy + &bzz3; // m2
 
-        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE); // m28
+        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak(); // m1
         let byz3 = (byz.double() + &byz).normalize_weak(); // m1
 
         let xx3 = xx.double() + &xx; // m3
-        let bxx9 = (xx3.double() + &xx3).mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak(); // m1
+        let bxx9 = (xx3.double() + &xx3).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak(); // m1
 
         let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
         let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
@@ -337,11 +342,11 @@ impl ProjectivePoint {
         let yy_m_bzz3 = yy + &bzz3.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
 
-        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE);
+        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
         let byz3 = (byz.double() + &byz).normalize_weak();
 
         let xx3 = xx.double() + &xx;
-        let bxx9 = &(xx3.double() + &xx3).mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let bxx9 = &(xx3.double() + &xx3).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
 
         ProjectivePoint {
             x: ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(),
@@ -368,7 +373,7 @@ impl ProjectivePoint {
 
         let yy_zz = yy * &zz; // m1
         let yy_zz8 = yy_zz.double().double().double(); // m8
-        let t = (yy_zz8.double() + &yy_zz8).mul_single(CURVE_EQUATION_B_SINGLE);
+        let t = (yy_zz8.double() + &yy_zz8).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE);
 
         ProjectivePoint {
             x: xy2 * &yy_m_bzz9,

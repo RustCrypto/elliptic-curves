@@ -14,30 +14,6 @@ use super::util::{u64_array_to_biguint, biguint_to_u64_array};
 pub struct FieldElement5x52(pub(crate) [u64; 5]);
 
 
-impl ConditionallySelectable for FieldElement5x52 {
-    fn conditional_select(a: &FieldElement5x52, b: &FieldElement5x52, choice: Choice) -> FieldElement5x52 {
-        FieldElement5x52([
-            u64::conditional_select(&a.0[0], &b.0[0], choice),
-            u64::conditional_select(&a.0[1], &b.0[1], choice),
-            u64::conditional_select(&a.0[2], &b.0[2], choice),
-            u64::conditional_select(&a.0[3], &b.0[3], choice),
-            u64::conditional_select(&a.0[4], &b.0[4], choice),
-        ])
-    }
-}
-
-
-impl ConstantTimeEq for FieldElement5x52 {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0[0].ct_eq(&other.0[0])
-            & self.0[1].ct_eq(&other.0[1])
-            & self.0[2].ct_eq(&other.0[2])
-            & self.0[3].ct_eq(&other.0[3])
-            & self.0[4].ct_eq(&other.0[4])
-    }
-}
-
-
 impl FieldElement5x52 {
     /// Returns the zero element.
     pub const fn zero() -> FieldElement5x52 {
@@ -113,6 +89,7 @@ impl FieldElement5x52 {
 
         // Alternatively we can subtract modulus and check if we end up with a nonzero borrow,
         // like in the previous version. Check which if faster.
+        // TODO: make sure it's constant-time
         let overflow =
             w[4].ct_eq(&0x0FFFFFFFFFFFFu64)
             & (w[3] & w[2] & w[1]).ct_eq(&0xFFFFFFFFFFFFFu64)
@@ -233,18 +210,11 @@ impl FieldElement5x52 {
 
     pub fn to_words(&self) -> [u64; 4] {
         let mut ret = [0u64; 4];
-        let x = self.normalize();
 
-        debug_assert!(verify_bits(x.0[0], 52));
-        debug_assert!(verify_bits(x.0[1], 52));
-        debug_assert!(verify_bits(x.0[2], 52));
-        debug_assert!(verify_bits(x.0[3], 52));
-        debug_assert!(verify_bits(x.0[4], 48));
-
-        ret[0] = x.0[0] | (x.0[1] << 52);
-        ret[1] = (x.0[1] >> 12) | (x.0[2] << 40);
-        ret[2] = (x.0[2] >> 24) | (x.0[3] << 28);
-        ret[3] = (x.0[3] >> 36) | (x.0[4] << 16);
+        ret[0] = self.0[0] | (self.0[1] << 52);
+        ret[1] = (self.0[1] >> 12) | (self.0[2] << 40);
+        ret[2] = (self.0[2] >> 24) | (self.0[3] << 28);
+        ret[3] = (self.0[3] >> 36) | (self.0[4] << 16);
         ret
     }
 
@@ -294,6 +264,10 @@ impl FieldElement5x52 {
     pub fn is_odd(&self) -> Choice {
         (self.0[0] as u8 & 1).into()
     }
+
+    // The maximum number `m` for which `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64`
+    #[cfg(debug_assertions)]
+    pub const fn max_magnitude() -> u32 { 2047u32 }
 
     pub const fn negate(&self, magnitude: u32) -> Self {
         let m = (magnitude + 1) as u64;
@@ -593,6 +567,30 @@ impl FieldElement5x52 {
         // [r4 r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
 
         FieldElement5x52([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
+    }
+}
+
+
+impl ConditionallySelectable for FieldElement5x52 {
+    fn conditional_select(a: &FieldElement5x52, b: &FieldElement5x52, choice: Choice) -> FieldElement5x52 {
+        FieldElement5x52([
+            u64::conditional_select(&a.0[0], &b.0[0], choice),
+            u64::conditional_select(&a.0[1], &b.0[1], choice),
+            u64::conditional_select(&a.0[2], &b.0[2], choice),
+            u64::conditional_select(&a.0[3], &b.0[3], choice),
+            u64::conditional_select(&a.0[4], &b.0[4], choice),
+        ])
+    }
+}
+
+
+impl ConstantTimeEq for FieldElement5x52 {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0[0].ct_eq(&other.0[0])
+            & self.0[1].ct_eq(&other.0[1])
+            & self.0[2].ct_eq(&other.0[2])
+            & self.0[3].ct_eq(&other.0[3])
+            & self.0[4].ct_eq(&other.0[4])
     }
 }
 

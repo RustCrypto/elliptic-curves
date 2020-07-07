@@ -5,9 +5,17 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "field-5x52")]
 pub use super::field_5x52::FieldElement5x52 as FieldElementImpl;
 
+#[cfg(not(debug_assertions))]
+#[cfg(feature = "field-10x26")]
+pub use super::field_10x26::FieldElement10x26 as FieldElementImpl;
+
 #[cfg(debug_assertions)]
 #[cfg(feature = "field-5x52")]
 use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
+
+#[cfg(debug_assertions)]
+#[cfg(feature = "field-10x26")]
+use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
 
 #[cfg(debug_assertions)]
 #[cfg(test)]
@@ -68,7 +76,7 @@ impl FieldElementImpl {
     }
 
     fn new(value: &FieldElementUnsafeImpl, magnitude: u32) -> Self {
-        debug_assert!(magnitude < 2048);
+        debug_assert!(magnitude <= FieldElementUnsafeImpl::max_magnitude());
         Self {
             value: *value,
             magnitude: magnitude,
@@ -108,8 +116,7 @@ impl FieldElementImpl {
     }
 
     pub fn to_words(&self) -> [u64; 4] {
-        debug_assert!(self.normalized);
-        self.value.to_words()
+        self.normalize().value.to_words()
     }
 
     pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
@@ -134,19 +141,27 @@ impl FieldElementImpl {
 
     pub fn negate(&self, magnitude: u32) -> Self {
         debug_assert!(self.magnitude <= magnitude);
-        Self::new(&(self.value.negate(magnitude)), magnitude + 1)
+        let new_magnitude = magnitude + 1;
+        debug_assert!(new_magnitude <= FieldElementUnsafeImpl::max_magnitude());
+        Self::new(&(self.value.negate(magnitude)), new_magnitude)
     }
 
     pub fn add(&self, rhs: &Self) -> Self {
-        Self::new(&(self.value.add(&(rhs.value))), self.magnitude + rhs.magnitude)
+        let new_magnitude = self.magnitude + rhs.magnitude;
+        debug_assert!(new_magnitude <= FieldElementUnsafeImpl::max_magnitude());
+        Self::new(&(self.value.add(&(rhs.value))), new_magnitude)
     }
 
     pub fn double(&self) -> Self {
-        Self::new(&(self.value.double()), self.magnitude * 2)
+        let new_magnitude = self.magnitude * 2;
+        debug_assert!(new_magnitude <= FieldElementUnsafeImpl::max_magnitude());
+        Self::new(&(self.value.double()), new_magnitude)
     }
 
     pub fn mul_single(&self, rhs: u32) -> Self {
-        Self::new(&(self.value.mul_single(rhs)), self.magnitude * rhs)
+        let new_magnitude = self.magnitude * rhs;
+        debug_assert!(new_magnitude <= FieldElementUnsafeImpl::max_magnitude());
+        Self::new(&(self.value.mul_single(rhs)), new_magnitude)
     }
 
     /// Returns self * rhs mod p

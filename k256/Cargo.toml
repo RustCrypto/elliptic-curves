@@ -32,6 +32,7 @@ num-traits = "0.2"
 default = ["arithmetic", "std", "field-5x52", "scalar-4x64"]
 arithmetic = []
 field-5x52 = []
+field-10x26 = []
 scalar-4x64 = []
 nightly-bench = []
 rand = ["elliptic-curve/rand_core"]
