@@ -29,10 +29,11 @@ proptest = "0.10"
 [features]
 default = ["arithmetic", "std"]
 arithmetic = []
+legacy = ["arithmetic", "elliptic-curve/legacy"]
 rand = ["elliptic-curve/rand_core"]
 test-vectors = []
 std = ["elliptic-curve/std"]
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["arithmetic", "rand", "test-vectors", "std"]
 rustdoc-args = ["--cfg", "docsrs"]

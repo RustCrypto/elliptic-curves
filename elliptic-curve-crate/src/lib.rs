@@ -27,8 +27,9 @@ pub use rand_core;
 pub mod error;
 pub mod secret_key;
 
-pub use generic_array::{self, typenum::consts};
-pub use subtle;
+#[cfg(feature = "legacy")]
+#[cfg_attr(docsrs, doc(cfg(feature = "legacy")))]
+pub mod legacy;
 
 // TODO(tarcieri): other curve forms
 #[cfg(feature = "weierstrass")]
@@ -36,6 +37,8 @@ pub use subtle;
 pub mod weierstrass;
 
 pub use self::{error::Error, secret_key::SecretKey};
+pub use generic_array::{self, typenum::consts};
+pub use subtle;
 
 /// Byte array containing a serialized scalar value (i.e. an integer)
 pub type ScalarBytes<Size> = generic_array::GenericArray<u8, Size>;

@@ -15,6 +15,9 @@ use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint
 use field::{FieldElement, MODULUS};
 use scalar::Scalar;
 
+#[cfg(feature = "legacy")]
+use elliptic_curve::{consts::U32, legacy};
+
 #[cfg(feature = "rand")]
 use crate::SecretKey;
 
@@ -189,6 +192,19 @@ impl Neg for AffinePoint {
             x: self.x,
             y: -self.y,
         }
+    }
+}
+
+#[cfg(feature = "legacy")]
+impl legacy::AffineCoordinates for AffinePoint {
+    type FieldElementSize = U32;
+
+    fn x(&self) -> legacy::FieldElementBytes<U32> {
+        self.x.to_bytes().into()
+    }
+
+    fn y(&self) -> legacy::FieldElementBytes<U32> {
+        self.y.to_bytes().into()
     }
 }
 

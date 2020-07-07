@@ -37,10 +37,10 @@ default-features = false
 hex = "0.4"
 
 [features]
-default = []
+legacy = []
 weierstrass = []
 std = []
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["weierstrass", "std"]
 rustdoc-args = ["--cfg", "docsrs"]
