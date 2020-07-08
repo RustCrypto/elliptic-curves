@@ -864,22 +864,6 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "nightly-bench")]
-    extern crate test;
-
-    #[cfg(feature = "nightly-bench")]
-    use test::Bencher;
-
-    #[cfg(feature = "nightly-bench")]
-    #[bench]
-    fn bench_mul(b: &mut Bencher) {
-        let p = ProjectivePoint::generator();
-        let m = hex::decode(&MUL_BASE_TEST_VECTORS[0].m).unwrap();
-        let s = Scalar::from_bytes(m[..].try_into().unwrap()).unwrap();
-
-        b.iter(|| &p * &s);
-    }
-
     #[cfg(feature = "rand")]
     #[test]
     fn generate_secret_key() {
