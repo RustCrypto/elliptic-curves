@@ -313,11 +313,6 @@ impl Scalar4x64 {
         Self(res)
     }
 
-    #[cfg(test)]
-    pub fn modulus_as_biguint() -> BigUint {
-        Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
-    }
-
     #[cfg(feature = "zeroize")]
     pub fn zeroize(&mut self) {
         self.0.as_mut().zeroize()
@@ -343,7 +338,6 @@ impl From<u32> for Scalar4x64 {
 impl From<&BigUint> for Scalar4x64 {
     fn from(x: &BigUint) -> Self {
         let words = biguint_to_u64_array(x);
-        debug_assert!(x < &Scalar4x64::modulus_as_biguint());
         Scalar4x64::from_words(words).unwrap()
     }
 }

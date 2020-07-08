@@ -11,6 +11,10 @@ mod field;
 
 #[cfg(not(feature = "scalar-32bit"))]
 mod scalar_4x64;
+
+#[cfg(feature = "scalar-32bit")]
+mod scalar_8x32;
+
 pub(crate) mod scalar;
 
 mod util;

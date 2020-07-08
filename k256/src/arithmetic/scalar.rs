@@ -12,12 +12,14 @@ use super::util::{u64_array_to_biguint, biguint_to_u64_array};
 #[cfg(not(feature = "scalar-32bit"))]
 pub use super::scalar_4x64::Scalar4x64 as ScalarImpl;
 
+#[cfg(feature = "scalar-32bit")]
+pub use super::scalar_8x32::Scalar8x32 as ScalarImpl;
+
 use core::{convert::TryInto, ops::Neg};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
-
 
 /// An element in the finite field modulo n.
 #[derive(Clone, Copy, Debug, Default)]
@@ -128,7 +130,6 @@ impl Scalar {
     pub fn zeroize(&mut self) {
         self.0.zeroize()
     }
-
 }
 
 
@@ -355,3 +356,4 @@ mod tests {
         }
     }
 }
+
