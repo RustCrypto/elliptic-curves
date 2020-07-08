@@ -23,7 +23,11 @@ pub const fn sbb32(a: u32, b: u32, borrow: u32) -> (u32, u32) {
 #[cfg(test)]
 #[allow(dead_code)]
 pub fn u64_array_to_biguint(words: &[u64; 4]) -> BigUint {
-    words.iter().enumerate().map(|(i, w)| w.to_biguint().unwrap() << (i * 64)).sum()
+    words
+        .iter()
+        .enumerate()
+        .map(|(i, w)| w.to_biguint().unwrap() << (i * 64))
+        .sum()
 }
 
 #[cfg(test)]
@@ -40,7 +44,11 @@ pub fn biguint_to_u64_array(x: &BigUint) -> [u64; 4] {
 #[cfg(test)]
 #[allow(dead_code)]
 pub fn u32_array_to_biguint(words: &[u32; 8]) -> BigUint {
-    words.iter().enumerate().map(|(i, w)| w.to_biguint().unwrap() << (i * 32)).sum()
+    words
+        .iter()
+        .enumerate()
+        .map(|(i, w)| w.to_biguint().unwrap() << (i * 32))
+        .sum()
 }
 
 #[cfg(test)]

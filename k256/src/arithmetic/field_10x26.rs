@@ -70,8 +70,7 @@ impl FieldElement10x26 {
         // Alternatively we can subtract modulus and check if we end up with a nonzero borrow,
         // like in the previous version. Check which if faster.
         // TODO: make sure it's constant-time
-        let overflow =
-            n9.ct_eq(&0x3FFFFFu32)
+        let overflow = n9.ct_eq(&0x3FFFFFu32)
             & ((n8 & n7 & n6 & n5 & n4 & n3 & n2).ct_eq(&0x3FFFFFFu32))
             & Choice::from(((n1 + 0x40u32 + ((n0 + 0x3D1u32) >> 26)) > 0x3FFFFFFu32) as u8);
 
@@ -268,8 +267,7 @@ impl FieldElement10x26 {
         // Alternatively we can subtract modulus and check if we end up with a nonzero borrow,
         // like in the previous version. Check which if faster.
         // TODO: make sure it's constant-time
-        let overflow =
-            res.0[9].ct_eq(&0x3FFFFFu32)
+        let overflow = res.0[9].ct_eq(&0x3FFFFFu32)
             & ((res.0[8] & res.0[7] & res.0[6] & res.0[5] & res.0[4] & res.0[3] & res.0[2])
                 .ct_eq(&0x3FFFFFFu32))
             & Choice::from(

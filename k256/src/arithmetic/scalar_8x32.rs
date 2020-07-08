@@ -7,7 +7,7 @@ use num_bigint::{BigUint, ToBigUint};
 
 use crate::arithmetic::util::sbb32;
 
-use core::{convert::TryInto};
+use core::convert::TryInto;
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;

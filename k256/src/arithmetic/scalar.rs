@@ -328,7 +328,7 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn generate() {
-        use elliptic_curve::{rand_core::OsRng};
+        use elliptic_curve::rand_core::OsRng;
         let a = Scalar::generate(&mut OsRng);
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);

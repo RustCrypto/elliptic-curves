@@ -5,7 +5,7 @@ use num_bigint::{BigUint, ToBigUint};
 #[cfg(test)]
 use num_traits::cast::ToPrimitive;
 
-use core::{convert::TryInto};
+use core::convert::TryInto;
 
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
