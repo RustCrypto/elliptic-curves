@@ -212,7 +212,7 @@ impl Scalar4x64 {
         // TODO: the original returned overflow here, do we need it?
     }
 
-    pub fn mul_wide(&self, rhs: &Self) -> WideScalar {
+    pub fn mul_wide(&self, rhs: &Self) -> WideScalar8x64 {
         /* 160 bit accumulator. */
 
         let c0 = 0;
@@ -246,7 +246,7 @@ impl Scalar4x64 {
         let (l6, c0, _c1) = (c0, c1, 0);
         let l7 = c0;
 
-        WideScalar([l0, l1, l2, l3, l4, l5, l6, l7])
+        WideScalar8x64([l0, l1, l2, l3, l4, l5, l6, l7])
     }
 
     pub fn mul(&self, rhs: &Self) -> Self {
@@ -374,10 +374,18 @@ impl ConstantTimeEq for Scalar4x64 {
 
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct WideScalar([u64; 8]);
+pub struct WideScalar8x64([u64; 8]);
 
 
-impl WideScalar {
+impl WideScalar8x64 {
+
+    pub fn from_bytes(bytes: &[u8; 64]) -> Self {
+        let mut w = [0u64; 8];
+        for i in 0..8 {
+            w[i] = u64::from_be_bytes(bytes[((7-i)*8)..((7-i)*8+8)].try_into().unwrap());
+        }
+        Self(w)
+    }
 
     pub fn reduce(&self) -> Scalar4x64 {
 
@@ -454,7 +462,7 @@ impl WideScalar {
 
 
 #[cfg(test)]
-impl From<&BigUint> for WideScalar {
+impl From<&BigUint> for WideScalar8x64 {
     fn from(x: &BigUint) -> Self {
         let mask = BigUint::from(u64::MAX);
         let w0 = (x & &mask).to_u64().unwrap();
@@ -465,12 +473,12 @@ impl From<&BigUint> for WideScalar {
         let w5 = ((x >> 320) as BigUint & &mask).to_u64().unwrap();
         let w6 = ((x >> 384) as BigUint & &mask).to_u64().unwrap();
         let w7 = ((x >> 448) as BigUint & &mask).to_u64().unwrap();
-        WideScalar([w0, w1, w2, w3, w4, w5, w6, w7])
+        Self([w0, w1, w2, w3, w4, w5, w6, w7])
     }
 }
 
 
-impl ConstantTimeEq for WideScalar {
+impl ConstantTimeEq for WideScalar8x64 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0[0].ct_eq(&other.0[0])
             & self.0[1].ct_eq(&other.0[1])
@@ -484,7 +492,7 @@ impl ConstantTimeEq for WideScalar {
 }
 
 
-impl PartialEq for WideScalar {
+impl PartialEq for WideScalar8x64 {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }

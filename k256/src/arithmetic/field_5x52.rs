@@ -1,9 +1,6 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use super::util::{verify_bits, verify_bits_128};
 
-#[cfg(feature = "getrandom")]
-use getrandom::getrandom;
-
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 #[cfg(test)]
@@ -24,17 +21,6 @@ impl FieldElement5x52 {
     pub const fn one() -> FieldElement5x52 {
         FieldElement5x52([1, 0, 0, 0, 0])
     }
-
-    /// Returns a uniformly-random element within the field.
-    /// TODO: implement
-    /*#[cfg(feature = "getrandom")]
-    pub fn generate() -> Self {
-        // We reduce a random 512-bit value into a 256-bit field, which results in a
-        // negligible bias from the uniform distribution.
-        let mut buf = [0; 64];
-        getrandom(&mut buf).unwrap();
-        FieldElement5x52::from_bytes_wide(buf)
-    }*/
 
     /// Attempts to parse the given byte array as an SEC-1-encoded field element.
     ///

@@ -11,6 +11,9 @@ use crate::arithmetic::util::sbb32;
 
 use core::{convert::TryInto, ops::Neg};
 
+#[cfg(feature = "zeroize")]
+use zeroize::Zeroize;
+
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
 pub const MODULUS: [u32; 8] = [
@@ -191,7 +194,7 @@ impl Scalar8x32 {
         // TODO: the original returned overflow here, do we need it?
     }
 
-    pub fn mul_wide(&self, rhs: &Self) -> WideScalar {
+    pub fn mul_wide(&self, rhs: &Self) -> WideScalar16x32 {
         /* 96 bit accumulator. */
         let c0 = 0;
         let c1 = 0;
@@ -280,7 +283,7 @@ impl Scalar8x32 {
         debug_assert!(c1 == 0);
         let l15 = c0;
 
-        WideScalar([l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15])
+        WideScalar16x32([l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15])
     }
 
     pub fn mul(&self, rhs: &Self) -> Self {
@@ -473,10 +476,18 @@ fn muladd_fast(a: u32, b: u32, c0: u32, c1: u32) -> (u32, u32) {
 
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct WideScalar([u32; 16]);
+pub struct WideScalar16x32([u32; 16]);
 
 
-impl WideScalar {
+impl WideScalar16x32 {
+
+    pub fn from_bytes(bytes: &[u8; 64]) -> Self {
+        let mut w = [0u32; 16];
+        for i in 0..16 {
+            w[i] = u32::from_be_bytes(bytes[((15-i)*4)..((15-i)*4+4)].try_into().unwrap());
+        }
+        Self(w)
+    }
 
     pub fn reduce(&self) -> Scalar8x32 {
         let n0 = self.0[8];

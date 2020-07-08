@@ -11,15 +11,23 @@ use super::util::{u64_array_to_biguint, biguint_to_u64_array};
 
 #[cfg(not(feature = "scalar-32bit"))]
 pub use super::scalar_4x64::Scalar4x64 as ScalarImpl;
+#[cfg(not(feature = "scalar-32bit"))]
+pub use super::scalar_4x64::WideScalar8x64 as WideScalarImpl;
 
 #[cfg(feature = "scalar-32bit")]
 pub use super::scalar_8x32::Scalar8x32 as ScalarImpl;
+#[cfg(feature = "scalar-32bit")]
+pub use super::scalar_8x32::WideScalar16x32 as WideScalarImpl;
 
 use core::{convert::TryInto, ops::Neg};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
+
+#[cfg(feature = "rand")]
+use elliptic_curve::rand_core::{CryptoRng, RngCore};
+
 
 /// An element in the finite field modulo n.
 #[derive(Clone, Copy, Debug, Default)]
@@ -129,6 +137,16 @@ impl Scalar {
     #[cfg(feature = "zeroize")]
     pub fn zeroize(&mut self) {
         self.0.zeroize()
+    }
+
+    /// Returns a uniformly-random scalar.
+    #[cfg(feature = "rand")]
+    pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+        // We reduce a random 512-bit value into a 256-bit field, which results in a
+        // negligible bias from the uniform distribution.
+        let mut buf = [0; 64];
+        rng.fill_bytes(&mut buf);
+        Scalar(WideScalarImpl::from_bytes(&buf).reduce())
     }
 }
 
