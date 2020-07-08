@@ -65,6 +65,10 @@ impl FieldElement {
         Self(self.0.normalize_weak())
     }
 
+    pub fn normalizes_to_zero(&self) -> Choice {
+        self.0.normalizes_to_zero()
+    }
+
     pub fn mul_single(&self, rhs: u32) -> Self {
         Self(self.0.mul_single(rhs))
     }

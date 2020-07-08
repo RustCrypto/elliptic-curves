@@ -117,6 +117,10 @@ impl FieldElementImpl {
         Self::new_normalized(&self.value.normalize())
     }
 
+    pub fn normalizes_to_zero(&self) -> Choice {
+        self.value.normalizes_to_zero()
+    }
+
     pub fn to_words(&self) -> [u64; 4] {
         self.normalize().value.to_words()
     }

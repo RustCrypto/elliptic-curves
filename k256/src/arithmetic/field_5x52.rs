@@ -144,32 +144,15 @@ impl FieldElement5x52 {
     pub fn normalize(&self) -> Self {
         // TODO: the first part is the same as normalize_weak()
 
-        let mut t0 = self.0[0];
-        let mut t1 = self.0[1];
-        let mut t2 = self.0[2];
-        let mut t3 = self.0[3];
-        let mut t4 = self.0[4];
+        let res = self.normalize_weak();
 
-        // Reduce t4 at the start so there will be at most a single carry from the first pass
-        let x = t4 >> 48;
-        t4 &= 0x0FFFFFFFFFFFFu64;
+        let mut t0 = res.0[0];
+        let mut t1 = res.0[1];
+        let mut t2 = res.0[2];
+        let mut t3 = res.0[3];
+        let mut t4 = res.0[4];
 
-        // The first pass ensures the magnitude is 1, ...
-        t0 += x * 0x1000003D1u64;
-        t1 += t0 >> 52;
-        t0 &= 0xFFFFFFFFFFFFFu64;
-        t2 += t1 >> 52;
-        t1 &= 0xFFFFFFFFFFFFFu64;
-        let mut m = t1;
-        t3 += t2 >> 52;
-        t2 &= 0xFFFFFFFFFFFFFu64;
-        m &= t2;
-        t4 += t3 >> 52;
-        t3 &= 0xFFFFFFFFFFFFFu64;
-        m &= t3;
-
-        // ... except for a possible carry at bit 48 of t4 (i.e. bit 256 of the field element)
-        debug_assert!(t4 >> 49 == 0);
+        let m = t1 & t2 & t3;
 
         // At most a single final reduction is needed; check if the value is >= the field characteristic
         let x = (t4 >> 48 != 0)
@@ -194,6 +177,23 @@ impl FieldElement5x52 {
         t4 &= 0x0FFFFFFFFFFFFu64;
 
         FieldElement5x52([t0, t1, t2, t3, t4])
+    }
+
+    pub fn normalizes_to_zero(&self) -> Choice {
+
+        let res = self.normalize_weak();
+
+        let t0 = res.0[0];
+        let t1 = res.0[1];
+        let t2 = res.0[2];
+        let t3 = res.0[3];
+        let t4 = res.0[4];
+
+        /* z0 tracks a possible raw value of 0, z1 tracks a possible raw value of P */
+        let z0 = t0 | t1 | t2 | t3 | t4;
+        let z1 = (t0 ^ 0x1000003D0u64) & t1 & t2 & t3 & (t4 ^ 0xF000000000000u64);
+
+        Choice::from(((z0 == 0) | (z1 == 0xFFFFFFFFFFFFFu64)) as u8)
     }
 
     pub fn to_words(&self) -> [u64; 4] {

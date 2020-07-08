@@ -67,7 +67,8 @@ impl ConditionallySelectable for AffinePoint {
 
 impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
-        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
+        (self.x.negate(1) + &other.x).normalizes_to_zero() &
+        (self.y.negate(1) + &other.y).normalizes_to_zero()
     }
 }
 
@@ -142,10 +143,9 @@ impl AffinePoint {
                 x.and_then(|x| {
                     y.and_then(|y| {
                         // Check that the point is on the curve
-                        // TODO: there must be some un-normalized comparison
-                        let lhs = (y * &y).normalize();
-                        let rhs = (x * &x * &x + &CURVE_EQUATION_B).normalize();
-                        CtOption::new(AffinePoint { x, y }, lhs.ct_eq(&rhs))
+                        let lhs = (y * &y).negate(1);
+                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
+                        CtOption::new(AffinePoint { x, y }, (lhs + &rhs).normalizes_to_zero())
                     })
                 })
             }
@@ -160,16 +160,6 @@ impl AffinePoint {
     /// Returns a [`PublicKey`] with the SEC-1 uncompressed encoding of this point.
     pub fn to_uncompressed_pubkey(&self) -> PublicKey {
         PublicKey::Uncompressed(self.clone().into())
-    }
-
-    /// Normalize the coordinates of this point.
-    pub fn normalize(&self) -> AffinePoint {
-        // TODO: hide from the user? It is only necessary in tests.
-        // And even that can be avoided by modifying equality check.
-        AffinePoint {
-            x: self.x.normalize(),
-            y: self.y.normalize(),
-        }
     }
 }
 
@@ -449,17 +439,6 @@ impl ProjectivePoint {
 
         acc
     }
-
-    /// Normalize the coordinates of this point.
-    pub fn normalize(&self) -> ProjectivePoint {
-        // TODO: hide from the user? It is only necessary in tests.
-        // And even that can be avoided by modifying equality check.
-        ProjectivePoint {
-            x: self.x.normalize(),
-            y: self.y.normalize(),
-            z: self.z.normalize(),
-        }
-    }
 }
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
@@ -708,7 +687,7 @@ mod tests {
     fn affine_negation() {
         let basepoint = AffinePoint::generator();
 
-        assert_eq!((-(-basepoint)).normalize(), basepoint);
+        assert_eq!((-(-basepoint)), basepoint);
     }
 
     #[test]
@@ -721,7 +700,7 @@ mod tests {
             basepoint_projective,
         );
         assert_eq!(
-            basepoint_projective.to_affine().unwrap().normalize(),
+            basepoint_projective.to_affine().unwrap(),
             basepoint_affine
         );
 
@@ -814,12 +793,12 @@ mod tests {
     fn projective_add_vs_double() {
         let generator = ProjectivePoint::generator();
 
-        let r1 = (generator + &generator).normalize();
-        let r2 = generator.double().normalize();
+        let r1 = generator + &generator;
+        let r2 = generator.double();
         assert_eq!(r1, r2);
 
-        let r1 = ((generator + &generator) + &(generator + &generator)).normalize();
-        let r2 = generator.double().double().normalize();
+        let r1 = (generator + &generator) + &(generator + &generator);
+        let r2 = generator.double().double();
         assert_eq!(r1, r2);
     }
 
@@ -860,7 +839,7 @@ mod tests {
                 )
             }))
         {
-            let res = (generator * &k).to_affine().unwrap().normalize();
+            let res = (generator * &k).to_affine().unwrap();
             assert_eq!(
                 (
                     hex::encode(res.x.to_bytes()).to_uppercase().as_str(),
