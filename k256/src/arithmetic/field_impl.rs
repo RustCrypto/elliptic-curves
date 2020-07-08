@@ -80,7 +80,7 @@ impl FieldElementImpl {
         debug_assert!(magnitude <= FieldElementUnsafeImpl::max_magnitude());
         Self {
             value: *value,
-            magnitude: magnitude,
+            magnitude,
             normalized: false,
         }
     }

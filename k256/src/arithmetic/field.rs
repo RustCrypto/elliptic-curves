@@ -36,7 +36,7 @@ impl FieldElement {
 
     pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         let value = FieldElementImpl::from_words(words);
-        CtOption::map(value, |x| Self(x))
+        CtOption::map(value, Self)
     }
 
     pub fn to_words(&self) -> [u64; 4] {
@@ -45,7 +45,7 @@ impl FieldElement {
 
     pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
         let value = FieldElementImpl::from_bytes(bytes);
-        CtOption::map(value, |x| Self(x))
+        CtOption::map(value, Self)
     }
 
     /// Returns the SEC-1 encoding of this field element.

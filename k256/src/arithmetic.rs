@@ -127,7 +127,7 @@ impl AffinePoint {
                         );
 
                         AffinePoint {
-                            x: x,
+                            x,
                             y: y.normalize(),
                         }
                     })
@@ -316,7 +316,7 @@ impl ProjectivePoint {
         let byz = &yz_pairs
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak(); // m1
-        let byz3 = (byz.double() + &byz).normalize_weak(); // m1
+        let byz3 = (byz.double() + byz).normalize_weak(); // m1
 
         let xx3 = xx.double() + &xx; // m3
         let bxx9 = (xx3.double() + &xx3)
@@ -349,7 +349,7 @@ impl ProjectivePoint {
         let xz_pairs = (other.x * &self.z) + &self.x; // m2
 
         let bzz = &self.z.mul_single(CURVE_EQUATION_B_SINGLE);
-        let bzz3 = (bzz.double() + &bzz).normalize_weak();
+        let bzz3 = (bzz.double() + bzz).normalize_weak();
 
         let yy_m_bzz3 = yy + &bzz3.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
@@ -357,7 +357,7 @@ impl ProjectivePoint {
         let byz = &yz_pairs
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
-        let byz3 = (byz.double() + &byz).normalize_weak();
+        let byz3 = (byz.double() + byz).normalize_weak();
 
         let xx3 = xx.double() + &xx;
         let bxx9 = &(xx3.double() + &xx3)
@@ -382,7 +382,7 @@ impl ProjectivePoint {
         let xy2 = (self.x * &self.y).double(); // m2
 
         let bzz = &zz.mul_single(CURVE_EQUATION_B_SINGLE); // m7
-        let bzz3 = (bzz.double() + &bzz).normalize_weak(); // m1
+        let bzz3 = (bzz.double() + bzz).normalize_weak(); // m1
         let bzz9 = (bzz3.double() + &bzz3).normalize_weak(); // m1
 
         let yy_m_bzz9 = yy + &bzz9.negate(1); // m3
@@ -426,7 +426,7 @@ impl ProjectivePoint {
         let mask = (1u32 << LOG_MUL_WINDOW_SIZE) - 1u32;
 
         precomp[0] = ProjectivePoint::identity();
-        precomp[1] = self.clone();
+        precomp[1] = *self;
         for i in 2..MUL_PRECOMP_SIZE {
             precomp[i] = precomp[i - 1] + self;
         }

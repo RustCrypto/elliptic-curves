@@ -133,7 +133,7 @@ impl Scalar8x32 {
 
     // FIXME: use subtle
     pub fn is_zero(&self) -> u8 {
-        return ((self.0[0]
+        ((self.0[0]
             | self.0[1]
             | self.0[2]
             | self.0[3]
@@ -141,7 +141,7 @@ impl Scalar8x32 {
             | self.0[5]
             | self.0[6]
             | self.0[7])
-            == 0) as u8;
+            == 0) as u8
     }
 
     pub fn negate(&self) -> Self {
@@ -369,10 +369,13 @@ impl Scalar8x32 {
         }
 
         if small_shift == 0 {
+            #[allow(clippy::needless_range_loop)]
+            #[allow(clippy::manual_memcpy)]
             for i in 0..(8 - full_shifts) {
                 res[i] = self.0[i + full_shifts];
             }
         } else {
+            #[allow(clippy::needless_range_loop)]
             for i in 0..(8 - full_shifts) {
                 let mut lo = self.0[i + full_shifts] >> small_shift;
                 if i < 7 - full_shifts {

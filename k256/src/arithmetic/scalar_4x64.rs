@@ -292,10 +292,13 @@ impl Scalar4x64 {
         }
 
         if small_shift == 0 {
+            #[allow(clippy::needless_range_loop)]
+            #[allow(clippy::manual_memcpy)]
             for i in 0..(4 - full_shifts) {
                 res[i] = self.0[i + full_shifts];
             }
         } else {
+            #[allow(clippy::needless_range_loop)]
             for i in 0..(4 - full_shifts) {
                 let mut lo = self.0[i + full_shifts] >> small_shift;
                 if i < 3 - full_shifts {

@@ -69,6 +69,7 @@ impl Scalar {
         Self(ScalarImpl::one())
     }
 
+    /// Checks if the scalar is zero.
     pub fn is_zero(&self) -> Choice {
         Choice::from(self.0.is_zero())
     }
@@ -84,7 +85,7 @@ impl Scalar {
     /// [0, p).
     pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
         let value = ScalarImpl::from_bytes(bytes);
-        CtOption::map(value, |x| Self(x))
+        CtOption::map(value, Self)
     }
 
     /// Returns the SEC-1 encoding of this scalar.
