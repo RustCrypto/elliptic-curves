@@ -492,6 +492,7 @@ fn muladd_fast(a: u32, b: u32, c0: u32, c1: u32) -> (u32, u32) {
 pub struct WideScalar16x32([u32; 16]);
 
 impl WideScalar16x32 {
+    #[cfg(feature = "rand")]
     pub fn from_bytes(bytes: &[u8; 64]) -> Self {
         let mut w = [0u32; 16];
         for i in 0..16 {
