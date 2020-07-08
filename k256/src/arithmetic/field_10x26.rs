@@ -247,7 +247,16 @@ impl FieldElement10x26 {
 
         /* z0 tracks a possible raw value of 0, z1 tracks a possible raw value of P */
         let z0 = t0 | t1 | t2 | t3 | t4 | t5 | t6 | t7 | t8 | t9;
-        let z1 = (t0 ^ 0x3D0u32) & (t1 ^ 0x40u32) & t2 & t3 & t4 & t5 & t6 & t7 & t8 & (t9 ^ 0x3C00000u32);
+        let z1 = (t0 ^ 0x3D0u32)
+            & (t1 ^ 0x40u32)
+            & t2
+            & t3
+            & t4
+            & t5
+            & t6
+            & t7
+            & t8
+            & (t9 ^ 0x3C00000u32);
 
         Choice::from(((z0 == 0) | (z1 == 0x3FFFFFFu32)) as u8)
     }

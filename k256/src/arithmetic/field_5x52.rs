@@ -180,7 +180,6 @@ impl FieldElement5x52 {
     }
 
     pub fn normalizes_to_zero(&self) -> Choice {
-
         let res = self.normalize_weak();
 
         let t0 = res.0[0];

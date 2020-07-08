@@ -67,8 +67,8 @@ impl ConditionallySelectable for AffinePoint {
 
 impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
-        (self.x.negate(1) + &other.x).normalizes_to_zero() &
-        (self.y.negate(1) + &other.y).normalizes_to_zero()
+        (self.x.negate(1) + &other.x).normalizes_to_zero()
+            & (self.y.negate(1) + &other.y).normalizes_to_zero()
     }
 }
 
@@ -285,34 +285,34 @@ impl ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 7).
 
-        let xx = self.x * &other.x; // m1
-        let yy = self.y * &other.y; // m1
-        let zz = self.z * &other.z; // m1
+        let xx = self.x * &other.x;
+        let yy = self.y * &other.y;
+        let zz = self.z * &other.z;
 
-        let n_xx_yy = (xx + &yy).negate(2); // m3
-        let n_yy_zz = (yy + &zz).negate(2); // m3
-        let n_xx_zz = (xx + &zz).negate(2); // m3
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &n_xx_yy; // m4
-        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) + &n_yy_zz; // m4
-        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) + &n_xx_zz; // m4
+        let n_xx_yy = (xx + &yy).negate(2);
+        let n_yy_zz = (yy + &zz).negate(2);
+        let n_xx_zz = (xx + &zz).negate(2);
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &n_xx_yy;
+        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) + &n_yy_zz;
+        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) + &n_xx_zz;
 
         // TODO: would it be faster to do a multiplication by a FieldElement(B)?
-        let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE); // m7
-        let bzz3 = (bzz.double() + &bzz).normalize_weak(); // m1
+        let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = (bzz.double() + &bzz).normalize_weak();
 
-        let yy_m_bzz3 = yy + &bzz3.negate(1); // m3
-        let yy_p_bzz3 = yy + &bzz3; // m2
+        let yy_m_bzz3 = yy + &bzz3.negate(1);
+        let yy_p_bzz3 = yy + &bzz3;
 
         let byz = &yz_pairs
             .mul_single(CURVE_EQUATION_B_SINGLE)
-            .normalize_weak(); // m1
-        let byz3 = (byz.double() + byz).normalize_weak(); // m1
+            .normalize_weak();
+        let byz3 = (byz.double() + byz).normalize_weak();
 
-        let xx3 = xx.double() + &xx; // m3
+        let xx3 = xx.double() + &xx;
         let bxx9 = (xx3.double() + &xx3)
             .normalize_weak()
             .mul_single(CURVE_EQUATION_B_SINGLE)
-            .normalize_weak(); // m1
+            .normalize_weak();
 
         let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
         let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
@@ -330,11 +330,11 @@ impl ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 8).
 
-        let xx = self.x * &other.x; // m1
-        let yy = self.y * &other.y; // m1
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &(xx + &yy).negate(2); // m4
-        let yz_pairs = (other.y * &self.z) + &self.y; // m2
-        let xz_pairs = (other.x * &self.z) + &self.x; // m2
+        let xx = self.x * &other.x;
+        let yy = self.y * &other.y;
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &(xx + &yy).negate(2);
+        let yz_pairs = (other.y * &self.z) + &self.y;
+        let xz_pairs = (other.x * &self.z) + &self.x;
 
         let bzz = &self.z.mul_single(CURVE_EQUATION_B_SINGLE);
         let bzz3 = (bzz.double() + bzz).normalize_weak();
@@ -365,19 +365,19 @@ impl ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 9).
 
-        let yy = self.y.square(); // m1
-        let zz = self.z.square(); // m1
-        let xy2 = (self.x * &self.y).double(); // m2
+        let yy = self.y.square();
+        let zz = self.z.square();
+        let xy2 = (self.x * &self.y).double();
 
-        let bzz = &zz.mul_single(CURVE_EQUATION_B_SINGLE); // m7
-        let bzz3 = (bzz.double() + bzz).normalize_weak(); // m1
-        let bzz9 = (bzz3.double() + &bzz3).normalize_weak(); // m1
+        let bzz = &zz.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = (bzz.double() + bzz).normalize_weak();
+        let bzz9 = (bzz3.double() + &bzz3).normalize_weak();
 
-        let yy_m_bzz9 = yy + &bzz9.negate(1); // m3
-        let yy_p_bzz3 = yy + &bzz3; // m2
+        let yy_m_bzz9 = yy + &bzz9.negate(1);
+        let yy_p_bzz3 = yy + &bzz3;
 
-        let yy_zz = yy * &zz; // m1
-        let yy_zz8 = yy_zz.double().double().double(); // m8
+        let yy_zz = yy * &zz;
+        let yy_zz8 = yy_zz.double().double().double();
         let t = (yy_zz8.double() + &yy_zz8)
             .normalize_weak()
             .mul_single(CURVE_EQUATION_B_SINGLE);
@@ -406,8 +406,8 @@ impl ProjectivePoint {
     /// Returns `[k] self`.
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
         const LOG_MUL_WINDOW_SIZE: usize = 4;
-        const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1; // 64
-        const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE; // 16
+        const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1;
+        const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE;
 
         // corresponds to di = [1, 3, 5, ..., 2^(w-1)-1, -2^(w-1)-1, ..., -3, -1]
         let mut precomp = [ProjectivePoint::identity(); MUL_PRECOMP_SIZE];
@@ -697,10 +697,7 @@ mod tests {
             ProjectivePoint::from(basepoint_affine),
             basepoint_projective,
         );
-        assert_eq!(
-            basepoint_projective.to_affine().unwrap(),
-            basepoint_affine
-        );
+        assert_eq!(basepoint_projective.to_affine().unwrap(), basepoint_affine);
 
         // The projective identity does not have an affine representation.
         assert!(bool::from(
