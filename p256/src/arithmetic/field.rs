@@ -80,7 +80,7 @@ impl FieldElement {
 
     /// Returns the multiplicative identity.
     pub const fn one() -> FieldElement {
-        FieldElement([1, 0, 0, 0])
+        R
     }
 
     /// Returns a uniformly-random element within the field.
