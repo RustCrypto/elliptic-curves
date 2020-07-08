@@ -154,6 +154,7 @@ impl Scalar4x64 {
     }
 
     // TODO: check if it's faster
+    #[allow(dead_code)]
     pub fn neg(&self) -> Self {
         let (w0, borrow) = sbb(MODULUS[0], self.0[0], 0);
         let (w1, borrow) = sbb(MODULUS[1], self.0[1], borrow);

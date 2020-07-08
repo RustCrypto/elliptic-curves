@@ -69,6 +69,11 @@ impl Scalar {
         Self(ScalarImpl::one())
     }
 
+    pub fn is_zero(&self) -> Choice {
+        Choice::from(self.0.is_zero())
+    }
+
+    /// Returns the value of the scalar truncated to a 32-bit unsigned integer.
     pub fn truncate_to_u32(&self) -> u32 {
         self.0.truncate_to_u32()
     }
@@ -97,34 +102,40 @@ impl Scalar {
         self.0.is_high()
     }
 
+    /// Negates the scalar.
     pub fn negate(&self) -> Self {
         Self(self.0.negate())
     }
 
-    // TODO: compare performance with the old implementation from FieldElement, based on adc()
+    /// Modulo add two scalars
     pub fn add(&self, rhs: &Scalar) -> Scalar {
         Self(self.0.add(&(rhs.0)))
     }
 
-    // TODO: see if a separate sub() implementation is faster
+    /// Modulo subtract one scalar from the other.
     pub fn sub(&self, rhs: &Scalar) -> Scalar {
+        // TODO: see if a separate sub() implementation is faster
         self.add(&rhs.negate())
     }
 
+    /// Modulo multiply two scalars
     pub fn mul(&self, rhs: &Scalar) -> Scalar {
         Self(self.0.mul(&(rhs.0)))
     }
 
+    /// Right shifts the scalar. Note: not constant-time in `shift`.
     pub fn rshift(&self, shift: usize) -> Scalar {
         Self(self.0.rshift(shift))
     }
 
     #[cfg(test)]
+    /// Returns the scalar modulus as a `BigUint` object.
     pub fn modulus_as_biguint() -> BigUint {
         Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 
     #[cfg(feature = "zeroize")]
+    /// Fills this scalar with zeros.
     pub fn zeroize(&mut self) {
         self.0.zeroize()
     }
@@ -314,6 +325,15 @@ mod tests {
         assert_eq!(modulus_minus_one_neg, Scalar::one());
     }
 
+    #[cfg(feature = "rand")]
+    #[test]
+    fn generate() {
+        use elliptic_curve::{rand_core::OsRng};
+        let a = Scalar::generate(&mut OsRng);
+        // just to make sure `a` is not optimized out by the compiler
+        assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
+    }
+
     prop_compose! {
         fn scalar()(words in any::<[u64; 4]>()) -> Scalar {
             let mut res = u64_array_to_biguint(&words);
@@ -328,6 +348,13 @@ mod tests {
     }
 
     proptest! {
+
+        #[test]
+        fn fuzzy_roundtrip_to_bytes(a in scalar()) {
+            let bytes = a.to_bytes();
+            let a_back = Scalar::from_bytes(bytes).unwrap();
+            assert_eq!(a, a_back);
+        }
 
         #[test]
         fn fuzzy_mul(a in scalar(), b in scalar()) {

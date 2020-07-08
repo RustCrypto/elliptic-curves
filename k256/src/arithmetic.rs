@@ -162,7 +162,10 @@ impl AffinePoint {
         PublicKey::Uncompressed(self.clone().into())
     }
 
+    /// Normalize the coordinates of this point.
     pub fn normalize(&self) -> AffinePoint {
+        // TODO: hide from the user? It is only necessary in tests.
+        // And even that can be avoided by modifying equality check.
         AffinePoint {
             x: self.x.normalize(),
             y: self.y.normalize(),
@@ -447,7 +450,10 @@ impl ProjectivePoint {
         acc
     }
 
+    /// Normalize the coordinates of this point.
     pub fn normalize(&self) -> ProjectivePoint {
+        // TODO: hide from the user? It is only necessary in tests.
+        // And even that can be avoided by modifying equality check.
         ProjectivePoint {
             x: self.x.normalize(),
             y: self.y.normalize(),
