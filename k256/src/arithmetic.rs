@@ -6,8 +6,8 @@ mod field_5x52;
 #[cfg(feature = "field-32bit")]
 mod field_10x26;
 
-mod field_impl;
 mod field;
+mod field_impl;
 
 #[cfg(not(feature = "scalar-32bit"))]
 mod scalar_4x64;
@@ -27,7 +27,7 @@ use elliptic_curve::{
 };
 
 use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
-use field::{FieldElement};
+use field::FieldElement;
 use scalar::Scalar;
 
 #[cfg(feature = "rand")]
@@ -39,9 +39,7 @@ use elliptic_curve::{
     weierstrass::GenerateSecretKey,
 };
 
-
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
-
 
 const CURVE_EQUATION_B: FieldElement = FieldElement::from_words_unchecked([
     CURVE_EQUATION_B_SINGLE as u64,
@@ -49,7 +47,6 @@ const CURVE_EQUATION_B: FieldElement = FieldElement::from_words_unchecked([
     0x0000_0000_0000_0000,
     0x0000_0000_0000_0000,
 ]);
-
 
 /// A point on the secp256k1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -129,7 +126,10 @@ impl AffinePoint {
                             !(beta.normalize().is_odd() ^ y_is_odd),
                         );
 
-                        AffinePoint { x: x, y: y.normalize() }
+                        AffinePoint {
+                            x: x,
+                            y: y.normalize(),
+                        }
                     })
                 })
             }
@@ -165,7 +165,7 @@ impl AffinePoint {
     pub fn normalize(&self) -> AffinePoint {
         AffinePoint {
             x: self.x.normalize(),
-            y: self.y.normalize()
+            y: self.y.normalize(),
         }
     }
 }
@@ -310,11 +310,16 @@ impl ProjectivePoint {
         let yy_m_bzz3 = yy + &bzz3.negate(1); // m3
         let yy_p_bzz3 = yy + &bzz3; // m2
 
-        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak(); // m1
+        let byz = &yz_pairs
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak(); // m1
         let byz3 = (byz.double() + &byz).normalize_weak(); // m1
 
         let xx3 = xx.double() + &xx; // m3
-        let bxx9 = (xx3.double() + &xx3).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak(); // m1
+        let bxx9 = (xx3.double() + &xx3)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak(); // m1
 
         let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
         let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
@@ -346,11 +351,16 @@ impl ProjectivePoint {
         let yy_m_bzz3 = yy + &bzz3.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
 
-        let byz = &yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let byz = &yz_pairs
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
         let byz3 = (byz.double() + &byz).normalize_weak();
 
         let xx3 = xx.double() + &xx;
-        let bxx9 = &(xx3.double() + &xx3).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let bxx9 = &(xx3.double() + &xx3)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
 
         ProjectivePoint {
             x: ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(),
@@ -377,12 +387,18 @@ impl ProjectivePoint {
 
         let yy_zz = yy * &zz; // m1
         let yy_zz8 = yy_zz.double().double().double(); // m8
-        let t = (yy_zz8.double() + &yy_zz8).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE);
+        let t = (yy_zz8.double() + &yy_zz8)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE);
 
         ProjectivePoint {
             x: xy2 * &yy_m_bzz9,
             y: ((yy_m_bzz9 * &yy_p_bzz3) + &t).normalize_weak(),
-            z: ((yy * &self.y) * &self.z).double().double().double().normalize_weak(),
+            z: ((yy * &self.y) * &self.z)
+                .double()
+                .double()
+                .double()
+                .normalize_weak(),
         }
     }
 
@@ -398,7 +414,6 @@ impl ProjectivePoint {
 
     /// Returns `[k] self`.
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
-
         const LOG_MUL_WINDOW_SIZE: usize = 4;
         const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1; // 64
         const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE; // 16
@@ -410,7 +425,7 @@ impl ProjectivePoint {
         precomp[0] = ProjectivePoint::identity();
         precomp[1] = self.clone();
         for i in 2..MUL_PRECOMP_SIZE {
-            precomp[i] = precomp[i-1] + self;
+            precomp[i] = precomp[i - 1] + self;
         }
 
         let mut acc = ProjectivePoint::identity();
@@ -436,11 +451,10 @@ impl ProjectivePoint {
         ProjectivePoint {
             x: self.x.normalize(),
             y: self.y.normalize(),
-            z: self.z.normalize()
+            z: self.z.normalize(),
         }
     }
 }
-
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
@@ -700,7 +714,10 @@ mod tests {
             ProjectivePoint::from(basepoint_affine),
             basepoint_projective,
         );
-        assert_eq!(basepoint_projective.to_affine().unwrap().normalize(), basepoint_affine);
+        assert_eq!(
+            basepoint_projective.to_affine().unwrap().normalize(),
+            basepoint_affine
+        );
 
         // The projective identity does not have an affine representation.
         assert!(bool::from(

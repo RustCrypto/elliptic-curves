@@ -1,24 +1,18 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
-
 use core::ops::{Add, AddAssign, Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-#[cfg(feature = "rand")]
-use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
-pub use super::field_impl::{FieldElementImpl};
-
+pub use super::field_impl::FieldElementImpl;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(FieldElementImpl);
 
-
 impl FieldElement {
-
+    /// Returns the zero element.
     pub const fn zero() -> Self {
         Self(FieldElementImpl::zero())
     }
@@ -42,7 +36,7 @@ impl FieldElement {
 
     pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         let value = FieldElementImpl::from_words(words);
-        CtOption::map(value, |x| { Self(x) })
+        CtOption::map(value, |x| Self(x))
     }
 
     pub fn to_words(&self) -> [u64; 4] {
@@ -51,7 +45,7 @@ impl FieldElement {
 
     pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
         let value = FieldElementImpl::from_bytes(bytes);
-        CtOption::map(value, |x| { Self(x) })
+        CtOption::map(value, |x| Self(x))
     }
 
     /// Returns the SEC-1 encoding of this field element.
@@ -98,51 +92,77 @@ impl FieldElement {
         x3 = x3.mul(a);
 
         let mut x6 = x3;
-        for _j in 0..3 { x6 = x6.square(); }
+        for _j in 0..3 {
+            x6 = x6.square();
+        }
         x6 = x6.mul(&x3);
 
         let mut x9 = x6;
-        for _j in 0..3 { x9 = x9.square(); }
+        for _j in 0..3 {
+            x9 = x9.square();
+        }
         x9 = x9.mul(&x3);
 
         let mut x11 = x9;
-        for _j in 0..2 { x11 = x11.square(); }
+        for _j in 0..2 {
+            x11 = x11.square();
+        }
         x11 = x11.mul(&x2);
 
         let mut x22 = x11;
-        for _j in 0..11 { x22 = x22.square(); }
+        for _j in 0..11 {
+            x22 = x22.square();
+        }
         x22 = x22.mul(&x11);
 
         let mut x44 = x22;
-        for _j in 0..22 { x44 = x44.square(); }
+        for _j in 0..22 {
+            x44 = x44.square();
+        }
         x44 = x44.mul(&x22);
 
         let mut x88 = x44;
-        for _j in 0..44 { x88 = x88.square(); }
+        for _j in 0..44 {
+            x88 = x88.square();
+        }
         x88 = x88.mul(&x44);
 
         let mut x176 = x88;
-        for _j in 0..88 { x176 = x176.square(); }
+        for _j in 0..88 {
+            x176 = x176.square();
+        }
         x176 = x176.mul(&x88);
 
         let mut x220 = x176;
-        for _j in 0..44 { x220 = x220.square(); }
+        for _j in 0..44 {
+            x220 = x220.square();
+        }
         x220 = x220.mul(&x44);
 
         let mut x223 = x220;
-        for _j in 0..3 { x223 = x223.square(); }
+        for _j in 0..3 {
+            x223 = x223.square();
+        }
         x223 = x223.mul(&x3);
 
         // The final result is then assembled using a sliding window over the blocks.
 
         let mut t1 = x223;
-        for _j in 0..23 { t1 = t1.square(); }
+        for _j in 0..23 {
+            t1 = t1.square();
+        }
         t1 = t1.mul(&x22);
-        for _j in 0..5 { t1 = t1.square(); }
+        for _j in 0..5 {
+            t1 = t1.square();
+        }
         t1 = t1.mul(a);
-        for _j in 0..3 { t1 = t1.square(); }
+        for _j in 0..3 {
+            t1 = t1.square();
+        }
         t1 = t1.mul(&x2);
-        for _j in 0..2 { t1 = t1.square(); }
+        for _j in 0..2 {
+            t1 = t1.square();
+        }
         t1 = t1.mul(a);
 
         // FIXME: change to `a.normalizes_to_zero()`
@@ -175,47 +195,69 @@ impl FieldElement {
         x3 = x3.mul(a);
 
         let mut x6 = x3;
-        for _j in 0..3 { x6 = x6.square(); }
+        for _j in 0..3 {
+            x6 = x6.square();
+        }
         x6 = x6.mul(&x3);
 
         let mut x9 = x6;
-        for _j in 0..3 { x9 = x9.square(); }
+        for _j in 0..3 {
+            x9 = x9.square();
+        }
         x9 = x9.mul(&x3);
 
         let mut x11 = x9;
-        for _j in 0..2 { x11 = x11.square(); }
+        for _j in 0..2 {
+            x11 = x11.square();
+        }
         x11 = x11.mul(&x2);
 
         let mut x22 = x11;
-        for _j in 0..11 { x22 = x22.square(); }
+        for _j in 0..11 {
+            x22 = x22.square();
+        }
         x22 = x22.mul(&x11);
 
         let mut x44 = x22;
-        for _j in 0..22 { x44 = x44.square(); }
+        for _j in 0..22 {
+            x44 = x44.square();
+        }
         x44 = x44.mul(&x22);
 
         let mut x88 = x44;
-        for _j in 0..44 { x88 = x88.square(); }
+        for _j in 0..44 {
+            x88 = x88.square();
+        }
         x88 = x88.mul(&x44);
 
         let mut x176 = x88;
-        for _j in 0..88 { x176 = x176.square(); }
+        for _j in 0..88 {
+            x176 = x176.square();
+        }
         x176 = x176.mul(&x88);
 
         let mut x220 = x176;
-        for _j in 0..44 { x220 = x220.square(); }
+        for _j in 0..44 {
+            x220 = x220.square();
+        }
         x220 = x220.mul(&x44);
 
         let mut x223 = x220;
-        for _j in 0..3 { x223 = x223.square(); }
+        for _j in 0..3 {
+            x223 = x223.square();
+        }
         x223 = x223.mul(&x3);
 
         // The final result is then assembled using a sliding window over the blocks.
 
         let mut t1 = x223;
-        for _j in 0..23 { t1 = t1.square(); }
+        for _j in 0..23 {
+            t1 = t1.square();
+        }
         t1 = t1.mul(&x22);
-        for _j in 0..6 { t1 = t1.square(); }
+        for _j in 0..6 {
+            t1 = t1.square();
+        }
         t1 = t1.mul(&x2);
         t1 = t1.square();
         let sqrt = t1.square();
@@ -232,13 +274,11 @@ impl FieldElement {
     }
 }
 
-
 impl PartialEq for FieldElement {
     fn eq(&self, other: &Self) -> bool {
         self.0.ct_eq(&(other.0)).into()
     }
 }
-
 
 impl Default for FieldElement {
     fn default() -> Self {
@@ -246,20 +286,17 @@ impl Default for FieldElement {
     }
 }
 
-
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self(FieldElementImpl::conditional_select(&(a.0), &(b.0), choice))
     }
 }
 
-
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0.ct_eq(&(other.0))
     }
 }
-
 
 impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
@@ -283,7 +320,6 @@ impl AddAssign<FieldElement> for FieldElement {
     }
 }
 
-
 impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
@@ -300,13 +336,11 @@ impl Mul<&FieldElement> for FieldElement {
     }
 }
 
-
 impl MulAssign<FieldElement> for FieldElement {
     fn mul_assign(&mut self, rhs: FieldElement) {
         *self = *self * &rhs;
     }
 }
-
 
 #[cfg(test)]
 impl From<&BigUint> for FieldElement {
@@ -316,7 +350,6 @@ impl From<&BigUint> for FieldElement {
     }
 }
 
-
 #[cfg(test)]
 impl ToBigUint for FieldElement {
     fn to_biguint(&self) -> Option<BigUint> {
@@ -324,15 +357,14 @@ impl ToBigUint for FieldElement {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use proptest::{prelude::*};
-    use num_bigint::{ToBigUint};
+    use num_bigint::ToBigUint;
+    use proptest::prelude::*;
 
     use super::FieldElement;
-    use crate::test_vectors::field::DBL_TEST_VECTORS;
     use crate::arithmetic::util::u64_array_to_biguint;
+    use crate::test_vectors::field::DBL_TEST_VECTORS;
 
     #[test]
     fn zero_is_additive_identity() {

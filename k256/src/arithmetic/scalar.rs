@@ -1,13 +1,9 @@
 //! Scalar field arithmetic.
 
-use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Shr};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Shr, Sub, SubAssign};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
-#[cfg(test)]
-use num_traits::cast::{ToPrimitive};
-#[cfg(test)]
-use super::util::{u64_array_to_biguint, biguint_to_u64_array};
 
 #[cfg(not(feature = "scalar-32bit"))]
 pub use super::scalar_4x64::Scalar4x64 as ScalarImpl;
@@ -19,7 +15,7 @@ pub use super::scalar_8x32::Scalar8x32 as ScalarImpl;
 #[cfg(feature = "scalar-32bit")]
 pub use super::scalar_8x32::WideScalar16x32 as WideScalarImpl;
 
-use core::{convert::TryInto, ops::Neg};
+use core::ops::Neg;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
@@ -28,12 +24,10 @@ use zeroize::Zeroize;
 #[cfg(feature = "rand")]
 use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
-
 /// An element in the finite field modulo n.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(ScalarImpl);
-
 
 #[cfg(test)]
 impl From<&BigUint> for Scalar {
@@ -43,7 +37,6 @@ impl From<&BigUint> for Scalar {
     }
 }
 
-
 #[cfg(test)]
 impl From<BigUint> for Scalar {
     fn from(x: BigUint) -> Self {
@@ -52,7 +45,6 @@ impl From<BigUint> for Scalar {
     }
 }
 
-
 #[cfg(test)]
 impl ToBigUint for Scalar {
     fn to_biguint(&self) -> Option<BigUint> {
@@ -60,13 +52,11 @@ impl ToBigUint for Scalar {
     }
 }
 
-
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
         Self(ScalarImpl::from(k))
     }
 }
-
 
 impl Scalar {
     /// Returns the zero scalar.
@@ -150,7 +140,6 @@ impl Scalar {
     }
 }
 
-
 impl Shr<usize> for Scalar {
     type Output = Self;
 
@@ -158,7 +147,6 @@ impl Shr<usize> for Scalar {
         self.rshift(rhs)
     }
 }
-
 
 impl Shr<usize> for &Scalar {
     type Output = Scalar;
@@ -168,13 +156,11 @@ impl Shr<usize> for &Scalar {
     }
 }
 
-
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self(ScalarImpl::conditional_select(&(a.0), &(b.0), choice))
     }
 }
-
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
@@ -182,13 +168,11 @@ impl ConstantTimeEq for Scalar {
     }
 }
 
-
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
 }
-
 
 impl Neg for Scalar {
     type Output = Scalar;
@@ -197,7 +181,6 @@ impl Neg for Scalar {
         self.negate()
     }
 }
-
 
 impl Add<&Scalar> for &Scalar {
     type Output = Scalar;
@@ -229,7 +212,6 @@ impl AddAssign<Scalar> for Scalar {
     }
 }
 
-
 impl Sub<&Scalar> for &Scalar {
     type Output = Scalar;
 
@@ -251,7 +233,6 @@ impl SubAssign<Scalar> for Scalar {
         *self = Scalar::sub(self, &rhs);
     }
 }
-
 
 impl Mul<&Scalar> for &Scalar {
     type Output = Scalar;
@@ -275,7 +256,6 @@ impl MulAssign<Scalar> for Scalar {
     }
 }
 
-
 #[cfg(feature = "zeroize")]
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {
@@ -283,13 +263,12 @@ impl Zeroize for Scalar {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::util::{u64_array_to_biguint};
-    use proptest::{prelude::*};
-    use num_bigint::{ToBigUint};
+    use crate::arithmetic::util::u64_array_to_biguint;
+    use num_bigint::ToBigUint;
+    use proptest::prelude::*;
 
     #[test]
     fn is_high() {
@@ -374,4 +353,3 @@ mod tests {
         }
     }
 }
-

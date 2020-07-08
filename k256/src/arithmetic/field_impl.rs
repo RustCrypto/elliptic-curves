@@ -21,15 +21,13 @@ use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
-
 #[cfg(debug_assertions)]
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElementImpl {
     value: FieldElementUnsafeImpl,
     magnitude: u32,
-    normalized: bool
-    }
-
+    normalized: bool,
+}
 
 #[cfg(debug_assertions)]
 impl ConditionallySelectable for FieldElementImpl {
@@ -37,15 +35,18 @@ impl ConditionallySelectable for FieldElementImpl {
         // 1. It's debug only, so it shouldn't present a security risk
         // 2. Being normalized does is independent from the field element value;
         //    elements must be normalized explicitly.
-        let new_normalized = if bool::from(choice) { b.normalized } else { a.normalized };
+        let new_normalized = if bool::from(choice) {
+            b.normalized
+        } else {
+            a.normalized
+        };
         Self {
             value: FieldElementUnsafeImpl::conditional_select(&(a.value), &(b.value), choice),
             magnitude: u32::conditional_select(&(a.magnitude), &(b.magnitude), choice),
-            normalized: new_normalized
-            }
+            normalized: new_normalized,
+        }
     }
 }
-
 
 #[cfg(debug_assertions)]
 impl ConstantTimeEq for FieldElementImpl {
@@ -57,22 +58,22 @@ impl ConstantTimeEq for FieldElementImpl {
     }
 }
 
-
 #[cfg(debug_assertions)]
 impl FieldElementImpl {
-
     const fn new_normalized(value: &FieldElementUnsafeImpl) -> Self {
         Self {
             value: *value,
             magnitude: 1,
-            normalized: true}
+            normalized: true,
+        }
     }
 
     const fn new_weak_normalized(value: &FieldElementUnsafeImpl) -> Self {
         Self {
             value: *value,
             magnitude: 1u32,
-            normalized: false}
+            normalized: false,
+        }
     }
 
     fn new(value: &FieldElementUnsafeImpl, magnitude: u32) -> Self {
@@ -80,7 +81,8 @@ impl FieldElementImpl {
         Self {
             value: *value,
             magnitude: magnitude,
-            normalized: false}
+            normalized: false,
+        }
     }
 
     pub const fn zero() -> Self {
@@ -98,7 +100,7 @@ impl FieldElementImpl {
     /// [0, p).
     pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
         let value = FieldElementUnsafeImpl::from_bytes(bytes);
-        CtOption::map(value, |x| { Self::new_normalized(&x) })
+        CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
     /// Returns the SEC-1 encoding of this field element.
@@ -126,7 +128,7 @@ impl FieldElementImpl {
 
     pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         let value = FieldElementUnsafeImpl::from_words(words);
-        CtOption::map(value, |x| { Self::new_normalized(&x) })
+        CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
     pub fn is_zero(&self) -> Choice {
@@ -178,14 +180,12 @@ impl FieldElementImpl {
     }
 }
 
-
 #[cfg(debug_assertions)]
 impl Default for FieldElementImpl {
     fn default() -> Self {
         Self::zero()
     }
 }
-
 
 #[cfg(debug_assertions)]
 #[cfg(test)]
@@ -194,7 +194,6 @@ impl From<&BigUint> for FieldElementImpl {
         Self::new_normalized(&FieldElementUnsafeImpl::from(x))
     }
 }
-
 
 #[cfg(debug_assertions)]
 #[cfg(test)]

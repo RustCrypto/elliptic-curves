@@ -1,11 +1,11 @@
 #[cfg(test)]
+use super::util::{biguint_to_u64_array, u64_array_to_biguint};
+#[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 #[cfg(test)]
-use num_traits::cast::{ToPrimitive};
-#[cfg(test)]
-use super::util::{u64_array_to_biguint, biguint_to_u64_array};
+use num_traits::cast::ToPrimitive;
 
-use core::{convert::TryInto, ops::Neg};
+use core::{convert::TryInto};
 
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -26,15 +26,8 @@ pub const MODULUS: [u64; LIMBS] = [
     0xFFFF_FFFF_FFFF_FFFF,
 ];
 
-
 /* Limbs of 2^256 minus the secp256k1 order. */
-pub const NEG_MODULUS: [u64; LIMBS] = [
-    !MODULUS[0] + 1,
-    !MODULUS[1],
-    1,
-    0
-];
-
+pub const NEG_MODULUS: [u64; LIMBS] = [!MODULUS[0] + 1, !MODULUS[1], 1, 0];
 
 /// Constant representing the modulus / 2
 const FRAC_MODULUS_2: [u64; LIMBS] = [
@@ -44,30 +37,26 @@ const FRAC_MODULUS_2: [u64; LIMBS] = [
     0x7FFF_FFFF_FFFF_FFFF,
 ];
 
-
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar4x64([u64; LIMBS]);
 
-
 /** Add a to the number defined by (c0,c1,c2). c2 must never overflow. */
 fn sumadd(a: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
-    let new_c0 = c0.wrapping_add(a);                  /* overflow is handled on the next line */
+    let new_c0 = c0.wrapping_add(a); /* overflow is handled on the next line */
     let over: u64 = if new_c0 < a { 1 } else { 0 };
-    let new_c1 = c1.wrapping_add(over);                 /* overflow is handled on the next line */
-    let new_c2 = c2 + if new_c1 < over { 1 } else { 0 };  /* never overflows by contract */
+    let new_c1 = c1.wrapping_add(over); /* overflow is handled on the next line */
+    let new_c2 = c2 + if new_c1 < over { 1 } else { 0 }; /* never overflows by contract */
     (new_c0, new_c1, new_c2)
 }
 
-
 /** Add a to the number defined by (c0,c1). c1 must never overflow, c2 must be zero. */
 fn sumadd_fast(a: u64, c0: u64, c1: u64) -> (u64, u64) {
-    let new_c0 = c0.wrapping_add(a);                 /* overflow is handled on the next line */
-    let new_c1 = c1 + if new_c0 < a { 1 } else { 0 };  /* never overflows by contract (verified the next line) */
+    let new_c0 = c0.wrapping_add(a); /* overflow is handled on the next line */
+    let new_c1 = c1 + if new_c0 < a { 1 } else { 0 }; /* never overflows by contract (verified the next line) */
     debug_assert!((new_c1 != 0) | (new_c0 >= a));
     (new_c0, new_c1)
 }
-
 
 /** Add a*b to the number defined by (c0,c1,c2). c2 must never overflow. */
 fn muladd(a: u64, b: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
@@ -75,30 +64,27 @@ fn muladd(a: u64, b: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
     let th = (t >> 64) as u64; /* at most 0xFFFFFFFFFFFFFFFE */
     let tl = t as u64;
 
-    let new_c0 = c0.wrapping_add(tl);                 /* overflow is handled on the next line */
-    let new_th = th + if new_c0 < tl { 1 } else { 0 };  /* at most 0xFFFFFFFFFFFFFFFF */
-    let new_c1 = c1.wrapping_add(new_th);                 /* overflow is handled on the next line */
-    let new_c2 = c2 + if new_c1 < new_th { 1 } else { 0 };  /* never overflows by contract (verified in the next line) */
+    let new_c0 = c0.wrapping_add(tl); /* overflow is handled on the next line */
+    let new_th = th + if new_c0 < tl { 1 } else { 0 }; /* at most 0xFFFFFFFFFFFFFFFF */
+    let new_c1 = c1.wrapping_add(new_th); /* overflow is handled on the next line */
+    let new_c2 = c2 + if new_c1 < new_th { 1 } else { 0 }; /* never overflows by contract (verified in the next line) */
     debug_assert!((new_c1 >= new_th) || (new_c2 != 0));
     (new_c0, new_c1, new_c2)
 }
 
-
 /** Add a*b to the number defined by (c0,c1). c1 must never overflow. */
 fn muladd_fast(a: u64, b: u64, c0: u64, c1: u64) -> (u64, u64) {
-
     let t = (a as u128) * (b as u128);
     let th = (t >> 64) as u64; /* at most 0xFFFFFFFFFFFFFFFE */
     let tl = t as u64;
 
     let new_c0 = c0.wrapping_add(tl); /* overflow is handled on the next line */
     // FIXME: constant time
-    let new_th = th + if new_c0 < tl { 1 } else { 0 };  /* at most 0xFFFFFFFFFFFFFFFF */
+    let new_th = th + if new_c0 < tl { 1 } else { 0 }; /* at most 0xFFFFFFFFFFFFFFFF */
     let new_c1 = c1 + new_th; /* never overflows by contract (verified in the next line) */
     debug_assert!(new_c1 >= new_th);
     (new_c0, new_c1)
 }
-
 
 impl Scalar4x64 {
     /// Returns the zero scalar.
@@ -182,11 +168,14 @@ impl Scalar4x64 {
         // FIXME: use subtle
         let nonzero = (0xFFFFFFFFFFFFFFFFu64 * (self.is_zero() == 0) as u64) as u128;
         let mut t = (!self.0[0]) as u128 + (MODULUS[0] + 1) as u128;
-        let r0 = t & nonzero; t >>= 64;
+        let r0 = t & nonzero;
+        t >>= 64;
         t += (!self.0[1]) as u128 + MODULUS[1] as u128;
-        let r1 = t & nonzero; t >>= 64;
+        let r1 = t & nonzero;
+        t >>= 64;
         t += (!self.0[2]) as u128 + MODULUS[2] as u128;
-        let r2 = t & nonzero; t >>= 64;
+        let r2 = t & nonzero;
+        t >>= 64;
         t += (!self.0[3]) as u128 + MODULUS[3] as u128;
         let r3 = t & nonzero;
         Self([r0 as u64, r1 as u64, r2 as u64, r3 as u64])
@@ -195,13 +184,17 @@ impl Scalar4x64 {
     // TODO: compare performance with the old implementation from FieldElement, based on adc()
     pub fn add(&self, rhs: &Self) -> Self {
         let mut t = (self.0[0] as u128) + (rhs.0[0] as u128);
-        let r0 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        let r0 = t & 0xFFFFFFFFFFFFFFFFu128;
+        t >>= 64;
         t += (self.0[1] as u128) + (rhs.0[1] as u128);
-        let r1 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        let r1 = t & 0xFFFFFFFFFFFFFFFFu128;
+        t >>= 64;
         t += (self.0[2] as u128) + (rhs.0[2] as u128);
-        let r2 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        let r2 = t & 0xFFFFFFFFFFFFFFFFu128;
+        t >>= 64;
         t += (self.0[3] as u128) + (rhs.0[3] as u128);
-        let r3 = t & 0xFFFFFFFFFFFFFFFFu128; t >>= 64;
+        let r3 = t & 0xFFFFFFFFFFFFFFFFu128;
+        t >>= 64;
         let r = Self([r0 as u64, r1 as u64, r2 as u64, r3 as u64]);
         let overflow = t as u8 + r.get_overflow();
         debug_assert!(overflow == 0 || overflow == 1);
@@ -272,11 +265,14 @@ impl Scalar4x64 {
 
         // FIXME: use conditional select here
         let mut t = (self.0[0] as u128) + ((overflow as u64 * NEG_MODULUS[0]) as u128);
-        let r0 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64; t >>= 64;
+        let r0 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        t >>= 64;
         t += (self.0[1] as u128) + ((overflow as u64 * NEG_MODULUS[1]) as u128);
-        let r1 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64; t >>= 64;
+        let r1 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        t >>= 64;
         t += (self.0[2] as u128) + ((overflow as u64 * NEG_MODULUS[2]) as u128);
-        let r2 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64; t >>= 64;
+        let r2 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        t >>= 64;
         t += self.0[3] as u128;
         let r3 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
         // TODO: the original returned overflow here, do we need it?
@@ -285,7 +281,6 @@ impl Scalar4x64 {
     }
 
     pub fn rshift(&self, shift: usize) -> Self {
-
         let full_shifts = shift >> 6;
         let small_shift = shift & 0x3f;
 
@@ -297,10 +292,9 @@ impl Scalar4x64 {
 
         if small_shift == 0 {
             for i in 0..(4 - full_shifts) {
-               res[i] = self.0[i + full_shifts];
+                res[i] = self.0[i + full_shifts];
             }
-        }
-        else {
+        } else {
             for i in 0..(4 - full_shifts) {
                 let mut lo = self.0[i + full_shifts] >> small_shift;
                 if i < 3 - full_shifts {
@@ -319,20 +313,17 @@ impl Scalar4x64 {
     }
 }
 
-
 impl From<u64> for Scalar4x64 {
     fn from(k: u64) -> Self {
         Scalar4x64([k, 0, 0, 0])
     }
 }
 
-
 impl From<u32> for Scalar4x64 {
     fn from(k: u32) -> Self {
         Scalar4x64([k as u64, 0, 0, 0])
     }
 }
-
 
 #[cfg(test)]
 impl From<&BigUint> for Scalar4x64 {
@@ -342,14 +333,12 @@ impl From<&BigUint> for Scalar4x64 {
     }
 }
 
-
 #[cfg(test)]
 impl ToBigUint for Scalar4x64 {
     fn to_biguint(&self) -> Option<BigUint> {
         Some(u64_array_to_biguint(&(self.0)))
     }
 }
-
 
 impl ConditionallySelectable for Scalar4x64 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
@@ -362,7 +351,6 @@ impl ConditionallySelectable for Scalar4x64 {
     }
 }
 
-
 impl ConstantTimeEq for Scalar4x64 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0[0].ct_eq(&other.0[0])
@@ -372,23 +360,19 @@ impl ConstantTimeEq for Scalar4x64 {
     }
 }
 
-
 #[derive(Clone, Copy, Debug, Default)]
 pub struct WideScalar8x64([u64; 8]);
 
-
 impl WideScalar8x64 {
-
     pub fn from_bytes(bytes: &[u8; 64]) -> Self {
         let mut w = [0u64; 8];
         for i in 0..8 {
-            w[i] = u64::from_be_bytes(bytes[((7-i)*8)..((7-i)*8+8)].try_into().unwrap());
+            w[i] = u64::from_be_bytes(bytes[((7 - i) * 8)..((7 - i) * 8 + 8)].try_into().unwrap());
         }
         Self(w)
     }
 
     pub fn reduce(&self) -> Scalar4x64 {
-
         let n0 = self.0[4];
         let n1 = self.0[5];
         let n2 = self.0[6];
@@ -397,7 +381,9 @@ impl WideScalar8x64 {
         /* Reduce 512 bits into 385. */
         /* m[0..6] = self[0..3] + n[0..3] * NEG_MODULUS. */
         // FIXME: some functions receive 0 as arguments; can it be optimized?
-        let c0 = self.0[0]; let c1 = 0; let c2 = 0;
+        let c0 = self.0[0];
+        let c1 = 0;
+        let c2 = 0;
         let (c0, c1) = muladd_fast(n0, NEG_MODULUS[0], c0, c1);
         let (m0, c0, c1) = (c0, c1, 0);
         let (c0, c1) = sumadd_fast(self.0[1], c0, c1);
@@ -424,7 +410,9 @@ impl WideScalar8x64 {
 
         /* Reduce 385 bits into 258. */
         /* p[0..4] = m[0..3] + m[4..6] * NEG_MODULUS. */
-        let c0 = m0; let c1 = 0; let c2 = 0;
+        let c0 = m0;
+        let c1 = 0;
+        let c2 = 0;
         let (c0, c1) = muladd_fast(m4, NEG_MODULUS[0], c0, c1);
         let (p0, c0, c1) = (c0, c1, 0);
         let (c0, c1) = sumadd_fast(m1, c0, c1);
@@ -446,20 +434,23 @@ impl WideScalar8x64 {
         /* Reduce 258 bits into 256. */
         /* r[0..3] = p[0..3] + p[4] * NEG_MODULUS. */
         let mut c = (p0 as u128) + (NEG_MODULUS[0] as u128) * (p4 as u128);
-        let r0 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        let r0 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        c >>= 64;
         c += (p1 as u128) + (NEG_MODULUS[1] as u128) * (p4 as u128);
-        let r1 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        let r1 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        c >>= 64;
         c += (p2 as u128) + (p4 as u128);
-        let r2 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        let r2 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        c >>= 64;
         c += p3 as u128;
-        let r3 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64; c >>= 64;
+        let r3 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
+        c >>= 64;
 
         /* Final reduction of r. */
         let s = Scalar4x64([r0, r1, r2, r3]);
         s.reduce((c as u8) + s.get_overflow())
     }
 }
-
 
 #[cfg(test)]
 impl From<&BigUint> for WideScalar8x64 {
@@ -477,7 +468,6 @@ impl From<&BigUint> for WideScalar8x64 {
     }
 }
 
-
 impl ConstantTimeEq for WideScalar8x64 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0[0].ct_eq(&other.0[0])
@@ -490,7 +480,6 @@ impl ConstantTimeEq for WideScalar8x64 {
             & self.0[7].ct_eq(&other.0[7])
     }
 }
-
 
 impl PartialEq for WideScalar8x64 {
     fn eq(&self, other: &Self) -> bool {
