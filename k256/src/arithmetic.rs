@@ -296,7 +296,6 @@ impl ProjectivePoint {
         let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) + &n_yy_zz;
         let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) + &n_xx_zz;
 
-        // TODO: would it be faster to do a multiplication by a FieldElement(B)?
         let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE);
         let bzz3 = (bzz.double() + &bzz).normalize_weak();
 
