@@ -201,7 +201,7 @@ impl Neg for AffinePoint {
     fn neg(self) -> Self::Output {
         AffinePoint {
             x: self.x,
-            y: self.y.negate(1).normalize_weak(), // FIXME: check magnitude
+            y: self.y.negate(1).normalize_weak(),
         }
     }
 }
@@ -275,7 +275,7 @@ impl ProjectivePoint {
     fn neg(&self) -> ProjectivePoint {
         ProjectivePoint {
             x: self.x,
-            y: self.y.negate(1).normalize_weak(), // FIXME: check magnitude
+            y: self.y.negate(1).normalize_weak(),
             z: self.z,
         }
     }
@@ -329,8 +329,6 @@ impl ProjectivePoint {
     fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 8).
-
-        // FIXME: check magnitudes
 
         let xx = self.x * &other.x; // m1
         let yy = self.y * &other.y; // m1
