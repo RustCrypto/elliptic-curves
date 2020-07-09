@@ -270,17 +270,18 @@ impl Scalar4x64 {
         wide_res.reduce()
     }
 
+    /// Return 1u8 if `self` is greater than the modulus, 0u8 otherwise.
     pub fn get_overflow(&self) -> u8 {
-        let mut yes = 0u8;
-        let mut no = 0u8;
-        // FIXME: use subtle here
-        no |= (self.0[3] < MODULUS[3]) as u8; /* No need for a > check. */
-        no |= (self.0[2] < MODULUS[2]) as u8;
-        yes |= (self.0[2] > MODULUS[2]) as u8 & !no;
-        no |= (self.0[1] < MODULUS[1]) as u8;
-        yes |= (self.0[1] > MODULUS[1]) as u8 & !no;
-        yes |= (self.0[0] >= MODULUS[0]) as u8 & !no;
-        yes
+        // Instead of comparison-based check from libsecp256k1,
+        // we just subtract the modulus and check for the borrow.
+        // It is a little slower in addition microbenchmarks,
+        // but there is no speed difference on high level.
+        let mut borrow = 0;
+        for i in 0..4 {
+            let t = sbb(self.0[i], MODULUS[i], borrow);
+            borrow = t.1;
+        }
+        ((!borrow) >> 63) as u8
     }
 
     pub fn reduce(&self, overflow: u8) -> Self {
