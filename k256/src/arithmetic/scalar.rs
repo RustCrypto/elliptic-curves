@@ -115,8 +115,7 @@ impl Scalar {
 
     /// Modulo subtract one scalar from the other.
     pub fn sub(&self, rhs: &Scalar) -> Scalar {
-        // TODO: see if a separate sub() implementation is faster
-        self.add(&rhs.negate())
+        Self(self.0.sub(&(rhs.0)))
     }
 
     /// Modulo multiply two scalars
@@ -355,6 +354,43 @@ mod tests {
             let bytes = a.to_bytes();
             let a_back = Scalar::from_bytes(bytes).unwrap();
             assert_eq!(a, a_back);
+        }
+
+        #[test]
+        fn fuzzy_add(a in scalar(), b in scalar()) {
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+
+            let res_bi = (&a_bi + &b_bi) % &Scalar::modulus_as_biguint();
+            let res_ref = Scalar::from(&res_bi);
+            let res_test = a.add(&b);
+
+            assert_eq!(res_ref, res_test);
+        }
+
+        #[test]
+        fn fuzzy_sub(a in scalar(), b in scalar()) {
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+
+            let m = Scalar::modulus_as_biguint();
+            let res_bi = (&m + &a_bi - &b_bi) % &m;
+            let res_ref = Scalar::from(&res_bi);
+            let res_test = a.sub(&b);
+
+            assert_eq!(res_ref, res_test);
+        }
+
+        #[test]
+        fn fuzzy_neg(a in scalar()) {
+            let a_bi = a.to_biguint().unwrap();
+
+            let m = Scalar::modulus_as_biguint();
+            let res_bi = (&m - &a_bi) % &m;
+            let res_ref = Scalar::from(&res_bi);
+            let res_test = -a;
+
+            assert_eq!(res_ref, res_test);
         }
 
         #[test]

@@ -12,7 +12,7 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
 
-use crate::arithmetic::util::sbb;
+use crate::arithmetic::util::{adc, sbb};
 
 /// The number of 64-bit limbs used to represent a [`Scalar`].
 const LIMBS: usize = 4;
@@ -204,6 +204,28 @@ impl Scalar4x64 {
         r.reduce(overflow)
 
         // TODO: the original returned overflow here, do we need it?
+    }
+
+    pub fn sub(&self, rhs: &Self) -> Self {
+        let mut res = [0u64; 4];
+        let mut borrow = 0;
+        for i in 0..4 {
+            let t = sbb(self.0[i], rhs.0[i], borrow);
+            res[i] = t.0;
+            borrow = t.1;
+        }
+
+        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
+        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
+        // modulus.
+        let mut carry = 0;
+        for i in 0..4 {
+            let t = adc(res[i], MODULUS[i] & borrow, carry);
+            res[i] = t.0;
+            carry = t.1;
+        }
+
+        Self(res)
     }
 
     pub fn mul_wide(&self, rhs: &Self) -> WideScalar8x64 {

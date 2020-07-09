@@ -20,6 +20,20 @@ pub const fn sbb32(a: u32, b: u32, borrow: u32) -> (u32, u32) {
     (ret as u32, (ret >> 32) as u32)
 }
 
+#[cfg(not(feature = "scalar-32bit"))]
+#[inline(always)]
+pub const fn adc(a: u64, b: u64, carry: u64) -> (u64, u64) {
+    let ret = (a as u128) + (b as u128) + (carry as u128);
+    (ret as u64, (ret >> 64) as u64)
+}
+
+#[cfg(feature = "scalar-32bit")]
+#[inline(always)]
+pub const fn adc32(a: u32, b: u32, carry: u32) -> (u32, u32) {
+    let ret = (a as u64) + (b as u64) + (carry as u64);
+    (ret as u32, (ret >> 32) as u32)
+}
+
 #[cfg(test)]
 #[allow(dead_code)]
 pub fn u64_array_to_biguint(words: &[u64; 4]) -> BigUint {

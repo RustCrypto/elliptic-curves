@@ -5,7 +5,7 @@ use super::util::{biguint_to_u32_array, u32_array_to_biguint};
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
-use crate::arithmetic::util::sbb32;
+use crate::arithmetic::util::{sbb32, adc32};
 
 use core::convert::TryInto;
 
@@ -207,6 +207,28 @@ impl Scalar8x32 {
         r.reduce(overflow)
 
         // TODO: the original returned overflow here, do we need it?
+    }
+
+    pub fn sub(&self, rhs: &Self) -> Self {
+        let mut res = [0u32; 8];
+        let mut borrow = 0;
+        for i in 0..8 {
+            let t = sbb32(self.0[i], rhs.0[i], borrow);
+            res[i] = t.0;
+            borrow = t.1;
+        }
+
+        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
+        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
+        // modulus.
+        let mut carry = 0;
+        for i in 0..8 {
+            let t = adc32(res[i], MODULUS[i] & borrow, carry);
+            res[i] = t.0;
+            carry = t.1;
+        }
+
+        Self(res)
     }
 
     pub fn mul_wide(&self, rhs: &Self) -> WideScalar16x32 {
