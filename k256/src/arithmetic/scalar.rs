@@ -71,7 +71,7 @@ impl Scalar {
 
     /// Checks if the scalar is zero.
     pub fn is_zero(&self) -> Choice {
-        Choice::from(self.0.is_zero())
+        self.0.is_zero()
     }
 
     /// Returns the value of the scalar truncated to a 32-bit unsigned integer.
