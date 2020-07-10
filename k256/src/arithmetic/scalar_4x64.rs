@@ -192,7 +192,6 @@ impl Scalar4x64 {
         Self::conditional_select(&Self(res), &Self::zero(), self.is_zero())
     }
 
-    // TODO: compare performance with the old implementation from FieldElement, based on adc()
     pub fn add(&self, rhs: &Self) -> Self {
         let (res1, overflow) = adc_array_with_overflow(&(self.0), &(rhs.0));
         let (res2, _) = sbb_array(&res1, &MODULUS);
