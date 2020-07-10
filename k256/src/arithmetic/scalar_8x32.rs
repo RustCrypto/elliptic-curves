@@ -31,10 +31,10 @@ pub const NEG_MODULUS: [u32; 8] = [
     !MODULUS[1],
     !MODULUS[2],
     !MODULUS[3],
-    1,
-    0,
-    0,
-    0,
+    !MODULUS[4],
+    !MODULUS[5],
+    !MODULUS[6],
+    !MODULUS[7],
 ];
 
 /// Constant representing the modulus / 2
@@ -48,6 +48,109 @@ const FRAC_MODULUS_2: [u32; 8] = [
     0xFFFF_FFFF,
     0x7FFF_FFFF,
 ];
+
+#[inline(always)]
+fn sbb_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
+    let borrow = 0;
+    let (r0, borrow) = sbb32(lhs[0], rhs[0], borrow);
+    let (r1, borrow) = sbb32(lhs[1], rhs[1], borrow);
+    let (r2, borrow) = sbb32(lhs[2], rhs[2], borrow);
+    let (r3, borrow) = sbb32(lhs[3], rhs[3], borrow);
+    let (r4, borrow) = sbb32(lhs[4], rhs[4], borrow);
+    let (r5, borrow) = sbb32(lhs[5], rhs[5], borrow);
+    let (r6, borrow) = sbb32(lhs[6], rhs[6], borrow);
+    let (r7, borrow) = sbb32(lhs[7], rhs[7], borrow);
+    ([r0, r1, r2, r3, r4, r5, r6, r7], borrow)
+}
+
+#[inline(always)]
+fn sbb_array_with_underflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
+    let (res, borrow) = sbb_array(lhs, rhs);
+    (res, Choice::from((borrow >> 31) as u8))
+}
+
+#[inline(always)]
+fn adc_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
+    let carry = 0;
+    let (r0, carry) = adc32(lhs[0], rhs[0], carry);
+    let (r1, carry) = adc32(lhs[1], rhs[1], carry);
+    let (r2, carry) = adc32(lhs[2], rhs[2], carry);
+    let (r3, carry) = adc32(lhs[3], rhs[3], carry);
+    let (r4, carry) = adc32(lhs[4], rhs[4], carry);
+    let (r5, carry) = adc32(lhs[5], rhs[5], carry);
+    let (r6, carry) = adc32(lhs[6], rhs[6], carry);
+    let (r7, carry) = adc32(lhs[7], rhs[7], carry);
+    ([r0, r1, r2, r3, r4, r5, r6, r7], carry)
+}
+
+#[inline(always)]
+fn adc_array_with_overflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
+    let (res, carry) = adc_array(lhs, rhs);
+    (res, Choice::from(carry as u8))
+}
+
+#[inline(always)]
+fn conditional_select(a: &[u32; 8], b: &[u32; 8], choice: Choice) -> [u32; 8] {
+    [
+        u32::conditional_select(&a[0], &b[0], choice),
+        u32::conditional_select(&a[1], &b[1], choice),
+        u32::conditional_select(&a[2], &b[2], choice),
+        u32::conditional_select(&a[3], &b[3], choice),
+        u32::conditional_select(&a[4], &b[4], choice),
+        u32::conditional_select(&a[5], &b[5], choice),
+        u32::conditional_select(&a[6], &b[6], choice),
+        u32::conditional_select(&a[7], &b[7], choice),
+    ]
+}
+
+#[inline(always)]
+fn ct_less(a: u32, b: u32) -> u32 {
+    (a < b) as u32
+}
+
+/// Add a to the number defined by (c0,c1,c2). c2 must never overflow.
+fn sumadd(a: u32, c0: u32, c1: u32, c2: u32) -> (u32, u32, u32) {
+    let new_c0 = c0.wrapping_add(a); // overflow is handled on the next line
+    let over: u32 = if new_c0 < a { 1 } else { 0 };
+    let new_c1 = c1.wrapping_add(over); // overflow is handled on the next line
+    let new_c2 = c2 + ct_less(new_c1, over); // never overflows by contract
+    (new_c0, new_c1, new_c2)
+}
+
+/// Add a to the number defined by (c0,c1). c1 must never overflow, c2 must be zero.
+fn sumadd_fast(a: u32, c0: u32, c1: u32) -> (u32, u32) {
+    let new_c0 = c0.wrapping_add(a); // overflow is handled on the next line
+    let new_c1 = c1 + ct_less(new_c0, a); // never overflows by contract (verified the next line)
+    debug_assert!((new_c1 != 0) | (new_c0 >= a));
+    (new_c0, new_c1)
+}
+
+/// Add a*b to the number defined by (c0,c1,c2). c2 must never overflow.
+fn muladd(a: u32, b: u32, c0: u32, c1: u32, c2: u32) -> (u32, u32, u32) {
+    let t = (a as u64) * (b as u64);
+    let th = (t >> 32) as u32; // at most 0xFFFFFFFFFFFFFFFE
+    let tl = t as u32;
+
+    let new_c0 = c0.wrapping_add(tl); // overflow is handled on the next line
+    let new_th = th + ct_less(new_c0, tl); // at most 0xFFFFFFFFFFFFFFFF
+    let new_c1 = c1.wrapping_add(new_th); // overflow is handled on the next line
+    let new_c2 = c2 + ct_less(new_c1, new_th); // never overflows by contract (verified in the next line)
+    debug_assert!((new_c1 >= new_th) || (new_c2 != 0));
+    (new_c0, new_c1, new_c2)
+}
+
+/// Add a*b to the number defined by (c0,c1). c1 must never overflow.
+fn muladd_fast(a: u32, b: u32, c0: u32, c1: u32) -> (u32, u32) {
+    let t = (a as u64) * (b as u64);
+    let th = (t >> 32) as u32; // at most 0xFFFFFFFFFFFFFFFE
+    let tl = t as u32;
+
+    let new_c0 = c0.wrapping_add(tl); // overflow is handled on the next line
+    let new_th = th + ct_less(new_c0, tl); // at most 0xFFFFFFFFFFFFFFFF
+    let new_c1 = c1 + new_th; // never overflows by contract (verified in the next line)
+    debug_assert!(new_c1 >= new_th);
+    (new_c0, new_c1)
+}
 
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
@@ -91,17 +194,8 @@ impl Scalar8x32 {
     pub fn from_words(w: [u32; 8]) -> CtOption<Self> {
         // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
         // value of 2^64 - 1.
-        let (_, borrow) = sbb32(w[0], MODULUS[0], 0);
-        let (_, borrow) = sbb32(w[1], MODULUS[1], borrow);
-        let (_, borrow) = sbb32(w[2], MODULUS[2], borrow);
-        let (_, borrow) = sbb32(w[3], MODULUS[3], borrow);
-        let (_, borrow) = sbb32(w[4], MODULUS[4], borrow);
-        let (_, borrow) = sbb32(w[5], MODULUS[5], borrow);
-        let (_, borrow) = sbb32(w[6], MODULUS[6], borrow);
-        let (_, borrow) = sbb32(w[7], MODULUS[7], borrow);
-        let is_some = (borrow as u8) & 1;
-
-        CtOption::new(Self(w), Choice::from(is_some))
+        let (_, underflow) = sbb_array_with_underflow(&w, &MODULUS);
+        CtOption::new(Self(w), underflow)
     }
 
     /// Returns the SEC-1 encoding of this scalar.
@@ -120,115 +214,39 @@ impl Scalar8x32 {
 
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
-        let (_, borrow) = sbb32(self.0[0], FRAC_MODULUS_2[0], 0);
-        let (_, borrow) = sbb32(self.0[1], FRAC_MODULUS_2[1], borrow);
-        let (_, borrow) = sbb32(self.0[2], FRAC_MODULUS_2[2], borrow);
-        let (_, borrow) = sbb32(self.0[3], FRAC_MODULUS_2[3], borrow);
-        let (_, borrow) = sbb32(self.0[4], FRAC_MODULUS_2[4], borrow);
-        let (_, borrow) = sbb32(self.0[5], FRAC_MODULUS_2[5], borrow);
-        let (_, borrow) = sbb32(self.0[6], FRAC_MODULUS_2[6], borrow);
-        let (_, borrow) = sbb32(self.0[7], FRAC_MODULUS_2[7], borrow);
-        (borrow & 1).ct_eq(&0)
+        let (_, underflow) = sbb_array_with_underflow(&(self.0), &FRAC_MODULUS_2);
+        !underflow
     }
 
-    // FIXME: use subtle
-    pub fn is_zero(&self) -> u8 {
-        ((self.0[0]
-            | self.0[1]
-            | self.0[2]
-            | self.0[3]
-            | self.0[4]
-            | self.0[5]
-            | self.0[6]
-            | self.0[7])
-            == 0) as u8
+    pub fn is_zero(&self) -> Choice {
+        Choice::from(
+            ((self.0[0]
+                | self.0[1]
+                | self.0[2]
+                | self.0[3]
+                | self.0[4]
+                | self.0[5]
+                | self.0[6]
+                | self.0[7])
+                == 0) as u8,
+        )
     }
 
     pub fn negate(&self) -> Self {
-        let nonzero = (0xFFFFFFFFu32 * ((self.is_zero() == 0) as u32)) as u64;
-        let mut t = (!self.0[0]) as u64 + (MODULUS[0] + 1) as u64;
-        let r0 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[1]) as u64 + MODULUS[1] as u64;
-        let r1 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[2]) as u64 + MODULUS[2] as u64;
-        let r2 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[3]) as u64 + MODULUS[3] as u64;
-        let r3 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[4]) as u64 + MODULUS[4] as u64;
-        let r4 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[5]) as u64 + MODULUS[5] as u64;
-        let r5 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[6]) as u64 + MODULUS[6] as u64;
-        let r6 = (t & nonzero) as u32;
-        t >>= 32;
-        t += (!self.0[7]) as u64 + MODULUS[7] as u64;
-        let r7 = (t & nonzero) as u32;
-
-        Self([r0, r1, r2, r3, r4, r5, r6, r7])
+        let (res, _) = sbb_array(&MODULUS, &(self.0));
+        Self::conditional_select(&Self(res), &Self::zero(), self.is_zero())
     }
 
-    // TODO: compare performance with the old implementation from FieldElement, based on adc()
     pub fn add(&self, rhs: &Self) -> Self {
-        let mut t = self.0[0] as u64 + rhs.0[0] as u64;
-        // FIXME: `& 0xFFFFFFFFu64` is redundant
-        let r0 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[1] as u64 + rhs.0[1] as u64;
-        let r1 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[2] as u64 + rhs.0[2] as u64;
-        let r2 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[3] as u64 + rhs.0[3] as u64;
-        let r3 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[4] as u64 + rhs.0[4] as u64;
-        let r4 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[5] as u64 + rhs.0[5] as u64;
-        let r5 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[6] as u64 + rhs.0[6] as u64;
-        let r6 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[7] as u64 + rhs.0[7] as u64;
-        let r7 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-
-        let r = Self([r0, r1, r2, r3, r4, r5, r6, r7]);
-        let overflow = t as u8 + r.get_overflow();
-        debug_assert!(overflow == 0 || overflow == 1);
-        r.reduce(overflow)
-
-        // TODO: the original returned overflow here, do we need it?
+        let (res1, overflow) = adc_array_with_overflow(&(self.0), &(rhs.0));
+        let (res2, _) = sbb_array(&res1, &MODULUS);
+        Self(conditional_select(&res1, &res2, overflow))
     }
 
     pub fn sub(&self, rhs: &Self) -> Self {
-        let mut res = [0u32; 8];
-        let mut borrow = 0;
-        for i in 0..8 {
-            let t = sbb32(self.0[i], rhs.0[i], borrow);
-            res[i] = t.0;
-            borrow = t.1;
-        }
-
-        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
-        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
-        // modulus.
-        let mut carry = 0;
-        for i in 0..8 {
-            let t = adc32(res[i], MODULUS[i] & borrow, carry);
-            res[i] = t.0;
-            carry = t.1;
-        }
-
-        Self(res)
+        let (res1, underflow) = sbb_array_with_underflow(&(self.0), &(rhs.0));
+        let (res2, _) = adc_array(&res1, &MODULUS);
+        Self(conditional_select(&res1, &res2, underflow))
     }
 
     pub fn mul_wide(&self, rhs: &Self) -> WideScalar16x32 {
@@ -330,49 +348,9 @@ impl Scalar8x32 {
         wide_res.reduce()
     }
 
-    /// Return 1u8 if `self` is greater than the modulus, 0u8 otherwise.
-    pub fn get_overflow(&self) -> u8 {
-        // Instead of comparison-based check from libsecp256k1,
-        // we just subtract the modulus and check for the borrow.
-        // It is a little slower in addition microbenchmarks,
-        // but there is no speed difference on high level.
-        let mut borrow = 0;
-        for i in 0..8 {
-            let t = sbb32(self.0[i], MODULUS[i], borrow);
-            borrow = t.1;
-        }
-        ((!borrow) >> 31) as u8
-    }
-
-    pub fn reduce(&self, overflow: u8) -> Self {
-        debug_assert!(overflow <= 1);
-
-        // FIXME: use conditional select here
-        let mut t = self.0[0] as u64 + ((overflow as u32) * NEG_MODULUS[0]) as u64;
-        let r0 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[1] as u64 + ((overflow as u32) * NEG_MODULUS[1]) as u64;
-        let r1 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[2] as u64 + ((overflow as u32) * NEG_MODULUS[2]) as u64;
-        let r2 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[3] as u64 + ((overflow as u32) * NEG_MODULUS[3]) as u64;
-        let r3 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[4] as u64 + ((overflow as u32) * NEG_MODULUS[4]) as u64;
-        let r4 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[5] as u64;
-        let r5 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[6] as u64;
-        let r6 = (t & 0xFFFFFFFFu64) as u32;
-        t >>= 32;
-        t += self.0[7] as u64;
-        let r7 = (t & 0xFFFFFFFFu64) as u32;
-
-        Self([r0, r1, r2, r3, r4, r5, r6, r7])
+    pub fn from_overflow(w: &[u32; 8], high_bit: Choice) -> Self {
+        let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
+        Self(conditional_select(&w, &r2, !underflow | high_bit))
     }
 
     pub fn rshift(&self, shift: usize) -> Self {
@@ -434,16 +412,7 @@ impl ToBigUint for Scalar8x32 {
 
 impl ConditionallySelectable for Scalar8x32 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self([
-            u32::conditional_select(&a.0[0], &b.0[0], choice),
-            u32::conditional_select(&a.0[1], &b.0[1], choice),
-            u32::conditional_select(&a.0[2], &b.0[2], choice),
-            u32::conditional_select(&a.0[3], &b.0[3], choice),
-            u32::conditional_select(&a.0[4], &b.0[4], choice),
-            u32::conditional_select(&a.0[5], &b.0[5], choice),
-            u32::conditional_select(&a.0[6], &b.0[6], choice),
-            u32::conditional_select(&a.0[7], &b.0[7], choice),
-        ])
+        Scalar8x32(conditional_select(&(a.0), &(b.0), choice))
     }
 }
 
@@ -458,51 +427,6 @@ impl ConstantTimeEq for Scalar8x32 {
             & self.0[6].ct_eq(&other.0[6])
             & self.0[7].ct_eq(&other.0[7])
     }
-}
-
-/** Add a to the number defined by (c0,c1,c2). c2 must never overflow. */
-fn sumadd(a: u32, c0: u32, c1: u32, c2: u32) -> (u32, u32, u32) {
-    let new_c0 = c0.wrapping_add(a); /* overflow is handled on the next line */
-    let over: u32 = if new_c0 < a { 1 } else { 0 };
-    let new_c1 = c1.wrapping_add(over); /* overflow is handled on the next line */
-    let new_c2 = c2 + if new_c1 < over { 1 } else { 0 }; /* never overflows by contract */
-    (new_c0, new_c1, new_c2)
-}
-
-/** Add a to the number defined by (c0,c1). c1 must never overflow, c2 must be zero. */
-fn sumadd_fast(a: u32, c0: u32, c1: u32) -> (u32, u32) {
-    let new_c0 = c0.wrapping_add(a); /* overflow is handled on the next line */
-    let new_c1 = c1 + if new_c0 < a { 1 } else { 0 }; /* never overflows by contract (verified the next line) */
-    debug_assert!((new_c1 != 0) | (new_c0 >= a));
-    (new_c0, new_c1)
-}
-
-/** Add a*b to the number defined by (c0,c1,c2). c2 must never overflow. */
-fn muladd(a: u32, b: u32, c0: u32, c1: u32, c2: u32) -> (u32, u32, u32) {
-    let t = (a as u64) * (b as u64);
-    let th = (t >> 32) as u32; /* at most 0xFFFFFFFFFFFFFFFE */
-    let tl = t as u32;
-
-    let new_c0 = c0.wrapping_add(tl); /* overflow is handled on the next line */
-    let new_th = th + if new_c0 < tl { 1 } else { 0 }; /* at most 0xFFFFFFFFFFFFFFFF */
-    let new_c1 = c1.wrapping_add(new_th); /* overflow is handled on the next line */
-    let new_c2 = c2 + if new_c1 < new_th { 1 } else { 0 }; /* never overflows by contract (verified in the next line) */
-    debug_assert!((new_c1 >= new_th) || (new_c2 != 0));
-    (new_c0, new_c1, new_c2)
-}
-
-/** Add a*b to the number defined by (c0,c1). c1 must never overflow. */
-fn muladd_fast(a: u32, b: u32, c0: u32, c1: u32) -> (u32, u32) {
-    let t = (a as u64) * (b as u64);
-    let th = (t >> 32) as u32; /* at most 0xFFFFFFFFFFFFFFFE */
-    let tl = t as u32;
-
-    let new_c0 = c0.wrapping_add(tl); /* overflow is handled on the next line */
-    // FIXME: constant time
-    let new_th = th + if new_c0 < tl { 1 } else { 0 }; /* at most 0xFFFFFFFFFFFFFFFF */
-    let new_c1 = c1 + new_th; /* never overflows by contract (verified in the next line) */
-    debug_assert!(new_c1 >= new_th);
-    (new_c0, new_c1)
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -676,7 +600,7 @@ impl WideScalar16x32 {
         c >>= 32;
 
         /* Final reduction of r. */
-        let s = Scalar8x32([r0, r1, r2, r3, r4, r5, r6, r7]);
-        s.reduce((c as u8) + s.get_overflow())
+        let high_bit = Choice::from(c as u8);
+        Scalar8x32::from_overflow(&[r0, r1, r2, r3, r4, r5, r6, r7], high_bit)
     }
 }

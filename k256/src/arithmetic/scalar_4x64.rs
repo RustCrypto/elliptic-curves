@@ -27,7 +27,7 @@ pub const MODULUS: [u64; LIMBS] = [
 ];
 
 /* Limbs of 2^256 minus the secp256k1 order. */
-pub const NEG_MODULUS: [u64; LIMBS] = [!MODULUS[0] + 1, !MODULUS[1], 1, 0];
+pub const NEG_MODULUS: [u64; LIMBS] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
 
 /// Constant representing the modulus / 2
 const FRAC_MODULUS_2: [u64; LIMBS] = [
@@ -79,10 +79,6 @@ fn conditional_select(a: &[u64; 4], b: &[u64; 4], choice: Choice) -> [u64; 4] {
     ]
 }
 
-#[derive(Clone, Copy, Debug, Default)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub struct Scalar4x64([u64; LIMBS]);
-
 #[inline(always)]
 fn ct_less(a: u64, b: u64) -> u64 {
     (a < b) as u64
@@ -131,6 +127,10 @@ fn muladd_fast(a: u64, b: u64, c0: u64, c1: u64) -> (u64, u64) {
     debug_assert!(new_c1 >= new_th);
     (new_c0, new_c1)
 }
+
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
+pub struct Scalar4x64([u64; LIMBS]);
 
 impl Scalar4x64 {
     /// Returns the zero scalar.
