@@ -37,6 +37,49 @@ const FRAC_MODULUS_2: [u64; LIMBS] = [
     0x7FFF_FFFF_FFFF_FFFF,
 ];
 
+#[inline(always)]
+fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
+    let borrow = 0;
+    let (r0, borrow) = sbb(lhs[0], rhs[0], borrow);
+    let (r1, borrow) = sbb(lhs[1], rhs[1], borrow);
+    let (r2, borrow) = sbb(lhs[2], rhs[2], borrow);
+    let (r3, borrow) = sbb(lhs[3], rhs[3], borrow);
+    ([r0, r1, r2, r3], borrow)
+}
+
+#[inline(always)]
+fn sbb_array_with_underflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
+    let (res, borrow) = sbb_array(lhs, rhs);
+    (res, Choice::from((borrow >> 63) as u8))
+}
+
+#[inline(always)]
+fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
+    let carry = 0;
+    let (r0, carry) = adc(lhs[0], rhs[0], carry);
+    let (r1, carry) = adc(lhs[1], rhs[1], carry);
+    let (r2, carry) = adc(lhs[2], rhs[2], carry);
+    let (r3, carry) = adc(lhs[3], rhs[3], carry);
+    ([r0, r1, r2, r3], carry)
+}
+
+#[inline(always)]
+fn adc_array_with_overflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
+    let (res, carry) = adc_array(lhs, rhs);
+    (res, Choice::from(carry as u8))
+}
+
+
+#[inline(always)]
+fn conditional_select(a: &[u64; 4], b: &[u64; 4], choice: Choice) -> [u64; 4] {
+    [
+        u64::conditional_select(&a[0], &b[0], choice),
+        u64::conditional_select(&a[1], &b[1], choice),
+        u64::conditional_select(&a[2], &b[2], choice),
+        u64::conditional_select(&a[3], &b[3], choice),
+    ]
+}
+
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar4x64([u64; LIMBS]);
@@ -120,13 +163,8 @@ impl Scalar4x64 {
     pub fn from_words(w: [u64; 4]) -> CtOption<Self> {
         // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
         // value of 2^64 - 1.
-        let (_, borrow) = sbb(w[0], MODULUS[0], 0);
-        let (_, borrow) = sbb(w[1], MODULUS[1], borrow);
-        let (_, borrow) = sbb(w[2], MODULUS[2], borrow);
-        let (_, borrow) = sbb(w[3], MODULUS[3], borrow);
-        let is_some = (borrow as u8) & 1;
-
-        CtOption::new(Self(w), Choice::from(is_some))
+        let (_, underflow) = sbb_array_with_underflow(&w, &MODULUS);
+        CtOption::new(Self(w), underflow)
     }
 
     /// Returns the SEC-1 encoding of this scalar.
@@ -141,91 +179,30 @@ impl Scalar4x64 {
 
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
-        let (_, borrow) = sbb(self.0[0], FRAC_MODULUS_2[0], 0);
-        let (_, borrow) = sbb(self.0[1], FRAC_MODULUS_2[1], borrow);
-        let (_, borrow) = sbb(self.0[2], FRAC_MODULUS_2[2], borrow);
-        let (_, borrow) = sbb(self.0[3], FRAC_MODULUS_2[3], borrow);
-        (borrow & 1).ct_eq(&0)
+        let (_, underflow) = sbb_array_with_underflow(&(self.0), &FRAC_MODULUS_2);
+        !underflow
     }
 
-    // FIXME: use subtle
-    pub fn is_zero(&self) -> u8 {
-        return ((self.0[0] | self.0[1] | self.0[2] | self.0[3]) == 0) as u8;
-    }
-
-    // TODO: check if it's faster
-    #[allow(dead_code)]
-    pub fn neg(&self) -> Self {
-        let (w0, borrow) = sbb(MODULUS[0], self.0[0], 0);
-        let (w1, borrow) = sbb(MODULUS[1], self.0[1], borrow);
-        let (w2, borrow) = sbb(MODULUS[2], self.0[2], borrow);
-        let (w3, _) = sbb(MODULUS[3], self.0[3], borrow);
-
-        let is_zero = self.0.ct_eq(&[0u64; LIMBS]);
-        Self::conditional_select(&Self([w0, w1, w2, w3]), &Self::zero(), is_zero)
+    pub fn is_zero(&self) -> Choice {
+        Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3]) == 0) as u8)
     }
 
     pub fn negate(&self) -> Self {
-        // FIXME: use subtle
-        let nonzero = (0xFFFFFFFFFFFFFFFFu64 * (self.is_zero() == 0) as u64) as u128;
-        let mut t = (!self.0[0]) as u128 + (MODULUS[0] + 1) as u128;
-        let r0 = t & nonzero;
-        t >>= 64;
-        t += (!self.0[1]) as u128 + MODULUS[1] as u128;
-        let r1 = t & nonzero;
-        t >>= 64;
-        t += (!self.0[2]) as u128 + MODULUS[2] as u128;
-        let r2 = t & nonzero;
-        t >>= 64;
-        t += (!self.0[3]) as u128 + MODULUS[3] as u128;
-        let r3 = t & nonzero;
-        Self([r0 as u64, r1 as u64, r2 as u64, r3 as u64])
+        let (res, _) = sbb_array(&MODULUS, &(self.0));
+        Self::conditional_select(&Self(res), &Self::zero(), self.is_zero())
     }
 
     // TODO: compare performance with the old implementation from FieldElement, based on adc()
     pub fn add(&self, rhs: &Self) -> Self {
-        let mut t = (self.0[0] as u128) + (rhs.0[0] as u128);
-        let r0 = t & 0xFFFFFFFFFFFFFFFFu128;
-        t >>= 64;
-        t += (self.0[1] as u128) + (rhs.0[1] as u128);
-        let r1 = t & 0xFFFFFFFFFFFFFFFFu128;
-        t >>= 64;
-        t += (self.0[2] as u128) + (rhs.0[2] as u128);
-        let r2 = t & 0xFFFFFFFFFFFFFFFFu128;
-        t >>= 64;
-        t += (self.0[3] as u128) + (rhs.0[3] as u128);
-        let r3 = t & 0xFFFFFFFFFFFFFFFFu128;
-        t >>= 64;
-        let r = Self([r0 as u64, r1 as u64, r2 as u64, r3 as u64]);
-        let overflow = t as u8 + r.get_overflow();
-        debug_assert!(overflow == 0 || overflow == 1);
-
-        // FIXME: a scalar should be normalized on creation; use from_words() or seomthing?
-        r.reduce(overflow)
-
-        // TODO: the original returned overflow here, do we need it?
+        let (res1, overflow) = adc_array_with_overflow(&(self.0), &(rhs.0));
+        let (res2, _) = sbb_array(&res1, &MODULUS);
+        Self(conditional_select(&res1, &res2, overflow))
     }
 
     pub fn sub(&self, rhs: &Self) -> Self {
-        let mut res = [0u64; 4];
-        let mut borrow = 0;
-        for i in 0..4 {
-            let t = sbb(self.0[i], rhs.0[i], borrow);
-            res[i] = t.0;
-            borrow = t.1;
-        }
-
-        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
-        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
-        // modulus.
-        let mut carry = 0;
-        for i in 0..4 {
-            let t = adc(res[i], MODULUS[i] & borrow, carry);
-            res[i] = t.0;
-            carry = t.1;
-        }
-
-        Self(res)
+        let (res1, underflow) = sbb_array_with_underflow(&(self.0), &(rhs.0));
+        let (res2, _) = adc_array(&res1, &MODULUS);
+        Self(conditional_select(&res1, &res2, underflow))
     }
 
     pub fn mul_wide(&self, rhs: &Self) -> WideScalar8x64 {
@@ -236,7 +213,6 @@ impl Scalar4x64 {
         let c2 = 0;
 
         /* l[0..7] = a[0..3] * b[0..3]. */
-        // FIXME: `muladd()` always receives c2 == 0; can we optimize that?
         let (c0, c1) = muladd_fast(self.0[0], rhs.0[0], c0, c1);
         let (l0, c0, c1) = (c0, c1, 0);
         let (c0, c1, c2) = muladd(self.0[0], rhs.0[1], c0, c1, c2);
@@ -270,38 +246,9 @@ impl Scalar4x64 {
         wide_res.reduce()
     }
 
-    /// Return 1u8 if `self` is greater than the modulus, 0u8 otherwise.
-    pub fn get_overflow(&self) -> u8 {
-        // Instead of comparison-based check from libsecp256k1,
-        // we just subtract the modulus and check for the borrow.
-        // It is a little slower in addition microbenchmarks,
-        // but there is no speed difference on high level.
-        let mut borrow = 0;
-        for i in 0..4 {
-            let t = sbb(self.0[i], MODULUS[i], borrow);
-            borrow = t.1;
-        }
-        ((!borrow) >> 63) as u8
-    }
-
-    pub fn reduce(&self, overflow: u8) -> Self {
-        debug_assert!(overflow <= 1);
-
-        // FIXME: use conditional select here
-        let mut t = (self.0[0] as u128) + ((overflow as u64 * NEG_MODULUS[0]) as u128);
-        let r0 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
-        t >>= 64;
-        t += (self.0[1] as u128) + ((overflow as u64 * NEG_MODULUS[1]) as u128);
-        let r1 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
-        t >>= 64;
-        t += (self.0[2] as u128) + ((overflow as u64 * NEG_MODULUS[2]) as u128);
-        let r2 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
-        t >>= 64;
-        t += self.0[3] as u128;
-        let r3 = (t & 0xFFFFFFFFFFFFFFFFu128) as u64;
-        // TODO: the original returned overflow here, do we need it?
-
-        Self([r0, r1, r2, r3])
+    pub fn from_overflow(w: &[u64; 4], high_bit: Choice) -> Self {
+        let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
+        Self(conditional_select(&w, &r2, !underflow | high_bit))
     }
 
     pub fn rshift(&self, shift: usize) -> Self {
@@ -369,12 +316,7 @@ impl ToBigUint for Scalar4x64 {
 
 impl ConditionallySelectable for Scalar4x64 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Scalar4x64([
-            u64::conditional_select(&a.0[0], &b.0[0], choice),
-            u64::conditional_select(&a.0[1], &b.0[1], choice),
-            u64::conditional_select(&a.0[2], &b.0[2], choice),
-            u64::conditional_select(&a.0[3], &b.0[3], choice),
-        ])
+        Scalar4x64(conditional_select(&(a.0), &(b.0), choice))
     }
 }
 
@@ -408,7 +350,6 @@ impl WideScalar8x64 {
 
         /* Reduce 512 bits into 385. */
         /* m[0..6] = self[0..3] + n[0..3] * NEG_MODULUS. */
-        // FIXME: some functions receive 0 as arguments; can it be optimized?
         let c0 = self.0[0];
         let c1 = 0;
         let c2 = 0;
@@ -434,7 +375,7 @@ impl WideScalar8x64 {
         let (c0, c1) = sumadd_fast(n3, c0, c1);
         let (m5, c0, _c1) = (c0, c1, 0);
         debug_assert!(c0 <= 1);
-        let m6 = c0; // FIXME: as u32 in the original, but it's used in muladd() anyway;
+        let m6 = c0;
 
         /* Reduce 385 bits into 258. */
         /* p[0..4] = m[0..3] + m[4..6] * NEG_MODULUS. */
@@ -456,7 +397,7 @@ impl WideScalar8x64 {
         let (c0, c1) = muladd_fast(m6, NEG_MODULUS[1], c0, c1);
         let (c0, c1) = sumadd_fast(m5, c0, c1);
         let (p3, c0, _c1) = (c0, c1, 0);
-        let p4 = c0 + m6; // FIXME: as u32 in the original, but it has to be converted later anyway;
+        let p4 = c0 + m6;
         debug_assert!(p4 <= 2);
 
         /* Reduce 258 bits into 256. */
@@ -475,8 +416,8 @@ impl WideScalar8x64 {
         c >>= 64;
 
         /* Final reduction of r. */
-        let s = Scalar4x64([r0, r1, r2, r3]);
-        s.reduce((c as u8) + s.get_overflow())
+        let high_bit = Choice::from(c as u8);
+        Scalar4x64::from_overflow(&[r0, r1, r2, r3], high_bit)
     }
 }
 
