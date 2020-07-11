@@ -123,9 +123,72 @@ impl Scalar {
         Self(self.0.mul(&(rhs.0)))
     }
 
+    pub fn square(&self) -> Self {
+        self.mul(&self)
+    }
+
     /// Right shifts the scalar. Note: not constant-time in `shift`.
     pub fn rshift(&self, shift: usize) -> Scalar {
         Self(self.0.rshift(shift))
+    }
+
+    fn pow2k(&self, k: usize) -> Self {
+        let mut x = *self;
+        for _j in 0..k {
+            x = x.square();
+        }
+        x
+    }
+
+    pub fn invert(&self) -> CtOption<Self> {
+
+        // Using an addition chain from
+        // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
+
+        let x_1 = *self;
+        let x_10 = self.pow2k(1);
+        let x_11 = x_10.mul(&x_1);
+        let x_101 = x_10.mul(&x_11);
+        let x_111 = x_10.mul(&x_101);
+        let x_1001 = x_10.mul(&x_111);
+        let x_1011 = x_10.mul(&x_1001);
+        let x_1101 = x_10.mul(&x_1011);
+
+        let x6 = x_1101.pow2k(2).mul(&x_1011);
+        let x8 = x6.pow2k(2).mul(&x_11);
+        let x14 = x8.pow2k(6).mul(&x6);
+        let x28 = x14.pow2k(14).mul(&x14);
+        let x56 = x28.pow2k(28).mul(&x28);
+
+        let res = x56
+            .pow2k(56).mul(&x56)
+            .pow2k(14).mul(&x14)
+            .pow2k(3).mul(&x_101)
+            .pow2k(4).mul(&x_111)
+            .pow2k(4).mul(&x_101)
+            .pow2k(5).mul(&x_1011)
+            .pow2k(4).mul(&x_1011)
+            .pow2k(4).mul(&x_111)
+            .pow2k(5).mul(&x_111)
+            .pow2k(6).mul(&x_1101)
+            .pow2k(4).mul(&x_101)
+            .pow2k(3).mul(&x_111)
+            .pow2k(5).mul(&x_1001)
+            .pow2k(6).mul(&x_101)
+            .pow2k(10).mul(&x_111)
+            .pow2k(4).mul(&x_111)
+            .pow2k(9).mul(&x8)
+            .pow2k(5).mul(&x_1001)
+            .pow2k(6).mul(&x_1011)
+            .pow2k(4).mul(&x_1101)
+            .pow2k(5).mul(&x_11)
+            .pow2k(6).mul(&x_1101)
+            .pow2k(10).mul(&x_1101)
+            .pow2k(4).mul(&x_1001)
+            .pow2k(6).mul(&x_1)
+            .pow2k(8).mul(&x6);
+
+        CtOption::new(res, !self.is_zero())
     }
 
     #[cfg(test)]
@@ -414,6 +477,18 @@ mod tests {
             let res_test = a >> b;
 
             assert_eq!(res_ref, res_test);
+        }
+
+        #[test]
+        fn fuzzy_invert(
+            a in scalar()
+        ) {
+            let a = if bool::from(a.is_zero()) { Scalar::one() } else { a };
+            let a_bi = a.to_biguint().unwrap();
+            let inv = a.invert().unwrap();
+            let inv_bi = inv.to_biguint().unwrap();
+            let m = Scalar::modulus_as_biguint();
+            assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
         }
     }
 }
