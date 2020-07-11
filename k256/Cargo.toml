@@ -30,6 +30,7 @@ num-traits = "0.2"
 
 [features]
 default = ["arithmetic", "std"]
+all-nonconflicting = ["default", "rand", "test-vectors", "64bit"]
 arithmetic = []
 field-10x26 = []
 field-5x52 = []
