@@ -238,7 +238,7 @@ impl FieldElement5x52 {
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&Self::zero())
+        Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3] | self.0[4]) == 0) as u8)
     }
 
     /// Determine if this `FieldElement5x52` is odd in the SEC-1 sense: `self mod 2 == 1`.
@@ -295,7 +295,6 @@ impl FieldElement5x52 {
 
     #[inline(always)]
     fn mul_inner(&self, rhs: &Self) -> Self {
-
         /*
         `square()` is just `mul()` with equal arguments. Rust compiler is smart enough
         to do all the necessary optimizations for this case, but it needs to have this information
