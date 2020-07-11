@@ -1,12 +1,26 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
+#[cfg(feature = "field-5x52")]
+mod field_5x52;
+
+#[cfg(feature = "field-10x26")]
+mod field_10x26;
+
+#[cfg(any(feature = "field-10x26", feature = "field-5x52"))]
+mod field_impl;
+#[cfg(any(feature = "field-10x26", feature = "field-5x52"))]
+use field_impl::FieldElementImpl;
+
+#[cfg(feature = "field-montgomery")]
+mod field_montgomery;
+#[cfg(feature = "field-montgomery")]
+use field_montgomery::FieldElementMontgomery as FieldElementImpl;
+
 use core::ops::{Add, AddAssign, Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
-
-pub use super::field_impl::FieldElementImpl;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(FieldElementImpl);

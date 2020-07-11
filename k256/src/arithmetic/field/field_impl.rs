@@ -2,19 +2,19 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(not(debug_assertions))]
-#[cfg(not(feature = "field-32bit"))]
+#[cfg(feature = "field-5x52")]
 pub use super::field_5x52::FieldElement5x52 as FieldElementImpl;
 
 #[cfg(not(debug_assertions))]
-#[cfg(feature = "field-32bit")]
+#[cfg(feature = "field-10x26")]
 pub use super::field_10x26::FieldElement10x26 as FieldElementImpl;
 
 #[cfg(debug_assertions)]
-#[cfg(not(feature = "field-32bit"))]
+#[cfg(feature = "field-5x52")]
 use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
 
 #[cfg(debug_assertions)]
-#[cfg(feature = "field-32bit")]
+#[cfg(feature = "field-10x26")]
 use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
 
 #[cfg(debug_assertions)]

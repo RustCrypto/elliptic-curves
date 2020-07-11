@@ -1,19 +1,23 @@
 //! Scalar field arithmetic.
 
+#[cfg(feature = "scalar-4x64")]
+mod scalar_4x64;
+#[cfg(feature = "scalar-4x64")]
+use scalar_4x64::Scalar4x64 as ScalarImpl;
+#[cfg(feature = "scalar-4x64")]
+use scalar_4x64::WideScalar8x64 as WideScalarImpl;
+
+#[cfg(feature = "scalar-8x32")]
+mod scalar_8x32;
+#[cfg(feature = "scalar-8x32")]
+use scalar_8x32::Scalar8x32 as ScalarImpl;
+#[cfg(feature = "scalar-8x32")]
+use scalar_8x32::WideScalar16x32 as WideScalarImpl;
+
 use core::ops::{Add, AddAssign, Mul, MulAssign, Shr, Sub, SubAssign};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
-
-#[cfg(not(feature = "scalar-32bit"))]
-pub use super::scalar_4x64::Scalar4x64 as ScalarImpl;
-#[cfg(not(feature = "scalar-32bit"))]
-pub use super::scalar_4x64::WideScalar8x64 as WideScalarImpl;
-
-#[cfg(feature = "scalar-32bit")]
-pub use super::scalar_8x32::Scalar8x32 as ScalarImpl;
-#[cfg(feature = "scalar-32bit")]
-pub use super::scalar_8x32::WideScalar16x32 as WideScalarImpl;
 
 use core::ops::Neg;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -141,7 +145,6 @@ impl Scalar {
     }
 
     pub fn invert(&self) -> CtOption<Self> {
-
         // Using an addition chain from
         // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
 
@@ -161,32 +164,58 @@ impl Scalar {
         let x56 = x28.pow2k(28).mul(&x28);
 
         let res = x56
-            .pow2k(56).mul(&x56)
-            .pow2k(14).mul(&x14)
-            .pow2k(3).mul(&x_101)
-            .pow2k(4).mul(&x_111)
-            .pow2k(4).mul(&x_101)
-            .pow2k(5).mul(&x_1011)
-            .pow2k(4).mul(&x_1011)
-            .pow2k(4).mul(&x_111)
-            .pow2k(5).mul(&x_111)
-            .pow2k(6).mul(&x_1101)
-            .pow2k(4).mul(&x_101)
-            .pow2k(3).mul(&x_111)
-            .pow2k(5).mul(&x_1001)
-            .pow2k(6).mul(&x_101)
-            .pow2k(10).mul(&x_111)
-            .pow2k(4).mul(&x_111)
-            .pow2k(9).mul(&x8)
-            .pow2k(5).mul(&x_1001)
-            .pow2k(6).mul(&x_1011)
-            .pow2k(4).mul(&x_1101)
-            .pow2k(5).mul(&x_11)
-            .pow2k(6).mul(&x_1101)
-            .pow2k(10).mul(&x_1101)
-            .pow2k(4).mul(&x_1001)
-            .pow2k(6).mul(&x_1)
-            .pow2k(8).mul(&x6);
+            .pow2k(56)
+            .mul(&x56)
+            .pow2k(14)
+            .mul(&x14)
+            .pow2k(3)
+            .mul(&x_101)
+            .pow2k(4)
+            .mul(&x_111)
+            .pow2k(4)
+            .mul(&x_101)
+            .pow2k(5)
+            .mul(&x_1011)
+            .pow2k(4)
+            .mul(&x_1011)
+            .pow2k(4)
+            .mul(&x_111)
+            .pow2k(5)
+            .mul(&x_111)
+            .pow2k(6)
+            .mul(&x_1101)
+            .pow2k(4)
+            .mul(&x_101)
+            .pow2k(3)
+            .mul(&x_111)
+            .pow2k(5)
+            .mul(&x_1001)
+            .pow2k(6)
+            .mul(&x_101)
+            .pow2k(10)
+            .mul(&x_111)
+            .pow2k(4)
+            .mul(&x_111)
+            .pow2k(9)
+            .mul(&x8)
+            .pow2k(5)
+            .mul(&x_1001)
+            .pow2k(6)
+            .mul(&x_1011)
+            .pow2k(4)
+            .mul(&x_1101)
+            .pow2k(5)
+            .mul(&x_11)
+            .pow2k(6)
+            .mul(&x_1101)
+            .pow2k(10)
+            .mul(&x_1101)
+            .pow2k(4)
+            .mul(&x_1001)
+            .pow2k(6)
+            .mul(&x_1)
+            .pow2k(8)
+            .mul(&x6);
 
         CtOption::new(res, !self.is_zero())
     }

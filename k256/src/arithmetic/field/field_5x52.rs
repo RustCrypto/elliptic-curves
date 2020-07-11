@@ -1,7 +1,7 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(test)]
-use super::util::{biguint_to_u64_array, u64_array_to_biguint};
+use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
@@ -218,7 +218,7 @@ impl FieldElement5x52 {
     }
 
     /// Constructs a field element from 4 64-bit words,
-    /// asserting that it is withing required limits.
+    /// asserting that it is within required limits.
     pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         let res = Self::from_words_unchecked(words);
         let overflow = res.get_overflow();

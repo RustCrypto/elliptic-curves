@@ -1,7 +1,7 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(test)]
-use super::util::{biguint_to_u32_array, u32_array_to_biguint};
+use crate::arithmetic::util::{biguint_to_u32_array, u32_array_to_biguint};
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 

@@ -4,7 +4,7 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 use getrandom::getrandom;
 
 #[cfg(test)]
-use super::util::{biguint_to_u64_array, u64_array_to_biguint};
+use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 

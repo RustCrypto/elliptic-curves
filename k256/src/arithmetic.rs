@@ -1,20 +1,6 @@
 //! A pure-Rust implementation of group operations on secp256k1.
 
-#[cfg(not(feature = "field-32bit"))]
-mod field_5x52;
-
-#[cfg(feature = "field-32bit")]
-mod field_10x26;
-
 mod field;
-mod field_impl;
-
-#[cfg(not(feature = "scalar-32bit"))]
-mod scalar_4x64;
-
-#[cfg(feature = "scalar-32bit")]
-mod scalar_8x32;
-
 pub(crate) mod scalar;
 
 mod util;
