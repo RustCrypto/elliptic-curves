@@ -99,11 +99,6 @@ impl Scalar {
         self.0.to_bytes()
     }
 
-    /// Is this scalar equal to zero?
-    pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&Scalar::zero())
-    }
-
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
         self.0.is_high()
