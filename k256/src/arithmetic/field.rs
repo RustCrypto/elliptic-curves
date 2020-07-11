@@ -81,96 +81,44 @@ impl FieldElement {
         Self(self.0.square())
     }
 
+    fn pow2k(&self, k: usize) -> Self {
+        let mut x = *self;
+        for _j in 0..k {
+            x = x.square();
+        }
+        x
+    }
+
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
         // The binary representation of (p - 2) has 5 blocks of 1s, with lengths in
         // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
         // [1], [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        let a = &(self.0);
-
-        let mut x2 = a.square();
-        x2 = x2.mul(a);
-
-        let mut x3 = x2.square();
-        x3 = x3.mul(a);
-
-        let mut x6 = x3;
-        for _j in 0..3 {
-            x6 = x6.square();
-        }
-        x6 = x6.mul(&x3);
-
-        let mut x9 = x6;
-        for _j in 0..3 {
-            x9 = x9.square();
-        }
-        x9 = x9.mul(&x3);
-
-        let mut x11 = x9;
-        for _j in 0..2 {
-            x11 = x11.square();
-        }
-        x11 = x11.mul(&x2);
-
-        let mut x22 = x11;
-        for _j in 0..11 {
-            x22 = x22.square();
-        }
-        x22 = x22.mul(&x11);
-
-        let mut x44 = x22;
-        for _j in 0..22 {
-            x44 = x44.square();
-        }
-        x44 = x44.mul(&x22);
-
-        let mut x88 = x44;
-        for _j in 0..44 {
-            x88 = x88.square();
-        }
-        x88 = x88.mul(&x44);
-
-        let mut x176 = x88;
-        for _j in 0..88 {
-            x176 = x176.square();
-        }
-        x176 = x176.mul(&x88);
-
-        let mut x220 = x176;
-        for _j in 0..44 {
-            x220 = x220.square();
-        }
-        x220 = x220.mul(&x44);
-
-        let mut x223 = x220;
-        for _j in 0..3 {
-            x223 = x223.square();
-        }
-        x223 = x223.mul(&x3);
+        let x2 = self.pow2k(1).mul(self);
+        let x3 = x2.pow2k(1).mul(self);
+        let x6 = x3.pow2k(3).mul(&x3);
+        let x9 = x6.pow2k(3).mul(&x3);
+        let x11 = x9.pow2k(2).mul(&x2);
+        let x22 = x11.pow2k(11).mul(&x11);
+        let x44 = x22.pow2k(22).mul(&x22);
+        let x88 = x44.pow2k(44).mul(&x44);
+        let x176 = x88.pow2k(88).mul(&x88);
+        let x220 = x176.pow2k(44).mul(&x44);
+        let x223 = x220.pow2k(3).mul(&x3);
 
         // The final result is then assembled using a sliding window over the blocks.
+        let res = x223
+            .pow2k(23)
+            .mul(&x22)
+            .pow2k(5)
+            .mul(self)
+            .pow2k(3)
+            .mul(&x2)
+            .pow2k(2)
+            .mul(self);
 
-        let mut t1 = x223;
-        for _j in 0..23 {
-            t1 = t1.square();
-        }
-        t1 = t1.mul(&x22);
-        for _j in 0..5 {
-            t1 = t1.square();
-        }
-        t1 = t1.mul(a);
-        for _j in 0..3 {
-            t1 = t1.square();
-        }
-        t1 = t1.mul(&x2);
-        for _j in 0..2 {
-            t1 = t1.square();
-        }
-        t1 = t1.mul(a);
-
-        // FIXME: change to `a.normalizes_to_zero()`
-        CtOption::new(FieldElement(t1), !a.normalize().is_zero())
+        CtOption::new(res, !self.normalizes_to_zero())
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
@@ -190,86 +138,25 @@ impl FieldElement {
         // { 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
         // 1, [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        let a = &(self.0);
-
-        let mut x2 = a.square();
-        x2 = x2.mul(a);
-
-        let mut x3 = x2.square();
-        x3 = x3.mul(a);
-
-        let mut x6 = x3;
-        for _j in 0..3 {
-            x6 = x6.square();
-        }
-        x6 = x6.mul(&x3);
-
-        let mut x9 = x6;
-        for _j in 0..3 {
-            x9 = x9.square();
-        }
-        x9 = x9.mul(&x3);
-
-        let mut x11 = x9;
-        for _j in 0..2 {
-            x11 = x11.square();
-        }
-        x11 = x11.mul(&x2);
-
-        let mut x22 = x11;
-        for _j in 0..11 {
-            x22 = x22.square();
-        }
-        x22 = x22.mul(&x11);
-
-        let mut x44 = x22;
-        for _j in 0..22 {
-            x44 = x44.square();
-        }
-        x44 = x44.mul(&x22);
-
-        let mut x88 = x44;
-        for _j in 0..44 {
-            x88 = x88.square();
-        }
-        x88 = x88.mul(&x44);
-
-        let mut x176 = x88;
-        for _j in 0..88 {
-            x176 = x176.square();
-        }
-        x176 = x176.mul(&x88);
-
-        let mut x220 = x176;
-        for _j in 0..44 {
-            x220 = x220.square();
-        }
-        x220 = x220.mul(&x44);
-
-        let mut x223 = x220;
-        for _j in 0..3 {
-            x223 = x223.square();
-        }
-        x223 = x223.mul(&x3);
+        let x2 = self.pow2k(1).mul(&self);
+        let x3 = x2.pow2k(1).mul(&self);
+        let x6 = x3.pow2k(3).mul(&x3);
+        let x9 = x6.pow2k(3).mul(&x3);
+        let x11 = x9.pow2k(2).mul(&x2);
+        let x22 = x11.pow2k(11).mul(&x11);
+        let x44 = x22.pow2k(22).mul(&x22);
+        let x88 = x44.pow2k(44).mul(&x44);
+        let x176 = x88.pow2k(88).mul(&x88);
+        let x220 = x176.pow2k(44).mul(&x44);
+        let x223 = x220.pow2k(3).mul(&x3);
 
         // The final result is then assembled using a sliding window over the blocks.
+        let res = x223.pow2k(23).mul(&x22).pow2k(6).mul(&x2).pow2k(2);
 
-        let mut t1 = x223;
-        for _j in 0..23 {
-            t1 = t1.square();
-        }
-        t1 = t1.mul(&x22);
-        for _j in 0..6 {
-            t1 = t1.square();
-        }
-        t1 = t1.mul(&x2);
-        t1 = t1.square();
-        let sqrt = t1.square();
+        let is_root = (res.mul(&res).negate(1) + &self).normalizes_to_zero();
 
-        CtOption::new(
-            FieldElement(sqrt),
-            (sqrt.mul(&sqrt)).normalize().ct_eq(&a.normalize()), // Only return Some if it's the square root.
-        )
+        // Only return Some if it's the square root.
+        CtOption::new(res, is_root)
     }
 
     #[cfg(test)]
