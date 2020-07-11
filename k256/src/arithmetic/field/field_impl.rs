@@ -1,27 +1,18 @@
-#[cfg(debug_assertions)]
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(not(debug_assertions))]
-#[cfg(feature = "field-5x52")]
-pub use super::field_5x52::FieldElement5x52 as FieldElementImpl;
+use cfg_if::cfg_if;
 
-#[cfg(not(debug_assertions))]
-#[cfg(feature = "field-10x26")]
-pub use super::field_10x26::FieldElement10x26 as FieldElementImpl;
+cfg_if! {
+    if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+        use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
+    } else if #[cfg(target_pointer_width = "64")] {
+        use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
+    }
+}
 
-#[cfg(debug_assertions)]
-#[cfg(feature = "field-5x52")]
-use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
-
-#[cfg(debug_assertions)]
-#[cfg(feature = "field-10x26")]
-use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
-
-#[cfg(debug_assertions)]
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
-#[cfg(debug_assertions)]
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElementImpl {
     value: FieldElementUnsafeImpl,
@@ -29,7 +20,6 @@ pub struct FieldElementImpl {
     normalized: bool,
 }
 
-#[cfg(debug_assertions)]
 impl ConditionallySelectable for FieldElementImpl {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         // 1. It's debug only, so it shouldn't present a security risk
@@ -48,7 +38,6 @@ impl ConditionallySelectable for FieldElementImpl {
     }
 }
 
-#[cfg(debug_assertions)]
 impl ConstantTimeEq for FieldElementImpl {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.value.ct_eq(&(other.value))
@@ -58,7 +47,6 @@ impl ConstantTimeEq for FieldElementImpl {
     }
 }
 
-#[cfg(debug_assertions)]
 impl FieldElementImpl {
     const fn new_normalized(value: &FieldElementUnsafeImpl) -> Self {
         Self {
@@ -184,14 +172,12 @@ impl FieldElementImpl {
     }
 }
 
-#[cfg(debug_assertions)]
 impl Default for FieldElementImpl {
     fn default() -> Self {
         Self::zero()
     }
 }
 
-#[cfg(debug_assertions)]
 #[cfg(test)]
 impl From<&BigUint> for FieldElementImpl {
     fn from(x: &BigUint) -> Self {
@@ -199,7 +185,6 @@ impl From<&BigUint> for FieldElementImpl {
     }
 }
 
-#[cfg(debug_assertions)]
 #[cfg(test)]
 impl ToBigUint for FieldElementImpl {
     fn to_biguint(&self) -> Option<BigUint> {

@@ -8,7 +8,7 @@ use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
-use crate::arithmetic::util::{adc, mac, mac_typemax, sbb};
+use crate::arithmetic::util::{adc64, mac64, mac64_typemax, sbb64};
 
 /// Constant representing the modulus
 /// p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
@@ -79,10 +79,10 @@ impl FieldElementMontgomery {
     pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
         // value of 2^64 - 1.
-        let (_, borrow) = sbb(words[0], MODULUS.0[0], 0);
-        let (_, borrow) = sbb(words[1], MODULUS.0[1], borrow);
-        let (_, borrow) = sbb(words[2], MODULUS.0[2], borrow);
-        let (_, borrow) = sbb(words[3], MODULUS.0[3], borrow);
+        let (_, borrow) = sbb64(words[0], MODULUS.0[0], 0);
+        let (_, borrow) = sbb64(words[1], MODULUS.0[1], borrow);
+        let (_, borrow) = sbb64(words[2], MODULUS.0[2], borrow);
+        let (_, borrow) = sbb64(words[3], MODULUS.0[3], borrow);
         let is_some = (borrow as u8) & 1;
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
@@ -141,10 +141,10 @@ impl FieldElementMontgomery {
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
         // Bit 256 of p is set, so addition can result in five words.
-        let (w0, carry) = adc(self.0[0], rhs.0[0], 0);
-        let (w1, carry) = adc(self.0[1], rhs.0[1], carry);
-        let (w2, carry) = adc(self.0[2], rhs.0[2], carry);
-        let (w3, w4) = adc(self.0[3], rhs.0[3], carry);
+        let (w0, carry) = adc64(self.0[0], rhs.0[0], 0);
+        let (w1, carry) = adc64(self.0[1], rhs.0[1], carry);
+        let (w2, carry) = adc64(self.0[2], rhs.0[2], carry);
+        let (w3, w4) = adc64(self.0[3], rhs.0[3], carry);
 
         // Attempt to subtract the modulus, to ensure the result is in the field.
         Self::sub_inner(
@@ -192,19 +192,19 @@ impl FieldElementMontgomery {
         r3: u64,
         r4: u64,
     ) -> Self {
-        let (w0, borrow) = sbb(l0, r0, 0);
-        let (w1, borrow) = sbb(l1, r1, borrow);
-        let (w2, borrow) = sbb(l2, r2, borrow);
-        let (w3, borrow) = sbb(l3, r3, borrow);
-        let (_, borrow) = sbb(l4, r4, borrow);
+        let (w0, borrow) = sbb64(l0, r0, 0);
+        let (w1, borrow) = sbb64(l1, r1, borrow);
+        let (w2, borrow) = sbb64(l2, r2, borrow);
+        let (w3, borrow) = sbb64(l3, r3, borrow);
+        let (_, borrow) = sbb64(l4, r4, borrow);
 
         // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
         // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
         // modulus.
-        let (w0, carry) = adc(w0, MODULUS.0[0] & borrow, 0);
-        let (w1, carry) = adc(w1, MODULUS.0[1] & borrow, carry);
-        let (w2, carry) = adc(w2, MODULUS.0[2] & borrow, carry);
-        let (w3, _) = adc(w3, MODULUS.0[3] & borrow, carry);
+        let (w0, carry) = adc64(w0, MODULUS.0[0] & borrow, 0);
+        let (w1, carry) = adc64(w1, MODULUS.0[1] & borrow, carry);
+        let (w2, carry) = adc64(w2, MODULUS.0[2] & borrow, carry);
+        let (w3, _) = adc64(w3, MODULUS.0[3] & borrow, carry);
 
         Self([w0, w1, w2, w3])
     }
@@ -235,56 +235,56 @@ impl FieldElementMontgomery {
         y3: u64,
     ) -> Self {
         let u = ((x0 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a0, carry) = mac(0, u, MODULUS.0[0], 0);
-        let (a1, carry) = mac_typemax(0, u, carry);
-        let (a2, carry) = mac_typemax(0, u, carry);
-        let (a3, carry) = mac_typemax(0, u, carry);
-        let (a4, carry2) = adc(0, 0, carry);
+        let (a0, carry) = mac64(0, u, MODULUS.0[0], 0);
+        let (a1, carry) = mac64_typemax(0, u, carry);
+        let (a2, carry) = mac64_typemax(0, u, carry);
+        let (a3, carry) = mac64_typemax(0, u, carry);
+        let (a4, carry2) = adc64(0, 0, carry);
 
-        let (_, carry) = mac(a0, x0, y0, 0);
-        let (a1, carry) = mac(a1, x0, y1, carry);
-        let (a2, carry) = mac(a2, x0, y2, carry);
-        let (a3, carry) = mac(a3, x0, y3, carry);
-        let (a4, a5) = adc(a4, carry2, carry);
+        let (_, carry) = mac64(a0, x0, y0, 0);
+        let (a1, carry) = mac64(a1, x0, y1, carry);
+        let (a2, carry) = mac64(a2, x0, y2, carry);
+        let (a3, carry) = mac64(a3, x0, y3, carry);
+        let (a4, a5) = adc64(a4, carry2, carry);
 
         let u = ((a1 as u128) + (x1 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a1, carry) = mac(a1, u, MODULUS.0[0], 0);
-        let (a2, carry) = mac_typemax(a2, u, carry);
-        let (a3, carry) = mac_typemax(a3, u, carry);
-        let (a4, carry) = mac_typemax(a4, u, carry);
-        let (a5, carry2) = adc(a5, 0, carry);
+        let (a1, carry) = mac64(a1, u, MODULUS.0[0], 0);
+        let (a2, carry) = mac64_typemax(a2, u, carry);
+        let (a3, carry) = mac64_typemax(a3, u, carry);
+        let (a4, carry) = mac64_typemax(a4, u, carry);
+        let (a5, carry2) = adc64(a5, 0, carry);
 
-        let (_, carry) = mac(a1, x1, y0, 0);
-        let (a2, carry) = mac(a2, x1, y1, carry);
-        let (a3, carry) = mac(a3, x1, y2, carry);
-        let (a4, carry) = mac(a4, x1, y3, carry);
-        let (a5, a6) = adc(a5, carry2, carry);
+        let (_, carry) = mac64(a1, x1, y0, 0);
+        let (a2, carry) = mac64(a2, x1, y1, carry);
+        let (a3, carry) = mac64(a3, x1, y2, carry);
+        let (a4, carry) = mac64(a4, x1, y3, carry);
+        let (a5, a6) = adc64(a5, carry2, carry);
 
         let u = ((a2 as u128) + (x2 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a2, carry) = mac(a2, u, MODULUS.0[0], 0);
-        let (a3, carry) = mac_typemax(a3, u, carry);
-        let (a4, carry) = mac_typemax(a4, u, carry);
-        let (a5, carry) = mac_typemax(a5, u, carry);
-        let (a6, carry2) = adc(a6, 0, carry);
+        let (a2, carry) = mac64(a2, u, MODULUS.0[0], 0);
+        let (a3, carry) = mac64_typemax(a3, u, carry);
+        let (a4, carry) = mac64_typemax(a4, u, carry);
+        let (a5, carry) = mac64_typemax(a5, u, carry);
+        let (a6, carry2) = adc64(a6, 0, carry);
 
-        let (_, carry) = mac(a2, x2, y0, 0);
-        let (a3, carry) = mac(a3, x2, y1, carry);
-        let (a4, carry) = mac(a4, x2, y2, carry);
-        let (a5, carry) = mac(a5, x2, y3, carry);
-        let (a6, a7) = adc(a6, carry2, carry);
+        let (_, carry) = mac64(a2, x2, y0, 0);
+        let (a3, carry) = mac64(a3, x2, y1, carry);
+        let (a4, carry) = mac64(a4, x2, y2, carry);
+        let (a5, carry) = mac64(a5, x2, y3, carry);
+        let (a6, a7) = adc64(a6, carry2, carry);
 
         let u = ((a3 as u128) + (x3 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a3, carry) = mac(a3, u, MODULUS.0[0], 0);
-        let (a4, carry) = mac_typemax(a4, u, carry);
-        let (a5, carry) = mac_typemax(a5, u, carry);
-        let (a6, carry) = mac_typemax(a6, u, carry);
-        let (a7, carry2) = adc(a7, 0, carry);
+        let (a3, carry) = mac64(a3, u, MODULUS.0[0], 0);
+        let (a4, carry) = mac64_typemax(a4, u, carry);
+        let (a5, carry) = mac64_typemax(a5, u, carry);
+        let (a6, carry) = mac64_typemax(a6, u, carry);
+        let (a7, carry2) = adc64(a7, 0, carry);
 
-        let (_, carry) = mac(a3, x3, y0, 0);
-        let (a4, carry) = mac(a4, x3, y1, carry);
-        let (a5, carry) = mac(a5, x3, y2, carry);
-        let (a6, carry) = mac(a6, x3, y3, carry);
-        let (a7, a8) = adc(a7, carry2, carry);
+        let (_, carry) = mac64(a3, x3, y0, 0);
+        let (a4, carry) = mac64(a4, x3, y1, carry);
+        let (a5, carry) = mac64(a5, x3, y2, carry);
+        let (a6, carry) = mac64(a6, x3, y3, carry);
+        let (a7, a8) = adc64(a7, carry2, carry);
 
         // Result may be within MODULUS of the correct value
         Self::sub_inner(
@@ -327,32 +327,32 @@ impl FieldElementMontgomery {
         t7: u64,
     ) -> Self {
         let k = t0.wrapping_mul(INV);
-        let (_, carry) = mac(t0, k, MODULUS.0[0], 0);
-        let (r1, carry) = mac_typemax(t1, k, carry);
-        let (r2, carry) = mac_typemax(t2, k, carry);
-        let (r3, carry) = mac_typemax(t3, k, carry);
-        let (r4, r5) = adc(t4, 0, carry);
+        let (_, carry) = mac64(t0, k, MODULUS.0[0], 0);
+        let (r1, carry) = mac64_typemax(t1, k, carry);
+        let (r2, carry) = mac64_typemax(t2, k, carry);
+        let (r3, carry) = mac64_typemax(t3, k, carry);
+        let (r4, r5) = adc64(t4, 0, carry);
 
         let k = r1.wrapping_mul(INV);
-        let (_, carry) = mac(r1, k, MODULUS.0[0], 0);
-        let (r2, carry) = mac_typemax(r2, k, carry);
-        let (r3, carry) = mac_typemax(r3, k, carry);
-        let (r4, carry) = mac_typemax(r4, k, carry);
-        let (r5, r6) = adc(t5, r5, carry);
+        let (_, carry) = mac64(r1, k, MODULUS.0[0], 0);
+        let (r2, carry) = mac64_typemax(r2, k, carry);
+        let (r3, carry) = mac64_typemax(r3, k, carry);
+        let (r4, carry) = mac64_typemax(r4, k, carry);
+        let (r5, r6) = adc64(t5, r5, carry);
 
         let k = r2.wrapping_mul(INV);
-        let (_, carry) = mac(r2, k, MODULUS.0[0], 0);
-        let (r3, carry) = mac_typemax(r3, k, carry);
-        let (r4, carry) = mac_typemax(r4, k, carry);
-        let (r5, carry) = mac_typemax(r5, k, carry);
-        let (r6, r7) = adc(t6, r6, carry);
+        let (_, carry) = mac64(r2, k, MODULUS.0[0], 0);
+        let (r3, carry) = mac64_typemax(r3, k, carry);
+        let (r4, carry) = mac64_typemax(r4, k, carry);
+        let (r5, carry) = mac64_typemax(r5, k, carry);
+        let (r6, r7) = adc64(t6, r6, carry);
 
         let k = r3.wrapping_mul(INV);
-        let (_, carry) = mac(r3, k, MODULUS.0[0], 0);
-        let (r4, carry) = mac_typemax(r4, k, carry);
-        let (r5, carry) = mac_typemax(r5, k, carry);
-        let (r6, carry) = mac_typemax(r6, k, carry);
-        let (r7, r8) = adc(t7, r7, carry);
+        let (_, carry) = mac64(r3, k, MODULUS.0[0], 0);
+        let (r4, carry) = mac64_typemax(r4, k, carry);
+        let (r5, carry) = mac64_typemax(r5, k, carry);
+        let (r6, carry) = mac64_typemax(r6, k, carry);
+        let (r7, r8) = adc64(t7, r7, carry);
 
         // Result may be within MODULUS of the correct value
         Self::sub_inner(

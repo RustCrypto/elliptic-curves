@@ -1,20 +1,33 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
-#[cfg(feature = "field-5x52")]
-mod field_5x52;
+use cfg_if::cfg_if;
 
-#[cfg(feature = "field-10x26")]
-mod field_10x26;
+cfg_if! {
+    if #[cfg(feature = "field-montgomery")] {
+        mod field_montgomery;
+    } else if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+        mod field_10x26;
+    } else if #[cfg(target_pointer_width = "64")] {
+        mod field_5x52;
+    }
+}
 
-#[cfg(any(feature = "field-10x26", feature = "field-5x52"))]
-mod field_impl;
-#[cfg(any(feature = "field-10x26", feature = "field-5x52"))]
-use field_impl::FieldElementImpl;
-
-#[cfg(feature = "field-montgomery")]
-mod field_montgomery;
-#[cfg(feature = "field-montgomery")]
-use field_montgomery::FieldElementMontgomery as FieldElementImpl;
+cfg_if! {
+    if #[cfg(all(debug_assertions, not(feature = "field-montgomery")))] {
+        mod field_impl;
+        use field_impl::FieldElementImpl;
+    } else {
+        cfg_if! {
+            if #[cfg(feature = "field-montgomery")] {
+                use field_montgomery::FieldElementMontgomery as FieldElementImpl;
+            } else if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+                use field_10x26::FieldElement10x26 as FieldElementImpl;
+            } else if #[cfg(target_pointer_width = "64")] {
+                use field_5x52::FieldElement5x52 as FieldElementImpl;
+            }
+        }
+    }
+}
 
 use core::ops::{Add, AddAssign, Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
