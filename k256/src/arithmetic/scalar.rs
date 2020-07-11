@@ -86,6 +86,11 @@ impl Scalar {
         ret
     }
 
+    /// Is this scalar equal to zero?
+    pub fn is_zero(&self) -> Choice {
+        self.ct_eq(&Scalar::zero())
+    }
+
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
         let (_, borrow) = sbb(self.0[0], FRAC_MODULUS_2[0], 0);
@@ -107,6 +112,12 @@ impl ConditionallySelectable for Scalar {
     }
 }
 
+impl ConstantTimeEq for Scalar {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&other.0)
+    }
+}
+
 impl Neg for Scalar {
     type Output = Scalar;
 
@@ -115,9 +126,7 @@ impl Neg for Scalar {
         let (w1, borrow) = sbb(MODULUS[1], self.0[1], borrow);
         let (w2, borrow) = sbb(MODULUS[2], self.0[2], borrow);
         let (w3, _) = sbb(MODULUS[3], self.0[3], borrow);
-
-        let is_zero = self.0.ct_eq(&[0u64; LIMBS]);
-        Scalar::conditional_select(&Scalar([w0, w1, w2, w3]), &Scalar::zero(), is_zero)
+        Scalar::conditional_select(&Scalar([w0, w1, w2, w3]), &Scalar::zero(), self.is_zero())
     }
 }
 
