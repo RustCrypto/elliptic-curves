@@ -437,8 +437,9 @@ impl FieldElement5x52 {
         c >>= 52;
         debug_assert!(r3 >> 52 == 0);
         debug_assert!(c >> 48 == 0);
+        let c64 = c as u64;
         // [t4+c r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        c += t4 as u128;
+        c = c64 as u128 + t4 as u128;
         debug_assert!(c >> 49 == 0);
         // [c r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
         let r4 = c as u64;
