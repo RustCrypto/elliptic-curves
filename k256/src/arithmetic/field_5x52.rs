@@ -10,13 +10,13 @@ pub struct FieldElement5x52(pub(crate) [u64; 5]);
 
 impl FieldElement5x52 {
     /// Returns the zero element.
-    pub const fn zero() -> FieldElement5x52 {
-        FieldElement5x52([0, 0, 0, 0, 0])
+    pub const fn zero() -> Self {
+        Self([0, 0, 0, 0, 0])
     }
 
     /// Returns the multiplicative identity.
-    pub const fn one() -> FieldElement5x52 {
-        FieldElement5x52([1, 0, 0, 0, 0])
+    pub const fn one() -> Self {
+        Self([1, 0, 0, 0, 0])
     }
 
     /// Attempts to parse the given byte array as an SEC-1-encoded field element.
@@ -24,9 +24,7 @@ impl FieldElement5x52 {
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
     pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
-        let mut w = [0u64; 5];
-
-        w[0] = (bytes[31] as u64)
+        let w0 = (bytes[31] as u64)
             | ((bytes[30] as u64) << 8)
             | ((bytes[29] as u64) << 16)
             | ((bytes[28] as u64) << 24)
@@ -34,7 +32,7 @@ impl FieldElement5x52 {
             | ((bytes[26] as u64) << 40)
             | (((bytes[25] & 0xFu8) as u64) << 48);
 
-        w[1] = ((bytes[25] >> 4) as u64)
+        let w1 = ((bytes[25] >> 4) as u64)
             | ((bytes[24] as u64) << 4)
             | ((bytes[23] as u64) << 12)
             | ((bytes[22] as u64) << 20)
@@ -42,7 +40,7 @@ impl FieldElement5x52 {
             | ((bytes[20] as u64) << 36)
             | ((bytes[19] as u64) << 44);
 
-        w[2] = (bytes[18] as u64)
+        let w2 = (bytes[18] as u64)
             | ((bytes[17] as u64) << 8)
             | ((bytes[16] as u64) << 16)
             | ((bytes[15] as u64) << 24)
@@ -50,7 +48,7 @@ impl FieldElement5x52 {
             | ((bytes[13] as u64) << 40)
             | (((bytes[12] & 0xFu8) as u64) << 48);
 
-        w[3] = ((bytes[12] >> 4) as u64)
+        let w3 = ((bytes[12] >> 4) as u64)
             | ((bytes[11] as u64) << 4)
             | ((bytes[10] as u64) << 12)
             | ((bytes[9] as u64) << 20)
@@ -58,21 +56,17 @@ impl FieldElement5x52 {
             | ((bytes[7] as u64) << 36)
             | ((bytes[6] as u64) << 44);
 
-        w[4] = (bytes[5] as u64)
+        let w4 = (bytes[5] as u64)
             | ((bytes[4] as u64) << 8)
             | ((bytes[3] as u64) << 16)
             | ((bytes[2] as u64) << 24)
             | ((bytes[1] as u64) << 32)
             | ((bytes[0] as u64) << 40);
 
-        // Alternatively we can subtract modulus and check if we end up with a nonzero borrow,
-        // like in the previous version. Check which if faster.
-        // TODO: make sure it's constant-time
-        let overflow = w[4].ct_eq(&0x0FFFFFFFFFFFFu64)
-            & (w[3] & w[2] & w[1]).ct_eq(&0xFFFFFFFFFFFFFu64)
-            & Choice::from(if w[0] >= 0xFFFFEFFFFFC2Fu64 { 1u8 } else { 0u8 }); // FIXME: make constant time
+        let res = Self([w0, w1, w2, w3, w4]);
+        let overflow = res.get_overflow();
 
-        CtOption::new(FieldElement5x52(w), !overflow)
+        CtOption::new(res, !overflow)
     }
 
     /// Returns the SEC-1 encoding of this field element.
@@ -113,72 +107,79 @@ impl FieldElement5x52 {
         ret
     }
 
+    /// Adds `x * (2^256 - modulus)`.
+    fn add_modulus_correction(&self, x: u64) -> Self {
+        // add (2^256 - modulus) * x to the first limb
+        let t0 = self.0[0] + x * 0x1000003D1u64;
+
+        // Propagate excess bits up the limbs
+        let t1 = self.0[1] + (t0 >> 52);
+        let t0 = t0 & 0xFFFFFFFFFFFFFu64;
+
+        let t2 = self.0[2] + (t1 >> 52);
+        let t1 = t1 & 0xFFFFFFFFFFFFFu64;
+
+        let t3 = self.0[3] + (t2 >> 52);
+        let t2 = t2 & 0xFFFFFFFFFFFFFu64;
+
+        let t4 = self.0[4] + (t3 >> 52);
+        let t3 = t3 & 0xFFFFFFFFFFFFFu64;
+
+        Self([t0, t1, t2, t3, t4])
+    }
+
+    /// Subtract the overflow in the last limb and return it with the new field element.
+    /// Equivalent to subtracting a multiple of 2^256.
+    fn subtract_modulus_approximation(&self) -> (Self, u64) {
+        let x = self.0[4] >> 48;
+        let t4 = self.0[4] & 0x0FFFFFFFFFFFFu64; // equivalent to self -= 2^256 * x
+        (Self([self.0[0], self.0[1], self.0[2], self.0[3], t4]), x)
+    }
+
+    /// Checks if the field element is greater or equal to the modulus.
+    fn get_overflow(&self) -> Choice {
+        let m = self.0[1] & self.0[2] & self.0[3];
+        let x = (self.0[4] >> 48 != 0)
+            | ((self.0[4] == 0x0FFFFFFFFFFFFu64) & (m == 0xFFFFFFFFFFFFFu64) & (self.0[0] >= 0xFFFFEFFFFFC2Fu64));
+        Choice::from(x as u8)
+    }
+
+    /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
     pub fn normalize_weak(&self) -> Self {
-        let mut t0 = self.0[0];
-        let mut t1 = self.0[1];
-        let mut t2 = self.0[2];
-        let mut t3 = self.0[3];
-        let mut t4 = self.0[4];
 
         // Reduce t4 at the start so there will be at most a single carry from the first pass
-        let x = t4 >> 48;
-        t4 &= 0x0FFFFFFFFFFFFu64;
+        let (t, x) = self.subtract_modulus_approximation();
 
         // The first pass ensures the magnitude is 1, ...
-        t0 += x * 0x1000003D1u64;
-        t1 += t0 >> 52;
-        t0 &= 0xFFFFFFFFFFFFFu64;
-        t2 += t1 >> 52;
-        t1 &= 0xFFFFFFFFFFFFFu64;
-        t3 += t2 >> 52;
-        t2 &= 0xFFFFFFFFFFFFFu64;
-        t4 += t3 >> 52;
-        t3 &= 0xFFFFFFFFFFFFFu64;
+        let res = t.add_modulus_correction(x);
 
         // ... except for a possible carry at bit 48 of t4 (i.e. bit 256 of the field element)
-        debug_assert!(t4 >> 49 == 0);
+        debug_assert!(res.0[4] >> 49 == 0);
 
-        FieldElement5x52([t0, t1, t2, t3, t4])
+        res
     }
 
+    /// Fully normalizes the field element.
+    /// That is, first four limbs are at most 52 bit large, the last limb is at most 48 bit large,
+    /// and the value is less than the modulus.
     pub fn normalize(&self) -> Self {
-        // TODO: the first part is the same as normalize_weak()
-
         let res = self.normalize_weak();
 
-        let mut t0 = res.0[0];
-        let mut t1 = res.0[1];
-        let mut t2 = res.0[2];
-        let mut t3 = res.0[3];
-        let mut t4 = res.0[4];
-
-        let m = t1 & t2 & t3;
-
         // At most a single final reduction is needed; check if the value is >= the field characteristic
-        let x = (t4 >> 48 != 0)
-            | ((t4 == 0x0FFFFFFFFFFFFu64) & (m == 0xFFFFFFFFFFFFFu64) & (t0 >= 0xFFFFEFFFFFC2Fu64));
+        let overflow = res.get_overflow();
 
         // Apply the final reduction (for constant-time behaviour, we do it always)
-        // FIXME: ensure constant time here
-        t0 += (x as u64) * 0x1000003D1u64;
-        t1 += t0 >> 52;
-        t0 &= 0xFFFFFFFFFFFFFu64;
-        t2 += t1 >> 52;
-        t1 &= 0xFFFFFFFFFFFFFu64;
-        t3 += t2 >> 52;
-        t2 &= 0xFFFFFFFFFFFFFu64;
-        t4 += t3 >> 52;
-        t3 &= 0xFFFFFFFFFFFFFu64;
+        let res_corrected = res.add_modulus_correction(1u64);
+        // Mask off the possible multiple of 2^256 from the final reduction
+        let (res_corrected, x) = res_corrected.subtract_modulus_approximation();
 
         // If t4 didn't carry to bit 48 already, then it should have after any final reduction
-        debug_assert!(t4 >> 48 == x as u64);
+        debug_assert!(x == (overflow.unwrap_u8() as u64));
 
-        // Mask off the possible multiple of 2^256 from the final reduction
-        t4 &= 0x0FFFFFFFFFFFFu64;
-
-        FieldElement5x52([t0, t1, t2, t3, t4])
+        Self::conditional_select(&res, &res_corrected, overflow)
     }
 
+    /// Checks if the field element becomes zero if normalized.
     pub fn normalizes_to_zero(&self) -> Choice {
         let res = self.normalize_weak();
 
@@ -195,16 +196,17 @@ impl FieldElement5x52 {
         Choice::from(((z0 == 0) | (z1 == 0xFFFFFFFFFFFFFu64)) as u8)
     }
 
+    /// Pack the field element into 4 64-bit words.
     pub fn to_words(&self) -> [u64; 4] {
-        let mut ret = [0u64; 4];
-
-        ret[0] = self.0[0] | (self.0[1] << 52);
-        ret[1] = (self.0[1] >> 12) | (self.0[2] << 40);
-        ret[2] = (self.0[2] >> 24) | (self.0[3] << 28);
-        ret[3] = (self.0[3] >> 36) | (self.0[4] << 16);
-        ret
+        let r0 = self.0[0] | (self.0[1] << 52);
+        let r1 = (self.0[1] >> 12) | (self.0[2] << 40);
+        let r2 = (self.0[2] >> 24) | (self.0[3] << 28);
+        let r3 = (self.0[3] >> 36) | (self.0[4] << 16);
+        [r0, r1, r2, r3]
     }
 
+    /// Constructs a field element from 4 64-bit words without checking the resulting value
+    /// for correctness (that is, if it is less than the modulus).
     pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
         let w0 = words[0] & 0xFFFFFFFFFFFFFu64;
         let w1 = (words[0] >> 52) | ((words[1] & 0xFFFFFFFFFFu64) << 12);
@@ -214,18 +216,11 @@ impl FieldElement5x52 {
         Self([w0, w1, w2, w3, w4])
     }
 
+    /// Constructs a field element from 4 64-bit words,
+    /// asserting that it is withing required limits.
     pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         let res = Self::from_words_unchecked(words);
-
-        // Alternatively we can subtract modulus and check if we end up with a nonzero borrow,
-        // like in the previous version. Check which if faster.
-        let overflow = res.0[4].ct_eq(&0x0FFFFFFFFFFFFu64)
-            & (res.0[3] & res.0[2] & res.0[1]).ct_eq(&0xFFFFFFFFFFFFFu64)
-            & Choice::from(if res.0[0] >= 0xFFFFEFFFFFC2Fu64 {
-                1u8
-            } else {
-                0u8
-            }); // FIXME: make constant time
+        let overflow = res.get_overflow();
 
         debug_assert!(res.0[0] >> 52 == 0);
         debug_assert!(res.0[1] >> 52 == 0);
@@ -242,7 +237,7 @@ impl FieldElement5x52 {
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&FieldElement5x52::zero())
+        self.ct_eq(&Self::zero())
     }
 
     /// Determine if this `FieldElement5x52` is odd in the SEC-1 sense: `self mod 2 == 1`.
@@ -254,7 +249,7 @@ impl FieldElement5x52 {
         (self.0[0] as u8 & 1).into()
     }
 
-    // The maximum number `m` for which `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64`
+    /// The maximum number `m` for which `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64`
     #[cfg(debug_assertions)]
     pub const fn max_magnitude() -> u32 {
         2047u32
@@ -267,12 +262,12 @@ impl FieldElement5x52 {
         let r2 = 0xFFFFFFFFFFFFFu64 * 2 * m - self.0[2];
         let r3 = 0xFFFFFFFFFFFFFu64 * 2 * m - self.0[3];
         let r4 = 0x0FFFFFFFFFFFFu64 * 2 * m - self.0[4];
-        FieldElement5x52([r0, r1, r2, r3, r4])
+        Self([r0, r1, r2, r3, r4])
     }
 
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
-        FieldElement5x52([
+        Self([
             self.0[0] + rhs.0[0],
             self.0[1] + rhs.0[1],
             self.0[2] + rhs.0[2],
@@ -288,7 +283,7 @@ impl FieldElement5x52 {
 
     pub const fn mul_single(&self, rhs: u32) -> Self {
         let rhs_u64 = rhs as u64;
-        FieldElement5x52([
+        Self([
             self.0[0] * rhs_u64,
             self.0[1] * rhs_u64,
             self.0[2] * rhs_u64,
@@ -578,7 +573,7 @@ impl FieldElement5x52 {
         debug_assert!(r4 >> 49 == 0);
         // [r4 r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
 
-        FieldElement5x52([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
+        Self([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
     }
 }
 
