@@ -181,7 +181,7 @@ impl FieldElement {
         // The final result is then assembled using a sliding window over the blocks.
         let res = x223.pow2k(23).mul(&x22).pow2k(6).mul(&x2).pow2k(2);
 
-        let is_root = (res.mul(&res).negate(1) + &self).normalizes_to_zero();
+        let is_root = (res.mul(&res).negate(1) + self).normalizes_to_zero();
 
         // Only return Some if it's the square root.
         CtOption::new(res, is_root)
