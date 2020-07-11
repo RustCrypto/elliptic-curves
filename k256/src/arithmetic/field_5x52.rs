@@ -449,18 +449,13 @@ impl FieldElement5x52 {
 
     /// Returns self * self mod p
     pub fn square(&self) -> Self {
-        let mut a0 = self.0[0] as u128;
+        let a0 = self.0[0] as u128;
         let a1 = self.0[1] as u128;
         let a2 = self.0[2] as u128;
         let a3 = self.0[3] as u128;
-        let mut a4 = self.0[4] as u128;
+        let a4 = self.0[4] as u128;
         let m = 0xFFFFFFFFFFFFFu64 as u128;
         let r = 0x1000003D10u64 as u128;
-
-        // TODO: go through the algorithm and see where temporary variables dip under 64 bits,
-        // so that we can truncate them to u64 and cast back to u128,
-        // making sure compiler uses faster multiplication instructions.
-        // Also check that multiplications by 2 are resolved as shifts.
 
         debug_assert!(a0 >> 56 == 0);
         debug_assert!(a1 >> 56 == 0);
@@ -472,37 +467,43 @@ impl FieldElement5x52 {
         // px is a shorthand for sum(a[i]*a[x-i], i=0..x).
         // Note that [x 0 0 0 0 0] = [x*r].
 
-        let mut d = (a0 * 2) * a3 + (a1 * 2) * a2;
+        let mut c: u128;
+        let mut d: u128;
+
+        d = (a0 * 2) * a3 + (a1 * 2) * a2;
         debug_assert!(d >> 114 == 0);
         // [d 0 0 0] = [p3 0 0 0]
-        let mut c = a4 * a4;
+        c = a4 * a4;
         debug_assert!(c >> 112 == 0);
         // [c 0 0 0 0 d 0 0 0] = [p8 0 0 0 0 p3 0 0 0]
         d += (c & m) * r;
         c >>= 52;
         debug_assert!(d >> 115 == 0);
         debug_assert!(c >> 60 == 0);
+        let c64 = c as u64;
         // [c 0 0 0 0 0 d 0 0 0] = [p8 0 0 0 0 p3 0 0 0]
-        let t3 = d & m;
+        let t3 = (d & m) as u64;
         d >>= 52;
         debug_assert!(t3 >> 52 == 0);
         debug_assert!(d >> 63 == 0);
+        let d64 = d as u64;
         // [c 0 0 0 0 d t3 0 0 0] = [p8 0 0 0 0 p3 0 0 0]
 
-        a4 *= 2;
-        d += a0 * a4 + (a1 * 2) * a3 + a2 * a2;
+        let a4 = a4 * 2;
+        d = d64 as u128 + a0 * a4 + (a1 * 2) * a3 + a2 * a2;
         debug_assert!(d >> 115 == 0);
         // [c 0 0 0 0 d t3 0 0 0] = [p8 0 0 0 p4 p3 0 0 0]
-        d += c * r;
+        d += c64 as u128 * r;
         debug_assert!(d >> 116 == 0);
         // [d t3 0 0 0] = [p8 0 0 0 p4 p3 0 0 0]
-        let mut t4 = d & m;
+        let t4 = (d & m) as u64;
         d >>= 52;
         debug_assert!(t4 >> 52 == 0);
         debug_assert!(d >> 64 == 0);
+        let d64 = d as u64;
         // [d t4 t3 0 0 0] = [p8 0 0 0 p4 p3 0 0 0]
         let tx = t4 >> 48;
-        t4 &= m >> 4;
+        let t4 = t4 & ((m as u64) >> 4);
         debug_assert!(tx >> 4 == 0);
         debug_assert!(t4 >> 48 == 0);
         // [d t4+(tx<<48) t3 0 0 0] = [p8 0 0 0 p4 p3 0 0 0]
@@ -510,78 +511,84 @@ impl FieldElement5x52 {
         c = a0 * a0;
         debug_assert!(c >> 112 == 0);
         // [d t4+(tx<<48) t3 0 0 c] = [p8 0 0 0 p4 p3 0 0 p0]
-        d += a1 * a4 + (a2 * 2) * a3;
+        d = d64 as u128 + a1 * a4 + (a2 * 2) * a3;
         debug_assert!(d >> 114 == 0);
         // [d t4+(tx<<48) t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
-        let mut u0 = d & m;
+        let u0 = (d & m) as u64;
         d >>= 52;
         debug_assert!(u0 >> 52 == 0);
         debug_assert!(d >> 62 == 0);
+        let d64 = d as u64;
         // [d u0 t4+(tx<<48) t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
         // [d 0 t4+(tx<<48)+(u0<<52) t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
-        u0 = (u0 << 4) | tx;
+        let u0 = (u0 << 4) | tx;
         debug_assert!(u0 >> 56 == 0);
         // [d 0 t4+(u0<<48) t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
-        c += u0 * (r >> 4);
+        c += u0 as u128 * (r >> 4);
         debug_assert!(c >> 113 == 0);
         // [d 0 t4 t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
-        let r0 = c & m;
+        let r0 = (c & m) as u64;
         c >>= 52;
         debug_assert!(r0 >> 52 == 0);
         debug_assert!(c >> 61 == 0);
+        let c64 = c as u64;
         // [d 0 t4 t3 0 c r0] = [p8 0 0 p5 p4 p3 0 0 p0]
 
-        a0 *= 2;
-        c += a0 * a1;
+        let a0 = a0 * 2;
+        c = c64 as u128 + a0 * a1;
         debug_assert!(c >> 114 == 0);
         // [d 0 t4 t3 0 c r0] = [p8 0 0 p5 p4 p3 0 p1 p0]
-        d += a2 * a4 + a3 * a3;
+        d = d64 as u128 + a2 * a4 + a3 * a3;
         debug_assert!(d >> 114 == 0);
         // [d 0 t4 t3 0 c r0] = [p8 0 p6 p5 p4 p3 0 p1 p0]
         c += (d & m) * r;
         d >>= 52;
         debug_assert!(c >> 115 == 0);
         debug_assert!(d >> 62 == 0);
+        let d64 = d as u64;
         // [d 0 0 t4 t3 0 c r0] = [p8 0 p6 p5 p4 p3 0 p1 p0]
-        let r1 = c & m;
+        let r1 = (c & m) as u64;
         c >>= 52;
         debug_assert!(r1 >> 52 == 0);
         debug_assert!(c >> 63 == 0);
+        let c64 = c as u64;
         // [d 0 0 t4 t3 c r1 r0] = [p8 0 p6 p5 p4 p3 0 p1 p0]
 
-        c += a0 * a2 + a1 * a1;
+        c = c64 as u128 + a0 * a2 + a1 * a1;
         debug_assert!(c >> 114 == 0);
         // [d 0 0 t4 t3 c r1 r0] = [p8 0 p6 p5 p4 p3 p2 p1 p0]
-        d += a3 * a4;
+        d = d64 as u128 + a3 * a4;
         debug_assert!(d >> 114 == 0);
         // [d 0 0 t4 t3 c r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
         c += (d & m) * r;
         d >>= 52;
         debug_assert!(c >> 115 == 0);
         debug_assert!(d >> 62 == 0);
+        let d64 = d as u64;
         // [d 0 0 0 t4 t3 c r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        let r2 = c & m;
+        let r2 = (c & m) as u64;
         c >>= 52;
         debug_assert!(r2 >> 52 == 0);
         debug_assert!(c >> 63 == 0);
+        let c64 = c as u64;
         // [d 0 0 0 t4 t3+c r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
 
-        c += d * r + t3;
+        c = c64 as u128 + d64 as u128 * r + t3 as u128;
         debug_assert!(c >> 100 == 0);
         // [t4 c r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        let r3 = c & m;
+        let r3 = (c & m) as u64;
         c >>= 52;
         debug_assert!(r3 >> 52 == 0);
         debug_assert!(c >> 48 == 0);
         // [t4+c r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        c += t4;
+        c += t4 as u128;
         debug_assert!(c >> 49 == 0);
         // [c r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        let r4 = c;
+        let r4 = c as u64;
         debug_assert!(r4 >> 49 == 0);
         // [r4 r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
 
-        Self([r0 as u64, r1 as u64, r2 as u64, r3 as u64, r4 as u64])
+        Self([r0, r1, r2, r3, r4])
     }
 }
 
