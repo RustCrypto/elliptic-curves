@@ -140,13 +140,14 @@ impl FieldElement5x52 {
     fn get_overflow(&self) -> Choice {
         let m = self.0[1] & self.0[2] & self.0[3];
         let x = (self.0[4] >> 48 != 0)
-            | ((self.0[4] == 0x0FFFFFFFFFFFFu64) & (m == 0xFFFFFFFFFFFFFu64) & (self.0[0] >= 0xFFFFEFFFFFC2Fu64));
+            | ((self.0[4] == 0x0FFFFFFFFFFFFu64)
+                & (m == 0xFFFFFFFFFFFFFu64)
+                & (self.0[0] >= 0xFFFFEFFFFFC2Fu64));
         Choice::from(x as u8)
     }
 
     /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
     pub fn normalize_weak(&self) -> Self {
-
         // Reduce t4 at the start so there will be at most a single carry from the first pass
         let (t, x) = self.subtract_modulus_approximation();
 
