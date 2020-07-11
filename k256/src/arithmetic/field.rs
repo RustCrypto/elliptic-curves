@@ -22,6 +22,7 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
+/// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(FieldElementImpl);
 

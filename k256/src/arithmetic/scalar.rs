@@ -28,7 +28,7 @@ use zeroize::Zeroize;
 #[cfg(feature = "rand")]
 use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
-/// An element in the finite field modulo n.
+/// An element in the finite field modulo curve order.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(ScalarImpl);
@@ -112,21 +112,22 @@ impl Scalar {
         Self(self.0.negate())
     }
 
-    /// Modulo add two scalars
+    /// Modulo adds two scalars
     pub fn add(&self, rhs: &Scalar) -> Scalar {
         Self(self.0.add(&(rhs.0)))
     }
 
-    /// Modulo subtract one scalar from the other.
+    /// Modulo subtracts one scalar from the other.
     pub fn sub(&self, rhs: &Scalar) -> Scalar {
         Self(self.0.sub(&(rhs.0)))
     }
 
-    /// Modulo multiply two scalars
+    /// Modulo multiplies two scalars.
     pub fn mul(&self, rhs: &Scalar) -> Scalar {
         Self(self.0.mul(&(rhs.0)))
     }
 
+    /// Modulo squares the scalar.
     pub fn square(&self) -> Self {
         self.mul(&self)
     }
@@ -136,6 +137,7 @@ impl Scalar {
         Self(self.0.rshift(shift))
     }
 
+    /// Raises the scalar to the power `2^k`
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
         for _j in 0..k {
@@ -144,6 +146,7 @@ impl Scalar {
         x
     }
 
+    /// Inverts the scalar.
     pub fn invert(&self) -> CtOption<Self> {
         // Using an addition chain from
         // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
@@ -220,14 +223,14 @@ impl Scalar {
         CtOption::new(res, !self.is_zero())
     }
 
-    #[cfg(test)]
     /// Returns the scalar modulus as a `BigUint` object.
+    #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
         Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 
-    #[cfg(feature = "zeroize")]
     /// Fills this scalar with zeros.
+    #[cfg(feature = "zeroize")]
     pub fn zeroize(&mut self) {
         self.0.zeroize()
     }
