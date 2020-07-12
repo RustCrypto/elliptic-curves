@@ -373,9 +373,11 @@ impl Scalar8x32 {
 
         Self(res)
     }
+}
 
-    #[cfg(feature = "zeroize")]
-    pub fn zeroize(&mut self) {
+#[cfg(feature = "zeroize")]
+impl Zeroize for Scalar8x32 {
+    fn zeroize(&mut self) {
         self.0.as_mut().zeroize()
     }
 }

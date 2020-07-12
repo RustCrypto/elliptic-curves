@@ -203,12 +203,6 @@ impl Scalar {
         Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 
-    /// Fills this scalar with zeros.
-    #[cfg(feature = "zeroize")]
-    pub fn zeroize(&mut self) {
-        self.0.zeroize()
-    }
-
     /// Returns a uniformly-random scalar.
     #[cfg(feature = "rand")]
     pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
@@ -339,7 +333,7 @@ impl MulAssign<Scalar> for Scalar {
 #[cfg(feature = "zeroize")]
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {
-        self.zeroize()
+        self.0.zeroize()
     }
 }
 
