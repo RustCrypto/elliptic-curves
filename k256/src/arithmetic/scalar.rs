@@ -344,7 +344,6 @@ mod tests {
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
-    #[cfg(test)]
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
             debug_assert!(x < &Scalar::modulus_as_biguint());
@@ -353,14 +352,12 @@ mod tests {
         }
     }
 
-    #[cfg(test)]
     impl From<BigUint> for Scalar {
         fn from(x: BigUint) -> Self {
             Self::from(&x)
         }
     }
 
-    #[cfg(test)]
     impl ToBigUint for Scalar {
         fn to_biguint(&self) -> Option<BigUint> {
             Some(bytes_to_biguint(&(self.to_bytes())))
