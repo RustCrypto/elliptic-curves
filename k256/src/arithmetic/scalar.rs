@@ -35,29 +35,6 @@ use elliptic_curve::rand_core::{CryptoRng, RngCore};
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(ScalarImpl);
 
-#[cfg(test)]
-impl From<&BigUint> for Scalar {
-    fn from(x: &BigUint) -> Self {
-        debug_assert!(x < &Scalar::modulus_as_biguint());
-        Self(ScalarImpl::from(x))
-    }
-}
-
-#[cfg(test)]
-impl From<BigUint> for Scalar {
-    fn from(x: BigUint) -> Self {
-        debug_assert!(&x < &Scalar::modulus_as_biguint());
-        Self(ScalarImpl::from(&x))
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for Scalar {
-    fn to_biguint(&self) -> Option<BigUint> {
-        self.0.to_biguint()
-    }
-}
-
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
         Self(ScalarImpl::from(k))
@@ -89,7 +66,7 @@ impl Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let value = ScalarImpl::from_bytes(bytes);
         CtOption::map(value, Self)
     }
@@ -369,9 +346,32 @@ impl Zeroize for Scalar {
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::util::u64_array_to_biguint;
-    use num_bigint::ToBigUint;
+    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
+    use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
+
+    #[cfg(test)]
+    impl From<&BigUint> for Scalar {
+        fn from(x: &BigUint) -> Self {
+            debug_assert!(x < &Scalar::modulus_as_biguint());
+            let bytes = biguint_to_bytes(x);
+            Self::from_bytes(&bytes).unwrap()
+        }
+    }
+
+    #[cfg(test)]
+    impl From<BigUint> for Scalar {
+        fn from(x: BigUint) -> Self {
+            Self::from(&x)
+        }
+    }
+
+    #[cfg(test)]
+    impl ToBigUint for Scalar {
+        fn to_biguint(&self) -> Option<BigUint> {
+            Some(bytes_to_biguint(&(self.to_bytes())))
+        }
+    }
 
     #[test]
     fn is_high() {
@@ -427,8 +427,8 @@ mod tests {
     }
 
     prop_compose! {
-        fn scalar()(words in any::<[u64; 4]>()) -> Scalar {
-            let mut res = u64_array_to_biguint(&words);
+        fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
+            let mut res = bytes_to_biguint(&bytes);
             let m = Scalar::modulus_as_biguint();
             // Modulus is 256 bit long, same as the maximum `res`,
             // so this is guaranteed to land us in the correct range.
@@ -444,7 +444,7 @@ mod tests {
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
             let bytes = a.to_bytes();
-            let a_back = Scalar::from_bytes(bytes).unwrap();
+            let a_back = Scalar::from_bytes(&bytes).unwrap();
             assert_eq!(a, a_back);
         }
 

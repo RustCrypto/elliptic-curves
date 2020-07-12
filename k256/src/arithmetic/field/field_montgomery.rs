@@ -1,14 +1,27 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
-use core::convert::TryInto;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(test)]
-use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-
 use crate::arithmetic::util::{adc64, mac64, mac64_typemax, sbb64};
+
+const fn bytes_to_u64(b: &[u8; 8]) -> u64 {
+    ((b[0] as u64) << 56)
+        | ((b[1] as u64) << 48)
+        | ((b[2] as u64) << 40)
+        | ((b[3] as u64) << 32)
+        | ((b[4] as u64) << 24)
+        | ((b[5] as u64) << 16)
+        | ((b[6] as u64) << 8)
+        | (b[7] as u64)
+}
+
+const fn bytes_to_words(b: &[u8; 32]) -> [u64; 4] {
+    let w3 = bytes_to_u64(&[b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]]);
+    let w2 = bytes_to_u64(&[b[8], b[9], b[10], b[11], b[12], b[13], b[14], b[15]]);
+    let w1 = bytes_to_u64(&[b[16], b[17], b[18], b[19], b[20], b[21], b[22], b[23]]);
+    let w0 = bytes_to_u64(&[b[24], b[25], b[26], b[27], b[28], b[29], b[30], b[31]]);
+    [w0, w1, w2, w3]
+}
 
 /// Constant representing the modulus
 /// p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
@@ -56,27 +69,17 @@ impl FieldElementMontgomery {
         R
     }
 
+    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(bytes_to_words(bytes)).mul(&R2)
+    }
+
     /// Attempts to parse the given byte array as an SEC-1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
-        let mut w = [0u64; 4];
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
+        let words = bytes_to_words(bytes);
 
-        // Interpret the bytes as a big-endian integer w.
-        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-
-        Self::from_words(w)
-    }
-
-    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
-        Self(words).mul(&R2)
-    }
-
-    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
         // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
         // value of 2^64 - 1.
         let (_, borrow) = sbb64(words[0], MODULUS.0[0], 0);
@@ -91,20 +94,13 @@ impl FieldElementMontgomery {
 
     /// Returns the SEC-1 encoding of this field element.
     pub fn to_bytes(&self) -> [u8; 32] {
-        let tmp = self.to_words();
-
-        let mut ret = [0; 32];
-        ret[0..8].copy_from_slice(&tmp[3].to_be_bytes());
-        ret[8..16].copy_from_slice(&tmp[2].to_be_bytes());
-        ret[16..24].copy_from_slice(&tmp[1].to_be_bytes());
-        ret[24..32].copy_from_slice(&tmp[0].to_be_bytes());
-        ret
-    }
-
-    pub fn to_words(&self) -> [u64; 4] {
-        // Convert from Montgomery form to canonical form
         let res = Self::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
-        [res.0[0], res.0[1], res.0[2], res.0[3]]
+        let mut ret = [0; 32];
+        ret[0..8].copy_from_slice(&res.0[3].to_be_bytes());
+        ret[8..16].copy_from_slice(&res.0[2].to_be_bytes());
+        ret[16..24].copy_from_slice(&res.0[1].to_be_bytes());
+        ret[24..32].copy_from_slice(&res.0[0].to_be_bytes());
+        ret
     }
 
     /// Determine if this `FieldElement` is zero.
@@ -419,20 +415,5 @@ impl PartialEq for FieldElementMontgomery {
 impl Default for FieldElementMontgomery {
     fn default() -> Self {
         Self::zero()
-    }
-}
-
-#[cfg(test)]
-impl From<&BigUint> for FieldElementMontgomery {
-    fn from(x: &BigUint) -> Self {
-        let words = biguint_to_u64_array(x);
-        FieldElementMontgomery::from_words(words).unwrap()
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for FieldElementMontgomery {
-    fn to_biguint(&self) -> Option<BigUint> {
-        Some(u64_array_to_biguint(&(self.to_words())))
     }
 }

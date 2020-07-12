@@ -1,10 +1,3 @@
-#[cfg(test)]
-use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-#[cfg(test)]
-use num_traits::cast::ToPrimitive;
-
 use core::convert::TryInto;
 
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -151,7 +144,7 @@ impl Scalar4x64 {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -160,10 +153,6 @@ impl Scalar4x64 {
         w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
         w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
 
-        Self::from_words(w)
-    }
-
-    pub fn from_words(w: [u64; 4]) -> CtOption<Self> {
         // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
         // value of 2^64 - 1.
         let (_, underflow) = sbb_array_with_underflow(&w, &MODULUS);
@@ -289,30 +278,9 @@ impl Scalar4x64 {
     }
 }
 
-impl From<u64> for Scalar4x64 {
-    fn from(k: u64) -> Self {
-        Scalar4x64([k, 0, 0, 0])
-    }
-}
-
 impl From<u32> for Scalar4x64 {
     fn from(k: u32) -> Self {
         Scalar4x64([k as u64, 0, 0, 0])
-    }
-}
-
-#[cfg(test)]
-impl From<&BigUint> for Scalar4x64 {
-    fn from(x: &BigUint) -> Self {
-        let words = biguint_to_u64_array(x);
-        Scalar4x64::from_words(words).unwrap()
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for Scalar4x64 {
-    fn to_biguint(&self) -> Option<BigUint> {
-        Some(u64_array_to_biguint(&(self.0)))
     }
 }
 
@@ -420,40 +388,5 @@ impl WideScalar8x64 {
         /* Final reduction of r. */
         let high_bit = Choice::from(c as u8);
         Scalar4x64::from_overflow(&[r0, r1, r2, r3], high_bit)
-    }
-}
-
-#[cfg(test)]
-impl From<&BigUint> for WideScalar8x64 {
-    fn from(x: &BigUint) -> Self {
-        let mask = BigUint::from(u64::MAX);
-        let w0 = (x & &mask).to_u64().unwrap();
-        let w1 = ((x >> 64) as BigUint & &mask).to_u64().unwrap();
-        let w2 = ((x >> 128) as BigUint & &mask).to_u64().unwrap();
-        let w3 = ((x >> 192) as BigUint & &mask).to_u64().unwrap();
-        let w4 = ((x >> 256) as BigUint & &mask).to_u64().unwrap();
-        let w5 = ((x >> 320) as BigUint & &mask).to_u64().unwrap();
-        let w6 = ((x >> 384) as BigUint & &mask).to_u64().unwrap();
-        let w7 = ((x >> 448) as BigUint & &mask).to_u64().unwrap();
-        Self([w0, w1, w2, w3, w4, w5, w6, w7])
-    }
-}
-
-impl ConstantTimeEq for WideScalar8x64 {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0[0].ct_eq(&other.0[0])
-            & self.0[1].ct_eq(&other.0[1])
-            & self.0[2].ct_eq(&other.0[2])
-            & self.0[3].ct_eq(&other.0[3])
-            & self.0[4].ct_eq(&other.0[4])
-            & self.0[5].ct_eq(&other.0[5])
-            & self.0[6].ct_eq(&other.0[6])
-            & self.0[7].ct_eq(&other.0[7])
-    }
-}
-
-impl PartialEq for WideScalar8x64 {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
     }
 }

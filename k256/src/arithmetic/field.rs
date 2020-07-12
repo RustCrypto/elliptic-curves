@@ -58,20 +58,11 @@ impl FieldElement {
         self.0.is_odd()
     }
 
-    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
-        Self(FieldElementImpl::from_words_unchecked(words))
+    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(FieldElementImpl::from_bytes_unchecked(bytes))
     }
 
-    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
-        let value = FieldElementImpl::from_words(words);
-        CtOption::map(value, Self)
-    }
-
-    pub fn to_words(&self) -> [u64; 4] {
-        self.0.normalize().to_words()
-    }
-
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let value = FieldElementImpl::from_bytes(bytes);
         CtOption::map(value, Self)
     }
@@ -262,28 +253,26 @@ impl MulAssign<FieldElement> for FieldElement {
 }
 
 #[cfg(test)]
-impl From<&BigUint> for FieldElement {
-    fn from(x: &BigUint) -> Self {
-        debug_assert!(x < &Self::modulus_as_biguint());
-        Self(FieldElementImpl::from(x))
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for FieldElement {
-    fn to_biguint(&self) -> Option<BigUint> {
-        self.normalize().0.to_biguint()
-    }
-}
-
-#[cfg(test)]
 mod tests {
-    use num_bigint::ToBigUint;
+    use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
     use super::FieldElement;
-    use crate::arithmetic::util::u64_array_to_biguint;
+    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
     use crate::test_vectors::field::DBL_TEST_VECTORS;
+
+    impl From<&BigUint> for FieldElement {
+        fn from(x: &BigUint) -> Self {
+            let bytes = biguint_to_bytes(x);
+            Self::from_bytes(&bytes).unwrap()
+        }
+    }
+
+    impl ToBigUint for FieldElement {
+        fn to_biguint(&self) -> Option<BigUint> {
+            Some(bytes_to_biguint(&(self.to_bytes())))
+        }
+    }
 
     #[test]
     fn zero_is_additive_identity() {
@@ -302,18 +291,18 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes([0; 32]).unwrap(),
+            FieldElement::from_bytes(&[0; 32]).unwrap(),
             FieldElement::zero()
         );
         assert_eq!(
-            FieldElement::from_bytes([
+            FieldElement::from_bytes(&[
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
             ])
             .unwrap(),
             FieldElement::one()
         );
-        assert!(bool::from(FieldElement::from_bytes([0xff; 32]).is_none()));
+        assert!(bool::from(FieldElement::from_bytes(&[0xff; 32]).is_none()));
     }
 
     #[test]
@@ -385,8 +374,8 @@ mod tests {
     }
 
     prop_compose! {
-        fn field_element()(words in any::<[u64; 4]>()) -> FieldElement {
-            let mut res = u64_array_to_biguint(&words);
+        fn field_element()(bytes in any::<[u8; 32]>()) -> FieldElement {
+            let mut res = bytes_to_biguint(&bytes);
             let m = FieldElement::modulus_as_biguint();
             // Modulus is 256 bit long, same as the maximum `res`,
             // so this is guaranteed to land us in the correct range.

@@ -1,10 +1,5 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(test)]
-use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement5x52(pub(crate) [u64; 5]);
 
@@ -19,11 +14,7 @@ impl FieldElement5x52 {
         Self([1, 0, 0, 0, 0])
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let w0 = (bytes[31] as u64)
             | ((bytes[30] as u64) << 8)
             | ((bytes[29] as u64) << 16)
@@ -63,9 +54,16 @@ impl FieldElement5x52 {
             | ((bytes[1] as u64) << 32)
             | ((bytes[0] as u64) << 40);
 
-        let res = Self([w0, w1, w2, w3, w4]);
-        let overflow = res.get_overflow();
+        Self([w0, w1, w2, w3, w4])
+    }
 
+    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
+        let res = Self::from_bytes_unchecked(bytes);
+        let overflow = res.get_overflow();
         CtOption::new(res, !overflow)
     }
 
@@ -195,41 +193,6 @@ impl FieldElement5x52 {
         let z1 = (t0 ^ 0x1000003D0u64) & t1 & t2 & t3 & (t4 ^ 0xF000000000000u64);
 
         Choice::from(((z0 == 0) | (z1 == 0xFFFFFFFFFFFFFu64)) as u8)
-    }
-
-    /// Pack the field element into 4 64-bit words.
-    pub fn to_words(&self) -> [u64; 4] {
-        let r0 = self.0[0] | (self.0[1] << 52);
-        let r1 = (self.0[1] >> 12) | (self.0[2] << 40);
-        let r2 = (self.0[2] >> 24) | (self.0[3] << 28);
-        let r3 = (self.0[3] >> 36) | (self.0[4] << 16);
-        [r0, r1, r2, r3]
-    }
-
-    /// Constructs a field element from 4 64-bit words without checking the resulting value
-    /// for correctness (that is, if it is less than the modulus).
-    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
-        let w0 = words[0] & 0xFFFFFFFFFFFFFu64;
-        let w1 = (words[0] >> 52) | ((words[1] & 0xFFFFFFFFFFu64) << 12);
-        let w2 = (words[1] >> 40) | ((words[2] & 0xFFFFFFFu64) << 24);
-        let w3 = (words[2] >> 28) | ((words[3] & 0xFFFFu64) << 36);
-        let w4 = words[3] >> 16;
-        Self([w0, w1, w2, w3, w4])
-    }
-
-    /// Constructs a field element from 4 64-bit words,
-    /// asserting that it is within required limits.
-    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
-        let res = Self::from_words_unchecked(words);
-        let overflow = res.get_overflow();
-
-        debug_assert!(res.0[0] >> 52 == 0);
-        debug_assert!(res.0[1] >> 52 == 0);
-        debug_assert!(res.0[2] >> 52 == 0);
-        debug_assert!(res.0[3] >> 52 == 0);
-        debug_assert!(res.0[4] >> 48 == 0);
-
-        CtOption::new(res, !overflow)
     }
 
     /// Determine if this `FieldElement5x52` is zero.
@@ -471,6 +434,12 @@ impl FieldElement5x52 {
     }
 }
 
+impl Default for FieldElement5x52 {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
 impl ConditionallySelectable for FieldElement5x52 {
     fn conditional_select(
         a: &FieldElement5x52,
@@ -494,26 +463,5 @@ impl ConstantTimeEq for FieldElement5x52 {
             & self.0[2].ct_eq(&other.0[2])
             & self.0[3].ct_eq(&other.0[3])
             & self.0[4].ct_eq(&other.0[4])
-    }
-}
-
-impl Default for FieldElement5x52 {
-    fn default() -> Self {
-        Self::zero()
-    }
-}
-
-#[cfg(test)]
-impl From<&BigUint> for FieldElement5x52 {
-    fn from(x: &BigUint) -> Self {
-        let words = biguint_to_u64_array(x);
-        FieldElement5x52::from_words(words).unwrap()
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for FieldElement5x52 {
-    fn to_biguint(&self) -> Option<BigUint> {
-        Some(u64_array_to_biguint(&(self.to_words())))
     }
 }

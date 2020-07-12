@@ -3,11 +3,6 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "getrandom")]
 use getrandom::getrandom;
 
-#[cfg(test)]
-use crate::arithmetic::util::{biguint_to_u64_array, u64_array_to_biguint};
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement10x26(pub(crate) [u32; 10]);
 
@@ -22,11 +17,7 @@ impl FieldElement10x26 {
         Self([1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let n0 = (bytes[31] as u32)
             | ((bytes[30] as u32) << 8)
             | ((bytes[29] as u32) << 16)
@@ -67,7 +58,15 @@ impl FieldElement10x26 {
             | ((bytes[1] as u32) << 6)
             | ((bytes[0] as u32) << 14);
 
-        let res = Self([n0, n1, n2, n3, n4, n5, n6, n7, n8, n9]);
+        Self([n0, n1, n2, n3, n4, n5, n6, n7, n8, n9])
+    }
+
+    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
+        let res = Self::from_bytes_unchecked(bytes);
         let overflow = res.get_overflow();
 
         CtOption::new(res, !overflow)
@@ -233,54 +232,6 @@ impl FieldElement10x26 {
             & (t9 ^ 0x3C00000u32);
 
         Choice::from(((z0 == 0) | (z1 == 0x3FFFFFFu32)) as u8)
-    }
-
-    pub fn to_words(&self) -> [u64; 4] {
-        let mut ret = [0u64; 4];
-
-        ret[0] = (self.0[0] as u64) | ((self.0[1] as u64) << 26) | ((self.0[2] as u64) << 52);
-        ret[1] =
-            ((self.0[2] as u64) >> 12) | ((self.0[3] as u64) << 14) | ((self.0[4] as u64) << 40);
-        ret[2] = ((self.0[4] as u64) >> 24)
-            | ((self.0[5] as u64) << 2)
-            | ((self.0[6] as u64) << 28)
-            | ((self.0[7] as u64) << 54);
-        ret[3] =
-            ((self.0[7] as u64) >> 10) | ((self.0[8] as u64) << 16) | ((self.0[9] as u64) << 42);
-
-        ret
-    }
-
-    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
-        let w0 = words[0] as u32 & 0x3FFFFFFu32;
-        let w1 = (words[0] >> 26) as u32 & 0x3FFFFFFu32;
-        let w2 = (words[0] >> 52) as u32 | ((words[1] << 12) as u32 & 0x3FFFFFFu32);
-        let w3 = (words[1] >> 14) as u32 & 0x3FFFFFFu32;
-        let w4 = (words[1] >> 40) as u32 | ((words[2] << 24) as u32 & 0x3FFFFFFu32);
-        let w5 = (words[2] >> 2) as u32 & 0x3FFFFFFu32;
-        let w6 = (words[2] >> 28) as u32 & 0x3FFFFFFu32;
-        let w7 = (words[2] >> 54) as u32 | ((words[3] << 10) as u32 & 0x3FFFFFFu32);
-        let w8 = (words[3] >> 16) as u32 & 0x3FFFFFFu32;
-        let w9 = (words[3] >> 42) as u32;
-        Self([w0, w1, w2, w3, w4, w5, w6, w7, w8, w9])
-    }
-
-    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
-        let res = Self::from_words_unchecked(words);
-        let overflow = res.get_overflow();
-
-        debug_assert!(res.0[0] >> 26 == 0);
-        debug_assert!(res.0[1] >> 26 == 0);
-        debug_assert!(res.0[2] >> 26 == 0);
-        debug_assert!(res.0[3] >> 26 == 0);
-        debug_assert!(res.0[4] >> 26 == 0);
-        debug_assert!(res.0[5] >> 26 == 0);
-        debug_assert!(res.0[6] >> 26 == 0);
-        debug_assert!(res.0[7] >> 26 == 0);
-        debug_assert!(res.0[8] >> 26 == 0);
-        debug_assert!(res.0[9] >> 22 == 0);
-
-        CtOption::new(res, !overflow)
     }
 
     /// Determine if this `FieldElement10x26` is zero.
@@ -691,6 +642,12 @@ impl FieldElement10x26 {
     }
 }
 
+impl Default for FieldElement10x26 {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
 impl ConditionallySelectable for FieldElement10x26 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self([
@@ -720,26 +677,5 @@ impl ConstantTimeEq for FieldElement10x26 {
             & self.0[7].ct_eq(&other.0[7])
             & self.0[8].ct_eq(&other.0[8])
             & self.0[9].ct_eq(&other.0[9])
-    }
-}
-
-impl Default for FieldElement10x26 {
-    fn default() -> Self {
-        Self::zero()
-    }
-}
-
-#[cfg(test)]
-impl From<&BigUint> for FieldElement10x26 {
-    fn from(x: &BigUint) -> Self {
-        let words = biguint_to_u64_array(x);
-        Self::from_words(words).unwrap()
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for FieldElement10x26 {
-    fn to_biguint(&self) -> Option<BigUint> {
-        Some(u64_array_to_biguint(&(self.to_words())))
     }
 }

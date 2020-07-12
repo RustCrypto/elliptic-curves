@@ -1,10 +1,5 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(test)]
-use crate::arithmetic::util::{biguint_to_u32_array, u32_array_to_biguint};
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-
 use crate::arithmetic::util::{adc32, sbb32};
 
 use core::convert::TryInto;
@@ -175,7 +170,7 @@ impl Scalar8x32 {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let mut w = [0u32; 8];
 
         // Interpret the bytes as a big-endian integer w.
@@ -188,10 +183,6 @@ impl Scalar8x32 {
         w[1] = u32::from_be_bytes(bytes[24..28].try_into().unwrap());
         w[0] = u32::from_be_bytes(bytes[28..32].try_into().unwrap());
 
-        Self::from_words(w)
-    }
-
-    pub fn from_words(w: [u32; 8]) -> CtOption<Self> {
         // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
         // value of 2^64 - 1.
         let (_, underflow) = sbb_array_with_underflow(&w, &MODULUS);
@@ -392,21 +383,6 @@ impl Scalar8x32 {
 impl From<u32> for Scalar8x32 {
     fn from(k: u32) -> Self {
         Self([k, 0, 0, 0, 0, 0, 0, 0])
-    }
-}
-
-#[cfg(test)]
-impl From<&BigUint> for Scalar8x32 {
-    fn from(x: &BigUint) -> Self {
-        let words = biguint_to_u32_array(x);
-        Self::from_words(words).unwrap()
-    }
-}
-
-#[cfg(test)]
-impl ToBigUint for Scalar8x32 {
-    fn to_biguint(&self) -> Option<BigUint> {
-        Some(u32_array_to_biguint(&(self.0)))
     }
 }
 

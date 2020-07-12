@@ -10,41 +10,11 @@ cfg_if! {
     }
 }
 
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElementImpl {
     value: FieldElementUnsafeImpl,
     magnitude: u32,
     normalized: bool,
-}
-
-impl ConditionallySelectable for FieldElementImpl {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        // 1. It's debug only, so it shouldn't present a security risk
-        // 2. Being normalized does is independent from the field element value;
-        //    elements must be normalized explicitly.
-        let new_normalized = if bool::from(choice) {
-            b.normalized
-        } else {
-            a.normalized
-        };
-        Self {
-            value: FieldElementUnsafeImpl::conditional_select(&(a.value), &(b.value), choice),
-            magnitude: u32::conditional_select(&(a.magnitude), &(b.magnitude), choice),
-            normalized: new_normalized,
-        }
-    }
-}
-
-impl ConstantTimeEq for FieldElementImpl {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.value.ct_eq(&(other.value))
-            & self.magnitude.ct_eq(&(other.magnitude))
-            // See the comment in `conditional_select()`
-            & Choice::from((self.normalized == other.normalized) as u8)
-    }
 }
 
 impl FieldElementImpl {
@@ -82,11 +52,16 @@ impl FieldElementImpl {
         Self::new_normalized(&FieldElementUnsafeImpl::one())
     }
 
+    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        let value = FieldElementUnsafeImpl::from_bytes_unchecked(bytes);
+        Self::new_normalized(&value)
+    }
+
     /// Attempts to parse the given byte array as an SEC-1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let value = FieldElementUnsafeImpl::from_bytes(bytes);
         CtOption::map(value, |x| Self::new_normalized(&x))
     }
@@ -107,20 +82,6 @@ impl FieldElementImpl {
 
     pub fn normalizes_to_zero(&self) -> Choice {
         self.value.normalizes_to_zero()
-    }
-
-    pub fn to_words(&self) -> [u64; 4] {
-        self.normalize().value.to_words()
-    }
-
-    pub const fn from_words_unchecked(words: [u64; 4]) -> Self {
-        let value = FieldElementUnsafeImpl::from_words_unchecked(words);
-        Self::new_normalized(&value)
-    }
-
-    pub fn from_words(words: [u64; 4]) -> CtOption<Self> {
-        let value = FieldElementUnsafeImpl::from_words(words);
-        CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
     pub fn is_zero(&self) -> Choice {
@@ -178,17 +139,29 @@ impl Default for FieldElementImpl {
     }
 }
 
-#[cfg(test)]
-impl From<&BigUint> for FieldElementImpl {
-    fn from(x: &BigUint) -> Self {
-        Self::new_normalized(&FieldElementUnsafeImpl::from(x))
+impl ConditionallySelectable for FieldElementImpl {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        // 1. It's debug only, so it shouldn't present a security risk
+        // 2. Being normalized does is independent from the field element value;
+        //    elements must be normalized explicitly.
+        let new_normalized = if bool::from(choice) {
+            b.normalized
+        } else {
+            a.normalized
+        };
+        Self {
+            value: FieldElementUnsafeImpl::conditional_select(&(a.value), &(b.value), choice),
+            magnitude: u32::conditional_select(&(a.magnitude), &(b.magnitude), choice),
+            normalized: new_normalized,
+        }
     }
 }
 
-#[cfg(test)]
-impl ToBigUint for FieldElementImpl {
-    fn to_biguint(&self) -> Option<BigUint> {
-        debug_assert!(self.normalized);
-        self.value.to_biguint()
+impl ConstantTimeEq for FieldElementImpl {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.value.ct_eq(&(other.value))
+            & self.magnitude.ct_eq(&(other.magnitude))
+            // See the comment in `conditional_select()`
+            & Choice::from((self.normalized == other.normalized) as u8)
     }
 }

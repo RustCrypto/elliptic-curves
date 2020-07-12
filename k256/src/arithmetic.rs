@@ -27,11 +27,39 @@ use elliptic_curve::{
 
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
 
-const CURVE_EQUATION_B: FieldElement = FieldElement::from_words_unchecked([
-    CURVE_EQUATION_B_SINGLE as u64,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
+const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unchecked(&[
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    CURVE_EQUATION_B_SINGLE as u8,
 ]);
 
 /// A point on the secp256k1 curve in affine coordinates.
@@ -73,13 +101,13 @@ impl AffinePoint {
         // x = 79be667e f9dcbbac 55a06295 ce870b07 029bfcdb 2dce28d9 59f2815b 16f81798
         // y = 483ada77 26a3c465 5da4fbfc 0e1108a8 fd17b448 a6855419 9c47d08f fb10d4b8
         AffinePoint {
-            x: FieldElement::from_bytes([
+            x: FieldElement::from_bytes(&[
                 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce, 0x87,
                 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81, 0x5b,
                 0x16, 0xf8, 0x17, 0x98,
             ])
             .unwrap(),
-            y: FieldElement::from_bytes([
+            y: FieldElement::from_bytes(&[
                 0x48, 0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65, 0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11,
                 0x08, 0xa8, 0xfd, 0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19, 0x9c, 0x47, 0xd0, 0x8f,
                 0xfb, 0x10, 0xd4, 0xb8,
@@ -176,7 +204,8 @@ impl FixedBaseScalarMul for Secp256k1 {
     /// Multiply the given scalar by the generator point for this elliptic
     /// curve.
     fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
-        Scalar::from_bytes((*scalar_bytes).into())
+        let bytes: [u8; 32] = (*scalar_bytes).into();
+        Scalar::from_bytes(&bytes)
             .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
     }
 }
@@ -579,7 +608,7 @@ impl GenerateSecretKey for Secp256k1 {
         loop {
             rng.fill_bytes(&mut bytes);
 
-            if Scalar::from_bytes(bytes).is_some().into() {
+            if Scalar::from_bytes(&bytes).is_some().into() {
                 return SecretKey::new(bytes.into());
             }
         }

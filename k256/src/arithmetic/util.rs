@@ -57,43 +57,20 @@ pub const fn mac64_typemax(a: u64, b: u64, carry: u64) -> (u64, u64) {
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
-pub fn u64_array_to_biguint(words: &[u64; 4]) -> BigUint {
-    words
+pub fn bytes_to_biguint(bytes: &[u8; 32]) -> BigUint {
+    bytes
         .iter()
         .enumerate()
-        .map(|(i, w)| w.to_biguint().unwrap() << (i * 64))
+        .map(|(i, w)| w.to_biguint().unwrap() << ((31 - i) * 8))
         .sum()
 }
 
 #[cfg(test)]
-#[allow(dead_code)]
-pub fn biguint_to_u64_array(x: &BigUint) -> [u64; 4] {
-    let mask = BigUint::from(u64::MAX);
-    let mut words = [0u64; 4];
-    for i in 0..4 {
-        words[i] = ((x >> (i * 64)) as BigUint & &mask).to_u64().unwrap();
+pub fn biguint_to_bytes(x: &BigUint) -> [u8; 32] {
+    let mask = BigUint::from(u8::MAX);
+    let mut bytes = [0u8; 32];
+    for i in 0..32 {
+        bytes[i] = ((x >> ((31 - i) * 8)) as BigUint & &mask).to_u8().unwrap();
     }
-    words
-}
-
-#[cfg(test)]
-#[allow(dead_code)]
-pub fn u32_array_to_biguint(words: &[u32; 8]) -> BigUint {
-    words
-        .iter()
-        .enumerate()
-        .map(|(i, w)| w.to_biguint().unwrap() << (i * 32))
-        .sum()
-}
-
-#[cfg(test)]
-#[allow(dead_code)]
-pub fn biguint_to_u32_array(x: &BigUint) -> [u32; 8] {
-    let mask = BigUint::from(u32::MAX);
-    let mut words = [0u32; 8];
-    for i in 0..8 {
-        words[i] = ((x >> (i * 32)) as BigUint & &mask).to_u32().unwrap();
-    }
-    words
+    bytes
 }
