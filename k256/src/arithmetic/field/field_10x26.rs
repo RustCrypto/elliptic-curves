@@ -1,8 +1,5 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(feature = "getrandom")]
-use getrandom::getrandom;
-
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement10x26(pub(crate) [u32; 10]);
 
