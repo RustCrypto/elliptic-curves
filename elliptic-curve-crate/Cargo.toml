@@ -38,9 +38,10 @@ hex = "0.4"
 
 [features]
 default = []
+ecdsa = ["weierstrass"]
 weierstrass = []
 std = []
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["weierstrass", "std"]
 rustdoc-args = ["--cfg", "docsrs"]

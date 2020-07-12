@@ -4,6 +4,10 @@ pub mod curve;
 pub mod point;
 pub mod public_key;
 
+#[cfg(feature = "ecdsa")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+pub mod ecdsa;
+
 pub use curve::Curve;
 pub use point::{CompressedPoint, CompressedPointSize, UncompressedPoint, UncompressedPointSize};
 pub use public_key::PublicKey;
