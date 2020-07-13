@@ -157,11 +157,6 @@ impl FieldElementMontgomery {
         )
     }
 
-    /// Returns 2*self.
-    pub const fn double(&self) -> Self {
-        self.add(self)
-    }
-
     /// Returns self - rhs mod p
     pub const fn subtract(&self, rhs: &Self) -> Self {
         Self::sub_inner(

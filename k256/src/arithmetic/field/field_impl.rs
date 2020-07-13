@@ -1,3 +1,7 @@
+//! A debug layer for lazy-reduction field elements making sure
+//! they are not misused. Ensures the correct normalization and checks magnitudes in operations.
+//! Only enabled when `debug_assertions` feature is on.
+
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use cfg_if::cfg_if;
@@ -29,7 +33,7 @@ impl FieldElementImpl {
     const fn new_weak_normalized(value: &FieldElementUnsafeImpl) -> Self {
         Self {
             value: *value,
-            magnitude: 1u32,
+            magnitude: 1,
             normalized: false,
         }
     }
@@ -57,16 +61,11 @@ impl FieldElementImpl {
         Self::new_normalized(&value)
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
     pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let value = FieldElementUnsafeImpl::from_bytes(bytes);
         CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
-    /// Returns the SEC-1 encoding of this field element.
     pub fn to_bytes(&self) -> [u8; 32] {
         debug_assert!(self.normalized);
         self.value.to_bytes()
@@ -105,12 +104,6 @@ impl FieldElementImpl {
         let new_magnitude = self.magnitude + rhs.magnitude;
         debug_assert!(new_magnitude <= FieldElementUnsafeImpl::max_magnitude());
         Self::new(&(self.value.add(&(rhs.value))), new_magnitude)
-    }
-
-    pub fn double(&self) -> Self {
-        let new_magnitude = self.magnitude * 2;
-        debug_assert!(new_magnitude <= FieldElementUnsafeImpl::max_magnitude());
-        Self::new(&(self.value.double()), new_magnitude)
     }
 
     pub fn mul_single(&self, rhs: u32) -> Self {

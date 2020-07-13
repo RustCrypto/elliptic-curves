@@ -1,5 +1,13 @@
+//! Field element modulo the curve internal modulus using 32-bit limbs.
+//! Ported from https://github.com/bitcoin-core/secp256k1
+
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+/// Scalars modulo SECP256k1 modulus (2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1).
+/// Uses 5 64-bit limbs (little-endian), where in the normalized form
+/// first 4 contain 52 bits of the value each, and the last one contains 48 bits.
+/// Arithmetic operations can be done without modulo reduction for some time,
+/// using the remaining overflow bits.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement5x52(pub(crate) [u64; 5]);
 
@@ -14,6 +22,8 @@ impl FieldElement5x52 {
         Self([1, 0, 0, 0, 0])
     }
 
+    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Does not check the result for being in the correct range.
     pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let w0 = (bytes[31] as u64)
             | ((bytes[30] as u64) << 8)
@@ -126,7 +136,7 @@ impl FieldElement5x52 {
         Self([t0, t1, t2, t3, t4])
     }
 
-    /// Subtract the overflow in the last limb and return it with the new field element.
+    /// Subtracts the overflow in the last limb and return it with the new field element.
     /// Equivalent to subtracting a multiple of 2^256.
     fn subtract_modulus_approximation(&self) -> (Self, u64) {
         let x = self.0[4] >> 48;
@@ -164,7 +174,8 @@ impl FieldElement5x52 {
     pub fn normalize(&self) -> Self {
         let res = self.normalize_weak();
 
-        // At most a single final reduction is needed; check if the value is >= the field characteristic
+        // At most a single final reduction is needed;
+        // check if the value is >= the field characteristic
         let overflow = res.get_overflow();
 
         // Apply the final reduction (for constant-time behaviour, we do it always)
@@ -172,7 +183,8 @@ impl FieldElement5x52 {
         // Mask off the possible multiple of 2^256 from the final reduction
         let (res_corrected, x) = res_corrected.subtract_modulus_approximation();
 
-        // If t4 didn't carry to bit 48 already, then it should have after any final reduction
+        // If the last limb didn't carry to bit 48 already,
+        // then it should have after any final reduction
         debug_assert!(x == (overflow.unwrap_u8() as u64));
 
         Self::conditional_select(&res, &res_corrected, overflow)
@@ -188,7 +200,7 @@ impl FieldElement5x52 {
         let t3 = res.0[3];
         let t4 = res.0[4];
 
-        /* z0 tracks a possible raw value of 0, z1 tracks a possible raw value of P */
+        // z0 tracks a possible raw value of 0, z1 tracks a possible raw value of the modulus
         let z0 = t0 | t1 | t2 | t3 | t4;
         let z1 = (t0 ^ 0x1000003D0u64) & t1 & t2 & t3 & (t4 ^ 0xF000000000000u64);
 
@@ -219,6 +231,9 @@ impl FieldElement5x52 {
         2047u32
     }
 
+    /// Returns -self, treating it as a value of given magnitude.
+    /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
+    /// Raises the magnitude by 1.
     pub const fn negate(&self, magnitude: u32) -> Self {
         let m = (magnitude + 1) as u64;
         let r0 = 0xFFFFEFFFFFC2Fu64 * 2 * m - self.0[0];
@@ -229,7 +244,8 @@ impl FieldElement5x52 {
         Self([r0, r1, r2, r3, r4])
     }
 
-    /// Returns self + rhs mod p
+    /// Returns self + rhs mod p.
+    /// Sums the magnitudes.
     pub const fn add(&self, rhs: &Self) -> Self {
         Self([
             self.0[0] + rhs.0[0],
@@ -240,11 +256,8 @@ impl FieldElement5x52 {
         ])
     }
 
-    /// Returns 2*self.
-    pub const fn double(&self) -> Self {
-        self.add(self)
-    }
-
+    /// Multiplies by a single-limb integer.
+    /// Multiplies the magnitude by the same value.
     pub const fn mul_single(&self, rhs: u32) -> Self {
         let rhs_u64 = rhs as u64;
         Self([
@@ -424,11 +437,15 @@ impl FieldElement5x52 {
     }
 
     /// Returns self * rhs mod p
+    /// Brings the magnitude to 1 (but doesn't normalize the result).
+    /// The magnitudes of arguments should be <= 8.
     pub fn mul(&self, rhs: &Self) -> Self {
         self.mul_inner(rhs)
     }
 
     /// Returns self * self
+    /// Brings the magnitude to 1 (but doesn't normalize the result).
+    /// The magnitudes of arguments should be <= 8.
     pub fn square(&self) -> Self {
         self.mul_inner(self)
     }

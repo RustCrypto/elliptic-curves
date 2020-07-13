@@ -1,3 +1,6 @@
+//! Arithmetic modulo curve base order using 32-bit limbs.
+//! Ported from https://github.com/bitcoin-core/secp256k1
+
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use crate::arithmetic::util::{adc32, sbb32};
@@ -20,7 +23,7 @@ pub const MODULUS: [u32; 8] = [
     0xFFFF_FFFF,
 ];
 
-/* Limbs of 2^256 minus the secp256k1 order. */
+/// Limbs of 2^256 minus the secp256k1 order.
 pub const NEG_MODULUS: [u32; 8] = [
     !MODULUS[0] + 1,
     !MODULUS[1],
@@ -44,6 +47,9 @@ const FRAC_MODULUS_2: [u32; 8] = [
     0x7FFF_FFFF,
 ];
 
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a sinle-limb value.
+/// The borrow can be either `0` or `<u32>::MAX`.
 #[inline(always)]
 fn sbb_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
     let borrow = 0;
@@ -58,12 +64,18 @@ fn sbb_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
     ([r0, r1, r2, r3, r4, r5, r6, r7], borrow)
 }
 
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a constant-time `Choice`
+/// (`0` if there was no borrow and `1` if there was).
 #[inline(always)]
 fn sbb_array_with_underflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
     let (res, borrow) = sbb_array(lhs, rhs);
     (res, Choice::from((borrow >> 31) as u8))
 }
 
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a sinle-limb value.
+/// The carry can be either `0` or `1`.
 #[inline(always)]
 fn adc_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
     let carry = 0;
@@ -78,6 +90,9 @@ fn adc_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
     ([r0, r1, r2, r3, r4, r5, r6, r7], carry)
 }
 
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a constant-time `Choice`
+/// (`0` if there was no carry and `1` if there was).
 #[inline(always)]
 fn adc_array_with_overflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
     let (res, carry) = adc_array(lhs, rhs);
@@ -98,8 +113,11 @@ fn conditional_select(a: &[u32; 8], b: &[u32; 8], choice: Choice) -> [u32; 8] {
     ]
 }
 
+/// Constant-time comparison.
 #[inline(always)]
 fn ct_less(a: u32, b: u32) -> u32 {
+    // Do not convert to Choice since it is only used internally,
+    // and we don't want loss of performance.
     (a < b) as u32
 }
 
@@ -147,6 +165,7 @@ fn muladd_fast(a: u32, b: u32, c0: u32, c1: u32) -> (u32, u32) {
     (new_c0, new_c1)
 }
 
+/// A scalar with arithmetic modulo curve order, represented as 8 32-bit limbs (little-endian).
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar8x32([u32; 8]);
@@ -162,6 +181,7 @@ impl Scalar8x32 {
         Self([1, 0, 0, 0, 0, 0, 0, 0])
     }
 
+    /// Truncates the scalar to a `u32` value. All the higher bits are discarded.
     pub fn truncate_to_u32(&self) -> u32 {
         self.0[0]
     }
@@ -169,22 +189,20 @@ impl Scalar8x32 {
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
+    /// [0, modulus).
     pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
-        let mut w = [0u32; 8];
-
         // Interpret the bytes as a big-endian integer w.
-        w[7] = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
-        w[6] = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
-        w[5] = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
-        w[4] = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
-        w[3] = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
-        w[2] = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
-        w[1] = u32::from_be_bytes(bytes[24..28].try_into().unwrap());
-        w[0] = u32::from_be_bytes(bytes[28..32].try_into().unwrap());
+        let w7 = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
+        let w6 = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        let w5 = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+        let w4 = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
+        let w3 = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
+        let w2 = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
+        let w1 = u32::from_be_bytes(bytes[24..28].try_into().unwrap());
+        let w0 = u32::from_be_bytes(bytes[28..32].try_into().unwrap());
+        let w = [w0, w1, w2, w3, w4, w5, w6, w7];
 
-        // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
-        // value of 2^64 - 1.
+        // If w is in the range [0, n) then w - n will underflow
         let (_, underflow) = sbb_array_with_underflow(&w, &MODULUS);
         CtOption::new(Self(w), underflow)
     }
@@ -209,6 +227,7 @@ impl Scalar8x32 {
         !underflow
     }
 
+    /// Is this scalar equal to 0?
     pub fn is_zero(&self) -> Choice {
         Choice::from(
             ((self.0[0]
@@ -223,24 +242,28 @@ impl Scalar8x32 {
         )
     }
 
+    /// Negates the scalar.
     pub fn negate(&self) -> Self {
         let (res, _) = sbb_array(&MODULUS, &(self.0));
         Self::conditional_select(&Self(res), &Self::zero(), self.is_zero())
     }
 
+    /// Sums two scalars.
     pub fn add(&self, rhs: &Self) -> Self {
         let (res1, overflow) = adc_array_with_overflow(&(self.0), &(rhs.0));
         let (res2, _) = sbb_array(&res1, &MODULUS);
         Self(conditional_select(&res1, &res2, overflow))
     }
 
+    /// Subtracts one scalar from the other.
     pub fn sub(&self, rhs: &Self) -> Self {
         let (res1, underflow) = sbb_array_with_underflow(&(self.0), &(rhs.0));
         let (res2, _) = adc_array(&res1, &MODULUS);
         Self(conditional_select(&res1, &res2, underflow))
     }
 
-    pub fn mul_wide(&self, rhs: &Self) -> WideScalar16x32 {
+    /// Multiplies two scalars without modulo reduction, producing up to a 512-bit scalar.
+    fn mul_wide(&self, rhs: &Self) -> WideScalar16x32 {
         /* 96 bit accumulator. */
         let c0 = 0;
         let c1 = 0;
@@ -334,16 +357,22 @@ impl Scalar8x32 {
         ])
     }
 
+    /// Multiplies two scalars.
     pub fn mul(&self, rhs: &Self) -> Self {
         let wide_res = self.mul_wide(rhs);
         wide_res.reduce()
     }
 
-    pub fn from_overflow(w: &[u32; 8], high_bit: Choice) -> Self {
+    /// Creates a normalized scalar from four given limbs and a possible high (carry) bit
+    /// in constant time.
+    /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
+    fn from_overflow(w: &[u32; 8], high_bit: Choice) -> Self {
         let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
         Self(conditional_select(&w, &r2, !underflow | high_bit))
     }
 
+    /// Right shifts a scalar by given number of bits.
+    /// Constant time in the scalar argument, but not in the shift argument.
     pub fn rshift(&self, shift: usize) -> Self {
         let full_shifts = shift >> 5;
         let small_shift = shift & 0x1f;

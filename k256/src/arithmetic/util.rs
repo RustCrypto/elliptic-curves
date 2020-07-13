@@ -5,7 +5,7 @@ use num_bigint::{BigUint, ToBigUint};
 #[cfg(test)]
 use num_traits::cast::ToPrimitive;
 
-/// Computes a - (b + borrow), returning the result along with the new borrow.
+/// Computes `a - (b + borrow)`, returning the result along with the new borrow. 64-bit version.
 #[cfg(any(
     feature = "field-montgomery",
     all(target_pointer_width = "64", not(feature = "force-32-bit"))
@@ -16,6 +16,7 @@ pub const fn sbb64(a: u64, b: u64, borrow: u64) -> (u64, u64) {
     (ret as u64, (ret >> 64) as u64)
 }
 
+/// Computes `a + b + carry`, returning the result along with the new carry. 64-bit version.
 #[cfg(any(
     feature = "field-montgomery",
     all(target_pointer_width = "64", not(feature = "force-32-bit"))
@@ -26,6 +27,7 @@ pub const fn adc64(a: u64, b: u64, carry: u64) -> (u64, u64) {
     (ret as u64, (ret >> 64) as u64)
 }
 
+/// Computes `a - (b + borrow)`, returning the result along with the new borrow. 32-bit version.
 #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))]
 #[inline(always)]
 pub const fn sbb32(a: u32, b: u32, borrow: u32) -> (u32, u32) {
@@ -33,6 +35,7 @@ pub const fn sbb32(a: u32, b: u32, borrow: u32) -> (u32, u32) {
     (ret as u32, (ret >> 32) as u32)
 }
 
+/// Computes `a + b + carry`, returning the result along with the new carry. 32-bit version.
 #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))]
 #[inline(always)]
 pub const fn adc32(a: u32, b: u32, carry: u32) -> (u32, u32) {
@@ -40,7 +43,7 @@ pub const fn adc32(a: u32, b: u32, carry: u32) -> (u32, u32) {
     (ret as u32, (ret >> 32) as u32)
 }
 
-/// Computes a + (b * c) + carry, returning the result along with the new carry.
+/// Computes `a + (b * c) + carry`, returning the result along with the new carry.
 #[cfg(feature = "field-montgomery")]
 #[inline(always)]
 pub const fn mac64(a: u64, b: u64, c: u64, carry: u64) -> (u64, u64) {
@@ -56,6 +59,7 @@ pub const fn mac64_typemax(a: u64, b: u64, carry: u64) -> (u64, u64) {
     (ret as u64, (ret >> 64) as u64)
 }
 
+/// Converts a byte array (big-endian) to BigUint.
 #[cfg(test)]
 pub fn bytes_to_biguint(bytes: &[u8; 32]) -> BigUint {
     bytes
@@ -65,6 +69,7 @@ pub fn bytes_to_biguint(bytes: &[u8; 32]) -> BigUint {
         .sum()
 }
 
+/// Converts a BigUint to a byte array (big-endian).
 #[cfg(test)]
 pub fn biguint_to_bytes(x: &BigUint) -> [u8; 32] {
     let mask = BigUint::from(u8::MAX);

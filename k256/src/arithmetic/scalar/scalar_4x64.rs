@@ -1,3 +1,6 @@
+//! Arithmetic modulo curve base order using 64-bit limbs.
+//! Ported from https://github.com/bitcoin-core/secp256k1
+
 use core::convert::TryInto;
 
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -7,29 +10,29 @@ use zeroize::Zeroize;
 
 use crate::arithmetic::util::{adc64, sbb64};
 
-/// The number of 64-bit limbs used to represent a [`Scalar`].
-const LIMBS: usize = 4;
-
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-pub const MODULUS: [u64; LIMBS] = [
+pub const MODULUS: [u64; 4] = [
     0xBFD2_5E8C_D036_4141,
     0xBAAE_DCE6_AF48_A03B,
     0xFFFF_FFFF_FFFF_FFFE,
     0xFFFF_FFFF_FFFF_FFFF,
 ];
 
-/* Limbs of 2^256 minus the secp256k1 order. */
-pub const NEG_MODULUS: [u64; LIMBS] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
+/// Limbs of 2^256 minus the secp256k1 order.
+pub const NEG_MODULUS: [u64; 4] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
 
 /// Constant representing the modulus / 2
-const FRAC_MODULUS_2: [u64; LIMBS] = [
+const FRAC_MODULUS_2: [u64; 4] = [
     0xDFE9_2F46_681B_20A0,
     0x5D57_6E73_57A4_501D,
     0xFFFF_FFFF_FFFF_FFFF,
     0x7FFF_FFFF_FFFF_FFFF,
 ];
 
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a sinle-limb value.
+/// The borrow can be either `0` or `<u64>::MAX`.
 #[inline(always)]
 fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     let borrow = 0;
@@ -40,12 +43,18 @@ fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     ([r0, r1, r2, r3], borrow)
 }
 
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a constant-time `Choice`
+/// (`0` if there was no borrow and `1` if there was).
 #[inline(always)]
 fn sbb_array_with_underflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
     let (res, borrow) = sbb_array(lhs, rhs);
     (res, Choice::from((borrow >> 63) as u8))
 }
 
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a sinle-limb value.
+/// The carry can be either `0` or `1`.
 #[inline(always)]
 fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     let carry = 0;
@@ -56,6 +65,9 @@ fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     ([r0, r1, r2, r3], carry)
 }
 
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a constant-time `Choice`
+/// (`0` if there was no carry and `1` if there was).
 #[inline(always)]
 fn adc_array_with_overflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
     let (res, carry) = adc_array(lhs, rhs);
@@ -72,8 +84,11 @@ fn conditional_select(a: &[u64; 4], b: &[u64; 4], choice: Choice) -> [u64; 4] {
     ]
 }
 
+/// Constant-time comparison.
 #[inline(always)]
 fn ct_less(a: u64, b: u64) -> u64 {
+    // Do not convert to Choice since it is only used internally,
+    // and we don't want loss of performance.
     (a < b) as u64
 }
 
@@ -121,9 +136,10 @@ fn muladd_fast(a: u64, b: u64, c0: u64, c1: u64) -> (u64, u64) {
     (new_c0, new_c1)
 }
 
+/// A scalar with arithmetic modulo curve order, represented as 4 64-bit limbs (little-endian).
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub struct Scalar4x64([u64; LIMBS]);
+pub struct Scalar4x64([u64; 4]);
 
 impl Scalar4x64 {
     /// Returns the zero scalar.
@@ -136,6 +152,7 @@ impl Scalar4x64 {
         Self([1, 0, 0, 0])
     }
 
+    /// Truncates the scalar to a `u32` value. All the higher bits are discarded.
     pub fn truncate_to_u32(&self) -> u32 {
         self.0[0] as u32
     }
@@ -143,18 +160,16 @@ impl Scalar4x64 {
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
+    /// [0, modulus).
     pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
-        let mut w = [0u64; LIMBS];
-
         // Interpret the bytes as a big-endian integer w.
-        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        let w3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        let w2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        let w1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        let w0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        let w = [w0, w1, w2, w3];
 
-        // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
-        // value of 2^64 - 1.
+        // If w is in the range [0, n) then w - n will underflow
         let (_, underflow) = sbb_array_with_underflow(&w, &MODULUS);
         CtOption::new(Self(w), underflow)
     }
@@ -175,28 +190,33 @@ impl Scalar4x64 {
         !underflow
     }
 
+    /// Is this scalar equal to 0?
     pub fn is_zero(&self) -> Choice {
         Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3]) == 0) as u8)
     }
 
+    /// Negates the scalar.
     pub fn negate(&self) -> Self {
         let (res, _) = sbb_array(&MODULUS, &(self.0));
         Self::conditional_select(&Self(res), &Self::zero(), self.is_zero())
     }
 
+    /// Sums two scalars.
     pub fn add(&self, rhs: &Self) -> Self {
         let (res1, overflow) = adc_array_with_overflow(&(self.0), &(rhs.0));
         let (res2, _) = sbb_array(&res1, &MODULUS);
         Self(conditional_select(&res1, &res2, overflow))
     }
 
+    /// Subtracts one scalar from the other.
     pub fn sub(&self, rhs: &Self) -> Self {
         let (res1, underflow) = sbb_array_with_underflow(&(self.0), &(rhs.0));
         let (res2, _) = adc_array(&res1, &MODULUS);
         Self(conditional_select(&res1, &res2, underflow))
     }
 
-    pub fn mul_wide(&self, rhs: &Self) -> WideScalar8x64 {
+    /// Multiplies two scalars without modulo reduction, producing up to a 512-bit scalar.
+    fn mul_wide(&self, rhs: &Self) -> WideScalar8x64 {
         /* 160 bit accumulator. */
 
         let c0 = 0;
@@ -232,16 +252,22 @@ impl Scalar4x64 {
         WideScalar8x64([l0, l1, l2, l3, l4, l5, l6, l7])
     }
 
+    /// Multiplies two scalars.
     pub fn mul(&self, rhs: &Self) -> Self {
         let wide_res = self.mul_wide(rhs);
         wide_res.reduce()
     }
 
-    pub fn from_overflow(w: &[u64; 4], high_bit: Choice) -> Self {
+    /// Creates a normalized scalar from four given limbs and a possible high (carry) bit
+    /// in constant time.
+    /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
+    fn from_overflow(w: &[u64; 4], high_bit: Choice) -> Self {
         let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
         Self(conditional_select(&w, &r2, !underflow | high_bit))
     }
 
+    /// Right shifts a scalar by given number of bits.
+    /// Constant time in the scalar argument, but not in the shift argument.
     pub fn rshift(&self, shift: usize) -> Self {
         let full_shifts = shift >> 6;
         let small_shift = shift & 0x3f;

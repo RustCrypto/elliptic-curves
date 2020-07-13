@@ -50,18 +50,34 @@ impl FieldElement {
         Self(FieldElementImpl::one())
     }
 
+    /// Determine if this `FieldElement10x26` is zero.
+    ///
+    /// # Returns
+    ///
+    /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_zero(&self) -> Choice {
         self.0.is_zero()
     }
 
+    /// Determine if this `FieldElement10x26` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    ///
+    /// # Returns
+    ///
+    /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
         self.0.is_odd()
     }
 
+    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Does not check the result for being in the correct range.
     pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(FieldElementImpl::from_bytes_unchecked(bytes))
     }
 
+    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
     pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let value = FieldElementImpl::from_bytes(bytes);
         CtOption::map(value, Self)
@@ -72,34 +88,56 @@ impl FieldElement {
         self.0.normalize().to_bytes()
     }
 
+    /// Returns -self, treating it as a value of given magnitude.
+    /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
     pub fn negate(&self, magnitude: u32) -> Self {
         Self(self.0.negate(magnitude))
     }
 
+    /// Fully normalizes the field element.
+    /// Brings the magnitude to 1 and modulo reduces the value.
     pub fn normalize(&self) -> Self {
         Self(self.0.normalize())
     }
 
+    /// Weakly normalizes the field element.
+    /// Brings the magnitude to 1, but does not guarantee the value to be less than the modulus.
     pub fn normalize_weak(&self) -> Self {
         Self(self.0.normalize_weak())
     }
 
+    /// Checks if the field element becomes zero if normalized.
     pub fn normalizes_to_zero(&self) -> Choice {
         self.0.normalizes_to_zero()
     }
 
+    /// Multiplies by a single-limb integer.
+    /// Multiplies the magnitude by the same value.
     pub fn mul_single(&self, rhs: u32) -> Self {
         Self(self.0.mul_single(rhs))
     }
 
+    /// Returns 2*self.
+    /// Doubles the magnitude.
     pub fn double(&self) -> Self {
-        Self(self.0.double())
+        Self(self.0.add(&(self.0)))
     }
 
+    /// Returns self * rhs mod p
+    /// Brings the magnitude to 1 (but doesn't normalize the result).
+    /// The magnitudes of arguments should be <= 8.
+    pub fn mul(&self, rhs: &Self) -> Self {
+        Self(self.0.mul(&(rhs.0)))
+    }
+
+    /// Returns self * self
+    /// Brings the magnitude to 1 (but doesn't normalize the result).
+    /// The magnitudes of arguments should be <= 8.
     pub fn square(&self) -> Self {
         Self(self.0.square())
     }
 
+    /// Raises the scalar to the power `2^k`
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
         for _j in 0..k {
@@ -109,6 +147,7 @@ impl FieldElement {
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
+    /// The result has magnitude 1, but is not normalized.
     pub fn invert(&self) -> CtOption<Self> {
         // The binary representation of (p - 2) has 5 blocks of 1s, with lengths in
         // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
@@ -141,6 +180,7 @@ impl FieldElement {
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
+    /// The result has magnitude 1, but is not normalized.
     pub fn sqrt(&self) -> CtOption<Self> {
         /*
         Given that p is congruent to 3 mod 4, we can compute the square root of
