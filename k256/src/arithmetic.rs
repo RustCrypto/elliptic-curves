@@ -573,18 +573,9 @@ impl<'a> Neg for &'a ProjectivePoint {
 #[cfg(feature = "rand")]
 impl GenerateSecretKey for Secp256k1 {
     fn generate_secret_key(rng: &mut (impl CryptoRng + RngCore)) -> SecretKey {
-        let mut bytes = [0u8; 32];
-
-        // "Generate-and-Pray": create random 32-byte strings, and test if they
-        // are accepted by Scalar::from_bytes
-        // TODO(tarcieri): use a modular reduction instead?
-        loop {
-            rng.fill_bytes(&mut bytes);
-
-            if Scalar::from_bytes(&bytes).is_some().into() {
-                return SecretKey::new(bytes.into());
-            }
-        }
+        // It seems that slight variable-timeness is more secure than slight non-uniformity.
+        let s = Scalar::generate_vartime(rng);
+        SecretKey::new(s.to_bytes().into())
     }
 }
 
