@@ -71,7 +71,7 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # (general links)
 
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
-[`elliptic-curve`]: https://github.com/RustCrypto/elliptic-curves/tree/master/elliptic-curve-crate
+[`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [`arithmetic`]: https://docs.rs/k256/latest/k256/arithmetic/index.html
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
 [ECDSA]: https://github.com/RustCrypto/signatures/tree/master/ecdsa

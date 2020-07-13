@@ -66,6 +66,6 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (general links)
 
-[`elliptic-curve`]: https://github.com/RustCrypto/elliptic-curves/tree/master/elliptic-curve-crate
+[`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [`arithmetic`]: https://docs.rs/p256/latest/p256/arithmetic/index.html
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
