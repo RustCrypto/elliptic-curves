@@ -2,6 +2,7 @@
 
 mod field;
 pub(crate) mod scalar;
+
 mod util;
 
 use core::convert::TryInto;
@@ -12,7 +13,7 @@ use elliptic_curve::{
 };
 
 use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
-use field::{FieldElement, MODULUS};
+use field::FieldElement;
 use scalar::Scalar;
 
 #[cfg(feature = "rand")]
@@ -24,12 +25,14 @@ use elliptic_curve::{
     weierstrass::GenerateSecretKey,
 };
 
-/// b = 7 in Montgomery form (aR mod p, where R = 2**256.
-const CURVE_EQUATION_B: FieldElement = FieldElement([
-    0x0000_0007_0000_1ab7,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
+const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
+
+#[rustfmt::skip]
+const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unchecked(&[
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, CURVE_EQUATION_B_SINGLE as u8,
 ]);
 
 /// A point on the secp256k1 curve in affine coordinates.
@@ -51,7 +54,8 @@ impl ConditionallySelectable for AffinePoint {
 
 impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
-        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
+        (self.x.negate(1) + &other.x).normalizes_to_zero()
+            & (self.y.negate(1) + &other.y).normalizes_to_zero()
     }
 }
 
@@ -70,13 +74,13 @@ impl AffinePoint {
         // x = 79be667e f9dcbbac 55a06295 ce870b07 029bfcdb 2dce28d9 59f2815b 16f81798
         // y = 483ada77 26a3c465 5da4fbfc 0e1108a8 fd17b448 a6855419 9c47d08f fb10d4b8
         AffinePoint {
-            x: FieldElement::from_bytes([
+            x: FieldElement::from_bytes(&[
                 0x79, 0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce, 0x87,
                 0x0b, 0x07, 0x02, 0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81, 0x5b,
                 0x16, 0xf8, 0x17, 0x98,
             ])
             .unwrap(),
-            y: FieldElement::from_bytes([
+            y: FieldElement::from_bytes(&[
                 0x48, 0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65, 0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11,
                 0x08, 0xa8, 0xfd, 0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19, 0x9c, 0x47, 0xd0, 0x8f,
                 0xfb, 0x10, 0xd4, 0xb8,
@@ -104,13 +108,16 @@ impl AffinePoint {
 
                     beta.map(|beta| {
                         let y = FieldElement::conditional_select(
-                            &(MODULUS - &beta),
+                            &beta.negate(1),
                             &beta,
                             // beta.is_odd() == y_is_odd
-                            !(beta.is_odd() ^ y_is_odd),
+                            !(beta.normalize().is_odd() ^ y_is_odd),
                         );
 
-                        AffinePoint { x, y }
+                        AffinePoint {
+                            x,
+                            y: y.normalize(),
+                        }
                     })
                 })
             }
@@ -123,9 +130,9 @@ impl AffinePoint {
                 x.and_then(|x| {
                     y.and_then(|y| {
                         // Check that the point is on the curve
-                        let lhs = y * &y;
+                        let lhs = (y * &y).negate(1);
                         let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        CtOption::new(AffinePoint { x, y }, lhs.ct_eq(&rhs))
+                        CtOption::new(AffinePoint { x, y }, (lhs + &rhs).normalizes_to_zero())
                     })
                 })
             }
@@ -170,7 +177,8 @@ impl FixedBaseScalarMul for Secp256k1 {
     /// Multiply the given scalar by the generator point for this elliptic
     /// curve.
     fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
-        Scalar::from_bytes((*scalar_bytes).into())
+        let bytes: [u8; 32] = (*scalar_bytes).into();
+        Scalar::from_bytes(&bytes)
             .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
     }
 }
@@ -181,7 +189,7 @@ impl Neg for AffinePoint {
     fn neg(self) -> Self::Output {
         AffinePoint {
             x: self.x,
-            y: -self.y,
+            y: self.y.negate(1).normalize_weak(),
         }
     }
 }
@@ -255,7 +263,7 @@ impl ProjectivePoint {
     fn neg(&self) -> ProjectivePoint {
         ProjectivePoint {
             x: self.x,
-            y: self.y.neg(),
+            y: self.y.negate(1).normalize_weak(),
             z: self.z,
         }
     }
@@ -268,26 +276,39 @@ impl ProjectivePoint {
         let xx = self.x * &other.x;
         let yy = self.y * &other.y;
         let zz = self.z * &other.z;
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy);
-        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) - &(yy + &zz);
-        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) - &(xx + &zz);
 
-        let bzz = CURVE_EQUATION_B * &zz;
-        let bzz3 = bzz.double() + &bzz;
+        let n_xx_yy = (xx + &yy).negate(2);
+        let n_yy_zz = (yy + &zz).negate(2);
+        let n_xx_zz = (xx + &zz).negate(2);
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &n_xx_yy;
+        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) + &n_yy_zz;
+        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) + &n_xx_zz;
 
-        let yy_m_bzz3 = yy - &bzz3;
+        let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = (bzz.double() + &bzz).normalize_weak();
+
+        let yy_m_bzz3 = yy + &bzz3.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
 
-        let byz = CURVE_EQUATION_B * &yz_pairs;
-        let byz3 = byz.double() + &byz;
+        let byz = &yz_pairs
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
+        let byz3 = (byz.double() + byz).normalize_weak();
 
         let xx3 = xx.double() + &xx;
-        let bxx9 = CURVE_EQUATION_B * &(xx3.double() + &xx3);
+        let bxx9 = (xx3.double() + &xx3)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
+
+        let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
+        let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
+        let new_z = ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak();
 
         ProjectivePoint {
-            x: (xy_pairs * &yy_m_bzz3) - &(byz3 * &xz_pairs),
-            y: (yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs),
-            z: (yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs),
+            x: new_x,
+            y: new_y,
+            z: new_z,
         }
     }
 
@@ -298,26 +319,31 @@ impl ProjectivePoint {
 
         let xx = self.x * &other.x;
         let yy = self.y * &other.y;
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) - &(xx + &yy);
+        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &(xx + &yy).negate(2);
         let yz_pairs = (other.y * &self.z) + &self.y;
         let xz_pairs = (other.x * &self.z) + &self.x;
 
-        let bzz = CURVE_EQUATION_B * &self.z;
-        let bzz3 = bzz.double() + &bzz;
+        let bzz = &self.z.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = (bzz.double() + bzz).normalize_weak();
 
-        let yy_m_bzz3 = yy - &bzz3;
+        let yy_m_bzz3 = yy + &bzz3.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
 
-        let byz = CURVE_EQUATION_B * &yz_pairs;
-        let byz3 = byz.double() + &byz;
+        let byz = &yz_pairs
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
+        let byz3 = (byz.double() + byz).normalize_weak();
 
         let xx3 = xx.double() + &xx;
-        let bxx9 = CURVE_EQUATION_B * &(xx3.double() + &xx3);
+        let bxx9 = &(xx3.double() + &xx3)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
 
         ProjectivePoint {
-            x: (xy_pairs * &yy_m_bzz3) - &(byz3 * &xz_pairs),
-            y: (yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs),
-            z: (yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs),
+            x: ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(),
+            y: ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak(),
+            z: ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak(),
         }
     }
 
@@ -330,20 +356,27 @@ impl ProjectivePoint {
         let zz = self.z.square();
         let xy2 = (self.x * &self.y).double();
 
-        let bzz = CURVE_EQUATION_B * &zz;
-        let bzz3 = bzz.double() + &bzz;
-        let bzz9 = bzz3.double() + &bzz3;
+        let bzz = &zz.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = (bzz.double() + bzz).normalize_weak();
+        let bzz9 = (bzz3.double() + &bzz3).normalize_weak();
 
-        let yy_m_bzz9 = yy - &bzz9;
+        let yy_m_bzz9 = yy + &bzz9.negate(1);
         let yy_p_bzz3 = yy + &bzz3;
 
         let yy_zz = yy * &zz;
         let yy_zz8 = yy_zz.double().double().double();
+        let t = (yy_zz8.double() + &yy_zz8)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE);
 
         ProjectivePoint {
             x: xy2 * &yy_m_bzz9,
-            y: (yy_m_bzz9 * &yy_p_bzz3) + &(CURVE_EQUATION_B * &(yy_zz8.double() + &yy_zz8)),
-            z: ((yy * &self.y) * &self.z).double().double().double(),
+            y: ((yy_m_bzz9 * &yy_p_bzz3) + &t).normalize_weak(),
+            z: ((yy * &self.y) * &self.z)
+                .double()
+                .double()
+                .double()
+                .normalize_weak(),
         }
     }
 
@@ -359,16 +392,37 @@ impl ProjectivePoint {
 
     /// Returns `[k] self`.
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
-        let mut ret = ProjectivePoint::identity();
+        const LOG_MUL_WINDOW_SIZE: usize = 4;
+        const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1;
+        const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE;
 
-        for limb in k.0.iter().rev() {
-            for i in (0..64).rev() {
-                ret = ret.double();
-                ret.conditional_assign(&(ret + self), Choice::from(((limb >> i) & 1u64) as u8));
-            }
+        // corresponds to di = [1, 3, 5, ..., 2^(w-1)-1, -2^(w-1)-1, ..., -3, -1]
+        let mut precomp = [ProjectivePoint::identity(); MUL_PRECOMP_SIZE];
+        let mask = (1u32 << LOG_MUL_WINDOW_SIZE) - 1u32;
+
+        precomp[0] = ProjectivePoint::identity();
+        precomp[1] = *self;
+        for i in 2..MUL_PRECOMP_SIZE {
+            precomp[i] = precomp[i - 1] + self;
         }
 
-        ret
+        let mut acc = ProjectivePoint::identity();
+        for idx in (0..MUL_STEPS).rev() {
+            for _j in 0..LOG_MUL_WINDOW_SIZE {
+                acc = acc.double();
+            }
+            let di = ((k >> (idx * LOG_MUL_WINDOW_SIZE)).truncate_to_u32() & mask) as usize;
+
+            // Constant-time array indexing
+            let mut elem = ProjectivePoint::identity();
+            for i in 0..MUL_PRECOMP_SIZE {
+                elem = ProjectivePoint::conditional_select(&elem, &(precomp[di]), i.ct_eq(&di));
+            }
+
+            acc += precomp[di as usize];
+        }
+
+        acc
     }
 }
 
@@ -519,18 +573,9 @@ impl<'a> Neg for &'a ProjectivePoint {
 #[cfg(feature = "rand")]
 impl GenerateSecretKey for Secp256k1 {
     fn generate_secret_key(rng: &mut (impl CryptoRng + RngCore)) -> SecretKey {
-        let mut bytes = [0u8; 32];
-
-        // "Generate-and-Pray": create random 32-byte strings, and test if they
-        // are accepted by Scalar::from_bytes
-        // TODO(tarcieri): use a modular reduction instead?
-        loop {
-            rng.fill_bytes(&mut bytes);
-
-            if Scalar::from_bytes(bytes).is_some().into() {
-                return SecretKey::new(bytes.into());
-            }
-        }
+        // It seems that slight variable-timeness is more secure than slight non-uniformity.
+        let s = Scalar::generate_vartime(rng);
+        SecretKey::new(s.to_bytes().into())
     }
 }
 
@@ -618,7 +663,7 @@ mod tests {
     fn affine_negation() {
         let basepoint = AffinePoint::generator();
 
-        assert_eq!(-(-basepoint), basepoint);
+        assert_eq!((-(-basepoint)), basepoint);
     }
 
     #[test]
@@ -721,11 +766,13 @@ mod tests {
     fn projective_add_vs_double() {
         let generator = ProjectivePoint::generator();
 
-        assert_eq!(generator + &generator, generator.double());
-        assert_eq!(
-            (generator + &generator) + &(generator + &generator),
-            generator.double().double()
-        );
+        let r1 = generator + &generator;
+        let r2 = generator.double();
+        assert_eq!(r1, r2);
+
+        let r1 = (generator + &generator) + &(generator + &generator);
+        let r2 = generator.double().double();
+        assert_eq!(r1, r2);
     }
 
     #[test]
@@ -757,7 +804,7 @@ mod tests {
         for (k, coords) in ADD_TEST_VECTORS
             .iter()
             .enumerate()
-            .map(|(k, coords)| (Scalar::from(k as u64 + 1), *coords))
+            .map(|(k, coords)| (Scalar::from(k as u32 + 1), *coords))
             .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
                 (
                     Scalar::from_bytes(hex::decode(k).unwrap()[..].try_into().unwrap()).unwrap(),

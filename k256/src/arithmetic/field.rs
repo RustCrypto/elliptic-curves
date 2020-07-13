@@ -1,475 +1,250 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
-use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use cfg_if::cfg_if;
+
+cfg_if! {
+    if #[cfg(feature = "field-montgomery")] {
+        mod field_montgomery;
+    } else if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+        mod field_10x26;
+    } else if #[cfg(target_pointer_width = "64")] {
+        mod field_5x52;
+    }
+}
+
+cfg_if! {
+    if #[cfg(all(debug_assertions, not(feature = "field-montgomery")))] {
+        mod field_impl;
+        use field_impl::FieldElementImpl;
+    } else {
+        cfg_if! {
+            if #[cfg(feature = "field-montgomery")] {
+                use field_montgomery::FieldElementMontgomery as FieldElementImpl;
+            } else if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+                use field_10x26::FieldElement10x26 as FieldElementImpl;
+            } else if #[cfg(target_pointer_width = "64")] {
+                use field_5x52::FieldElement5x52 as FieldElementImpl;
+            }
+        }
+    }
+}
+
+use core::ops::{Add, AddAssign, Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(feature = "rand")]
-use elliptic_curve::rand_core::{CryptoRng, RngCore};
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
 
-use super::util::{adc, mac, mac_typemax, sbb};
-
-/// Constant representing the modulus
-/// p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
-/// p = 115792089237316195423570985008687907853269984665640564039457584007908834671663
-pub const MODULUS: FieldElement = FieldElement([
-    0xFFFF_FFFE_FFFF_FC2F,
-    0xFFFF_FFFF_FFFF_FFFF,
-    0xFFFF_FFFF_FFFF_FFFF,
-    0xFFFF_FFFF_FFFF_FFFF,
-]);
-
-/// R = 2^256 mod p
-const R: FieldElement = FieldElement([
-    0x0000_0001_0000_03d1,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
-]);
-
-/// R^2 = 2^512 mod p
-const R2: FieldElement = FieldElement([
-    0x0000_07a2_000e_90a1,
-    0x0000_0000_0000_0001,
-    0x0000_0000_0000_0000,
-    0x0000_0000_0000_0000,
-]);
-
-/// INV = -(p^-1 mod 2^64) mod 2^64
-const INV: u64 = 0xd838_091d_d225_3531;
-
-/// An element in the finite field modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
-// The internal representation is in little-endian order. Elements are always in
-// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
+/// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(crate) [u64; 4]);
-
-impl ConditionallySelectable for FieldElement {
-    fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
-        FieldElement([
-            u64::conditional_select(&a.0[0], &b.0[0], choice),
-            u64::conditional_select(&a.0[1], &b.0[1], choice),
-            u64::conditional_select(&a.0[2], &b.0[2], choice),
-            u64::conditional_select(&a.0[3], &b.0[3], choice),
-        ])
-    }
-}
-
-impl ConstantTimeEq for FieldElement {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0[0].ct_eq(&other.0[0])
-            & self.0[1].ct_eq(&other.0[1])
-            & self.0[2].ct_eq(&other.0[2])
-            & self.0[3].ct_eq(&other.0[3])
-    }
-}
-
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Default for FieldElement {
-    fn default() -> Self {
-        FieldElement::zero()
-    }
-}
+pub struct FieldElement(FieldElementImpl);
 
 impl FieldElement {
     /// Returns the zero element.
-    pub const fn zero() -> FieldElement {
-        FieldElement([0, 0, 0, 0])
+    pub const fn zero() -> Self {
+        Self(FieldElementImpl::zero())
     }
 
     /// Returns the multiplicative identity.
-    pub const fn one() -> FieldElement {
-        R
+    pub const fn one() -> Self {
+        Self(FieldElementImpl::one())
     }
 
-    /// Returns a uniformly-random element within the field.
-    #[cfg(feature = "rand")]
-    pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
-        // We reduce a random 512-bit value into a 256-bit field, which results in a
-        // negligible bias from the uniform distribution.
-        let mut buf = [0; 64];
-        rng.fill_bytes(&mut buf);
-        FieldElement::from_bytes_wide(buf)
+    /// Determine if this `FieldElement10x26` is zero.
+    ///
+    /// # Returns
+    ///
+    /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    pub fn is_zero(&self) -> Choice {
+        self.0.is_zero()
     }
 
-    #[cfg(feature = "rand")]
-    fn from_bytes_wide(bytes: [u8; 64]) -> Self {
-        FieldElement::montgomery_reduce(
-            u64::from_be_bytes(bytes[0..8].try_into().unwrap()),
-            u64::from_be_bytes(bytes[8..16].try_into().unwrap()),
-            u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
-            u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
-            u64::from_be_bytes(bytes[32..40].try_into().unwrap()),
-            u64::from_be_bytes(bytes[40..48].try_into().unwrap()),
-            u64::from_be_bytes(bytes[48..56].try_into().unwrap()),
-            u64::from_be_bytes(bytes[56..64].try_into().unwrap()),
-        )
+    /// Determine if this `FieldElement10x26` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    ///
+    /// # Returns
+    ///
+    /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    pub fn is_odd(&self) -> Choice {
+        self.0.is_odd()
+    }
+
+    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Does not check the result for being in the correct range.
+    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(FieldElementImpl::from_bytes_unchecked(bytes))
     }
 
     /// Attempts to parse the given byte array as an SEC-1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
-        let mut w = [0u64; 4];
-
-        // Interpret the bytes as a big-endian integer w.
-        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-
-        // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
-        // value of 2^64 - 1.
-        let (_, borrow) = sbb(w[0], MODULUS.0[0], 0);
-        let (_, borrow) = sbb(w[1], MODULUS.0[1], borrow);
-        let (_, borrow) = sbb(w[2], MODULUS.0[2], borrow);
-        let (_, borrow) = sbb(w[3], MODULUS.0[3], borrow);
-        let is_some = (borrow as u8) & 1;
-
-        // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        CtOption::new(FieldElement(w).mul(&R2), Choice::from(is_some))
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
+        let value = FieldElementImpl::from_bytes(bytes);
+        CtOption::map(value, Self)
     }
 
     /// Returns the SEC-1 encoding of this field element.
     pub fn to_bytes(&self) -> [u8; 32] {
-        // Convert from Montgomery form to canonical form
-        let tmp =
-            FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
-
-        let mut ret = [0; 32];
-        ret[0..8].copy_from_slice(&tmp.0[3].to_be_bytes());
-        ret[8..16].copy_from_slice(&tmp.0[2].to_be_bytes());
-        ret[16..24].copy_from_slice(&tmp.0[1].to_be_bytes());
-        ret[24..32].copy_from_slice(&tmp.0[0].to_be_bytes());
-        ret
+        self.0.normalize().to_bytes()
     }
 
-    /// Determine if this `FieldElement` is zero.
-    ///
-    /// # Returns
-    ///
-    /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&FieldElement::zero())
+    /// Returns -self, treating it as a value of given magnitude.
+    /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
+    pub fn negate(&self, magnitude: u32) -> Self {
+        Self(self.0.negate(magnitude))
     }
 
-    /// Determine if this `FieldElement` is odd in the SEC-1 sense: `self mod 2 == 1`.
-    ///
-    /// # Returns
-    ///
-    /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    pub fn is_odd(&self) -> Choice {
-        let bytes = self.to_bytes();
-        (bytes[31] & 1).into()
+    /// Fully normalizes the field element.
+    /// Brings the magnitude to 1 and modulo reduces the value.
+    pub fn normalize(&self) -> Self {
+        Self(self.0.normalize())
     }
 
-    /// Returns self + rhs mod p
-    pub const fn add(&self, rhs: &Self) -> Self {
-        // Bit 256 of p is set, so addition can result in five words.
-        let (w0, carry) = adc(self.0[0], rhs.0[0], 0);
-        let (w1, carry) = adc(self.0[1], rhs.0[1], carry);
-        let (w2, carry) = adc(self.0[2], rhs.0[2], carry);
-        let (w3, w4) = adc(self.0[3], rhs.0[3], carry);
+    /// Weakly normalizes the field element.
+    /// Brings the magnitude to 1, but does not guarantee the value to be less than the modulus.
+    pub fn normalize_weak(&self) -> Self {
+        Self(self.0.normalize_weak())
+    }
 
-        // Attempt to subtract the modulus, to ensure the result is in the field.
-        Self::sub_inner(
-            w0,
-            w1,
-            w2,
-            w3,
-            w4,
-            MODULUS.0[0],
-            MODULUS.0[1],
-            MODULUS.0[2],
-            MODULUS.0[3],
-            0,
-        )
+    /// Checks if the field element becomes zero if normalized.
+    pub fn normalizes_to_zero(&self) -> Choice {
+        self.0.normalizes_to_zero()
+    }
+
+    /// Multiplies by a single-limb integer.
+    /// Multiplies the magnitude by the same value.
+    pub fn mul_single(&self, rhs: u32) -> Self {
+        Self(self.0.mul_single(rhs))
     }
 
     /// Returns 2*self.
-    pub const fn double(&self) -> Self {
-        self.add(self)
-    }
-
-    /// Returns self - rhs mod p
-    pub const fn subtract(&self, rhs: &Self) -> Self {
-        Self::sub_inner(
-            self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
-            0,
-        )
-    }
-
-    #[inline]
-    #[allow(clippy::too_many_arguments)]
-    const fn sub_inner(
-        l0: u64,
-        l1: u64,
-        l2: u64,
-        l3: u64,
-        l4: u64,
-        r0: u64,
-        r1: u64,
-        r2: u64,
-        r3: u64,
-        r4: u64,
-    ) -> Self {
-        let (w0, borrow) = sbb(l0, r0, 0);
-        let (w1, borrow) = sbb(l1, r1, borrow);
-        let (w2, borrow) = sbb(l2, r2, borrow);
-        let (w3, borrow) = sbb(l3, r3, borrow);
-        let (_, borrow) = sbb(l4, r4, borrow);
-
-        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
-        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
-        // modulus.
-        let (w0, carry) = adc(w0, MODULUS.0[0] & borrow, 0);
-        let (w1, carry) = adc(w1, MODULUS.0[1] & borrow, carry);
-        let (w2, carry) = adc(w2, MODULUS.0[2] & borrow, carry);
-        let (w3, _) = adc(w3, MODULUS.0[3] & borrow, carry);
-
-        FieldElement([w0, w1, w2, w3])
-    }
-
-    /// Montgomery Multiplication
-    ///
-    /// For secp256k1, all of the limbs of p (except the first!) are 2^64 -1.
-    /// Thus, all multiplications by these limbs can be simplified to a shift
-    /// and subtraction:
-    /// ```text
-    ///     a_i * (2^64 - 1) = a_i * 2^64 - a_i = (a_i << 64) - a_i
-    /// ```
-    ///
-    /// References:
-    /// - Handbook of Applied Cryptography, Chapter 14
-    ///   Algorithm 14.36
-    ///   http://cacr.uwaterloo.ca/hac/about/chap14.pdf
-    #[inline]
-    #[allow(clippy::too_many_arguments)]
-    const fn montgomery_mulmod(
-        x0: u64,
-        x1: u64,
-        x2: u64,
-        x3: u64,
-        y0: u64,
-        y1: u64,
-        y2: u64,
-        y3: u64,
-    ) -> Self {
-        let u = ((x0 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a0, carry) = mac(0, u, MODULUS.0[0], 0);
-        let (a1, carry) = mac_typemax(0, u, carry);
-        let (a2, carry) = mac_typemax(0, u, carry);
-        let (a3, carry) = mac_typemax(0, u, carry);
-        let (a4, carry2) = adc(0, 0, carry);
-
-        let (_, carry) = mac(a0, x0, y0, 0);
-        let (a1, carry) = mac(a1, x0, y1, carry);
-        let (a2, carry) = mac(a2, x0, y2, carry);
-        let (a3, carry) = mac(a3, x0, y3, carry);
-        let (a4, a5) = adc(a4, carry2, carry);
-
-        let u = ((a1 as u128) + (x1 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a1, carry) = mac(a1, u, MODULUS.0[0], 0);
-        let (a2, carry) = mac_typemax(a2, u, carry);
-        let (a3, carry) = mac_typemax(a3, u, carry);
-        let (a4, carry) = mac_typemax(a4, u, carry);
-        let (a5, carry2) = adc(a5, 0, carry);
-
-        let (_, carry) = mac(a1, x1, y0, 0);
-        let (a2, carry) = mac(a2, x1, y1, carry);
-        let (a3, carry) = mac(a3, x1, y2, carry);
-        let (a4, carry) = mac(a4, x1, y3, carry);
-        let (a5, a6) = adc(a5, carry2, carry);
-
-        let u = ((a2 as u128) + (x2 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a2, carry) = mac(a2, u, MODULUS.0[0], 0);
-        let (a3, carry) = mac_typemax(a3, u, carry);
-        let (a4, carry) = mac_typemax(a4, u, carry);
-        let (a5, carry) = mac_typemax(a5, u, carry);
-        let (a6, carry2) = adc(a6, 0, carry);
-
-        let (_, carry) = mac(a2, x2, y0, 0);
-        let (a3, carry) = mac(a3, x2, y1, carry);
-        let (a4, carry) = mac(a4, x2, y2, carry);
-        let (a5, carry) = mac(a5, x2, y3, carry);
-        let (a6, a7) = adc(a6, carry2, carry);
-
-        let u = ((a3 as u128) + (x3 as u128) * (y0 as u128)).wrapping_mul(INV as u128) as u64;
-        let (a3, carry) = mac(a3, u, MODULUS.0[0], 0);
-        let (a4, carry) = mac_typemax(a4, u, carry);
-        let (a5, carry) = mac_typemax(a5, u, carry);
-        let (a6, carry) = mac_typemax(a6, u, carry);
-        let (a7, carry2) = adc(a7, 0, carry);
-
-        let (_, carry) = mac(a3, x3, y0, 0);
-        let (a4, carry) = mac(a4, x3, y1, carry);
-        let (a5, carry) = mac(a5, x3, y2, carry);
-        let (a6, carry) = mac(a6, x3, y3, carry);
-        let (a7, a8) = adc(a7, carry2, carry);
-
-        // Result may be within MODULUS of the correct value
-        Self::sub_inner(
-            a4,
-            a5,
-            a6,
-            a7,
-            a8,
-            MODULUS.0[0],
-            MODULUS.0[1],
-            MODULUS.0[2],
-            MODULUS.0[3],
-            0,
-        )
-    }
-
-    /// Montgomery Reduction
-    ///
-    /// For secp256k1, all of the limbs of p (except the first!) are 2^64 -1.
-    /// Thus, all multiplications by this limb can be simplified to a shift
-    /// and subtraction:
-    /// ```text
-    ///     a_i * (2^64 - 1) = a_i * 2^64 - a_i = (a_i << 64) - a_i
-    /// ```
-    ///
-    /// References:
-    /// - Handbook of Applied Cryptography, Chaper 14
-    ///   Algorithm 14.32
-    ///   http://cacr.uwaterloo.ca/hac/about/chap14.pdf
-    #[inline]
-    #[allow(clippy::too_many_arguments)]
-    const fn montgomery_reduce(
-        t0: u64,
-        t1: u64,
-        t2: u64,
-        t3: u64,
-        t4: u64,
-        t5: u64,
-        t6: u64,
-        t7: u64,
-    ) -> Self {
-        let k = t0.wrapping_mul(INV);
-        let (_, carry) = mac(t0, k, MODULUS.0[0], 0);
-        let (r1, carry) = mac_typemax(t1, k, carry);
-        let (r2, carry) = mac_typemax(t2, k, carry);
-        let (r3, carry) = mac_typemax(t3, k, carry);
-        let (r4, r5) = adc(t4, 0, carry);
-
-        let k = r1.wrapping_mul(INV);
-        let (_, carry) = mac(r1, k, MODULUS.0[0], 0);
-        let (r2, carry) = mac_typemax(r2, k, carry);
-        let (r3, carry) = mac_typemax(r3, k, carry);
-        let (r4, carry) = mac_typemax(r4, k, carry);
-        let (r5, r6) = adc(t5, r5, carry);
-
-        let k = r2.wrapping_mul(INV);
-        let (_, carry) = mac(r2, k, MODULUS.0[0], 0);
-        let (r3, carry) = mac_typemax(r3, k, carry);
-        let (r4, carry) = mac_typemax(r4, k, carry);
-        let (r5, carry) = mac_typemax(r5, k, carry);
-        let (r6, r7) = adc(t6, r6, carry);
-
-        let k = r3.wrapping_mul(INV);
-        let (_, carry) = mac(r3, k, MODULUS.0[0], 0);
-        let (r4, carry) = mac_typemax(r4, k, carry);
-        let (r5, carry) = mac_typemax(r5, k, carry);
-        let (r6, carry) = mac_typemax(r6, k, carry);
-        let (r7, r8) = adc(t7, r7, carry);
-
-        // Result may be within MODULUS of the correct value
-        Self::sub_inner(
-            r4,
-            r5,
-            r6,
-            r7,
-            r8,
-            MODULUS.0[0],
-            MODULUS.0[1],
-            MODULUS.0[2],
-            MODULUS.0[3],
-            0,
-        )
+    /// Doubles the magnitude.
+    pub fn double(&self) -> Self {
+        Self(self.0.add(&(self.0)))
     }
 
     /// Returns self * rhs mod p
-    pub const fn mul(&self, rhs: &Self) -> Self {
-        FieldElement::montgomery_mulmod(
-            self.0[0], self.0[1], self.0[2], self.0[3], rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
-        )
+    /// Brings the magnitude to 1 (but doesn't normalize the result).
+    /// The magnitudes of arguments should be <= 8.
+    pub fn mul(&self, rhs: &Self) -> Self {
+        Self(self.0.mul(&(rhs.0)))
     }
 
-    /// Returns self * self mod p
-    pub const fn square(&self) -> Self {
-        // TODO: Implement an efficient squaring algorithm
-        // perhaps algorithm 14.16 from the HAC?
-        FieldElement::montgomery_mulmod(
-            self.0[0], self.0[1], self.0[2], self.0[3], self.0[0], self.0[1], self.0[2], self.0[3],
-        )
+    /// Returns self * self
+    /// Brings the magnitude to 1 (but doesn't normalize the result).
+    /// The magnitudes of arguments should be <= 8.
+    pub fn square(&self) -> Self {
+        Self(self.0.square())
     }
 
-    /// Returns `self^by`, where `by` is a little-endian integer exponent.
-    ///
-    /// **This operation is variable time with respect to the exponent.** If the exponent
-    /// is fixed, this operation is effectively constant time.
-    pub fn pow_vartime(&self, by: &[u64; 4]) -> Self {
-        let mut res = Self::one();
-        for e in by.iter().rev() {
-            for i in (0..64).rev() {
-                res = res.square();
-
-                if ((*e >> i) & 1) == 1 {
-                    res = res * self;
-                }
-            }
+    /// Raises the scalar to the power `2^k`
+    fn pow2k(&self, k: usize) -> Self {
+        let mut x = *self;
+        for _j in 0..k {
+            x = x.square();
         }
-        res
+        x
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
+    /// The result has magnitude 1, but is not normalized.
     pub fn invert(&self) -> CtOption<Self> {
-        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
-        // field, we can apply Fermat's Little Theorem:
-        //
-        //    a^p         ≡ a mod p
-        //    a^(p-1)     ≡ 1 mod p
-        //    a^(p-2) * a ≡ 1 mod p
-        //
-        // Thus inversion can be implemented with a single exponentiation.
-        let inverse = self.pow_vartime(&[
-            0xFFFF_FFFE_FFFF_FC2D,
-            0xFFFF_FFFF_FFFF_FFFF,
-            0xFFFF_FFFF_FFFF_FFFF,
-            0xFFFF_FFFF_FFFF_FFFF,
-        ]);
+        // The binary representation of (p - 2) has 5 blocks of 1s, with lengths in
+        // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
+        // [1], [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        CtOption::new(inverse, !self.is_zero())
+        let x2 = self.pow2k(1).mul(self);
+        let x3 = x2.pow2k(1).mul(self);
+        let x6 = x3.pow2k(3).mul(&x3);
+        let x9 = x6.pow2k(3).mul(&x3);
+        let x11 = x9.pow2k(2).mul(&x2);
+        let x22 = x11.pow2k(11).mul(&x11);
+        let x44 = x22.pow2k(22).mul(&x22);
+        let x88 = x44.pow2k(44).mul(&x44);
+        let x176 = x88.pow2k(88).mul(&x88);
+        let x220 = x176.pow2k(44).mul(&x44);
+        let x223 = x220.pow2k(3).mul(&x3);
+
+        // The final result is then assembled using a sliding window over the blocks.
+        let res = x223
+            .pow2k(23)
+            .mul(&x22)
+            .pow2k(5)
+            .mul(self)
+            .pow2k(3)
+            .mul(&x2)
+            .pow2k(2)
+            .mul(self);
+
+        CtOption::new(res, !self.normalizes_to_zero())
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
+    /// The result has magnitude 1, but is not normalized.
     pub fn sqrt(&self) -> CtOption<Self> {
-        // We need to find alpha such that alpha^2 = beta mod p. For secp256k1,
-        // p ≡ 3 mod 4. By Euler's Criterion, beta^(p-1)/2 ≡ 1 mod p. So:
-        //
-        //     alpha^2 = beta beta^((p - 1) / 2) mod p ≡ beta^((p + 1) / 2) mod p
-        //     alpha = ± beta^((p + 1) / 4) mod p
-        //
-        // Thus sqrt can be implemented with a single exponentiation.
-        let sqrt = self.pow_vartime(&[
-            0xffff_ffff_bfff_ff0c,
-            0xffff_ffff_ffff_ffff,
-            0xffff_ffff_ffff_ffff,
-            0x3fff_ffff_ffff_ffff,
-        ]);
+        /*
+        Given that p is congruent to 3 mod 4, we can compute the square root of
+        a mod p as the (p+1)/4'th power of a.
 
-        CtOption::new(
-            sqrt,
-            (&sqrt * &sqrt).ct_eq(self), // Only return Some if it's the square root.
-        )
+        As (p+1)/4 is an even number, it will have the same result for a and for
+        (-a). Only one of these two numbers actually has a square root however,
+        so we test at the end by squaring and comparing to the input.
+        Also because (p+1)/4 is an even number, the computed square root is
+        itself always a square (a ** ((p+1)/4) is the square of a ** ((p+1)/8)).
+        */
+
+        // The binary representation of (p + 1)/4 has 3 blocks of 1s, with lengths in
+        // { 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
+        // 1, [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
+
+        let x2 = self.pow2k(1).mul(&self);
+        let x3 = x2.pow2k(1).mul(&self);
+        let x6 = x3.pow2k(3).mul(&x3);
+        let x9 = x6.pow2k(3).mul(&x3);
+        let x11 = x9.pow2k(2).mul(&x2);
+        let x22 = x11.pow2k(11).mul(&x11);
+        let x44 = x22.pow2k(22).mul(&x22);
+        let x88 = x44.pow2k(44).mul(&x44);
+        let x176 = x88.pow2k(88).mul(&x88);
+        let x220 = x176.pow2k(44).mul(&x44);
+        let x223 = x220.pow2k(3).mul(&x3);
+
+        // The final result is then assembled using a sliding window over the blocks.
+        let res = x223.pow2k(23).mul(&x22).pow2k(6).mul(&x2).pow2k(2);
+
+        let is_root = (res.mul(&res).negate(1) + self).normalizes_to_zero();
+
+        // Only return Some if it's the square root.
+        CtOption::new(res, is_root)
+    }
+
+    #[cfg(test)]
+    pub fn modulus_as_biguint() -> BigUint {
+        Self::one().negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
+    }
+}
+
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.ct_eq(&(other.0)).into()
+    }
+}
+
+impl Default for FieldElement {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
+impl ConditionallySelectable for FieldElement {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self(FieldElementImpl::conditional_select(&(a.0), &(b.0), choice))
+    }
+}
+
+impl ConstantTimeEq for FieldElement {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&(other.0))
     }
 }
 
@@ -477,7 +252,7 @@ impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(self, other)
+        FieldElement(self.0.add(&(other.0)))
     }
 }
 
@@ -485,35 +260,13 @@ impl Add<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(&self, other)
+        FieldElement(self.0.add(&(other.0)))
     }
 }
 
 impl AddAssign<FieldElement> for FieldElement {
     fn add_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::add(self, &rhs);
-    }
-}
-
-impl Sub<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::subtract(self, other)
-    }
-}
-
-impl Sub<&FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::subtract(&self, other)
-    }
-}
-
-impl SubAssign<FieldElement> for FieldElement {
-    fn sub_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::subtract(self, &rhs);
+        *self = *self + &rhs;
     }
 }
 
@@ -521,7 +274,7 @@ impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::mul(self, other)
+        FieldElement(self.0.mul(&(other.0)))
     }
 }
 
@@ -529,72 +282,67 @@ impl Mul<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::mul(&self, other)
+        FieldElement(self.0.mul(&(other.0)))
     }
 }
 
 impl MulAssign<FieldElement> for FieldElement {
     fn mul_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::mul(self, &rhs);
-    }
-}
-
-impl Neg for FieldElement {
-    type Output = FieldElement;
-
-    fn neg(self) -> FieldElement {
-        FieldElement::zero() - &self
-    }
-}
-
-impl<'a> Neg for &'a FieldElement {
-    type Output = FieldElement;
-
-    fn neg(self) -> FieldElement {
-        FieldElement::zero() - self
+        *self = *self * &rhs;
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use fiat_crypto::secp256k1_64::{
-        fiat_secp256k1_add, fiat_secp256k1_mul, fiat_secp256k1_opp, fiat_secp256k1_square,
-        fiat_secp256k1_sub,
-    };
-    use proptest::{num::u64::ANY, prelude::*};
+    use num_bigint::{BigUint, ToBigUint};
+    use proptest::prelude::*;
 
     use super::FieldElement;
+    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
     use crate::test_vectors::field::DBL_TEST_VECTORS;
+
+    impl From<&BigUint> for FieldElement {
+        fn from(x: &BigUint) -> Self {
+            let bytes = biguint_to_bytes(x);
+            Self::from_bytes(&bytes).unwrap()
+        }
+    }
+
+    impl ToBigUint for FieldElement {
+        fn to_biguint(&self) -> Option<BigUint> {
+            Some(bytes_to_biguint(&(self.to_bytes())))
+        }
+    }
 
     #[test]
     fn zero_is_additive_identity() {
         let zero = FieldElement::zero();
         let one = FieldElement::one();
-        assert_eq!(zero.add(&zero), zero);
-        assert_eq!(one.add(&zero), one);
+        assert_eq!((zero + &zero).normalize(), zero);
+        assert_eq!((one + &zero).normalize(), one);
     }
 
     #[test]
     fn one_is_multiplicative_identity() {
         let one = FieldElement::one();
-        assert_eq!(one.mul(&one), one);
+        assert_eq!((one * &one).normalize(), one);
     }
 
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes([0; 32]).unwrap(),
+            FieldElement::from_bytes(&[0; 32]).unwrap(),
             FieldElement::zero()
         );
         assert_eq!(
-            FieldElement::from_bytes([
+            FieldElement::from_bytes(&[
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
             ])
             .unwrap(),
             FieldElement::one()
         );
-        assert!(bool::from(FieldElement::from_bytes([0xff; 32]).is_none()));
+        assert!(bool::from(FieldElement::from_bytes(&[0xff; 32]).is_none()));
     }
 
     #[test]
@@ -614,7 +362,7 @@ mod tests {
         let mut r = FieldElement::one();
         for i in 0..DBL_TEST_VECTORS.len() {
             assert_eq!(hex::encode(r.to_bytes()), DBL_TEST_VECTORS[i]);
-            r = r + &r;
+            r = (r + &r).normalize();
         }
     }
 
@@ -623,7 +371,7 @@ mod tests {
         let mut r = FieldElement::one();
         for i in 0..DBL_TEST_VECTORS.len() {
             assert_eq!(hex::encode(r.to_bytes()), DBL_TEST_VECTORS[i]);
-            r = r.double();
+            r = r.double().normalize();
         }
     }
 
@@ -632,7 +380,7 @@ mod tests {
         let mut r = FieldElement::one();
         let two = r + &r;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(hex::encode(r.to_bytes()), DBL_TEST_VECTORS[i]);
+            assert_eq!(hex::encode(r.normalize().to_bytes()), DBL_TEST_VECTORS[i]);
             r = r * &two;
         }
     }
@@ -640,17 +388,9 @@ mod tests {
     #[test]
     fn negation() {
         let two = FieldElement::one().double();
-        let neg_two = -two;
-        assert_eq!(two + &neg_two, FieldElement::zero());
-        assert_eq!(-neg_two, two);
-    }
-
-    #[test]
-    fn pow_vartime() {
-        let one = FieldElement::one();
-        let two = one + &one;
-        let four = two.square();
-        assert_eq!(two.pow_vartime(&[2, 0, 0, 0]), four);
+        let neg_two = two.negate(2);
+        assert_eq!((two + &neg_two).normalize(), FieldElement::zero());
+        assert_eq!(neg_two.negate(3).normalize(), two.normalize());
     }
 
     #[test]
@@ -658,11 +398,11 @@ mod tests {
         assert!(bool::from(FieldElement::zero().invert().is_none()));
 
         let one = FieldElement::one();
-        assert_eq!(one.invert().unwrap(), one);
+        assert_eq!(one.invert().unwrap().normalize(), one);
 
         let two = one + &one;
         let inv_two = two.invert().unwrap();
-        assert_eq!(two * &inv_two, one);
+        assert_eq!((two * &inv_two).normalize(), one);
     }
 
     #[test]
@@ -670,98 +410,100 @@ mod tests {
         let one = FieldElement::one();
         let two = one + &one;
         let four = two.square();
-        assert_eq!(four.sqrt().unwrap(), two);
+        assert_eq!(four.sqrt().unwrap().normalize(), two.normalize());
+    }
+
+    prop_compose! {
+        fn field_element()(bytes in any::<[u8; 32]>()) -> FieldElement {
+            let mut res = bytes_to_biguint(&bytes);
+            let m = FieldElement::modulus_as_biguint();
+            // Modulus is 256 bit long, same as the maximum `res`,
+            // so this is guaranteed to land us in the correct range.
+            if res >= m {
+                res -= m;
+            }
+            FieldElement::from(&res)
+        }
     }
 
     proptest! {
-        /// This checks behaviour well within the field ranges, because it doesn't set the
-        /// highest limb.
-        #[test]
-        fn add_then_sub(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
-        ) {
-            let a = FieldElement([a0, a1, a2, 0]);
-            let b = FieldElement([b0, b1, b2, 0]);
-            assert_eq!(a.add(&b).subtract(&a), b);
-        }
 
-        /// These tests fuzz the Field arithmetic implementation against
-        /// fiat-crypto.
         #[test]
-        fn mul_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
+        fn fuzzy_add(
+            a in field_element(),
+            b in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            let b = [b0, b1, b2, 0];
-            fiat_secp256k1_mul(&mut out, &a, &b);
-            assert_eq!(FieldElement(a).mul(&FieldElement(b)).0, out);
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+            let res_bi = (&a_bi + &b_bi) % FieldElement::modulus_as_biguint();
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = (&a + &b).normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn square_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
+        fn fuzzy_mul(
+            a in field_element(),
+            b in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            fiat_secp256k1_square(&mut out, &a);
-            assert_eq!(FieldElement(a).square().0, out);
+            let a_bi = a.to_biguint().unwrap();
+            let b_bi = b.to_biguint().unwrap();
+            let res_bi = (&a_bi * &b_bi) % FieldElement::modulus_as_biguint();
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = (&a * &b).normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn add_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
+        fn fuzzy_square(
+            a in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            let b = [b0, b1, b2, 0];
-            fiat_secp256k1_add(&mut out, &a, &b);
-            assert_eq!(FieldElement(a).add(&FieldElement(b)).0, out);
+            let a_bi = a.to_biguint().unwrap();
+            let res_bi = (&a_bi * &a_bi) % FieldElement::modulus_as_biguint();
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = a.square().normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn sub_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
+        fn fuzzy_negate(
+            a in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            let b = [b0, b1, b2, 0];
-            fiat_secp256k1_sub(&mut out, &a, &b);
-            assert_eq!(FieldElement(a).subtract(&FieldElement(b)).0, out);
+            let m = FieldElement::modulus_as_biguint();
+            let a_bi = a.to_biguint().unwrap();
+            let res_bi = (&m - &a_bi) % &m;
+            let res_ref = FieldElement::from(&res_bi);
+            let res_test = a.negate(1).normalize();
+            assert_eq!(res_test, res_ref);
         }
 
         #[test]
-        fn negate_with_fiat(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
+        fn fuzzy_sqrt(
+            a in field_element()
         ) {
-            let mut out: [u64; 4] = [0; 4];
-            let a = [a0, a1, a2, 0];
-            fiat_secp256k1_opp(&mut out, &a);
-            assert_eq!((-FieldElement(a)).0, out);
+            let m = FieldElement::modulus_as_biguint();
+            let a_bi = a.to_biguint().unwrap();
+            let sqr_bi = (&a_bi * &a_bi) % &m;
+            let sqr = FieldElement::from(&sqr_bi);
+
+            let res_ref1 = a;
+            let possible_sqrt = (&m - &a_bi) % &m;
+            let res_ref2 = FieldElement::from(&possible_sqrt);
+            let res_test = sqr.sqrt().unwrap().normalize();
+            // FIXME: is there a rule which square root is returned?
+            assert!(res_test == res_ref1 || res_test == res_ref2);
+        }
+
+        #[test]
+        fn fuzzy_invert(
+            a in field_element()
+        ) {
+            let a = if bool::from(a.is_zero()) { FieldElement::one() } else { a };
+            let a_bi = a.to_biguint().unwrap();
+            let inv = a.invert().unwrap().normalize();
+            let inv_bi = inv.to_biguint().unwrap();
+            let m = FieldElement::modulus_as_biguint();
+            assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
         }
     }
 }
