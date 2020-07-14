@@ -11,15 +11,11 @@ edition = "2018"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 
-[dependencies.elliptic-curve]
-version = "= 0.5.0-pre"
-default-features = false
-features = ["weierstrass"]
-
-[dependencies.zeroize]
-version = "1"
-optional = true
-default-features = false
+[dependencies]
+ecdsa = { version = "= 0.7.0-pre", optional = true,  default-features = false }
+elliptic-curve = { version = "= 0.5.0-pre", default-features = false,  features = ["weierstrass"] }
+sha2 = { version = "0.9", optional = true }
+zeroize = { version = "1",  optional = true, default-features = false }
 
 [dev-dependencies]
 hex = "0.4"
@@ -29,6 +25,7 @@ proptest = "0.10"
 default = ["arithmetic", "std"]
 arithmetic = []
 rand = ["elliptic-curve/rand_core"]
+sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]
 
