@@ -57,4 +57,4 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (general links)
 
-[`elliptic-curve`]: https://github.com/RustCrypto/elliptic-curves/tree/master/elliptic-curve-crate
+[`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve

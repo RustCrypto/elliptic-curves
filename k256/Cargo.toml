@@ -15,8 +15,7 @@ keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 cfg-if = "0.1"
 
 [dependencies.elliptic-curve]
-version = "0.4"
-path = "../elliptic-curve-crate"
+version = "= 0.5.0-pre"
 default-features = false
 features = ["weierstrass"]
 
