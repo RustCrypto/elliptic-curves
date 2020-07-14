@@ -16,6 +16,10 @@
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
+#[cfg(feature = "ecdsa")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+pub mod ecdsa;
+
 #[cfg(any(feature = "test-vectors", test))]
 #[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
 pub mod test_vectors;

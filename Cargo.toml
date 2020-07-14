@@ -7,4 +7,5 @@ members = [
 ]
 
 [patch.crates-io]
+ecdsa = { git = "https://github.com/RustCrypto/signatures" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
