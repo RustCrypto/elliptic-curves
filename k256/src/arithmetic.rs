@@ -396,7 +396,6 @@ impl ProjectivePoint {
         const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1;
         const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE;
 
-        // corresponds to di = [1, 3, 5, ..., 2^(w-1)-1, -2^(w-1)-1, ..., -3, -1]
         let mut precomp = [ProjectivePoint::identity(); MUL_PRECOMP_SIZE];
         let mask = (1u32 << LOG_MUL_WINDOW_SIZE) - 1u32;
 
@@ -419,7 +418,7 @@ impl ProjectivePoint {
                 elem = ProjectivePoint::conditional_select(&elem, &(precomp[di]), i.ct_eq(&di));
             }
 
-            acc += precomp[di as usize];
+            acc += elem;
         }
 
         acc
