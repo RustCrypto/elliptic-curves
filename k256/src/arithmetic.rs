@@ -6,7 +6,7 @@ pub(crate) mod scalar;
 mod util;
 
 use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FixedBaseScalarMul,
@@ -348,7 +348,8 @@ impl ProjectivePoint {
     }
 
     /// Doubles this point.
-    fn double(&self) -> ProjectivePoint {
+    #[inline]
+    pub fn double(&self) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 9).
 
@@ -388,40 +389,6 @@ impl ProjectivePoint {
     /// Returns `self - other`.
     fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         self.add_mixed(&other.neg())
-    }
-
-    /// Returns `[k] self`.
-    fn mul(&self, k: &Scalar) -> ProjectivePoint {
-        const LOG_MUL_WINDOW_SIZE: usize = 4;
-        const MUL_STEPS: usize = (256 - 1) / LOG_MUL_WINDOW_SIZE + 1;
-        const MUL_PRECOMP_SIZE: usize = 1 << LOG_MUL_WINDOW_SIZE;
-
-        let mut precomp = [ProjectivePoint::identity(); MUL_PRECOMP_SIZE];
-        let mask = (1u32 << LOG_MUL_WINDOW_SIZE) - 1u32;
-
-        precomp[0] = ProjectivePoint::identity();
-        precomp[1] = *self;
-        for i in 2..MUL_PRECOMP_SIZE {
-            precomp[i] = precomp[i - 1] + self;
-        }
-
-        let mut acc = ProjectivePoint::identity();
-        for idx in (0..MUL_STEPS).rev() {
-            for _j in 0..LOG_MUL_WINDOW_SIZE {
-                acc = acc.double();
-            }
-            let di = ((k >> (idx * LOG_MUL_WINDOW_SIZE)).truncate_to_u32() & mask) as usize;
-
-            // Constant-time array indexing
-            let mut elem = ProjectivePoint::identity();
-            for i in 0..MUL_PRECOMP_SIZE {
-                elem = ProjectivePoint::conditional_select(&elem, &(precomp[di]), i.ct_eq(&di));
-            }
-
-            acc += elem;
-        }
-
-        acc
     }
 }
 
@@ -522,34 +489,6 @@ impl Sub<&AffinePoint> for ProjectivePoint {
 impl SubAssign<AffinePoint> for ProjectivePoint {
     fn sub_assign(&mut self, rhs: AffinePoint) {
         *self = ProjectivePoint::sub_mixed(self, &rhs);
-    }
-}
-
-impl Mul<&Scalar> for &ProjectivePoint {
-    type Output = ProjectivePoint;
-
-    fn mul(self, other: &Scalar) -> ProjectivePoint {
-        ProjectivePoint::mul(self, other)
-    }
-}
-
-impl Mul<&Scalar> for ProjectivePoint {
-    type Output = ProjectivePoint;
-
-    fn mul(self, other: &Scalar) -> ProjectivePoint {
-        ProjectivePoint::mul(&self, other)
-    }
-}
-
-impl MulAssign<Scalar> for ProjectivePoint {
-    fn mul_assign(&mut self, rhs: Scalar) {
-        *self = ProjectivePoint::mul(self, &rhs);
-    }
-}
-
-impl MulAssign<&Scalar> for ProjectivePoint {
-    fn mul_assign(&mut self, rhs: &Scalar) {
-        *self = ProjectivePoint::mul(self, rhs);
     }
 }
 

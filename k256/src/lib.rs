@@ -16,6 +16,8 @@
 
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
+#[cfg(feature = "arithmetic")]
+mod mul;
 
 #[cfg(feature = "ecdsa")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
