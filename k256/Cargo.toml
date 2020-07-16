@@ -23,6 +23,7 @@ hex = "0.4"
 proptest = "0.10"
 num-bigint = "0.3"
 num-traits = "0.2"
+criterion = "0.3"
 
 [features]
 default = ["arithmetic", "std"]
@@ -37,3 +38,8 @@ std = ["elliptic-curve/std"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[[bench]]
+name = "bench"
+path = "bench/bench.rs"
+harness = false
