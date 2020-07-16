@@ -28,10 +28,11 @@ criterion = "0.3"
 [features]
 default = ["arithmetic", "std"]
 arithmetic = []
+digest = ["ecdsa/digest"]
 field-montgomery = []
 force-32-bit = []
 rand = ["elliptic-curve/rand_core"]
-sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+sha256 = ["digest", "ecdsa/hazmat", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]
 
