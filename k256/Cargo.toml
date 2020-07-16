@@ -30,6 +30,7 @@ criterion = "0.3"
 default = ["arithmetic", "std"]
 arithmetic = []
 digest = ["ecdsa/digest"]
+endomorphism-mul = []
 field-montgomery = []
 force-32-bit = []
 rand = ["elliptic-curve/rand_core"]

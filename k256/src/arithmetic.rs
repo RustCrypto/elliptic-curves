@@ -35,6 +35,15 @@ pub(crate) const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unche
     0, 0, 0, 0, 0, 0, 0, CURVE_EQUATION_B_SINGLE as u8,
 ]);
 
+#[rustfmt::skip]
+#[cfg(feature = "endomorphism-mul")]
+const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
+    0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
+    0x6e, 0x64, 0x47, 0x9e, 0xac, 0x34, 0x34, 0xe9,
+    0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
+    0xc1, 0x39, 0x6c, 0x28, 0x71, 0x95, 0x01, 0xee,
+]);
+
 /// A point on the secp256k1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
@@ -389,6 +398,16 @@ impl ProjectivePoint {
     /// Returns `self - other`.
     fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         self.add_mixed(&other.neg())
+    }
+
+    /// Calculates SECP256k1 endomorphism: `self * lambda`.
+    #[cfg(feature = "endomorphism-mul")]
+    pub fn endomorphism(&self) -> Self {
+        Self {
+            x: self.x * &ENDOMORPHISM_BETA,
+            y: self.y,
+            z: self.z,
+        }
     }
 }
 
