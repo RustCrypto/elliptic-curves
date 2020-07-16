@@ -24,11 +24,14 @@ use num_bigint::{BigUint, ToBigUint};
 use core::ops::Neg;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-#[cfg(feature = "zeroize")]
-use zeroize::Zeroize;
+#[cfg(feature = "digest")]
+use ecdsa::signature::digest::{consts::U32, Digest};
 
 #[cfg(feature = "rand")]
 use elliptic_curve::rand_core::{CryptoRng, RngCore};
+
+#[cfg(feature = "zeroize")]
+use zeroize::Zeroize;
 
 /// An element in the finite field modulo curve order.
 #[derive(Clone, Copy, Debug, Default)]
@@ -69,6 +72,17 @@ impl Scalar {
     pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let value = ScalarImpl::from_bytes(bytes);
         CtOption::map(value, Self)
+    }
+
+    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
+    /// modulo n.
+    #[cfg(feature = "digest")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
+    pub fn from_digest<D>(digest: D) -> Self
+    where
+        D: Digest<OutputSize = U32>,
+    {
+        Self(ScalarImpl::from_bytes_reduced(&digest.finalize().into()))
     }
 
     /// Returns the SEC-1 encoding of this scalar.
