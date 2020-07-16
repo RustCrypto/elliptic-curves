@@ -71,6 +71,13 @@ impl Scalar {
         CtOption::map(value, Self)
     }
 
+    /// Parses the given byte array as a scalar.
+    ///
+    /// Subtracts the modulus when the byte array is larger than the modulus.
+    pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
+        Self(ScalarImpl::from_bytes_reduced(bytes))
+    }
+
     /// Returns the SEC-1 encoding of this scalar.
     pub fn to_bytes(&self) -> [u8; 32] {
         self.0.to_bytes()

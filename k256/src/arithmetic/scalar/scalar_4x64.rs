@@ -174,6 +174,22 @@ impl Scalar4x64 {
         CtOption::new(Self(w), underflow)
     }
 
+    /// Parses the given byte array as a scalar.
+    ///
+    /// Subtracts the modulus when the byte array is larger than the modulus.
+    pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
+        // Interpret the bytes as a big-endian integer w.
+        let w3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        let w2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        let w1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        let w0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        let w = [w0, w1, w2, w3];
+
+        // If w is in the range [0, n) then w - n will underflow
+        let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
+        Self(conditional_select(&w, &r2, !underflow))
+    }
+
     /// Returns the SEC-1 encoding of this scalar.
     pub fn to_bytes(&self) -> [u8; 32] {
         let mut ret = [0; 32];
