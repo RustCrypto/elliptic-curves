@@ -1,7 +1,7 @@
 //! A pure-Rust implementation of group operations on secp256k1.
 
-pub(crate) mod scalar;
 pub(crate) mod field;
+pub(crate) mod scalar;
 
 mod util;
 

@@ -28,7 +28,7 @@ pub mod test_vectors;
 pub use elliptic_curve;
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint, field::FieldElement};
+pub use arithmetic::{field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint};
 
 use elliptic_curve::{generic_array::typenum::U32, weierstrass::Curve};
 
