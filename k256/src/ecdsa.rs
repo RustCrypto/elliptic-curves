@@ -2,8 +2,6 @@
 
 pub mod recoverable;
 
-pub use recoverable::{RecoverableSignature, RecoveryId};
-
 use super::Secp256k1;
 
 #[cfg(feature = "arithmetic")]
