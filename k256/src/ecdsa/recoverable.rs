@@ -44,27 +44,17 @@ impl Signature {
     }
 
     /// Recover the [`PublicKey`] used to create the given signature
-    // TODO(tarcieri): accept original message rather than scalar
     #[cfg(all(feature = "arithmetic", feature = "sha256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic", feature = "sha256")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
     pub fn recover_pubkey(&self, msg: &[u8]) -> Result<PublicKey, Error> {
+        let r = self.r()?;
+        let s = self.s()?;
         let z = Scalar::from_digest(Sha256::new().chain(msg));
-
-        let maybe_r = self.r();
-        let maybe_s = self.s();
-
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        let (r, s) = if maybe_r.is_some().into() && maybe_s.is_some().into() {
-            (maybe_r.unwrap(), maybe_s.unwrap())
-        } else {
-            return Err(Error::new());
-        };
-
         let x = FieldElement::from_bytes(&r.to_bytes());
 
         let pk = x.and_then(|x| {
-            let y_is_odd = Choice::from(self.recovery_id().is_y_odd() as u8);
+            let y_is_odd = Choice::from(self.recovery_id().0);
             let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
             let beta = alpha.sqrt().unwrap();
 
@@ -96,16 +86,30 @@ impl Signature {
 
     /// Parse the `r` component of this signature to a [`Scalar`]
     #[cfg(feature = "arithmetic")]
-    fn r(&self) -> CtOption<Scalar> {
-        Scalar::from_bytes(self.bytes[..32].try_into().unwrap())
-            .and_then(|r| CtOption::new(r, !r.is_zero()))
+    fn r(&self) -> Result<Scalar, Error> {
+        let maybe_r = Scalar::from_bytes(self.bytes[..32].try_into().unwrap())
+            .and_then(|r| CtOption::new(r, !r.is_zero()));
+
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        if maybe_r.is_some().into() {
+            Ok(maybe_r.unwrap())
+        } else {
+            Err(Error::new())
+        }
     }
 
     /// Parse the `s` component of this signature to a [`Scalar`]
     #[cfg(feature = "arithmetic")]
-    fn s(&self) -> CtOption<Scalar> {
-        Scalar::from_bytes(self.bytes[32..64].try_into().unwrap())
-            .and_then(|s| CtOption::new(s, !s.is_zero()))
+    fn s(&self) -> Result<Scalar, Error> {
+        let maybe_s = Scalar::from_bytes(self.bytes[32..64].try_into().unwrap())
+            .and_then(|s| CtOption::new(s, !s.is_zero()));
+
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        if maybe_s.is_some().into() {
+            Ok(maybe_s.unwrap())
+        } else {
+            Err(Error::new())
+        }
     }
 }
 
@@ -162,28 +166,22 @@ impl From<Signature> for super::Signature {
 /// In practice these values are always either `0` or `1`, and indicate
 /// whether or not the y-coordinate of the original [`PublicKey`] is odd.
 ///
-/// Values 2 and 3 are also defined to capture whether `r` overflowed the
-/// curve's order, however there is a vanishingly small chance of this
-/// occurring such that these values are not used in practice. As such, for
-/// simplicity's sake we do not support them.
+/// While values `2` and `3` are also defined to capture whether `r`
+/// overflowed the curve's order, this crate does *not* support them.
+///
+/// There is a vanishingly small chance of these values occurring outside
+/// of contrived examples, so for simplicity's sake handling these values
+/// is unsupported and will return an `Error` when parsing the `Id`.
 #[derive(Copy, Clone, Debug)]
 pub struct Id(u8);
-
-impl Id {
-    /// Is the y-coordinate of the public key odd?
-    fn is_y_odd(self) -> bool {
-        self.0 & 1 != 0
-    }
-}
 
 impl TryFrom<u8> for Id {
     type Error = Error;
 
     fn try_from(byte: u8) -> Result<Self, Error> {
-        if byte <= 1 {
-            Ok(Self(byte))
-        } else {
-            Err(Error::new())
+        match byte {
+            0 | 1 => Ok(Self(byte)),
+            _ => Err(Error::new()),
         }
     }
 }
