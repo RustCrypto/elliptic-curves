@@ -221,7 +221,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/signatures#04ca0e23cabc78b3c775f0e53d376f1dde55360e"
+source = "git+https://github.com/RustCrypto/signatures#e9037b7d94bdbfab092387849a78020d9bb69e79"
 dependencies = [
  "elliptic-curve",
  "signature",

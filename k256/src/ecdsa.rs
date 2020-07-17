@@ -5,10 +5,14 @@ pub mod recoverable;
 use super::Secp256k1;
 
 #[cfg(feature = "arithmetic")]
-use crate::{elliptic_curve::subtle::ConditionallySelectable, Scalar};
-
-#[cfg(feature = "arithmetic")]
-use ecdsa::Error;
+use {
+    crate::{AffinePoint, ProjectivePoint, Scalar, ScalarBytes},
+    ecdsa::{
+        hazmat::{SignPrimitive, VerifyPrimitive},
+        Error,
+    },
+    elliptic_curve::subtle::{ConditionallySelectable, CtOption},
+};
 
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ::ecdsa::Signature<Secp256k1>;
@@ -17,6 +21,86 @@ pub type Signature = ::ecdsa::Signature<Secp256k1>;
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
+}
+
+#[cfg(feature = "arithmetic")]
+impl SignPrimitive<Secp256k1> for Scalar {
+    type Scalar = Scalar;
+
+    #[allow(clippy::many_single_char_names)]
+    fn try_sign_prehashed(
+        &self,
+        ephemeral_scalar: &Scalar,
+        masking_scalar: Option<&Scalar>,
+        hashed_msg: &ScalarBytes,
+    ) -> Result<Signature, Error> {
+        let k = ephemeral_scalar;
+
+        if k.is_zero().into() {
+            return Err(Error::new());
+        }
+
+        // TODO(tarcieri): masking_scalar
+        assert!(masking_scalar.is_none(), "todo: masking_scalar support");
+
+        // Compute `x`-coordinate of affine point 𝑘×𝑮
+        let x = (ProjectivePoint::generator() * k).to_affine().unwrap().x;
+
+        // Lift `x` (element of base field) to serialized big endian integer,
+        // then reduce it to an element of the scalar field
+        let r = Scalar::from_bytes_reduced(&x.to_bytes());
+
+        // Reduce message hash to an element of the scalar field
+        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
+
+        // Compute `s` as a signature over `r` and `z`
+        let s = k.invert().unwrap() * &(z + &(r * self));
+
+        if s.is_zero().into() {
+            return Err(Error::new());
+        }
+
+        let signature = Signature::from_scalars(&r.into(), &s.into());
+        normalize_s(&signature)
+    }
+}
+
+#[cfg(feature = "arithmetic")]
+impl VerifyPrimitive<Secp256k1> for AffinePoint {
+    fn verify_prehashed(
+        &self,
+        hashed_msg: &ScalarBytes,
+        signature: &Signature,
+    ) -> Result<(), Error> {
+        let maybe_r =
+            Scalar::from_bytes(signature.r().as_ref()).and_then(|r| CtOption::new(r, !r.is_zero()));
+
+        let maybe_s =
+            Scalar::from_bytes(signature.s().as_ref()).and_then(|s| CtOption::new(s, !s.is_zero()));
+
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        let (r, s) = if maybe_r.is_some().into() && maybe_s.is_some().into() {
+            (maybe_r.unwrap(), maybe_s.unwrap())
+        } else {
+            return Err(Error::new());
+        };
+
+        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
+        let s_inv = s.invert().unwrap();
+        let u1 = z * &s_inv;
+        let u2 = r * &s_inv;
+
+        let x = ((&ProjectivePoint::generator() * &u1) + &(ProjectivePoint::from(*self) * &u2))
+            .to_affine()
+            .unwrap()
+            .x;
+
+        if Scalar::from_bytes_reduced(&x.to_bytes()) == r {
+            Ok(())
+        } else {
+            Err(Error::new())
+        }
+    }
 }
 
 #[cfg(feature = "arithmetic")]
@@ -49,26 +133,78 @@ pub fn normalize_s(signature: &Signature) -> Result<Signature, Error> {
 #[cfg(all(test, feature = "arithmetic"))]
 mod tests {
     use super::*;
+    use crate::PublicKey;
     use ecdsa::signature::Signature as _;
+    use hex_literal::hex;
+
+    /// ECDSA test vector
+    struct EcdsaVector {
+        d: [u8; 32],
+        k: [u8; 32],
+        m: [u8; 32],
+        r: [u8; 32],
+        s: [u8; 32],
+        q: [u8; 65],
+    }
+
+    /// ECDSA test vectors
+    const ECDSA_VECTORS: &[EcdsaVector] = &[EcdsaVector {
+        d: hex!("ebb2c082fd7727890a28ac82f6bdf97bad8de9f5d7c9028692de1a255cad3e0f"),
+        k: hex!("49a0d7b786ec9cde0d0721d72804befd06571c974b191efb42ecf322ba9ddd9a"),
+        m: hex!("4b688df40bcedbe641ddb16ff0a1842d9c67ea1c3bf63f3e0471baa664531d1a"),
+        r: hex!("241097efbf8b63bf145c8961dbdf10c310efbb3b2676bbc0f8b08505c9e2f795"),
+        s: hex!("021006b7838609339e8b415a7f9acb1b661828131aef1ecbc7955dfb01f3ca0e"),
+        q: hex!(
+            "04779dd197a5df977ed2cf6cb31d82d43328b790dc6b3b7d4437a427bd5847df
+             cde94b724a555b6d017bb7607c3e3281daf5b1699d6ef4124975c9237b917d426f"
+        ),
+    }];
 
     #[test]
-    fn already_normalized() {
-        #[rustfmt::skip]
-            let sig = Signature::from_bytes(&[
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]).unwrap();
+    fn ecdsa_signing() {
+        for vector in ECDSA_VECTORS {
+            let d = Scalar::from_bytes(&vector.d).unwrap();
+            let k = Scalar::from_bytes(&vector.k).unwrap();
+            let sig = d.try_sign_prehashed(&k, None, &vector.m.into()).unwrap();
 
-        let sig_normalized = normalize_s(&sig).unwrap();
-        assert_eq!(sig, sig_normalized);
+            assert_eq!(vector.r, sig.r().as_ref());
+            assert_eq!(vector.s, sig.s().as_ref());
+        }
+    }
+
+    #[test]
+    fn ecdsa_verify_success() {
+        for vector in ECDSA_VECTORS {
+            let pk = PublicKey::from_bytes(&vector.q[..]).unwrap();
+            let q = AffinePoint::from_pubkey(&pk).unwrap();
+            let sig = Signature::from_scalars(&vector.r.into(), &vector.s.into());
+            let result = q.verify_prehashed(&vector.m.into(), &sig);
+
+            assert!(result.is_ok());
+        }
+    }
+
+    #[test]
+    fn ecdsa_verify_failure() {
+        for vector in ECDSA_VECTORS {
+            let pk = PublicKey::from_bytes(&vector.q[..]).unwrap();
+            let q = AffinePoint::from_pubkey(&pk).unwrap();
+
+            // Flip a bit in `s`
+            let mut s_tweaked = vector.s;
+            s_tweaked[0] ^= 1;
+
+            let sig = Signature::from_scalars(&vector.r.into(), &s_tweaked.into());
+            let result = q.verify_prehashed(&vector.m.into(), &sig);
+
+            assert!(result.is_err());
+        }
     }
 
     // Test vectors generated using rust-secp256k1
     #[test]
     #[rustfmt::skip]
-    fn not_normalized() {
+    fn normalize_s_high() {
         let sig_hi = Signature::from_bytes(&[
             0x20, 0xc0, 0x1a, 0x91, 0x0e, 0xbb, 0x26, 0x10,
             0xaf, 0x2d, 0x76, 0x3f, 0xa0, 0x9b, 0x3b, 0x30,
@@ -93,5 +229,19 @@ mod tests {
 
         let sig_normalized = normalize_s(&sig_hi).unwrap();
         assert_eq!(sig_lo, sig_normalized);
+    }
+
+    #[test]
+    fn normalize_s_low() {
+        #[rustfmt::skip]
+        let sig = Signature::from_bytes(&[
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ]).unwrap();
+
+        let sig_normalized = normalize_s(&sig).unwrap();
+        assert_eq!(sig, sig_normalized);
     }
 }

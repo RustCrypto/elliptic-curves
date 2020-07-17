@@ -16,12 +16,8 @@ cfg_if! {
     }
 }
 
-use core::ops::{Add, AddAssign, Mul, MulAssign, Shr, Sub, SubAssign};
-
-#[cfg(test)]
-use num_bigint::{BigUint, ToBigUint};
-
-use core::ops::Neg;
+use crate::ScalarBytes;
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "digest")]
@@ -32,6 +28,9 @@ use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
+
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
 
 /// An element in the finite field modulo curve order.
 #[derive(Clone, Copy, Debug, Default)]
@@ -74,6 +73,13 @@ impl Scalar {
         CtOption::map(value, Self)
     }
 
+    /// Parses the given byte array as a scalar.
+    ///
+    /// Subtracts the modulus when the byte array is larger than the modulus.
+    pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
+        Self(ScalarImpl::from_bytes_reduced(bytes))
+    }
+
     /// Convert the output of a digest algorithm into a [`Scalar`] reduced
     /// modulo n.
     #[cfg(feature = "digest")]
@@ -82,7 +88,7 @@ impl Scalar {
     where
         D: Digest<OutputSize = U32>,
     {
-        Self(ScalarImpl::from_bytes_reduced(&digest.finalize().into()))
+        Self::from_bytes_reduced(&digest.finalize().into())
     }
 
     /// Returns the SEC-1 encoding of this scalar.
@@ -333,6 +339,12 @@ impl Mul<&Scalar> for Scalar {
 impl MulAssign<Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: Scalar) {
         *self = Scalar::mul(self, &rhs);
+    }
+}
+
+impl From<Scalar> for ScalarBytes {
+    fn from(scalar: Scalar) -> Self {
+        scalar.to_bytes().into()
     }
 }
 
