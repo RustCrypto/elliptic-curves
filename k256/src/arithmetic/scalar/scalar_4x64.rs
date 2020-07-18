@@ -221,8 +221,8 @@ impl Scalar4x64 {
     /// Sums two scalars.
     pub fn add(&self, rhs: &Self) -> Self {
         let (res1, overflow) = adc_array_with_overflow(&(self.0), &(rhs.0));
-        let (res2, _) = sbb_array(&res1, &MODULUS);
-        Self(conditional_select(&res1, &res2, overflow))
+        let (res2, underflow) = sbb_array_with_underflow(&res1, &MODULUS);
+        Self(conditional_select(&res1, &res2, overflow | !underflow))
     }
 
     /// Subtracts one scalar from the other.

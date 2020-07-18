@@ -414,6 +414,23 @@ mod tests {
         assert_eq!(modulus_minus_one_neg, Scalar::one());
     }
 
+    #[test]
+    fn add_result_within_256_bits() {
+        // A regression for a bug where reduction was not applied
+        // when the unreduced result of addition was in the range `[modulus, 2^256)`.
+        let t = 1.to_biguint().unwrap() << 255;
+        let one = 1.to_biguint().unwrap();
+
+        let a = Scalar::from(&t - &one);
+        let b = Scalar::from(&t);
+        let res = &a + &b;
+
+        let m = Scalar::modulus_as_biguint();
+        let res_ref = Scalar::from((&t + &t - &one) % &m);
+
+        assert_eq!(res, res_ref);
+    }
+
     #[cfg(feature = "rand")]
     #[test]
     fn generate_biased() {
