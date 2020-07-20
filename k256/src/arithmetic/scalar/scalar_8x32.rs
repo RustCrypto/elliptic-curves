@@ -210,7 +210,6 @@ impl Scalar8x32 {
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    #[cfg(feature = "digest")]
     pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
         // Interpret the bytes as a big-endian integer w.
         let w7 = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
