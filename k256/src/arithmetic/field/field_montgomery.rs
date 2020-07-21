@@ -69,7 +69,7 @@ impl FieldElementMontgomery {
         R
     }
 
-    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(bytes_to_words(bytes)).mul(&R2)
     }
 

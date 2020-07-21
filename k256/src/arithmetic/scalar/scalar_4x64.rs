@@ -157,7 +157,8 @@ impl Scalar4x64 {
         self.0[0] as u32
     }
 
-    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+    #[cfg(feature = "endomorphism-mul")]
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         // Interpret the bytes as a big-endian integer w.
         let w3 =
             ((bytes[0] as u64) << 56) | ((bytes[1] as u64) << 48) | ((bytes[2] as u64) << 40) | ((bytes[3] as u64) << 32) |
