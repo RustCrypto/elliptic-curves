@@ -56,7 +56,7 @@ impl FieldElementImpl {
         Self::new_normalized(&FieldElementUnsafeImpl::one())
     }
 
-    pub const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let value = FieldElementUnsafeImpl::from_bytes_unchecked(bytes);
         Self::new_normalized(&value)
     }

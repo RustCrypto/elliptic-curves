@@ -64,6 +64,13 @@ impl Scalar {
         self.0.truncate_to_u32()
     }
 
+    /// Attempts to parse the given byte array as a scalar.
+    /// Does not check the result for being in the correct range.
+    #[cfg(feature = "endomorphism-mul")]
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(ScalarImpl::from_bytes_unchecked(bytes))
+    }
+
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
@@ -224,6 +231,18 @@ impl Scalar {
             }
         }
     }
+
+    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
+    pub fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
+        Self(self.0.conditional_add_bit(bit, flag))
+    }
+
+    /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
+    /// (rounding to the nearest integer).
+    /// Variable time in `shift`.
+    pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
+        Self(self.0.mul_shift_var(&(b.0), shift))
+    }
 }
 
 impl Shr<usize> for Scalar {
@@ -261,6 +280,14 @@ impl PartialEq for Scalar {
 }
 
 impl Neg for Scalar {
+    type Output = Scalar;
+
+    fn neg(self) -> Scalar {
+        self.negate()
+    }
+}
+
+impl Neg for &Scalar {
     type Output = Scalar;
 
     fn neg(self) -> Scalar {
@@ -480,6 +507,14 @@ mod tests {
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
             let bytes = a.to_bytes();
             let a_back = Scalar::from_bytes(&bytes).unwrap();
+            assert_eq!(a, a_back);
+        }
+
+        #[test]
+        #[cfg(feature = "endomorphism-mul")]
+        fn fuzzy_roundtrip_to_bytes_unchecked(a in scalar()) {
+            let bytes = a.to_bytes();
+            let a_back = Scalar::from_bytes_unchecked(&bytes);
             assert_eq!(a, a_back);
         }
 

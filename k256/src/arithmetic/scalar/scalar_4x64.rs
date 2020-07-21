@@ -157,6 +157,24 @@ impl Scalar4x64 {
         self.0[0] as u32
     }
 
+    #[cfg(feature = "endomorphism-mul")]
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        // Interpret the bytes as a big-endian integer w.
+        let w3 =
+            ((bytes[0] as u64) << 56) | ((bytes[1] as u64) << 48) | ((bytes[2] as u64) << 40) | ((bytes[3] as u64) << 32) |
+            ((bytes[4] as u64) << 24) | ((bytes[5] as u64) << 16) | ((bytes[6] as u64) << 8) | (bytes[7] as u64);
+        let w2 =
+            ((bytes[8] as u64) << 56) | ((bytes[9] as u64) << 48) | ((bytes[10] as u64) << 40) | ((bytes[11] as u64) << 32) |
+            ((bytes[12] as u64) << 24) | ((bytes[13] as u64) << 16) | ((bytes[14] as u64) << 8) | (bytes[15] as u64);
+        let w1 =
+            ((bytes[16] as u64) << 56) | ((bytes[17] as u64) << 48) | ((bytes[18] as u64) << 40) | ((bytes[19] as u64) << 32) |
+            ((bytes[20] as u64) << 24) | ((bytes[21] as u64) << 16) | ((bytes[22] as u64) << 8) | (bytes[23] as u64);
+        let w0 =
+            ((bytes[24] as u64) << 56) | ((bytes[25] as u64) << 48) | ((bytes[26] as u64) << 40) | ((bytes[27] as u64) << 32) |
+            ((bytes[28] as u64) << 24) | ((bytes[29] as u64) << 16) | ((bytes[30] as u64) << 8) | (bytes[31] as u64);
+        Self([w0, w1, w2, w3])
+    }
+
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
@@ -313,6 +331,53 @@ impl Scalar4x64 {
 
         Self(res)
     }
+
+    pub fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
+        debug_assert!(bit < 256);
+
+        // Construct Scalar(1 << bit).
+        // Since the 255-th bit of the modulus is 1, this will always be within range.
+        let bit_lo = bit & 0x3F;
+        let w = Self([
+            (((bit >> 6) == 0) as u64) << bit_lo,
+            (((bit >> 6) == 1) as u64) << bit_lo,
+            (((bit >> 6) == 2) as u64) << bit_lo,
+            (((bit >> 6) == 3) as u64) << bit_lo,
+        ]);
+
+        Self::conditional_select(self, &(self.add(&w)), flag)
+    }
+
+    pub fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
+        debug_assert!(shift >= 256);
+
+        fn ifelse(c: bool, x: u64, y: u64) -> u64 { if c {x} else {y} }
+
+        let l = self.mul_wide(b);
+        let shiftlimbs = shift >> 6;
+        let shiftlow = shift & 0x3F;
+        let shifthigh = 64 - shiftlow;
+        let r0 = ifelse(
+            shift < 512,
+            (l.0[shiftlimbs] >> shiftlow) | ifelse(shift < 448 && shiftlow != 0, l.0[1 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r1 = ifelse(
+            shift < 448,
+            (l.0[1 + shiftlimbs] >> shiftlow) | ifelse(shift < 448 && shiftlow != 0, l.0[2 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r2 = ifelse(
+            shift < 384,
+            (l.0[2 + shiftlimbs] >> shiftlow) | ifelse(shift < 320 && shiftlow != 0, l.0[3 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r3 = ifelse(shift < 320, l.0[3 + shiftlimbs] >> shiftlow, 0);
+
+        let res = Self([r0, r1, r2, r3]);
+
+        // Check the highmost discarded bit and round up if it is set.
+        let c = (l.0[(shift - 1) >> 6] >> ((shift - 1) & 0x3f)) & 1;
+        res.conditional_add_bit(0, Choice::from(c as u8))
+    }
+
 }
 
 #[cfg(feature = "zeroize")]

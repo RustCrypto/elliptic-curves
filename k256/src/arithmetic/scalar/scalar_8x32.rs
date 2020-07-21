@@ -186,6 +186,28 @@ impl Scalar8x32 {
         self.0[0]
     }
 
+    #[cfg(feature = "endomorphism-mul")]
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        // Interpret the bytes as a big-endian integer w.
+        let w7 =
+            ((bytes[0] as u32) << 24) | ((bytes[1] as u32) << 16) | ((bytes[2] as u32) << 8) | (bytes[3] as u32);
+        let w6 =
+            ((bytes[4] as u32) << 24) | ((bytes[5] as u32) << 16) | ((bytes[6] as u32) << 8) | (bytes[7] as u32);
+        let w5 =
+            ((bytes[8] as u32) << 24) | ((bytes[9] as u32) << 16) | ((bytes[10] as u32) << 8) | (bytes[11] as u32);
+        let w4 =
+            ((bytes[12] as u32) << 24) | ((bytes[13] as u32) << 16) | ((bytes[14] as u32) << 8) | (bytes[15] as u32);
+        let w3 =
+            ((bytes[16] as u32) << 24) | ((bytes[17] as u32) << 16) | ((bytes[18] as u32) << 8) | (bytes[19] as u32);
+        let w2 =
+            ((bytes[20] as u32) << 24) | ((bytes[21] as u32) << 16) | ((bytes[22] as u32) << 8) | (bytes[23] as u32);
+        let w1 =
+            ((bytes[24] as u32) << 24) | ((bytes[25] as u32) << 16) | ((bytes[26] as u32) << 8) | (bytes[27] as u32);
+        let w0 =
+            ((bytes[28] as u32) << 24) | ((bytes[29] as u32) << 16) | ((bytes[30] as u32) << 8) | (bytes[31] as u32);
+        Self([w0, w1, w2, w3, w4, w5, w6, w7])
+    }
+
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
@@ -422,6 +444,74 @@ impl Scalar8x32 {
 
         Self(res)
     }
+
+    pub fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
+        debug_assert!(bit < 256);
+
+        // Construct Scalar(1 << bit).
+        // Since the 255-th bit of the modulus is 1, this will always be within range.
+        let bit_lo = bit & 0x1F;
+        let w = Self([
+            (((bit >> 5) == 0) as u32) << bit_lo,
+            (((bit >> 5) == 1) as u32) << bit_lo,
+            (((bit >> 5) == 2) as u32) << bit_lo,
+            (((bit >> 5) == 3) as u32) << bit_lo,
+            (((bit >> 5) == 4) as u32) << bit_lo,
+            (((bit >> 5) == 5) as u32) << bit_lo,
+            (((bit >> 5) == 6) as u32) << bit_lo,
+            (((bit >> 5) == 7) as u32) << bit_lo,
+        ]);
+
+        Self::conditional_select(self, &(self.add(&w)), flag)
+    }
+
+    pub fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
+        debug_assert!(shift >= 256);
+
+        fn ifelse(c: bool, x: u32, y: u32) -> u32 { if c {x} else {y} }
+
+        let l = self.mul_wide(b);
+        let shiftlimbs = shift >> 5;
+        let shiftlow = shift & 0x1F;
+        let shifthigh = 32 - shiftlow;
+        let r0 = ifelse(
+            shift < 512,
+            (l.0[shiftlimbs] >> shiftlow) | ifelse(shift < 480 && shiftlow != 0, l.0[1 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r1 = ifelse(
+            shift < 480,
+            (l.0[1 + shiftlimbs] >> shiftlow) | ifelse(shift < 448 && shiftlow != 0, l.0[2 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r2 = ifelse(
+            shift < 448,
+            (l.0[2 + shiftlimbs] >> shiftlow) | ifelse(shift < 416 && shiftlow != 0, l.0[3 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r3 = ifelse(
+            shift < 416,
+            (l.0[3 + shiftlimbs] >> shiftlow) | ifelse(shift < 384 && shiftlow != 0, l.0[4 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r4 = ifelse(
+            shift < 384,
+            (l.0[4 + shiftlimbs] >> shiftlow) | ifelse(shift < 352 && shiftlow != 0, l.0[5 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r5 = ifelse(
+            shift < 352,
+            (l.0[5 + shiftlimbs] >> shiftlow) | ifelse(shift < 320 && shiftlow != 0, l.0[6 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r6 = ifelse(
+            shift < 320,
+            (l.0[6 + shiftlimbs] >> shiftlow) | ifelse(shift < 288 && shiftlow != 0, l.0[7 + shiftlimbs] << shifthigh, 0),
+            0);
+        let r7 = ifelse(
+            shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
+
+        let res = Self([r0, r1, r2, r3, r4, r5, r6, r7]);
+
+        // Check the highmost discarded bit and round up if it is set.
+        let c = (l.0[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
+        res.conditional_add_bit(0, Choice::from(c as u8))
+    }
+
 }
 
 #[cfg(feature = "zeroize")]
