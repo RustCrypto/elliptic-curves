@@ -1,7 +1,10 @@
 //! Scalar field arithmetic modulo n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 
-use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use crate::ScalarBytes;
+use core::{
+    convert::TryInto,
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
@@ -131,14 +134,14 @@ impl Scalar {
     /// Returns None if the secret's underlying value does not represent a field element.
     pub fn from_secret(s: SecretKey) -> CtOption<Scalar> {
         // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
-        Self::from_bytes((*s.secret_scalar()).into())
+        Self::from_bytes(s.secret_scalar().as_ref())
     }
 
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -158,10 +161,10 @@ impl Scalar {
         CtOption::new(Scalar(w), Choice::from(is_some))
     }
 
-    /// Parses the given byte array as hashed message.
+    /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: [u8; 32]) -> Self {
+    pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
         Self::sub_inner(
             u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
             u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
@@ -648,6 +651,12 @@ impl ConstantTimeEq for Scalar {
     }
 }
 
+impl From<Scalar> for ScalarBytes {
+    fn from(scalar: Scalar) -> Self {
+        scalar.to_bytes().into()
+    }
+}
+
 #[cfg(feature = "zeroize")]
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {
@@ -665,7 +674,7 @@ mod tests {
         let mut bytes = [0u8; 32];
         bytes[24..].copy_from_slice(k.to_be_bytes().as_ref());
 
-        let scalar = Scalar::from_bytes(bytes).unwrap();
+        let scalar = Scalar::from_bytes(&bytes).unwrap();
         assert_eq!(bytes, scalar.to_bytes());
     }
 

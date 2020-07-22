@@ -12,13 +12,15 @@ categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 
 [dependencies]
-ecdsa = { version = "= 0.7.0-pre", optional = true,  default-features = false }
+ecdsa = { version = "= 0.7.0-pre", optional = true, default-features = false }
 elliptic-curve = { version = "= 0.5.0-pre", default-features = false,  features = ["weierstrass"] }
 sha2 = { version = "0.9", optional = true }
 zeroize = { version = "1",  optional = true, default-features = false }
 
 [dev-dependencies]
-hex = "0.4"
+ecdsa = { version = "= 0.7.0-pre", default-features = false, features = ["dev", "hazmat"] }
+hex = "0.4" # TODO: switch to hex-literal
+hex-literal = "0.2"
 proptest = "0.10"
 
 [features]
