@@ -98,53 +98,57 @@ impl AffinePoint {
         }
     }
 
-    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded `AffinePoint`.
+    /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
+    pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
+        let bytes = point.as_bytes();
+        let y_is_odd = Choice::from(bytes[0] & 0x01);
+        let x = FieldElement::from_bytes(bytes[1..33].try_into().unwrap());
+
+        x.and_then(|x| {
+            let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
+            let beta = alpha.sqrt();
+
+            beta.map(|beta| {
+                let y = FieldElement::conditional_select(
+                    &beta.negate(1),
+                    &beta,
+                    // beta.is_odd() == y_is_odd
+                    !(beta.normalize().is_odd() ^ y_is_odd),
+                );
+
+                AffinePoint {
+                    x,
+                    y: y.normalize(),
+                }
+            })
+        })
+    }
+
+    /// Attempts to parse the given [`UncompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
+    pub fn from_uncompressed_point(point: &UncompressedPoint) -> CtOption<Self> {
+        let bytes = point.as_bytes();
+        let x = FieldElement::from_bytes(bytes[1..33].try_into().unwrap());
+        let y = FieldElement::from_bytes(bytes[33..65].try_into().unwrap());
+
+        x.and_then(|x| {
+            y.and_then(|y| {
+                // Check that the point is on the curve
+                let lhs = (y * &y).negate(1);
+                let rhs = x * &x * &x + &CURVE_EQUATION_B;
+                CtOption::new(AffinePoint { x, y }, (lhs + &rhs).normalizes_to_zero())
+            })
+        })
+    }
+
+    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
     ///
     /// # Returns
     ///
     /// `None` value if `pubkey` is not on the secp256k1 curve.
     pub fn from_pubkey(pubkey: &PublicKey) -> CtOption<Self> {
         match pubkey {
-            PublicKey::Compressed(point) => {
-                let bytes = point.as_bytes();
-
-                let y_is_odd = Choice::from(bytes[0] & 0x01);
-                let x = FieldElement::from_bytes(bytes[1..33].try_into().unwrap());
-
-                x.and_then(|x| {
-                    let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
-                    let beta = alpha.sqrt();
-
-                    beta.map(|beta| {
-                        let y = FieldElement::conditional_select(
-                            &beta.negate(1),
-                            &beta,
-                            // beta.is_odd() == y_is_odd
-                            !(beta.normalize().is_odd() ^ y_is_odd),
-                        );
-
-                        AffinePoint {
-                            x,
-                            y: y.normalize(),
-                        }
-                    })
-                })
-            }
-            PublicKey::Uncompressed(point) => {
-                let bytes = point.as_bytes();
-
-                let x = FieldElement::from_bytes(bytes[1..33].try_into().unwrap());
-                let y = FieldElement::from_bytes(bytes[33..65].try_into().unwrap());
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = (y * &y).negate(1);
-                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        CtOption::new(AffinePoint { x, y }, (lhs + &rhs).normalizes_to_zero())
-                    })
-                })
-            }
+            PublicKey::Compressed(point) => Self::from_compressed_point(point),
+            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
         }
     }
 

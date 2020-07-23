@@ -13,12 +13,13 @@ keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
 [dependencies]
 cfg-if = "0.1"
-ecdsa = { version = "= 0.7.0-pre", optional = true, default-features = false }
+ecdsa = { version = "= 0.7.0-pre", optional = true, default-features = false, features = ["hazmat"] }
 elliptic-curve = { version = "= 0.5.0-pre",  default-features = false, features = ["weierstrass"] }
 sha2 = { version = "0.9", optional = true }
 zeroize = { version = "1", optional = true, default-features = false }
 
 [dev-dependencies]
+ecdsa = { version = "= 0.7.0-pre", default-features = false, features = ["dev", "hazmat"] }
 hex = "0.4" # TODO: switch to hex-literal
 hex-literal = "0.2"
 proptest = "0.10"
@@ -34,7 +35,7 @@ endomorphism-mul = []
 field-montgomery = []
 force-32-bit = []
 rand = ["elliptic-curve/rand_core"]
-sha256 = ["digest", "ecdsa/hazmat", "sha2"]
+sha256 = ["digest", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]
 
