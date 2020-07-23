@@ -133,73 +133,22 @@ pub fn normalize_s(signature: &Signature) -> Result<Signature, Error> {
 #[cfg(all(test, feature = "arithmetic"))]
 mod tests {
     use super::*;
-    use crate::PublicKey;
-    use ecdsa::signature::Signature as _;
+    use ecdsa::{dev::TestVector, signature::Signature as _};
     use hex_literal::hex;
 
-    /// ECDSA test vector
-    struct EcdsaVector {
-        d: [u8; 32],
-        k: [u8; 32],
-        m: [u8; 32],
-        r: [u8; 32],
-        s: [u8; 32],
-        q: [u8; 65],
-    }
-
     /// ECDSA test vectors
-    const ECDSA_VECTORS: &[EcdsaVector] = &[EcdsaVector {
-        d: hex!("ebb2c082fd7727890a28ac82f6bdf97bad8de9f5d7c9028692de1a255cad3e0f"),
-        k: hex!("49a0d7b786ec9cde0d0721d72804befd06571c974b191efb42ecf322ba9ddd9a"),
-        m: hex!("4b688df40bcedbe641ddb16ff0a1842d9c67ea1c3bf63f3e0471baa664531d1a"),
-        r: hex!("241097efbf8b63bf145c8961dbdf10c310efbb3b2676bbc0f8b08505c9e2f795"),
-        s: hex!("021006b7838609339e8b415a7f9acb1b661828131aef1ecbc7955dfb01f3ca0e"),
-        q: hex!(
-            "04779dd197a5df977ed2cf6cb31d82d43328b790dc6b3b7d4437a427bd5847df
-             cde94b724a555b6d017bb7607c3e3281daf5b1699d6ef4124975c9237b917d426f"
-        ),
+    const TEST_VECTORS: &[TestVector] = &[TestVector {
+        d: &hex!("ebb2c082fd7727890a28ac82f6bdf97bad8de9f5d7c9028692de1a255cad3e0f"),
+        q_x: &hex!("779dd197a5df977ed2cf6cb31d82d43328b790dc6b3b7d4437a427bd5847dfcd"),
+        q_y: &hex!("e94b724a555b6d017bb7607c3e3281daf5b1699d6ef4124975c9237b917d426f"),
+        k: &hex!("49a0d7b786ec9cde0d0721d72804befd06571c974b191efb42ecf322ba9ddd9a"),
+        m: &hex!("4b688df40bcedbe641ddb16ff0a1842d9c67ea1c3bf63f3e0471baa664531d1a"),
+        r: &hex!("241097efbf8b63bf145c8961dbdf10c310efbb3b2676bbc0f8b08505c9e2f795"),
+        s: &hex!("021006b7838609339e8b415a7f9acb1b661828131aef1ecbc7955dfb01f3ca0e"),
     }];
 
-    #[test]
-    fn ecdsa_signing() {
-        for vector in ECDSA_VECTORS {
-            let d = Scalar::from_bytes(&vector.d).unwrap();
-            let k = Scalar::from_bytes(&vector.k).unwrap();
-            let sig = d.try_sign_prehashed(&k, None, &vector.m.into()).unwrap();
-
-            assert_eq!(vector.r, sig.r().as_ref());
-            assert_eq!(vector.s, sig.s().as_ref());
-        }
-    }
-
-    #[test]
-    fn ecdsa_verify_success() {
-        for vector in ECDSA_VECTORS {
-            let pk = PublicKey::from_bytes(&vector.q[..]).unwrap();
-            let q = AffinePoint::from_pubkey(&pk).unwrap();
-            let sig = Signature::from_scalars(&vector.r.into(), &vector.s.into());
-            let result = q.verify_prehashed(&vector.m.into(), &sig);
-
-            assert!(result.is_ok());
-        }
-    }
-
-    #[test]
-    fn ecdsa_verify_failure() {
-        for vector in ECDSA_VECTORS {
-            let pk = PublicKey::from_bytes(&vector.q[..]).unwrap();
-            let q = AffinePoint::from_pubkey(&pk).unwrap();
-
-            // Flip a bit in `s`
-            let mut s_tweaked = vector.s;
-            s_tweaked[0] ^= 1;
-
-            let sig = Signature::from_scalars(&vector.r.into(), &s_tweaked.into());
-            let result = q.verify_prehashed(&vector.m.into(), &sig);
-
-            assert!(result.is_err());
-        }
-    }
+    ecdsa::new_signing_test!(TEST_VECTORS);
+    ecdsa::new_verification_test!(TEST_VECTORS);
 
     // Test vectors generated using rust-secp256k1
     #[test]
