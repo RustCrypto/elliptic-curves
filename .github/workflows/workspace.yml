@@ -40,6 +40,7 @@ jobs:
           command: fmt
           args: --all -- --check
 
+# TODO(tarcieri): investigate why codecov is failing
 #  codecov:
 #    runs-on: ubuntu-latest
 #    steps:

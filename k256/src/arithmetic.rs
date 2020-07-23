@@ -98,6 +98,18 @@ impl AffinePoint {
         }
     }
 
+    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
+    ///
+    /// # Returns
+    ///
+    /// `None` value if `pubkey` is not on the secp256k1 curve.
+    pub fn from_pubkey(pubkey: &PublicKey) -> CtOption<Self> {
+        match pubkey {
+            PublicKey::Compressed(point) => Self::from_compressed_point(point),
+            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
+        }
+    }
+
     /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
     pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
         let bytes = point.as_bytes();
@@ -140,26 +152,15 @@ impl AffinePoint {
         })
     }
 
-    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
+    /// Returns a [`PublicKey`] with the SEC-1 encoding of this point.
     ///
-    /// # Returns
-    ///
-    /// `None` value if `pubkey` is not on the secp256k1 curve.
-    pub fn from_pubkey(pubkey: &PublicKey) -> CtOption<Self> {
-        match pubkey {
-            PublicKey::Compressed(point) => Self::from_compressed_point(point),
-            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
+    /// If `compress` is set to `true`, point compression is applied.
+    pub fn to_pubkey(&self, compress: bool) -> PublicKey {
+        if compress {
+            PublicKey::Compressed(self.clone().into())
+        } else {
+            PublicKey::Uncompressed(self.clone().into())
         }
-    }
-
-    /// Returns a [`PublicKey`] with the SEC-1 compressed encoding of this point.
-    pub fn to_compressed_pubkey(&self) -> PublicKey {
-        PublicKey::Compressed(self.clone().into())
-    }
-
-    /// Returns a [`PublicKey`] with the SEC-1 uncompressed encoding of this point.
-    pub fn to_uncompressed_pubkey(&self) -> PublicKey {
-        PublicKey::Uncompressed(self.clone().into())
     }
 }
 
@@ -575,7 +576,7 @@ mod tests {
         let pubkey = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
         let res: PublicKey = AffinePoint::from_pubkey(&pubkey)
             .unwrap()
-            .to_uncompressed_pubkey()
+            .to_pubkey(false)
             .into();
 
         assert_eq!(res, pubkey);
@@ -586,7 +587,7 @@ mod tests {
         let pubkey = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
         let res: PublicKey = AffinePoint::from_pubkey(&pubkey)
             .unwrap()
-            .to_compressed_pubkey()
+            .to_pubkey(true)
             .into();
 
         assert_eq!(res, pubkey);
@@ -596,9 +597,7 @@ mod tests {
     fn uncompressed_to_compressed() {
         let encoded = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_pubkey(&encoded)
-            .unwrap()
-            .to_compressed_pubkey();
+        let res = AffinePoint::from_pubkey(&encoded).unwrap().to_pubkey(true);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),
@@ -610,9 +609,7 @@ mod tests {
     fn compressed_to_uncompressed() {
         let encoded = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_pubkey(&encoded)
-            .unwrap()
-            .to_uncompressed_pubkey();
+        let res = AffinePoint::from_pubkey(&encoded).unwrap().to_pubkey(false);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),
