@@ -78,7 +78,7 @@ impl Signature {
 
         // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         if pk.is_some().into() {
-            Ok(pk.unwrap().to_compressed_pubkey())
+            Ok(pk.unwrap().to_pubkey(true))
         } else {
             Err(Error::new())
         }
