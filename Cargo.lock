@@ -452,6 +452,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex",
+ "hex-literal",
  "proptest",
  "sha2",
  "zeroize",

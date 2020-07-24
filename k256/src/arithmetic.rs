@@ -191,8 +191,7 @@ impl FixedBaseScalarMul for Secp256k1 {
     /// Multiply the given scalar by the generator point for this elliptic
     /// curve.
     fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
-        let bytes: [u8; 32] = (*scalar_bytes).into();
-        Scalar::from_bytes(&bytes)
+        Scalar::from_bytes(scalar_bytes.as_ref())
             .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
     }
 }

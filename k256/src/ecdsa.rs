@@ -136,7 +136,7 @@ mod tests {
     use ecdsa::{dev::TestVector, signature::Signature as _};
     use hex_literal::hex;
 
-    /// ECDSA test vectors
+    /// ECDSA/secp256k1 test vectors
     const TEST_VECTORS: &[TestVector] = &[TestVector {
         d: &hex!("ebb2c082fd7727890a28ac82f6bdf97bad8de9f5d7c9028692de1a255cad3e0f"),
         q_x: &hex!("779dd197a5df977ed2cf6cb31d82d43328b790dc6b3b7d4437a427bd5847dfcd"),
