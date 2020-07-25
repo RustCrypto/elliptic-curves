@@ -8,7 +8,7 @@ use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::FixedBaseScalarMul,
+    weierstrass::{curve::Arithmetic, FixedBaseScalarMul},
 };
 
 use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint};
@@ -37,6 +37,11 @@ const CURVE_EQUATION_B: FieldElement = FieldElement([
     0xe5a2_20ab_f721_2ed6,
     0xdc30_061d_0487_4834,
 ]);
+
+impl Arithmetic for NistP256 {
+    type Scalar = Scalar;
+    type AffinePoint = AffinePoint;
+}
 
 /// A point on the secp256r1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]

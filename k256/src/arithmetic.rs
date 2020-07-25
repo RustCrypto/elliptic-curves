@@ -9,7 +9,7 @@ use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::FixedBaseScalarMul,
+    weierstrass::{curve::Arithmetic, FixedBaseScalarMul},
 };
 
 use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
@@ -43,6 +43,11 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
     0xc1, 0x39, 0x6c, 0x28, 0x71, 0x95, 0x01, 0xee,
 ]);
+
+impl Arithmetic for Secp256k1 {
+    type Scalar = Scalar;
+    type AffinePoint = AffinePoint;
+}
 
 /// A point on the secp256k1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
