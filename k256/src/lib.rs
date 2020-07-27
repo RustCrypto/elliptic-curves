@@ -32,7 +32,7 @@ pub use elliptic_curve;
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint};
 
-use elliptic_curve::{generic_array::typenum::U32, weierstrass::Curve};
+use elliptic_curve::consts::U32;
 
 /// K-256 (secp256k1) elliptic curve.
 ///
@@ -48,13 +48,15 @@ use elliptic_curve::{generic_array::typenum::U32, weierstrass::Curve};
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Secp256k1;
 
-impl Curve for Secp256k1 {
-    /// 256-bit (32-byte) private scalar
-    type ScalarSize = U32;
+impl elliptic_curve::Curve for Secp256k1 {
+    /// 256-bit (32-byte)
+    type ElementSize = U32;
 }
 
+impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
+
 /// K-256 (secp256k1) Secret Key.
-pub type SecretKey = elliptic_curve::SecretKey<U32>;
+pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 
 /// K-256 (secp256k1) Public Key.
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<Secp256k1>;
@@ -62,7 +64,7 @@ pub type PublicKey = elliptic_curve::weierstrass::PublicKey<Secp256k1>;
 /// K-256 Scalar Bytes.
 ///
 /// Byte array containing a serialized scalar value (i.e. an integer)
-pub type ScalarBytes = elliptic_curve::ScalarBytes<U32>;
+pub type ScalarBytes = elliptic_curve::ScalarBytes<Secp256k1>;
 
 /// K-256 Compressed Curve Point.
 pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<Secp256k1>;

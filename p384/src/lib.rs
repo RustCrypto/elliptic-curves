@@ -19,7 +19,7 @@ pub mod ecdsa;
 
 pub use elliptic_curve;
 
-use elliptic_curve::{generic_array::typenum::U48, weierstrass::Curve};
+use elliptic_curve::consts::U48;
 
 /// NIST P-384 elliptic curve.
 ///
@@ -44,16 +44,23 @@ use elliptic_curve::{generic_array::typenum::U48, weierstrass::Curve};
 #[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP384;
 
-impl Curve for NistP384 {
-    /// 384-bit (48-byte) private scalar
-    type ScalarSize = U48;
+impl elliptic_curve::Curve for NistP384 {
+    /// 384-bit (48-byte)
+    type ElementSize = U48;
 }
 
+impl elliptic_curve::weierstrass::Curve for NistP384 {}
+
 /// NIST P-384 Secret Key
-pub type SecretKey = elliptic_curve::SecretKey<U48>;
+pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
 
 /// NIST P-384 Public Key
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP384>;
+
+/// NIST P-384 Scalar Bytes.
+///
+/// Byte array containing a serialized scalar value (i.e. an integer)
+pub type ScalarBytes = elliptic_curve::ScalarBytes<NistP384>;
 
 /// NIST P-384 Compressed Curve Point
 pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<NistP384>;
