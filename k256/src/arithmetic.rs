@@ -23,6 +23,7 @@ use crate::SecretKey;
 use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
     weierstrass::GenerateSecretKey,
+    Generate,
 };
 
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
@@ -538,10 +539,8 @@ impl<'a> Neg for &'a ProjectivePoint {
 
 #[cfg(feature = "rand")]
 impl GenerateSecretKey for Secp256k1 {
-    fn generate_secret_key(rng: &mut (impl CryptoRng + RngCore)) -> SecretKey {
-        // It seems that slight variable-timeness is more secure than slight non-uniformity.
-        let s = Scalar::generate_vartime(rng);
-        SecretKey::new(s.to_bytes().into())
+    fn generate_secret_key(rng: impl CryptoRng + RngCore) -> SecretKey {
+        SecretKey::new(Scalar::generate(rng).to_bytes().into())
     }
 }
 
