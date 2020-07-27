@@ -8,7 +8,8 @@ use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::{curve::Arithmetic, FixedBaseScalarMul},
+    weierstrass::FixedBaseScalarMul,
+    Arithmetic,
 };
 
 use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint};
@@ -182,11 +183,11 @@ impl From<AffinePoint> for UncompressedPoint {
 
 impl FixedBaseScalarMul for NistP256 {
     /// Elliptic curve point type
-    type Point = AffinePoint;
+    type AffinePoint = AffinePoint;
 
     /// Multiply the given scalar by the generator point for this elliptic
     /// curve.
-    fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<Self::Point> {
+    fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<AffinePoint> {
         Scalar::from_bytes(scalar_bytes.as_ref())
             .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
     }
