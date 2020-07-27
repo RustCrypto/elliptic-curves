@@ -17,16 +17,6 @@ use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoin
 use field::FieldElement;
 use scalar::Scalar;
 
-#[cfg(feature = "rand")]
-use crate::SecretKey;
-
-#[cfg(feature = "rand")]
-use elliptic_curve::{
-    rand_core::{CryptoRng, RngCore},
-    weierstrass::GenerateSecretKey,
-    Generate,
-};
-
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
 
 #[rustfmt::skip]
@@ -538,13 +528,6 @@ impl<'a> Neg for &'a ProjectivePoint {
     }
 }
 
-#[cfg(feature = "rand")]
-impl GenerateSecretKey for Secp256k1 {
-    fn generate_secret_key(rng: impl CryptoRng + RngCore) -> SecretKey {
-        SecretKey::new(Scalar::generate(rng).to_bytes().into())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use core::convert::TryInto;
@@ -804,8 +787,10 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn generate_secret_key() {
-        use elliptic_curve::{rand_core::OsRng, weierstrass::GenerateSecretKey};
-        let key = Secp256k1::generate_secret_key(&mut OsRng);
+        use crate::SecretKey;
+        use elliptic_curve::{rand_core::OsRng, Generate};
+
+        let key = SecretKey::generate(&mut OsRng);
 
         // Sanity check
         assert!(!key.secret_scalar().iter().all(|b| *b == 0))
