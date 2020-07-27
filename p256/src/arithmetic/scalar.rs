@@ -7,6 +7,12 @@ use core::{
 };
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+#[cfg(feature = "rand")]
+use elliptic_curve::{
+    rand_core::{CryptoRng, RngCore},
+    Generate,
+};
+
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
 
@@ -654,6 +660,32 @@ impl ConstantTimeEq for Scalar {
 impl From<Scalar> for ScalarBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes().into()
+    }
+}
+
+#[cfg(feature = "rand")]
+impl Generate for Scalar {
+    fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
+        let mut bytes = [0u8; 32];
+
+        // Generate a uniformly random scalar using rejection sampling,
+        // which produces a uniformly random distribution of scalars.
+        //
+        // This method is not constant time, but should be secure so long as
+        // rejected RNG outputs are unrelated to future ones (which is a
+        // necessary property of a `CryptoRng`).
+        //
+        // With an unbiased RNG, the probability of failing to complete after 4
+        // iterations is vanishingly small.
+        loop {
+            rng.fill_bytes(&mut bytes);
+            let scalar = Scalar::from_bytes(&bytes);
+            if scalar.is_some().into() {
+                #[cfg(feature = "zeroize")]
+                bytes.zeroize();
+                return scalar.unwrap();
+            }
+        }
     }
 }
 

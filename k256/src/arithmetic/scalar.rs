@@ -24,7 +24,10 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 use ecdsa::signature::digest::{consts::U32, Digest};
 
 #[cfg(feature = "rand")]
-use elliptic_curve::rand_core::{CryptoRng, RngCore};
+use elliptic_curve::{
+    rand_core::{CryptoRng, RngCore},
+    Generate,
+};
 
 #[cfg(feature = "zeroize")]
 use zeroize::Zeroize;
@@ -207,7 +210,7 @@ impl Scalar {
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
     #[cfg(feature = "rand")]
-    pub fn generate_biased(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+    pub fn generate_biased(mut rng: impl CryptoRng + RngCore) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution, but the process is constant-time.
         let mut buf = [0u8; 64];
@@ -215,19 +218,19 @@ impl Scalar {
         Scalar(WideScalarImpl::from_bytes(&buf).reduce())
     }
 
-    /// Returns a uniformly-random scalar, generated (nearly) in constant time.
+    /// Returns a uniformly-random scalar, generated using rejection sampling.
     #[cfg(feature = "rand")]
-    pub fn generate_vartime(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+    pub fn generate_vartime(mut rng: impl CryptoRng + RngCore) -> Self {
         let mut bytes = [0u8; 32];
 
-        // "Generate-and-Pray": create random 32-byte strings, and test if they
-        // are accepted by Scalar::from_bytes
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
             rng.fill_bytes(&mut bytes);
-            let s = Scalar::from_bytes(&bytes);
-            if s.is_some().into() {
-                return s.unwrap();
+            let scalar = Scalar::from_bytes(&bytes);
+            if scalar.is_some().into() {
+                #[cfg(feature = "zeroize")]
+                bytes.zeroize();
+                return scalar.unwrap();
             }
         }
     }
@@ -372,6 +375,22 @@ impl MulAssign<Scalar> for Scalar {
 impl From<Scalar> for ScalarBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes().into()
+    }
+}
+
+#[cfg(feature = "rand")]
+impl Generate for Scalar {
+    fn generate(rng: impl CryptoRng + RngCore) -> Self {
+        // Uses rejection sampling as the default random generation method,
+        // which produces a uniformly random distribution of scalars.
+        //
+        // This method is not constant time, but should be secure so long as
+        // rejected RNG outputs are unrelated to future ones (which is a
+        // necessary property of a `CryptoRng`).
+        //
+        // With an unbiased RNG, the probability of failing to complete after 4
+        // iterations is vanishingly small.
+        Self::generate_vartime(rng)
     }
 }
 
