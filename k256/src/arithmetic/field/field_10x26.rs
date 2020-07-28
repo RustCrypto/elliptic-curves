@@ -185,8 +185,8 @@ impl FieldElement10x26 {
         // The first pass ensures the magnitude is 1, ...
         let res = t.add_modulus_correction(x);
 
-        // ... except for a possible carry at bit 48 of t4 (i.e. bit 256 of the field element)
-        debug_assert!(res.0[9] >> 22 == 0);
+        // ... except for a possible carry at bit 22 of t9 (i.e. bit 256 of the field element)
+        debug_assert!(res.0[9] >> 23 == 0);
 
         res
     }
