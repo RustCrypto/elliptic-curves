@@ -16,16 +16,6 @@ use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint
 use field::{FieldElement, MODULUS};
 use scalar::Scalar;
 
-#[cfg(feature = "rand")]
-use crate::SecretKey;
-
-#[cfg(feature = "rand")]
-use elliptic_curve::{
-    rand_core::{CryptoRng, RngCore},
-    weierstrass::GenerateSecretKey,
-    Generate,
-};
-
 /// a = -3
 const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
     .subtract(&FieldElement::one())
@@ -538,13 +528,6 @@ impl<'a> Neg for &'a ProjectivePoint {
     }
 }
 
-#[cfg(feature = "rand")]
-impl GenerateSecretKey for NistP256 {
-    fn generate_secret_key(rng: impl CryptoRng + RngCore) -> SecretKey {
-        SecretKey::new(Scalar::generate(rng).to_bytes().into())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     // TODO(tarcieri): test `FixedBaseScalarMul` impl
@@ -785,10 +768,10 @@ mod tests {
     #[cfg(feature = "rand")]
     #[test]
     fn generate_secret_key() {
-        use crate::NistP256;
-        use elliptic_curve::{rand_core::OsRng, weierstrass::GenerateSecretKey};
+        use crate::SecretKey;
+        use elliptic_curve::{rand_core::OsRng, Generate};
 
-        let key = NistP256::generate_secret_key(&mut OsRng);
+        let key = SecretKey::generate(&mut OsRng);
 
         // Sanity check
         assert!(!key.secret_scalar().iter().all(|b| *b == 0))
