@@ -11,7 +11,10 @@ use {
         hazmat::{SignPrimitive, VerifyPrimitive},
         Error,
     },
-    elliptic_curve::subtle::{ConditionallySelectable, CtOption},
+    elliptic_curve::{
+        ops::Invert,
+        subtle::{ConditionallySelectable, CtOption},
+    },
 };
 
 /// ECDSA/secp256k1 signature (fixed-size)
@@ -26,20 +29,22 @@ impl ecdsa::hazmat::DigestPrimitive for Secp256k1 {
 #[cfg(feature = "arithmetic")]
 impl SignPrimitive<Secp256k1> for Scalar {
     #[allow(clippy::many_single_char_names)]
-    fn try_sign_prehashed(
+    fn try_sign_prehashed<K>(
         &self,
-        ephemeral_scalar: &Scalar,
-        masking_scalar: Option<&Scalar>,
+        ephemeral_scalar: &K,
         hashed_msg: &ScalarBytes,
-    ) -> Result<Signature, Error> {
-        let k = ephemeral_scalar;
+    ) -> Result<Signature, Error>
+    where
+        K: AsRef<Scalar> + Invert<Output = Scalar>,
+    {
+        let k_inverse = ephemeral_scalar.invert();
+        let k = ephemeral_scalar.as_ref();
 
-        if k.is_zero().into() {
+        if k_inverse.is_none().into() || k.is_zero().into() {
             return Err(Error::new());
         }
 
-        // TODO(tarcieri): masking_scalar
-        assert!(masking_scalar.is_none(), "todo: masking_scalar support");
+        let k_inverse = k_inverse.unwrap();
 
         // Compute `x`-coordinate of affine point 𝑘×𝑮
         let x = (ProjectivePoint::generator() * k).to_affine().unwrap().x;
@@ -51,8 +56,8 @@ impl SignPrimitive<Secp256k1> for Scalar {
         // Reduce message hash to an element of the scalar field
         let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
 
-        // Compute `s` as a signature over `r` and `z`
-        let s = k.invert().unwrap() * &(z + &(r * self));
+        // Compute `s` as a signature over `r` and `z`.
+        let s = k_inverse * &(z + &(r * self));
 
         if s.is_zero().into() {
             return Err(Error::new());

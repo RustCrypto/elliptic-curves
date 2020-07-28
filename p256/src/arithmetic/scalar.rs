@@ -1,11 +1,17 @@
 //! Scalar field arithmetic modulo n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 
+#[cfg(feature = "rand")]
+pub mod blinding;
+
 use crate::ScalarBytes;
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::{
+    ops::Invert,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+};
 
 #[cfg(feature = "rand")]
 use elliptic_curve::{
@@ -108,6 +114,12 @@ fn shr1(u256: &mut U256) {
         let new_digit = (bit << 63) | (*digit >> 1);
         bit = *digit & 1;
         *digit = new_digit;
+    }
+}
+
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
     }
 }
 
@@ -654,6 +666,14 @@ impl ConstantTimeEq for Scalar {
             & self.0[1].ct_eq(&other.0[1])
             & self.0[2].ct_eq(&other.0[2])
             & self.0[3].ct_eq(&other.0[3])
+    }
+}
+
+impl Invert for Scalar {
+    type Output = Self;
+
+    fn invert(&self) -> CtOption<Self> {
+        Scalar::invert(self)
     }
 }
 

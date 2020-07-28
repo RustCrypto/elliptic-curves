@@ -18,7 +18,10 @@ cfg_if! {
 
 use crate::ScalarBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::{
+    ops::Invert,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+};
 
 #[cfg(feature = "digest")]
 use ecdsa::signature::digest::{consts::U32, Digest};
@@ -248,6 +251,12 @@ impl Scalar {
     }
 }
 
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
+    }
+}
+
 impl Shr<usize> for Scalar {
     type Output = Self;
 
@@ -369,6 +378,14 @@ impl Mul<&Scalar> for Scalar {
 impl MulAssign<Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: Scalar) {
         *self = Scalar::mul(self, &rhs);
+    }
+}
+
+impl Invert for Scalar {
+    type Output = Self;
+
+    fn invert(&self) -> CtOption<Self> {
+        Scalar::invert(self)
     }
 }
 

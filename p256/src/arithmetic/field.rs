@@ -88,7 +88,7 @@ impl FieldElement {
 
     /// Returns a uniformly-random element within the field.
     #[cfg(feature = "rand")]
-    pub fn generate(rng: &mut (impl CryptoRng + RngCore)) -> Self {
+    pub fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution.
         let mut buf = [0; 64];
