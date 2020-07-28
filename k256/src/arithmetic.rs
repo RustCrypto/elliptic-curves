@@ -182,9 +182,6 @@ impl From<AffinePoint> for UncompressedPoint {
 }
 
 impl FixedBaseScalarMul for Secp256k1 {
-    /// Elliptic curve point type
-    type AffinePoint = AffinePoint;
-
     /// Multiply the given scalar by the generator point for this elliptic
     /// curve.
     fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<AffinePoint> {
