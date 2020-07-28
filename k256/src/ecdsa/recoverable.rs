@@ -54,15 +54,14 @@ impl Signature {
         let x = FieldElement::from_bytes(&r.to_bytes());
 
         let pk = x.and_then(|x| {
-            let y_is_odd = Choice::from(self.recovery_id().0);
             let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
             let beta = alpha.sqrt().unwrap();
 
             let y = FieldElement::conditional_select(
                 &beta.negate(1),
                 &beta,
-                // beta.is_odd() == y_is_odd
-                !(beta.normalize().is_odd() ^ y_is_odd),
+                // beta.is_odd() == recovery_id.is_y_odd()
+                !(beta.normalize().is_odd() ^ self.recovery_id().is_y_odd()),
             );
 
             let R = ProjectivePoint::from(AffinePoint {
@@ -174,6 +173,13 @@ impl From<Signature> for super::Signature {
 /// is unsupported and will return an `Error` when parsing the `Id`.
 #[derive(Copy, Clone, Debug)]
 pub struct Id(u8);
+
+impl Id {
+    /// Is `y` odd?
+    fn is_y_odd(self) -> Choice {
+        self.0.into()
+    }
+}
 
 impl TryFrom<u8> for Id {
     type Error = Error;
