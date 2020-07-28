@@ -25,8 +25,6 @@ impl ecdsa::hazmat::DigestPrimitive for Secp256k1 {
 
 #[cfg(feature = "arithmetic")]
 impl SignPrimitive<Secp256k1> for Scalar {
-    type Scalar = Scalar;
-
     #[allow(clippy::many_single_char_names)]
     fn try_sign_prehashed(
         &self,
