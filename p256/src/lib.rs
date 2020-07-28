@@ -29,6 +29,9 @@ pub use elliptic_curve;
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
+#[cfg(all(feature = "arithmetic", feature = "rand"))]
+pub use arithmetic::scalar::blinding::BlindedScalar;
+
 use elliptic_curve::consts::U32;
 
 /// NIST P-256 elliptic curve.

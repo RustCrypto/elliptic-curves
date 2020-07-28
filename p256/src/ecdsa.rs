@@ -9,7 +9,7 @@ use {
         hazmat::{SignPrimitive, VerifyPrimitive},
         Error,
     },
-    elliptic_curve::subtle::CtOption,
+    elliptic_curve::{ops::Invert, subtle::CtOption},
 };
 
 /// ECDSA/P-256 signature (fixed-size)
@@ -24,24 +24,22 @@ impl ecdsa::hazmat::DigestPrimitive for NistP256 {
 #[cfg(feature = "arithmetic")]
 impl SignPrimitive<NistP256> for Scalar {
     #[allow(clippy::many_single_char_names)]
-    fn try_sign_prehashed(
+    fn try_sign_prehashed<K>(
         &self,
-        ephemeral_scalar: &Scalar,
-        masking_scalar: Option<&Scalar>,
+        ephemeral_scalar: &K,
         hashed_msg: &ScalarBytes,
-    ) -> Result<Signature, Error> {
-        let k = ephemeral_scalar;
+    ) -> Result<Signature, Error>
+    where
+        K: AsRef<Scalar> + Invert<Output = Scalar>,
+    {
+        let k_inverse = ephemeral_scalar.invert();
+        let k = ephemeral_scalar.as_ref();
 
-        if k.is_zero().into() {
+        if k_inverse.is_none().into() || k.is_zero().into() {
             return Err(Error::new());
         }
 
-        // prevent side channel analysis of scalar inversion by pre-and-post-multiplying
-        // with the random masking scalar
-        let k_inverse = match masking_scalar.as_ref() {
-            Some(s) => (k * s).invert_vartime().unwrap() * s,
-            None => k.invert().unwrap(),
-        };
+        let k_inverse = k_inverse.unwrap();
 
         // Compute `x`-coordinate of affine point 𝑘×𝑮
         let x = (ProjectivePoint::generator() * k).to_affine().unwrap().x;
@@ -53,7 +51,7 @@ impl SignPrimitive<NistP256> for Scalar {
         // Reduce message hash to an element of the scalar field
         let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
 
-        // Compute `s` as a signature over `r` and `z`
+        // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * &(z + &(r * self));
 
         if s.is_zero().into() {
@@ -107,6 +105,24 @@ mod tests {
     use super::*;
     use crate::test_vectors::ecdsa::ECDSA_TEST_VECTORS;
 
+    #[cfg(feature = "rand")]
+    use {crate::BlindedScalar, elliptic_curve::rand_core::OsRng};
+
     ecdsa::new_signing_test!(ECDSA_TEST_VECTORS);
     ecdsa::new_verification_test!(ECDSA_TEST_VECTORS);
+
+    #[cfg(feature = "rand")]
+    #[test]
+    fn scalar_blinding() {
+        let vector = &ECDSA_TEST_VECTORS[0];
+        let d = Scalar::from_bytes(vector.d.try_into().unwrap()).unwrap();
+        let k = Scalar::from_bytes(vector.k.try_into().unwrap()).unwrap();
+        let k_blinded = BlindedScalar::new(k, &mut OsRng);
+        let sig = d
+            .try_sign_prehashed(&k_blinded, GenericArray::from_slice(vector.m))
+            .unwrap();
+
+        assert_eq!(vector.r, sig.r().as_slice());
+        assert_eq!(vector.s, sig.s().as_slice());
+    }
 }

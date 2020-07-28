@@ -13,8 +13,8 @@ keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 
 [dependencies]
 ecdsa = { version = "= 0.7.0-pre", optional = true, default-features = false }
-elliptic-curve = { version = "= 0.5.0-pre", default-features = false,  features = ["weierstrass"] }
-sha2 = { version = "0.9", default-features = false, optional = true }
+elliptic-curve = { version = "= 0.5.0-pre", default-features = false, features = ["weierstrass"] }
+sha2 = { version = "0.9", optional = true, default-features = false }
 zeroize = { version = "1",  optional = true, default-features = false }
 
 [dev-dependencies]
