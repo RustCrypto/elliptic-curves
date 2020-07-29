@@ -8,11 +8,11 @@ use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::FixedBaseScalarMul,
+    weierstrass::FromPublicKey,
     Arithmetic,
 };
 
-use crate::{CompressedPoint, NistP256, PublicKey, ScalarBytes, UncompressedPoint};
+use crate::{CompressedPoint, NistP256, PublicKey, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 use scalar::Scalar;
 
@@ -88,18 +88,6 @@ impl AffinePoint {
         }
     }
 
-    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
-    ///
-    /// # Returns
-    ///
-    /// `None` value if `pubkey` is not on the secp256k1 curve.
-    pub fn from_pubkey(pubkey: &PublicKey) -> CtOption<Self> {
-        match pubkey {
-            PublicKey::Compressed(point) => Self::from_compressed_point(point),
-            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
-        }
-    }
-
     /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
     pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
         let bytes = point.as_bytes();
@@ -171,12 +159,17 @@ impl From<AffinePoint> for UncompressedPoint {
     }
 }
 
-impl FixedBaseScalarMul for NistP256 {
-    /// Multiply the given scalar by the generator point for this elliptic
-    /// curve.
-    fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<AffinePoint> {
-        Scalar::from_bytes(scalar_bytes.as_ref())
-            .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
+impl FromPublicKey<NistP256> for AffinePoint {
+    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
+    ///
+    /// # Returns
+    ///
+    /// `None` value if `pubkey` is not on the NIST P-256 curve.
+    fn from_public_key(pubkey: &PublicKey) -> CtOption<Self> {
+        match pubkey {
+            PublicKey::Compressed(point) => Self::from_compressed_point(point),
+            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
+        }
     }
 }
 
@@ -527,9 +520,6 @@ impl<'a> Neg for &'a ProjectivePoint {
 
 #[cfg(test)]
 mod tests {
-    // TODO(tarcieri): test `FixedBaseScalarMul` impl
-    // See the `fixed_base_scalar_mul` in `k256` crate's `arithmetic.rs` for an example
-
     use core::convert::TryInto;
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B};
@@ -537,6 +527,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         PublicKey,
     };
+    use elliptic_curve::weierstrass::FromPublicKey;
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";
@@ -563,7 +554,7 @@ mod tests {
     #[test]
     fn uncompressed_round_trip() {
         let pubkey = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let point = AffinePoint::from_pubkey(&pubkey).unwrap();
+        let point = AffinePoint::from_public_key(&pubkey).unwrap();
         assert_eq!(point, AffinePoint::generator());
 
         let res: PublicKey = point.to_pubkey(false).into();
@@ -573,7 +564,7 @@ mod tests {
     #[test]
     fn compressed_round_trip() {
         let pubkey = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let point = AffinePoint::from_pubkey(&pubkey).unwrap();
+        let point = AffinePoint::from_public_key(&pubkey).unwrap();
         assert_eq!(point, AffinePoint::generator());
 
         let res: PublicKey = point.to_pubkey(true).into();
@@ -584,7 +575,9 @@ mod tests {
     fn uncompressed_to_compressed() {
         let encoded = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_pubkey(&encoded).unwrap().to_pubkey(true);
+        let res = AffinePoint::from_public_key(&encoded)
+            .unwrap()
+            .to_pubkey(true);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),
@@ -596,7 +589,9 @@ mod tests {
     fn compressed_to_uncompressed() {
         let encoded = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_pubkey(&encoded).unwrap().to_pubkey(false);
+        let res = AffinePoint::from_public_key(&encoded)
+            .unwrap()
+            .to_pubkey(false);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),

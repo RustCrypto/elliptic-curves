@@ -16,10 +16,12 @@ cfg_if! {
     }
 }
 
-use crate::ScalarBytes;
+use super::{AffinePoint, ProjectivePoint};
+use crate::{ScalarBytes, Secp256k1, SecretKey};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
-    ops::Invert,
+    ops::{Invert, MulBase},
+    secret_key::FromSecretKey,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
 
@@ -46,6 +48,12 @@ pub struct Scalar(ScalarImpl);
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
         Self(ScalarImpl::from(k))
+    }
+}
+
+impl FromSecretKey<Secp256k1> for Scalar {
+    fn from_secret_key(secret_key: &SecretKey) -> CtOption<Self> {
+        Self::from_bytes(secret_key.secret_scalar().as_ref())
     }
 }
 
@@ -378,6 +386,14 @@ impl Mul<&Scalar> for Scalar {
 impl MulAssign<Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: Scalar) {
         *self = Scalar::mul(self, &rhs);
+    }
+}
+
+impl MulBase for Scalar {
+    type Output = AffinePoint;
+
+    fn mul_base(&self) -> CtOption<AffinePoint> {
+        (ProjectivePoint::generator() * self).to_affine()
     }
 }
 

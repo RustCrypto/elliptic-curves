@@ -3,13 +3,15 @@
 #[cfg(feature = "rand")]
 pub mod blinding;
 
-use crate::ScalarBytes;
+use super::{AffinePoint, ProjectivePoint};
+use crate::{NistP256, ScalarBytes, SecretKey};
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    ops::Invert,
+    ops::{Invert, MulBase},
+    secret_key::FromSecretKey,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
 
@@ -23,7 +25,6 @@ use elliptic_curve::{
 use zeroize::Zeroize;
 
 use super::util::{adc, mac, sbb};
-use crate::SecretKey;
 
 /// The number of 64-bit limbs used to represent a [`Scalar`].
 const LIMBS: usize = 4;
@@ -76,6 +77,12 @@ pub struct Scalar(pub(crate) [u64; LIMBS]);
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
         Scalar([k, 0, 0, 0])
+    }
+}
+
+impl FromSecretKey<NistP256> for Scalar {
+    fn from_secret_key(secret_key: &SecretKey) -> CtOption<Self> {
+        Self::from_bytes(secret_key.secret_scalar().as_ref())
     }
 }
 
@@ -666,6 +673,14 @@ impl ConstantTimeEq for Scalar {
             & self.0[1].ct_eq(&other.0[1])
             & self.0[2].ct_eq(&other.0[2])
             & self.0[3].ct_eq(&other.0[3])
+    }
+}
+
+impl MulBase for Scalar {
+    type Output = AffinePoint;
+
+    fn mul_base(&self) -> CtOption<AffinePoint> {
+        (ProjectivePoint::generator() * self).to_affine()
     }
 }
 
