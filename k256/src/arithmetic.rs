@@ -9,11 +9,11 @@ use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::FixedBaseScalarMul,
+    weierstrass::FromPublicKey,
     Arithmetic,
 };
 
-use crate::{CompressedPoint, PublicKey, ScalarBytes, Secp256k1, UncompressedPoint};
+use crate::{CompressedPoint, PublicKey, Secp256k1, UncompressedPoint};
 use field::FieldElement;
 use scalar::Scalar;
 
@@ -95,18 +95,6 @@ impl AffinePoint {
         }
     }
 
-    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
-    ///
-    /// # Returns
-    ///
-    /// `None` value if `pubkey` is not on the secp256k1 curve.
-    pub fn from_pubkey(pubkey: &PublicKey) -> CtOption<Self> {
-        match pubkey {
-            PublicKey::Compressed(point) => Self::from_compressed_point(point),
-            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
-        }
-    }
-
     /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
     pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
         let bytes = point.as_bytes();
@@ -181,15 +169,6 @@ impl From<AffinePoint> for UncompressedPoint {
     }
 }
 
-impl FixedBaseScalarMul for Secp256k1 {
-    /// Multiply the given scalar by the generator point for this elliptic
-    /// curve.
-    fn mul_base(scalar_bytes: &ScalarBytes) -> CtOption<AffinePoint> {
-        Scalar::from_bytes(scalar_bytes.as_ref())
-            .and_then(|scalar| (&ProjectivePoint::generator() * &scalar).to_affine())
-    }
-}
-
 impl Neg for AffinePoint {
     type Output = AffinePoint;
 
@@ -197,6 +176,20 @@ impl Neg for AffinePoint {
         AffinePoint {
             x: self.x,
             y: self.y.negate(1).normalize_weak(),
+        }
+    }
+}
+
+impl FromPublicKey<Secp256k1> for AffinePoint {
+    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
+    ///
+    /// # Returns
+    ///
+    /// `None` value if `pubkey` is not on the secp256k1 curve.
+    fn from_public_key(pubkey: &PublicKey) -> CtOption<Self> {
+        match pubkey {
+            PublicKey::Compressed(point) => Self::from_compressed_point(point),
+            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
         }
     }
 }
@@ -243,7 +236,7 @@ impl PartialEq for ProjectivePoint {
 }
 
 impl ProjectivePoint {
-    /// Returns the additive identity of SECP256k1, also known as the "neutral element" o
+    /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
     /// "point at infinity".
     pub const fn identity() -> ProjectivePoint {
         ProjectivePoint {
@@ -535,9 +528,9 @@ mod tests {
             group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
             mul_base::MUL_BASE_TEST_VECTORS,
         },
-        PublicKey, ScalarBytes, Secp256k1, UncompressedPoint,
+        PublicKey, UncompressedPoint,
     };
-    use elliptic_curve::weierstrass::FixedBaseScalarMul;
+    use elliptic_curve::{ops::MulBase, weierstrass::FromPublicKey};
 
     const CURVE_EQUATION_B_BYTES: &str =
         "0000000000000000000000000000000000000000000000000000000000000007";
@@ -558,7 +551,7 @@ mod tests {
     #[test]
     fn uncompressed_round_trip() {
         let pubkey = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let res: PublicKey = AffinePoint::from_pubkey(&pubkey)
+        let res: PublicKey = AffinePoint::from_public_key(&pubkey)
             .unwrap()
             .to_pubkey(false)
             .into();
@@ -569,7 +562,7 @@ mod tests {
     #[test]
     fn compressed_round_trip() {
         let pubkey = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let res: PublicKey = AffinePoint::from_pubkey(&pubkey)
+        let res: PublicKey = AffinePoint::from_public_key(&pubkey)
             .unwrap()
             .to_pubkey(true)
             .into();
@@ -581,7 +574,9 @@ mod tests {
     fn uncompressed_to_compressed() {
         let encoded = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_pubkey(&encoded).unwrap().to_pubkey(true);
+        let res = AffinePoint::from_public_key(&encoded)
+            .unwrap()
+            .to_pubkey(true);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),
@@ -593,7 +588,9 @@ mod tests {
     fn compressed_to_uncompressed() {
         let encoded = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_pubkey(&encoded).unwrap().to_pubkey(false);
+        let res = AffinePoint::from_public_key(&encoded)
+            .unwrap()
+            .to_pubkey(false);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),
@@ -772,12 +769,14 @@ mod tests {
             let x = hex::decode(&vector.x).unwrap();
             let y = hex::decode(&vector.y).unwrap();
 
-            let point =
-                UncompressedPoint::from(Secp256k1::mul_base(ScalarBytes::from_slice(&m)).unwrap())
-                    .into_bytes();
+            let point: UncompressedPoint = Scalar::from_bytes(m.as_slice().try_into().unwrap())
+                .unwrap()
+                .mul_base()
+                .unwrap()
+                .into();
 
-            assert_eq!(x, &point[1..=32]);
-            assert_eq!(y, &point[33..]);
+            assert_eq!(x, &point.as_ref()[1..=32]);
+            assert_eq!(y, &point.as_ref()[33..]);
         }
     }
 
