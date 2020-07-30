@@ -22,7 +22,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "zeroize")]
-use zeroize::Zeroize;
+use elliptic_curve::zeroize::Zeroize;
 
 use super::util::{adc, mac, sbb};
 
@@ -121,12 +121,6 @@ fn shr1(u256: &mut U256) {
         let new_digit = (bit << 63) | (*digit >> 1);
         bit = *digit & 1;
         *digit = new_digit;
-    }
-}
-
-impl AsRef<Scalar> for Scalar {
-    fn as_ref(&self) -> &Scalar {
-        self
     }
 }
 

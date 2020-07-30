@@ -1,11 +1,12 @@
 //! Elliptic Curve Digital Signature Algorithm (ECDSA)
 
-pub use super::NistP256;
+use super::NistP256;
+use core::borrow::Borrow;
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "ecdsa")]
 use {
     crate::{AffinePoint, ProjectivePoint, Scalar, ScalarBytes},
-    ecdsa::{
+    ecdsa_core::{
         hazmat::{SignPrimitive, VerifyPrimitive},
         Error,
     },
@@ -13,15 +14,20 @@ use {
 };
 
 /// ECDSA/P-256 signature (fixed-size)
-pub type Signature = ::ecdsa::Signature<NistP256>;
+pub type Signature = ecdsa_core::Signature<NistP256>;
+
+/// ECDSA/secp256k1 signer
+#[cfg(feature = "ecdsa")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+pub type Signer = ecdsa_core::Signer<NistP256>;
 
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
-impl ecdsa::hazmat::DigestPrimitive for NistP256 {
+impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
     type Digest = sha2::Sha256;
 }
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "ecdsa")]
 impl SignPrimitive<NistP256> for Scalar {
     #[allow(clippy::many_single_char_names)]
     fn try_sign_prehashed<K>(
@@ -30,10 +36,10 @@ impl SignPrimitive<NistP256> for Scalar {
         hashed_msg: &ScalarBytes,
     ) -> Result<Signature, Error>
     where
-        K: AsRef<Scalar> + Invert<Output = Scalar>,
+        K: Borrow<Scalar> + Invert<Output = Scalar>,
     {
         let k_inverse = ephemeral_scalar.invert();
-        let k = ephemeral_scalar.as_ref();
+        let k = ephemeral_scalar.borrow();
 
         if k_inverse.is_none().into() || k.is_zero().into() {
             return Err(Error::new());
@@ -62,7 +68,7 @@ impl SignPrimitive<NistP256> for Scalar {
     }
 }
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "ecdsa")]
 impl VerifyPrimitive<NistP256> for AffinePoint {
     fn verify_prehashed(
         &self,
@@ -100,7 +106,7 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
     }
 }
 
-#[cfg(all(test, feature = "arithmetic"))]
+#[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use super::*;
     use crate::test_vectors::ecdsa::ECDSA_TEST_VECTORS;
@@ -108,8 +114,8 @@ mod tests {
     #[cfg(feature = "rand")]
     use {crate::BlindedScalar, elliptic_curve::rand_core::OsRng};
 
-    ecdsa::new_signing_test!(ECDSA_TEST_VECTORS);
-    ecdsa::new_verification_test!(ECDSA_TEST_VECTORS);
+    ecdsa_core::new_signing_test!(ECDSA_TEST_VECTORS);
+    ecdsa_core::new_verification_test!(ECDSA_TEST_VECTORS);
 
     #[cfg(feature = "rand")]
     #[test]

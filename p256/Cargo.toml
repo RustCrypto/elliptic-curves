@@ -12,13 +12,12 @@ categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 
 [dependencies]
-ecdsa = { version = "= 0.7.0-pre", optional = true, default-features = false }
+ecdsa-core = { version = "= 0.7.0-pre", package = "ecdsa", optional = true, default-features = false }
 elliptic-curve = { version = "= 0.5.0-pre", default-features = false, features = ["weierstrass"] }
 sha2 = { version = "0.9", optional = true, default-features = false }
-zeroize = { version = "1",  optional = true, default-features = false }
 
 [dev-dependencies]
-ecdsa = { version = "= 0.7.0-pre", default-features = false, features = ["dev", "hazmat"] }
+ecdsa-core = { version = "= 0.7.0-pre", package = "ecdsa", default-features = false, features = ["dev"] }
 hex = "0.4" # TODO: switch to hex-literal
 hex-literal = "0.2"
 proptest = "0.10"
@@ -26,10 +25,12 @@ proptest = "0.10"
 [features]
 default = ["arithmetic", "std"]
 arithmetic = []
+ecdsa = ["arithmetic", "ecdsa-core/signer", "sha256", "zeroize"]
 rand = ["elliptic-curve/rand_core"]
-sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+sha256 = ["ecdsa-core/digest", "ecdsa-core/hazmat", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]
+zeroize = ["elliptic-curve/zeroize"]
 
 [package.metadata.docs.rs]
 all-features = true

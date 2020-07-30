@@ -221,7 +221,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/signatures#e33e8b2c69887cbae749126354966ddbf1c66b63"
+source = "git+https://github.com/RustCrypto/signatures#b95afa61699dd63d1089fa4e26eecf6f723985ef"
 dependencies = [
  "elliptic-curve",
  "signature",
@@ -236,11 +236,12 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0-pre"
-source = "git+https://github.com/RustCrypto/traits#129205462a5f04d3e3b6f2e4592b5d7a0d6448f0"
+source = "git+https://github.com/RustCrypto/traits#06f105843d8f90d0bb0301762f79b73519acbc3c"
 dependencies = [
  "generic-array",
  "rand_core",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -348,7 +349,6 @@ dependencies = [
  "num-traits",
  "proptest",
  "sha2",
- "zeroize",
 ]
 
 [[package]]
@@ -455,7 +455,6 @@ dependencies = [
  "hex-literal",
  "proptest",
  "sha2",
- "zeroize",
 ]
 
 [[package]]
@@ -766,11 +765,12 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.1.0"
+version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65211b7b6fc3f14ff9fc7a2011a434e3e6880585bd2e9e9396315ae24cbf7852"
+checksum = "29f060a7d147e33490ec10da418795238fd7545bba241504d6b31a409f2e6210"
 dependencies = [
  "digest",
+ "rand_core",
 ]
 
 [[package]]

@@ -4,7 +4,7 @@ use core::{
     convert::{TryFrom, TryInto},
     fmt::{self, Debug},
 };
-use ecdsa::{signature::Signature as _, Error};
+use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "arithmetic")]
 use crate::arithmetic::{
@@ -45,7 +45,8 @@ impl Signature {
 
     /// Recover the [`PublicKey`] used to create the given signature
     #[cfg(all(feature = "arithmetic", feature = "sha256"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic", feature = "sha256")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
     pub fn recover_pubkey(&self, msg: &[u8]) -> Result<PublicKey, Error> {
         let r = self.r()?;
@@ -112,7 +113,7 @@ impl Signature {
     }
 }
 
-impl ecdsa::signature::Signature for Signature {
+impl ecdsa_core::signature::Signature for Signature {
     fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         bytes.try_into()
     }

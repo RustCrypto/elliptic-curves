@@ -26,7 +26,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "digest")]
-use ecdsa::signature::digest::{consts::U32, Digest};
+use ecdsa_core::signature::digest::{consts::U32, Digest};
 
 #[cfg(feature = "rand")]
 use elliptic_curve::{
@@ -35,7 +35,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "zeroize")]
-use zeroize::Zeroize;
+use elliptic_curve::zeroize::Zeroize;
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -256,12 +256,6 @@ impl Scalar {
     /// Variable time in `shift`.
     pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
         Self(self.0.mul_shift_var(&(b.0), shift))
-    }
-}
-
-impl AsRef<Scalar> for Scalar {
-    fn as_ref(&self) -> &Scalar {
-        self
     }
 }
 
