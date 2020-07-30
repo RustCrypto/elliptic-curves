@@ -1,6 +1,6 @@
 //! ECDSA/secp256k1 test vectors
 
-use ecdsa::dev::TestVector;
+use ecdsa_core::dev::TestVector;
 use hex_literal::hex;
 
 /// ECDSA/secp256k1 test vectors

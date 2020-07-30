@@ -4,6 +4,7 @@
 // and extract it into the `elliptic-curve` crate so it can be reused across curves
 
 use super::Scalar;
+use core::borrow::Borrow;
 use elliptic_curve::{
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
@@ -12,7 +13,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "zeroize")]
-use zeroize::Zeroize;
+use elliptic_curve::zeroize::Zeroize;
 
 /// Scalar blinded with a randomly generated masking value.
 ///
@@ -38,8 +39,8 @@ impl BlindedScalar {
     }
 }
 
-impl AsRef<Scalar> for BlindedScalar {
-    fn as_ref(&self) -> &Scalar {
+impl Borrow<Scalar> for BlindedScalar {
+    fn borrow(&self) -> &Scalar {
         &self.scalar
     }
 }

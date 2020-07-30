@@ -8,7 +8,7 @@ use crate::arithmetic::util::{adc32, sbb32};
 use core::convert::TryInto;
 
 #[cfg(feature = "zeroize")]
-use zeroize::Zeroize;
+use elliptic_curve::zeroize::Zeroize;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
