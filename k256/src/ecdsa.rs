@@ -26,6 +26,11 @@ pub type Signature = ecdsa_core::Signature<Secp256k1>;
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type Signer = ecdsa_core::Signer<Secp256k1>;
 
+/// ECDSA/secp256k1 verifier
+#[cfg(feature = "ecdsa")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+pub type Verifier = ecdsa_core::Verifier<Secp256k1>;
+
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {

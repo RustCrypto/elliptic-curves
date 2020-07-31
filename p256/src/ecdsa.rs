@@ -16,10 +16,15 @@ use {
 /// ECDSA/P-256 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP256>;
 
-/// ECDSA/secp256k1 signer
+/// ECDSA/P-256 signer
 #[cfg(feature = "ecdsa")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type Signer = ecdsa_core::Signer<NistP256>;
+
+/// ECDSA/P-256 verifier
+#[cfg(feature = "ecdsa")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+pub type Verifier = ecdsa_core::Verifier<NistP256>;
 
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
