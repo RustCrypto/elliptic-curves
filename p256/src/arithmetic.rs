@@ -7,6 +7,7 @@ mod util;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    ops::MulBase,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FromPublicKey,
     Arithmetic,
@@ -170,6 +171,14 @@ impl FromPublicKey<NistP256> for AffinePoint {
             PublicKey::Compressed(point) => Self::from_compressed_point(point),
             PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
         }
+    }
+}
+
+impl MulBase for AffinePoint {
+    type Scalar = Scalar;
+
+    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
+        ProjectivePoint::mul_base(scalar).and_then(|point| point.to_affine())
     }
 }
 
@@ -374,6 +383,12 @@ impl ProjectivePoint {
     }
 }
 
+impl Default for ProjectivePoint {
+    fn default() -> Self {
+        Self::identity()
+    }
+}
+
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -499,6 +514,14 @@ impl MulAssign<Scalar> for ProjectivePoint {
 impl MulAssign<&Scalar> for ProjectivePoint {
     fn mul_assign(&mut self, rhs: &Scalar) {
         *self = ProjectivePoint::mul(self, rhs);
+    }
+}
+
+impl MulBase for ProjectivePoint {
+    type Scalar = Scalar;
+
+    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
+        CtOption::new(ProjectivePoint::generator() * scalar, Choice::from(1))
     }
 }
 

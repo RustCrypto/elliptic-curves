@@ -236,7 +236,7 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0-pre"
-source = "git+https://github.com/RustCrypto/traits#06f105843d8f90d0bb0301762f79b73519acbc3c"
+source = "git+https://github.com/RustCrypto/traits#2eb31349c6bef08f910a84caa8678f8aa12b13c5"
 dependencies = [
  "generic-array",
  "rand_core",
