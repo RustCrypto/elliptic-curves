@@ -32,7 +32,7 @@ pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 #[cfg(all(feature = "arithmetic", feature = "rand"))]
 pub use arithmetic::scalar::blinding::BlindedScalar;
 
-use elliptic_curve::consts::U32;
+use elliptic_curve::{consts::U32, oid::ObjectIdentifier};
 
 /// NIST P-256 elliptic curve.
 ///
@@ -59,6 +59,10 @@ pub struct NistP256;
 impl elliptic_curve::Curve for NistP256 {
     /// 256-bit (32-byte)
     type ElementSize = U32;
+}
+
+impl elliptic_curve::Identifier for NistP256 {
+    const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
 }
 
 impl elliptic_curve::weierstrass::Curve for NistP256 {}

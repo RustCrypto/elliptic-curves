@@ -19,7 +19,7 @@ pub mod ecdsa;
 
 pub use elliptic_curve;
 
-use elliptic_curve::consts::U48;
+use elliptic_curve::{consts::U48, ObjectIdentifier};
 
 /// NIST P-384 elliptic curve.
 ///
@@ -47,6 +47,10 @@ pub struct NistP384;
 impl elliptic_curve::Curve for NistP384 {
     /// 384-bit (48-byte)
     type ElementSize = U48;
+}
+
+impl elliptic_curve::Identifier for NistP384 {
+    const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 34]);
 }
 
 impl elliptic_curve::weierstrass::Curve for NistP384 {}
