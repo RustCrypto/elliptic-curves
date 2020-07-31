@@ -1,8 +1,10 @@
 use core::ops::{Mul, MulAssign};
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use elliptic_curve::{
+    ops::MulBase,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+};
 
-use crate::arithmetic::scalar::Scalar;
-use crate::arithmetic::ProjectivePoint;
+use crate::arithmetic::{scalar::Scalar, ProjectivePoint};
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 struct LookupTable([ProjectivePoint; 8]);
@@ -279,5 +281,13 @@ impl MulAssign<Scalar> for ProjectivePoint {
 impl MulAssign<&Scalar> for ProjectivePoint {
     fn mul_assign(&mut self, rhs: &Scalar) {
         *self = mul_windowed(self, rhs);
+    }
+}
+
+impl MulBase for ProjectivePoint {
+    type Scalar = Scalar;
+
+    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
+        CtOption::new(ProjectivePoint::generator() * scalar, Choice::from(1))
     }
 }

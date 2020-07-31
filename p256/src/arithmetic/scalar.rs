@@ -3,14 +3,13 @@
 #[cfg(feature = "rand")]
 pub mod blinding;
 
-use super::{AffinePoint, ProjectivePoint};
 use crate::{NistP256, ScalarBytes, SecretKey};
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    ops::{Invert, MulBase},
+    ops::Invert,
     secret_key::FromSecretKey,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
@@ -667,14 +666,6 @@ impl ConstantTimeEq for Scalar {
             & self.0[1].ct_eq(&other.0[1])
             & self.0[2].ct_eq(&other.0[2])
             & self.0[3].ct_eq(&other.0[3])
-    }
-}
-
-impl MulBase for Scalar {
-    type Output = AffinePoint;
-
-    fn mul_base(&self) -> CtOption<AffinePoint> {
-        (ProjectivePoint::generator() * self).to_affine()
     }
 }
 

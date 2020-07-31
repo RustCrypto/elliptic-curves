@@ -8,6 +8,7 @@ mod util;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    ops::MulBase,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FromPublicKey,
     Arithmetic,
@@ -166,6 +167,14 @@ impl From<AffinePoint> for UncompressedPoint {
             &affine_point.x.to_bytes().into(),
             &affine_point.y.to_bytes().into(),
         )
+    }
+}
+
+impl MulBase for AffinePoint {
+    type Scalar = Scalar;
+
+    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
+        ProjectivePoint::mul_base(scalar).and_then(|point| point.to_affine())
     }
 }
 
@@ -399,6 +408,12 @@ impl ProjectivePoint {
             y: self.y,
             z: self.z,
         }
+    }
+}
+
+impl Default for ProjectivePoint {
+    fn default() -> Self {
+        Self::identity()
     }
 }
 
@@ -769,11 +784,8 @@ mod tests {
             let x = hex::decode(&vector.x).unwrap();
             let y = hex::decode(&vector.y).unwrap();
 
-            let point: UncompressedPoint = Scalar::from_bytes(m.as_slice().try_into().unwrap())
-                .unwrap()
-                .mul_base()
-                .unwrap()
-                .into();
+            let scalar = Scalar::from_bytes(m.as_slice().try_into().unwrap()).unwrap();
+            let point = UncompressedPoint::from(AffinePoint::mul_base(&scalar).unwrap());
 
             assert_eq!(x, &point.as_ref()[1..=32]);
             assert_eq!(y, &point.as_ref()[33..]);
