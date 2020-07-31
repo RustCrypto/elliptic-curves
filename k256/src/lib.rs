@@ -32,7 +32,7 @@ pub use elliptic_curve;
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint};
 
-use elliptic_curve::consts::U32;
+use elliptic_curve::{consts::U32, ObjectIdentifier};
 
 /// K-256 (secp256k1) elliptic curve.
 ///
@@ -51,6 +51,10 @@ pub struct Secp256k1;
 impl elliptic_curve::Curve for Secp256k1 {
     /// 256-bit (32-byte)
     type ElementSize = U32;
+}
+
+impl elliptic_curve::Identifier for Secp256k1 {
+    const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
 }
 
 impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
