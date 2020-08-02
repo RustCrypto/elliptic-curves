@@ -7,7 +7,7 @@ mod util;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    ops::MulBase,
+    point::Generator,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FromPublicKey,
     Arithmetic,
@@ -15,7 +15,7 @@ use elliptic_curve::{
 
 use crate::{CompressedPoint, NistP256, PublicKey, UncompressedPoint};
 use field::{FieldElement, MODULUS};
-use scalar::Scalar;
+use scalar::{NonZeroScalar, Scalar};
 
 /// a = -3
 const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
@@ -67,9 +67,9 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-impl AffinePoint {
+impl Generator for AffinePoint {
     /// Returns the base point of P-256.
-    pub fn generator() -> AffinePoint {
+    fn generator() -> AffinePoint {
         // NIST P-256 basepoint in affine coordinates:
         // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
         // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
@@ -88,7 +88,9 @@ impl AffinePoint {
             .unwrap(),
         }
     }
+}
 
+impl AffinePoint {
     /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
     pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
         let bytes = point.as_bytes();
@@ -174,11 +176,13 @@ impl FromPublicKey<NistP256> for AffinePoint {
     }
 }
 
-impl MulBase for AffinePoint {
-    type Scalar = Scalar;
+impl Mul<NonZeroScalar> for AffinePoint {
+    type Output = AffinePoint;
 
-    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
-        ProjectivePoint::mul_base(scalar).and_then(|point| point.to_affine())
+    fn mul(self, scalar: NonZeroScalar) -> Self {
+        (ProjectivePoint::from(self) * scalar.as_ref())
+            .to_affine()
+            .unwrap()
     }
 }
 
@@ -517,14 +521,6 @@ impl MulAssign<&Scalar> for ProjectivePoint {
     }
 }
 
-impl MulBase for ProjectivePoint {
-    type Scalar = Scalar;
-
-    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
-        CtOption::new(ProjectivePoint::generator() * scalar, Choice::from(1))
-    }
-}
-
 impl Neg for ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -550,7 +546,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         PublicKey,
     };
-    use elliptic_curve::weierstrass::FromPublicKey;
+    use elliptic_curve::{point::Generator, weierstrass::FromPublicKey};
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";

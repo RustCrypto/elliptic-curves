@@ -30,7 +30,11 @@ pub mod test_vectors;
 pub use elliptic_curve;
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint};
+pub use arithmetic::{
+    field::FieldElement,
+    scalar::{NonZeroScalar, Scalar},
+    AffinePoint, ProjectivePoint,
+};
 
 use elliptic_curve::{consts::U32, ObjectIdentifier};
 

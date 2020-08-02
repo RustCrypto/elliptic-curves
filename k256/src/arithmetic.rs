@@ -6,9 +6,9 @@ pub(crate) mod scalar;
 mod util;
 
 use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    ops::MulBase,
+    point::Generator,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::FromPublicKey,
     Arithmetic,
@@ -16,7 +16,7 @@ use elliptic_curve::{
 
 use crate::{CompressedPoint, PublicKey, Secp256k1, UncompressedPoint};
 use field::FieldElement;
-use scalar::Scalar;
+use scalar::{NonZeroScalar, Scalar};
 
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
 
@@ -74,9 +74,9 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-impl AffinePoint {
+impl Generator for AffinePoint {
     /// Returns the base point of SECP256k1.
-    pub fn generator() -> AffinePoint {
+    fn generator() -> AffinePoint {
         // SECP256k1 basepoint in affine coordinates:
         // x = 79be667e f9dcbbac 55a06295 ce870b07 029bfcdb 2dce28d9 59f2815b 16f81798
         // y = 483ada77 26a3c465 5da4fbfc 0e1108a8 fd17b448 a6855419 9c47d08f fb10d4b8
@@ -95,7 +95,9 @@ impl AffinePoint {
             .unwrap(),
         }
     }
+}
 
+impl AffinePoint {
     /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
     pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
         let bytes = point.as_bytes();
@@ -170,11 +172,13 @@ impl From<AffinePoint> for UncompressedPoint {
     }
 }
 
-impl MulBase for AffinePoint {
-    type Scalar = Scalar;
+impl Mul<NonZeroScalar> for AffinePoint {
+    type Output = AffinePoint;
 
-    fn mul_base(scalar: &Scalar) -> CtOption<Self> {
-        ProjectivePoint::mul_base(scalar).and_then(|point| point.to_affine())
+    fn mul(self, scalar: NonZeroScalar) -> Self {
+        (ProjectivePoint::from(self) * scalar.as_ref())
+            .to_affine()
+            .unwrap()
     }
 }
 
@@ -539,13 +543,10 @@ mod tests {
 
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_B};
     use crate::{
-        test_vectors::{
-            group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
-            mul_base::MUL_BASE_TEST_VECTORS,
-        },
-        PublicKey, UncompressedPoint,
+        test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
+        PublicKey,
     };
-    use elliptic_curve::{ops::MulBase, weierstrass::FromPublicKey};
+    use elliptic_curve::{point::Generator, weierstrass::FromPublicKey};
 
     const CURVE_EQUATION_B_BYTES: &str =
         "0000000000000000000000000000000000000000000000000000000000000007";
@@ -774,21 +775,6 @@ mod tests {
                 ),
                 coords,
             );
-        }
-    }
-
-    #[test]
-    fn fixed_base_scalar_mul() {
-        for vector in MUL_BASE_TEST_VECTORS {
-            let m = hex::decode(&vector.m).unwrap();
-            let x = hex::decode(&vector.x).unwrap();
-            let y = hex::decode(&vector.y).unwrap();
-
-            let scalar = Scalar::from_bytes(m.as_slice().try_into().unwrap()).unwrap();
-            let point = UncompressedPoint::from(AffinePoint::mul_base(&scalar).unwrap());
-
-            assert_eq!(x, &point.as_ref()[1..=32]);
-            assert_eq!(y, &point.as_ref()[33..]);
         }
     }
 
