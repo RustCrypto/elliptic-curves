@@ -143,6 +143,11 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
             return Err(Error::new());
         };
 
+        // Ensure signature is "low S" normalized ala BIP 0062
+        if s.is_high().into() {
+            return Err(Error::new());
+        }
+
         let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
         let s_inv = s.invert().unwrap();
         let u1 = z * &s_inv;
