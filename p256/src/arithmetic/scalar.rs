@@ -67,6 +67,9 @@ pub const MU: [u64; 5] = [
     0x0000_0000_0000_0001,
 ];
 
+/// Non-zero scalar value.
+pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<NistP256>;
+
 /// An element in the finite field modulo n.
 // The internal representation is as little-endian ordered u64 words.
 #[derive(Clone, Copy, Debug, Default)]

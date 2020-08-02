@@ -39,6 +39,9 @@ use elliptic_curve::zeroize::Zeroize;
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
+/// Non-zero scalar value.
+pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<Secp256k1>;
+
 /// An element in the finite field modulo curve order.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
