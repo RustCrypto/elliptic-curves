@@ -1,4 +1,9 @@
-//! Ethereum-style "recoverable signatures"
+//! Ethereum-style "recoverable signatures".
+//!
+//! These signatures include an additional [`Id`] field which allows for
+//! recovery of the [`PublicKey`] used to create them. This is helpful in
+//! cases where the hash/fingerprint of a key used to create a signature is
+//! known in advance.
 
 use core::{
     convert::{TryFrom, TryInto},
@@ -6,18 +11,18 @@ use core::{
 };
 use ecdsa_core::{signature::Signature as _, Error};
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "ecdsa")]
 use crate::arithmetic::{
     field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint, CURVE_EQUATION_B,
 };
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "ecdsa")]
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, CtOption};
 
-#[cfg(any(feature = "arithmetic", docsrs))]
+#[cfg(any(feature = "ecdsa", docsrs))]
 use crate::PublicKey;
 
-#[cfg(all(feature = "arithmetic", feature = "sha256"))]
+#[cfg(feature = "ecdsa")]
 use sha2::{Digest, Sha256};
 
 /// Size of an Ethereum-style recoverable signature in bytes
@@ -38,15 +43,26 @@ pub struct Signature {
 }
 
 impl Signature {
+    /// Create a new recoverable ECDSA/secp256k1 signature from a regular
+    /// fixed-size signature and an associated recovery [`Id`].
+    ///
+    /// This is an "unchecked" conversion and assumes the provided [`Id`]
+    /// is valid for this signature.
+    pub fn new(signature: &super::Signature, recovery_id: Id) -> Self {
+        let mut bytes = [0u8; SIZE];
+        bytes[..64].copy_from_slice(signature.as_ref());
+        bytes[64] = recovery_id.0;
+        Self { bytes }
+    }
+
     /// Get the recovery [`Id`] for this signature
     pub fn recovery_id(self) -> Id {
         self.bytes[64].try_into().expect("invalid recovery ID")
     }
 
     /// Recover the [`PublicKey`] used to create the given signature
-    #[cfg(all(feature = "arithmetic", feature = "sha256"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
+    #[cfg(feature = "ecdsa")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
     pub fn recover_pubkey(&self, msg: &[u8]) -> Result<PublicKey, Error> {
         let r = self.r()?;
@@ -85,7 +101,7 @@ impl Signature {
     }
 
     /// Parse the `r` component of this signature to a [`Scalar`]
-    #[cfg(feature = "arithmetic")]
+    #[cfg(feature = "ecdsa")]
     fn r(&self) -> Result<Scalar, Error> {
         let maybe_r = Scalar::from_bytes(self.bytes[..32].try_into().unwrap())
             .and_then(|r| CtOption::new(r, !r.is_zero()));
@@ -99,7 +115,7 @@ impl Signature {
     }
 
     /// Parse the `s` component of this signature to a [`Scalar`]
-    #[cfg(feature = "arithmetic")]
+    #[cfg(feature = "ecdsa")]
     fn s(&self) -> Result<Scalar, Error> {
         let maybe_s = Scalar::from_bytes(self.bytes[32..64].try_into().unwrap())
             .and_then(|s| CtOption::new(s, !s.is_zero()));
@@ -176,7 +192,16 @@ impl From<Signature> for super::Signature {
 pub struct Id(u8);
 
 impl Id {
+    /// Create a new [`Id`] from the given byte value
+    pub fn new(byte: u8) -> Result<Self, Error> {
+        match byte {
+            0 | 1 => Ok(Self(byte)),
+            _ => Err(Error::new()),
+        }
+    }
+
     /// Is `y` odd?
+    #[cfg(feature = "ecdsa")]
     fn is_y_odd(self) -> Choice {
         self.0.into()
     }
@@ -186,10 +211,7 @@ impl TryFrom<u8> for Id {
     type Error = Error;
 
     fn try_from(byte: u8) -> Result<Self, Error> {
-        match byte {
-            0 | 1 => Ok(Self(byte)),
-            _ => Err(Error::new()),
-        }
+        Self::new(byte)
     }
 }
 
@@ -199,7 +221,7 @@ impl From<Id> for u8 {
     }
 }
 
-#[cfg(all(test, feature = "arithmetic", feature = "sha256"))]
+#[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use super::Signature;
     use core::convert::TryFrom;

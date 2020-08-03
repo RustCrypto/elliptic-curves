@@ -21,7 +21,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use k256::{
-//!     ecdsa::{Signer, signature::RandomizedSigner},
+//!     ecdsa::{Signer, Signature, signature::RandomizedSigner},
 //!     elliptic_curve::{Generate, rand_core::OsRng},
 //!     SecretKey,
 //! };
@@ -30,7 +30,11 @@
 //! let secret_key = SecretKey::generate(&mut OsRng);
 //! let signer = Signer::new(&secret_key).expect("secret key invalid");
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
-//! let signature = signer.sign_with_rng(&mut OsRng, message);
+//!
+//! // Note: the signature type must be annotated or otherwise inferrable as
+//! // `Signer` has many impls of the `RandomizedSigner` trait (for both
+//! // regular and recoverable signature types).
+//! let signature: Signature = signer.sign_with_rng(&mut OsRng, message);
 //!
 //! // Verification
 //! use k256::{PublicKey, ecdsa::{Verifier, signature::Verifier as _}};
@@ -44,126 +48,28 @@
 
 pub mod recoverable;
 
-pub use ecdsa_core::signature;
+#[cfg(feature = "ecdsa")]
+mod signer;
+#[cfg(feature = "ecdsa")]
+mod verifier;
 
-use super::Secp256k1;
-use core::borrow::Borrow;
+pub use ecdsa_core::signature::{self, Error};
 
 #[cfg(feature = "ecdsa")]
-use {
-    crate::{AffinePoint, ProjectivePoint, Scalar, ScalarBytes},
-    ecdsa_core::{
-        hazmat::{SignPrimitive, VerifyPrimitive},
-        Error,
-    },
-    elliptic_curve::{
-        ops::Invert,
-        subtle::{ConditionallySelectable, CtOption},
-    },
-};
+pub use self::{signer::Signer, verifier::Verifier};
+
+use crate::Secp256k1;
+
+#[cfg(feature = "ecdsa")]
+use crate::{elliptic_curve::subtle::ConditionallySelectable, Scalar};
 
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
-
-/// ECDSA/secp256k1 signer
-#[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type Signer = ecdsa_core::Signer<Secp256k1>;
-
-/// ECDSA/secp256k1 verifier
-#[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type Verifier = ecdsa_core::Verifier<Secp256k1>;
 
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
-}
-
-#[cfg(feature = "ecdsa")]
-impl SignPrimitive<Secp256k1> for Scalar {
-    #[allow(clippy::many_single_char_names)]
-    fn try_sign_prehashed<K>(
-        &self,
-        ephemeral_scalar: &K,
-        hashed_msg: &ScalarBytes,
-    ) -> Result<Signature, Error>
-    where
-        K: Borrow<Scalar> + Invert<Output = Scalar>,
-    {
-        let k_inverse = ephemeral_scalar.invert();
-        let k = ephemeral_scalar.borrow();
-
-        if k_inverse.is_none().into() || k.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let k_inverse = k_inverse.unwrap();
-
-        // Compute `x`-coordinate of affine point 𝑘×𝑮
-        let x = (ProjectivePoint::generator() * k).to_affine().unwrap().x;
-
-        // Lift `x` (element of base field) to serialized big endian integer,
-        // then reduce it to an element of the scalar field
-        let r = Scalar::from_bytes_reduced(&x.to_bytes());
-
-        // Reduce message hash to an element of the scalar field
-        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
-
-        // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * &(z + &(r * self));
-
-        if s.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let signature = Signature::from_scalars(&r.into(), &s.into());
-        normalize_s(&signature)
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(
-        &self,
-        hashed_msg: &ScalarBytes,
-        signature: &Signature,
-    ) -> Result<(), Error> {
-        let maybe_r =
-            Scalar::from_bytes(signature.r().as_ref()).and_then(|r| CtOption::new(r, !r.is_zero()));
-
-        let maybe_s =
-            Scalar::from_bytes(signature.s().as_ref()).and_then(|s| CtOption::new(s, !s.is_zero()));
-
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        let (r, s) = if maybe_r.is_some().into() && maybe_s.is_some().into() {
-            (maybe_r.unwrap(), maybe_s.unwrap())
-        } else {
-            return Err(Error::new());
-        };
-
-        // Ensure signature is "low S" normalized ala BIP 0062
-        if s.is_high().into() {
-            return Err(Error::new());
-        }
-
-        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
-        let s_inv = s.invert().unwrap();
-        let u1 = z * &s_inv;
-        let u2 = r * &s_inv;
-
-        let x = ((&ProjectivePoint::generator() * &u1) + &(ProjectivePoint::from(*self) * &u2))
-            .to_affine()
-            .unwrap()
-            .x;
-
-        if Scalar::from_bytes_reduced(&x.to_bytes()) == r {
-            Ok(())
-        } else {
-            Err(Error::new())
-        }
-    }
 }
 
 #[cfg(feature = "ecdsa")]
@@ -195,12 +101,8 @@ pub fn normalize_s(signature: &Signature) -> Result<Signature, Error> {
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
-    use super::*;
-    use crate::test_vectors::ecdsa::ECDSA_TEST_VECTORS;
+    use super::{normalize_s, Signature};
     use ecdsa_core::signature::Signature as _;
-
-    ecdsa_core::new_signing_test!(ECDSA_TEST_VECTORS);
-    ecdsa_core::new_verification_test!(ECDSA_TEST_VECTORS);
 
     // Test vectors generated using rust-secp256k1
     #[test]
