@@ -236,7 +236,7 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0-pre"
-source = "git+https://github.com/RustCrypto/traits#efefde4b5088af69407f80c88ecb4d966b9016f7"
+source = "git+https://github.com/RustCrypto/traits#920522ae53f03483a27b24bc8e924db9e8aff29c"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -781,9 +781,9 @@ checksum = "502d53007c02d7605a05df1c1a73ee436952781653da5d0bf57ad608f66932c1"
 
 [[package]]
 name = "syn"
-version = "1.0.36"
+version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cdb98bcb1f9d81d07b536179c269ea15999b5d14ea958196413869445bb5250"
+checksum = "239f255b9e3429350f188c27b807fc9920a15eb9145230ff1a7d054c08fec319"
 dependencies = [
  "proc-macro2",
  "quote",
