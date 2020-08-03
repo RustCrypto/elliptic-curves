@@ -200,6 +200,25 @@ impl Id {
         }
     }
 
+    /// Internal API for converting a [`PublicKey`] to an [`Id`].
+    ///
+    /// This makes assumptions about how the signature is computed which are
+    /// honored by the current implementation but don't necessarily generally
+    /// apply to all signatures.
+    pub(super) fn from_public_key(public_key: &PublicKey) -> Self {
+        match public_key {
+            PublicKey::Compressed(pk) => match pk.as_ref()[0] {
+                0x02 => Id(0),
+                0x03 => Id(1),
+                other => unreachable!("unexpected SEC-1 public key tag: {}", other),
+            },
+            PublicKey::Uncompressed(pk) => {
+                let is_y_odd = pk.as_ref().last().expect("last byte") & 1 == 1;
+                Id(is_y_odd as u8)
+            }
+        }
+    }
+
     /// Is `y` odd?
     #[cfg(feature = "ecdsa")]
     fn is_y_odd(self) -> Choice {

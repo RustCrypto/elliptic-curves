@@ -1,14 +1,12 @@
 //! ECDSA signer
 
 use super::{recoverable, Error, Signature};
-use crate::{ProjectivePoint, Scalar, ScalarBytes, Secp256k1, SecretKey};
+use crate::{ProjectivePoint, PublicKey, Scalar, ScalarBytes, Secp256k1, SecretKey};
 use core::borrow::Borrow;
 use ecdsa_core::{hazmat::SignPrimitive, signature::RandomizedSigner};
 use elliptic_curve::{
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    secret_key::FromSecretKey,
-    zeroize::Zeroizing,
 };
 
 /// ECDSA/secp256k1 signer
@@ -17,36 +15,21 @@ pub struct Signer {
     /// Core ECDSA signer
     signer: ecdsa_core::Signer<Secp256k1>,
 
-    /// Precomputed [`recoverable::Id`] for the public key associated with
-    /// this signer.
-    ///
-    /// We disallow recovery IDs 2 and 3 (they do not occur in practice) and
-    /// always low-S normalize signatures, so this value is static for all
-    /// recoverable signatures we produce.
-    recovery_id: recoverable::Id,
+    /// Public key
+    public_key: PublicKey,
 }
 
 impl Signer {
     /// Create a new signer
     pub fn new(secret_key: &SecretKey) -> Result<Self, Error> {
-        let public_key = Scalar::from_secret_key(secret_key).and_then(|scalar| {
-            (ProjectivePoint::generator() * &*Zeroizing::new(scalar)).to_affine()
-        });
+        let signer = ecdsa_core::Signer::new(secret_key)?;
+        let public_key = PublicKey::from_secret_key(secret_key, true).map_err(|_| Error::new())?;
+        Ok(Self { signer, public_key })
+    }
 
-        if public_key.is_none().into() {
-            return Err(Error::new());
-        }
-
-        // Since we low-S normalize all signatures, and disallow IDs 2 and 3,
-        // the recovery ID only encodes whether the y-coordinate of the public
-        // key is odd, regardless of the signature we produce.
-        let is_y_odd = public_key.unwrap().y.normalize().is_odd();
-        let recovery_id = recoverable::Id::new(is_y_odd.unwrap_u8()).expect("invalid recovery ID");
-
-        Ok(Self {
-            signer: ecdsa_core::Signer::new(secret_key)?,
-            recovery_id,
-        })
+    /// Get the public key for this signer
+    pub fn public_key(&self) -> &PublicKey {
+        &self.public_key
     }
 }
 
@@ -68,8 +51,15 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
         rng: impl CryptoRng + RngCore,
         msg: &[u8],
     ) -> Result<recoverable::Signature, Error> {
-        let sig: Signature = self.try_sign_with_rng(rng, msg)?;
-        Ok(recoverable::Signature::new(&sig, self.recovery_id))
+        let sig = self.try_sign_with_rng(rng, msg)?;
+        let recovery_id = recoverable::Id::from_public_key(&self.public_key);
+        Ok(recoverable::Signature::new(&sig, recovery_id))
+    }
+}
+
+impl From<&Signer> for PublicKey {
+    fn from(signer: &Signer) -> PublicKey {
+        signer.public_key
     }
 }
 
