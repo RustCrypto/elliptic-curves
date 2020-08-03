@@ -31,7 +31,6 @@ pub use elliptic_curve;
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{
-    field::FieldElement,
     scalar::{NonZeroScalar, Scalar},
     AffinePoint, ProjectivePoint,
 };

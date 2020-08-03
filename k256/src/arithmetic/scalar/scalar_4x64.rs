@@ -6,7 +6,7 @@ use core::convert::TryInto;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
-use zeroize::Zeroize;
+use elliptic_curve::zeroize::Zeroize;
 
 use crate::arithmetic::util::{adc64, sbb64};
 

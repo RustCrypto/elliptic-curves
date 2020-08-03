@@ -25,7 +25,7 @@ proptest = "0.10"
 [features]
 default = ["arithmetic", "std"]
 arithmetic = []
-ecdsa = ["arithmetic", "ecdsa-core/signer", "ecdsa-core/verifier", "sha256", "zeroize"]
+ecdsa = ["arithmetic", "ecdsa-core/signer", "ecdsa-core/verifier", "rand", "sha256", "zeroize"]
 rand = ["elliptic-curve/rand_core"]
 sha256 = ["ecdsa-core/digest", "ecdsa-core/hazmat", "sha2"]
 test-vectors = []
