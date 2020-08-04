@@ -35,7 +35,10 @@ pub use arithmetic::{
     AffinePoint, ProjectivePoint,
 };
 
-use elliptic_curve::{consts::U32, ObjectIdentifier};
+use elliptic_curve::consts::U32;
+
+#[cfg(feature = "oid")]
+use elliptic_curve::oid::ObjectIdentifier;
 
 /// K-256 (secp256k1) elliptic curve.
 ///
@@ -56,11 +59,12 @@ impl elliptic_curve::Curve for Secp256k1 {
     type ElementSize = U32;
 }
 
+impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
+
+#[cfg(feature = "oid")]
 impl elliptic_curve::Identifier for Secp256k1 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
 }
-
-impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
 
 /// K-256 (secp256k1) Secret Key.
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;

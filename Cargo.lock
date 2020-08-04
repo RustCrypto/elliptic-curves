@@ -98,6 +98,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "const-oid"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2d9162b7289a46e86208d6af2c686ca5bfde445878c41a458a9fac706252d0b"
+
+[[package]]
 name = "cpuid-bool"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -236,8 +242,9 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0-pre"
-source = "git+https://github.com/RustCrypto/traits#83c41ca3a5e19a5d8d776ac7f74123de8373e2e8"
+source = "git+https://github.com/RustCrypto/traits#72f1909a39571b0fe57f2751c1393680f364ee32"
 dependencies = [
+ "const-oid",
  "generic-array",
  "rand_core",
  "subtle",
