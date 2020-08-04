@@ -3,7 +3,6 @@ members = [
     "k256",
     "p256",
     "p384",
-    "p521"
 ]
 
 [patch.crates-io]
