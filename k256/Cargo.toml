@@ -27,13 +27,14 @@ num-traits = "0.2"
 criterion = "0.3"
 
 [features]
-default = ["arithmetic", "std"]
+default = ["arithmetic", "oid", "std"]
 arithmetic = []
 digest = ["ecdsa-core/digest"]
 ecdsa = ["arithmetic", "ecdsa-core/signer", "ecdsa-core/verifier", "rand", "sha256", "zeroize"]
 endomorphism-mul = []
 field-montgomery = []
 force-32-bit = []
+oid = ["elliptic-curve/oid"]
 rand = ["elliptic-curve/rand_core"]
 sha256 = ["digest", "sha2"]
 test-vectors = []

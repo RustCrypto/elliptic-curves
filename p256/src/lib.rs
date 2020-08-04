@@ -35,7 +35,10 @@ pub use arithmetic::{
 #[cfg(all(feature = "arithmetic", feature = "rand"))]
 pub use arithmetic::scalar::blinding::BlindedScalar;
 
-use elliptic_curve::{consts::U32, oid::ObjectIdentifier};
+use elliptic_curve::consts::U32;
+
+#[cfg(feature = "oid")]
+use elliptic_curve::oid::ObjectIdentifier;
 
 /// NIST P-256 elliptic curve.
 ///
@@ -64,11 +67,12 @@ impl elliptic_curve::Curve for NistP256 {
     type ElementSize = U32;
 }
 
+impl elliptic_curve::weierstrass::Curve for NistP256 {}
+
+#[cfg(feature = "oid")]
 impl elliptic_curve::Identifier for NistP256 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
 }
-
-impl elliptic_curve::weierstrass::Curve for NistP256 {}
 
 /// NIST P-256 Secret Key
 pub type SecretKey = elliptic_curve::SecretKey<NistP256>;

@@ -26,6 +26,7 @@ version = "0.9"
 optional = true
 
 [features]
+oid = ["elliptic-curve/oid"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]
 
