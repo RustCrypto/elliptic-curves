@@ -3,7 +3,7 @@
 #[cfg(feature = "rand")]
 pub mod blinding;
 
-use crate::{NistP256, ScalarBytes, SecretKey};
+use crate::{ElementBytes, NistP256, SecretKey};
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -84,7 +84,7 @@ impl From<u64> for Scalar {
 
 impl FromSecretKey<NistP256> for Scalar {
     fn from_secret_key(secret_key: &SecretKey) -> CtOption<Self> {
-        Self::from_bytes(secret_key.secret_scalar().as_ref())
+        Self::from_bytes(secret_key.as_bytes().as_ref())
     }
 }
 
@@ -155,7 +155,7 @@ impl Scalar {
     /// Returns None if the secret's underlying value does not represent a field element.
     pub fn from_secret(s: SecretKey) -> CtOption<Scalar> {
         // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
-        Self::from_bytes(s.secret_scalar().as_ref())
+        Self::from_bytes(s.as_bytes().as_ref())
     }
 
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
@@ -680,7 +680,7 @@ impl Invert for Scalar {
     }
 }
 
-impl From<Scalar> for ScalarBytes {
+impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes().into()
     }

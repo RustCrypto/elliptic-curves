@@ -75,7 +75,7 @@ pub type PublicKey = elliptic_curve::weierstrass::PublicKey<Secp256k1>;
 /// K-256 Scalar Bytes.
 ///
 /// Byte array containing a serialized scalar value (i.e. an integer)
-pub type ScalarBytes = elliptic_curve::ScalarBytes<Secp256k1>;
+pub type ElementBytes = elliptic_curve::ElementBytes<Secp256k1>;
 
 /// K-256 Compressed Curve Point.
 pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<Secp256k1>;

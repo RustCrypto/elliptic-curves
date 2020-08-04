@@ -5,7 +5,7 @@ use core::borrow::Borrow;
 
 #[cfg(feature = "ecdsa")]
 use {
-    crate::{AffinePoint, ProjectivePoint, Scalar, ScalarBytes},
+    crate::{AffinePoint, ElementBytes, ProjectivePoint, Scalar},
     ecdsa_core::{
         hazmat::{SignPrimitive, VerifyPrimitive},
         Error,
@@ -38,7 +38,7 @@ impl SignPrimitive<NistP256> for Scalar {
     fn try_sign_prehashed<K>(
         &self,
         ephemeral_scalar: &K,
-        hashed_msg: &ScalarBytes,
+        hashed_msg: &ElementBytes,
     ) -> Result<Signature, Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,
@@ -77,7 +77,7 @@ impl SignPrimitive<NistP256> for Scalar {
 impl VerifyPrimitive<NistP256> for AffinePoint {
     fn verify_prehashed(
         &self,
-        hashed_msg: &ScalarBytes,
+        hashed_msg: &ElementBytes,
         signature: &Signature,
     ) -> Result<(), Error> {
         let maybe_r =
