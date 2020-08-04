@@ -16,16 +16,17 @@ cfg_if! {
     }
 }
 
-use crate::{ElementBytes, Secp256k1, SecretKey};
+use crate::{ElementBytes, Secp256k1};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
+    consts::U32,
     ops::Invert,
-    secret_key::FromSecretKey,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    FromBytes,
 };
 
 #[cfg(feature = "digest")]
-use ecdsa_core::signature::digest::{consts::U32, Digest};
+use ecdsa_core::signature::digest::Digest;
 
 #[cfg(feature = "rand")]
 use elliptic_curve::{
@@ -50,12 +51,6 @@ pub struct Scalar(ScalarImpl);
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
         Self(ScalarImpl::from(k))
-    }
-}
-
-impl FromSecretKey<Secp256k1> for Scalar {
-    fn from_secret_key(secret_key: &SecretKey) -> CtOption<Self> {
-        Self::from_bytes(secret_key.as_bytes().as_ref())
     }
 }
 
@@ -87,20 +82,11 @@ impl Scalar {
         Self(ScalarImpl::from_bytes_unchecked(bytes))
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
-        let value = ScalarImpl::from_bytes(bytes);
-        CtOption::map(value, Self)
-    }
-
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
-        Self(ScalarImpl::from_bytes_reduced(bytes))
+    pub fn from_bytes_reduced(bytes: &ElementBytes) -> Self {
+        Self(ScalarImpl::from_bytes_reduced(bytes.as_ref()))
     }
 
     /// Convert the output of a digest algorithm into a [`Scalar`] reduced
@@ -111,11 +97,11 @@ impl Scalar {
     where
         D: Digest<OutputSize = U32>,
     {
-        Self::from_bytes_reduced(&digest.finalize().into())
+        Self::from_bytes_reduced(&digest.finalize())
     }
 
     /// Returns the SEC-1 encoding of this scalar.
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(&self) -> ElementBytes {
         self.0.to_bytes()
     }
 
@@ -234,7 +220,7 @@ impl Scalar {
     /// Returns a uniformly-random scalar, generated using rejection sampling.
     #[cfg(feature = "rand")]
     pub fn generate_vartime(mut rng: impl CryptoRng + RngCore) -> Self {
-        let mut bytes = [0u8; 32];
+        let mut bytes = ElementBytes::default();
 
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
@@ -258,6 +244,18 @@ impl Scalar {
     /// Variable time in `shift`.
     pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
         Self(self.0.mul_shift_var(&(b.0), shift))
+    }
+}
+
+impl FromBytes for Scalar {
+    type Size = U32;
+
+    /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+        ScalarImpl::from_bytes(bytes.as_ref()).map(Self)
     }
 }
 
@@ -395,7 +393,7 @@ impl Invert for Scalar {
 
 impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
-        scalar.to_bytes().into()
+        scalar.to_bytes()
     }
 }
 
@@ -426,6 +424,7 @@ impl Zeroize for Scalar {
 mod tests {
     use super::Scalar;
     use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
+    use elliptic_curve::FromBytes;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -433,7 +432,7 @@ mod tests {
         fn from(x: &BigUint) -> Self {
             debug_assert!(x < &Scalar::modulus_as_biguint());
             let bytes = biguint_to_bytes(x);
-            Self::from_bytes(&bytes).unwrap()
+            Self::from_bytes(&bytes.into()).unwrap()
         }
     }
 
@@ -445,7 +444,7 @@ mod tests {
 
     impl ToBigUint for Scalar {
         fn to_biguint(&self) -> Option<BigUint> {
-            Some(bytes_to_biguint(&(self.to_bytes())))
+            Some(bytes_to_biguint(self.to_bytes().as_ref()))
         }
     }
 
@@ -545,8 +544,7 @@ mod tests {
 
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
-            let bytes = a.to_bytes();
-            let a_back = Scalar::from_bytes(&bytes).unwrap();
+            let a_back = Scalar::from_bytes(&a.to_bytes().into()).unwrap();
             assert_eq!(a, a_back);
         }
 
@@ -554,7 +552,7 @@ mod tests {
         #[cfg(feature = "endomorphism-mul")]
         fn fuzzy_roundtrip_to_bytes_unchecked(a in scalar()) {
             let bytes = a.to_bytes();
-            let a_back = Scalar::from_bytes_unchecked(&bytes);
+            let a_back = Scalar::from_bytes_unchecked(bytes.as_ref());
             assert_eq!(a, a_back);
         }
 

@@ -1,8 +1,7 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-use crate::arithmetic::util::{adc64, mac64, mac64_typemax, sbb64};
+use crate::{arithmetic::util::{adc64, mac64, mac64_typemax, sbb64}, ElementBytes};
 
 const fn bytes_to_u64(b: &[u8; 8]) -> u64 {
     ((b[0] as u64) << 56)
@@ -77,8 +76,8 @@ impl FieldElementMontgomery {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
-        let words = bytes_to_words(bytes);
+    pub fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+        let words = bytes_to_words(bytes.as_ref());
 
         // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
         // value of 2^64 - 1.
@@ -93,9 +92,9 @@ impl FieldElementMontgomery {
     }
 
     /// Returns the SEC-1 encoding of this field element.
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(&self) -> ElementBytes {
         let res = Self::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
-        let mut ret = [0; 32];
+        let mut ret = ElementBytes::default();
         ret[0..8].copy_from_slice(&res.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&res.0[2].to_be_bytes());
         ret[16..24].copy_from_slice(&res.0[1].to_be_bytes());

@@ -3,7 +3,7 @@
 use super::{recoverable, Error, Signature};
 use crate::{AffinePoint, ElementBytes, ProjectivePoint, PublicKey, Scalar, Secp256k1};
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
-use elliptic_curve::subtle::CtOption;
+use elliptic_curve::{subtle::CtOption, FromBytes};
 
 /// ECDSA/secp256k1 verifier
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
@@ -40,10 +40,10 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         signature: &Signature,
     ) -> Result<(), Error> {
         let maybe_r =
-            Scalar::from_bytes(signature.r().as_ref()).and_then(|r| CtOption::new(r, !r.is_zero()));
+            Scalar::from_bytes(signature.r()).and_then(|r| CtOption::new(r, !r.is_zero()));
 
         let maybe_s =
-            Scalar::from_bytes(signature.s().as_ref()).and_then(|s| CtOption::new(s, !s.is_zero()));
+            Scalar::from_bytes(signature.s()).and_then(|s| CtOption::new(s, !s.is_zero()));
 
         // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         let (r, s) = if maybe_r.is_some().into() && maybe_s.is_some().into() {
@@ -57,7 +57,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
             return Err(Error::new());
         }
 
-        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
+        let z = Scalar::from_bytes_reduced(&hashed_msg);
         let s_inv = s.invert().unwrap();
         let u1 = z * &s_inv;
         let u2 = r * &s_inv;

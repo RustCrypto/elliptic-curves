@@ -61,7 +61,10 @@ pub use self::{signer::Signer, verifier::Verifier};
 use crate::Secp256k1;
 
 #[cfg(feature = "ecdsa")]
-use crate::{elliptic_curve::subtle::ConditionallySelectable, Scalar};
+use crate::{
+    elliptic_curve::{subtle::ConditionallySelectable, FromBytes},
+    Scalar,
+};
 
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
@@ -93,10 +96,7 @@ pub fn normalize_s(signature: &Signature) -> Result<Signature, Error> {
     let s_neg = -s;
     let low_s = Scalar::conditional_select(&s, &s_neg, s.is_high());
 
-    Ok(Signature::from_scalars(
-        signature.r(),
-        &low_s.to_bytes().into(),
-    ))
+    Ok(Signature::from_scalars(signature.r(), &low_s.to_bytes()))
 }
 
 #[cfg(all(test, feature = "ecdsa"))]

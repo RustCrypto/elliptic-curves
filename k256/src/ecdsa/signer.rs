@@ -7,9 +7,8 @@ use ecdsa_core::{hazmat::RecoverableSignPrimitive, signature::RandomizedSigner};
 use elliptic_curve::{
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    secret_key::FromSecretKey,
     zeroize::Zeroizing,
-    Generate,
+    FromBytes, Generate,
 };
 use sha2::{Digest, Sha256};
 
@@ -70,7 +69,7 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
         rng: impl CryptoRng + RngCore,
         msg: &[u8],
     ) -> Result<recoverable::Signature, Error> {
-        let d = Scalar::from_secret_key(&self.secret_key).unwrap();
+        let d = Scalar::from_bytes(self.secret_key.as_bytes()).unwrap();
         let k = Zeroizing::new(Scalar::generate(rng));
         let z = Sha256::digest(msg);
         let (signature, is_r_odd) = d.try_sign_recoverable_prehashed(&*k, &z)?;
@@ -124,7 +123,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         let r = Scalar::from_bytes_reduced(&R.x.to_bytes());
 
         // Reduce message hash to an element of the scalar field
-        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
+        let z = Scalar::from_bytes_reduced(&hashed_msg);
 
         // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * &(z + &(r * self));

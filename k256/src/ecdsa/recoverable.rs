@@ -45,7 +45,10 @@ use crate::arithmetic::{
 };
 
 #[cfg(feature = "ecdsa")]
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, CtOption};
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, CtOption},
+    FromBytes,
+};
 
 #[cfg(any(feature = "ecdsa", docsrs))]
 use crate::PublicKey;

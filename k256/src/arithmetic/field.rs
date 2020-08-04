@@ -29,6 +29,7 @@ cfg_if! {
     }
 }
 
+use crate::ElementBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -78,13 +79,12 @@ impl FieldElement {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
-        let value = FieldElementImpl::from_bytes(bytes);
-        CtOption::map(value, Self)
+    pub fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+        FieldElementImpl::from_bytes(bytes).map(Self)
     }
 
     /// Returns the SEC-1 encoding of this field element.
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(&self) -> ElementBytes {
         self.0.normalize().to_bytes()
     }
 
@@ -298,19 +298,22 @@ mod tests {
     use proptest::prelude::*;
 
     use super::FieldElement;
-    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
-    use crate::test_vectors::field::DBL_TEST_VECTORS;
+    use crate::{
+        arithmetic::util::{biguint_to_bytes, bytes_to_biguint},
+        test_vectors::field::DBL_TEST_VECTORS,
+        ElementBytes,
+    };
 
     impl From<&BigUint> for FieldElement {
         fn from(x: &BigUint) -> Self {
             let bytes = biguint_to_bytes(x);
-            Self::from_bytes(&bytes).unwrap()
+            Self::from_bytes(&bytes.into()).unwrap()
         }
     }
 
     impl ToBigUint for FieldElement {
         fn to_biguint(&self) -> Option<BigUint> {
-            Some(bytes_to_biguint(&(self.to_bytes())))
+            Some(bytes_to_biguint(self.to_bytes().as_ref()))
         }
     }
 
@@ -331,29 +334,35 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes(&[0; 32]).unwrap(),
+            FieldElement::from_bytes(&ElementBytes::default()).unwrap(),
             FieldElement::zero()
         );
         assert_eq!(
-            FieldElement::from_bytes(&[
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 1
-            ])
+            FieldElement::from_bytes(
+                &[
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 1
+                ]
+                .into()
+            )
             .unwrap(),
             FieldElement::one()
         );
-        assert!(bool::from(FieldElement::from_bytes(&[0xff; 32]).is_none()));
+        assert!(bool::from(
+            FieldElement::from_bytes(&[0xff; 32].into()).is_none()
+        ));
     }
 
     #[test]
     fn to_bytes() {
-        assert_eq!(FieldElement::zero().to_bytes(), [0; 32]);
+        assert_eq!(FieldElement::zero().to_bytes(), [0; 32].into());
         assert_eq!(
             FieldElement::one().to_bytes(),
             [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
             ]
+            .into()
         );
     }
 

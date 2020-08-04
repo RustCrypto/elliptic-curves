@@ -227,7 +227,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/signatures#5e2a6b5d84a483a79ef85312b3729821d07db207"
+source = "git+https://github.com/RustCrypto/signatures#a7dde254d74b05158504c6fe20bb2dde4a3fe102"
 dependencies = [
  "elliptic-curve",
  "signature",
@@ -242,7 +242,7 @@ checksum = "bb1f6b1ce1c140482ea30ddd3335fc0024ac7ee112895426e0a629a6c20adfe3"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0-pre"
-source = "git+https://github.com/RustCrypto/traits#1dd4bc5ebc1f7c16e4a76fa6264b796579b4685e"
+source = "git+https://github.com/RustCrypto/traits#9bab4e821421e384096e86e92278ef20fb8f4621"
 dependencies = [
  "const-oid",
  "generic-array",
@@ -781,9 +781,9 @@ checksum = "502d53007c02d7605a05df1c1a73ee436952781653da5d0bf57ad608f66932c1"
 
 [[package]]
 name = "syn"
-version = "1.0.37"
+version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "239f255b9e3429350f188c27b807fc9920a15eb9145230ff1a7d054c08fec319"
+checksum = "e69abc24912995b3038597a7a593be5053eb0fb44f3cc5beec0deb421790c1f4"
 dependencies = [
  "proc-macro2",
  "quote",

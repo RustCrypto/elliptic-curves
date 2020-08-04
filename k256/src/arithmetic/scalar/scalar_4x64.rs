@@ -8,7 +8,7 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
 
-use crate::arithmetic::util::{adc64, sbb64};
+use crate::{ElementBytes, arithmetic::util::{adc64, sbb64}};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
@@ -209,8 +209,8 @@ impl Scalar4x64 {
     }
 
     /// Returns the SEC-1 encoding of this scalar.
-    pub fn to_bytes(&self) -> [u8; 32] {
-        let mut ret = [0; 32];
+    pub fn to_bytes(&self) -> ElementBytes {
+        let mut ret = ElementBytes::default();
         ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
