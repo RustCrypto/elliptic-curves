@@ -240,7 +240,7 @@ impl From<Signature> for super::Signature {
 /// of contrived examples, so for simplicity's sake handling these values
 /// is unsupported and will return an `Error` when parsing the `Id`.
 #[derive(Copy, Clone, Debug)]
-pub struct Id(u8);
+pub struct Id(pub(super) u8);
 
 impl Id {
     /// Create a new [`Id`] from the given byte value
