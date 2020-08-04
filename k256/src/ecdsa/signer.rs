@@ -9,6 +9,9 @@ use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
 };
 
+#[cfg(debug_assertions)]
+use crate::{ecdsa::signature::Verifier as _, ecdsa::Verifier};
+
 /// ECDSA/secp256k1 signer
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub struct Signer {
@@ -39,9 +42,18 @@ impl RandomizedSigner<Signature> for Signer {
         rng: impl CryptoRng + RngCore,
         msg: &[u8],
     ) -> Result<Signature, Error> {
-        self.signer
+        let signature = self
+            .signer
             .try_sign_with_rng(rng, msg)
-            .and_then(|sig| super::normalize_s(&sig))
+            .and_then(|sig| super::normalize_s(&sig))?;
+
+        #[cfg(debug_assertions)]
+        assert!(Verifier::new(&self.public_key)
+            .expect("invalid public key")
+            .verify(msg, &signature)
+            .is_ok());
+
+        Ok(signature)
     }
 }
 
@@ -51,9 +63,10 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
         rng: impl CryptoRng + RngCore,
         msg: &[u8],
     ) -> Result<recoverable::Signature, Error> {
-        let sig = self.try_sign_with_rng(rng, msg)?;
-        let recovery_id = recoverable::Id::from_public_key(&self.public_key);
-        Ok(recoverable::Signature::new(&sig, recovery_id))
+        let signature = self.try_sign_with_rng(rng, msg)?;
+
+        // TODO(tarcieri): more efficient method of computing recovery ID
+        recoverable::Signature::from_trial_recovery(&self.public_key, msg, &signature)
     }
 }
 
