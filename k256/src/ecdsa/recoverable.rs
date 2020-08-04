@@ -4,6 +4,34 @@
 //! recovery of the [`PublicKey`] used to create them. This is helpful in
 //! cases where the hash/fingerprint of a key used to create a signature is
 //! known in advance.
+//!
+//! ## Signing/Recovery Example
+//!
+//! ```
+//! # #[cfg(feature = "ecdsa")]
+//! # {
+//! use k256::{
+//!     ecdsa::{Signer, recoverable, signature::RandomizedSigner},
+//!     elliptic_curve::{Generate, rand_core::OsRng},
+//!     SecretKey, PublicKey
+//! };
+//!
+//! // Signing
+//! let secret_key = SecretKey::generate(&mut OsRng);
+//! let public_key = PublicKey::from_secret_key(&secret_key, true).expect("secret key invalid");
+//!
+//! let signer = Signer::new(&secret_key).expect("secret key invalid");
+//! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
+//!
+//! // Note: the signature type must be annotated or otherwise inferrable as
+//! // `Signer` has many impls of the `RandomizedSigner` trait (for both
+//! // regular and recoverable signature types).
+//! let signature: recoverable::Signature = signer.sign_with_rng(&mut OsRng, message);
+//! let recovered_pubkey = signature.recover_pubkey(message).expect("couldn't recover pubkey");
+//!
+//! assert_eq!(&public_key, &recovered_pubkey);
+//! # }
+//! ```
 
 use core::{
     convert::{TryFrom, TryInto},
@@ -53,6 +81,29 @@ impl Signature {
         bytes[..64].copy_from_slice(signature.as_ref());
         bytes[64] = recovery_id.0;
         Self { bytes }
+    }
+
+    /// Given a public key, message, and signature, use trial recovery for both
+    /// possible recovery IDs in an attempt to determine if a suitable
+    /// recovery ID exists, or return an error otherwise.
+    pub fn from_trial_recovery(
+        public_key: &PublicKey,
+        msg: &[u8],
+        signature: &super::Signature,
+    ) -> Result<Self, Error> {
+        let normalized_signature = super::normalize_s(signature)?;
+
+        for recovery_id in 0..=1 {
+            let recoverable_signature = Signature::new(&normalized_signature, Id(recovery_id));
+
+            if let Ok(recovered_key) = recoverable_signature.recover_pubkey(msg) {
+                if public_key == &recovered_key {
+                    return Ok(recoverable_signature);
+                }
+            }
+        }
+
+        Err(Error::new())
     }
 
     /// Get the recovery [`Id`] for this signature
@@ -197,25 +248,6 @@ impl Id {
         match byte {
             0 | 1 => Ok(Self(byte)),
             _ => Err(Error::new()),
-        }
-    }
-
-    /// Internal API for converting a [`PublicKey`] to an [`Id`].
-    ///
-    /// This makes assumptions about how the signature is computed which are
-    /// honored by the current implementation but don't necessarily generally
-    /// apply to all signatures.
-    pub(super) fn from_public_key(public_key: &PublicKey) -> Self {
-        match public_key {
-            PublicKey::Compressed(pk) => match pk.as_ref()[0] {
-                0x02 => Id(0),
-                0x03 => Id(1),
-                other => unreachable!("unexpected SEC-1 public key tag: {}", other),
-            },
-            PublicKey::Uncompressed(pk) => {
-                let is_y_odd = pk.as_ref().last().expect("last byte") & 1 == 1;
-                Id(is_y_odd as u8)
-            }
         }
     }
 
