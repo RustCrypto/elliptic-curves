@@ -72,16 +72,22 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
     ) -> Result<recoverable::Signature, Error> {
         let d = Scalar::from_secret_key(&self.secret_key).unwrap();
         let k = Zeroizing::new(Scalar::generate(rng));
-        let z = Sha256::new().chain(msg).finalize();
+        let z = Sha256::digest(msg);
         let (signature, is_r_odd) = d.try_sign_recoverable_prehashed(&*k, &z)?;
         let normalized_signature = super::normalize_s(&signature)?;
         let is_s_high = normalized_signature != signature;
         let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
+        let recoverable_signature = recoverable::Signature::new(&normalized_signature, recovery_id);
 
-        Ok(recoverable::Signature::new(
-            &normalized_signature,
-            recovery_id,
-        ))
+        #[cfg(debug_assertions)]
+        assert_eq!(
+            self.public_key,
+            recoverable_signature
+                .recover_pubkey(msg)
+                .expect("recovery failed")
+        );
+
+        Ok(recoverable_signature)
     }
 }
 
