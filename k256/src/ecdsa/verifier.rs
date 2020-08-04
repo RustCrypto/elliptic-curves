@@ -1,7 +1,7 @@
 //! ECDSA verifier
 
 use super::{recoverable, Error, Signature};
-use crate::{AffinePoint, ProjectivePoint, PublicKey, Scalar, ScalarBytes, Secp256k1};
+use crate::{AffinePoint, ElementBytes, ProjectivePoint, PublicKey, Scalar, Secp256k1};
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::subtle::CtOption;
 
@@ -36,7 +36,7 @@ impl signature::Verifier<recoverable::Signature> for Verifier {
 impl VerifyPrimitive<Secp256k1> for AffinePoint {
     fn verify_prehashed(
         &self,
-        hashed_msg: &ScalarBytes,
+        hashed_msg: &ElementBytes,
         signature: &Signature,
     ) -> Result<(), Error> {
         let maybe_r =

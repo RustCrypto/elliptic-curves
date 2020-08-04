@@ -785,6 +785,6 @@ mod tests {
         let key = SecretKey::generate(&mut OsRng);
 
         // Sanity check
-        assert!(!key.secret_scalar().iter().all(|b| *b == 0))
+        assert!(!key.as_bytes().iter().all(|b| *b == 0))
     }
 }

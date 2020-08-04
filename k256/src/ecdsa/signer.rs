@@ -1,7 +1,7 @@
 //! ECDSA signer
 
 use super::{recoverable, Error, Signature};
-use crate::{ProjectivePoint, PublicKey, Scalar, ScalarBytes, Secp256k1, SecretKey};
+use crate::{ElementBytes, ProjectivePoint, PublicKey, Scalar, Secp256k1, SecretKey};
 use core::borrow::Borrow;
 use ecdsa_core::{hazmat::RecoverableSignPrimitive, signature::RandomizedSigner};
 use elliptic_curve::{
@@ -102,7 +102,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
     fn try_sign_recoverable_prehashed<K>(
         &self,
         ephemeral_scalar: &K,
-        hashed_msg: &ScalarBytes,
+        hashed_msg: &ElementBytes,
     ) -> Result<(Signature, bool), Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,

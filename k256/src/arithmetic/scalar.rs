@@ -16,7 +16,7 @@ cfg_if! {
     }
 }
 
-use crate::{ScalarBytes, Secp256k1, SecretKey};
+use crate::{ElementBytes, Secp256k1, SecretKey};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     ops::Invert,
@@ -55,7 +55,7 @@ impl From<u32> for Scalar {
 
 impl FromSecretKey<Secp256k1> for Scalar {
     fn from_secret_key(secret_key: &SecretKey) -> CtOption<Self> {
-        Self::from_bytes(secret_key.secret_scalar().as_ref())
+        Self::from_bytes(secret_key.as_bytes().as_ref())
     }
 }
 
@@ -393,7 +393,7 @@ impl Invert for Scalar {
     }
 }
 
-impl From<Scalar> for ScalarBytes {
+impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes().into()
     }
