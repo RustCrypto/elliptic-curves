@@ -3,7 +3,7 @@
 
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
-use crate::arithmetic::util::{adc32, sbb32};
+use crate::{ElementBytes, arithmetic::util::{adc32, sbb32}};
 
 use core::convert::TryInto;
 
@@ -250,8 +250,8 @@ impl Scalar8x32 {
     }
 
     /// Returns the SEC-1 encoding of this scalar.
-    pub fn to_bytes(&self) -> [u8; 32] {
-        let mut ret = [0; 32];
+    pub fn to_bytes(&self) -> ElementBytes {
+        let mut ret = ElementBytes::default();
         ret[0..4].copy_from_slice(&self.0[7].to_be_bytes());
         ret[4..8].copy_from_slice(&self.0[6].to_be_bytes());
         ret[8..12].copy_from_slice(&self.0[5].to_be_bytes());

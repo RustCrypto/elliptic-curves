@@ -1,5 +1,6 @@
 //! Field arithmetic modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 
+use crate::ElementBytes;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -114,7 +115,7 @@ impl FieldElement {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: [u8; 32]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -136,12 +137,12 @@ impl FieldElement {
     }
 
     /// Returns the SEC-1 encoding of this field element.
-    pub fn to_bytes(&self) -> [u8; 32] {
+    pub fn to_bytes(&self) -> ElementBytes {
         // Convert from Montgomery form to canonical form
         let tmp =
             FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
 
-        let mut ret = [0; 32];
+        let mut ret = ElementBytes::default();
         ret[0..8].copy_from_slice(&tmp.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&tmp.0[2].to_be_bytes());
         ret[16..24].copy_from_slice(&tmp.0[1].to_be_bytes());
@@ -500,10 +501,9 @@ impl<'a> Neg for &'a FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use proptest::{num::u64::ANY, prelude::*};
-
     use super::FieldElement;
-    use crate::test_vectors::field::DBL_TEST_VECTORS;
+    use crate::{test_vectors::field::DBL_TEST_VECTORS, ElementBytes};
+    use proptest::{num::u64::ANY, prelude::*};
 
     #[test]
     fn zero_is_additive_identity() {
@@ -522,29 +522,35 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes([0; 32]).unwrap(),
+            FieldElement::from_bytes(&ElementBytes::default()).unwrap(),
             FieldElement::zero()
         );
         assert_eq!(
-            FieldElement::from_bytes([
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 1
-            ])
+            FieldElement::from_bytes(
+                &[
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 1
+                ]
+                .into()
+            )
             .unwrap(),
             FieldElement::one()
         );
-        assert!(bool::from(FieldElement::from_bytes([0xff; 32]).is_none()));
+        assert!(bool::from(
+            FieldElement::from_bytes(&[0xff; 32].into()).is_none()
+        ));
     }
 
     #[test]
     fn to_bytes() {
-        assert_eq!(FieldElement::zero().to_bytes(), [0; 32]);
+        assert_eq!(FieldElement::zero().to_bytes(), ElementBytes::default());
         assert_eq!(
             FieldElement::one().to_bytes(),
             [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
             ]
+            .into()
         );
     }
 

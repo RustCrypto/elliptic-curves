@@ -7,9 +7,10 @@ mod util;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    generic_array::arr,
     point::Generator,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::FromPublicKey,
+    weierstrass::public_key::FromPublicKey,
     Arithmetic,
 };
 
@@ -74,16 +75,16 @@ impl Generator for AffinePoint {
         // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
         // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
         AffinePoint {
-            x: FieldElement::from_bytes([
+            x: FieldElement::from_bytes(&arr![u8;
                 0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
                 0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
-                0xd8, 0x98, 0xc2, 0x96,
+                0xd8, 0x98, 0xc2, 0x96
             ])
             .unwrap(),
-            y: FieldElement::from_bytes([
+            y: FieldElement::from_bytes(&arr![u8;
                 0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
                 0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
-                0x37, 0xbf, 0x51, 0xf5,
+                0x37, 0xbf, 0x51, 0xf5
             ])
             .unwrap(),
         }
@@ -145,10 +146,7 @@ impl AffinePoint {
 impl From<AffinePoint> for CompressedPoint {
     /// Returns the SEC-1 compressed encoding of this point.
     fn from(affine_point: AffinePoint) -> CompressedPoint {
-        CompressedPoint::from_affine_coords(
-            &affine_point.x.to_bytes().into(),
-            &affine_point.y.to_bytes().into(),
-        )
+        CompressedPoint::from_affine_coords(&affine_point.x.to_bytes(), &affine_point.y.to_bytes())
     }
 }
 
@@ -156,8 +154,8 @@ impl From<AffinePoint> for UncompressedPoint {
     /// Returns the SEC-1 uncompressed encoding of this point.
     fn from(affine_point: AffinePoint) -> UncompressedPoint {
         UncompressedPoint::from_affine_coords(
-            &affine_point.x.to_bytes().into(),
-            &affine_point.y.to_bytes().into(),
+            &affine_point.x.to_bytes(),
+            &affine_point.y.to_bytes(),
         )
     }
 }
@@ -546,7 +544,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         PublicKey,
     };
-    use elliptic_curve::{point::Generator, weierstrass::FromPublicKey};
+    use elliptic_curve::{point::Generator, weierstrass::public_key::FromPublicKey, FromBytes};
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";

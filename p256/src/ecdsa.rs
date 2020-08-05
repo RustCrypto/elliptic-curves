@@ -10,7 +10,7 @@ use {
         hazmat::{SignPrimitive, VerifyPrimitive},
         Error,
     },
-    elliptic_curve::{ops::Invert, subtle::CtOption},
+    elliptic_curve::{ops::Invert, subtle::CtOption, FromBytes},
 };
 
 /// ECDSA/P-256 signature (fixed-size)
@@ -60,7 +60,7 @@ impl SignPrimitive<NistP256> for Scalar {
         let r = Scalar::from_bytes_reduced(&x.to_bytes());
 
         // Reduce message hash to an element of the scalar field
-        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
+        let z = Scalar::from_bytes_reduced(hashed_msg);
 
         // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * &(z + &(r * self));
@@ -81,10 +81,10 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
         signature: &Signature,
     ) -> Result<(), Error> {
         let maybe_r =
-            Scalar::from_bytes(signature.r().as_ref()).and_then(|r| CtOption::new(r, !r.is_zero()));
+            Scalar::from_bytes(signature.r()).and_then(|r| CtOption::new(r, !r.is_zero()));
 
         let maybe_s =
-            Scalar::from_bytes(signature.s().as_ref()).and_then(|s| CtOption::new(s, !s.is_zero()));
+            Scalar::from_bytes(signature.s()).and_then(|s| CtOption::new(s, !s.is_zero()));
 
         // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         let (r, s) = if maybe_r.is_some().into() && maybe_s.is_some().into() {
@@ -93,7 +93,7 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
             return Err(Error::new());
         };
 
-        let z = Scalar::from_bytes_reduced(hashed_msg.as_ref());
+        let z = Scalar::from_bytes_reduced(hashed_msg);
         let s_inv = s.invert().unwrap();
         let u1 = z * &s_inv;
         let u2 = r * &s_inv;

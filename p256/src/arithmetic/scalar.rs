@@ -9,9 +9,10 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    consts::U32,
     ops::Invert,
-    secret_key::FromSecretKey,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    FromBytes,
 };
 
 #[cfg(feature = "rand")]
@@ -82,12 +83,6 @@ impl From<u64> for Scalar {
     }
 }
 
-impl FromSecretKey<NistP256> for Scalar {
-    fn from_secret_key(secret_key: &SecretKey) -> CtOption<Self> {
-        Self::from_bytes(secret_key.as_bytes().as_ref())
-    }
-}
-
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
@@ -138,31 +133,14 @@ impl Ord for Scalar {
     }
 }
 
-impl Scalar {
-    /// Returns the zero scalar.
-    pub const fn zero() -> Scalar {
-        Scalar([0, 0, 0, 0])
-    }
-
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Scalar {
-        Scalar([1, 0, 0, 0])
-    }
-
-    /// Attempts to convert a `SecretKey` (defined in the more generic `elliptic_curve` crate) to a
-    /// `Scalar`
-    ///
-    /// Returns None if the secret's underlying value does not represent a field element.
-    pub fn from_secret(s: SecretKey) -> CtOption<Scalar> {
-        // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
-        Self::from_bytes(s.as_bytes().as_ref())
-    }
+impl FromBytes for Scalar {
+    type Size = U32;
 
     /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: &[u8; 32]) -> CtOption<Self> {
+    fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -181,11 +159,32 @@ impl Scalar {
 
         CtOption::new(Scalar(w), Choice::from(is_some))
     }
+}
+
+impl Scalar {
+    /// Returns the zero scalar.
+    pub const fn zero() -> Scalar {
+        Scalar([0, 0, 0, 0])
+    }
+
+    /// Returns the multiplicative identity.
+    pub const fn one() -> Scalar {
+        Scalar([1, 0, 0, 0])
+    }
+
+    /// Attempts to convert a `SecretKey` (defined in the more generic `elliptic_curve` crate) to a
+    /// `Scalar`
+    ///
+    /// Returns None if the secret's underlying value does not represent a field element.
+    pub fn from_secret_key(s: &SecretKey) -> CtOption<Scalar> {
+        // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
+        Self::from_bytes(s.as_bytes())
+    }
 
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &[u8; 32]) -> Self {
+    pub fn from_bytes_reduced(bytes: &ElementBytes) -> Self {
         Self::sub_inner(
             u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
             u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
@@ -201,8 +200,8 @@ impl Scalar {
     }
 
     /// Returns the SEC-1 encoding of this scalar.
-    pub fn to_bytes(&self) -> [u8; 32] {
-        let mut ret = [0; 32];
+    fn to_bytes(&self) -> ElementBytes {
+        let mut ret = ElementBytes::default();
         ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
@@ -682,14 +681,14 @@ impl Invert for Scalar {
 
 impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
-        scalar.to_bytes().into()
+        scalar.to_bytes()
     }
 }
 
 #[cfg(feature = "rand")]
 impl Generate for Scalar {
     fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
-        let mut bytes = [0u8; 32];
+        let mut bytes = ElementBytes::default();
 
         // Generate a uniformly random scalar using rejection sampling,
         // which produces a uniformly random distribution of scalars.
@@ -722,11 +721,13 @@ impl Zeroize for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, SecretKey};
+    use crate::ElementBytes;
+    use elliptic_curve::FromBytes;
 
     #[test]
     fn from_to_bytes_roundtrip() {
         let k: u64 = 42;
-        let mut bytes = [0u8; 32];
+        let mut bytes = ElementBytes::default();
         bytes[24..].copy_from_slice(k.to_be_bytes().as_ref());
 
         let scalar = Scalar::from_bytes(&bytes).unwrap();
@@ -772,7 +773,7 @@ mod tests {
     fn from_ec_secret() {
         let scalar = Scalar::one();
         let secret = SecretKey::from_bytes(scalar.to_bytes()).unwrap();
-        let rederived_scalar = Scalar::from_secret(secret).unwrap();
+        let rederived_scalar = Scalar::from_secret_key(&secret).unwrap();
         assert_eq!(scalar.0, rederived_scalar.0);
     }
 }
