@@ -49,9 +49,8 @@ impl RandomizedSigner<Signature> for Signer {
     ) -> Result<Signature, Error> {
         let signer = ecdsa_core::Signer::new(&self.secret_key)?;
 
-        let signature = signer
-            .try_sign_with_rng(rng, msg)
-            .and_then(|sig| super::normalize_s(&sig))?;
+        let mut signature = signer.try_sign_with_rng(rng, msg)?;
+        signature.normalize_s()?;
 
         #[cfg(debug_assertions)]
         assert!(Verifier::new(&self.public_key)
@@ -72,11 +71,10 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
         let d = Scalar::from_bytes(self.secret_key.as_bytes()).unwrap();
         let k = Zeroizing::new(Scalar::generate(rng));
         let z = Sha256::digest(msg);
-        let (signature, is_r_odd) = d.try_sign_recoverable_prehashed(&*k, &z)?;
-        let normalized_signature = super::normalize_s(&signature)?;
-        let is_s_high = normalized_signature != signature;
+        let (mut signature, is_r_odd) = d.try_sign_recoverable_prehashed(&*k, &z)?;
+        let is_s_high = signature.normalize_s()?;
         let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
-        let recoverable_signature = recoverable::Signature::new(&normalized_signature, recovery_id);
+        let recoverable_signature = recoverable::Signature::new(&signature, recovery_id);
 
         #[cfg(debug_assertions)]
         assert_eq!(

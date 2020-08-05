@@ -94,10 +94,11 @@ impl Signature {
         msg: &[u8],
         signature: &super::Signature,
     ) -> Result<Self, Error> {
-        let normalized_signature = super::normalize_s(signature)?;
+        let mut signature = *signature;
+        signature.normalize_s()?;
 
         for recovery_id in 0..=1 {
-            let recoverable_signature = Signature::new(&normalized_signature, Id(recovery_id));
+            let recoverable_signature = Signature::new(&signature, Id(recovery_id));
 
             if let Ok(recovered_key) = recoverable_signature.recover_pubkey(msg) {
                 if public_key == &recovered_key {
