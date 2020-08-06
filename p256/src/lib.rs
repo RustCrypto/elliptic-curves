@@ -16,6 +16,10 @@
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
+#[cfg(feature = "ecdh")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdh")))]
+pub mod ecdh;
+
 #[cfg(feature = "ecdsa-core")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa-core")))]
 pub mod ecdsa;
@@ -67,7 +71,10 @@ impl elliptic_curve::Curve for NistP256 {
     type ElementSize = U32;
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP256 {}
+impl elliptic_curve::weierstrass::Curve for NistP256 {
+    /// NIST P-256 points are typically uncompressed.
+    const COMPRESS_POINTS: bool = false;
+}
 
 #[cfg(feature = "oid")]
 impl elliptic_curve::Identifier for NistP256 {
@@ -80,9 +87,9 @@ pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
 /// NIST P-256 Public Key
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP256>;
 
-/// NIST P-256 Scalar Bytes.
+/// NIST P-256 Serialized Field Element.
 ///
-/// Byte array containing a serialized scalar value (i.e. an integer)
+/// Byte array containing a serialized field element value (base field or scalar).
 pub type ElementBytes = elliptic_curve::ElementBytes<NistP256>;
 
 /// NIST P-256 Compressed Curve Point
