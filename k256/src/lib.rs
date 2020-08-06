@@ -19,6 +19,10 @@ mod arithmetic;
 #[cfg(feature = "arithmetic")]
 mod mul;
 
+#[cfg(feature = "ecdh")]
+#[cfg_attr(docsrs, doc(cfg(feature = "ecdh")))]
+pub mod ecdh;
+
 #[cfg(feature = "ecdsa-core")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa-core")))]
 pub mod ecdsa;
@@ -59,7 +63,10 @@ impl elliptic_curve::Curve for Secp256k1 {
     type ElementSize = U32;
 }
 
-impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
+impl elliptic_curve::weierstrass::Curve for Secp256k1 {
+    /// secp256k1 points are typically compressed.
+    const COMPRESS_POINTS: bool = true;
+}
 
 #[cfg(feature = "oid")]
 impl elliptic_curve::Identifier for Secp256k1 {
@@ -72,9 +79,9 @@ pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 /// K-256 (secp256k1) Public Key.
 pub type PublicKey = elliptic_curve::weierstrass::PublicKey<Secp256k1>;
 
-/// K-256 Scalar Bytes.
+/// K-256 Serialized Field Element.
 ///
-/// Byte array containing a serialized scalar value (i.e. an integer)
+/// Byte array containing a serialized field element value (base field or scalar).
 pub type ElementBytes = elliptic_curve::ElementBytes<Secp256k1>;
 
 /// K-256 Compressed Curve Point.

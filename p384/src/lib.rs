@@ -57,7 +57,9 @@ impl elliptic_curve::Identifier for NistP384 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 34]);
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP384 {}
+impl elliptic_curve::weierstrass::Curve for NistP384 {
+    const COMPRESS_POINTS: bool = false;
+}
 
 /// NIST P-384 Secret Key
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
