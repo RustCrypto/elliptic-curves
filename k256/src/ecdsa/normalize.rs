@@ -6,12 +6,11 @@ use crate::Scalar;
 use ecdsa_core::NormalizeLow;
 
 impl NormalizeLow for Scalar {
-    fn normalize_low(&mut self) -> bool {
+    fn normalize_low(&self) -> (Self, bool) {
         if self.is_high().into() {
-            *self = -*self;
-            true
+            (-self, true)
         } else {
-            false
+            (*self, false)
         }
     }
 }

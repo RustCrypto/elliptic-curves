@@ -48,9 +48,7 @@ impl RandomizedSigner<Signature> for Signer {
         msg: &[u8],
     ) -> Result<Signature, Error> {
         let signer = ecdsa_core::Signer::new(&self.secret_key)?;
-
-        let mut signature = signer.try_sign_with_rng(rng, msg)?;
-        signature.normalize_s()?;
+        let signature = signer.try_sign_with_rng(rng, msg)?;
 
         #[cfg(debug_assertions)]
         assert!(Verifier::new(&self.public_key)
@@ -71,20 +69,15 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
         let d = Scalar::from_bytes(self.secret_key.as_bytes()).unwrap();
         let k = Zeroizing::new(Scalar::generate(rng));
         let z = Sha256::digest(msg);
-        let (mut signature, is_r_odd) = d.try_sign_recoverable_prehashed(&*k, &z)?;
-        let is_s_high = signature.normalize_s()?;
-        let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
-        let recoverable_signature = recoverable::Signature::new(&signature, recovery_id);
+        let signature = d.try_sign_recoverable_prehashed(&*k, &z)?;
 
         #[cfg(debug_assertions)]
         assert_eq!(
             self.public_key,
-            recoverable_signature
-                .recover_pubkey(msg)
-                .expect("recovery failed")
+            signature.recover_pubkey(msg).expect("recovery failed")
         );
 
-        Ok(recoverable_signature)
+        Ok(signature)
     }
 }
 
@@ -95,12 +88,14 @@ impl From<&Signer> for PublicKey {
 }
 
 impl RecoverableSignPrimitive<Secp256k1> for Scalar {
+    type RecoverableSignature = recoverable::Signature;
+
     #[allow(non_snake_case, clippy::many_single_char_names)]
     fn try_sign_recoverable_prehashed<K>(
         &self,
         ephemeral_scalar: &K,
         hashed_msg: &ElementBytes,
-    ) -> Result<(Signature, bool), Error>
+    ) -> Result<recoverable::Signature, Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,
     {
@@ -130,9 +125,12 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
             return Err(Error::new());
         }
 
-        let signature = Signature::from_scalars(&r.into(), &s.into());
-        let r_is_odd = R.y.normalize().is_odd();
-        Ok((signature, r_is_odd.into()))
+        let mut signature = Signature::from_scalars(&r.into(), &s.into());
+        let is_r_odd = bool::from(R.y.normalize().is_odd());
+        let is_s_high = signature.normalize_s()?;
+        let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
+        let recoverable_signature = recoverable::Signature::new(&signature, recovery_id);
+        Ok(recoverable_signature)
     }
 }
 
