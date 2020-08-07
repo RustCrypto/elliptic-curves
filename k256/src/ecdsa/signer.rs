@@ -131,7 +131,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         }
 
         let signature = Signature::from_scalars(&r.into(), &s.into());
-        let r_is_odd = R.y.is_odd();
+        let r_is_odd = R.y.normalize().is_odd();
         Ok((signature, r_is_odd.into()))
     }
 }
