@@ -19,6 +19,9 @@ use crate::{CompressedPoint, PublicKey, Secp256k1, UncompressedPoint};
 use field::FieldElement;
 use scalar::{NonZeroScalar, Scalar};
 
+#[cfg(feature = "zeroize")]
+use elliptic_curve::zeroize::Zeroize;
+
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
 
 #[rustfmt::skip]
@@ -202,6 +205,14 @@ impl FromPublicKey<Secp256k1> for AffinePoint {
             PublicKey::Compressed(point) => Self::from_compressed_point(point),
             PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
         }
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for AffinePoint {
+    fn zeroize(&mut self) {
+        self.x.zeroize();
+        self.y.zeroize();
     }
 }
 

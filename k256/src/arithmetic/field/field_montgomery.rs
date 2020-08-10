@@ -3,6 +3,9 @@
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use crate::{arithmetic::util::{adc64, mac64, mac64_typemax, sbb64}, ElementBytes};
 
+#[cfg(feature = "zeroize")]
+use elliptic_curve::zeroize::Zeroize;
+
 const fn bytes_to_u64(b: &[u8; 8]) -> u64 {
     ((b[0] as u64) << 56)
         | ((b[1] as u64) << 48)
@@ -409,5 +412,12 @@ impl PartialEq for FieldElementMontgomery {
 impl Default for FieldElementMontgomery {
     fn default() -> Self {
         Self::zero()
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for FieldElementMontgomery {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
     }
 }

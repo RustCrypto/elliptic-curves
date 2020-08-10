@@ -22,9 +22,10 @@
 //! # {
 //! use k256::{
 //!     ecdsa::{Signer, Signature, signature::RandomizedSigner},
-//!     elliptic_curve::{Generate, rand_core::OsRng},
+//!     elliptic_curve::{Generate},
 //!     SecretKey,
 //! };
+//! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Signing
 //! let secret_key = SecretKey::generate(&mut OsRng);
