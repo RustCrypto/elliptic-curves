@@ -355,6 +355,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "proptest",
+ "rand_core",
  "sha2",
 ]
 
@@ -461,6 +462,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "proptest",
+ "rand_core",
  "sha2",
 ]
 

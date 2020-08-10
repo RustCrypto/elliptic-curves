@@ -8,6 +8,9 @@ use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, Ct
 #[cfg(feature = "rand")]
 use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
+#[cfg(feature = "zeroize")]
+use elliptic_curve::zeroize::Zeroize;
+
 use super::util::{adc, mac, sbb};
 
 /// The number of 64-bit limbs used to represent a [`FieldElement`].
@@ -496,6 +499,13 @@ impl<'a> Neg for &'a FieldElement {
 
     fn neg(self) -> FieldElement {
         FieldElement::zero() - self
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for FieldElement {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
     }
 }
 

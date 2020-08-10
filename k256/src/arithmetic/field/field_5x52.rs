@@ -4,6 +4,9 @@
 use crate::ElementBytes;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
+#[cfg(feature = "zeroize")]
+use elliptic_curve::zeroize::Zeroize;
+
 /// Scalars modulo SECP256k1 modulus (2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1).
 /// Uses 5 64-bit limbs (little-endian), where in the normalized form
 /// first 4 contain 52 bits of the value each, and the last one contains 48 bits.
@@ -481,5 +484,12 @@ impl ConstantTimeEq for FieldElement5x52 {
             & self.0[2].ct_eq(&other.0[2])
             & self.0[3].ct_eq(&other.0[3])
             & self.0[4].ct_eq(&other.0[4])
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for FieldElement5x52 {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
     }
 }

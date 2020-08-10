@@ -6,6 +6,9 @@ use crate::ElementBytes;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use cfg_if::cfg_if;
 
+#[cfg(feature = "zeroize")]
+use elliptic_curve::zeroize::Zeroize;
+
 cfg_if! {
     if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
         use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
@@ -156,5 +159,14 @@ impl ConstantTimeEq for FieldElementImpl {
             & self.magnitude.ct_eq(&(other.magnitude))
             // See the comment in `conditional_select()`
             & Choice::from((self.normalized == other.normalized) as u8)
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for FieldElementImpl {
+    fn zeroize(&mut self) {
+        self.value.zeroize();
+        self.magnitude.zeroize();
+        self.normalized.zeroize();
     }
 }

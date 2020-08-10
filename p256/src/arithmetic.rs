@@ -18,6 +18,9 @@ use crate::{CompressedPoint, NistP256, PublicKey, UncompressedPoint};
 use field::{FieldElement, MODULUS};
 use scalar::{NonZeroScalar, Scalar};
 
+#[cfg(feature = "zeroize")]
+use elliptic_curve::zeroize::Zeroize;
+
 /// a = -3
 const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
     .subtract(&FieldElement::one())
@@ -192,6 +195,14 @@ impl Neg for AffinePoint {
             x: self.x,
             y: -self.y,
         }
+    }
+}
+
+#[cfg(feature = "zeroize")]
+impl Zeroize for AffinePoint {
+    fn zeroize(&mut self) {
+        self.x.zeroize();
+        self.y.zeroize();
     }
 }
 
