@@ -457,7 +457,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "p256"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
