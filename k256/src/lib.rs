@@ -31,6 +31,8 @@
 //!
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
+//!
+//! [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
