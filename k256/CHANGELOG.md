@@ -20,8 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#73]: https://github.com/RustCrypto/elliptic-curves/pull/73
 [#82]: https://github.com/RustCrypto/elliptic-curves/pull/82
 [#101]: https://github.com/RustCrypto/elliptic-curves/pull/101
-[#104]: https://github.com/RustCrypto/elliptic-curves/pull/104
 [#103]: https://github.com/RustCrypto/elliptic-curves/pull/103
+[#104]: https://github.com/RustCrypto/elliptic-curves/pull/104
 [#105]: https://github.com/RustCrypto/elliptic-curves/pull/105
 [#110]: https://github.com/RustCrypto/elliptic-curves/pull/110
 [#113]: https://github.com/RustCrypto/elliptic-curves/pull/113
