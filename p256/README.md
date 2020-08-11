@@ -15,7 +15,25 @@ multiplication, which can be used to implement protocols such as [ECDH].
 
 [Documentation][docs-link]
 
-## About P-256
+## ⚠️ Security Warning
+
+The elliptic curve arithmetic contained in this crate has never been
+independently audited!
+
+This crate has been designed with the goal of ensuring that secret-dependent
+operations are performed in constant time (using the `subtle` crate and
+constant-time formulas). However, it has not been thoroughly assessed to ensure
+that generated assembly is constant time on common CPU architectures.
+
+USE AT YOUR OWN RISK!
+
+## Supported Algorithms
+
+- [Elliptic Curve Diffie-Hellman (ECDH)][ECDH]: gated under the `ecdh` feature.
+- [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
+  `ecdsa` feature.
+
+## About NIST P-256
 
 NIST P-256 is a Weierstrass curve specified in FIPS 186-4: Digital Signature
 Standard (DSS):
@@ -68,4 +86,5 @@ dual licensed as above, without any additional terms or conditions.
 
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [`arithmetic`]: https://docs.rs/p256/latest/p256/arithmetic/index.html
-[ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
+[ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
+[ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
