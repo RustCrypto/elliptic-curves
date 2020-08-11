@@ -11,9 +11,29 @@ from the [`elliptic-curve`] crate.
 
 Optionally includes an [`arithmetic`] feature providing scalar and
 affine/projective point types with support for constant-time scalar
-multiplication, which can be used to implement protocols such as [ECDH].
+multiplication.
 
 [Documentation][docs-link]
+
+## ⚠️ Security Warning
+
+The elliptic curve arithmetic contained in this crate has never been
+independently audited!
+
+This crate has been designed with the goal of ensuring that secret-dependent
+operations are performed in constant time (using the `subtle` crate and
+constant-time formulas). However, it has not been thoroughly assessed to ensure
+that generated assembly is constant time on common CPU architectures.
+
+USE AT YOUR OWN RISK!
+
+## Supported Algorithms
+
+- [Elliptic Curve Diffie-Hellman (ECDH)][ECDH]: gated under the `ecdh` feature.
+- [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
+  `ecdsa` feature. Supports low-S normalized ECDSA signing and verification
+  as used in consensus-critical applications, and additionally supports
+  public key recovery from ECDSA signatures (as used by e.g. Ethereum).
 
 ## About K-256 (secp256k1)
 
@@ -73,5 +93,5 @@ dual licensed as above, without any additional terms or conditions.
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [`arithmetic`]: https://docs.rs/k256/latest/k256/arithmetic/index.html
-[ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
-[ECDSA]: https://github.com/RustCrypto/signatures/tree/master/ecdsa
+[ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
+[ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm

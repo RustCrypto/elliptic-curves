@@ -1,4 +1,29 @@
-//! K-256 (secp256k1) elliptic curve
+//! K-256 ([secp256k1]) elliptic curve.
+//!
+//! ## ⚠️ Security Warning
+//!
+//! The elliptic curve arithmetic contained in this crate has never been
+//! independently audited!
+//!
+//! This crate has been designed with the goal of ensuring that secret-dependent
+//! operations are performed in constant time (using the `subtle` crate and
+//! constant-time formulas). However, it has not been thoroughly assessed to ensure
+//! that generated assembly is constant time on common CPU architectures.
+//!
+//! USE AT YOUR OWN RISK!
+//!
+//! ## About K-256 (secp256k1)
+//!
+//! K-256 is a Koblitz curve typically referred to as "[secp256k1]".
+//! The "K-256" name follows NIST notation where P = prime fields,
+//! B = binary fields, and K = Koblitz curves (defined over F₂).
+//!
+//! The curve is specified as `secp256k1` by Certicom's SECG in
+//! "SEC 2: Recommended Elliptic Curve Domain Parameters":
+//!
+//! <https://www.secg.org/sec2-v2.pdf>
+//!
+//! It's primarily notable for usage in Bitcoin and other cryptocurrencies.
 //!
 //! ## Minimum Supported Rust Version
 //!
