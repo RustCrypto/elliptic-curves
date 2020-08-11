@@ -50,11 +50,11 @@
 pub use ecdsa_core::signature::{self, Error};
 
 use super::NistP256;
-use core::borrow::Borrow;
 
 #[cfg(feature = "ecdsa")]
 use {
     crate::{AffinePoint, ElementBytes, ProjectivePoint, Scalar},
+    core::borrow::Borrow,
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
     elliptic_curve::{ops::Invert, subtle::CtOption, FromBytes},
 };
@@ -72,8 +72,7 @@ pub type Signer = ecdsa_core::Signer<NistP256>;
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type Verifier = ecdsa_core::Verifier<NistP256>;
 
-#[cfg(feature = "sha256")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
+#[cfg(all(feature = "ecdsa", feature = "sha256"))]
 impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
     type Digest = sha2::Sha256;
 }
