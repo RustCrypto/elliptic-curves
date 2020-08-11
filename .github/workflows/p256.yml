@@ -37,6 +37,12 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       - run: cargo build --no-default-features --release --target ${{ matrix.target }}
+      - run: cargo build --no-default-features --features arithmetic --release --target ${{ matrix.target }}
+      - run: cargo build --no-default-features --features ecdsa-core --release --target ${{ matrix.target }}
+      # TODO(tarcieri): use new cargo resolver when stable: https://github.com/rust-lang/cargo/issues/7915
+      #- run: cargo build --no-default-features --features rand --release --target ${{ matrix.target }}
+      #- run: cargo build --no-default-features --features ecdsa --release --target ${{ matrix.target }}
+      - run: cargo build --no-default-features --features sha256 --release --target ${{ matrix.target }}
   test:
     runs-on: ubuntu-latest
     strategy:

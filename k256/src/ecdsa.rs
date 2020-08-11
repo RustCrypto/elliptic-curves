@@ -66,8 +66,7 @@ use crate::Secp256k1;
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
-#[cfg(feature = "sha256")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
+#[cfg(all(feature = "ecdsa", feature = "sha256"))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
 }

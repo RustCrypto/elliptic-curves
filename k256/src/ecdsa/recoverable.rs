@@ -86,9 +86,16 @@ impl Signature {
         Self { bytes }
     }
 
+    /// Get the recovery [`Id`] for this signature
+    pub fn recovery_id(self) -> Id {
+        self.bytes[64].try_into().expect("invalid recovery ID")
+    }
+
     /// Given a public key, message, and signature, use trial recovery for both
     /// possible recovery IDs in an attempt to determine if a suitable
     /// recovery ID exists, or return an error otherwise.
+    #[cfg(feature = "ecdsa")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn from_trial_recovery(
         public_key: &PublicKey,
         msg: &[u8],
@@ -108,11 +115,6 @@ impl Signature {
         }
 
         Err(Error::new())
-    }
-
-    /// Get the recovery [`Id`] for this signature
-    pub fn recovery_id(self) -> Id {
-        self.bytes[64].try_into().expect("invalid recovery ID")
     }
 
     /// Recover the [`PublicKey`] used to create the given signature
