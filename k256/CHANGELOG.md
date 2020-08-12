@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.2 (2020-08-11)
+### Fixed
+- Builds with either `ecdsa-core` or `sha256` in isolation ([#133])
+
+[#133]: https://github.com/RustCrypto/elliptic-curves/pull/133
+
 ## 0.4.1 (2020-08-10)
 ### Fixed
 - secp256k1 rustdoc link ([#131])
