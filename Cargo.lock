@@ -226,9 +226,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.7.1"
+version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a06af0f48740a4d6585bcc5e728ed1cd695eb281ca21264c4a21d750edf4fd6"
+checksum = "83c7b18ecf0bb8dae3a2e41e7ec2b8fdb1988a6537c88d3c341e50feb8ee355a"
 dependencies = [
  "elliptic-curve",
  "signature",
