@@ -208,7 +208,7 @@ impl Scalar8x32 {
         Self([w0, w1, w2, w3, w4, w5, w6, w7])
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
+    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, modulus).
@@ -249,7 +249,7 @@ impl Scalar8x32 {
         Self(conditional_select(&w, &r2, !underflow))
     }
 
-    /// Returns the SEC-1 encoding of this scalar.
+    /// Returns the SEC1 encoding of this scalar.
     pub fn to_bytes(&self) -> ElementBytes {
         let mut ret = ElementBytes::default();
         ret[0..4].copy_from_slice(&self.0[7].to_be_bytes());

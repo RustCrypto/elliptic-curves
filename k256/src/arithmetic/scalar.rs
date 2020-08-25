@@ -100,7 +100,7 @@ impl Scalar {
         Self::from_bytes_reduced(&digest.finalize())
     }
 
-    /// Returns the SEC-1 encoding of this scalar.
+    /// Returns the SEC1 encoding of this scalar.
     pub fn to_bytes(&self) -> ElementBytes {
         self.0.to_bytes()
     }
@@ -250,7 +250,7 @@ impl Scalar {
 impl FromBytes for Scalar {
     type Size = U32;
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded scalar.
+    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).

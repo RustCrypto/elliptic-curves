@@ -63,7 +63,7 @@ impl FieldElement {
         self.0.is_zero()
     }
 
-    /// Determine if this `FieldElement10x26` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement10x26` is odd in the SEC1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///
@@ -72,13 +72,13 @@ impl FieldElement {
         self.0.is_odd()
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(FieldElementImpl::from_bytes_unchecked(bytes))
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
@@ -86,7 +86,7 @@ impl FieldElement {
         FieldElementImpl::from_bytes(bytes).map(Self)
     }
 
-    /// Returns the SEC-1 encoding of this field element.
+    /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(&self) -> ElementBytes {
         self.0.normalize().to_bytes()
     }

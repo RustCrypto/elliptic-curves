@@ -1,7 +1,7 @@
 //! ECDSA signer
 
 use super::{recoverable, Error, Signature};
-use crate::{ElementBytes, ProjectivePoint, PublicKey, Scalar, Secp256k1, SecretKey};
+use crate::{ElementBytes, EncodedPoint, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::borrow::Borrow;
 use ecdsa_core::{hazmat::RecoverableSignPrimitive, signature::RandomizedSigner};
 use elliptic_curve::{
@@ -22,13 +22,14 @@ pub struct Signer {
     secret_key: SecretKey,
 
     /// Public key
-    public_key: PublicKey,
+    public_key: EncodedPoint,
 }
 
 impl Signer {
     /// Create a new signer
     pub fn new(secret_key: &SecretKey) -> Result<Self, Error> {
-        let public_key = PublicKey::from_secret_key(secret_key, true).map_err(|_| Error::new())?;
+        let public_key =
+            EncodedPoint::from_secret_key(secret_key, true).map_err(|_| Error::new())?;
         Ok(Self {
             secret_key: secret_key.clone(),
             public_key,
@@ -36,7 +37,7 @@ impl Signer {
     }
 
     /// Get the public key for this signer
-    pub fn public_key(&self) -> &PublicKey {
+    pub fn public_key(&self) -> &EncodedPoint {
         &self.public_key
     }
 }
@@ -81,8 +82,8 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
     }
 }
 
-impl From<&Signer> for PublicKey {
-    fn from(signer: &Signer) -> PublicKey {
+impl From<&Signer> for EncodedPoint {
+    fn from(signer: &Signer) -> EncodedPoint {
         signer.public_key
     }
 }

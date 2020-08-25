@@ -65,19 +65,13 @@ impl elliptic_curve::weierstrass::Curve for NistP384 {
     const COMPRESS_POINTS: bool = false;
 }
 
-/// NIST P-384 Secret Key
-pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
-
-/// NIST P-384 Public Key
-pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP384>;
-
-/// NIST P-384 Scalar Bytes.
+/// NIST P-384 Serialized Field Element.
 ///
-/// Byte array containing a serialized scalar value (i.e. an integer)
+/// Byte array containing a serialized field element value (base field or scalar).
 pub type ElementBytes = elliptic_curve::ElementBytes<NistP384>;
 
-/// NIST P-384 Compressed Curve Point
-pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<NistP384>;
+/// NIST P-384 SEC1 Encoded Point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 
-/// NIST P-384 Uncompressed Curve Point
-pub type UncompressedPoint = elliptic_curve::weierstrass::UncompressedPoint<NistP384>;
+/// NIST P-384 Secret Key
+pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
