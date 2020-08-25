@@ -108,19 +108,13 @@ impl elliptic_curve::Identifier for NistP256 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
 }
 
-/// NIST P-256 Secret Key
-pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
-
-/// NIST P-256 Public Key
-pub type PublicKey = elliptic_curve::weierstrass::PublicKey<NistP256>;
-
 /// NIST P-256 Serialized Field Element.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type ElementBytes = elliptic_curve::ElementBytes<NistP256>;
 
-/// NIST P-256 Compressed Curve Point
-pub type CompressedPoint = elliptic_curve::weierstrass::CompressedPoint<NistP256>;
+/// NIST P-256 SEC1 Encoded Point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
 
-/// NIST P-256 Uncompressed Curve Point
-pub type UncompressedPoint = elliptic_curve::weierstrass::UncompressedPoint<NistP256>;
+/// NIST P-256 Secret Key.
+pub type SecretKey = elliptic_curve::SecretKey<NistP256>;

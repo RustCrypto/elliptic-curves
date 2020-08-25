@@ -4,17 +4,17 @@ mod field;
 pub(crate) mod scalar;
 mod util;
 
-use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     generic_array::arr,
     point::Generator,
+    sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::public_key::FromPublicKey,
+    weierstrass::point::Decompress,
     Arithmetic,
 };
 
-use crate::{CompressedPoint, NistP256, PublicKey, UncompressedPoint};
+use crate::{ElementBytes, EncodedPoint, NistP256};
 use field::{FieldElement, MODULUS};
 use scalar::{NonZeroScalar, Scalar};
 
@@ -94,14 +94,9 @@ impl Generator for AffinePoint {
     }
 }
 
-impl AffinePoint {
-    /// Attempts to parse the given [`CompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
-    pub fn from_compressed_point(point: &CompressedPoint) -> CtOption<Self> {
-        let bytes = point.as_bytes();
-        let y_is_odd = Choice::from(bytes[0] & 0x01);
-        let x = FieldElement::from_bytes(bytes[1..33].try_into().unwrap());
-
-        x.and_then(|x| {
+impl Decompress<NistP256> for AffinePoint {
+    fn decompress(x_bytes: &ElementBytes, y_is_odd: Choice) -> CtOption<Self> {
+        FieldElement::from_bytes(x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
             let beta = alpha.sqrt();
 
@@ -113,67 +108,53 @@ impl AffinePoint {
                     !(beta.is_odd() ^ y_is_odd),
                 );
 
-                AffinePoint { x, y }
+                Self { x, y }
             })
         })
     }
-
-    /// Attempts to parse the given [`UncompressedPoint`] as a SEC-1 encoded [`AffinePoint`]
-    pub fn from_uncompressed_point(point: &UncompressedPoint) -> CtOption<Self> {
-        let bytes = point.as_bytes();
-        let x = FieldElement::from_bytes(bytes[1..33].try_into().unwrap());
-        let y = FieldElement::from_bytes(bytes[33..65].try_into().unwrap());
-
-        x.and_then(|x| {
-            y.and_then(|y| {
-                // Check that the point is on the curve
-                let lhs = y * &y;
-                let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
-                CtOption::new(AffinePoint { x, y }, lhs.ct_eq(&rhs))
-            })
-        })
-    }
-
-    /// Returns a [`PublicKey`] with the SEC-1 encoding of this point.
-    ///
-    /// If `compress` is set to `true`, point compression is applied.
-    pub fn to_pubkey(&self, compress: bool) -> PublicKey {
-        if compress {
-            PublicKey::Compressed(self.clone().into())
-        } else {
-            PublicKey::Uncompressed(self.clone().into())
-        }
-    }
 }
 
-impl From<AffinePoint> for CompressedPoint {
-    /// Returns the SEC-1 compressed encoding of this point.
-    fn from(affine_point: AffinePoint) -> CompressedPoint {
-        CompressedPoint::from_affine_coords(&affine_point.x.to_bytes(), &affine_point.y.to_bytes())
-    }
-}
-
-impl From<AffinePoint> for UncompressedPoint {
-    /// Returns the SEC-1 uncompressed encoding of this point.
-    fn from(affine_point: AffinePoint) -> UncompressedPoint {
-        UncompressedPoint::from_affine_coords(
-            &affine_point.x.to_bytes(),
-            &affine_point.y.to_bytes(),
-        )
-    }
-}
-
-impl FromPublicKey<NistP256> for AffinePoint {
-    /// Attempts to parse the given [`PublicKey`] as an SEC-1-encoded [`AffinePoint`].
+impl FromEncodedPoint<NistP256> for AffinePoint {
+    /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded [`AffinePoint`].
     ///
     /// # Returns
     ///
-    /// `None` value if `pubkey` is not on the NIST P-256 curve.
-    fn from_public_key(pubkey: &PublicKey) -> CtOption<Self> {
-        match pubkey {
-            PublicKey::Compressed(point) => Self::from_compressed_point(point),
-            PublicKey::Uncompressed(point) => Self::from_uncompressed_point(point),
+    /// `None` value if `encoded_point` is not on the secp256r1 curve.
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
+        match encoded_point.tag() {
+            sec1::Tag::CompressedEvenY => {
+                AffinePoint::decompress(encoded_point.x(), Choice::from(0))
+            }
+            sec1::Tag::CompressedOddY => {
+                AffinePoint::decompress(encoded_point.x(), Choice::from(1))
+            }
+            sec1::Tag::Uncompressed => {
+                let x = FieldElement::from_bytes(encoded_point.x());
+                let y = FieldElement::from_bytes(encoded_point.y().expect("missing y-coordinate"));
+
+                x.and_then(|x| {
+                    y.and_then(|y| {
+                        // Check that the point is on the curve
+                        let lhs = y * &y;
+                        let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
+                        CtOption::new(AffinePoint { x, y }, lhs.ct_eq(&rhs))
+                    })
+                })
+            }
         }
+    }
+}
+
+impl ToEncodedPoint<NistP256> for AffinePoint {
+    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+        EncodedPoint::from_affine_coords(&self.x.to_bytes(), &self.y.to_bytes(), compress)
+    }
+}
+
+impl From<AffinePoint> for EncodedPoint {
+    /// Returns the SEC1 compressed encoding of this point.
+    fn from(affine_point: AffinePoint) -> EncodedPoint {
+        affine_point.to_encoded_point(false)
     }
 }
 
@@ -553,9 +534,13 @@ mod tests {
     use super::{AffinePoint, ProjectivePoint, Scalar, CURVE_EQUATION_A, CURVE_EQUATION_B};
     use crate::{
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
-        PublicKey,
+        EncodedPoint,
     };
-    use elliptic_curve::{point::Generator, weierstrass::public_key::FromPublicKey, FromBytes};
+    use elliptic_curve::{
+        point::Generator,
+        sec1::{FromEncodedPoint, ToEncodedPoint},
+        FromBytes,
+    };
 
     const CURVE_EQUATION_A_BYTES: &str =
         "FFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC";
@@ -581,31 +566,33 @@ mod tests {
 
     #[test]
     fn uncompressed_round_trip() {
-        let pubkey = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let point = AffinePoint::from_public_key(&pubkey).unwrap();
+        let pubkey =
+            EncodedPoint::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
+        let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
         assert_eq!(point, AffinePoint::generator());
 
-        let res: PublicKey = point.to_pubkey(false).into();
+        let res: EncodedPoint = point.into();
         assert_eq!(res, pubkey);
     }
 
     #[test]
     fn compressed_round_trip() {
-        let pubkey = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
-        let point = AffinePoint::from_public_key(&pubkey).unwrap();
+        let pubkey = EncodedPoint::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
+        let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
         assert_eq!(point, AffinePoint::generator());
 
-        let res: PublicKey = point.to_pubkey(true).into();
+        let res: EncodedPoint = point.to_encoded_point(true).into();
         assert_eq!(res, pubkey);
     }
 
     #[test]
     fn uncompressed_to_compressed() {
-        let encoded = PublicKey::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
+        let encoded =
+            EncodedPoint::from_bytes(&hex::decode(UNCOMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_public_key(&encoded)
+        let res = AffinePoint::from_encoded_point(&encoded)
             .unwrap()
-            .to_pubkey(true);
+            .to_encoded_point(true);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),
@@ -615,11 +602,12 @@ mod tests {
 
     #[test]
     fn compressed_to_uncompressed() {
-        let encoded = PublicKey::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
+        let encoded =
+            EncodedPoint::from_bytes(&hex::decode(COMPRESSED_BASEPOINT).unwrap()).unwrap();
 
-        let res = AffinePoint::from_public_key(&encoded)
+        let res = AffinePoint::from_encoded_point(&encoded)
             .unwrap()
-            .to_pubkey(false);
+            .to_encoded_point(false);
 
         assert_eq!(
             hex::encode(res.as_bytes()).to_uppercase(),

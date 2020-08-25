@@ -38,9 +38,9 @@
 //! let signature: Signature = signer.sign_with_rng(&mut OsRng, message);
 //!
 //! // Verification
-//! use k256::{PublicKey, ecdsa::{Verifier, signature::Verifier as _}};
+//! use k256::{EncodedPoint, ecdsa::{Verifier, signature::Verifier as _}};
 //!
-//! let public_key = PublicKey::from_secret_key(&secret_key, true).expect("secret key invalid");
+//! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
 //! let verifier = Verifier::new(&public_key).expect("public key invalid");
 //!
 //! assert!(verifier.verify(message, &signature).is_ok());

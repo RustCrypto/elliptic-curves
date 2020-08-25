@@ -114,7 +114,7 @@ impl FieldElement {
         )
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
@@ -139,7 +139,7 @@ impl FieldElement {
         CtOption::new(FieldElement(w).mul(&R2), Choice::from(is_some))
     }
 
-    /// Returns the SEC-1 encoding of this field element.
+    /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(&self) -> ElementBytes {
         // Convert from Montgomery form to canonical form
         let tmp =
@@ -162,7 +162,7 @@ impl FieldElement {
         self.ct_eq(&FieldElement::zero())
     }
 
-    /// Determine if this `FieldElement` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement` is odd in the SEC1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///

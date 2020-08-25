@@ -1,7 +1,7 @@
 //! Ethereum-style "recoverable signatures".
 //!
 //! These signatures include an additional [`Id`] field which allows for
-//! recovery of the [`PublicKey`] used to create them. This is helpful in
+//! recovery of the [`EncodedPoint`] used to create them. This is helpful in
 //! cases where the hash/fingerprint of a key used to create a signature is
 //! known in advance.
 //!
@@ -13,12 +13,12 @@
 //! use k256::{
 //!     ecdsa::{Signer, recoverable, signature::RandomizedSigner},
 //!     elliptic_curve::{Generate, rand_core::OsRng},
-//!     SecretKey, PublicKey
+//!     SecretKey, EncodedPoint
 //! };
 //!
 //! // Signing
 //! let secret_key = SecretKey::generate(&mut OsRng);
-//! let public_key = PublicKey::from_secret_key(&secret_key, true).expect("secret key invalid");
+//! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
 //!
 //! let signer = Signer::new(&secret_key).expect("secret key invalid");
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
@@ -51,7 +51,7 @@ use elliptic_curve::{
 };
 
 #[cfg(any(feature = "ecdsa", docsrs))]
-use crate::PublicKey;
+use crate::EncodedPoint;
 
 #[cfg(feature = "ecdsa")]
 use sha2::{Digest, Sha256};
@@ -60,7 +60,7 @@ use sha2::{Digest, Sha256};
 pub const SIZE: usize = 65;
 
 /// Ethereum-style "recoverable signatures" which allow for the recovery of
-/// the signer's [`PublicKey`] from the signature itself.
+/// the signer's [`EncodedPoint`] from the signature itself.
 ///
 /// This format consists of [`Signature`] followed by a 1-byte recovery [`Id`]
 /// (65-bytes total):
@@ -97,7 +97,7 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn from_trial_recovery(
-        public_key: &PublicKey,
+        public_key: &EncodedPoint,
         msg: &[u8],
         signature: &super::Signature,
     ) -> Result<Self, Error> {
@@ -117,11 +117,11 @@ impl Signature {
         Err(Error::new())
     }
 
-    /// Recover the [`PublicKey`] used to create the given signature
+    /// Recover the [`EncodedPoint`] used to create the given signature
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
-    pub fn recover_pubkey(&self, msg: &[u8]) -> Result<PublicKey, Error> {
+    pub fn recover_pubkey(&self, msg: &[u8]) -> Result<EncodedPoint, Error> {
         let r = self.r()?;
         let s = self.s()?;
         let z = Scalar::from_digest(Sha256::new().chain(msg));
@@ -151,7 +151,7 @@ impl Signature {
 
         // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         if pk.is_some().into() {
-            Ok(pk.unwrap().to_pubkey(true))
+            Ok(pk.unwrap().into())
         } else {
             Err(Error::new())
         }
@@ -234,10 +234,10 @@ impl From<Signature> for super::Signature {
     }
 }
 
-/// Identifier used to compute a [`PublicKey`] from a [`Signature`].
+/// Identifier used to compute a [`EncodedPoint`] from a [`Signature`].
 ///
 /// In practice these values are always either `0` or `1`, and indicate
-/// whether or not the y-coordinate of the original [`PublicKey`] is odd.
+/// whether or not the y-coordinate of the original [`EncodedPoint`] is odd.
 ///
 /// While values `2` and `3` are also defined to capture whether `r`
 /// overflowed the curve's order, this crate does *not* support them.

@@ -11,16 +11,16 @@
 //! ```
 //! # #[cfg(feature = "ecdh")]
 //! # {
-//! use k256::{PublicKey, ecdh::EphemeralSecret};
+//! use k256::{EncodedPoint, ecdh::EphemeralSecret};
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::generate(&mut OsRng);
-//! let alice_public = PublicKey::from(&alice_secret);
+//! let alice_public = EncodedPoint::from(&alice_secret);
 //!
 //! // Bob
 //! let bob_secret = EphemeralSecret::generate(&mut OsRng);
-//! let bob_public = PublicKey::from(&bob_secret);
+//! let bob_public = EncodedPoint::from(&bob_secret);
 //!
 //! // Alice computes shared secret from Bob's public key
 //! let alice_shared = alice_secret.diffie_hellman(&bob_public)

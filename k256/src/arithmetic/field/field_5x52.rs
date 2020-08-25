@@ -26,7 +26,7 @@ impl FieldElement5x52 {
         Self([1, 0, 0, 0, 0])
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let w0 = (bytes[31] as u64)
@@ -71,7 +71,7 @@ impl FieldElement5x52 {
         Self([w0, w1, w2, w3, w4])
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
@@ -81,7 +81,7 @@ impl FieldElement5x52 {
         CtOption::new(res, !overflow)
     }
 
-    /// Returns the SEC-1 encoding of this field element.
+    /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(&self) -> ElementBytes {
         let mut ret = ElementBytes::default();
         ret[0] = (self.0[4] >> 40) as u8;
@@ -220,7 +220,7 @@ impl FieldElement5x52 {
         Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3] | self.0[4]) == 0) as u8)
     }
 
-    /// Determine if this `FieldElement5x52` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement5x52` is odd in the SEC1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///

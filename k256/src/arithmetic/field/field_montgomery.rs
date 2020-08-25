@@ -75,7 +75,7 @@ impl FieldElementMontgomery {
         Self(bytes_to_words(bytes)).mul(&R2)
     }
 
-    /// Attempts to parse the given byte array as an SEC-1-encoded field element.
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
@@ -94,7 +94,7 @@ impl FieldElementMontgomery {
         CtOption::new(Self(words).mul(&R2), Choice::from(is_some))
     }
 
-    /// Returns the SEC-1 encoding of this field element.
+    /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(&self) -> ElementBytes {
         let res = Self::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
         let mut ret = ElementBytes::default();
@@ -118,7 +118,7 @@ impl FieldElementMontgomery {
         self.is_zero()
     }
 
-    /// Determine if this `FieldElement` is odd in the SEC-1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement` is odd in the SEC1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///
