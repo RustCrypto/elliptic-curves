@@ -46,11 +46,13 @@ use crate::{
     },
     ecdsa::digest::Digest,
     elliptic_curve::consts::U32,
+    NonZeroScalar,
 };
 
 #[cfg(feature = "ecdsa")]
 use elliptic_curve::{
-    subtle::{Choice, ConditionallySelectable, CtOption},
+    ops::Invert,
+    subtle::{Choice, ConditionallySelectable},
     FromBytes,
 };
 
@@ -164,7 +166,7 @@ impl Signature {
 
             let r_inv = r.invert().unwrap();
             let u1 = -(r_inv * &z);
-            let u2 = r_inv * &s;
+            let u2 = r_inv * s.as_ref();
             ((&ProjectivePoint::generator() * &u1) + &(R * &u2)).to_affine()
         });
 
@@ -179,12 +181,11 @@ impl Signature {
     /// Parse the `r` component of this signature to a [`Scalar`]
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-    pub fn r(&self) -> Scalar {
-        let maybe_r = Scalar::from_bytes(self.bytes[..32].try_into().unwrap())
-            .and_then(|r| CtOption::new(r, !r.is_zero()));
+    pub fn r(&self) -> NonZeroScalar {
+        let r = NonZeroScalar::from_bytes(self.bytes[..32].try_into().unwrap());
 
-        if maybe_r.is_some().into() {
-            maybe_r.unwrap()
+        if r.is_some().into() {
+            r.unwrap()
         } else {
             unreachable!("r-component ensured valid in constructor");
         }
@@ -193,12 +194,11 @@ impl Signature {
     /// Parse the `s` component of this signature to a [`Scalar`]
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-    pub fn s(&self) -> Scalar {
-        let maybe_s = Scalar::from_bytes(self.bytes[32..64].try_into().unwrap())
-            .and_then(|s| CtOption::new(s, !s.is_zero()));
+    pub fn s(&self) -> NonZeroScalar {
+        let s = NonZeroScalar::from_bytes(self.bytes[32..64].try_into().unwrap());
 
-        if maybe_s.is_some().into() {
-            maybe_s.unwrap()
+        if s.is_some().into() {
+            s.unwrap()
         } else {
             unreachable!("s-component ensured valid in constructor");
         }
