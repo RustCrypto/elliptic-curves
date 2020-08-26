@@ -66,10 +66,36 @@ pub use self::{signer::Signer, verifier::Verifier};
 
 use crate::Secp256k1;
 
+#[cfg(feature = "ecdsa")]
+use crate::{
+    elliptic_curve::{subtle::CtOption, FromBytes},
+    Scalar,
+};
+#[cfg(feature = "ecdsa")]
+use core::convert::TryInto;
+
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
 #[cfg(all(feature = "ecdsa", feature = "sha256"))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
+}
+
+/// Validate that the scalars of an ECDSA signature are modulo the order
+#[cfg(feature = "ecdsa")]
+fn check_scalars(signature: &Signature) -> Result<(), Error> {
+    let (r_bytes, s_bytes) = signature.as_ref().split_at(32);
+
+    let maybe_r = Scalar::from_bytes(r_bytes.try_into().unwrap())
+        .and_then(|r| CtOption::new(r, !r.is_zero()));
+
+    let maybe_s = Scalar::from_bytes(s_bytes.try_into().unwrap())
+        .and_then(|s| CtOption::new(s, !s.is_zero()));
+
+    if maybe_r.is_some().into() && maybe_s.is_some().into() {
+        Ok(())
+    } else {
+        Err(Error::new())
+    }
 }
