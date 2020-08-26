@@ -58,6 +58,9 @@ mod verifier;
 
 pub use ecdsa_core::signature::{self, Error};
 
+#[cfg(feature = "digest")]
+pub use ecdsa_core::signature::digest;
+
 #[cfg(feature = "ecdsa")]
 pub use self::{signer::Signer, verifier::Verifier};
 

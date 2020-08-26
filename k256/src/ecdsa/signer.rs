@@ -1,7 +1,10 @@
 //! ECDSA signer
 
 use super::{recoverable, Error, Signature};
-use crate::{ElementBytes, EncodedPoint, ProjectivePoint, Scalar, Secp256k1, SecretKey};
+use crate::{
+    ecdsa::digest::Digest, ElementBytes, EncodedPoint, ProjectivePoint, Scalar, Secp256k1,
+    SecretKey,
+};
 use core::borrow::Borrow;
 use ecdsa_core::{hazmat::RecoverableSignPrimitive, signature::RandomizedSigner};
 use elliptic_curve::{
@@ -10,7 +13,9 @@ use elliptic_curve::{
     zeroize::Zeroizing,
     FromBytes, Generate,
 };
-use sha2::{Digest, Sha256};
+
+#[cfg(feature = "keccak256")]
+use sha3::Keccak256;
 
 #[cfg(debug_assertions)]
 use crate::{ecdsa::signature::Verifier as _, ecdsa::Verifier};
@@ -42,6 +47,7 @@ impl Signer {
     }
 }
 
+#[cfg(feature = "sha256")]
 impl RandomizedSigner<Signature> for Signer {
     fn try_sign_with_rng(
         &self,
@@ -61,6 +67,7 @@ impl RandomizedSigner<Signature> for Signer {
     }
 }
 
+#[cfg(feature = "keccak256")]
 impl RandomizedSigner<recoverable::Signature> for Signer {
     fn try_sign_with_rng(
         &self,
@@ -69,13 +76,13 @@ impl RandomizedSigner<recoverable::Signature> for Signer {
     ) -> Result<recoverable::Signature, Error> {
         let d = Scalar::from_bytes(self.secret_key.as_bytes()).unwrap();
         let k = Zeroizing::new(Scalar::generate(rng));
-        let z = Sha256::digest(msg);
+        let z = Keccak256::digest(msg);
         let signature = d.try_sign_recoverable_prehashed(&*k, &z)?;
 
         #[cfg(debug_assertions)]
         assert_eq!(
             self.public_key,
-            signature.recover_pubkey(msg).expect("recovery failed")
+            signature.recover_public_key(msg).expect("recovery failed")
         );
 
         Ok(signature)
