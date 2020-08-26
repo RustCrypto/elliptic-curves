@@ -137,8 +137,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         let is_r_odd = bool::from(R.y.normalize().is_odd());
         let is_s_high = signature.normalize_s()?;
         let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
-        let recoverable_signature = recoverable::Signature::new(&signature, recovery_id);
-        Ok(recoverable_signature)
+        recoverable::Signature::new(&signature, recovery_id)
     }
 }
 

@@ -83,11 +83,14 @@ impl Signature {
     ///
     /// This is an "unchecked" conversion and assumes the provided [`Id`]
     /// is valid for this signature.
-    pub fn new(signature: &super::Signature, recovery_id: Id) -> Self {
+    pub fn new(signature: &super::Signature, recovery_id: Id) -> Result<Self, Error> {
+        #[cfg(feature = "ecdsa")]
+        super::check_scalars(signature)?;
+
         let mut bytes = [0u8; SIZE];
         bytes[..64].copy_from_slice(signature.as_ref());
         bytes[64] = recovery_id.0;
-        Self { bytes }
+        Ok(Self { bytes })
     }
 
     /// Get the recovery [`Id`] for this signature
@@ -109,11 +112,11 @@ impl Signature {
         signature.normalize_s()?;
 
         for recovery_id in 0..=1 {
-            let recoverable_signature = Signature::new(&signature, Id(recovery_id));
-
-            if let Ok(recovered_key) = recoverable_signature.recover_public_key(msg) {
-                if public_key == &recovered_key {
-                    return Ok(recoverable_signature);
+            if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {
+                if let Ok(recovered_key) = recoverable_signature.recover_public_key(msg) {
+                    if public_key == &recovered_key {
+                        return Ok(recoverable_signature);
+                    }
                 }
             }
         }
@@ -138,8 +141,8 @@ impl Signature {
     where
         D: Digest<OutputSize = U32>,
     {
-        let r = self.r()?;
-        let s = self.s()?;
+        let r = self.r();
+        let s = self.s();
         let z = Scalar::from_digest(msg_prehash);
         let x = FieldElement::from_bytes(&r.to_bytes());
 
@@ -175,29 +178,29 @@ impl Signature {
 
     /// Parse the `r` component of this signature to a [`Scalar`]
     #[cfg(feature = "ecdsa")]
-    fn r(&self) -> Result<Scalar, Error> {
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    pub fn r(&self) -> Scalar {
         let maybe_r = Scalar::from_bytes(self.bytes[..32].try_into().unwrap())
             .and_then(|r| CtOption::new(r, !r.is_zero()));
 
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         if maybe_r.is_some().into() {
-            Ok(maybe_r.unwrap())
+            maybe_r.unwrap()
         } else {
-            Err(Error::new())
+            unreachable!("r-component ensured valid in constructor");
         }
     }
 
     /// Parse the `s` component of this signature to a [`Scalar`]
     #[cfg(feature = "ecdsa")]
-    fn s(&self) -> Result<Scalar, Error> {
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    pub fn s(&self) -> Scalar {
         let maybe_s = Scalar::from_bytes(self.bytes[32..64].try_into().unwrap())
             .and_then(|s| CtOption::new(s, !s.is_zero()));
 
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         if maybe_s.is_some().into() {
-            Ok(maybe_s.unwrap())
+            maybe_s.unwrap()
         } else {
-            Err(Error::new())
+            unreachable!("s-component ensured valid in constructor");
         }
     }
 }
@@ -234,13 +237,13 @@ impl TryFrom<&[u8]> for Signature {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Error> {
-        if bytes.len() == SIZE && Id::try_from(bytes[64]).is_ok() {
-            let mut arr = [0u8; SIZE];
-            arr.copy_from_slice(bytes);
-            Ok(Self { bytes: arr })
-        } else {
-            Err(Error::new())
+        if bytes.len() != SIZE {
+            return Err(Error::new());
         }
+
+        let signature = super::Signature::try_from(&bytes[..64])?;
+        let recovery_id = Id::try_from(bytes[64])?;
+        Self::new(&signature, recovery_id)
     }
 }
 
