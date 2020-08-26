@@ -67,10 +67,7 @@ pub use self::{signer::Signer, verifier::Verifier};
 use crate::Secp256k1;
 
 #[cfg(feature = "ecdsa")]
-use crate::{
-    elliptic_curve::{subtle::CtOption, FromBytes},
-    Scalar,
-};
+use crate::{elliptic_curve::FromBytes, NonZeroScalar};
 #[cfg(feature = "ecdsa")]
 use core::convert::TryInto;
 
@@ -86,12 +83,8 @@ impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
 #[cfg(feature = "ecdsa")]
 fn check_scalars(signature: &Signature) -> Result<(), Error> {
     let (r_bytes, s_bytes) = signature.as_ref().split_at(32);
-
-    let maybe_r = Scalar::from_bytes(r_bytes.try_into().unwrap())
-        .and_then(|r| CtOption::new(r, !r.is_zero()));
-
-    let maybe_s = Scalar::from_bytes(s_bytes.try_into().unwrap())
-        .and_then(|s| CtOption::new(s, !s.is_zero()));
+    let maybe_r = NonZeroScalar::from_bytes(r_bytes.try_into().unwrap());
+    let maybe_s = NonZeroScalar::from_bytes(s_bytes.try_into().unwrap());
 
     if maybe_r.is_some().into() && maybe_s.is_some().into() {
         Ok(())
