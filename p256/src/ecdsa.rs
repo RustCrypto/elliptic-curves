@@ -143,37 +143,52 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
-    use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
+    mod sign {
+        use crate::{
+            ecdsa::{signature::Signer as _, Signer},
+            test_vectors::ecdsa::ECDSA_TEST_VECTORS,
+            NistP256,
+        };
+        use hex_literal::hex;
 
-    #[cfg(feature = "rand")]
-    use {
-        crate::{BlindedScalar, Scalar},
-        core::convert::TryInto,
-        ecdsa_core::hazmat::SignPrimitive,
-        elliptic_curve::{rand_core::OsRng, FromBytes},
-    };
+        #[cfg(feature = "rand")]
+        use crate::{elliptic_curve::rand_core::OsRng, BlindedScalar, Scalar};
 
-    mod signing {
-        use super::{NistP256, ECDSA_TEST_VECTORS};
         ecdsa_core::new_signing_test!(NistP256, ECDSA_TEST_VECTORS);
+
+        // Test vector from RFC 6979 Appendix 2.5 (NIST P-256 + SHA-256)
+        // <https://tools.ietf.org/html/rfc6979#appendix-A.2.5>
+        #[test]
+        fn rfc6979() {
+            let x = &hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
+            let signer = Signer::from_bytes(x).unwrap();
+            let signature = signer.sign(b"sample");
+            assert_eq!(
+                signature.as_ref(),
+                &hex!(
+                    "efd48b2aacb6a8fd1140dd9cd45e81d69d2c877b56aaf991c34d0ea84eaf3716
+                     f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8"
+                )[..]
+            );
+        }
+
+        #[cfg(feature = "rand")]
+        #[test]
+        fn scalar_blinding() {
+            let vector = &ECDSA_TEST_VECTORS[0];
+            let d = Scalar::from_bytes(vector.d.try_into().unwrap()).unwrap();
+            let k = Scalar::from_bytes(vector.k.try_into().unwrap()).unwrap();
+            let k_blinded = BlindedScalar::new(k, &mut OsRng);
+            let z = Scalar::from_bytes(vector.m.try_into().unwrap()).unwrap();
+            let sig = d.try_sign_prehashed(&k_blinded, &z).unwrap();
+
+            assert_eq!(vector.r, sig.r().as_slice());
+            assert_eq!(vector.s, sig.s().as_slice());
+        }
     }
 
-    mod verification {
-        use super::{NistP256, ECDSA_TEST_VECTORS};
+    mod verify {
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
         ecdsa_core::new_verification_test!(NistP256, ECDSA_TEST_VECTORS);
-    }
-
-    #[cfg(feature = "rand")]
-    #[test]
-    fn scalar_blinding() {
-        let vector = &ECDSA_TEST_VECTORS[0];
-        let d = Scalar::from_bytes(vector.d.try_into().unwrap()).unwrap();
-        let k = Scalar::from_bytes(vector.k.try_into().unwrap()).unwrap();
-        let k_blinded = BlindedScalar::new(k, &mut OsRng);
-        let z = Scalar::from_bytes(vector.m.try_into().unwrap()).unwrap();
-        let sig = d.try_sign_prehashed(&k_blinded, &z).unwrap();
-
-        assert_eq!(vector.r, sig.r().as_slice());
-        assert_eq!(vector.s, sig.s().as_slice());
     }
 }
