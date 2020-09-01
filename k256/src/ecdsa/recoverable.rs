@@ -11,7 +11,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use k256::{
-//!     ecdsa::{Signer, recoverable, signature::RandomizedSigner},
+//!     ecdsa::{Signer, recoverable, signature::Signer as _},
 //!     elliptic_curve::{Generate, rand_core::OsRng},
 //!     SecretKey, EncodedPoint
 //! };
@@ -24,9 +24,9 @@
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
-//! // `Signer` has many impls of the `RandomizedSigner` trait (for both
-//! // regular and recoverable signature types).
-//! let signature: recoverable::Signature = signer.sign_with_rng(&mut OsRng, message);
+//! // `Signer` has many impls of the `Signer` trait (for both regular and
+//! // recoverable signature types).
+//! let signature: recoverable::Signature = signer.sign(message);
 //! let recovered_pubkey = signature.recover_public_key(message).expect("couldn't recover pubkey");
 //!
 //! assert_eq!(&public_key, &recovered_pubkey);
@@ -44,16 +44,13 @@ use crate::{
     arithmetic::{
         field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint, CURVE_EQUATION_B,
     },
-    ecdsa::digest::Digest,
-    elliptic_curve::consts::U32,
+    elliptic_curve::{
+        consts::U32,
+        ops::Invert,
+        subtle::{Choice, ConditionallySelectable},
+        Digest, FromBytes, FromDigest,
+    },
     NonZeroScalar,
-};
-
-#[cfg(feature = "ecdsa")]
-use elliptic_curve::{
-    ops::Invert,
-    subtle::{Choice, ConditionallySelectable},
-    FromBytes,
 };
 
 #[cfg(any(feature = "ecdsa", docsrs))]

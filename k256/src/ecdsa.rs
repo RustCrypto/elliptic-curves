@@ -21,7 +21,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use k256::{
-//!     ecdsa::{Signer, Signature, signature::RandomizedSigner},
+//!     ecdsa::{Signer, Signature, signature::Signer as _},
 //!     elliptic_curve::{Generate},
 //!     SecretKey,
 //! };
@@ -33,9 +33,9 @@
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
-//! // `Signer` has many impls of the `RandomizedSigner` trait (for both
-//! // regular and recoverable signature types).
-//! let signature: Signature = signer.sign_with_rng(&mut OsRng, message);
+//! // `Signer` has many impls of the `Signer` trait (for both regular and
+//! // recoverable signature types).
+//! let signature: Signature = signer.sign(message);
 //!
 //! // Verification
 //! use k256::{EncodedPoint, ecdsa::{Verifier, signature::Verifier as _}};
