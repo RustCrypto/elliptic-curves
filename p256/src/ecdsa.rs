@@ -21,7 +21,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p256::{
-//!     ecdsa::{Signer, Signature, signature::RandomizedSigner},
+//!     ecdsa::{Signer, Signature, signature::Signer as _},
 //!     elliptic_curve::{Generate},
 //!     SecretKey,
 //! };
@@ -32,10 +32,7 @@
 //! let signer = Signer::new(&secret_key).expect("secret key invalid");
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
-//! // Note: the signature type must be annotated or otherwise inferrable as
-//! // `Signer` has many impls of the `RandomizedSigner` trait (for both
-//! // regular and recoverable signature types).
-//! let signature: Signature = signer.sign_with_rng(&mut OsRng, message);
+//! let signature: Signature = signer.sign(message);
 //!
 //! // Verification
 //! use p256::{EncodedPoint, ecdsa::{Verifier, signature::Verifier as _}};
@@ -53,7 +50,7 @@ use super::NistP256;
 
 #[cfg(feature = "ecdsa")]
 use {
-    crate::{AffinePoint, ElementBytes, ProjectivePoint, Scalar},
+    crate::{AffinePoint, ProjectivePoint, Scalar},
     core::borrow::Borrow,
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
     elliptic_curve::{ops::Invert, subtle::CtOption, FromBytes},
@@ -80,11 +77,7 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
 #[cfg(feature = "ecdsa")]
 impl SignPrimitive<NistP256> for Scalar {
     #[allow(clippy::many_single_char_names)]
-    fn try_sign_prehashed<K>(
-        &self,
-        ephemeral_scalar: &K,
-        hashed_msg: &ElementBytes,
-    ) -> Result<Signature, Error>
+    fn try_sign_prehashed<K>(&self, ephemeral_scalar: &K, z: &Scalar) -> Result<Signature, Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,
     {
@@ -104,9 +97,6 @@ impl SignPrimitive<NistP256> for Scalar {
         // then reduce it to an element of the scalar field
         let r = Scalar::from_bytes_reduced(&x.to_bytes());
 
-        // Reduce message hash to an element of the scalar field
-        let z = Scalar::from_bytes_reduced(hashed_msg);
-
         // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * &(z + &(r * self));
 
@@ -120,11 +110,7 @@ impl SignPrimitive<NistP256> for Scalar {
 
 #[cfg(feature = "ecdsa")]
 impl VerifyPrimitive<NistP256> for AffinePoint {
-    fn verify_prehashed(
-        &self,
-        hashed_msg: &ElementBytes,
-        signature: &Signature,
-    ) -> Result<(), Error> {
+    fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
         let maybe_r =
             Scalar::from_bytes(signature.r()).and_then(|r| CtOption::new(r, !r.is_zero()));
 
@@ -138,7 +124,6 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
             return Err(Error::new());
         };
 
-        let z = Scalar::from_bytes_reduced(hashed_msg);
         let s_inv = s.invert().unwrap();
         let u1 = z * &s_inv;
         let u2 = r * &s_inv;
@@ -158,14 +143,25 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
-    use super::*;
-    use crate::test_vectors::ecdsa::ECDSA_TEST_VECTORS;
+    use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
 
     #[cfg(feature = "rand")]
-    use {crate::BlindedScalar, elliptic_curve::rand_core::OsRng};
+    use {
+        crate::{BlindedScalar, Scalar},
+        core::convert::TryInto,
+        ecdsa_core::hazmat::SignPrimitive,
+        elliptic_curve::{rand_core::OsRng, FromBytes},
+    };
 
-    ecdsa_core::new_signing_test!(ECDSA_TEST_VECTORS);
-    ecdsa_core::new_verification_test!(ECDSA_TEST_VECTORS);
+    mod signing {
+        use super::{NistP256, ECDSA_TEST_VECTORS};
+        ecdsa_core::new_signing_test!(NistP256, ECDSA_TEST_VECTORS);
+    }
+
+    mod verification {
+        use super::{NistP256, ECDSA_TEST_VECTORS};
+        ecdsa_core::new_verification_test!(NistP256, ECDSA_TEST_VECTORS);
+    }
 
     #[cfg(feature = "rand")]
     #[test]
@@ -174,9 +170,8 @@ mod tests {
         let d = Scalar::from_bytes(vector.d.try_into().unwrap()).unwrap();
         let k = Scalar::from_bytes(vector.k.try_into().unwrap()).unwrap();
         let k_blinded = BlindedScalar::new(k, &mut OsRng);
-        let sig = d
-            .try_sign_prehashed(&k_blinded, GenericArray::from_slice(vector.m))
-            .unwrap();
+        let z = Scalar::from_bytes(vector.m.try_into().unwrap()).unwrap();
+        let sig = d.try_sign_prehashed(&k_blinded, &z).unwrap();
 
         assert_eq!(vector.r, sig.r().as_slice());
         assert_eq!(vector.s, sig.s().as_slice());

@@ -15,6 +15,9 @@ use elliptic_curve::{
     FromBytes,
 };
 
+#[cfg(feature = "digest")]
+use elliptic_curve::{Digest, FromDigest};
+
 #[cfg(feature = "rand")]
 use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
@@ -158,6 +161,19 @@ impl FromBytes for Scalar {
         let is_some = (borrow as u8) & 1;
 
         CtOption::new(Scalar(w), Choice::from(is_some))
+    }
+}
+
+#[cfg(feature = "digest")]
+#[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
+impl FromDigest<NistP256> for Scalar {
+    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
+    /// modulo n.
+    fn from_digest<D>(digest: D) -> Self
+    where
+        D: Digest<OutputSize = U32>,
+    {
+        Self::from_bytes_reduced(&digest.finalize())
     }
 }
 

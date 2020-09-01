@@ -1,11 +1,10 @@
 //! ECDSA verifier
 
 use super::{recoverable, Error, Signature};
-use crate::{
-    AffinePoint, ElementBytes, EncodedPoint, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1,
-};
+use crate::{AffinePoint, EncodedPoint, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1};
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
-use elliptic_curve::{ops::Invert, FromBytes};
+use elliptic_curve::{consts::U32, ops::Invert, FromBytes};
+use signature::{digest::Digest, DigestVerifier, PrehashSignature};
 
 /// ECDSA/secp256k1 verifier
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
@@ -23,24 +22,37 @@ impl Verifier {
     }
 }
 
-impl signature::Verifier<Signature> for Verifier {
-    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
-        self.verifier.verify(msg, signature)
+impl<S> signature::Verifier<S> for Verifier
+where
+    S: PrehashSignature,
+    Self: DigestVerifier<S::Digest, S>,
+{
+    fn verify(&self, msg: &[u8], signature: &S) -> Result<(), Error> {
+        self.verify_digest(S::Digest::new().chain(msg), signature)
     }
 }
 
-impl signature::Verifier<recoverable::Signature> for Verifier {
-    fn verify(&self, msg: &[u8], signature: &recoverable::Signature) -> Result<(), Error> {
-        self.verifier.verify(msg, &Signature::from(*signature))
+impl<D> DigestVerifier<D, Signature> for Verifier
+where
+    D: Digest<OutputSize = U32>,
+{
+    fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
+        self.verifier.verify_digest(digest, signature)
+    }
+}
+
+impl<D> DigestVerifier<D, recoverable::Signature> for Verifier
+where
+    D: Digest<OutputSize = U32>,
+{
+    fn verify_digest(&self, digest: D, signature: &recoverable::Signature) -> Result<(), Error> {
+        self.verifier
+            .verify_digest(digest, &Signature::from(*signature))
     }
 }
 
 impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(
-        &self,
-        hashed_msg: &ElementBytes,
-        signature: &Signature,
-    ) -> Result<(), Error> {
+    fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
         let maybe_r = NonZeroScalar::from_bytes(signature.r());
         let maybe_s = NonZeroScalar::from_bytes(signature.s());
 
@@ -52,21 +64,20 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         };
 
         // Ensure signature is "low S" normalized ala BIP 0062
-        if s.as_ref().is_high().into() {
+        if s.is_high().into() {
             return Err(Error::new());
         }
 
-        let z = Scalar::from_bytes_reduced(&hashed_msg);
         let s_inv = s.invert().unwrap();
         let u1 = z * &s_inv;
-        let u2 = r.as_ref() * &s_inv;
+        let u2 = *r * &s_inv;
 
         let x = ((&ProjectivePoint::generator() * &u1) + &(ProjectivePoint::from(*self) * &u2))
             .to_affine()
             .unwrap()
             .x;
 
-        if Scalar::from_bytes_reduced(&x.to_bytes()).eq(r.as_ref()) {
+        if Scalar::from_bytes_reduced(&x.to_bytes()).eq(&r) {
             Ok(())
         } else {
             Err(Error::new())
@@ -76,9 +87,6 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, AffinePoint};
-    use ecdsa_core::generic_array::GenericArray;
-
-    ecdsa_core::new_verification_test!(ECDSA_TEST_VECTORS);
+    use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, Secp256k1};
+    ecdsa_core::new_verification_test!(Secp256k1, ECDSA_TEST_VECTORS);
 }

@@ -1,97 +1,108 @@
 //! ECDSA signer
 
 use super::{recoverable, Error, Signature};
-use crate::{
-    ecdsa::digest::Digest, ElementBytes, EncodedPoint, ProjectivePoint, Scalar, Secp256k1,
-    SecretKey,
-};
+use crate::{ElementBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::borrow::Borrow;
-use ecdsa_core::{hazmat::RecoverableSignPrimitive, signature::RandomizedSigner};
+use ecdsa_core::{
+    hazmat::RecoverableSignPrimitive,
+    signature::{self, DigestSigner, RandomizedDigestSigner},
+    signer::rfc6979,
+};
 use elliptic_curve::{
+    consts::U32,
+    digest::{BlockInput, FixedOutput, Reset, Update},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    zeroize::Zeroizing,
-    FromBytes, Generate,
+    FromBytes, FromDigest,
 };
+use signature::PrehashSignature;
 
-#[cfg(feature = "keccak256")]
-use sha3::Keccak256;
-
-#[cfg(debug_assertions)]
-use crate::{ecdsa::signature::Verifier as _, ecdsa::Verifier};
+#[cfg(any(feature = "sha256", feature = "keccak256"))]
+use signature::digest::Digest;
 
 /// ECDSA/secp256k1 signer
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub struct Signer {
     /// Secret scalar value
-    secret_key: SecretKey,
-
-    /// Public key
-    public_key: EncodedPoint,
+    secret_scalar: NonZeroScalar,
 }
 
 impl Signer {
     /// Create a new signer
     pub fn new(secret_key: &SecretKey) -> Result<Self, Error> {
-        let public_key =
-            EncodedPoint::from_secret_key(secret_key, true).map_err(|_| Error::new())?;
-        Ok(Self {
-            secret_key: secret_key.clone(),
-            public_key,
-        })
-    }
+        let scalar = NonZeroScalar::from_bytes(secret_key.as_bytes());
 
-    /// Get the public key for this signer
-    pub fn public_key(&self) -> &EncodedPoint {
-        &self.public_key
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        if scalar.is_some().into() {
+            Ok(Self::from(scalar.unwrap()))
+        } else {
+            Err(Error::new())
+        }
     }
 }
 
-#[cfg(feature = "sha256")]
-impl RandomizedSigner<Signature> for Signer {
-    fn try_sign_with_rng(
+impl<S> signature::Signer<S> for Signer
+where
+    S: PrehashSignature,
+    Self: DigestSigner<S::Digest, S>,
+{
+    fn try_sign(&self, msg: &[u8]) -> Result<S, Error> {
+        self.try_sign_digest(Digest::chain(S::Digest::new(), msg))
+    }
+}
+
+impl<D> DigestSigner<D, Signature> for Signer
+where
+    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+{
+    fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
+        ecdsa_core::Signer::from(self.secret_scalar).try_sign_digest(digest)
+    }
+}
+
+impl<D> DigestSigner<D, recoverable::Signature> for Signer
+where
+    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+{
+    fn try_sign_digest(&self, digest: D) -> Result<recoverable::Signature, Error> {
+        let ephemeral_scalar = rfc6979::generate_k(&self.secret_scalar, digest.clone(), &[]);
+        let msg_scalar = Scalar::from_digest(digest);
+        self.secret_scalar
+            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)
+    }
+}
+
+impl<D> RandomizedDigestSigner<D, Signature> for Signer
+where
+    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+{
+    fn try_sign_digest_with_rng(
         &self,
         rng: impl CryptoRng + RngCore,
-        msg: &[u8],
+        digest: D,
     ) -> Result<Signature, Error> {
-        let signer = ecdsa_core::Signer::new(&self.secret_key)?;
-        let signature = signer.try_sign_with_rng(rng, msg)?;
-
-        #[cfg(debug_assertions)]
-        assert!(Verifier::new(&self.public_key)
-            .expect("invalid public key")
-            .verify(msg, &signature)
-            .is_ok());
-
-        Ok(signature)
+        ecdsa_core::Signer::from(self.secret_scalar).try_sign_digest_with_rng(rng, digest)
     }
 }
 
-#[cfg(feature = "keccak256")]
-impl RandomizedSigner<recoverable::Signature> for Signer {
-    fn try_sign_with_rng(
+impl<D> RandomizedDigestSigner<D, recoverable::Signature> for Signer
+where
+    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+{
+    fn try_sign_digest_with_rng(
         &self,
-        rng: impl CryptoRng + RngCore,
-        msg: &[u8],
+        mut rng: impl CryptoRng + RngCore,
+        digest: D,
     ) -> Result<recoverable::Signature, Error> {
-        let d = Scalar::from_bytes(self.secret_key.as_bytes()).unwrap();
-        let k = Zeroizing::new(Scalar::generate(rng));
-        let z = Keccak256::digest(msg);
-        let signature = d.try_sign_recoverable_prehashed(&*k, &z)?;
+        let mut added_entropy = ElementBytes::default();
+        rng.fill_bytes(&mut added_entropy);
 
-        #[cfg(debug_assertions)]
-        assert_eq!(
-            self.public_key,
-            signature.recover_public_key(msg).expect("recovery failed")
-        );
+        let ephemeral_scalar =
+            rfc6979::generate_k(&self.secret_scalar, digest.clone(), &added_entropy);
 
-        Ok(signature)
-    }
-}
-
-impl From<&Signer> for EncodedPoint {
-    fn from(signer: &Signer) -> EncodedPoint {
-        signer.public_key
+        let msg_scalar = Scalar::from_digest(digest);
+        self.secret_scalar
+            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)
     }
 }
 
@@ -102,7 +113,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
     fn try_sign_recoverable_prehashed<K>(
         &self,
         ephemeral_scalar: &K,
-        hashed_msg: &ElementBytes,
+        z: &Scalar,
     ) -> Result<recoverable::Signature, Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,
@@ -123,11 +134,8 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         // integer, then reduce it into an element of the scalar field
         let r = Scalar::from_bytes_reduced(&R.x.to_bytes());
 
-        // Reduce message hash to an element of the scalar field
-        let z = Scalar::from_bytes_reduced(&hashed_msg);
-
         // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * &(z + &(r * self));
+        let s = k_inverse * &(z + (r * self));
 
         if s.is_zero().into() {
             return Err(Error::new());
@@ -141,10 +149,14 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
     }
 }
 
+impl From<NonZeroScalar> for Signer {
+    fn from(secret_scalar: NonZeroScalar) -> Self {
+        Self { secret_scalar }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_vectors::ecdsa::ECDSA_TEST_VECTORS;
-    use ecdsa_core::hazmat::SignPrimitive;
-    ecdsa_core::new_signing_test!(ECDSA_TEST_VECTORS);
+    use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, Secp256k1};
+    ecdsa_core::new_signing_test!(Secp256k1, ECDSA_TEST_VECTORS);
 }

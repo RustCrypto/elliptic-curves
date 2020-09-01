@@ -26,7 +26,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "digest")]
-use ecdsa_core::signature::digest::Digest;
+use elliptic_curve::{Digest, FromDigest};
 
 #[cfg(feature = "rand")]
 use elliptic_curve::{
@@ -87,17 +87,6 @@ impl Scalar {
     /// Subtracts the modulus when the byte array is larger than the modulus.
     pub fn from_bytes_reduced(bytes: &ElementBytes) -> Self {
         Self(ScalarImpl::from_bytes_reduced(bytes.as_ref()))
-    }
-
-    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
-    /// modulo n.
-    #[cfg(feature = "digest")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
-    pub fn from_digest<D>(digest: D) -> Self
-    where
-        D: Digest<OutputSize = U32>,
-    {
-        Self::from_bytes_reduced(&digest.finalize())
     }
 
     /// Returns the SEC1 encoding of this scalar.
@@ -256,6 +245,19 @@ impl FromBytes for Scalar {
     /// [0, p).
     fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
         ScalarImpl::from_bytes(bytes.as_ref()).map(Self)
+    }
+}
+
+#[cfg(feature = "digest")]
+#[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
+impl FromDigest<Secp256k1> for Scalar {
+    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
+    /// modulo n.
+    fn from_digest<D>(digest: D) -> Self
+    where
+        D: Digest<OutputSize = U32>,
+    {
+        Self::from_bytes_reduced(&digest.finalize())
     }
 }
 
