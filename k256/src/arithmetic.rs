@@ -3,7 +3,8 @@
 pub(crate) mod field;
 pub(crate) mod scalar;
 
-mod util;
+#[cfg(test)]
+mod dev;
 
 use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 use elliptic_curve::{
