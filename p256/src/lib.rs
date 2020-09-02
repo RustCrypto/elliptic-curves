@@ -98,7 +98,9 @@ impl elliptic_curve::Curve for NistP256 {
     type FieldSize = U32;
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP256 {
+impl elliptic_curve::weierstrass::Curve for NistP256 {}
+
+impl elliptic_curve::point::Compression for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPRESS_POINTS: bool = false;
 }
