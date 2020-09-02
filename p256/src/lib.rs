@@ -1,5 +1,16 @@
 //! NIST P-256 elliptic curve (a.k.a. prime256v1, secp256r1)
 //!
+//! ## About NIST P-256
+//!
+//! NIST P-256 is a Weierstrass curve specified in FIPS 186-4: Digital Signature
+//! Standard (DSS):
+//!
+//! <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
+//!
+//! Also known as prime256v1 (ANSI X9.62) and secp256r1 (SECG), it's included in
+//! the US National Security Agency's "Suite B" and is widely used in protocols
+//! like TLS and the associated X.509 PKI.
+//!
 //! ## ⚠️ Security Warning
 //!
 //! The elliptic curve arithmetic contained in this crate has never been
@@ -11,17 +22,6 @@
 //! that generated assembly is constant time on common CPU architectures.
 //!
 //! USE AT YOUR OWN RISK!
-//!
-//! ## About NIST P-256
-//!
-//! NIST P-256 is a Weierstrass curve specified in FIPS 186-4: Digital Signature
-//! Standard (DSS):
-//!
-//! <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
-//!
-//! Also known as prime256v1 (ANSI X9.62) and secp256r1 (SECG), it's included in
-//! the US National Security Agency's "Suite B" and is widely used in protocols
-//! like TLS and the associated X.509 PKI.
 //!
 //! ## Minimum Supported Rust Version
 //!
