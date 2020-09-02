@@ -21,7 +21,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use k256::{
-//!     ecdsa::{Signer, Signature, signature::Signer as _},
+//!     ecdsa::{SigningKey, Signature, signature::Signer},
 //!     elliptic_curve::{Generate},
 //!     SecretKey,
 //! };
@@ -29,21 +29,21 @@
 //!
 //! // Signing
 //! let secret_key = SecretKey::generate(&mut OsRng);
-//! let signer = Signer::new(&secret_key).expect("secret key invalid");
+//! let signing_key = SigningKey::from_secret_key(&secret_key).expect("secret key invalid");
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
-//! let signature: Signature = signer.sign(message);
+//! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use k256::{EncodedPoint, ecdsa::{Verifier, signature::Verifier as _}};
+//! use k256::{EncodedPoint, ecdsa::{VerifyKey, signature::Verifier}};
 //!
 //! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
-//! let verifier = Verifier::new(&public_key).expect("public key invalid");
+//! let verify_key = VerifyKey::from_encoded_point(&public_key).expect("public key invalid");
 //!
-//! assert!(verifier.verify(message, &signature).is_ok());
+//! assert!(verify_key.verify(message, &signature).is_ok());
 //! # }
 //! ```
 
@@ -52,9 +52,9 @@ pub mod recoverable;
 #[cfg(feature = "ecdsa")]
 mod normalize;
 #[cfg(feature = "ecdsa")]
-mod signer;
+mod sign;
 #[cfg(feature = "ecdsa")]
-mod verifier;
+mod verify;
 
 pub use ecdsa_core::signature::{self, Error};
 
@@ -62,7 +62,7 @@ pub use ecdsa_core::signature::{self, Error};
 pub use ecdsa_core::signature::digest;
 
 #[cfg(feature = "ecdsa")]
-pub use self::{signer::Signer, verifier::Verifier};
+pub use self::{sign::SigningKey, verify::VerifyKey};
 
 use crate::Secp256k1;
 

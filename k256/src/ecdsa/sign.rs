@@ -2,11 +2,11 @@
 
 use super::{recoverable, Error, Signature};
 use crate::{ElementBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
-use core::borrow::Borrow;
+use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
     hazmat::RecoverableSignPrimitive,
+    rfc6979,
     signature::{self, DigestSigner, RandomizedDigestSigner},
-    signer::rfc6979,
 };
 use elliptic_curve::{
     consts::U32,
@@ -20,17 +20,21 @@ use signature::PrehashSignature;
 #[cfg(any(feature = "sha256", feature = "keccak256"))]
 use signature::digest::Digest;
 
-/// ECDSA/secp256k1 signer
+/// ECDSA/secp256k1 signing key
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub struct Signer {
+pub struct SigningKey {
     /// Secret scalar value
     secret_scalar: NonZeroScalar,
 }
 
-impl Signer {
-    /// Create a new signer
-    pub fn new(secret_key: &SecretKey) -> Result<Self, Error> {
-        let scalar = NonZeroScalar::from_bytes(secret_key.as_bytes());
+impl SigningKey {
+    /// Initialize signing key from a raw scalar serialized as a byte slice.
+    // TODO(tarcieri): PKCS#8 support
+    pub fn new(bytes: &[u8]) -> Result<Self, Error> {
+        let scalar = bytes
+            .try_into()
+            .map(NonZeroScalar::from_bytes)
+            .map_err(|_| Error::new())?;
 
         // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         if scalar.is_some().into() {
@@ -39,9 +43,15 @@ impl Signer {
             Err(Error::new())
         }
     }
+
+    /// Create a new signing key from a [`SecretKey`].
+    // TODO(tarcieri): infallible `From` conversion from a secret key
+    pub fn from_secret_key(secret_key: &SecretKey) -> Result<Self, Error> {
+        Self::new(secret_key.as_bytes())
+    }
 }
 
-impl<S> signature::Signer<S> for Signer
+impl<S> signature::Signer<S> for SigningKey
 where
     S: PrehashSignature,
     Self: DigestSigner<S::Digest, S>,
@@ -51,16 +61,16 @@ where
     }
 }
 
-impl<D> DigestSigner<D, Signature> for Signer
+impl<D> DigestSigner<D, Signature> for SigningKey
 where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
-        ecdsa_core::Signer::from(self.secret_scalar).try_sign_digest(digest)
+        ecdsa_core::SigningKey::from(self.secret_scalar).try_sign_digest(digest)
     }
 }
 
-impl<D> DigestSigner<D, recoverable::Signature> for Signer
+impl<D> DigestSigner<D, recoverable::Signature> for SigningKey
 where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
@@ -72,7 +82,7 @@ where
     }
 }
 
-impl<D> RandomizedDigestSigner<D, Signature> for Signer
+impl<D> RandomizedDigestSigner<D, Signature> for SigningKey
 where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
@@ -81,11 +91,11 @@ where
         rng: impl CryptoRng + RngCore,
         digest: D,
     ) -> Result<Signature, Error> {
-        ecdsa_core::Signer::from(self.secret_scalar).try_sign_digest_with_rng(rng, digest)
+        ecdsa_core::SigningKey::from(self.secret_scalar).try_sign_digest_with_rng(rng, digest)
     }
 }
 
-impl<D> RandomizedDigestSigner<D, recoverable::Signature> for Signer
+impl<D> RandomizedDigestSigner<D, recoverable::Signature> for SigningKey
 where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
@@ -149,7 +159,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
     }
 }
 
-impl From<NonZeroScalar> for Signer {
+impl From<NonZeroScalar> for SigningKey {
     fn from(secret_scalar: NonZeroScalar) -> Self {
         Self { secret_scalar }
     }

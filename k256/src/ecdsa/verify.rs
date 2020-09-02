@@ -6,23 +6,26 @@ use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{consts::U32, ops::Invert, FromBytes};
 use signature::{digest::Digest, DigestVerifier, PrehashSignature};
 
-/// ECDSA/secp256k1 verifier
+/// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub struct Verifier {
-    /// Core ECDSA verifier
-    verifier: ecdsa_core::Verifier<Secp256k1>,
+pub struct VerifyKey {
+    /// Core ECDSA verify key
+    key: ecdsa_core::VerifyKey<Secp256k1>,
 }
 
-impl Verifier {
-    /// Create a new verifier
-    pub fn new(public_key: &EncodedPoint) -> Result<Self, Error> {
-        Ok(Self {
-            verifier: ecdsa_core::Verifier::new(public_key)?,
-        })
+impl VerifyKey {
+    /// Initialize [`VerifyKey`] from a SEC1-encoded public key.
+    pub fn new(bytes: &[u8]) -> Result<Self, Error> {
+        ecdsa_core::VerifyKey::new(bytes).map(|key| VerifyKey { key })
+    }
+
+    /// Initialize [`VerifyKey`] from an [`EncodedPoint`].
+    pub fn from_encoded_point(public_key: &EncodedPoint) -> Result<Self, Error> {
+        ecdsa_core::VerifyKey::from_encoded_point(public_key).map(|key| VerifyKey { key })
     }
 }
 
-impl<S> signature::Verifier<S> for Verifier
+impl<S> signature::Verifier<S> for VerifyKey
 where
     S: PrehashSignature,
     Self: DigestVerifier<S::Digest, S>,
@@ -32,22 +35,21 @@ where
     }
 }
 
-impl<D> DigestVerifier<D, Signature> for Verifier
+impl<D> DigestVerifier<D, Signature> for VerifyKey
 where
     D: Digest<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
-        self.verifier.verify_digest(digest, signature)
+        self.key.verify_digest(digest, signature)
     }
 }
 
-impl<D> DigestVerifier<D, recoverable::Signature> for Verifier
+impl<D> DigestVerifier<D, recoverable::Signature> for VerifyKey
 where
     D: Digest<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &recoverable::Signature) -> Result<(), Error> {
-        self.verifier
-            .verify_digest(digest, &Signature::from(*signature))
+        self.key.verify_digest(digest, &Signature::from(*signature))
     }
 }
 
