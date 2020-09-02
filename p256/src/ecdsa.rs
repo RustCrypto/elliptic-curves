@@ -21,7 +21,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p256::{
-//!     ecdsa::{Signer, Signature, signature::Signer as _},
+//!     ecdsa::{SigningKey, Signature, signature::Signer},
 //!     elliptic_curve::{Generate},
 //!     SecretKey,
 //! };
@@ -29,18 +29,18 @@
 //!
 //! // Signing
 //! let secret_key = SecretKey::generate(&mut OsRng);
-//! let signer = Signer::new(&secret_key).expect("secret key invalid");
+//! let signing_key = SigningKey::from_secret_key(&secret_key).expect("secret key invalid");
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
-//! let signature: Signature = signer.sign(message);
+//! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use p256::{EncodedPoint, ecdsa::{Verifier, signature::Verifier as _}};
+//! use p256::{EncodedPoint, ecdsa::{VerifyKey, signature::Verifier}};
 //!
 //! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
-//! let verifier = Verifier::new(&public_key).expect("public key invalid");
+//! let verify_key = VerifyKey::from_encoded_point(&public_key).expect("public key invalid");
 //!
-//! assert!(verifier.verify(message, &signature).is_ok());
+//! assert!(verify_key.verify(message, &signature).is_ok());
 //! # }
 //! ```
 
@@ -59,15 +59,15 @@ use {
 /// ECDSA/P-256 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP256>;
 
-/// ECDSA/P-256 signer
+/// ECDSA/P-256 signing key
 #[cfg(feature = "ecdsa")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type Signer = ecdsa_core::Signer<NistP256>;
+pub type SigningKey = ecdsa_core::SigningKey<NistP256>;
 
-/// ECDSA/P-256 verifier
+/// ECDSA/P-256 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type Verifier = ecdsa_core::Verifier<NistP256>;
+pub type VerifyKey = ecdsa_core::VerifyKey<NistP256>;
 
 #[cfg(all(feature = "ecdsa", feature = "sha256"))]
 impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
@@ -145,7 +145,7 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
 mod tests {
     mod sign {
         use crate::{
-            ecdsa::{signature::Signer as _, Signer},
+            ecdsa::{signature::Signer, SigningKey},
             test_vectors::ecdsa::ECDSA_TEST_VECTORS,
             NistP256,
         };
@@ -161,7 +161,7 @@ mod tests {
         #[test]
         fn rfc6979() {
             let x = &hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
-            let signer = Signer::from_bytes(x).unwrap();
+            let signer = SigningKey::new(x).unwrap();
             let signature = signer.sign(b"sample");
             assert_eq!(
                 signature.as_ref(),

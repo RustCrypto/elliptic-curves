@@ -11,7 +11,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use k256::{
-//!     ecdsa::{Signer, recoverable, signature::Signer as _},
+//!     ecdsa::{SigningKey, recoverable, signature::Signer as _},
 //!     elliptic_curve::{Generate, rand_core::OsRng},
 //!     SecretKey, EncodedPoint
 //! };
@@ -20,7 +20,7 @@
 //! let secret_key = SecretKey::generate(&mut OsRng);
 //! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
 //!
-//! let signer = Signer::new(&secret_key).expect("secret key invalid");
+//! let signer = SigningKey::from_secret_key(&secret_key).expect("secret key invalid");
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
