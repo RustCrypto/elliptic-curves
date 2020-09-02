@@ -1,6 +1,6 @@
 //! ECDSA signer
 
-use super::{recoverable, Error, Signature};
+use super::{recoverable, Error, Signature, VerifyKey};
 use crate::{ElementBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
@@ -13,7 +13,7 @@ use elliptic_curve::{
     digest::{BlockInput, FixedOutput, Reset, Update},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    FromBytes, FromDigest,
+    FromBytes, FromDigest, Generate,
 };
 use signature::PrehashSignature;
 
@@ -48,6 +48,26 @@ impl SigningKey {
     // TODO(tarcieri): infallible `From` conversion from a secret key
     pub fn from_secret_key(secret_key: &SecretKey) -> Result<Self, Error> {
         Self::new(secret_key.as_bytes())
+    }
+
+    /// Get the [`VerifyKey`] which corresponds to this [`SigningKey`]
+    pub fn verify_key(&self) -> VerifyKey {
+        VerifyKey {
+            key: ecdsa_core::SigningKey::from(self.secret_scalar).verify_key(),
+        }
+    }
+
+    /// Serialize this [`SigningKey`] as bytes
+    pub fn to_bytes(&self) -> ElementBytes {
+        self.secret_scalar.to_bytes()
+    }
+}
+
+impl Generate for SigningKey {
+    fn generate(rng: impl CryptoRng + RngCore) -> Self {
+        Self {
+            secret_scalar: NonZeroScalar::generate(rng),
+        }
     }
 }
 
@@ -113,6 +133,12 @@ where
         let msg_scalar = Scalar::from_digest(digest);
         self.secret_scalar
             .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)
+    }
+}
+
+impl From<&SigningKey> for VerifyKey {
+    fn from(signing_key: &SigningKey) -> VerifyKey {
+        signing_key.verify_key()
     }
 }
 

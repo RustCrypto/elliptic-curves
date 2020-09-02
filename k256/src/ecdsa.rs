@@ -28,8 +28,7 @@
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Signing
-//! let secret_key = SecretKey::generate(&mut OsRng);
-//! let signing_key = SigningKey::from_secret_key(&secret_key).expect("secret key invalid");
+//! let signing_key = SigningKey::generate(&mut OsRng); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
@@ -40,9 +39,7 @@
 //! // Verification
 //! use k256::{EncodedPoint, ecdsa::{VerifyKey, signature::Verifier}};
 //!
-//! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
-//! let verify_key = VerifyKey::from_encoded_point(&public_key).expect("public key invalid");
-//!
+//! let verify_key = VerifyKey::from(&signing_key); // Serialize with `::to_encoded_point()`
 //! assert!(verify_key.verify(message, &signature).is_ok());
 //! # }
 //! ```

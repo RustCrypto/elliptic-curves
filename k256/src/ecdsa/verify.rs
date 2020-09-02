@@ -3,14 +3,14 @@
 use super::{recoverable, Error, Signature};
 use crate::{AffinePoint, EncodedPoint, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1};
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
-use elliptic_curve::{consts::U32, ops::Invert, FromBytes};
+use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint, FromBytes};
 use signature::{digest::Digest, DigestVerifier, PrehashSignature};
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub struct VerifyKey {
     /// Core ECDSA verify key
-    key: ecdsa_core::VerifyKey<Secp256k1>,
+    pub(super) key: ecdsa_core::VerifyKey<Secp256k1>,
 }
 
 impl VerifyKey {
@@ -22,6 +22,12 @@ impl VerifyKey {
     /// Initialize [`VerifyKey`] from an [`EncodedPoint`].
     pub fn from_encoded_point(public_key: &EncodedPoint) -> Result<Self, Error> {
         ecdsa_core::VerifyKey::from_encoded_point(public_key).map(|key| VerifyKey { key })
+    }
+
+    /// Serialize this [`VerifyKey`] as a SEC1 [`EncodedPoint`], optionally
+    /// applying point compression.
+    pub fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+        self.key.to_encoded_point(compress)
     }
 }
 
@@ -50,6 +56,18 @@ where
 {
     fn verify_digest(&self, digest: D, signature: &recoverable::Signature) -> Result<(), Error> {
         self.key.verify_digest(digest, &Signature::from(*signature))
+    }
+}
+
+impl From<&AffinePoint> for VerifyKey {
+    fn from(affine_point: &AffinePoint) -> VerifyKey {
+        VerifyKey::from_encoded_point(&affine_point.to_encoded_point(false)).unwrap()
+    }
+}
+
+impl From<&VerifyKey> for EncodedPoint {
+    fn from(verify_key: &VerifyKey) -> EncodedPoint {
+        verify_key.to_encoded_point(true)
     }
 }
 
