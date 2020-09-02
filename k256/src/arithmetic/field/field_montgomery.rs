@@ -1,7 +1,10 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-use crate::{arithmetic::util::{adc64, mac64, mac64_typemax, sbb64}, ElementBytes};
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    util::{adc64, mac64, sbb64}
+};
+use crate::ElementBytes;
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -23,6 +26,13 @@ const fn bytes_to_words(b: &[u8; 32]) -> [u64; 4] {
     let w1 = bytes_to_u64(&[b[16], b[17], b[18], b[19], b[20], b[21], b[22], b[23]]);
     let w0 = bytes_to_u64(&[b[24], b[25], b[26], b[27], b[28], b[29], b[30], b[31]]);
     [w0, w1, w2, w3]
+}
+
+/// Computes a multiply and carry via a shift and subtraction for the max of a type.
+#[inline(always)]
+pub const fn mac64_typemax(a: u64, b: u64, carry: u64) -> (u64, u64) {
+    let ret = (a as u128) + (((b as u128) << 64) - (b as u128)) + (carry as u128);
+    (ret as u64, (ret >> 64) as u64)
 }
 
 /// Constant representing the modulus

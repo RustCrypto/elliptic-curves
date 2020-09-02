@@ -2,13 +2,14 @@
 //! Ported from https://github.com/bitcoin-core/secp256k1
 
 use core::convert::TryInto;
-
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    util::{adc64, sbb64}
+};
+use crate::ElementBytes;
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
-
-use crate::{ElementBytes, arithmetic::util::{adc64, sbb64}};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141

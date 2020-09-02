@@ -425,7 +425,7 @@ impl Zeroize for Scalar {
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
+    use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
     use elliptic_curve::FromBytes;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
