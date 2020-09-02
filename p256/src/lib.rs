@@ -95,7 +95,7 @@ pub struct NistP256;
 
 impl elliptic_curve::Curve for NistP256 {
     /// 256-bit (32-byte)
-    type ElementSize = U32;
+    type FieldSize = U32;
 }
 
 impl elliptic_curve::weierstrass::Curve for NistP256 {

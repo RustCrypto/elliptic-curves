@@ -90,7 +90,7 @@ pub struct Secp256k1;
 
 impl elliptic_curve::Curve for Secp256k1 {
     /// 256-bit (32-byte)
-    type ElementSize = U32;
+    type FieldSize = U32;
 }
 
 impl elliptic_curve::weierstrass::Curve for Secp256k1 {

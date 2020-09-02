@@ -243,7 +243,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.7.2"
-source = "git+https://github.com/RustCrypto/signatures#de67a5244da7cd9d3836b852dd6b7f71104de736"
+source = "git+https://github.com/RustCrypto/signatures#416e6cc79366a2b7ddc52c98b8ee7bdfb33d9ff8"
 dependencies = [
  "elliptic-curve",
  "hmac",
@@ -259,7 +259,7 @@ checksum = "cd56b59865bce947ac5958779cfa508f6c3b9497cc762b7e24a12d11ccde2c4f"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0"
-source = "git+https://github.com/RustCrypto/traits#abff234bfe0ced9254615dc608ece09619a8db38"
+source = "git+https://github.com/RustCrypto/traits#a85525d61e1d882d12a4c00387655dded76fd0c2"
 dependencies = [
  "const-oid",
  "digest",

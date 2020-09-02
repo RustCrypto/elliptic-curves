@@ -53,7 +53,7 @@ pub struct NistP384;
 
 impl elliptic_curve::Curve for NistP384 {
     /// 384-bit (48-byte)
-    type ElementSize = U48;
+    type FieldSize = U48;
 }
 
 #[cfg(feature = "oid")]
