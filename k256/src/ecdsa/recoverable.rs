@@ -11,22 +11,20 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use k256::{
-//!     ecdsa::{SigningKey, recoverable, signature::Signer as _},
+//!     ecdsa::{SigningKey, recoverable, signature::Signer},
 //!     elliptic_curve::{Generate, rand_core::OsRng},
-//!     SecretKey, EncodedPoint
+//!     EncodedPoint
 //! };
 //!
 //! // Signing
-//! let secret_key = SecretKey::generate(&mut OsRng);
-//! let public_key = EncodedPoint::from_secret_key(&secret_key, true).expect("secret key invalid");
-//!
-//! let signer = SigningKey::from_secret_key(&secret_key).expect("secret key invalid");
+//! let signing_key = SigningKey::generate(&mut OsRng); // Serialize with `::to_bytes()`
+//! let public_key = EncodedPoint::from(&signing_key.verify_key());
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
-//! let signature: recoverable::Signature = signer.sign(message);
+//! let signature: recoverable::Signature = signing_key.sign(message);
 //! let recovered_pubkey = signature.recover_public_key(message).expect("couldn't recover pubkey");
 //!
 //! assert_eq!(&public_key, &recovered_pubkey);
