@@ -132,16 +132,13 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     ///
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
     fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
-        match encoded_point.tag() {
-            sec1::Tag::CompressedEvenY => {
-                AffinePoint::decompress(encoded_point.x(), Choice::from(0))
+        match encoded_point.coordinates() {
+            sec1::Coordinates::Compressed { x, y_is_odd } => {
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
-            sec1::Tag::CompressedOddY => {
-                AffinePoint::decompress(encoded_point.x(), Choice::from(1))
-            }
-            sec1::Tag::Uncompressed => {
-                let x = FieldElement::from_bytes(encoded_point.x());
-                let y = FieldElement::from_bytes(encoded_point.y().expect("missing y-coordinate"));
+            sec1::Coordinates::Uncompressed { x, y } => {
+                let x = FieldElement::from_bytes(x);
+                let y = FieldElement::from_bytes(y);
 
                 x.and_then(|x| {
                     y.and_then(|y| {
@@ -158,7 +155,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
 
 impl ToEncodedPoint<Secp256k1> for AffinePoint {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        EncodedPoint::from_affine_coords(&self.x.to_bytes(), &self.y.to_bytes(), compress)
+        EncodedPoint::from_affine_coordinates(&self.x.to_bytes(), &self.y.to_bytes(), compress)
     }
 }
 
