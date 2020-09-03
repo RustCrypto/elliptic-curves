@@ -4,7 +4,7 @@ use super::{recoverable, Error, Signature, VerifyKey};
 use crate::{ElementBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
-    hazmat::RecoverableSignPrimitive,
+    hazmat::SignPrimitive,
     rfc6979,
     signature::{self, DigestSigner, RandomizedDigestSigner},
 };
@@ -142,9 +142,18 @@ impl From<&SigningKey> for VerifyKey {
     }
 }
 
-impl RecoverableSignPrimitive<Secp256k1> for Scalar {
-    type RecoverableSignature = recoverable::Signature;
+impl SignPrimitive<Secp256k1> for Scalar {
+    fn try_sign_prehashed<K: Borrow<Scalar> + Invert<Output = Scalar>>(
+        &self,
+        ephemeral_scalar: &K,
+        hashed_msg: &Scalar,
+    ) -> Result<Signature, Error> {
+        self.try_sign_recoverable_prehashed(ephemeral_scalar, hashed_msg)
+            .map(Into::into)
+    }
+}
 
+impl Scalar {
     #[allow(non_snake_case, clippy::many_single_char_names)]
     fn try_sign_recoverable_prehashed<K>(
         &self,
