@@ -1,13 +1,17 @@
 //! ECDSA verifier
 
 use super::{recoverable, Error, Signature};
-use crate::{AffinePoint, EncodedPoint, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1};
+use crate::{
+    AffinePoint, CompressedPoint, EncodedPoint, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1,
+};
+use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint, FromBytes};
 use signature::{digest::Digest, DigestVerifier, PrehashSignature};
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerifyKey {
     /// Core ECDSA verify key
     pub(super) key: ecdsa_core::VerifyKey<Secp256k1>,
@@ -19,15 +23,17 @@ impl VerifyKey {
         ecdsa_core::VerifyKey::new(bytes).map(|key| VerifyKey { key })
     }
 
-    /// Initialize [`VerifyKey`] from an [`EncodedPoint`].
+    /// Initialize [`VerifyKey`] from a SEC1 [`EncodedPoint`].
     pub fn from_encoded_point(public_key: &EncodedPoint) -> Result<Self, Error> {
         ecdsa_core::VerifyKey::from_encoded_point(public_key).map(|key| VerifyKey { key })
     }
 
-    /// Serialize this [`VerifyKey`] as a SEC1 [`EncodedPoint`], optionally
-    /// applying point compression.
-    pub fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.key.to_encoded_point(compress)
+    /// Serialize this [`VerifyKey`] as a SEC1-encoded bytestring
+    /// (with point compression applied)
+    pub fn to_bytes(&self) -> CompressedPoint {
+        let mut result = [0u8; 33];
+        result.copy_from_slice(EncodedPoint::from(self).as_ref());
+        result
     }
 }
 
@@ -67,7 +73,15 @@ impl From<&AffinePoint> for VerifyKey {
 
 impl From<&VerifyKey> for EncodedPoint {
     fn from(verify_key: &VerifyKey) -> EncodedPoint {
-        verify_key.to_encoded_point(true)
+        verify_key.key.to_encoded_point(true)
+    }
+}
+
+impl TryFrom<&EncodedPoint> for VerifyKey {
+    type Error = Error;
+
+    fn try_from(encoded_point: &EncodedPoint) -> Result<Self, Error> {
+        Self::from_encoded_point(encoded_point)
     }
 }
 
