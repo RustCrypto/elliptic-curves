@@ -18,16 +18,16 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::generate(&mut OsRng); // Serialize with `::to_bytes()`
-//! let public_key = EncodedPoint::from(&signing_key.verify_key());
+//! let verify_key = signing_key.verify_key();
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
 //! let signature: recoverable::Signature = signing_key.sign(message);
-//! let recovered_pubkey = signature.recover_public_key(message).expect("couldn't recover pubkey");
+//! let recovered_key = signature.recover_verify_key(message).expect("couldn't recover pubkey");
 //!
-//! assert_eq!(&public_key, &recovered_pubkey);
+//! assert_eq!(&verify_key, &recovered_key);
 //! # }
 //! ```
 
@@ -39,12 +39,10 @@ use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "ecdsa")]
 use crate::{
-    arithmetic::{FieldElement, CURVE_EQUATION_B},
+    ecdsa::VerifyKey,
     elliptic_curve::{
-        consts::U32,
-        ops::Invert,
-        subtle::{Choice, ConditionallySelectable},
-        Digest, FromBytes, FromDigest,
+        consts::U32, ops::Invert, subtle::Choice, weierstrass::point::Decompress, Digest,
+        FromBytes, FromDigest,
     },
     AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
 };
@@ -108,8 +106,8 @@ impl Signature {
 
         for recovery_id in 0..=1 {
             if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {
-                if let Ok(recovered_key) = recoverable_signature.recover_public_key(msg) {
-                    if public_key == &recovered_key {
+                if let Ok(recovered_key) = recoverable_signature.recover_verify_key(msg) {
+                    if public_key == &EncodedPoint::from(&recovered_key) {
                         return Ok(recoverable_signature);
                     }
                 }
@@ -123,8 +121,8 @@ impl Signature {
     /// [`EncodedPoint`].
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")), doc(cfg(feature = "keccak256")))]
-    pub fn recover_public_key(&self, msg: &[u8]) -> Result<EncodedPoint, Error> {
-        self.recover_public_key_from_prehash(Keccak256::new().chain(msg))
+    pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyKey, Error> {
+        self.recover_verify_key_from_digest(Keccak256::new().chain(msg))
     }
 
     /// Recover the public key used to create the given signature as an
@@ -132,43 +130,29 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
-    pub fn recover_public_key_from_prehash<D>(&self, msg_prehash: D) -> Result<EncodedPoint, Error>
+    pub fn recover_verify_key_from_digest<D>(&self, msg_prehash: D) -> Result<VerifyKey, Error>
     where
         D: Digest<OutputSize = U32>,
     {
         let r = self.r();
         let s = self.s();
         let z = Scalar::from_digest(msg_prehash);
-        let x = FieldElement::from_bytes(&r.to_bytes());
-
-        let pk = x.and_then(|x| {
-            let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
-            let beta = alpha.sqrt().unwrap();
-
-            let y = FieldElement::conditional_select(
-                &beta.negate(1),
-                &beta,
-                // beta.is_odd() == recovery_id.is_y_odd()
-                !(beta.normalize().is_odd() ^ self.recovery_id().is_y_odd()),
-            );
-
-            let R = ProjectivePoint::from(AffinePoint {
-                x,
-                y: y.normalize(),
-            });
-
-            let r_inv = r.invert().unwrap();
-            let u1 = -(r_inv * &z);
-            let u2 = r_inv * s.as_ref();
-            ((&ProjectivePoint::generator() * &u1) + &(R * &u2)).to_affine()
-        });
+        let R = AffinePoint::decompress(&r.to_bytes(), self.recovery_id().is_y_odd());
 
         // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        if pk.is_some().into() {
-            Ok(pk.unwrap().into())
-        } else {
-            Err(Error::new())
+        if R.is_some().into() {
+            let R = ProjectivePoint::from(R.unwrap());
+            let r_inv = r.invert().unwrap();
+            let u1 = -(r_inv * &z);
+            let u2 = r_inv * &*s;
+            let pk = ((&ProjectivePoint::generator() * &u1) + &(R * &u2)).to_affine();
+
+            if pk.is_some().into() {
+                return Ok(VerifyKey::from(&pk.unwrap()));
+            }
         }
+
+        Err(Error::new())
     }
 
     /// Parse the `r` component of this signature to a [`Scalar`]
@@ -298,6 +282,7 @@ impl From<Id> for u8 {
 #[cfg(all(test, feature = "ecdsa", feature = "sha256"))]
 mod tests {
     use super::Signature;
+    use crate::EncodedPoint;
     use core::convert::TryFrom;
     use hex_literal::hex;
     use sha2::{Digest, Sha256};
@@ -335,8 +320,8 @@ mod tests {
         for vector in VECTORS {
             let sig = Signature::try_from(&vector.sig[..]).unwrap();
             let prehash = Sha256::new().chain(vector.msg);
-            let pk = sig.recover_public_key_from_prehash(prehash).unwrap();
-            assert_eq!(&vector.pk[..], pk.as_bytes());
+            let pk = sig.recover_verify_key_from_digest(prehash).unwrap();
+            assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
         }
     }
 }

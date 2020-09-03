@@ -104,13 +104,16 @@ impl elliptic_curve::Identifier for Secp256k1 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
 }
 
-/// K-256 Serialized Field Element.
+/// Compressed SEC1-encoded secp256k1 (K-256) point (i.e. public key)
+pub type CompressedPoint = [u8; 33];
+
+/// secp256k1 (K-256) serialized field element.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type ElementBytes = elliptic_curve::ElementBytes<Secp256k1>;
 
-/// K-256 (secp256k1) SEC1 Encoded Point.
+/// SEC1-encoded secp256k1 (K-256) curve point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
 
-/// K-256 (secp256k1) Secret Key.
+/// secp256k1 (K-256) secret key.
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
