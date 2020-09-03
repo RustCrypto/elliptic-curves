@@ -1,7 +1,6 @@
+use crate::arithmetic::{scalar::Scalar, ProjectivePoint};
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-
-use crate::arithmetic::{scalar::Scalar, ProjectivePoint};
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 struct LookupTable([ProjectivePoint; 8]);

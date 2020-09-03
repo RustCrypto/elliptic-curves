@@ -39,16 +39,14 @@ use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "ecdsa")]
 use crate::{
-    arithmetic::{
-        field::FieldElement, scalar::Scalar, AffinePoint, ProjectivePoint, CURVE_EQUATION_B,
-    },
+    arithmetic::{FieldElement, CURVE_EQUATION_B},
     elliptic_curve::{
         consts::U32,
         ops::Invert,
         subtle::{Choice, ConditionallySelectable},
         Digest, FromBytes, FromDigest,
     },
-    NonZeroScalar,
+    AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
 #[cfg(any(feature = "ecdsa", docsrs))]

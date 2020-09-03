@@ -59,8 +59,9 @@ pub use elliptic_curve;
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{
+    affine::AffinePoint,
+    projective::ProjectivePoint,
     scalar::{NonZeroScalar, Scalar},
-    AffinePoint, ProjectivePoint,
 };
 
 #[cfg(all(feature = "arithmetic", feature = "rand"))]

@@ -46,8 +46,6 @@
 
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
-#[cfg(feature = "arithmetic")]
-mod mul;
 
 #[cfg(feature = "ecdh")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdh")))]
@@ -65,8 +63,9 @@ pub use elliptic_curve;
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{
+    affine::AffinePoint,
+    projective::ProjectivePoint,
     scalar::{NonZeroScalar, Scalar},
-    AffinePoint, ProjectivePoint,
 };
 
 use elliptic_curve::consts::U32;
