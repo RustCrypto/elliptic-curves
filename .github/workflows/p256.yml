@@ -3,8 +3,8 @@ name: p256
 on:
   pull_request:
     paths:
-      - "elliptic-curve-crate/**"
       - "p256/**"
+      - "tests/p256_no_std/**"
       - "Cargo.*"
   push:
     branches: master
@@ -28,6 +28,9 @@ jobs:
         target:
           - thumbv7em-none-eabi
           - wasm32-unknown-unknown
+    defaults:
+      run:
+        working-directory: tests/p256_no_std
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
@@ -36,13 +39,13 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
-      - run: cargo build --no-default-features --release --target ${{ matrix.target }}
-      - run: cargo build --no-default-features --features arithmetic --release --target ${{ matrix.target }}
-      - run: cargo build --no-default-features --features ecdsa-core --release --target ${{ matrix.target }}
-      # TODO(tarcieri): use new cargo resolver when stable: https://github.com/rust-lang/cargo/issues/7915
-      #- run: cargo build --no-default-features --features rand --release --target ${{ matrix.target }}
-      #- run: cargo build --no-default-features --features ecdsa --release --target ${{ matrix.target }}
-      - run: cargo build --no-default-features --features sha256 --release --target ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }} --features arithmetic
+      - run: cargo build --release --target ${{ matrix.target }} --features ecdh
+      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa-core
+      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
+      - run: cargo build --release --target ${{ matrix.target }} --features sha256
+      - run: cargo build --release --target ${{ matrix.target }} --all-features
   test:
     runs-on: ubuntu-latest
     strategy:

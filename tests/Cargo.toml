@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "k256",
-    "p256",
-    "p384",
+    "k256_no_std",
+    "p256_no_std",
+    "p384_no_std",
 ]
 
 [patch.crates-io]

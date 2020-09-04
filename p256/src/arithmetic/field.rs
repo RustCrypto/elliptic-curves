@@ -4,12 +4,10 @@ use crate::ElementBytes;
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, mac64, sbb64},
 };
-
-#[cfg(feature = "rand")]
-use elliptic_curve::rand_core::{CryptoRng, RngCore};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -92,7 +90,6 @@ impl FieldElement {
     }
 
     /// Returns a uniformly-random element within the field.
-    #[cfg(feature = "rand")]
     pub fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution.
@@ -101,7 +98,6 @@ impl FieldElement {
         FieldElement::from_bytes_wide(buf)
     }
 
-    #[cfg(feature = "rand")]
     fn from_bytes_wide(bytes: [u8; 64]) -> Self {
         FieldElement::montgomery_reduce(
             u64::from_be_bytes(bytes[0..8].try_into().unwrap()),

@@ -13,10 +13,11 @@ keywords = ["crypto", "ecc", "nist", "secp384r1"]
 
 [dependencies]
 ecdsa = { version = "0.7", optional = true, default-features = false }
-elliptic-curve = { version = "0.5", default-features = false, features = ["weierstrass"] }
+elliptic-curve = { version = "0.5", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
+default = ["oid", "std"]
 oid = ["elliptic-curve/oid"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]

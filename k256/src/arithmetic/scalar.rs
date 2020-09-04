@@ -6,12 +6,10 @@ cfg_if! {
     if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
         mod scalar_8x32;
         use scalar_8x32::Scalar8x32 as ScalarImpl;
-        #[cfg(feature = "rand")]
         use scalar_8x32::WideScalar16x32 as WideScalarImpl;
     } else if #[cfg(target_pointer_width = "64")] {
         mod scalar_4x64;
         use scalar_4x64::Scalar4x64 as ScalarImpl;
-        #[cfg(feature = "rand")]
         use scalar_4x64::WideScalar8x64 as WideScalarImpl;
     }
 }
@@ -21,18 +19,13 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     consts::U32,
     ops::Invert,
+    rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    FromBytes,
+    FromBytes, Generate,
 };
 
 #[cfg(feature = "digest")]
 use elliptic_curve::{Digest, FromDigest};
-
-#[cfg(feature = "rand")]
-use elliptic_curve::{
-    rand_core::{CryptoRng, RngCore},
-    Generate,
-};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -197,7 +190,6 @@ impl Scalar {
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
-    #[cfg(feature = "rand")]
     pub fn generate_biased(mut rng: impl CryptoRng + RngCore) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution, but the process is constant-time.
@@ -207,7 +199,6 @@ impl Scalar {
     }
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
-    #[cfg(feature = "rand")]
     pub fn generate_vartime(mut rng: impl CryptoRng + RngCore) -> Self {
         let mut bytes = ElementBytes::default();
 
@@ -399,7 +390,6 @@ impl From<Scalar> for ElementBytes {
     }
 }
 
-#[cfg(feature = "rand")]
 impl Generate for Scalar {
     fn generate(rng: impl CryptoRng + RngCore) -> Self {
         // Uses rejection sampling as the default random generation method,
@@ -511,7 +501,6 @@ mod tests {
         assert_eq!(res, res_ref);
     }
 
-    #[cfg(feature = "rand")]
     #[test]
     fn generate_biased() {
         use elliptic_curve::rand_core::OsRng;
@@ -520,7 +509,6 @@ mod tests {
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
-    #[cfg(feature = "rand")]
     #[test]
     fn generate_vartime() {
         use elliptic_curve::rand_core::OsRng;

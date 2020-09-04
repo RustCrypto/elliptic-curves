@@ -1,0 +1,15 @@
+[package]
+name = "p256_no_std"
+version = "0.1.0"
+authors = ["RustCrypto Developers"]
+edition = "2018"
+
+[dependencies]
+p256 = { path = "../../p256", default-features = false }
+
+[features]
+arithmetic = ["p256/arithmetic"]
+ecdh = ["p256/ecdh"]
+ecdsa = ["p256/ecdsa"]
+ecdsa-core = ["p256/ecdsa-core"]
+sha256 = ["p256/sha256"]

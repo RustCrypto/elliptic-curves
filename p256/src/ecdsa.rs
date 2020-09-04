@@ -134,12 +134,10 @@ mod tests {
         use crate::{
             ecdsa::{signature::Signer, SigningKey},
             test_vectors::ecdsa::ECDSA_TEST_VECTORS,
-            NistP256,
+            BlindedScalar, NistP256, Scalar,
         };
+        use elliptic_curve::rand_core::OsRng;
         use hex_literal::hex;
-
-        #[cfg(feature = "rand")]
-        use crate::{elliptic_curve::rand_core::OsRng, BlindedScalar, Scalar};
 
         ecdsa_core::new_signing_test!(NistP256, ECDSA_TEST_VECTORS);
 
@@ -159,7 +157,6 @@ mod tests {
             );
         }
 
-        #[cfg(feature = "rand")]
         #[test]
         fn scalar_blinding() {
             let vector = &ECDSA_TEST_VECTORS[0];

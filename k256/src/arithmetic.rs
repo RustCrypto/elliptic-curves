@@ -44,7 +44,6 @@ mod tests {
         assert_eq!(CURVE_EQUATION_B.to_bytes(), CURVE_EQUATION_B_BYTES.into());
     }
 
-    #[cfg(feature = "rand")]
     #[test]
     fn generate_secret_key() {
         use crate::SecretKey;

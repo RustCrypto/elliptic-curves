@@ -17,7 +17,7 @@ use elliptic_curve::{
 };
 use signature::PrehashSignature;
 
-#[cfg(any(feature = "sha256", feature = "keccak256"))]
+#[cfg(feature = "digest")]
 use signature::digest::Digest;
 
 /// ECDSA/secp256k1 signing key
