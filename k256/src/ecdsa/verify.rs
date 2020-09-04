@@ -1,12 +1,10 @@
 //! ECDSA verifier
 
 use super::{recoverable, Error, Signature};
-use crate::{
-    AffinePoint, CompressedPoint, EncodedPoint, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1,
-};
+use crate::{AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, Scalar, Secp256k1};
 use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
-use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint, FromBytes};
+use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint};
 use signature::{digest::Digest, DigestVerifier, PrehashSignature};
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
@@ -87,15 +85,8 @@ impl TryFrom<&EncodedPoint> for VerifyKey {
 
 impl VerifyPrimitive<Secp256k1> for AffinePoint {
     fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
-        let maybe_r = NonZeroScalar::from_bytes(signature.r());
-        let maybe_s = NonZeroScalar::from_bytes(signature.s());
-
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        let (r, s) = if maybe_r.is_some().into() && maybe_s.is_some().into() {
-            (maybe_r.unwrap(), maybe_s.unwrap())
-        } else {
-            return Err(Error::new());
-        };
+        let r = signature.r();
+        let s = signature.s();
 
         // Ensure signature is "low S" normalized ala BIP 0062
         if s.is_high().into() {
