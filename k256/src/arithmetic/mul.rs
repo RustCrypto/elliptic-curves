@@ -252,6 +252,14 @@ fn mul_windowed(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     acc
 }
 
+impl Mul<Scalar> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, other: Scalar) -> ProjectivePoint {
+        mul_windowed(&self, &other)
+    }
+}
+
 impl Mul<&Scalar> for &ProjectivePoint {
     type Output = ProjectivePoint;
 

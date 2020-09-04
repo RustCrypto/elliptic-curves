@@ -385,6 +385,7 @@ dependencies = [
 name = "k256"
 version = "0.4.2"
 dependencies = [
+ "byteorder",
  "cfg-if",
  "criterion",
  "ecdsa",

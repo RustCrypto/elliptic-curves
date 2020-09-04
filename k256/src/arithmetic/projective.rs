@@ -1,9 +1,15 @@
 //! Projective points
 
-use super::{AffinePoint, FieldElement, CURVE_EQUATION_B_SINGLE};
-use core::ops::{Add, AddAssign, Neg, Sub, SubAssign};
+use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
+use core::{
+    fmt::{self, Display},
+    iter::Sum,
+    ops::{Add, AddAssign, Neg, Sub, SubAssign},
+};
 use elliptic_curve::{
+    group::{self, Group},
     point::Generator,
+    rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
 
@@ -57,6 +63,8 @@ impl PartialEq for ProjectivePoint {
         self.ct_eq(other).into()
     }
 }
+
+impl Eq for ProjectivePoint {}
 
 impl ProjectivePoint {
     /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
@@ -229,6 +237,40 @@ impl ProjectivePoint {
     }
 }
 
+impl Group for ProjectivePoint {
+    type Scalar = Scalar;
+
+    fn random(rng: impl RngCore) -> Self {
+        Self::generator() * &Scalar::generate_vartime(rng)
+    }
+
+    fn identity() -> Self {
+        ProjectivePoint::identity()
+    }
+
+    fn generator() -> Self {
+        ProjectivePoint::generator()
+    }
+
+    fn is_identity(&self) -> Choice {
+        self.ct_eq(&Self::identity())
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        ProjectivePoint::double(self)
+    }
+}
+
+impl group::Curve for ProjectivePoint {
+    type AffineRepr = AffinePoint;
+
+    // TODO(tarcieri): avoid panicking on identity
+    fn to_affine(&self) -> AffinePoint {
+        ProjectivePoint::to_affine(self).unwrap()
+    }
+}
+
 impl Default for ProjectivePoint {
     fn default() -> Self {
         Self::identity()
@@ -240,6 +282,14 @@ impl Add<&ProjectivePoint> for &ProjectivePoint {
 
     fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
         ProjectivePoint::add(self, other)
+    }
+}
+
+impl Add<ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(&self, &other)
     }
 }
 
@@ -263,6 +313,14 @@ impl AddAssign<&ProjectivePoint> for ProjectivePoint {
     }
 }
 
+impl Add<AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(&self, &other)
+    }
+}
+
 impl Add<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -282,6 +340,32 @@ impl Add<&AffinePoint> for ProjectivePoint {
 impl AddAssign<AffinePoint> for ProjectivePoint {
     fn add_assign(&mut self, rhs: AffinePoint) {
         *self = ProjectivePoint::add_mixed(self, &rhs);
+    }
+}
+
+impl AddAssign<&AffinePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: &AffinePoint) {
+        *self = ProjectivePoint::add_mixed(self, rhs);
+    }
+}
+
+impl Sum for ProjectivePoint {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(ProjectivePoint::identity(), |a, b| a + b)
+    }
+}
+
+impl<'a> Sum<&'a ProjectivePoint> for ProjectivePoint {
+    fn sum<I: Iterator<Item = &'a ProjectivePoint>>(iter: I) -> Self {
+        iter.cloned().sum()
+    }
+}
+
+impl Sub<ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(&self, &other)
     }
 }
 
@@ -313,6 +397,14 @@ impl SubAssign<&ProjectivePoint> for ProjectivePoint {
     }
 }
 
+impl Sub<AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(&self, &other)
+    }
+}
+
 impl Sub<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -335,6 +427,12 @@ impl SubAssign<AffinePoint> for ProjectivePoint {
     }
 }
 
+impl SubAssign<&AffinePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: &AffinePoint) {
+        *self = ProjectivePoint::sub_mixed(self, rhs);
+    }
+}
+
 impl Neg for ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -348,6 +446,15 @@ impl<'a> Neg for &'a ProjectivePoint {
 
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(self)
+    }
+}
+
+// TODO(tarcieri): double check how this should be implemented
+impl Display for ProjectivePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:X}", self.x.to_bytes())?;
+        write!(f, "{:X}", self.y.to_bytes())?;
+        write!(f, "{:X}", self.z.to_bytes())
     }
 }
 
