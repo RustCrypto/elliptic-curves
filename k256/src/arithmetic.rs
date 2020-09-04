@@ -9,7 +9,7 @@ pub(crate) mod scalar;
 #[cfg(test)]
 mod dev;
 
-pub(crate) use field::FieldElement;
+pub use field::FieldElement;
 
 use crate::Secp256k1;
 use affine::AffinePoint;

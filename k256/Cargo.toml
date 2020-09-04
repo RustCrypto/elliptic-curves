@@ -39,6 +39,7 @@ digest = ["elliptic-curve/digest", "ecdsa-core/digest"]
 ecdh = ["elliptic-curve/ecdh", "rand", "zeroize"]
 ecdsa = ["arithmetic", "digest", "ecdsa-core/rand", "ecdsa-core/sign", "ecdsa-core/verify", "rand", "zeroize"]
 endomorphism-mul = []
+expose-field = ["arithmetic"]
 field-montgomery = []
 force-32-bit = []
 keccak256 = ["digest", "sha3"]
@@ -50,10 +51,11 @@ std = ["elliptic-curve/std"]
 zeroize = ["elliptic-curve/zeroize"]
 
 [package.metadata.docs.rs]
-all-features = true
+features = ["ecdh", "ecdsa", "sha256", "keccak256"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
 name = "bench"
 path = "bench/bench.rs"
 harness = false
+required-features = ["expose-field"]
