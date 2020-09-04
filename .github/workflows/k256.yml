@@ -62,3 +62,4 @@ jobs:
     - run: cargo test --all-features
     - run: cargo test --features field-montgomery,rand
     - run: cargo test --features force-32-bit,rand
+    - run: cargo build --all-features --benches

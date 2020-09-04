@@ -68,6 +68,9 @@ pub use arithmetic::{
     scalar::{NonZeroScalar, Scalar},
 };
 
+#[cfg(feature = "expose-field")]
+pub use arithmetic::FieldElement;
+
 use elliptic_curve::consts::U32;
 
 #[cfg(feature = "oid")]
