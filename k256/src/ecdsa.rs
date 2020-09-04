@@ -71,6 +71,9 @@ use core::convert::TryInto;
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
+#[cfg(not(feature = "ecdsa"))]
+impl ecdsa_core::CheckSignatureBytes for Secp256k1 {}
+
 #[cfg(all(feature = "ecdsa", feature = "sha256"))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;

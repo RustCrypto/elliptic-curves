@@ -186,7 +186,7 @@ impl Scalar {
             return Err(Error::new());
         }
 
-        let mut signature = Signature::from_scalars(&r.into(), &s.into());
+        let mut signature = Signature::from_scalars(r, s)?;
         let is_r_odd = bool::from(R.y.normalize().is_odd());
         let is_s_high = signature.normalize_s()?;
         let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
