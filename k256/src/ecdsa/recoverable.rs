@@ -47,7 +47,7 @@ use crate::{
     AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
-#[cfg(any(feature = "ecdsa", docsrs))]
+#[cfg(any(all(feature = "ecdsa", feature = "keccak256"), docsrs))]
 use crate::EncodedPoint;
 
 #[cfg(feature = "keccak256")]
@@ -94,8 +94,9 @@ impl Signature {
     /// Given a public key, message, and signature, use trial recovery for both
     /// possible recovery IDs in an attempt to determine if a suitable
     /// recovery ID exists, or return an error otherwise.
-    #[cfg(feature = "ecdsa")]
+    #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
     pub fn from_trial_recovery(
         public_key: &EncodedPoint,
         msg: &[u8],
@@ -120,7 +121,8 @@ impl Signature {
     /// Recover the public key used to create the given signature as an
     /// [`EncodedPoint`].
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")), doc(cfg(feature = "keccak256")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
     pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyKey, Error> {
         self.recover_verify_key_from_digest(Keccak256::new().chain(msg))
     }

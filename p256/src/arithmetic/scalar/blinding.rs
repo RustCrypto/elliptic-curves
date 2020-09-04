@@ -20,7 +20,6 @@ use elliptic_curve::zeroize::Zeroize;
 /// This provides a randomly blinded impl of [`Invert`] which is useful for
 /// ECDSA ephemeral (`k`) scalars.
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub struct BlindedScalar {
     /// Actual scalar value
     scalar: Scalar,

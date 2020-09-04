@@ -1,0 +1,12 @@
+[package]
+name = "p384_no_std"
+version = "0.1.0"
+authors = ["RustCrypto Developers"]
+edition = "2018"
+
+[dependencies]
+p384 = { path = "../../p384", default-features = false }
+
+[features]
+ecdsa = ["p384/ecdsa"]
+sha384 = ["p384/sha384"]

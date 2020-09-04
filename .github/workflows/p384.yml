@@ -3,8 +3,8 @@ name: p384
 on:
   pull_request:
     paths:
-      - "elliptic-curve-crate/**"
       - "p384/**"
+      - "tests/p384_no_std/**"
       - "Cargo.*"
   push:
     branches: master
@@ -28,6 +28,9 @@ jobs:
         target:
           - thumbv7em-none-eabi
           - wasm32-unknown-unknown
+    defaults:
+      run:
+        working-directory: tests/p384_no_std
     steps:
       - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
@@ -36,7 +39,10 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
-      - run: cargo build --no-default-features --release --target ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }}
+      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
+      - run: cargo build --release --target ${{ matrix.target }} --features sha384
+      - run: cargo build --release --target ${{ matrix.target }} --all-features
   test:
     runs-on: ubuntu-latest
     strategy:

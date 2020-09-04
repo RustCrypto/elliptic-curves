@@ -1,6 +1,5 @@
 //! Scalar field arithmetic modulo n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 
-#[cfg(feature = "rand")]
 pub mod blinding;
 
 use crate::{ElementBytes, NistP256, SecretKey};
@@ -11,19 +10,14 @@ use core::{
 use elliptic_curve::{
     consts::U32,
     ops::Invert,
+    rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, mac64, sbb64},
-    FromBytes,
+    FromBytes, Generate,
 };
 
 #[cfg(feature = "digest")]
 use elliptic_curve::{Digest, FromDigest};
-
-#[cfg(feature = "rand")]
-use elliptic_curve::{
-    rand_core::{CryptoRng, RngCore},
-    Generate,
-};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -700,7 +694,6 @@ impl From<Scalar> for ElementBytes {
     }
 }
 
-#[cfg(feature = "rand")]
 impl Generate for Scalar {
     fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
         let mut bytes = ElementBytes::default();

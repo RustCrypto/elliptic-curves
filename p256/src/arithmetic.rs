@@ -53,7 +53,6 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "rand")]
     #[test]
     fn generate_secret_key() {
         use crate::SecretKey;

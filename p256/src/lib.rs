@@ -61,11 +61,9 @@ pub use elliptic_curve;
 pub use arithmetic::{
     affine::AffinePoint,
     projective::ProjectivePoint,
+    scalar::blinding::BlindedScalar,
     scalar::{NonZeroScalar, Scalar},
 };
-
-#[cfg(all(feature = "arithmetic", feature = "rand"))]
-pub use arithmetic::scalar::blinding::BlindedScalar;
 
 use elliptic_curve::consts::U32;
 

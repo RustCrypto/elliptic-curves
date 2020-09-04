@@ -413,7 +413,6 @@ impl ConstantTimeEq for Scalar4x64 {
 pub struct WideScalar8x64([u64; 8]);
 
 impl WideScalar8x64 {
-    #[cfg(feature = "rand")]
     pub fn from_bytes(bytes: &[u8; 64]) -> Self {
         let mut w = [0u64; 8];
         for i in 0..8 {

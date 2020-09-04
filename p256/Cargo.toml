@@ -17,7 +17,7 @@ keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 
 [dependencies]
 ecdsa-core = { version = "0.7", package = "ecdsa", optional = true, default-features = false }
-elliptic-curve = { version = "0.5", default-features = false, features = ["weierstrass"] }
+elliptic-curve = { version = "0.5", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [dev-dependencies]
@@ -31,10 +31,9 @@ rand_core = { version = "0.5", features = ["getrandom"] }
 default = ["arithmetic", "std"]
 arithmetic = []
 digest = ["elliptic-curve/digest", "ecdsa-core/digest"]
-ecdh = ["elliptic-curve/ecdh", "rand", "zeroize"]
-ecdsa = ["arithmetic", "ecdsa-core/rand", "ecdsa-core/sign", "ecdsa-core/verify", "rand", "sha256", "zeroize"]
+ecdh = ["elliptic-curve/ecdh", "zeroize"]
+ecdsa = ["arithmetic", "ecdsa-core/sign", "ecdsa-core/verify", "sha256", "zeroize"]
 oid = ["elliptic-curve/oid"]
-rand = ["elliptic-curve/rand"]
 sha256 = ["digest", "ecdsa-core/hazmat", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]

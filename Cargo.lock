@@ -243,7 +243,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.7.2"
-source = "git+https://github.com/RustCrypto/signatures#5046c9244904a8a6f0200d1c89024199c17e7582"
+source = "git+https://github.com/RustCrypto/signatures#1b54c722c4292222b5c603c657db7891785de226"
 dependencies = [
  "elliptic-curve",
  "hmac",
@@ -259,14 +259,27 @@ checksum = "cd56b59865bce947ac5958779cfa508f6c3b9497cc762b7e24a12d11ccde2c4f"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0"
-source = "git+https://github.com/RustCrypto/traits#ab2598b62c35d8e9350937b2f632c54b84cbcb01"
+source = "git+https://github.com/RustCrypto/traits#80abd0a2e92202915d853cf644ec8de50c2c3324"
 dependencies = [
  "const-oid",
  "digest",
+ "ff",
  "generic-array",
+ "group",
  "rand_core",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "ff"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01d11efdc125f2647dde5a0f5f88010a5b0f89b700f86052afa1d148c4696047"
+dependencies = [
+ "byteorder",
+ "rand_core",
+ "subtle",
 ]
 
 [[package]]
@@ -294,6 +307,17 @@ dependencies = [
  "cfg-if",
  "libc",
  "wasi",
+]
+
+[[package]]
+name = "group"
+version = "0.7.0"
+source = "git+https://github.com/zkcrypto/group.git#2942324876cdbb5c94140ad39ae83da642c30374"
+dependencies = [
+ "byteorder",
+ "ff",
+ "rand_core",
+ "subtle",
 ]
 
 [[package]]
