@@ -180,7 +180,7 @@ impl Scalar {
         let r = Scalar::from_bytes_reduced(&R.x.to_bytes());
 
         // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * &(z + (r * self));
+        let s = k_inverse * (z + (r * self));
 
         if s.is_zero().into() {
             return Err(Error::new());

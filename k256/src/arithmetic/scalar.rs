@@ -262,7 +262,7 @@ impl ff::Field for Scalar {
 
     #[must_use]
     fn double(&self) -> Self {
-        todo!();
+        self.add(self)
     }
 
     fn invert(&self) -> CtOption<Self> {
@@ -677,7 +677,7 @@ mod tests {
 
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
-            let a_back = Scalar::from_bytes(&a.to_bytes().into()).unwrap();
+            let a_back = Scalar::from_bytes(&a.to_bytes()).unwrap();
             assert_eq!(a, a_back);
         }
 

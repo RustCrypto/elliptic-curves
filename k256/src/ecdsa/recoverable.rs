@@ -168,9 +168,9 @@ impl Signature {
         if R.is_some().into() {
             let R = ProjectivePoint::from(R.unwrap());
             let r_inv = r.invert().unwrap();
-            let u1 = -(r_inv * &z);
-            let u2 = r_inv * &*s;
-            let pk = ((&ProjectivePoint::generator() * &u1) + &(R * &u2)).to_affine();
+            let u1 = -(r_inv * z);
+            let u2 = r_inv * *s;
+            let pk = ((ProjectivePoint::generator() * u1) + (R * u2)).to_affine();
 
             // TODO(tarcieri): ensure the signature verifies?
             Ok(VerifyKey::from(&pk))

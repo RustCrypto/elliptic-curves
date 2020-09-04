@@ -186,10 +186,10 @@ fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
     let c1 = k.mul_shift_var(&G1, 272);
     let c2 = k.mul_shift_var(&G2, 272);
 
-    let c1 = &c1 * &MINUS_B1;
-    let c2 = &c2 * &MINUS_B2;
-    let r2 = &c1 + &c2;
-    let r1 = k + &r2 * &MINUS_LAMBDA;
+    let c1 = c1 * MINUS_B1;
+    let c2 = c2 * MINUS_B2;
+    let r2 = c1 + c2;
+    let r1 = k + r2 * MINUS_LAMBDA;
 
     (r1, r2)
 }
@@ -240,7 +240,7 @@ fn mul_windowed(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     let digits1 = to_radix_16_half(&r1_c);
     let digits2 = to_radix_16_half(&r2_c);
 
-    let mut acc = table1.select(digits1[32]) + &table2.select(digits2[32]);
+    let mut acc = table1.select(digits1[32]) + table2.select(digits2[32]);
     for i in (0..32).rev() {
         for _j in 0..4 {
             acc = acc.double();

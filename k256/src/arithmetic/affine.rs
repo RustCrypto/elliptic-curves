@@ -215,8 +215,7 @@ mod tests {
         let pubkey = EncodedPoint::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
         let res: EncodedPoint = AffinePoint::from_encoded_point(&pubkey)
             .unwrap()
-            .to_encoded_point(false)
-            .into();
+            .to_encoded_point(false);
 
         assert_eq!(res, pubkey);
     }
@@ -226,8 +225,7 @@ mod tests {
         let pubkey = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
         let res: EncodedPoint = AffinePoint::from_encoded_point(&pubkey)
             .unwrap()
-            .to_encoded_point(true)
-            .into();
+            .to_encoded_point(true);
 
         assert_eq!(res, pubkey);
     }

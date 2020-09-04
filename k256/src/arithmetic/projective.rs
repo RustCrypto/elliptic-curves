@@ -241,7 +241,7 @@ impl Group for ProjectivePoint {
     type Scalar = Scalar;
 
     fn random(rng: impl RngCore) -> Self {
-        Self::generator() * &Scalar::generate_vartime(rng)
+        Self::generator() * Scalar::generate_vartime(rng)
     }
 
     fn identity() -> Self {
@@ -265,9 +265,8 @@ impl Group for ProjectivePoint {
 impl group::Curve for ProjectivePoint {
     type AffineRepr = AffinePoint;
 
-    // TODO(tarcieri): avoid panicking on identity
     fn to_affine(&self) -> AffinePoint {
-        ProjectivePoint::to_affine(self).unwrap()
+        ProjectivePoint::to_affine(self)
     }
 }
 
@@ -522,7 +521,7 @@ mod tests {
                 ADD_TEST_VECTORS[i]
             );
 
-            p = p + &generator;
+            p += &generator;
         }
     }
 
@@ -541,7 +540,7 @@ mod tests {
                 ADD_TEST_VECTORS[i]
             );
 
-            p = p + &generator;
+            p += &generator;
         }
     }
 
