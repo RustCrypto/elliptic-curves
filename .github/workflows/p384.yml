@@ -39,6 +39,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
+      - run: cp ../../Cargo.lock .. # Use same Cargo.lock resolution that's checked in
       - run: cargo build --release --target ${{ matrix.target }}
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
       - run: cargo build --release --target ${{ matrix.target }} --features sha384
