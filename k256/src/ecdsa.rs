@@ -22,7 +22,7 @@
 //! # {
 //! use k256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
-//!     elliptic_curve::{Generate},
+//!     elliptic_curve::Generate,
 //!     SecretKey,
 //! };
 //! use rand_core::OsRng; // requires 'getrandom' feature
