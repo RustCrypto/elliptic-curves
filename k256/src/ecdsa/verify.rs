@@ -99,7 +99,6 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
 
         let x = ((&ProjectivePoint::generator() * &u1) + &(ProjectivePoint::from(*self) * &u2))
             .to_affine()
-            .unwrap()
             .x;
 
         if Scalar::from_bytes_reduced(&x.to_bytes()).eq(&r) {

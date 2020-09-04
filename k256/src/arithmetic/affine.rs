@@ -20,6 +20,23 @@ use elliptic_curve::zeroize::Zeroize;
 pub struct AffinePoint {
     pub(crate) x: FieldElement,
     pub(crate) y: FieldElement,
+    pub(super) infinity: Choice,
+}
+
+impl AffinePoint {
+    /// Returns the identity of the group: the point at infinity.
+    pub fn identity() -> AffinePoint {
+        Self {
+            x: FieldElement::zero(),
+            y: FieldElement::zero(),
+            infinity: Choice::from(1),
+        }
+    }
+
+    /// Is this point the identity point?
+    pub fn is_identity(&self) -> Choice {
+        self.infinity
+    }
 }
 
 impl ConditionallySelectable for AffinePoint {
@@ -27,6 +44,7 @@ impl ConditionallySelectable for AffinePoint {
         AffinePoint {
             x: FieldElement::conditional_select(&a.x, &b.x, choice),
             y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            infinity: Choice::conditional_select(&a.infinity, &b.infinity, choice),
         }
     }
 }
@@ -35,6 +53,13 @@ impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
         (self.x.negate(1) + &other.x).normalizes_to_zero()
             & (self.y.negate(1) + &other.y).normalizes_to_zero()
+            & !(self.infinity ^ other.infinity)
+    }
+}
+
+impl Default for AffinePoint {
+    fn default() -> Self {
+        Self::identity()
     }
 }
 
@@ -65,6 +90,7 @@ impl Generator for AffinePoint {
                 0xfb, 0x10, 0xd4, 0xb8
             ])
             .unwrap(),
+            infinity: Choice::from(0),
         }
     }
 }
@@ -86,6 +112,7 @@ impl Decompress<Secp256k1> for AffinePoint {
                 Self {
                     x,
                     y: y.normalize(),
+                    infinity: Choice::from(0),
                 }
             })
         })
@@ -112,7 +139,9 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
                         // Check that the point is on the curve
                         let lhs = (y * &y).negate(1);
                         let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        CtOption::new(AffinePoint { x, y }, (lhs + &rhs).normalizes_to_zero())
+                        let infinity = Choice::from(0);
+                        let point = AffinePoint { x, y, infinity };
+                        CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
                     })
                 })
             }
@@ -137,9 +166,7 @@ impl Mul<NonZeroScalar> for AffinePoint {
     type Output = AffinePoint;
 
     fn mul(self, scalar: NonZeroScalar) -> Self {
-        (ProjectivePoint::from(self) * scalar.as_ref())
-            .to_affine()
-            .unwrap()
+        (ProjectivePoint::from(self) * scalar.as_ref()).to_affine()
     }
 }
 
@@ -150,6 +177,7 @@ impl Neg for AffinePoint {
         AffinePoint {
             x: self.x,
             y: self.y.negate(1).normalize_weak(),
+            infinity: self.infinity,
         }
     }
 }
