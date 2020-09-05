@@ -2,7 +2,10 @@
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
 use crate::{ElementBytes, EncodedPoint, NonZeroScalar, Secp256k1};
-use core::ops::{Mul, Neg};
+use core::{
+    fmt,
+    ops::{Mul, Neg},
+};
 use elliptic_curve::{
     generic_array::arr,
     point::Generator,
@@ -182,6 +185,12 @@ impl Neg for AffinePoint {
             y: self.y.negate(1).normalize_weak(),
             infinity: self.infinity,
         }
+    }
+}
+
+impl fmt::Display for AffinePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

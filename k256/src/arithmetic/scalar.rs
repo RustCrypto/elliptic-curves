@@ -16,7 +16,7 @@ cfg_if! {
 
 use crate::{ElementBytes, Secp256k1};
 use core::{
-    fmt::{self, Display},
+    fmt,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign},
 };
 use elliptic_curve::{
@@ -542,9 +542,9 @@ impl Generate for Scalar {
     }
 }
 
-impl Display for Scalar {
+impl fmt::Display for Scalar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:X}", self.to_bytes())
+        write!(f, "{:?}", self)
     }
 }
 
