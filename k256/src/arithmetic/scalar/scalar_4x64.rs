@@ -230,6 +230,11 @@ impl Scalar4x64 {
         Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3]) == 0) as u8)
     }
 
+    /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    pub fn is_odd(&self) -> Choice {
+        (self.0[0] as u8 & 1).into()
+    }
+
     /// Negates the scalar.
     pub fn negate(&self) -> Self {
         let (res, _) = sbb_array(&MODULUS, &(self.0));
@@ -392,6 +397,12 @@ impl Zeroize for Scalar4x64 {
 impl From<u32> for Scalar4x64 {
     fn from(k: u32) -> Self {
         Scalar4x64([k as u64, 0, 0, 0])
+    }
+}
+
+impl From<u64> for Scalar4x64 {
+    fn from(k: u64) -> Self {
+        Scalar4x64([k, 0, 0, 0])
     }
 }
 

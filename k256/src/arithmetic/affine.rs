@@ -2,7 +2,10 @@
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
 use crate::{ElementBytes, EncodedPoint, NonZeroScalar, Secp256k1};
-use core::ops::{Mul, Neg};
+use core::{
+    fmt,
+    ops::{Mul, Neg},
+};
 use elliptic_curve::{
     generic_array::arr,
     point::Generator,
@@ -185,6 +188,12 @@ impl Neg for AffinePoint {
     }
 }
 
+impl fmt::Display for AffinePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[cfg(feature = "zeroize")]
 impl Zeroize for AffinePoint {
     fn zeroize(&mut self) {
@@ -215,8 +224,7 @@ mod tests {
         let pubkey = EncodedPoint::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
         let res: EncodedPoint = AffinePoint::from_encoded_point(&pubkey)
             .unwrap()
-            .to_encoded_point(false)
-            .into();
+            .to_encoded_point(false);
 
         assert_eq!(res, pubkey);
     }
@@ -226,8 +234,7 @@ mod tests {
         let pubkey = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
         let res: EncodedPoint = AffinePoint::from_encoded_point(&pubkey)
             .unwrap()
-            .to_encoded_point(true)
-            .into();
+            .to_encoded_point(true);
 
         assert_eq!(res, pubkey);
     }

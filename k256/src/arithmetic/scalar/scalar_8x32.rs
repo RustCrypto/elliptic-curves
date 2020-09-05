@@ -285,6 +285,11 @@ impl Scalar8x32 {
         )
     }
 
+    /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    pub fn is_odd(&self) -> Choice {
+        (self.0[0] as u8 & 1).into()
+    }
+
     /// Negates the scalar.
     pub fn negate(&self) -> Self {
         let (res, _) = sbb_array(&MODULUS, &(self.0));
@@ -526,6 +531,12 @@ impl Zeroize for Scalar8x32 {
 impl From<u32> for Scalar8x32 {
     fn from(k: u32) -> Self {
         Self([k, 0, 0, 0, 0, 0, 0, 0])
+    }
+}
+
+impl From<u64> for Scalar8x32 {
+    fn from(k: u64) -> Self {
+        Self([(k & 0xFFFF) as u32, (k >> 32) as u32, 0, 0, 0, 0, 0, 0])
     }
 }
 

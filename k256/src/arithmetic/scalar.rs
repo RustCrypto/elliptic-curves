@@ -15,9 +15,13 @@ cfg_if! {
 }
 
 use crate::{ElementBytes, Secp256k1};
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
+use core::{
+    fmt,
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign},
+};
 use elliptic_curve::{
     consts::U32,
+    ff,
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -43,6 +47,12 @@ pub struct Scalar(ScalarImpl);
 
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
+        Self(ScalarImpl::from(k))
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(k: u64) -> Self {
         Self(ScalarImpl::from(k))
     }
 }
@@ -199,7 +209,8 @@ impl Scalar {
     }
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
-    pub fn generate_vartime(mut rng: impl CryptoRng + RngCore) -> Self {
+    // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
+    pub fn generate_vartime(mut rng: impl RngCore) -> Self {
         let mut bytes = ElementBytes::default();
 
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
@@ -224,6 +235,85 @@ impl Scalar {
     /// Variable time in `shift`.
     pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
         Self(self.0.mul_shift_var(&(b.0), shift))
+    }
+}
+
+impl ff::Field for Scalar {
+    fn random<R: RngCore + ?Sized>(rng: &mut R) -> Self {
+        Scalar::generate_vartime(rng)
+    }
+
+    fn zero() -> Self {
+        Scalar::zero()
+    }
+
+    fn one() -> Self {
+        Scalar::one()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0.is_zero().into()
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        Scalar::square(self)
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.add(self)
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        Scalar::invert(self)
+    }
+
+    // TODO(tarcieri): stub!
+    fn sqrt(&self) -> CtOption<Self> {
+        todo!();
+    }
+}
+
+impl ff::PrimeField for Scalar {
+    type Repr = ElementBytes;
+    type ReprEndianness = byteorder::BigEndian;
+
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 256;
+    const S: u32 = 6;
+
+    fn from_repr(repr: ElementBytes) -> Option<Self> {
+        let result = Scalar::from_bytes(&repr);
+
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        if result.is_some().into() {
+            Some(result.unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn to_repr(&self) -> ElementBytes {
+        self.to_bytes()
+    }
+
+    fn is_odd(&self) -> bool {
+        self.0.is_odd().into()
+    }
+
+    fn char() -> Self::Repr {
+        unimplemented!(); // removed in newer versions of `ff`
+    }
+
+    // TODO(tarcieri): stub!
+    fn multiplicative_generator() -> Self {
+        todo!();
+    }
+
+    // TODO(tarcieri): stub!
+    fn root_of_unity() -> Self {
+        todo!();
     }
 }
 
@@ -286,6 +376,8 @@ impl PartialEq for Scalar {
     }
 }
 
+impl Eq for Scalar {}
+
 impl Neg for Scalar {
     type Output = Scalar;
 
@@ -299,6 +391,14 @@ impl Neg for &Scalar {
 
     fn neg(self) -> Scalar {
         self.negate()
+    }
+}
+
+impl Add<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: Scalar) -> Scalar {
+        Scalar::add(&self, &other)
     }
 }
 
@@ -332,6 +432,20 @@ impl AddAssign<Scalar> for Scalar {
     }
 }
 
+impl AddAssign<&Scalar> for Scalar {
+    fn add_assign(&mut self, rhs: &Scalar) {
+        *self = Scalar::add(self, &rhs);
+    }
+}
+
+impl Sub<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn sub(self, other: Scalar) -> Scalar {
+        Scalar::sub(&self, &other)
+    }
+}
+
 impl Sub<&Scalar> for &Scalar {
     type Output = Scalar;
 
@@ -351,6 +465,20 @@ impl Sub<&Scalar> for Scalar {
 impl SubAssign<Scalar> for Scalar {
     fn sub_assign(&mut self, rhs: Scalar) {
         *self = Scalar::sub(self, &rhs);
+    }
+}
+
+impl SubAssign<&Scalar> for Scalar {
+    fn sub_assign(&mut self, rhs: &Scalar) {
+        *self = Scalar::sub(self, rhs);
+    }
+}
+
+impl Mul<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: Scalar) -> Scalar {
+        Scalar::mul(&self, &other)
     }
 }
 
@@ -376,6 +504,12 @@ impl MulAssign<Scalar> for Scalar {
     }
 }
 
+impl MulAssign<&Scalar> for Scalar {
+    fn mul_assign(&mut self, rhs: &Scalar) {
+        *self = Scalar::mul(self, rhs);
+    }
+}
+
 impl Invert for Scalar {
     type Output = Self;
 
@@ -386,6 +520,12 @@ impl Invert for Scalar {
 
 impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
+        scalar.to_bytes()
+    }
+}
+
+impl From<&Scalar> for ElementBytes {
+    fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
     }
 }
@@ -402,6 +542,12 @@ impl Generate for Scalar {
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
         Self::generate_vartime(rng)
+    }
+}
+
+impl fmt::Display for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -534,7 +680,7 @@ mod tests {
 
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
-            let a_back = Scalar::from_bytes(&a.to_bytes().into()).unwrap();
+            let a_back = Scalar::from_bytes(&a.to_bytes()).unwrap();
             assert_eq!(a, a_back);
         }
 

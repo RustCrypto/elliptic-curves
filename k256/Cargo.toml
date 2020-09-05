@@ -16,6 +16,7 @@ categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
 [dependencies]
+byteorder = { version = "1", default-features = false }
 cfg-if = "0.1"
 ecdsa-core = { version = "0.7", package = "ecdsa", optional = true, default-features = false }
 elliptic-curve = { version = "0.5", default-features = false }
