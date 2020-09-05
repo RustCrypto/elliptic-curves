@@ -139,8 +139,11 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
                         // Check that the point is on the curve
                         let lhs = (y * &y).negate(1);
                         let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        let infinity = Choice::from(0);
-                        let point = AffinePoint { x, y, infinity };
+                        let point = AffinePoint {
+                            x,
+                            y,
+                            infinity: Choice::from(0),
+                        };
                         CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
                     })
                 })

@@ -4,7 +4,7 @@ use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     point::Generator,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
 
 /// A point on the secp256r1 curve in projective coordinates.
@@ -18,11 +18,12 @@ pub struct ProjectivePoint {
 
 impl From<AffinePoint> for ProjectivePoint {
     fn from(p: AffinePoint) -> Self {
-        ProjectivePoint {
+        let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
             z: FieldElement::one(),
-        }
+        };
+        Self::conditional_select(&projective, &Self::identity(), p.infinity)
     }
 }
 
@@ -65,11 +66,15 @@ impl ProjectivePoint {
     }
 
     /// Returns the affine representation of this point, or `None` if it is the identity.
-    pub fn to_affine(&self) -> CtOption<AffinePoint> {
-        self.z.invert().map(|zinv| AffinePoint {
-            x: self.x * &zinv,
-            y: self.y * &zinv,
-        })
+    pub fn to_affine(&self) -> AffinePoint {
+        self.z
+            .invert()
+            .map(|zinv| AffinePoint {
+                x: self.x * &zinv,
+                y: self.y * &zinv,
+                infinity: Choice::from(0),
+            })
+            .unwrap_or_else(AffinePoint::identity)
     }
 
     /// Returns `-self`.
@@ -363,11 +368,11 @@ mod tests {
             ProjectivePoint::from(basepoint_affine),
             basepoint_projective,
         );
-        assert_eq!(basepoint_projective.to_affine().unwrap(), basepoint_affine);
+        assert_eq!(basepoint_projective.to_affine(), basepoint_affine);
+        assert!(!bool::from(basepoint_projective.to_affine().is_identity()));
 
-        // The projective identity does not have an affine representation.
         assert!(bool::from(
-            ProjectivePoint::identity().to_affine().is_none()
+            ProjectivePoint::identity().to_affine().is_identity()
         ));
     }
 
@@ -399,7 +404,7 @@ mod tests {
         let mut p = generator;
 
         for i in 0..ADD_TEST_VECTORS.len() {
-            let affine = p.to_affine().unwrap();
+            let affine = p.to_affine();
             assert_eq!(
                 (
                     hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
@@ -408,7 +413,7 @@ mod tests {
                 ADD_TEST_VECTORS[i]
             );
 
-            p = p + &generator;
+            p += &generator;
         }
     }
 
@@ -418,7 +423,7 @@ mod tests {
         let mut p = ProjectivePoint::generator();
 
         for i in 0..ADD_TEST_VECTORS.len() {
-            let affine = p.to_affine().unwrap();
+            let affine = p.to_affine();
             assert_eq!(
                 (
                     hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
@@ -437,7 +442,7 @@ mod tests {
         let mut p = generator;
 
         for i in 0..2 {
-            let affine = p.to_affine().unwrap();
+            let affine = p.to_affine();
             assert_eq!(
                 (
                     hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
@@ -494,7 +499,7 @@ mod tests {
                 )
             }))
         {
-            let res = (generator * &k).to_affine().unwrap();
+            let res = (generator * &k).to_affine();
             assert_eq!(
                 (
                     hex::encode(res.x.to_bytes()).to_uppercase().as_str(),
