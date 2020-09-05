@@ -7,8 +7,11 @@
 //!
 //! ## Signing/Recovery Example
 //!
+//! NOTE: make sure to enable both the `ecdsa` and `keccak256` features of
+//! this crate for the example to work.
+//!
 //! ```
-//! # #[cfg(feature = "ecdsa")]
+//! # #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
 //! # {
 //! use k256::{
 //!     ecdsa::{SigningKey, recoverable, signature::Signer},
@@ -39,16 +42,13 @@ use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "ecdsa")]
 use crate::{
-    ecdsa::VerifyKey,
+    ecdsa::{signature::DigestVerifier, VerifyKey},
     elliptic_curve::{
         consts::U32, ops::Invert, subtle::Choice, weierstrass::point::Decompress, Digest,
         FromBytes, FromDigest,
     },
     AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
 };
-
-#[cfg(any(all(feature = "ecdsa", feature = "keccak256"), docsrs))]
-use crate::EncodedPoint;
 
 #[cfg(feature = "keccak256")]
 use sha3::Keccak256;
@@ -91,24 +91,47 @@ impl Signature {
         self.bytes[64].try_into().expect("invalid recovery ID")
     }
 
-    /// Given a public key, message, and signature, use trial recovery for both
-    /// possible recovery IDs in an attempt to determine if a suitable
-    /// recovery ID exists, or return an error otherwise.
+    /// Given a public key, message, and signature, use trial recovery
+    /// to determine if a suitable recovery ID exists, or return an error
+    /// otherwise.
+    ///
+    /// Assumes Keccak256 as the message digest function. Use
+    /// [`from_digest_trial_recovery`] to support other digest functions.
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
     pub fn from_trial_recovery(
-        public_key: &EncodedPoint,
+        public_key: &VerifyKey,
         msg: &[u8],
         signature: &super::Signature,
     ) -> Result<Self, Error> {
+        Self::from_digest_trial_recovery(public_key, Keccak256::new().chain(msg), signature)
+    }
+
+    /// Given a public key, message digest, and signature, use trial recovery
+    /// to determine if a suitable recovery ID exists, or return an error
+    /// otherwise.
+    #[cfg(feature = "ecdsa")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    pub fn from_digest_trial_recovery<D>(
+        public_key: &VerifyKey,
+        digest: D,
+        signature: &super::Signature,
+    ) -> Result<Self, Error>
+    where
+        D: Clone + Digest<OutputSize = U32>,
+    {
         let mut signature = *signature;
         signature.normalize_s()?;
 
         for recovery_id in 0..=1 {
             if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {
-                if let Ok(recovered_key) = recoverable_signature.recover_verify_key(msg) {
-                    if public_key == &EncodedPoint::from(&recovered_key) {
+                if let Ok(recovered_key) =
+                    recoverable_signature.recover_verify_key_from_digest(digest.clone())
+                {
+                    if public_key == &recovered_key
+                        && public_key.verify_digest(digest.clone(), &signature).is_ok()
+                    {
                         return Ok(recoverable_signature);
                     }
                 }
@@ -148,6 +171,8 @@ impl Signature {
             let u1 = -(r_inv * &z);
             let u2 = r_inv * &*s;
             let pk = ((&ProjectivePoint::generator() * &u1) + &(R * &u2)).to_affine();
+
+            // TODO(tarcieri): ensure the signature verifies?
             Ok(VerifyKey::from(&pk))
         } else {
             Err(Error::new())
