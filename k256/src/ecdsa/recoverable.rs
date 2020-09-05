@@ -148,13 +148,10 @@ impl Signature {
             let u1 = -(r_inv * &z);
             let u2 = r_inv * &*s;
             let pk = ((&ProjectivePoint::generator() * &u1) + &(R * &u2)).to_affine();
-
-            if pk.is_some().into() {
-                return Ok(VerifyKey::from(&pk.unwrap()));
-            }
+            Ok(VerifyKey::from(&pk))
+        } else {
+            Err(Error::new())
         }
-
-        Err(Error::new())
     }
 
     /// Parse the `r` component of this signature to a [`Scalar`]
