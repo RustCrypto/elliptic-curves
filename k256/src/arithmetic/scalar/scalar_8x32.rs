@@ -306,6 +306,7 @@ impl Scalar8x32 {
     }
 
     /// Multiplies two scalars without modulo reduction, producing up to a 512-bit scalar.
+    #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
     fn mul_wide(&self, rhs: &Self) -> WideScalar16x32 {
         /* 96 bit accumulator. */
         let c0 = 0;
@@ -563,6 +564,7 @@ impl WideScalar16x32 {
         Self(w)
     }
 
+    #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
     pub fn reduce(&self) -> Scalar8x32 {
         let n0 = self.0[8];
         let n1 = self.0[9];
