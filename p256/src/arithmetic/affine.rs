@@ -20,6 +20,23 @@ use elliptic_curve::zeroize::Zeroize;
 pub struct AffinePoint {
     pub(crate) x: FieldElement,
     pub(crate) y: FieldElement,
+    pub(super) infinity: Choice,
+}
+
+impl AffinePoint {
+    /// Returns the identity of the group: the point at infinity.
+    pub fn identity() -> AffinePoint {
+        Self {
+            x: FieldElement::zero(),
+            y: FieldElement::zero(),
+            infinity: Choice::from(1),
+        }
+    }
+
+    /// Is this point the identity point?
+    pub fn is_identity(&self) -> Choice {
+        self.infinity
+    }
 }
 
 impl ConditionallySelectable for AffinePoint {
@@ -27,13 +44,20 @@ impl ConditionallySelectable for AffinePoint {
         AffinePoint {
             x: FieldElement::conditional_select(&a.x, &b.x, choice),
             y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            infinity: Choice::conditional_select(&a.infinity, &b.infinity, choice),
         }
     }
 }
 
 impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
-        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
+        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y) & !(self.infinity ^ other.infinity)
+    }
+}
+
+impl Default for AffinePoint {
+    fn default() -> Self {
+        Self::identity()
     }
 }
 
@@ -64,6 +88,7 @@ impl Generator for AffinePoint {
                 0x37, 0xbf, 0x51, 0xf5
             ])
             .unwrap(),
+            infinity: Choice::from(0),
         }
     }
 }
@@ -82,7 +107,11 @@ impl Decompress<NistP256> for AffinePoint {
                     !(beta.is_odd() ^ y_is_odd),
                 );
 
-                Self { x, y }
+                Self {
+                    x,
+                    y,
+                    infinity: Choice::from(0),
+                }
             })
         })
     }
@@ -108,7 +137,12 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
                         // Check that the point is on the curve
                         let lhs = y * &y;
                         let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
-                        CtOption::new(AffinePoint { x, y }, lhs.ct_eq(&rhs))
+                        let point = AffinePoint {
+                            x,
+                            y,
+                            infinity: Choice::from(0),
+                        };
+                        CtOption::new(point, lhs.ct_eq(&rhs))
                     })
                 })
             }
@@ -133,9 +167,7 @@ impl Mul<NonZeroScalar> for AffinePoint {
     type Output = AffinePoint;
 
     fn mul(self, scalar: NonZeroScalar) -> Self {
-        (ProjectivePoint::from(self) * scalar.as_ref())
-            .to_affine()
-            .unwrap()
+        (ProjectivePoint::from(self) * scalar.as_ref()).to_affine()
     }
 }
 
@@ -146,6 +178,7 @@ impl Neg for AffinePoint {
         AffinePoint {
             x: self.x,
             y: -self.y,
+            infinity: self.infinity,
         }
     }
 }
@@ -192,7 +225,7 @@ mod tests {
         let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
         assert_eq!(point, AffinePoint::generator());
 
-        let res: EncodedPoint = point.to_encoded_point(true).into();
+        let res: EncodedPoint = point.to_encoded_point(true);
         assert_eq!(res, pubkey);
     }
 

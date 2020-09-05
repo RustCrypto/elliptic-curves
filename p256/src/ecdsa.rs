@@ -89,7 +89,7 @@ impl SignPrimitive<NistP256> for Scalar {
         let k_inverse = k_inverse.unwrap();
 
         // Compute `x`-coordinate of affine point 𝑘×𝑮
-        let x = (ProjectivePoint::generator() * k).to_affine().unwrap().x;
+        let x = (ProjectivePoint::generator() * k).to_affine().x;
 
         // Lift `x` (element of base field) to serialized big endian integer,
         // then reduce it to an element of the scalar field
@@ -117,7 +117,6 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
 
         let x = ((&ProjectivePoint::generator() * &u1) + &(ProjectivePoint::from(*self) * &u2))
             .to_affine()
-            .unwrap()
             .x;
 
         if Scalar::from_bytes_reduced(&x.to_bytes()) == *r {

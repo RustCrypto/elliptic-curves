@@ -27,11 +27,12 @@ pub struct ProjectivePoint {
 
 impl From<AffinePoint> for ProjectivePoint {
     fn from(p: AffinePoint) -> Self {
-        ProjectivePoint {
+        let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
             z: FieldElement::one(),
-        }
+        };
+        Self::conditional_select(&projective, &Self::identity(), p.infinity)
     }
 }
 
