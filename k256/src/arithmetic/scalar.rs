@@ -269,6 +269,7 @@ impl ff::Field for Scalar {
         Scalar::invert(self)
     }
 
+    // TODO(tarcieri): stub!
     fn sqrt(&self) -> CtOption<Self> {
         todo!();
     }
@@ -305,10 +306,12 @@ impl ff::PrimeField for Scalar {
         unimplemented!(); // removed in newer versions of `ff`
     }
 
+    // TODO(tarcieri): stub!
     fn multiplicative_generator() -> Self {
         todo!();
     }
 
+    // TODO(tarcieri): stub!
     fn root_of_unity() -> Self {
         todo!();
     }
