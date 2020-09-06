@@ -21,7 +21,7 @@ use core::{
 };
 use elliptic_curve::{
     consts::U32,
-    ff,
+    ff::{Field, PrimeField},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -44,6 +44,91 @@ pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<Secp256k1>;
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(ScalarImpl);
+
+impl Field for Scalar {
+    fn random<R: RngCore + ?Sized>(rng: &mut R) -> Self {
+        Scalar::generate_vartime(rng)
+    }
+
+    fn zero() -> Self {
+        Scalar::zero()
+    }
+
+    fn one() -> Self {
+        Scalar::one()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0.is_zero().into()
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        Scalar::square(self)
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.add(self)
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        Scalar::invert(self)
+    }
+
+    // TODO(tarcieri): stub!
+    fn sqrt(&self) -> CtOption<Self> {
+        todo!();
+    }
+}
+
+impl PrimeField for Scalar {
+    type Repr = ElementBytes;
+    type ReprEndianness = byteorder::BigEndian;
+
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 255;
+    const S: u32 = 6;
+
+    fn from_repr(repr: ElementBytes) -> Option<Self> {
+        let result = Scalar::from_bytes(&repr);
+
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        if result.is_some().into() {
+            Some(result.unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn to_repr(&self) -> ElementBytes {
+        self.to_bytes()
+    }
+
+    fn is_odd(&self) -> bool {
+        self.0.is_odd().into()
+    }
+
+    fn char() -> Self::Repr {
+        unimplemented!(); // removed in newer versions of `ff`
+    }
+
+    fn multiplicative_generator() -> Self {
+        7u64.into()
+    }
+
+    fn root_of_unity() -> Self {
+        Scalar::from_bytes(
+            &[
+                0xc1, 0xdc, 0x06, 0x0e, 0x7a, 0x91, 0x98, 0x6d, 0xf9, 0x87, 0x9a, 0x3f, 0xbc, 0x48,
+                0x3a, 0x89, 0x8b, 0xde, 0xab, 0x68, 0x07, 0x56, 0x04, 0x59, 0x92, 0xf4, 0xb5, 0x40,
+                0x2b, 0x05, 0x2f, 0x2,
+            ]
+            .into(),
+        )
+        .unwrap()
+    }
+}
 
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
@@ -235,85 +320,6 @@ impl Scalar {
     /// Variable time in `shift`.
     pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
         Self(self.0.mul_shift_var(&(b.0), shift))
-    }
-}
-
-impl ff::Field for Scalar {
-    fn random<R: RngCore + ?Sized>(rng: &mut R) -> Self {
-        Scalar::generate_vartime(rng)
-    }
-
-    fn zero() -> Self {
-        Scalar::zero()
-    }
-
-    fn one() -> Self {
-        Scalar::one()
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero().into()
-    }
-
-    #[must_use]
-    fn square(&self) -> Self {
-        Scalar::square(self)
-    }
-
-    #[must_use]
-    fn double(&self) -> Self {
-        self.add(self)
-    }
-
-    fn invert(&self) -> CtOption<Self> {
-        Scalar::invert(self)
-    }
-
-    // TODO(tarcieri): stub!
-    fn sqrt(&self) -> CtOption<Self> {
-        todo!();
-    }
-}
-
-impl ff::PrimeField for Scalar {
-    type Repr = ElementBytes;
-    type ReprEndianness = byteorder::BigEndian;
-
-    const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 256;
-    const S: u32 = 6;
-
-    fn from_repr(repr: ElementBytes) -> Option<Self> {
-        let result = Scalar::from_bytes(&repr);
-
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        if result.is_some().into() {
-            Some(result.unwrap())
-        } else {
-            None
-        }
-    }
-
-    fn to_repr(&self) -> ElementBytes {
-        self.to_bytes()
-    }
-
-    fn is_odd(&self) -> bool {
-        self.0.is_odd().into()
-    }
-
-    fn char() -> Self::Repr {
-        unimplemented!(); // removed in newer versions of `ff`
-    }
-
-    // TODO(tarcieri): stub!
-    fn multiplicative_generator() -> Self {
-        todo!();
-    }
-
-    // TODO(tarcieri): stub!
-    fn root_of_unity() -> Self {
-        todo!();
     }
 }
 

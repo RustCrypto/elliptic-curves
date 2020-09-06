@@ -7,7 +7,8 @@ use core::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    group::{self, Group},
+    ff::Field,
+    group::{Curve, Group},
     point::Generator,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
@@ -240,8 +241,8 @@ impl ProjectivePoint {
 impl Group for ProjectivePoint {
     type Scalar = Scalar;
 
-    fn random(rng: impl RngCore) -> Self {
-        Self::generator() * Scalar::generate_vartime(rng)
+    fn random(mut rng: impl RngCore) -> Self {
+        Self::generator() * Scalar::random(&mut rng)
     }
 
     fn identity() -> Self {
@@ -262,7 +263,7 @@ impl Group for ProjectivePoint {
     }
 }
 
-impl group::Curve for ProjectivePoint {
+impl Curve for ProjectivePoint {
     type AffineRepr = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {

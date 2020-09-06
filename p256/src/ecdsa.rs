@@ -96,7 +96,7 @@ impl SignPrimitive<NistP256> for Scalar {
         let r = Scalar::from_bytes_reduced(&x.to_bytes());
 
         // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * &(z + &(r * self));
+        let s = k_inverse * (z + &(r * self));
 
         if s.is_zero().into() {
             return Err(Error::new());
@@ -113,9 +113,9 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
         let s = signature.s();
         let s_inv = s.invert().unwrap();
         let u1 = z * &s_inv;
-        let u2 = *r * &s_inv;
+        let u2 = *r * s_inv;
 
-        let x = ((&ProjectivePoint::generator() * &u1) + &(ProjectivePoint::from(*self) * &u2))
+        let x = ((ProjectivePoint::generator() * u1) + (ProjectivePoint::from(*self) * u2))
             .to_affine()
             .x;
 

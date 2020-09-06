@@ -1,9 +1,16 @@
 //! Projective points
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B};
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::{
+    fmt,
+    iter::Sum,
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 use elliptic_curve::{
+    ff::Field,
+    group::{Curve, Group},
     point::Generator,
+    rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
 
@@ -14,6 +21,39 @@ pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
     z: FieldElement,
+}
+
+impl Group for ProjectivePoint {
+    type Scalar = Scalar;
+
+    fn random(mut rng: impl RngCore) -> Self {
+        Self::generator() * Scalar::random(&mut rng)
+    }
+
+    fn identity() -> Self {
+        ProjectivePoint::identity()
+    }
+
+    fn generator() -> Self {
+        ProjectivePoint::generator()
+    }
+
+    fn is_identity(&self) -> Choice {
+        self.ct_eq(&Self::identity())
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        ProjectivePoint::double(self)
+    }
+}
+
+impl Curve for ProjectivePoint {
+    type AffineRepr = AffinePoint;
+
+    fn to_affine(&self) -> AffinePoint {
+        ProjectivePoint::to_affine(self)
+    }
 }
 
 impl From<AffinePoint> for ProjectivePoint {
@@ -48,6 +88,8 @@ impl PartialEq for ProjectivePoint {
         self.ct_eq(other).into()
     }
 }
+
+impl Eq for ProjectivePoint {}
 
 impl ProjectivePoint {
     /// Returns the additive identity of P-256, also known as the "neutral element" or
@@ -208,6 +250,14 @@ impl Default for ProjectivePoint {
     }
 }
 
+impl Add<ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(&self, &other)
+    }
+}
+
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -236,6 +286,14 @@ impl AddAssign<&ProjectivePoint> for ProjectivePoint {
     }
 }
 
+impl Add<AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn add(self, other: AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(&self, &other)
+    }
+}
+
 impl Add<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -255,6 +313,32 @@ impl Add<&AffinePoint> for ProjectivePoint {
 impl AddAssign<AffinePoint> for ProjectivePoint {
     fn add_assign(&mut self, rhs: AffinePoint) {
         *self = ProjectivePoint::add_mixed(self, &rhs);
+    }
+}
+
+impl AddAssign<&AffinePoint> for ProjectivePoint {
+    fn add_assign(&mut self, rhs: &AffinePoint) {
+        *self = ProjectivePoint::add_mixed(self, rhs);
+    }
+}
+
+impl Sum for ProjectivePoint {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(ProjectivePoint::identity(), |a, b| a + b)
+    }
+}
+
+impl<'a> Sum<&'a ProjectivePoint> for ProjectivePoint {
+    fn sum<I: Iterator<Item = &'a ProjectivePoint>>(iter: I) -> Self {
+        iter.cloned().sum()
+    }
+}
+
+impl Sub<ProjectivePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(&self, &other)
     }
 }
 
@@ -286,6 +370,14 @@ impl SubAssign<&ProjectivePoint> for ProjectivePoint {
     }
 }
 
+impl Sub<AffinePoint> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn sub(self, other: AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(&self, &other)
+    }
+}
+
 impl Sub<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
@@ -305,6 +397,20 @@ impl Sub<&AffinePoint> for ProjectivePoint {
 impl SubAssign<AffinePoint> for ProjectivePoint {
     fn sub_assign(&mut self, rhs: AffinePoint) {
         *self = ProjectivePoint::sub_mixed(self, &rhs);
+    }
+}
+
+impl SubAssign<&AffinePoint> for ProjectivePoint {
+    fn sub_assign(&mut self, rhs: &AffinePoint) {
+        *self = ProjectivePoint::sub_mixed(self, rhs);
+    }
+}
+
+impl Mul<Scalar> for ProjectivePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, other: Scalar) -> ProjectivePoint {
+        ProjectivePoint::mul(&self, &other)
     }
 }
 
@@ -349,6 +455,12 @@ impl<'a> Neg for &'a ProjectivePoint {
 
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(self)
+    }
+}
+
+impl fmt::Display for ProjectivePoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -432,7 +544,7 @@ mod tests {
                 ADD_TEST_VECTORS[i]
             );
 
-            p = p + &generator;
+            p += &generator;
         }
     }
 
