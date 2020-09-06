@@ -50,9 +50,9 @@ impl Invert for BlindedScalar {
     fn invert(&self) -> CtOption<Scalar> {
         // prevent side channel analysis of scalar inversion by pre-and-post-multiplying
         // with the random masking scalar
-        (self.scalar * &self.mask)
+        (self.scalar * self.mask)
             .invert_vartime()
-            .map(|s| s * &self.mask)
+            .map(|s| s * self.mask)
     }
 }
 

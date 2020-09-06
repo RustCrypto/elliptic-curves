@@ -5,10 +5,12 @@ pub mod blinding;
 use crate::{ElementBytes, NistP256, SecretKey};
 use core::{
     convert::TryInto,
+    fmt,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
     consts::U32,
+    ff::{Field, PrimeField},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -72,6 +74,110 @@ pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<NistP256>;
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(pub(crate) [u64; LIMBS]);
+
+impl Field for Scalar {
+    fn random<R: RngCore + ?Sized>(rng: &mut R) -> Self {
+        let mut bytes = ElementBytes::default();
+
+        // Generate a uniformly random scalar using rejection sampling,
+        // which produces a uniformly random distribution of scalars.
+        //
+        // This method is not constant time, but should be secure so long as
+        // rejected RNG outputs are unrelated to future ones (which is a
+        // necessary property of a `CryptoRng`).
+        //
+        // With an unbiased RNG, the probability of failing to complete after 4
+        // iterations is vanishingly small.
+        loop {
+            rng.fill_bytes(&mut bytes);
+            let scalar = Scalar::from_bytes(&bytes);
+            if scalar.is_some().into() {
+                #[cfg(feature = "zeroize")]
+                bytes.zeroize();
+                return scalar.unwrap();
+            }
+        }
+    }
+
+    fn zero() -> Self {
+        Scalar::zero()
+    }
+
+    fn one() -> Self {
+        Scalar::one()
+    }
+
+    fn is_zero(&self) -> bool {
+        self.is_zero().into()
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        Scalar::square(self)
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.add(self)
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        Scalar::invert(self)
+    }
+
+    // TODO(tarcieri); stub!
+    fn sqrt(&self) -> CtOption<Self> {
+        todo!();
+    }
+}
+
+impl PrimeField for Scalar {
+    type Repr = ElementBytes;
+    type ReprEndianness = byteorder::BigEndian;
+
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 255;
+    const S: u32 = 4;
+
+    fn from_repr(repr: ElementBytes) -> Option<Self> {
+        let result = Scalar::from_bytes(&repr);
+
+        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
+        if result.is_some().into() {
+            Some(result.unwrap())
+        } else {
+            None
+        }
+    }
+
+    fn to_repr(&self) -> ElementBytes {
+        self.to_bytes()
+    }
+
+    fn is_odd(&self) -> bool {
+        self.0[0] as u8 == 1
+    }
+
+    fn char() -> Self::Repr {
+        unimplemented!(); // removed in newer versions of `ff`
+    }
+
+    fn multiplicative_generator() -> Self {
+        7u64.into()
+    }
+
+    fn root_of_unity() -> Self {
+        Scalar::from_bytes(
+            &[
+                0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
+                0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
+                0xb4, 0x1e, 0x66, 0x00,
+            ]
+            .into(),
+        )
+        .unwrap()
+    }
+}
 
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
@@ -483,7 +589,7 @@ impl Scalar {
                 res = res.square();
 
                 if ((*e >> i) & 1) == 1 {
-                    res = res * self;
+                    res *= self;
                 }
             }
         }
@@ -566,15 +672,23 @@ impl Scalar {
 
             // sub-step
             if u >= v {
-                u = u - &v;
-                A = A - &C;
+                u -= &v;
+                A -= &C;
             } else {
-                v = v - &u;
-                C = C - &A;
+                v -= &u;
+                C -= &A;
             }
         }
 
         CtOption::new(C, !self.is_zero())
+    }
+}
+
+impl Add<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn add(self, other: Scalar) -> Scalar {
+        Scalar::add(&self, &other)
     }
 }
 
@@ -600,6 +714,20 @@ impl AddAssign<Scalar> for Scalar {
     }
 }
 
+impl AddAssign<&Scalar> for Scalar {
+    fn add_assign(&mut self, rhs: &Scalar) {
+        *self = Scalar::add(self, rhs);
+    }
+}
+
+impl Sub<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn sub(self, other: Scalar) -> Scalar {
+        Scalar::subtract(&self, &other)
+    }
+}
+
 impl Sub<&Scalar> for &Scalar {
     type Output = Scalar;
 
@@ -619,6 +747,20 @@ impl Sub<&Scalar> for Scalar {
 impl SubAssign<Scalar> for Scalar {
     fn sub_assign(&mut self, rhs: Scalar) {
         *self = Scalar::subtract(self, &rhs);
+    }
+}
+
+impl SubAssign<&Scalar> for Scalar {
+    fn sub_assign(&mut self, rhs: &Scalar) {
+        *self = Scalar::subtract(self, rhs);
+    }
+}
+
+impl Mul<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn mul(self, other: Scalar) -> Scalar {
+        Scalar::mul(&self, &other)
     }
 }
 
@@ -644,11 +786,17 @@ impl MulAssign<Scalar> for Scalar {
     }
 }
 
+impl MulAssign<&Scalar> for Scalar {
+    fn mul_assign(&mut self, rhs: &Scalar) {
+        *self = Scalar::mul(self, rhs);
+    }
+}
+
 impl Neg for Scalar {
     type Output = Scalar;
 
     fn neg(self) -> Scalar {
-        Scalar::zero() - &self
+        Scalar::zero() - self
     }
 }
 
@@ -694,28 +842,21 @@ impl From<Scalar> for ElementBytes {
     }
 }
 
+impl From<&Scalar> for ElementBytes {
+    fn from(scalar: &Scalar) -> Self {
+        scalar.to_bytes()
+    }
+}
+
 impl Generate for Scalar {
     fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
-        let mut bytes = ElementBytes::default();
+        Self::random(&mut rng)
+    }
+}
 
-        // Generate a uniformly random scalar using rejection sampling,
-        // which produces a uniformly random distribution of scalars.
-        //
-        // This method is not constant time, but should be secure so long as
-        // rejected RNG outputs are unrelated to future ones (which is a
-        // necessary property of a `CryptoRng`).
-        //
-        // With an unbiased RNG, the probability of failing to complete after 4
-        // iterations is vanishingly small.
-        loop {
-            rng.fill_bytes(&mut bytes);
-            let scalar = Scalar::from_bytes(&bytes);
-            if scalar.is_some().into() {
-                #[cfg(feature = "zeroize")]
-                bytes.zeroize();
-                return scalar.unwrap();
-            }
-        }
+impl fmt::Display for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
