@@ -76,9 +76,9 @@ impl Field for Scalar {
         Scalar::invert(self)
     }
 
-    // TODO(tarcieri): stub!
+    // TODO(tarcieri): stub! See: https://github.com/RustCrypto/elliptic-curves/issues/170
     fn sqrt(&self) -> CtOption<Self> {
-        todo!();
+        todo!("see RustCrypto/elliptic-curves#170");
     }
 }
 
