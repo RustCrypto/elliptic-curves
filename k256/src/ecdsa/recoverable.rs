@@ -164,7 +164,6 @@ impl Signature {
         let z = Scalar::from_digest(msg_prehash);
         let R = AffinePoint::decompress(&r.to_bytes(), self.recovery_id().is_y_odd());
 
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
         if R.is_some().into() {
             let R = ProjectivePoint::from(R.unwrap());
             let r_inv = r.invert().unwrap();
