@@ -31,17 +31,12 @@ impl SigningKey {
     /// Initialize signing key from a raw scalar serialized as a byte slice.
     // TODO(tarcieri): PKCS#8 support
     pub fn new(bytes: &[u8]) -> Result<Self, Error> {
-        let scalar = bytes
+        bytes
             .try_into()
-            .map(NonZeroScalar::from_bytes)
-            .map_err(|_| Error::new())?;
-
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        if scalar.is_some().into() {
-            Ok(Self::from(scalar.unwrap()))
-        } else {
-            Err(Error::new())
-        }
+            .ok()
+            .and_then(|b| NonZeroScalar::from_bytes(b).into())
+            .map(|secret_scalar| Self { secret_scalar })
+            .ok_or_else(Error::new)
     }
 
     /// Create a new signing key from a [`SecretKey`].

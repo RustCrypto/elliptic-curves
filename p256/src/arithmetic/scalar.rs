@@ -140,14 +140,7 @@ impl PrimeField for Scalar {
     const S: u32 = 4;
 
     fn from_repr(repr: ElementBytes) -> Option<Self> {
-        let result = Scalar::from_bytes(&repr);
-
-        // TODO(tarcieri): replace with into conversion when available (see subtle#73)
-        if result.is_some().into() {
-            Some(result.unwrap())
-        } else {
-            None
-        }
+        Scalar::from_bytes(&repr).into()
     }
 
     fn to_repr(&self) -> ElementBytes {
