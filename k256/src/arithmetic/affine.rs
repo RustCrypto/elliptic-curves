@@ -56,7 +56,7 @@ impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
         (self.x.negate(1) + &other.x).normalizes_to_zero()
             & (self.y.negate(1) + &other.y).normalizes_to_zero()
-            & !(self.infinity ^ other.infinity)
+            & self.infinity.ct_eq(&other.infinity)
     }
 }
 
@@ -108,8 +108,7 @@ impl Decompress<Secp256k1> for AffinePoint {
                 let y = FieldElement::conditional_select(
                     &beta.negate(1),
                     &beta,
-                    // beta.is_odd() == y_is_odd
-                    !(beta.normalize().is_odd() ^ y_is_odd),
+                    beta.normalize().is_odd().ct_eq(&y_is_odd),
                 );
 
                 Self {

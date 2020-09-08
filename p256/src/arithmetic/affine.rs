@@ -51,7 +51,7 @@ impl ConditionallySelectable for AffinePoint {
 
 impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
-        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y) & !(self.infinity ^ other.infinity)
+        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y) & self.infinity.ct_eq(&other.infinity)
     }
 }
 
@@ -103,8 +103,7 @@ impl Decompress<NistP256> for AffinePoint {
                 let y = FieldElement::conditional_select(
                     &(MODULUS - &beta),
                     &beta,
-                    // beta.is_odd() == y_is_odd
-                    !(beta.is_odd() ^ y_is_odd),
+                    beta.is_odd().ct_eq(&y_is_odd),
                 );
 
                 Self {
