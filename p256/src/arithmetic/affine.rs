@@ -1,7 +1,7 @@
 //! Affine points
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
-use crate::{ElementBytes, EncodedPoint, NistP256, NonZeroScalar};
+use crate::{EncodedPoint, FieldBytes, NistP256, NonZeroScalar};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     generic_array::arr,
@@ -94,7 +94,7 @@ impl Generator for AffinePoint {
 }
 
 impl Decompress<NistP256> for AffinePoint {
-    fn decompress(x_bytes: &ElementBytes, y_is_odd: Choice) -> CtOption<Self> {
+    fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
             let beta = alpha.sqrt();

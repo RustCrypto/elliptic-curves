@@ -6,7 +6,7 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, sbb64},
 };
-use crate::{ScalarBits, ElementBytes};
+use crate::{ScalarBits, FieldBytes};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -210,8 +210,8 @@ impl Scalar4x64 {
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> ElementBytes {
-        let mut ret = ElementBytes::default();
+    pub fn to_bytes(&self) -> FieldBytes {
+        let mut ret = FieldBytes::default();
         ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());

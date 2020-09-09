@@ -1,7 +1,7 @@
 //! ECDSA signer
 
 use super::{recoverable, Error, Signature, VerifyKey};
-use crate::{ElementBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
+use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
     hazmat::SignPrimitive,
@@ -60,7 +60,7 @@ impl SigningKey {
     }
 
     /// Serialize this [`SigningKey`] as bytes
-    pub fn to_bytes(&self) -> ElementBytes {
+    pub fn to_bytes(&self) -> FieldBytes {
         self.secret_scalar.to_bytes()
     }
 }
@@ -118,7 +118,7 @@ where
         mut rng: impl CryptoRng + RngCore,
         digest: D,
     ) -> Result<recoverable::Signature, Error> {
-        let mut added_entropy = ElementBytes::default();
+        let mut added_entropy = FieldBytes::default();
         rng.fill_bytes(&mut added_entropy);
 
         let ephemeral_scalar =

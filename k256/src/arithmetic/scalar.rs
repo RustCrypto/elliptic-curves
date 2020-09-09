@@ -16,7 +16,7 @@ cfg_if! {
     }
 }
 
-use crate::{ElementBytes, Secp256k1};
+use crate::{FieldBytes, Secp256k1};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     consts::U32,
@@ -93,7 +93,7 @@ impl Field for Scalar {
 }
 
 impl PrimeField for Scalar {
-    type Repr = ElementBytes;
+    type Repr = FieldBytes;
 
     cfg_if! {
         if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
@@ -107,11 +107,11 @@ impl PrimeField for Scalar {
     const CAPACITY: u32 = 255;
     const S: u32 = 6;
 
-    fn from_repr(repr: ElementBytes) -> Option<Self> {
+    fn from_repr(repr: FieldBytes) -> Option<Self> {
         Scalar::from_bytes(&repr).into()
     }
 
-    fn to_repr(&self) -> ElementBytes {
+    fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
     }
 
@@ -187,12 +187,12 @@ impl Scalar {
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &ElementBytes) -> Self {
+    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
         Self(ScalarImpl::from_bytes_reduced(bytes.as_ref()))
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> ElementBytes {
+    pub fn to_bytes(&self) -> FieldBytes {
         self.0.to_bytes()
     }
 
@@ -310,7 +310,7 @@ impl Scalar {
     /// Returns a uniformly-random scalar, generated using rejection sampling.
     // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
     pub fn generate_vartime(mut rng: impl RngCore) -> Self {
-        let mut bytes = ElementBytes::default();
+        let mut bytes = FieldBytes::default();
 
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
@@ -344,7 +344,7 @@ impl FromBytes for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+    fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         ScalarImpl::from_bytes(bytes.as_ref()).map(Self)
     }
 }
@@ -536,13 +536,13 @@ impl From<&Scalar> for ScalarBits {
     }
 }
 
-impl From<Scalar> for ElementBytes {
+impl From<Scalar> for FieldBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes()
     }
 }
 
-impl From<&Scalar> for ElementBytes {
+impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
     }

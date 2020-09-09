@@ -112,7 +112,7 @@ impl elliptic_curve::Identifier for NistP256 {
 /// NIST P-256 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
-pub type ElementBytes = elliptic_curve::ElementBytes<NistP256>;
+pub type FieldBytes = elliptic_curve::FieldBytes<NistP256>;
 
 /// NIST P-256 SEC1 Encoded Point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;

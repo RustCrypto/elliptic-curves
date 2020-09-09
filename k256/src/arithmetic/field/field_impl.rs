@@ -2,7 +2,7 @@
 //! they are not misused. Ensures the correct normalization and checks magnitudes in operations.
 //! Only enabled when `debug_assertions` feature is on.
 
-use crate::ElementBytes;
+use crate::FieldBytes;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use cfg_if::cfg_if;
 
@@ -64,12 +64,12 @@ impl FieldElementImpl {
         Self::new_normalized(&value)
     }
 
-    pub fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let value = FieldElementUnsafeImpl::from_bytes(bytes);
         CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
-    pub fn to_bytes(&self) -> ElementBytes {
+    pub fn to_bytes(&self) -> FieldBytes {
         debug_assert!(self.normalized);
         self.value.to_bytes()
     }

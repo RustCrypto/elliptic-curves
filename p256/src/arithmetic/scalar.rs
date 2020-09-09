@@ -2,7 +2,7 @@
 
 pub mod blinding;
 
-use crate::{ElementBytes, NistP256, SecretKey};
+use crate::{FieldBytes, NistP256, SecretKey};
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -78,7 +78,7 @@ pub struct Scalar(pub(crate) [u64; LIMBS]);
 
 impl Field for Scalar {
     fn random(mut rng: impl RngCore) -> Self {
-        let mut bytes = ElementBytes::default();
+        let mut bytes = FieldBytes::default();
 
         // Generate a uniformly random scalar using rejection sampling,
         // which produces a uniformly random distribution of scalars.
@@ -133,7 +133,7 @@ impl Field for Scalar {
 }
 
 impl PrimeField for Scalar {
-    type Repr = ElementBytes;
+    type Repr = FieldBytes;
 
     #[cfg(target_pointer_width = "32")]
     type ReprBits = [u32; 8];
@@ -145,11 +145,11 @@ impl PrimeField for Scalar {
     const CAPACITY: u32 = 255;
     const S: u32 = 4;
 
-    fn from_repr(repr: ElementBytes) -> Option<Self> {
+    fn from_repr(repr: FieldBytes) -> Option<Self> {
         Scalar::from_bytes(&repr).into()
     }
 
-    fn to_repr(&self) -> ElementBytes {
+    fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
     }
 
@@ -261,7 +261,7 @@ impl FromBytes for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+    fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -318,7 +318,7 @@ impl Scalar {
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &ElementBytes) -> Self {
+    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
         Self::sub_inner(
             u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
             u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
@@ -334,8 +334,8 @@ impl Scalar {
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    fn to_bytes(&self) -> ElementBytes {
-        let mut ret = ElementBytes::default();
+    fn to_bytes(&self) -> FieldBytes {
+        let mut ret = FieldBytes::default();
         ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
@@ -868,13 +868,13 @@ impl From<&Scalar> for ScalarBits {
     }
 }
 
-impl From<Scalar> for ElementBytes {
+impl From<Scalar> for FieldBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes()
     }
 }
 
-impl From<&Scalar> for ElementBytes {
+impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
     }
@@ -890,13 +890,13 @@ impl Zeroize for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, SecretKey};
-    use crate::ElementBytes;
+    use crate::FieldBytes;
     use elliptic_curve::FromBytes;
 
     #[test]
     fn from_to_bytes_roundtrip() {
         let k: u64 = 42;
-        let mut bytes = ElementBytes::default();
+        let mut bytes = FieldBytes::default();
         bytes[24..].copy_from_slice(k.to_be_bytes().as_ref());
 
         let scalar = Scalar::from_bytes(&bytes).unwrap();
