@@ -5,20 +5,19 @@ use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
         mod scalar_8x32;
+        use scalar_8x32::MODULUS;
         use scalar_8x32::Scalar8x32 as ScalarImpl;
         use scalar_8x32::WideScalar16x32 as WideScalarImpl;
     } else if #[cfg(target_pointer_width = "64")] {
         mod scalar_4x64;
+        use scalar_4x64::MODULUS;
         use scalar_4x64::Scalar4x64 as ScalarImpl;
         use scalar_4x64::WideScalar8x64 as WideScalarImpl;
     }
 }
 
 use crate::{ElementBytes, Secp256k1};
-use core::{
-    fmt,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign},
-};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     consts::U32,
     ff::{Field, PrimeField},
@@ -40,13 +39,16 @@ use num_bigint::{BigUint, ToBigUint};
 /// Non-zero scalar value.
 pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<Secp256k1>;
 
+/// secp256k1 field element serialized as bits.
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<Secp256k1>;
+
 /// An element in the finite field modulo curve order.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(ScalarImpl);
 
 impl Field for Scalar {
-    fn random<R: RngCore + ?Sized>(rng: &mut R) -> Self {
+    fn random(rng: impl RngCore) -> Self {
         Scalar::generate_vartime(rng)
     }
 
@@ -84,7 +86,14 @@ impl Field for Scalar {
 
 impl PrimeField for Scalar {
     type Repr = ElementBytes;
-    type ReprEndianness = byteorder::BigEndian;
+
+    cfg_if! {
+        if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+            type ReprBits = [u32; 8];
+        } else if #[cfg(target_pointer_width = "64")] {
+            type ReprBits = [u64; 4];
+        }
+    }
 
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
@@ -98,12 +107,16 @@ impl PrimeField for Scalar {
         self.to_bytes()
     }
 
+    fn to_le_bits(&self) -> ScalarBits {
+        self.into()
+    }
+
     fn is_odd(&self) -> bool {
         self.0.is_odd().into()
     }
 
-    fn char() -> Self::Repr {
-        unimplemented!(); // removed in newer versions of `ff`
+    fn char_le_bits() -> ScalarBits {
+        MODULUS.into()
     }
 
     fn multiplicative_generator() -> Self {
@@ -517,6 +530,12 @@ impl Invert for Scalar {
     }
 }
 
+impl From<&Scalar> for ScalarBits {
+    fn from(scalar: &Scalar) -> ScalarBits {
+        scalar.0.into()
+    }
+}
+
 impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes()
@@ -541,12 +560,6 @@ impl Generate for Scalar {
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
         Self::generate_vartime(rng)
-    }
-}
-
-impl fmt::Display for Scalar {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

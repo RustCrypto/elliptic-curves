@@ -6,7 +6,7 @@ use elliptic_curve::{
     util::{adc32, sbb32}
 };
 use core::convert::TryInto;
-use crate::{ElementBytes};
+use crate::{ElementBytes, ScalarBits};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -556,6 +556,12 @@ impl ConstantTimeEq for Scalar8x32 {
             & self.0[5].ct_eq(&other.0[5])
             & self.0[6].ct_eq(&other.0[6])
             & self.0[7].ct_eq(&other.0[7])
+    }
+}
+
+impl From<Scalar8x32> for ScalarBits {
+    fn from(scalar: Scalar8x32) -> ScalarBits {
+        scalar.0.into()
     }
 }
 

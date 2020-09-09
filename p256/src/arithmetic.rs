@@ -28,6 +28,7 @@ const CURVE_EQUATION_B: FieldElement = FieldElement([
 impl elliptic_curve::Arithmetic for NistP256 {
     type Scalar = Scalar;
     type AffinePoint = AffinePoint;
+    type ProjectivePoint = ProjectivePoint;
 }
 
 #[cfg(test)]
