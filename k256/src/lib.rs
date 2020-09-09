@@ -113,7 +113,7 @@ pub type CompressedPoint = [u8; 33];
 /// secp256k1 (K-256) field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
-pub type ElementBytes = elliptic_curve::ElementBytes<Secp256k1>;
+pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
 
 /// SEC1-encoded secp256k1 (K-256) curve point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;

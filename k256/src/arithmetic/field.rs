@@ -29,7 +29,7 @@ cfg_if! {
     }
 }
 
-use crate::ElementBytes;
+use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -82,12 +82,12 @@ impl FieldElement {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         FieldElementImpl::from_bytes(bytes).map(Self)
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> ElementBytes {
+    pub fn to_bytes(&self) -> FieldBytes {
         self.0.normalize().to_bytes()
     }
 
@@ -311,7 +311,7 @@ mod tests {
     use crate::{
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         test_vectors::field::DBL_TEST_VECTORS,
-        ElementBytes,
+        FieldBytes,
     };
 
     impl From<&BigUint> for FieldElement {
@@ -344,7 +344,7 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes(&ElementBytes::default()).unwrap(),
+            FieldElement::from_bytes(&FieldBytes::default()).unwrap(),
             FieldElement::zero()
         );
         assert_eq!(

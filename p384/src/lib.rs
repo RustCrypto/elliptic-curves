@@ -70,7 +70,7 @@ impl elliptic_curve::Identifier for NistP384 {
 /// NIST P-384 Serialized Field Element.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
-pub type ElementBytes = elliptic_curve::ElementBytes<NistP384>;
+pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 
 /// NIST P-384 SEC1 Encoded Point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;

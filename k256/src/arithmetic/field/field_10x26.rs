@@ -1,7 +1,7 @@
 //! Field element modulo the curve internal modulus using 32-bit limbs.
 //! Ported from https://github.com/bitcoin-core/secp256k1
 
-use crate::ElementBytes;
+use crate::FieldBytes;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
@@ -76,7 +76,7 @@ impl FieldElement10x26 {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: &ElementBytes) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let res = Self::from_bytes_unchecked(bytes.as_ref());
         let overflow = res.get_overflow();
 
@@ -84,8 +84,8 @@ impl FieldElement10x26 {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> ElementBytes {
-        let mut r = ElementBytes::default();
+    pub fn to_bytes(&self) -> FieldBytes {
+        let mut r = FieldBytes::default();
         r[0] = (self.0[9] >> 14) as u8;
         r[1] = (self.0[9] >> 6) as u8;
         r[2] = ((self.0[9] as u8 & 0x3Fu8) << 2) | ((self.0[8] >> 24) as u8 & 0x3);
