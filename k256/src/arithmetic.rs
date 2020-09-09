@@ -29,6 +29,7 @@ pub(crate) const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unche
 impl elliptic_curve::Arithmetic for Secp256k1 {
     type Scalar = Scalar;
     type AffinePoint = AffinePoint;
+    type ProjectivePoint = ProjectivePoint;
 }
 
 #[cfg(test)]

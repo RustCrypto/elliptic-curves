@@ -26,9 +26,10 @@ if you are interested in curves beyond the ones listed here.
 
 ## Minimum Supported Rust Version
 
-All crates in this repository support Rust **1.41** or higher. In future minimum
-supported Rust version can be changed, but it will be done with the minor
-version bump.
+All crates in this repository support Rust **1.44** or higher.
+
+Minimum supported Rust version can be changed in the future, but it will be
+done with a minor version bump.
 
 ## License
 
@@ -47,7 +48,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[rustc-image]: https://img.shields.io/badge/rustc-1.41+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.44+-blue.svg
 
 [//]: # (crates)
 

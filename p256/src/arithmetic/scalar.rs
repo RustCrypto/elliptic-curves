@@ -5,7 +5,6 @@ pub mod blinding;
 use crate::{ElementBytes, NistP256, SecretKey};
 use core::{
     convert::TryInto,
-    fmt,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
@@ -69,6 +68,9 @@ pub const MU: [u64; 5] = [
 /// Non-zero scalar value.
 pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<NistP256>;
 
+/// NIST P-256 field element serialized as bits.
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
+
 /// An element in the finite field modulo n.
 // The internal representation is as little-endian ordered u64 words.
 #[derive(Clone, Copy, Debug, Default)]
@@ -76,7 +78,7 @@ pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<NistP256>;
 pub struct Scalar(pub(crate) [u64; LIMBS]);
 
 impl Field for Scalar {
-    fn random<R: RngCore + ?Sized>(rng: &mut R) -> Self {
+    fn random(mut rng: impl RngCore) -> Self {
         let mut bytes = ElementBytes::default();
 
         // Generate a uniformly random scalar using rejection sampling,
@@ -133,7 +135,12 @@ impl Field for Scalar {
 
 impl PrimeField for Scalar {
     type Repr = ElementBytes;
-    type ReprEndianness = byteorder::BigEndian;
+
+    #[cfg(target_pointer_width = "32")]
+    type ReprBits = [u32; 8];
+
+    #[cfg(target_pointer_width = "64")]
+    type ReprBits = [u64; 4];
 
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
@@ -147,12 +154,32 @@ impl PrimeField for Scalar {
         self.to_bytes()
     }
 
+    fn to_le_bits(&self) -> ScalarBits {
+        self.into()
+    }
+
     fn is_odd(&self) -> bool {
         self.0[0] as u8 == 1
     }
 
-    fn char() -> Self::Repr {
-        unimplemented!(); // removed in newer versions of `ff`
+    #[cfg(target_pointer_width = "32")]
+    fn char_le_bits() -> ScalarBits {
+        [
+            0xfc63_2551,
+            0xf3b9_cac2,
+            0xa717_9e84,
+            0xbce6_faad,
+            0xffff_ffff,
+            0xffff_ffff,
+            0x0000_0000,
+            0xffff_ffff,
+        ]
+        .into()
+    }
+
+    #[cfg(target_pointer_width = "64")]
+    fn char_le_bits() -> ScalarBits {
+        MODULUS.into()
     }
 
     fn multiplicative_generator() -> Self {
@@ -829,6 +856,27 @@ impl Invert for Scalar {
     }
 }
 
+#[cfg(target_pointer_width = "32")]
+impl From<&Scalar> for ScalarBits {
+    fn from(scalar: &Scalar) -> ScalarBits {
+        let mut output = [0u32; 8];
+
+        for (input, output) in scalar.0.iter().zip(output.chunks_mut(2)) {
+            output[0] = (input >> 32) as u32;
+            output[1] = (input & 0xFFFF) as u32;
+        }
+
+        output.into()
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+impl From<&Scalar> for ScalarBits {
+    fn from(scalar: &Scalar) -> ScalarBits {
+        scalar.0.into()
+    }
+}
+
 impl From<Scalar> for ElementBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_bytes()
@@ -844,12 +892,6 @@ impl From<&Scalar> for ElementBytes {
 impl Generate for Scalar {
     fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
         Self::random(&mut rng)
-    }
-}
-
-impl fmt::Display for Scalar {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 
@@ -917,5 +959,25 @@ mod tests {
         let secret = SecretKey::from_bytes(scalar.to_bytes()).unwrap();
         let rederived_scalar = Scalar::from_secret_key(&secret).unwrap();
         assert_eq!(scalar.0, rederived_scalar.0);
+    }
+
+    #[test]
+    #[cfg(target_pointer_width = "32")]
+    fn scalar_into_scalarbits() {
+        use super::ScalarBits;
+
+        let minus_one = ScalarBits::from([
+            0xfc63_2550,
+            0xf3b9_cac2,
+            0xa717_9e84,
+            0xbce6_faad,
+            0xffff_ffff,
+            0xffff_ffff,
+            0x0000_0000,
+            0xffff_ffff,
+        ]);
+
+        let scalar_bits = ScalarBits::from(&-Scalar::from(1));
+        assert_eq!(minus_one, scalar_bits);
     }
 }

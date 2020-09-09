@@ -4,9 +4,9 @@
 use core::convert::TryInto;
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    util::{adc64, sbb64}
+    util::{adc64, sbb64},
 };
-use crate::ElementBytes;
+use crate::{ScalarBits, ElementBytes};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -418,6 +418,12 @@ impl ConstantTimeEq for Scalar4x64 {
             & self.0[1].ct_eq(&other.0[1])
             & self.0[2].ct_eq(&other.0[2])
             & self.0[3].ct_eq(&other.0[3])
+    }
+}
+
+impl From<Scalar4x64> for ScalarBits {
+    fn from(scalar: Scalar4x64) -> ScalarBits {
+        scalar.0.into()
     }
 }
 

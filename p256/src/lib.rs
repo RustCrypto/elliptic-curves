@@ -25,7 +25,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.41** or higher.
+//! Rust **1.44** or higher.
 //!
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
@@ -62,7 +62,7 @@ pub use arithmetic::{
     affine::AffinePoint,
     projective::ProjectivePoint,
     scalar::blinding::BlindedScalar,
-    scalar::{NonZeroScalar, Scalar},
+    scalar::{NonZeroScalar, Scalar, ScalarBits},
 };
 
 use elliptic_curve::consts::U32;
@@ -109,7 +109,7 @@ impl elliptic_curve::Identifier for NistP256 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
 }
 
-/// NIST P-256 Serialized Field Element.
+/// NIST P-256 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type ElementBytes = elliptic_curve::ElementBytes<NistP256>;

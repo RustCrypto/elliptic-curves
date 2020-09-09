@@ -2,7 +2,6 @@
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B};
 use core::{
-    fmt,
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -455,12 +454,6 @@ impl<'a> Neg for &'a ProjectivePoint {
 
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(self)
-    }
-}
-
-impl fmt::Display for ProjectivePoint {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 
