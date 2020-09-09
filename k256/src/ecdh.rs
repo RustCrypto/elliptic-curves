@@ -15,11 +15,11 @@
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Alice
-//! let alice_secret = EphemeralSecret::generate(&mut OsRng);
+//! let alice_secret = EphemeralSecret::random(&mut OsRng);
 //! let alice_public = EncodedPoint::from(&alice_secret);
 //!
 //! // Bob
-//! let bob_secret = EphemeralSecret::generate(&mut OsRng);
+//! let bob_secret = EphemeralSecret::random(&mut OsRng);
 //! let bob_public = EncodedPoint::from(&bob_secret);
 //!
 //! // Alice computes shared secret from Bob's public key

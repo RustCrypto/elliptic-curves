@@ -13,7 +13,7 @@ use elliptic_curve::{
     digest::{BlockInput, FixedOutput, Reset, Update},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    FromBytes, FromDigest, Generate,
+    FromBytes, FromDigest,
 };
 use signature::PrehashSignature;
 
@@ -28,7 +28,14 @@ pub struct SigningKey {
 }
 
 impl SigningKey {
-    /// Initialize signing key from a raw scalar serialized as a byte slice.
+    /// Generate a cryptographically random [`SigningKey`].
+    pub fn random(rng: impl CryptoRng + RngCore) -> Self {
+        Self {
+            secret_scalar: NonZeroScalar::random(rng),
+        }
+    }
+
+    /// Initialize [`SigningKey`] from a raw scalar value (big endian).
     // TODO(tarcieri): PKCS#8 support
     pub fn new(bytes: &[u8]) -> Result<Self, Error> {
         bytes
@@ -55,14 +62,6 @@ impl SigningKey {
     /// Serialize this [`SigningKey`] as bytes
     pub fn to_bytes(&self) -> ElementBytes {
         self.secret_scalar.to_bytes()
-    }
-}
-
-impl Generate for SigningKey {
-    fn generate(rng: impl CryptoRng + RngCore) -> Self {
-        Self {
-            secret_scalar: NonZeroScalar::generate(rng),
-        }
     }
 }
 

@@ -15,12 +15,12 @@
 //! # {
 //! use k256::{
 //!     ecdsa::{SigningKey, recoverable, signature::Signer},
-//!     elliptic_curve::{Generate, rand_core::OsRng},
 //!     EncodedPoint
 //! };
+//! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::generate(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
 //! let verify_key = signing_key.verify_key();
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!

@@ -22,13 +22,12 @@
 //! # {
 //! use k256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
-//!     elliptic_curve::Generate,
 //!     SecretKey,
 //! };
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::generate(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as

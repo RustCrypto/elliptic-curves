@@ -10,11 +10,10 @@ use core::{
 use elliptic_curve::{
     consts::U32,
     ff::{Field, PrimeField},
-    ops::Invert,
-    rand_core::{CryptoRng, RngCore},
+    rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, mac64, sbb64},
-    FromBytes, Generate,
+    FromBytes,
 };
 
 #[cfg(feature = "digest")]
@@ -848,14 +847,6 @@ impl ConstantTimeEq for Scalar {
     }
 }
 
-impl Invert for Scalar {
-    type Output = Self;
-
-    fn invert(&self) -> CtOption<Self> {
-        Scalar::invert(self)
-    }
-}
-
 #[cfg(target_pointer_width = "32")]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
@@ -886,12 +877,6 @@ impl From<Scalar> for ElementBytes {
 impl From<&Scalar> for ElementBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
-    }
-}
-
-impl Generate for Scalar {
-    fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
-        Self::random(&mut rng)
     }
 }
 
