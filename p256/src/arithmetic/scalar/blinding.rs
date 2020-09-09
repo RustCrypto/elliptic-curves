@@ -6,10 +6,10 @@
 use super::Scalar;
 use core::borrow::Borrow;
 use elliptic_curve::{
+    ff::Field,
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::CtOption,
-    Generate,
 };
 
 #[cfg(feature = "zeroize")]
@@ -33,7 +33,7 @@ impl BlindedScalar {
     pub fn new(scalar: Scalar, rng: impl CryptoRng + RngCore) -> Self {
         Self {
             scalar,
-            mask: Scalar::generate(rng),
+            mask: Scalar::random(rng),
         }
     }
 }

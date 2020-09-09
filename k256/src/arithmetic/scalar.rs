@@ -21,10 +21,9 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     consts::U32,
     ff::{Field, PrimeField},
-    ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    FromBytes, Generate,
+    FromBytes,
 };
 
 #[cfg(feature = "digest")]
@@ -49,7 +48,16 @@ pub struct Scalar(ScalarImpl);
 
 impl Field for Scalar {
     fn random(rng: impl RngCore) -> Self {
-        Scalar::generate_vartime(rng)
+        // Uses rejection sampling as the default random generation method,
+        // which produces a uniformly random distribution of scalars.
+        //
+        // This method is not constant time, but should be secure so long as
+        // rejected RNG outputs are unrelated to future ones (which is a
+        // necessary property of a `CryptoRng`).
+        //
+        // With an unbiased RNG, the probability of failing to complete after 4
+        // iterations is vanishingly small.
+        Self::generate_vartime(rng)
     }
 
     fn zero() -> Self {
@@ -522,14 +530,6 @@ impl MulAssign<&Scalar> for Scalar {
     }
 }
 
-impl Invert for Scalar {
-    type Output = Self;
-
-    fn invert(&self) -> CtOption<Self> {
-        Scalar::invert(self)
-    }
-}
-
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         scalar.0.into()
@@ -545,21 +545,6 @@ impl From<Scalar> for ElementBytes {
 impl From<&Scalar> for ElementBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
-    }
-}
-
-impl Generate for Scalar {
-    fn generate(rng: impl CryptoRng + RngCore) -> Self {
-        // Uses rejection sampling as the default random generation method,
-        // which produces a uniformly random distribution of scalars.
-        //
-        // This method is not constant time, but should be secure so long as
-        // rejected RNG outputs are unrelated to future ones (which is a
-        // necessary property of a `CryptoRng`).
-        //
-        // With an unbiased RNG, the probability of failing to complete after 4
-        // iterations is vanishingly small.
-        Self::generate_vartime(rng)
     }
 }
 
