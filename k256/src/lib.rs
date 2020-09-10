@@ -119,4 +119,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
 
 /// secp256k1 (K-256) secret key.
+#[cfg(feature = "zeroize")]
+#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;

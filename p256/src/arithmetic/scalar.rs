@@ -2,7 +2,7 @@
 
 pub mod blinding;
 
-use crate::{FieldBytes, NistP256, SecretKey};
+use crate::{FieldBytes, NistP256};
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -19,6 +19,8 @@ use elliptic_curve::{
 #[cfg(feature = "digest")]
 use elliptic_curve::{Digest, FromDigest};
 
+#[cfg(feature = "zeroize")]
+use crate::SecretKey;
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
 
@@ -304,15 +306,6 @@ impl Scalar {
     /// Returns the multiplicative identity.
     pub const fn one() -> Scalar {
         Scalar([1, 0, 0, 0])
-    }
-
-    /// Attempts to convert a `SecretKey` (defined in the more generic `elliptic_curve` crate) to a
-    /// `Scalar`
-    ///
-    /// Returns None if the secret's underlying value does not represent a field element.
-    pub fn from_secret_key(s: &SecretKey) -> CtOption<Scalar> {
-        // We can't unwrap() this, since it's not guaranteed that s represents a valid field elem
-        Self::from_bytes(s.as_bytes())
     }
 
     /// Parses the given byte array as a scalar.
@@ -881,6 +874,13 @@ impl From<&Scalar> for FieldBytes {
 }
 
 #[cfg(feature = "zeroize")]
+impl From<&SecretKey> for Scalar {
+    fn from(secret_key: &SecretKey) -> Scalar {
+        *secret_key.secret_scalar().as_ref()
+    }
+}
+
+#[cfg(feature = "zeroize")]
 impl Zeroize for Scalar {
     fn zeroize(&mut self) {
         self.0.as_mut().zeroize()
@@ -889,9 +889,12 @@ impl Zeroize for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::{Scalar, SecretKey};
+    use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::FromBytes;
+
+    #[cfg(feature = "zeroize")]
+    use crate::SecretKey;
 
     #[test]
     fn from_to_bytes_roundtrip() {
@@ -939,10 +942,11 @@ mod tests {
 
     // Tests that a Scalar can be safely converted to a SecretKey and back
     #[test]
+    #[cfg(feature = "zeroize")]
     fn from_ec_secret() {
         let scalar = Scalar::one();
         let secret = SecretKey::from_bytes(scalar.to_bytes()).unwrap();
-        let rederived_scalar = Scalar::from_secret_key(&secret).unwrap();
+        let rederived_scalar = Scalar::from(&secret);
         assert_eq!(scalar.0, rederived_scalar.0);
     }
 

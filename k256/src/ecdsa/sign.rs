@@ -46,12 +46,6 @@ impl SigningKey {
             .ok_or_else(Error::new)
     }
 
-    /// Create a new signing key from a [`SecretKey`].
-    // TODO(tarcieri): infallible `From` conversion from a secret key
-    pub fn from_secret_key(secret_key: &SecretKey) -> Result<Self, Error> {
-        Self::new(secret_key.as_bytes())
-    }
-
     /// Get the [`VerifyKey`] which corresponds to this [`SigningKey`]
     pub fn verify_key(&self) -> VerifyKey {
         VerifyKey {
@@ -62,6 +56,14 @@ impl SigningKey {
     /// Serialize this [`SigningKey`] as bytes
     pub fn to_bytes(&self) -> FieldBytes {
         self.secret_scalar.to_bytes()
+    }
+}
+
+impl From<&SecretKey> for SigningKey {
+    fn from(secret_key: &SecretKey) -> Self {
+        Self {
+            secret_scalar: *secret_key.secret_scalar(),
+        }
     }
 }
 

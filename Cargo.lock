@@ -40,9 +40,9 @@ checksum = "cf1de2fe8c75bc145a2f577add951f8134889b4795d47466a54a5c846d691693"
 
 [[package]]
 name = "bitvec"
-version = "0.18.1"
+version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c1f0df4bb4c441080e98d6ea2dc3281fc19bb440e69ce03075e3d705894f1cb"
+checksum = "64143ed23541fe0c6e2235905eaae37ceae1ca69e14dce4afcd6ec9643359d00"
 dependencies = [
  "funty",
  "radium",
@@ -254,7 +254,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.7.2"
-source = "git+https://github.com/RustCrypto/signatures#84e133fc954af3fe75757be1bf8c666e51aedd17"
+source = "git+https://github.com/RustCrypto/signatures#acd8c3f82a889293fc0e546455a8da68346241e2"
 dependencies = [
  "elliptic-curve",
  "hmac",
@@ -270,7 +270,7 @@ checksum = "cd56b59865bce947ac5958779cfa508f6c3b9497cc762b7e24a12d11ccde2c4f"
 [[package]]
 name = "elliptic-curve"
 version = "0.5.0"
-source = "git+https://github.com/RustCrypto/traits#24ce4e1bda977a7f41af203eb3cbd3fa0e906b93"
+source = "git+https://github.com/RustCrypto/traits#7dd78e0097bcc9a5adb84acf043f6e11e33ceacc"
 dependencies = [
  "bitvec",
  "const-oid",
@@ -559,9 +559,9 @@ checksum = "c36fa947111f5c62a733b652544dd0016a43ce89619538a8ef92724a6f501a20"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.20"
+version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "175c513d55719db99da20232b06cda8bab6b83ec2d04e3283edf0213c37c1a29"
+checksum = "36e28516df94f3dd551a587da5357459d9b36d945a7c37c3557928c1c2ff2a2c"
 dependencies = [
  "unicode-xid",
 ]
