@@ -76,4 +76,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 
 /// NIST P-384 Secret Key
+#[cfg(feature = "zeroize")]
+#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;

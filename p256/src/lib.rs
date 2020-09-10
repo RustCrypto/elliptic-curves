@@ -118,4 +118,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP256>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
 
 /// NIST P-256 Secret Key.
+#[cfg(feature = "zeroize")]
+#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
