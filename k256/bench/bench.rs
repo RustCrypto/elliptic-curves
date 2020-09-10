@@ -3,10 +3,10 @@
 use criterion::measurement::Measurement;
 use criterion::{criterion_group, criterion_main, BenchmarkGroup, Criterion};
 use hex_literal::hex;
-use k256::{elliptic_curve::FromBytes, FieldElement, ProjectivePoint, Scalar};
+use k256::{elliptic_curve::FromFieldBytes, FieldElement, ProjectivePoint, Scalar};
 
 fn test_scalar_x() -> Scalar {
-    Scalar::from_bytes(
+    Scalar::from_field_bytes(
         &[
             0xbb, 0x48, 0x8a, 0xef, 0x41, 0x6a, 0x41, 0xd7, 0x68, 0x0d, 0x1c, 0xf0, 0x1d, 0x70,
             0xf5, 0x9b, 0x60, 0xd7, 0xf5, 0xf7, 0x7e, 0x30, 0xe7, 0x8b, 0x8b, 0xf9, 0xd2, 0xd8,
@@ -18,7 +18,7 @@ fn test_scalar_x() -> Scalar {
 }
 
 fn test_scalar_y() -> Scalar {
-    Scalar::from_bytes(
+    Scalar::from_field_bytes(
         &[
             0x67, 0xe2, 0xf6, 0x80, 0x71, 0xed, 0x82, 0x81, 0xe8, 0xae, 0xd6, 0xbc, 0xf1, 0xc5,
             0x20, 0x7c, 0x5e, 0x63, 0x37, 0x22, 0xd9, 0x20, 0xaf, 0xd6, 0xae, 0x22, 0xd0, 0x6e,
@@ -32,7 +32,7 @@ fn test_scalar_y() -> Scalar {
 fn bench_point_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let p = ProjectivePoint::generator();
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
-    let s = Scalar::from_bytes(&m.into()).unwrap();
+    let s = Scalar::from_field_bytes(&m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| b.iter(|| &p * &s));
 }
 
