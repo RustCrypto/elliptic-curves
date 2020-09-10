@@ -456,7 +456,7 @@ mod tests {
         Scalar,
     };
     use core::convert::TryInto;
-    use elliptic_curve::{point::Generator, FromBytes};
+    use elliptic_curve::{point::Generator, FromFieldBytes};
 
     #[test]
     fn affine_to_projective() {
@@ -598,7 +598,8 @@ mod tests {
             .map(|(k, coords)| (Scalar::from(k as u32 + 1), *coords))
             .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
                 (
-                    Scalar::from_bytes(hex::decode(k).unwrap()[..].try_into().unwrap()).unwrap(),
+                    Scalar::from_field_bytes(hex::decode(k).unwrap()[..].try_into().unwrap())
+                        .unwrap(),
                     (x, y),
                 )
             }))

@@ -158,10 +158,10 @@ mod tests {
         #[test]
         fn scalar_blinding() {
             let vector = &ECDSA_TEST_VECTORS[0];
-            let d = Scalar::from_bytes(vector.d.try_into().unwrap()).unwrap();
-            let k = Scalar::from_bytes(vector.k.try_into().unwrap()).unwrap();
+            let d = Scalar::from_field_bytes(vector.d.try_into().unwrap()).unwrap();
+            let k = Scalar::from_field_bytes(vector.k.try_into().unwrap()).unwrap();
             let k_blinded = BlindedScalar::new(k, &mut OsRng);
-            let z = Scalar::from_bytes(vector.m.try_into().unwrap()).unwrap();
+            let z = Scalar::from_field_bytes(vector.m.try_into().unwrap()).unwrap();
             let sig = d.try_sign_prehashed(&k_blinded, &z).unwrap();
 
             assert_eq!(vector.r, sig.r().to_bytes().as_slice());

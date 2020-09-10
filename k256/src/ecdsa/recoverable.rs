@@ -45,7 +45,7 @@ use crate::{
     ecdsa::{signature::DigestVerifier, VerifyKey},
     elliptic_curve::{
         consts::U32, ops::Invert, subtle::Choice, weierstrass::point::Decompress, Digest,
-        FromBytes, FromDigest,
+        FromDigest, FromFieldBytes,
     },
     AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
 };
@@ -182,7 +182,7 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn r(&self) -> NonZeroScalar {
-        let r = NonZeroScalar::from_bytes(self.bytes[..32].try_into().unwrap());
+        let r = NonZeroScalar::from_field_bytes(self.bytes[..32].try_into().unwrap());
 
         if r.is_some().into() {
             r.unwrap()
@@ -195,7 +195,7 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn s(&self) -> NonZeroScalar {
-        let s = NonZeroScalar::from_bytes(self.bytes[32..64].try_into().unwrap());
+        let s = NonZeroScalar::from_field_bytes(self.bytes[32..64].try_into().unwrap());
 
         if s.is_some().into() {
             s.unwrap()

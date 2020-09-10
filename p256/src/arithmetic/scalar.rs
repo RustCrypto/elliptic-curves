@@ -8,16 +8,15 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    consts::U32,
     ff::{Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, mac64, sbb64},
-    FromBytes,
+    FromFieldBytes,
 };
 
 #[cfg(feature = "digest")]
-use elliptic_curve::{Digest, FromDigest};
+use elliptic_curve::{consts::U32, Digest, FromDigest};
 
 #[cfg(feature = "zeroize")]
 use crate::SecretKey;
@@ -93,7 +92,7 @@ impl Field for Scalar {
         // iterations is vanishingly small.
         loop {
             rng.fill_bytes(&mut bytes);
-            let scalar = Scalar::from_bytes(&bytes);
+            let scalar = Scalar::from_field_bytes(&bytes);
             if scalar.is_some().into() {
                 #[cfg(feature = "zeroize")]
                 bytes.zeroize();
@@ -148,7 +147,7 @@ impl PrimeField for Scalar {
     const S: u32 = 4;
 
     fn from_repr(repr: FieldBytes) -> Option<Self> {
-        Scalar::from_bytes(&repr).into()
+        Scalar::from_field_bytes(&repr).into()
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -188,7 +187,7 @@ impl PrimeField for Scalar {
     }
 
     fn root_of_unity() -> Self {
-        Scalar::from_bytes(
+        Scalar::from_field_bytes(
             &[
                 0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
                 0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
@@ -256,14 +255,12 @@ impl Ord for Scalar {
     }
 }
 
-impl FromBytes for Scalar {
-    type Size = U32;
-
+impl FromFieldBytes<NistP256> for Scalar {
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
+    fn from_field_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -891,7 +888,7 @@ impl Zeroize for Scalar {
 mod tests {
     use super::Scalar;
     use crate::FieldBytes;
-    use elliptic_curve::FromBytes;
+    use elliptic_curve::FromFieldBytes;
 
     #[cfg(feature = "zeroize")]
     use crate::SecretKey;
@@ -902,7 +899,7 @@ mod tests {
         let mut bytes = FieldBytes::default();
         bytes[24..].copy_from_slice(k.to_be_bytes().as_ref());
 
-        let scalar = Scalar::from_bytes(&bytes).unwrap();
+        let scalar = Scalar::from_field_bytes(&bytes).unwrap();
         assert_eq!(bytes, scalar.to_bytes());
     }
 

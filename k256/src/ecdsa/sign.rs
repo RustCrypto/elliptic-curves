@@ -13,7 +13,7 @@ use elliptic_curve::{
     digest::{BlockInput, FixedOutput, Reset, Update},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    FromBytes, FromDigest,
+    FromDigest, FromFieldBytes,
 };
 use signature::PrehashSignature;
 
@@ -41,7 +41,7 @@ impl SigningKey {
         bytes
             .try_into()
             .ok()
-            .and_then(|b| NonZeroScalar::from_bytes(b).into())
+            .and_then(|b| NonZeroScalar::from_field_bytes(b).into())
             .map(|secret_scalar| Self { secret_scalar })
             .ok_or_else(Error::new)
     }
