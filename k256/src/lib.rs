@@ -1,8 +1,13 @@
-//! K-256 ([secp256k1]) elliptic curve.
+//! Pure Rust implementation of the [secp256k1] (K-256) elliptic curve,
+//! including support for the
+//! [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA],
+//! [Elliptic Curve Diffie-Hellman (ECDH)][ECDH], and general purpose
+//! elliptic curve/field arithmetic which can be used to implement
+//! protocols based on group operations.
 //!
-//! ## About K-256 (secp256k1)
+//! ## About secp256k1 (K-256)
 //!
-//! K-256 is a Koblitz curve typically referred to as "[secp256k1]".
+//! secp256k1 is a Koblitz curve commonly used in cryptocurrency applications.
 //! The "K-256" name follows NIST notation where P = prime fields,
 //! B = binary fields, and K = Koblitz curves (defined over F₂).
 //!
@@ -10,8 +15,6 @@
 //! "SEC 2: Recommended Elliptic Curve Domain Parameters":
 //!
 //! <https://www.secg.org/sec2-v2.pdf>
-//!
-//! It's primarily notable for usage in Bitcoin and other cryptocurrencies.
 //!
 //! ## ⚠️ Security Warning
 //!
@@ -33,6 +36,8 @@
 //! done with a minor version bump.
 //!
 //! [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
+//! [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+//! [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]

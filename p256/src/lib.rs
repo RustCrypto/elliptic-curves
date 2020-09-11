@@ -1,15 +1,21 @@
-//! NIST P-256 elliptic curve (a.k.a. prime256v1, secp256r1)
+//! Pure Rust implementation of the NIST P-256 elliptic curve,
+//! including support for the
+//! [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA],
+//! [Elliptic Curve Diffie-Hellman (ECDH)][ECDH], and general purpose
+//! elliptic curve/field arithmetic which can be used to implement
+//! protocols based on group operations.
 //!
 //! ## About NIST P-256
 //!
-//! NIST P-256 is a Weierstrass curve specified in FIPS 186-4: Digital Signature
-//! Standard (DSS):
+//! NIST P-256 is a Weierstrass curve specified in FIPS 186-4:
+//! Digital Signature Standard (DSS):
 //!
 //! <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
 //!
-//! Also known as prime256v1 (ANSI X9.62) and secp256r1 (SECG), it's included in
-//! the US National Security Agency's "Suite B" and is widely used in protocols
-//! like TLS and the associated X.509 PKI.
+//! Also known as `prime256v1` (ANSI X9.62) and `secp256r1` (SECG), P-256 is
+//! included in the US National Security Agency's "Suite B" and is widely used
+//! in Internet and connected device protocols like TLS, the X.509 PKI, and
+//! Bluetooth.
 //!
 //! ## ⚠️ Security Warning
 //!
@@ -29,6 +35,9 @@
 //!
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
+//!
+//! [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+//! [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
