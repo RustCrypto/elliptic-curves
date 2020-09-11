@@ -17,14 +17,14 @@ keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
 [dependencies]
 cfg-if = "0.1"
-ecdsa-core = { version = "0.7", package = "ecdsa", optional = true, default-features = false }
-elliptic-curve = { version = "0.5", default-features = false }
+ecdsa-core = { version = "0.8", package = "ecdsa", optional = true, default-features = false }
+elliptic-curve = { version = "0.6", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 sha3 = { version = "0.9", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.3"
-ecdsa-core = { version = "0.7", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.8", package = "ecdsa", default-features = false, features = ["dev"] }
 hex = "0.4" # TODO: switch to hex-literal
 hex-literal = "0.3"
 num-bigint = "0.3"
