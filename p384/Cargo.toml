@@ -1,7 +1,7 @@
 [package]
 name = "p384"
 description = "NIST P-384 (secp384r1) elliptic curve"
-version = "0.3.0"
+version = "0.4.0-rc"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
