@@ -20,9 +20,9 @@ use crate::{FieldBytes, Secp256k1};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     ff::{Field, PrimeField},
+    generic_array::arr,
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    FromFieldBytes,
 };
 
 #[cfg(feature = "digest")]
@@ -106,8 +106,12 @@ impl PrimeField for Scalar {
     const CAPACITY: u32 = 255;
     const S: u32 = 6;
 
-    fn from_repr(repr: FieldBytes) -> Option<Self> {
-        Scalar::from_field_bytes(&repr).into()
+    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    fn from_repr(bytes: FieldBytes) -> Option<Self> {
+        ScalarImpl::from_bytes(bytes.as_ref()).map(Self).into()
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -131,14 +135,11 @@ impl PrimeField for Scalar {
     }
 
     fn root_of_unity() -> Self {
-        Scalar::from_field_bytes(
-            &[
-                0xc1, 0xdc, 0x06, 0x0e, 0x7a, 0x91, 0x98, 0x6d, 0xf9, 0x87, 0x9a, 0x3f, 0xbc, 0x48,
-                0x3a, 0x89, 0x8b, 0xde, 0xab, 0x68, 0x07, 0x56, 0x04, 0x59, 0x92, 0xf4, 0xb5, 0x40,
-                0x2b, 0x05, 0x2f, 0x2,
-            ]
-            .into(),
-        )
+        Scalar::from_repr(arr![u8;
+            0xc1, 0xdc, 0x06, 0x0e, 0x7a, 0x91, 0x98, 0x6d, 0xf9, 0x87, 0x9a, 0x3f, 0xbc, 0x48,
+            0x3a, 0x89, 0x8b, 0xde, 0xab, 0x68, 0x07, 0x56, 0x04, 0x59, 0x92, 0xf4, 0xb5, 0x40,
+            0x2b, 0x05, 0x2f, 0x2,
+        ])
         .unwrap()
     }
 }
@@ -314,11 +315,8 @@ impl Scalar {
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
             rng.fill_bytes(&mut bytes);
-            let scalar = Scalar::from_field_bytes(&bytes);
-            if scalar.is_some().into() {
-                #[cfg(feature = "zeroize")]
-                bytes.zeroize();
-                return scalar.unwrap();
+            if let Some(scalar) = Scalar::from_repr(bytes) {
+                return scalar;
             }
         }
     }
@@ -333,16 +331,6 @@ impl Scalar {
     /// Variable time in `shift`.
     pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
         Self(self.0.mul_shift_var(&(b.0), shift))
-    }
-}
-
-impl FromFieldBytes<Secp256k1> for Scalar {
-    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    fn from_field_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        ScalarImpl::from_bytes(bytes.as_ref()).map(Self)
     }
 }
 
@@ -556,7 +544,7 @@ impl Zeroize for Scalar {
 mod tests {
     use super::Scalar;
     use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
-    use elliptic_curve::FromFieldBytes;
+    use elliptic_curve::ff::PrimeField;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -564,7 +552,7 @@ mod tests {
         fn from(x: &BigUint) -> Self {
             debug_assert!(x < &Scalar::modulus_as_biguint());
             let bytes = biguint_to_bytes(x);
-            Self::from_field_bytes(&bytes.into()).unwrap()
+            Self::from_repr(bytes.into()).unwrap()
         }
     }
 
@@ -674,7 +662,7 @@ mod tests {
 
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
-            let a_back = Scalar::from_field_bytes(&a.to_bytes()).unwrap();
+            let a_back = Scalar::from_repr(a.to_bytes()).unwrap();
             assert_eq!(a, a_back);
         }
 
