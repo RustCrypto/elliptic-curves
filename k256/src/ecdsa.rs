@@ -63,9 +63,9 @@ pub use self::{sign::SigningKey, verify::VerifyKey};
 use crate::Secp256k1;
 
 #[cfg(feature = "ecdsa")]
-use crate::{elliptic_curve::FromFieldBytes, NonZeroScalar};
+use crate::NonZeroScalar;
 #[cfg(feature = "ecdsa")]
-use core::convert::TryInto;
+use elliptic_curve::generic_array::GenericArray;
 
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
@@ -82,10 +82,10 @@ impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
 #[cfg(feature = "ecdsa")]
 fn check_scalars(signature: &Signature) -> Result<(), Error> {
     let (r_bytes, s_bytes) = signature.as_ref().split_at(32);
-    let maybe_r = NonZeroScalar::from_field_bytes(r_bytes.try_into().unwrap());
-    let maybe_s = NonZeroScalar::from_field_bytes(s_bytes.try_into().unwrap());
+    let r_valid = NonZeroScalar::from_repr(GenericArray::clone_from_slice(r_bytes)).is_some();
+    let s_valid = NonZeroScalar::from_repr(GenericArray::clone_from_slice(s_bytes)).is_some();
 
-    if maybe_r.is_some().into() && maybe_s.is_some().into() {
+    if r_valid && s_valid {
         Ok(())
     } else {
         Err(Error::new())

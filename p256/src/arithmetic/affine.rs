@@ -5,7 +5,6 @@ use crate::{EncodedPoint, FieldBytes, NistP256, NonZeroScalar};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     generic_array::arr,
-    point::Generator,
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::point::Decompress,
@@ -24,6 +23,28 @@ pub struct AffinePoint {
 }
 
 impl AffinePoint {
+    /// Returns the base point of P-256.
+    pub fn generator() -> AffinePoint {
+        // NIST P-256 basepoint in affine coordinates:
+        // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
+        // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
+        AffinePoint {
+            x: FieldElement::from_bytes(&arr![u8;
+                0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
+                0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
+                0xd8, 0x98, 0xc2, 0x96
+            ])
+            .unwrap(),
+            y: FieldElement::from_bytes(&arr![u8;
+                0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
+                0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
+                0x37, 0xbf, 0x51, 0xf5
+            ])
+            .unwrap(),
+            infinity: Choice::from(0),
+        }
+    }
+
     /// Returns the identity of the group: the point at infinity.
     pub fn identity() -> AffinePoint {
         Self {
@@ -68,30 +89,6 @@ impl PartialEq for AffinePoint {
 }
 
 impl Eq for AffinePoint {}
-
-impl Generator for AffinePoint {
-    /// Returns the base point of P-256.
-    fn generator() -> AffinePoint {
-        // NIST P-256 basepoint in affine coordinates:
-        // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
-        // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
-        AffinePoint {
-            x: FieldElement::from_bytes(&arr![u8;
-                0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
-                0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
-                0xd8, 0x98, 0xc2, 0x96
-            ])
-            .unwrap(),
-            y: FieldElement::from_bytes(&arr![u8;
-                0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
-                0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
-                0x37, 0xbf, 0x51, 0xf5
-            ])
-            .unwrap(),
-            infinity: Choice::from(0),
-        }
-    }
-}
 
 impl Decompress<NistP256> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
@@ -194,10 +191,7 @@ impl Zeroize for AffinePoint {
 mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
-    use elliptic_curve::{
-        point::Generator,
-        sec1::{FromEncodedPoint, ToEncodedPoint},
-    };
+    use elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
     use hex_literal::hex;
 
     const UNCOMPRESSED_BASEPOINT: &[u8] = &hex!(

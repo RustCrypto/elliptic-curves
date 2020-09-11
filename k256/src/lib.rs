@@ -97,7 +97,7 @@ impl elliptic_curve::Curve for Secp256k1 {
 
 impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
 
-impl elliptic_curve::point::Compression for Secp256k1 {
+impl elliptic_curve::weierstrass::point::Compression for Secp256k1 {
     /// secp256k1 points are typically compressed.
     const COMPRESS_POINTS: bool = true;
 }

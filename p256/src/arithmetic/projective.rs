@@ -1,6 +1,7 @@
 //! Projective points
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B};
+use crate::NistP256;
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -8,10 +9,14 @@ use core::{
 use elliptic_curve::{
     ff::Field,
     group::{Curve, Group},
-    point::Generator,
+    point::ProjectiveArithmetic,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
+
+impl ProjectiveArithmetic for NistP256 {
+    type ProjectivePoint = ProjectivePoint;
+}
 
 /// A point on the secp256r1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -461,8 +466,7 @@ impl<'a> Neg for &'a ProjectivePoint {
 mod tests {
     use super::{AffinePoint, ProjectivePoint, Scalar};
     use crate::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS};
-    use core::convert::TryInto;
-    use elliptic_curve::{point::Generator, FromFieldBytes};
+    use elliptic_curve::{ff::PrimeField, generic_array::GenericArray};
 
     #[test]
     fn affine_to_projective() {
@@ -599,7 +603,7 @@ mod tests {
             .map(|(k, coords)| (Scalar::from(k as u64 + 1), *coords))
             .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
                 (
-                    Scalar::from_field_bytes(hex::decode(k).unwrap()[..].try_into().unwrap())
+                    Scalar::from_repr(GenericArray::clone_from_slice(&hex::decode(k).unwrap()[..]))
                         .unwrap(),
                     (x, y),
                 )

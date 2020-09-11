@@ -11,7 +11,6 @@ mod dev;
 
 pub use field::FieldElement;
 
-use crate::Secp256k1;
 use affine::AffinePoint;
 use projective::ProjectivePoint;
 use scalar::Scalar;
@@ -25,12 +24,6 @@ pub(crate) const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unche
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, CURVE_EQUATION_B_SINGLE as u8,
 ]);
-
-impl elliptic_curve::Arithmetic for Secp256k1 {
-    type Scalar = Scalar;
-    type AffinePoint = AffinePoint;
-    type ProjectivePoint = ProjectivePoint;
-}
 
 #[cfg(test)]
 mod tests {

@@ -13,7 +13,7 @@ use elliptic_curve::{
     digest::{BlockInput, FixedOutput, Reset, Update},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    FromDigest, FromFieldBytes,
+    FromDigest,
 };
 use signature::PrehashSignature;
 
@@ -41,7 +41,6 @@ impl SigningKey {
         bytes
             .try_into()
             .ok()
-            .and_then(|b| NonZeroScalar::from_field_bytes(b).into())
             .map(|secret_scalar| Self { secret_scalar })
             .ok_or_else(Error::new)
     }
@@ -62,7 +61,8 @@ impl SigningKey {
 impl From<&SecretKey> for SigningKey {
     fn from(secret_key: &SecretKey) -> Self {
         Self {
-            secret_scalar: *secret_key.secret_scalar(),
+            secret_scalar: NonZeroScalar::new(*secret_key.secret_scalar())
+                .expect("invalid secret scalar"),
         }
     }
 }

@@ -44,8 +44,8 @@ use ecdsa_core::{signature::Signature as _, Error};
 use crate::{
     ecdsa::{signature::DigestVerifier, VerifyKey},
     elliptic_curve::{
-        consts::U32, ops::Invert, subtle::Choice, weierstrass::point::Decompress, Digest,
-        FromDigest, FromFieldBytes,
+        consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
+        weierstrass::point::Decompress, Digest, FromDigest,
     },
     AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
 };
@@ -182,26 +182,16 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn r(&self) -> NonZeroScalar {
-        let r = NonZeroScalar::from_field_bytes(self.bytes[..32].try_into().unwrap());
-
-        if r.is_some().into() {
-            r.unwrap()
-        } else {
-            unreachable!("r-component ensured valid in constructor");
-        }
+        NonZeroScalar::from_repr(GenericArray::clone_from_slice(&self.bytes[..32]))
+            .unwrap_or_else(|| unreachable!("r-component ensured valid in constructor"))
     }
 
     /// Parse the `s` component of this signature to a [`Scalar`]
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn s(&self) -> NonZeroScalar {
-        let s = NonZeroScalar::from_field_bytes(self.bytes[32..64].try_into().unwrap());
-
-        if s.is_some().into() {
-            s.unwrap()
-        } else {
-            unreachable!("s-component ensured valid in constructor");
-        }
+        NonZeroScalar::from_repr(GenericArray::clone_from_slice(&self.bytes[32..64]))
+            .unwrap_or_else(|| unreachable!("s-component ensured valid in constructor"))
     }
 }
 

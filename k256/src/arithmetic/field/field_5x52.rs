@@ -10,7 +10,7 @@ use elliptic_curve::zeroize::Zeroize;
 /// Scalars modulo SECP256k1 modulus (2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1).
 /// Uses 5 64-bit limbs (little-endian), where in the normalized form
 /// first 4 contain 52 bits of the value each, and the last one contains 48 bits.
-/// Arithmetic operations can be done without modulo reduction for some time,
+/// ProjectiveArithmetic operations can be done without modulo reduction for some time,
 /// using the remaining overflow bits.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement5x52(pub(crate) [u64; 5]);

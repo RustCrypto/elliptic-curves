@@ -9,10 +9,10 @@ use core::{
 };
 use elliptic_curve::{
     ff::{Field, PrimeField},
+    generic_array::arr,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, mac64, sbb64},
-    FromFieldBytes,
 };
 
 #[cfg(feature = "digest")]
@@ -92,11 +92,8 @@ impl Field for Scalar {
         // iterations is vanishingly small.
         loop {
             rng.fill_bytes(&mut bytes);
-            let scalar = Scalar::from_field_bytes(&bytes);
-            if scalar.is_some().into() {
-                #[cfg(feature = "zeroize")]
-                bytes.zeroize();
-                return scalar.unwrap();
+            if let Some(scalar) = Scalar::from_repr(bytes) {
+                return scalar;
             }
         }
     }
@@ -146,8 +143,28 @@ impl PrimeField for Scalar {
     const CAPACITY: u32 = 255;
     const S: u32 = 4;
 
-    fn from_repr(repr: FieldBytes) -> Option<Self> {
-        Scalar::from_field_bytes(&repr).into()
+    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    fn from_repr(bytes: FieldBytes) -> Option<Self> {
+        let mut w = [0u64; LIMBS];
+
+        // Interpret the bytes as a big-endian integer w.
+        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+
+        // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
+        // value of 2^64 - 1.
+        let (_, borrow) = sbb64(w[0], MODULUS[0], 0);
+        let (_, borrow) = sbb64(w[1], MODULUS[1], borrow);
+        let (_, borrow) = sbb64(w[2], MODULUS[2], borrow);
+        let (_, borrow) = sbb64(w[3], MODULUS[3], borrow);
+        let is_some = (borrow as u8) & 1;
+
+        CtOption::new(Scalar(w), Choice::from(is_some)).into()
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -187,14 +204,11 @@ impl PrimeField for Scalar {
     }
 
     fn root_of_unity() -> Self {
-        Scalar::from_field_bytes(
-            &[
-                0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
-                0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
-                0xb4, 0x1e, 0x66, 0x00,
-            ]
-            .into(),
-        )
+        Scalar::from_repr(arr![u8;
+            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
+            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
+            0xb4, 0x1e, 0x66, 0x00,
+        ])
         .unwrap()
     }
 }
@@ -255,32 +269,6 @@ impl Ord for Scalar {
     }
 }
 
-impl FromFieldBytes<NistP256> for Scalar {
-    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    fn from_field_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        let mut w = [0u64; LIMBS];
-
-        // Interpret the bytes as a big-endian integer w.
-        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-
-        // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
-        // value of 2^64 - 1.
-        let (_, borrow) = sbb64(w[0], MODULUS[0], 0);
-        let (_, borrow) = sbb64(w[1], MODULUS[1], borrow);
-        let (_, borrow) = sbb64(w[2], MODULUS[2], borrow);
-        let (_, borrow) = sbb64(w[3], MODULUS[3], borrow);
-        let is_some = (borrow as u8) & 1;
-
-        CtOption::new(Scalar(w), Choice::from(is_some))
-    }
-}
-
 #[cfg(feature = "digest")]
 #[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
 impl FromDigest<NistP256> for Scalar {
@@ -324,7 +312,7 @@ impl Scalar {
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(&self) -> FieldBytes {
         let mut ret = FieldBytes::default();
         ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
@@ -873,7 +861,7 @@ impl From<&Scalar> for FieldBytes {
 #[cfg(feature = "zeroize")]
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.secret_scalar().as_ref()
+        *secret_key.secret_scalar()
     }
 }
 
@@ -888,7 +876,7 @@ impl Zeroize for Scalar {
 mod tests {
     use super::Scalar;
     use crate::FieldBytes;
-    use elliptic_curve::FromFieldBytes;
+    use elliptic_curve::ff::PrimeField;
 
     #[cfg(feature = "zeroize")]
     use crate::SecretKey;
@@ -899,7 +887,7 @@ mod tests {
         let mut bytes = FieldBytes::default();
         bytes[24..].copy_from_slice(k.to_be_bytes().as_ref());
 
-        let scalar = Scalar::from_field_bytes(&bytes).unwrap();
+        let scalar = Scalar::from_repr(bytes).unwrap();
         assert_eq!(bytes, scalar.to_bytes());
     }
 

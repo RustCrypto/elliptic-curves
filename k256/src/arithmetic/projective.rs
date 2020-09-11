@@ -1,6 +1,7 @@
 //! Projective points
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
+use crate::Secp256k1;
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
@@ -8,7 +9,7 @@ use core::{
 use elliptic_curve::{
     ff::Field,
     group::{Curve, Group},
-    point::Generator,
+    point::ProjectiveArithmetic,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
@@ -21,6 +22,10 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
     0xc1, 0x39, 0x6c, 0x28, 0x71, 0x95, 0x01, 0xee,
 ]);
+
+impl ProjectiveArithmetic for Secp256k1 {
+    type ProjectivePoint = ProjectivePoint;
+}
 
 /// A point on the secp256k1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -455,8 +460,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         Scalar,
     };
-    use core::convert::TryInto;
-    use elliptic_curve::{point::Generator, FromFieldBytes};
+    use elliptic_curve::{ff::PrimeField, generic_array::GenericArray};
 
     #[test]
     fn affine_to_projective() {
@@ -598,7 +602,7 @@ mod tests {
             .map(|(k, coords)| (Scalar::from(k as u32 + 1), *coords))
             .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
                 (
-                    Scalar::from_field_bytes(hex::decode(k).unwrap()[..].try_into().unwrap())
+                    Scalar::from_repr(GenericArray::clone_from_slice(&hex::decode(k).unwrap()[..]))
                         .unwrap(),
                     (x, y),
                 )
