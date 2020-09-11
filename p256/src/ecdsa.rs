@@ -10,8 +10,9 @@
 //!   [`signature::Signer`] trait. Example use cases for this include other
 //!   software implementations of ECDSA/P-256 and wrappers for cloud KMS
 //!   services or hardware devices (HSM or crypto hardware wallet).
-//! - `ecdsa`: provides the [`Signature`], [`Signer`], and [`Verifier`] types
-//!   which natively implement ECDSA/P-256 signing and verification.
+//! - `ecdsa`: provides `ecdsa-core` features plus the [`SigningKey`] and
+//!   [`VerifyKey`] types which natively implement ECDSA/P-256 signing and
+//!   verification.
 //!
 //! ## Signing/Verification Example
 //!
