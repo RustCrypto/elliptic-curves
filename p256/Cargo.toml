@@ -26,6 +26,8 @@ hex = "0.4" # TODO: switch to hex-literal
 hex-literal = "0.3"
 proptest = "0.10"
 rand_core = { version = "0.5", features = ["getrandom"] }
+rand = "0.7.3"
+sha2 = "0.9"
 
 [features]
 default = ["arithmetic", "std"]
