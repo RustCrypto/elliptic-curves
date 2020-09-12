@@ -7,7 +7,7 @@
 //!   ECDSA/secp256k1 signature). Does not require the `arithmetic` feature.
 //!   This is useful for 3rd-party crates which wish to use the `Signature`
 //!   type for interoperability purposes (particularly in conjunction with the
-//!   [`signature::Signer`] trait. Example use cases for this include other
+//!   [`signature::Signer`] trait). Example use cases for this include other
 //!   software implementations of ECDSA/secp256k1 and wrappers for cloud KMS
 //!   services or hardware devices (HSM or crypto hardware wallet).
 //! - `ecdsa`: provides `ecdsa-core` features plus the [`SigningKey`] and
