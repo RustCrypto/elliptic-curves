@@ -61,23 +61,6 @@ use {
 /// ECDSA/P-256 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP256>;
 
-struct VerifyKeyRecoverIter {
-	r: NonZeroScalar,
-	s: NonZeroScalar,
-	e: NonZeroScalar,
-	j: Scalar,
-	invert: bool
-}
-impl VerifyKeyRecoverIter {
-	fn new(r: NonZeroScalar, s: NonZeroScalar, e: Scalar, j: Scalar) -> Self {
-		Self {
-			r, s,
-			e: NonZeroScalar::new(e).unwrap(), 
-			j,
-			invert: false
-		}
-	}
-}
 struct PKRecover {
 	r: NonZeroScalar,
 	s: NonZeroScalar,
@@ -119,41 +102,6 @@ impl Iterator for PKRecover {
 	}
 }
 
-impl Iterator for VerifyKeyRecoverIter {
-	type Item = AffinePoint;
-	// fn next(&mut self) -> Option<Self::Item> {
-	// 	let h = NonZeroScalar::new(Scalar::one()).unwrap(); // Cofactor
-	// 	let n: NonZeroScalar = NonZeroScalar::new(Scalar(MODULUS)).unwrap();
-	// 	let r_inv = self.r.invert_vartime().unwrap();
-
-	// 	while self.j <= *h {
-	// 		let x = self.r.as_ref() + &(self.j * n.as_ref());
-			
-	// 		// Bellow should be the same as converting the octet string 02||X into an elliptic curve point.
-	// 		if let Some(mut R) = Option::from(AffinePoint::decompress(&x.into(), 0u8.into())) {
-	// 			let temp: AffinePoint = R * n;
-	// 			if temp.is_identity().into() {
-	// 				if self.invert {
-	// 					R = AffinePoint::neg(R);
-	// 					self.invert = false;
-	// 				}
-	// 				let Q = (ProjectivePoint::from(R) * self.s.as_ref() - ProjectivePoint::generator() * self.e.as_ref()) * r_inv;
-	// 				if !self.invert {
-	// 					self.j += Scalar::one();
-	// 				} else {
-	// 					self.invert = true;
-	// 				}
-	// 				return Some(Q.to_affine());
-	// 			}
-	// 		}
-	// 		self.j += Scalar::one();
-	// 	}
-	// 	None
-	// }
-	fn next(&mut self) -> Option<Self::Item> {
-		None
-	}
-}
 pub trait Recoverable<I: Iterator<Item = AffinePoint>> {
 	fn candidate_verify_keys(&self, hashed_msg: Scalar, initial_j: Scalar) -> I;
 }
@@ -308,135 +256,6 @@ mod tests {
 
 		use sha2::Digest;
 		
-		#[test]
-		fn learning_recovery() {
-			for _ in 0..10 {
-				// Recoverable signatures are the default I believe which means that the signature recovery iterator should return a single item.
-				let message = "Hello World".as_bytes();
-				// Secret Key:
-				let secret_scalar = NonZeroScalar::random(&mut thread_rng());
-	
-				// Public Key:
-				let public_point = AffinePoint::generator() * secret_scalar;
-				std::println!("Public Point: \t {:#?}", public_point);
-	
-				let signing_key = SigningKey::from(secret_scalar.clone());
-				let signature = signing_key.sign(message);
-	
-				// Recovery
-				let e = Scalar::from_digest(sha2::Sha256::new().chain(message));
-				let r = signature.r();
-				let s = signature.s();
-				let r_inv = r.invert_vartime().unwrap();
-				let n: NonZeroScalar = NonZeroScalar::new(Scalar(MODULUS)).unwrap();
-	
-				let mut candidates = std::vec::Vec::new();
-				let h = Scalar::one();
-				let mut j = Scalar::zero();
-				while j <= h {
-					let x = r.as_ref() + &(j * n.as_ref());
-					let R = AffinePoint::decompress(&x.into(), 0u8.into()).unwrap();
-					
-					if (R * n).is_identity().into() {
-						let Q = (ProjectivePoint::from(R) * s.as_ref() - ProjectivePoint::generator() * e) * r_inv;
-						candidates.push(Q.to_affine());
-						let R_inv = ProjectivePoint::from(R.neg());
-						let Q_2 = (R_inv * s.as_ref() - ProjectivePoint::generator() * e) * r_inv;
-						candidates.push(Q_2.to_affine());
-					}
-					j += Scalar::one();
-				}
-				std::println!("Candidates: {:#?}", candidates);
-			}
-		}
-		#[test]
-		fn learning_recovery_iterator() {
-			for _ in 0..10 {
-				// Recoverable signatures are the default I believe which means that the signature recovery iterator should return a single item.
-				let message = "Hello World".as_bytes();
-				// Secret Key:
-				let secret_scalar = NonZeroScalar::random(&mut thread_rng());
-	
-				// Public Key:
-				let public_point = AffinePoint::generator() * secret_scalar;
-				// std::println!("Public Point: \t {:#?}", public_point);
-	
-				let signing_key = SigningKey::from(secret_scalar.clone());
-				let signature = signing_key.sign(message);
-	
-				// Recovery
-				let e = Scalar::from_digest(sha2::Sha256::new().chain(message));
-
-				struct PKRecover {
-					r: NonZeroScalar,
-					s: NonZeroScalar,
-					e: Scalar,
-					j: Scalar,
-					invert: bool
-				}
-				impl Iterator for PKRecover {
-					type Item = AffinePoint;
-					fn next(&mut self) -> Option<Self::Item> {
-						let n: NonZeroScalar = NonZeroScalar::new(Scalar(MODULUS)).unwrap();
-						let h = Scalar::one();
-						let r_inv = self.r.invert_vartime().unwrap();
-						while self.j <= h {
-							let x = self.r.as_ref() + &(self.j * n.as_ref());
-							let mut R = AffinePoint::decompress(&x.into(), 0u8.into()).unwrap();
-							if self.invert {
-								R = R.neg();
-								self.invert = false;
-								self.j += Scalar::one();
-							} else {	
-								self.invert = true;
-							}
-							
-							if (R * n).is_identity().into() {
-								let Q = (ProjectivePoint::from(R) * self.s.as_ref() - ProjectivePoint::generator() * self.e) * r_inv;
-								return Some(Q.to_affine());
-							}
-						}
-						None
-					}
-				}
-				let candidates = PKRecover {
-					r: signature.r(),
-					s: signature.s(),
-					e,
-					j: Scalar::zero(),
-					invert: false
-				}.collect::<std::vec::Vec<AffinePoint>>();
-				// std::println!("Candidates: {:#?}", candidates);
-				assert!(candidates.contains(&public_point));
-				
-				// Non-iterator but works version:
-				let r = signature.r();
-				let s = signature.s();
-				let r_inv = r.invert_vartime().unwrap();
-				let n: NonZeroScalar = NonZeroScalar::new(Scalar(MODULUS)).unwrap();
-	
-				let mut candidates = std::vec::Vec::new();
-				let h = Scalar::one();
-				let mut j = Scalar::zero();
-				while j <= h {
-					let x = r.as_ref() + &(j * n.as_ref());
-					let R = AffinePoint::decompress(&x.into(), 0u8.into()).unwrap();
-					
-					if (R * n).is_identity().into() {
-						let Q = (ProjectivePoint::from(R) * s.as_ref() - ProjectivePoint::generator() * e) * r_inv;
-						std::println!("(Gud)Q: {:?}", Q);
-						candidates.push(Q.to_affine());
-						let R_inv = ProjectivePoint::from(R.neg());
-						let Q_2 = (R_inv * s.as_ref() - ProjectivePoint::generator() * e) * r_inv;
-						std::println!("(Gud)2: {:?}", Q_2);
-						candidates.push(Q_2.to_affine());
-					}
-					j += Scalar::one();
-				}
-
-				// assert!(false);
-			}
-		}
 		#[test]
 		fn test_pk_recovery() {
 			for _ in 0..100 {
