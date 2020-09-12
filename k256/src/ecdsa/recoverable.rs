@@ -178,7 +178,7 @@ impl Signature {
         }
     }
 
-    /// Parse the `r` component of this signature to a [`Scalar`]
+    /// Parse the `r` component of this signature to a [`NonZeroScalar`]
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn r(&self) -> NonZeroScalar {
@@ -186,7 +186,7 @@ impl Signature {
             .unwrap_or_else(|| unreachable!("r-component ensured valid in constructor"))
     }
 
-    /// Parse the `s` component of this signature to a [`Scalar`]
+    /// Parse the `s` component of this signature to a [`NonZeroScalar`]
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn s(&self) -> NonZeroScalar {
