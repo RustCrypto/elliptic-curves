@@ -54,6 +54,9 @@ use {
 /// ECDSA/P-256 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP256>;
 
+/// ECDSA/P-256 signature (ASN.1 DER encoded)
+pub type Asn1Signature = ecdsa_core::asn1::Signature<NistP256>;
+
 /// ECDSA/P-256 signing key
 #[cfg(feature = "ecdsa")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
