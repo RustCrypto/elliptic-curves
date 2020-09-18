@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.0 (2020-09-18)
+### Added
+- `ecdsa::Asn1Signature` type alias ([#186])
+
+### Changed
+- Rename `ElementBytes` => `FieldBytes` ([#176])
+- Rename `Curve::ElementSize` => `FieldSize` ([#150])
+
+[#186]: https://github.com/RustCrypto/elliptic-curves/pull/186
+[#176]: https://github.com/RustCrypto/elliptic-curves/pull/176
+[#150]: https://github.com/RustCrypto/elliptic-curves/pull/150
+
 ## 0.3.0 (2020-08-10)
 ### Added
 - ECDSA types ([#73])
