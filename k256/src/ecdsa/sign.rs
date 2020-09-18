@@ -17,7 +17,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "sha256")]
-use ecdsa_core::signature::{self, digest::Digest, PrehashSignature};
+use ecdsa_core::signature::{self, digest::Digest, PrehashSignature, RandomizedSigner};
 
 /// ECDSA/secp256k1 signing key
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
@@ -74,6 +74,17 @@ where
 {
     fn try_sign(&self, msg: &[u8]) -> Result<S, Error> {
         self.try_sign_digest(Digest::chain(S::Digest::new(), msg))
+    }
+}
+
+#[cfg(feature = "sha256")]
+impl<S> RandomizedSigner<S> for SigningKey
+where
+    S: PrehashSignature,
+    Self: RandomizedDigestSigner<S::Digest, S>,
+{
+    fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> Result<S, Error> {
+        self.try_sign_digest_with_rng(rng, S::Digest::new().chain(msg))
     }
 }
 
