@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.0 (2020-09-17)
 ### Added
-- `ecdsa::Asn1Signature` type aliases ([#186])
+- `ecdsa::Asn1Signature` type alias ([#186])
 - `ff` and `group` crate dependencies; MSRV 1.44+ ([#164], [#174])
 - `AffinePoint::identity()` and `::is_identity()` ([#165])
 - `expose-field` feature ([#161])
@@ -19,10 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename `ElementBytes` => `FieldBytes` ([#176])
 - Factor out a `from_digest_trial_recovery` method ([#168])
 - Rename `ecdsa::{Signer, Verifier}` => `::{SigningKey, VerifyKey}` ([#153])
-- Rename Curve::ElementSize => FieldSize ([#150])
+- Rename `Curve::ElementSize` => `FieldSize` ([#150])
 - Implement RFC6979 deterministic ECDSA ([#146])
 - Use `NonZeroScalar` for ECDSA signature components ([#144])
 - Eagerly verify ECDSA scalars are in range ([#143])
+- Rename `PublicKey` to `EncodedPoint` ([#141])
 
 ### Removed
 - `rand` feature ([#162])
@@ -44,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#144]: https://github.com/RustCrypto/elliptic-curves/pull/144
 [#143]: https://github.com/RustCrypto/elliptic-curves/pull/143
 [#142]: https://github.com/RustCrypto/elliptic-curves/pull/142
+[#141]: https://github.com/RustCrypto/elliptic-curves/pull/141
 
 ## 0.4.2 (2020-08-11)
 ### Fixed
