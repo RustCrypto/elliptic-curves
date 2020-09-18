@@ -6,7 +6,7 @@ use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
     hazmat::SignPrimitive,
     rfc6979,
-    signature::{self, DigestSigner, RandomizedDigestSigner},
+    signature::{DigestSigner, RandomizedDigestSigner},
 };
 use elliptic_curve::{
     consts::U32,
@@ -15,10 +15,9 @@ use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
     FromDigest,
 };
-use signature::PrehashSignature;
 
-#[cfg(feature = "digest")]
-use signature::digest::Digest;
+#[cfg(feature = "sha256")]
+use ecdsa_core::signature::{self, digest::Digest, PrehashSignature};
 
 /// ECDSA/secp256k1 signing key
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
@@ -67,6 +66,7 @@ impl From<&SecretKey> for SigningKey {
     }
 }
 
+#[cfg(feature = "sha256")]
 impl<S> signature::Signer<S> for SigningKey
 where
     S: PrehashSignature,

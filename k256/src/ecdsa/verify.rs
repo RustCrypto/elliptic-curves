@@ -5,7 +5,10 @@ use crate::{AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, Scalar,
 use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint};
-use signature::{digest::Digest, DigestVerifier, PrehashSignature};
+use signature::{digest::Digest, DigestVerifier};
+
+#[cfg(feature = "sha256")]
+use signature::PrehashSignature;
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
@@ -35,6 +38,7 @@ impl VerifyKey {
     }
 }
 
+#[cfg(feature = "sha256")]
 impl<S> signature::Verifier<S> for VerifyKey
 where
     S: PrehashSignature,
