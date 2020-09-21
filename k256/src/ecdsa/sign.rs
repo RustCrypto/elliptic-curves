@@ -66,7 +66,7 @@ impl From<&SecretKey> for SigningKey {
     }
 }
 
-#[cfg(feature = "sha256")]
+#[cfg(any(feature = "keccak256", feature = "sha256"))]
 impl<S> signature::Signer<S> for SigningKey
 where
     S: PrehashSignature,
@@ -77,7 +77,7 @@ where
     }
 }
 
-#[cfg(feature = "sha256")]
+#[cfg(any(feature = "keccak256", feature = "sha256"))]
 impl<S> RandomizedSigner<S> for SigningKey
 where
     S: PrehashSignature,
