@@ -14,9 +14,23 @@
 //!   [`VerifyKey`] types which natively implement ECDSA/secp256k1 signing and
 //!   verification.
 //!
+//! Additionally, this crate contains support for computing ECDSA signatures
+//! using either the SHA-256 (standard) or Keccak-256 (Ethereum) digest
+//! functions, which are gated under the following Cargo features:
+//!
+//! - `sha256`: compute signatures using NIST's standard SHA-256 digest
+//!   function. Unless you are computing signatures for Ethereum, this is
+//!   almost certainly what you want.
+//! - `keccak256`: compute signatures using the Keccak-256 digest function,
+//!   an incompatible variant of the SHA-3 algorithm used exclusively by
+//!   Ethereum.
+//!
+//! Most users of this library who want to sign/verify signatures will want to
+//! enable the `ecdsa` and `sha256` Cargo features.
+//!
 //! ## Signing/Verification Example
 //!
-//! This example requires the `ecdsa` Cargo feature is enabled:
+//! This example requires the `ecdsa` and `sha256` Cargo features are enabled:
 //!
 //! ```
 //! # #[cfg(feature = "ecdsa")]
