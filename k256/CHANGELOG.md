@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.1 (2020-09-21)
+### Added
+- Documentation for `sha256` feature ([#197])
+- `sec1::EncodedPoint::decompress` test ([#194])
+- Impl `RandomizedSigner` on `SigningKey` ([#193])
+
+### Changed
+- Gate ecdsa::{Signer, Verifier} impls on `sha256` feature ([#192])
+
+[#197]: https://github.com/RustCrypto/elliptic-curves/pull/197
+[#194]: https://github.com/RustCrypto/elliptic-curves/pull/194
+[#193]: https://github.com/RustCrypto/elliptic-curves/pull/193
+[#192]: https://github.com/RustCrypto/elliptic-curves/pull/192
+
 ## 0.5.0 (2020-09-17)
 ### Added
 - `ecdsa::Asn1Signature` type alias ([#186])
