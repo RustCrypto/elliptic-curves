@@ -1,4 +1,4 @@
-# RustCrypto: K-256 (secp256k1) elliptic curve
+# RustCrypto: secp256k1 (K-256) elliptic curve
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -6,12 +6,17 @@
 ![Rust Version][rustc-image]
 [![Build Status][build-image]][build-link]
 
-K-256 elliptic curve (a.k.a. [secp256k1]) types implemented in terms of traits
-from the [`elliptic-curve`] crate.
+[secp256k1] (a.k.a. K-256) elliptic curve library written in pure Rust with
+support for [ECDSA] signing/verification (including Ethereum-style signatures
+with public-key recovery), Elliptic Curve Diffie-Hellman (ECDH), and general
+purpose arithmetic which can be used to implement arbitrary protocols.
+
+Uses traits and base types from the [`elliptic-curve`] crate.
 
 Optionally includes an [`arithmetic`] feature providing scalar and
-affine/projective point types with support for constant-time scalar
-multiplication.
+point types (projective/affine) with support for constant-time scalar
+multiplication. Additionally, implements traits from the [`group`] crate
+which can be used to generically construct group-based protocols.
 
 [Documentation][docs-link]
 
@@ -35,9 +40,9 @@ USE AT YOUR OWN RISK!
   as used in consensus-critical applications, and additionally supports
   public key recovery from ECDSA signatures (as used by e.g. Ethereum).
 
-## About K-256 (secp256k1)
+## About secp256k1 (K-256)
 
-K-256 is a Koblitz curve typically referred to as "[secp256k1]".
+[secp256k1] is a Koblitz curve commonly used in cryptocurrency applications.
 The "K-256" name follows NIST notation where P = prime fields,
 B = binary fields, and K = Koblitz curves (defined over F₂).
 
@@ -93,5 +98,6 @@ dual licensed as above, without any additional terms or conditions.
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [`arithmetic`]: https://docs.rs/k256/latest/k256/arithmetic/index.html
+[`group`]: https://github.com/zkcrypto/group
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
