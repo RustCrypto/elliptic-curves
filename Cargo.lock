@@ -253,9 +253,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cda7dd00e9ace9867955ef64a176447b45f3e385f827bc686c832213bb7ec0e"
+checksum = "6b586654f7964785521b07db8e9a02ca2361ceb0ca82bef37226faa091049487"
 dependencies = [
  "elliptic-curve",
  "hmac",
@@ -348,9 +348,9 @@ checksum = "d36fab90f82edc3c747f9d438e06cf0a491055896f2a279638bb5beed6c40177"
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3deed196b6e7f9e44a2ae8d94225d80302d81208b1bb673fd21fe634645c85a9"
+checksum = "4c30f6d0bc6b00693347368a67d41b58f2fb851215ff1da49e90fe2c5c667151"
 dependencies = [
  "libc",
 ]
