@@ -12,7 +12,7 @@ use signature::PrehashSignature;
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct VerifyKey {
     /// Core ECDSA verify key
     pub(super) key: ecdsa_core::VerifyKey<Secp256k1>,
