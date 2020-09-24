@@ -403,7 +403,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "cfg-if",
  "criterion",
