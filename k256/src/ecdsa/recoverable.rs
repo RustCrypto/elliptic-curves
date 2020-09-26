@@ -45,9 +45,9 @@ use crate::{
     ecdsa::{signature::DigestVerifier, VerifyKey},
     elliptic_curve::{
         consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
-        weierstrass::point::Decompress, Digest, FromDigest,
+        weierstrass::point::Decompress, Digest,
     },
-    AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
+    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
 #[cfg(feature = "keccak256")]
@@ -141,8 +141,8 @@ impl Signature {
         Err(Error::new())
     }
 
-    /// Recover the public key used to create the given signature as an
-    /// [`EncodedPoint`].
+    /// Recover the public key used to create the given signature as a
+    /// [`VerifyKey`].
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
@@ -150,18 +150,29 @@ impl Signature {
         self.recover_verify_key_from_digest(Keccak256::new().chain(msg))
     }
 
-    /// Recover the public key used to create the given signature as an
-    /// [`EncodedPoint`] from the provided precomputed [`Digest`].
+    /// Recover the public key used to create the given signature as a
+    /// [`VerifyKey`] from the provided precomputed [`Digest`].
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-    #[allow(non_snake_case, clippy::many_single_char_names)]
-    pub fn recover_verify_key_from_digest<D>(&self, msg_prehash: D) -> Result<VerifyKey, Error>
+    pub fn recover_verify_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyKey, Error>
     where
         D: Digest<OutputSize = U32>,
     {
+        self.recover_verify_key_from_digest_bytes(&msg_digest.finalize())
+    }
+
+    /// Recover the public key used to create the given signature as a
+    /// [`VerifyKey`] from the raw bytes of a message digest.
+    #[cfg(feature = "ecdsa")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    #[allow(non_snake_case, clippy::many_single_char_names)]
+    pub fn recover_verify_key_from_digest_bytes(
+        &self,
+        digest_bytes: &FieldBytes,
+    ) -> Result<VerifyKey, Error> {
         let r = self.r();
         let s = self.s();
-        let z = Scalar::from_digest(msg_prehash);
+        let z = Scalar::from_bytes_reduced(digest_bytes);
         let R = AffinePoint::decompress(&r.to_bytes(), self.recovery_id().is_y_odd());
 
         if R.is_some().into() {
