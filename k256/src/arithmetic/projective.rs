@@ -1,7 +1,7 @@
 //! Projective points
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
-use crate::Secp256k1;
+use crate::{EncodedPoint, Secp256k1};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
@@ -11,7 +11,8 @@ use elliptic_curve::{
     group::{Curve, Group},
     point::ProjectiveArithmetic,
     rand_core::RngCore,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+    sec1::FromEncodedPoint,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
 
 #[rustfmt::skip]
@@ -44,6 +45,12 @@ impl From<AffinePoint> for ProjectivePoint {
             z: FieldElement::one(),
         };
         Self::conditional_select(&projective, &Self::identity(), p.infinity)
+    }
+}
+
+impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
+    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
+        AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
     }
 }
 
