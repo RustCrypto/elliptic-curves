@@ -4,7 +4,7 @@ use super::{recoverable, Error, Signature, VerifyKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
-    hazmat::SignPrimitive,
+    hazmat::RecoverableSignPrimitive,
     rfc6979,
     signature::{DigestSigner, RandomizedDigestSigner},
 };
@@ -104,8 +104,11 @@ where
     fn try_sign_digest(&self, digest: D) -> Result<recoverable::Signature, Error> {
         let ephemeral_scalar = rfc6979::generate_k(&self.secret_scalar, digest.clone(), &[]);
         let msg_scalar = Scalar::from_digest(digest);
-        self.secret_scalar
-            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)
+        let (signature, is_r_odd) = self
+            .secret_scalar
+            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
+
+        recoverable::Signature::new(&signature, recoverable::Id(is_r_odd as u8))
     }
 }
 
@@ -138,8 +141,11 @@ where
             rfc6979::generate_k(&self.secret_scalar, digest.clone(), &added_entropy);
 
         let msg_scalar = Scalar::from_digest(digest);
-        self.secret_scalar
-            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)
+        let (signature, is_r_odd) = self
+            .secret_scalar
+            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
+
+        recoverable::Signature::new(&signature, recoverable::Id(is_r_odd as u8))
     }
 }
 
@@ -149,24 +155,13 @@ impl From<&SigningKey> for VerifyKey {
     }
 }
 
-impl SignPrimitive<Secp256k1> for Scalar {
-    fn try_sign_prehashed<K: Borrow<Scalar> + Invert<Output = Scalar>>(
-        &self,
-        ephemeral_scalar: &K,
-        hashed_msg: &Scalar,
-    ) -> Result<Signature, Error> {
-        self.try_sign_recoverable_prehashed(ephemeral_scalar, hashed_msg)
-            .map(Into::into)
-    }
-}
-
-impl Scalar {
+impl RecoverableSignPrimitive<Secp256k1> for Scalar {
     #[allow(non_snake_case, clippy::many_single_char_names)]
     fn try_sign_recoverable_prehashed<K>(
         &self,
         ephemeral_scalar: &K,
         z: &Scalar,
-    ) -> Result<recoverable::Signature, Error>
+    ) -> Result<(Signature, bool), Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,
     {
@@ -196,8 +191,7 @@ impl Scalar {
         let mut signature = Signature::from_scalars(r, s)?;
         let is_r_odd = bool::from(R.y.normalize().is_odd());
         let is_s_high = signature.normalize_s()?;
-        let recovery_id = recoverable::Id((is_r_odd ^ is_s_high) as u8);
-        recoverable::Signature::new(&signature, recovery_id)
+        Ok((signature, is_r_odd ^ is_s_high))
     }
 }
 
