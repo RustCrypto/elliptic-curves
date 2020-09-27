@@ -25,6 +25,7 @@ impl VerifyKey {
     }
 
     /// Initialize [`VerifyKey`] from a SEC1 [`EncodedPoint`].
+    // TODO(tarcieri): switch to using `FromEncodedPoint` trait?
     pub fn from_encoded_point(public_key: &EncodedPoint) -> Result<Self, Error> {
         ecdsa_core::VerifyKey::from_encoded_point(public_key).map(|key| VerifyKey { key })
     }
@@ -75,7 +76,13 @@ impl From<&AffinePoint> for VerifyKey {
 
 impl From<&VerifyKey> for EncodedPoint {
     fn from(verify_key: &VerifyKey) -> EncodedPoint {
-        verify_key.key.to_encoded_point(true)
+        verify_key.to_encoded_point(true)
+    }
+}
+
+impl ToEncodedPoint<Secp256k1> for VerifyKey {
+    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+        self.key.to_encoded_point(compress)
     }
 }
 
