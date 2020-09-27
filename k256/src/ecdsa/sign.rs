@@ -57,15 +57,6 @@ impl SigningKey {
     }
 }
 
-impl From<&SecretKey> for SigningKey {
-    fn from(secret_key: &SecretKey) -> Self {
-        Self {
-            secret_scalar: NonZeroScalar::new(*secret_key.secret_scalar())
-                .expect("invalid secret scalar"),
-        }
-    }
-}
-
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
 impl<S> signature::Signer<S> for SigningKey
 where
@@ -149,9 +140,30 @@ where
     }
 }
 
+impl From<&SecretKey> for SigningKey {
+    fn from(secret_key: &SecretKey) -> SigningKey {
+        Self {
+            secret_scalar: NonZeroScalar::new(*secret_key.secret_scalar())
+                .expect("invalid secret scalar"),
+        }
+    }
+}
+
+impl From<&SigningKey> for SecretKey {
+    fn from(signing_key: &SigningKey) -> SecretKey {
+        SecretKey::new(signing_key.secret_scalar)
+    }
+}
+
 impl From<&SigningKey> for VerifyKey {
     fn from(signing_key: &SigningKey) -> VerifyKey {
         signing_key.verify_key()
+    }
+}
+
+impl From<NonZeroScalar> for SigningKey {
+    fn from(secret_scalar: NonZeroScalar) -> Self {
+        Self { secret_scalar }
     }
 }
 
@@ -192,12 +204,6 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         let is_r_odd = bool::from(R.y.normalize().is_odd());
         let is_s_high = signature.normalize_s()?;
         Ok((signature, is_r_odd ^ is_s_high))
-    }
-}
-
-impl From<NonZeroScalar> for SigningKey {
-    fn from(secret_scalar: NonZeroScalar) -> Self {
-        Self { secret_scalar }
     }
 }
 
