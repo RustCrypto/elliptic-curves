@@ -50,7 +50,8 @@ jobs:
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa,keccak256
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa,sha256
       - run: cargo build --release --target ${{ matrix.target }} --all-features
-  test:
+
+  benches:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -58,15 +59,41 @@ jobs:
           - 1.44.0 # MSRV
           - stable
     steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+      - run: cargo build --all-features --benches
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rust: 1.44.0 # MSRV
+            target: i686-unknown-linux-gnu # 32-bit Linux
+            deps: sudo apt install gcc-multilib # 32-bit support packages
+          - rust: 1.44.0 # MSRV
+            target: x86_64-unknown-linux-gnu
+            deps: true
+          - rust: stable
+            target: i686-unknown-linux-gnu # 32-bit Linux
+            deps: sudo apt install gcc-multilib # 32-bit support packages
+          - rust: stable
+            target: x86_64-unknown-linux-gnu
+            deps: true
+    steps:
     - uses: actions/checkout@v1
     - uses: actions-rs/toolchain@v1
       with:
         profile: minimal
         toolchain: ${{ matrix.rust }}
-    - run: cargo check --all-features
-    - run: cargo test --no-default-features
-    - run: cargo test
-    - run: cargo test --all-features
-    - run: cargo test --features field-montgomery
-    - run: cargo test --features force-32-bit
-    - run: cargo build --all-features --benches
+        target: ${{ matrix.target }}
+        override: true
+    - run: ${{ matrix.deps }}
+    - run: cargo check --target ${{ matrix.target }} --all-features
+    - run: cargo test --target ${{ matrix.target }} --no-default-features
+    - run: cargo test --target ${{ matrix.target }}
+    - run: cargo test --target ${{ matrix.target }} --features field-montgomery
+    - run: cargo test --target ${{ matrix.target }} --all-features
