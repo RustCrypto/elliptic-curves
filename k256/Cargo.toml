@@ -34,12 +34,12 @@ proptest = "0.10"
 rand_core = { version = "0.5", features = ["getrandom"] }
 
 [features]
-default = ["arithmetic", "oid", "std"]
+default = ["arithmetic", "endomorphism-mul", "oid", "std"]
 arithmetic = ["elliptic-curve/arithmetic"]
 digest = ["elliptic-curve/digest", "ecdsa-core/digest"]
 ecdh = ["elliptic-curve/ecdh", "zeroize"]
 ecdsa = ["arithmetic", "digest", "ecdsa-core/sign", "ecdsa-core/verify", "zeroize"]
-endomorphism-mul = []
+endomorphism-mul = ["arithmetic"]
 expose-field = ["arithmetic"]
 field-montgomery = []
 force-32-bit = []
