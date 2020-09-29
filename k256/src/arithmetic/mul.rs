@@ -36,29 +36,31 @@
 //!
 //! @fjarri:
 //!
-//! To be precise, the method used here is based on
-//! "An Alternate Decomposition of an Integer for Faster Point Multiplication on Certain Elliptic Curves"
-//! by Young-Ho Park, Sangtae Jeong, Chang Han Kim, and Jongin Lim
+//! To be precise, the method used here is based on "An Alternate Decomposition of an Integer for
+//! Faster Point Multiplication on Certain Elliptic Curves" by Young-Ho Park, Sangtae Jeong,
+//! Chang Han Kim, and Jongin Lim
 //! (https://link.springer.com/chapter/10.1007%2F3-540-45664-3_23)
 //!
 //! The precision used for `g1` and `g2` is not enough to ensure correct approximation at all times.
 //! For example, `2^272 * b1 / n` used to calculate `g2` is rounded down.
 //! This means that the approximation `z' = k * g2 / 2^272` always slightly underestimates
-//! the real value `z = b1 * k / n`. Therefore, when the fractional part of `z` is just slightly above
-//! 0.5, it will be rounded up, but `z'` will have the fractional part slightly below 0.5 and will be
-//! rounded down.
+//! the real value `z = b1 * k / n`. Therefore, when the fractional part of `z` is just slightly
+//! above 0.5, it will be rounded up, but `z'` will have the fractional part slightly below 0.5 and
+//! will be rounded down.
 //!
 //! The difference `z - z' = k * delta / 2^272`, where `delta = b1 * 2^272 mod n`.
 //! The closest `z` can get to the fractional part equal to .5 is `1 / (2n)` (since `n` is odd).
 //! Therefore, to guarantee that `z'` will always be rounded to the same value, one must have
 //! `delta / 2^m < 1 / (2n * (n - 1))`, where `m` is the power of 2 used for the approximation.
 //! This means that one should use at least `m = 512` (since `0 < delta < 1`).
-//! Indeed, tests show that with only `m = 272` the approximation produces off-by-1 errors occasionally.
+//! Indeed, tests show that with only `m = 272` the approximation produces off-by-1 errors
+//! occasionally.
 //!
-//! Now since `r1` is calculated as `k - r2 * lambda mod n`, the contract `r1 + r2 * lambda = k mod n`
-//! is always satisfied. The method guarantees both `r1` and `r2` to be less than `sqrt(n)`
-//! (so, fit in 128 bits) if the rounding is applied correctly - but in our case the off-by-1 errors
-//! will produce different `r1` and `r2` which are not necessarily bounded by `sqrt(n)`.
+//! Now since `r1` is calculated as `k - r2 * lambda mod n`, the contract
+//! `r1 + r2 * lambda = k mod n` is always satisfied. The method guarantees both `r1` and `r2` to be
+//! less than `sqrt(n)` (so, fit in 128 bits) if the rounding is applied correctly - but in our case
+//! the off-by-1 errors will produce different `r1` and `r2` which are not necessarily bounded by
+//! `sqrt(n)`.
 //!
 //! In experiments, I was not able to detect any case where they would go outside the 128 bit bound,
 //! but I cannot be sure that it cannot happen.
