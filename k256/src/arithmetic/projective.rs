@@ -16,7 +16,6 @@ use elliptic_curve::{
 };
 
 #[rustfmt::skip]
-#[cfg(feature = "endomorphism-mul")]
 const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
     0x6e, 0x64, 0x47, 0x9e, 0xac, 0x34, 0x34, 0xe9,
@@ -239,7 +238,6 @@ impl ProjectivePoint {
     }
 
     /// Calculates SECP256k1 endomorphism: `self * lambda`.
-    #[cfg(feature = "endomorphism-mul")]
     pub fn endomorphism(&self) -> Self {
         Self {
             x: self.x * &ENDOMORPHISM_BETA,
