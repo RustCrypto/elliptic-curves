@@ -187,7 +187,6 @@ impl Scalar8x32 {
         self.0[0]
     }
 
-    #[cfg(feature = "endomorphism-mul")]
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         // Interpret the bytes as a big-endian integer w.
         let w7 =

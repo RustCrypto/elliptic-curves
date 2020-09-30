@@ -179,7 +179,6 @@ impl Scalar {
 
     /// Attempts to parse the given byte array as a scalar.
     /// Does not check the result for being in the correct range.
-    #[cfg(feature = "endomorphism-mul")]
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(ScalarImpl::from_bytes_unchecked(bytes))
     }
@@ -659,7 +658,6 @@ mod tests {
     }
 
     proptest! {
-
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
             let a_back = Scalar::from_repr(a.to_bytes()).unwrap();
@@ -667,7 +665,6 @@ mod tests {
         }
 
         #[test]
-        #[cfg(feature = "endomorphism-mul")]
         fn fuzzy_roundtrip_to_bytes_unchecked(a in scalar()) {
             let bytes = a.to_bytes();
             let a_back = Scalar::from_bytes_unchecked(bytes.as_ref());
