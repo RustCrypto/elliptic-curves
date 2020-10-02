@@ -1,0 +1,12 @@
+[package]
+name = "weierstrass"
+version = "0.1.0"
+authors = ["RustCrypto Developers"]
+edition = "2018"
+
+[dependencies]
+generic-array = "0.14"
+subtle = "2"
+rand_core = "0.5"
+biguint-literal = { git = "https://github.com/RustCrypto/utils", branch = "biguint" }
+hex-literal = "0.3"
