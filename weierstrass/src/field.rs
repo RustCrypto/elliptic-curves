@@ -38,7 +38,7 @@ impl<C> FieldElement<C>
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
 {
-
+    /// Returns the zero element (additive identity).
     pub fn zero() -> Self {
         Self {
             words: Default::default(),

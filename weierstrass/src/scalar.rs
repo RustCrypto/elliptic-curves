@@ -35,7 +35,7 @@ impl<C> Scalar<C>
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
 {
-    /// Returns the zero scalar.
+    /// Returns the zero scalar (additive identity).
     pub fn zero() -> Self {
         Self::default()
     }
