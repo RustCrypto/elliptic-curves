@@ -22,5 +22,5 @@ pub(crate) const fn sbb(a: Word, b: Word, borrow: Word) -> (Word, Word) {
 pub(crate) const fn mac(a: Word, b: Word, c: Word, carry: Word) -> (Word, Word) {
     let (a, b, c) = (a as DoubleWord, b as DoubleWord, c as DoubleWord);
     let ret = a + b * c + (carry as DoubleWord);
-    (ret as Word, (ret >> 64) as Word)
+    (ret as Word, (ret >> WordWidth::USIZE) as Word)
 }
