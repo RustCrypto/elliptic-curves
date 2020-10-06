@@ -1,4 +1,4 @@
-# RustCrypto: Elliptic Curves ![Rust Version][rustc-image]
+# RustCrypto: Elliptic Curves ![Rust Version][rustc-image] [![Project Chat][chat-image]][chat-link]
 
 General purpose Elliptic Curve Cryptography (ECC) support, including types
 and traits for representing various elliptic curve forms, scalars, points,
@@ -49,6 +49,8 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # (badges)
 
 [rustc-image]: https://img.shields.io/badge/rustc-1.44+-blue.svg
+[chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
+[chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 
 [//]: # (crates)
 
