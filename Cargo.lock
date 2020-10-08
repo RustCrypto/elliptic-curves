@@ -277,9 +277,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.6.4"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f12f141af758c1e9ea292735e766038ab8fea7cec0364c67d2ce9de81513162e"
+checksum = "45738b8f6c34e7ab7cf1abb5e6aa3238323aec90253d48a80c7a73218748f0ed"
 dependencies = [
  "bitvec",
  "const-oid",
@@ -429,7 +429,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.5.8"
+version = "0.5.9"
 dependencies = [
  "cfg-if 1.0.0",
  "criterion",

@@ -1,9 +1,10 @@
 //! Ethereum-style "recoverable signatures".
 //!
 //! These signatures include an additional [`Id`] field which allows for
-//! recovery of the [`EncodedPoint`] used to create them. This is helpful in
-//! cases where the hash/fingerprint of a key used to create a signature is
-//! known in advance.
+//! recovery of the [`VerifyKey`] which can be used to verify them.
+//!
+//! This is helpful in cases where a hash/fingerprint of a [`VerifyKey`]
+//! for a given signature in known in advance.
 //!
 //! ## Signing/Recovery Example
 //!
@@ -57,7 +58,7 @@ use sha3::Keccak256;
 pub const SIZE: usize = 65;
 
 /// Ethereum-style "recoverable signatures" which allow for the recovery of
-/// the signer's [`EncodedPoint`] from the signature itself.
+/// the signer's [`VerifyKey`] from the signature itself.
 ///
 /// This format consists of [`Signature`] followed by a 1-byte recovery [`Id`]
 /// (65-bytes total):
@@ -96,7 +97,8 @@ impl Signature {
     /// otherwise.
     ///
     /// Assumes Keccak256 as the message digest function. Use
-    /// [`from_digest_trial_recovery`] to support other digest functions.
+    /// [`Signature::from_digest_trial_recovery`] to support other
+    ///digest functions.
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
@@ -259,10 +261,10 @@ impl ecdsa_core::signature::PrehashSignature for Signature {
     type Digest = Keccak256;
 }
 
-/// Identifier used to compute a [`EncodedPoint`] from a [`Signature`].
+/// Identifier used to compute a [`VerifyKey`] from a [`Signature`].
 ///
 /// In practice these values are always either `0` or `1`, and indicate
-/// whether or not the y-coordinate of the original [`EncodedPoint`] is odd.
+/// whether or not the y-coordinate of the original [`VerifyKey`] is odd.
 ///
 /// While values `2` and `3` are also defined to capture whether `r`
 /// overflowed the curve's order, this crate does *not* support them.
