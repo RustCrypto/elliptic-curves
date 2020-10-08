@@ -127,3 +127,18 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
+
+/// Bytes containing a secp256k1 secret scalar
+#[cfg(feature = "zeroize")]
+#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
+pub type SecretBytes = elliptic_curve::secret_key::SecretBytes<Secp256k1>;
+
+#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+impl elliptic_curve::secret_key::SecretValue for Secp256k1 {
+    type Secret = SecretBytes;
+
+    /// Parse the secret value from bytes
+    fn from_secret_bytes(bytes: &FieldBytes) -> Option<SecretBytes> {
+        Some(bytes.clone().into())
+    }
+}
