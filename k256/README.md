@@ -14,7 +14,7 @@ purpose arithmetic which can be used to implement arbitrary protocols.
 
 Uses traits and base types from the [`elliptic-curve`] crate.
 
-Optionally includes an [`arithmetic`] feature providing scalar and
+Optionally includes a secp256k1 [`arithmetic`] feature providing scalar and
 point types (projective/affine) with support for constant-time scalar
 multiplication. Additionally, implements traits from the [`group`] crate
 which can be used to generically construct group-based protocols.
@@ -23,7 +23,7 @@ which can be used to generically construct group-based protocols.
 
 ## ⚠️ Security Warning
 
-The elliptic curve arithmetic contained in this crate has never been
+The secp256k1 elliptic curve arithmetic contained in this crate has never been
 independently audited!
 
 This crate has been designed with the goal of ensuring that secret-dependent
@@ -36,10 +36,13 @@ USE AT YOUR OWN RISK!
 ## Supported Algorithms
 
 - [Elliptic Curve Diffie-Hellman (ECDH)][ECDH]: gated under the `ecdh` feature.
+  Note that this is technically ephemeral secp256k1 Diffie-Hellman
+  (a.k.a. ECDHE)
 - [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
-  `ecdsa` feature. Supports low-S normalized ECDSA signing and verification
-  as used in consensus-critical applications, and additionally supports
-  public key recovery from ECDSA signatures (as used by e.g. Ethereum).
+  `ecdsa` feature. Support for ECDSA/secp256k1 signing and verification,
+  applying [low-S normalization (BIP 0062)][BIP0062] as used in
+  consensus-critical applications, and additionally supports secp256k1
+  public-key recovery from ECDSA signatures (as used by e.g. Ethereum)
 
 ## About secp256k1 (K-256)
 
@@ -52,7 +55,7 @@ The curve is specified as `secp256k1` by Certicom's SECG in
 
 <https://www.secg.org/sec2-v2.pdf>
 
-It's primarily notable for usage in Bitcoin and other cryptocurrencies,
+secp256k1 is primarily notable for usage in Bitcoin and other cryptocurrencies,
 particularly in conjunction with the
 [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA].
 
@@ -104,3 +107,4 @@ dual licensed as above, without any additional terms or conditions.
 [`group`]: https://github.com/zkcrypto/group
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+[BIP0062]: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki
