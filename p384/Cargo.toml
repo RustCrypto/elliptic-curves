@@ -13,7 +13,7 @@ keywords = ["crypto", "ecc", "nist", "secp384r1"]
 
 [dependencies]
 ecdsa = { version = "0.8", optional = true, default-features = false }
-elliptic-curve = { version = "0.6.4", default-features = false }
+elliptic-curve = { version = "0.6.6", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
