@@ -36,6 +36,8 @@ pub type WordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WordWidth>;
 pub type Words<C> = GenericArray<Word, WordsLen<C>>;
 pub type WordsBytesLen<C> = Quot<<C as WeirstrassCurve>::Bits, U8>;
 pub type WordsBytes<C> = GenericArray<u8, WordsBytesLen<C>>;
+pub type DoubleWordsBytesLen<C> = Quot<<C as WeirstrassCurve>::Bits, U4>;
+pub type DoubleWordsBytes<C> = GenericArray<u8, DoubleWordsBytesLen<C>>;
 
 pub type WordsP1Len<C> = Sum<WordsLen<C>, U1>;
 pub type WordsP1<C> = GenericArray<Word, WordsP1Len<C>>;
