@@ -61,7 +61,7 @@ impl<C> Scalar<C>
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    fn to_bytes(&self) -> WordsBytes<C> {
+    pub fn to_bytes(&self) -> WordsBytes<C> {
         let mut buf = WordsBytes::<C>::default();
         let m = mem::size_of::<Word>();
         let iter = buf.chunks_exact_mut(m).zip(self.words.iter().rev());
@@ -304,9 +304,9 @@ impl<C> Scalar<C>
         !self.is_odd()
     }
 
-    fn shr1(&mut self) {
-        todo!();
-    }
+    // fn shr1(&mut self) {
+    //     todo!();
+    // }
 
     /// Faster inversion using Stein's algorithm
     pub fn invert_vartime(&self) -> CtOption<Self> {

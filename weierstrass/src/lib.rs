@@ -1,3 +1,4 @@
+pub use {generic_array, subtle};
 use generic_array::{ArrayLength, GenericArray};
 use generic_array::typenum::{
     self,
@@ -14,16 +15,13 @@ mod scalar;
 mod projective;
 mod utils;
 
-mod gost_test256;
-
 pub use affine::AffinePoint;
 pub use field::FieldElement;
 pub use scalar::Scalar;
 pub use projective::ProjectivePoint;
-pub use gost_test256::GostTest256;
 
 // TODO: add cfgs for other word sizes
-type Word = u64;
+pub type Word = u64;
 type DoubleWord = u128;
 type WordWidth = typenum::U64;
 /// Divisor for getting number of words in the wider buffer, it's equal
@@ -34,16 +32,16 @@ fn random_word(mut rng: impl CryptoRng + RngCore) -> Word {
     rng.next_u64()
 }
 
-type WordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WordWidth>;
-type Words<C> = GenericArray<Word, WordsLen<C>>;
-type WordsBytesLen<C> = Quot<<C as WeirstrassCurve>::Bits, U8>;
-type WordsBytes<C> = GenericArray<u8, WordsBytesLen<C>>;
+pub type WordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WordWidth>;
+pub type Words<C> = GenericArray<Word, WordsLen<C>>;
+pub type WordsBytesLen<C> = Quot<<C as WeirstrassCurve>::Bits, U8>;
+pub type WordsBytes<C> = GenericArray<u8, WordsBytesLen<C>>;
 
-type WordsP1Len<C> = Sum<WordsLen<C>, U1>;
-type WordsP1<C> = GenericArray<Word, WordsP1Len<C>>;
+pub type WordsP1Len<C> = Sum<WordsLen<C>, U1>;
+pub type WordsP1<C> = GenericArray<Word, WordsP1Len<C>>;
 
-type WideWordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WideWordsDiv>;
-type WideWords<C> = GenericArray<Word, WideWordsLen<C>>;
+pub type WideWordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WideWordsDiv>;
+pub type WideWords<C> = GenericArray<Word, WideWordsLen<C>>;
 
 pub trait WeirstrassCurve
     where
@@ -57,10 +55,12 @@ pub trait WeirstrassCurve
     type Bits: Unsigned + Div<WordWidth> + Div<WideWordsDiv> + Div<U8> + Div<U4>;
 
     const A: FieldElement<Self>;
+    const A_IS_MINUS_3: bool;
     const B: FieldElement<Self>;
     const MODULUS_P: Words<Self>;
     /// p - 2
     const MODULUS_P_M2: Words<Self>;
+
     const MODULUS_Q: Words<Self>;
     /// q - 2
     const MODULUS_Q_M2: Words<Self>;
@@ -74,10 +74,8 @@ pub trait WeirstrassCurve
     /// R2 = 2^(2*Bits) mod p
     const R2: FieldElement<Self>;
 
+    /// MU = floor(2^512 / q)
+    const MU: WordsP1<Self>;
     /// P*PT (mod 2^WORD_WIDTH) == -1
     const PT: Word;
-
-    /// MU = floor(2^512 / n)
-    const MU: WordsP1<Self>;
 }
-
