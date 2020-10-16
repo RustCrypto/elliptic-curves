@@ -1,11 +1,11 @@
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign, Shl};
 use core::iter::Sum;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-use generic_array::{ArrayLength, typenum::{B1, U1, Unsigned}};
+use generic_array::{ArrayLength, typenum::{B1, U1}};
 
 use crate::{
     WeierstrassCurve, CurveKind,
-    Word, WordWidth,
+    Word, WORD_WIDTH_BITS,
     Words, WordsLen,
     DoubleWordsLen,
     WordsBytesLen,
@@ -638,7 +638,7 @@ impl<C> ProjectivePoint<C>
         let mut ret = ProjectivePoint::identity();
 
         for word in k.words.iter().rev() {
-            for i in (0..WordWidth::USIZE).rev() {
+            for i in (0..WORD_WIDTH_BITS).rev() {
                 ret = ret.double();
                 let choice = ((word >> i) & (1 as Word)) as u8;
                 ret.conditional_assign(&(ret + *self), Choice::from(choice));

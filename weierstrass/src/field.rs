@@ -2,12 +2,12 @@ use core::{fmt, mem};
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl};
 use generic_array::ArrayLength;
-use generic_array::typenum::{B1, U1, Unsigned};
+use generic_array::typenum::{B1, U1};
 use subtle::{ConditionallySelectable, Choice, ConstantTimeEq, CtOption};
 use rand_core::{RngCore, CryptoRng};
 
 use crate::{
-    WeierstrassCurve, Word, WordWidth,
+    WeierstrassCurve, Word, WORD_WIDTH_BITS,
     Words, WordsLen,
     DoubleWords, DoubleWordsLen,
     WordsBytes, WordsBytesLen,
@@ -205,7 +205,7 @@ impl<C> FieldElement<C>
     pub fn pow_vartime(&self, by: &Words<C>) -> Self {
         let mut res = Self::one();
         for e in by.iter().rev() {
-            for i in (0..WordWidth::USIZE).rev() {
+            for i in (0..WORD_WIDTH_BITS).rev() {
                 res = res.square();
                 if ((*e >> i) & 1) == 1 {
                     res = res.mul(*self);

@@ -2,11 +2,10 @@ use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl};
 use core::{fmt, mem};
 use core::convert::TryInto;
 use subtle::{ConditionallySelectable, Choice, ConstantTimeEq, CtOption};
-use generic_array::ArrayLength;
-use generic_array::typenum::{B1, U1, Unsigned};
+use generic_array::{ArrayLength, typenum::{B1, U1}};
 
 use super::{
-    WeierstrassCurve, Word, WordWidth, Words, WordsLen,
+    WeierstrassCurve, Word, WORD_WIDTH_BITS, Words, WordsLen,
     DoubleWordsLen, DoubleWords,
     WordsBytesLen, WordsBytes,
     WordsP1Len, WordsP1,
@@ -271,9 +270,8 @@ impl<C> Scalar<C>
     /// If the exponent is fixed, this operation is effectively constant time.
     pub fn pow_vartime(&self, by: &Words<C>) -> Self {
         let mut res = Self::one();
-        let n = WordWidth::USIZE;
         for e in by.iter().rev() {
-            for i in (0..n).rev() {
+            for i in (0..WORD_WIDTH_BITS).rev() {
                 res = res.square();
                 if ((*e >> i) & 1) == 1 {
                     res *= *self;
@@ -327,13 +325,25 @@ impl<C> Scalar<C>
             *wm = Word::from_be_bytes(chunk.try_into().unwrap());
         }
 
+        for w in words.iter().rev() {
+            print!("{:016X}", w);
+        }
+        println!();
+
+        for w in C::MODULUS_Q.iter().rev() {
+            print!("{:016X}", w);
+        }
+        println!();
+
         // If w is in the range [0, n) then w - n will overflow, resulting
         // in a borrow value of 2^64 - 1.
         let mut borrow = Word::default();
         for (&w, &wm) in words.iter().zip(C::MODULUS_Q.iter()) {
             borrow = sbb(w, wm, borrow).1;
+            println!("{:016X}", borrow);
         }
         let is_some = (borrow as u8) & 1;
+        println!("========");
 
         CtOption::new(Self { words }, Choice::from(is_some)).into()
     }

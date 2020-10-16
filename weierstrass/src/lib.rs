@@ -1,4 +1,4 @@
-#![no_std]
+// #![no_std]
 pub use {generic_array, subtle};
 use generic_array::{ArrayLength, GenericArray};
 use generic_array::typenum::{
@@ -28,6 +28,9 @@ type WordWidth = typenum::U8;
 fn random_word(mut rng: impl CryptoRng + RngCore) -> Word {
     rng.next_u64()
 }
+
+
+const WORD_WIDTH_BITS: usize = 8*WordWidth::USIZE;
 
 pub type WordsLen<C> = Quot<<C as WeierstrassCurve>::Size, WordWidth>;
 pub type Words<C> = GenericArray<Word, WordsLen<C>>;
