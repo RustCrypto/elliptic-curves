@@ -1,12 +1,12 @@
-use core::ops::{Mul, Neg};
-use generic_array::{ArrayLength, typenum::U1};
+use core::ops::{Mul, Neg, Shl};
+use generic_array::{ArrayLength, typenum::{B1, U1}};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 use core::ops::Add;
 
 use crate::{
     WeirstrassCurve, Word, 
     Words, WordsLen,
-    WideWordsLen,
+    DoubleWordsLen,
     WordsBytesLen,
     WordsP1Len,
 };
@@ -18,8 +18,8 @@ use crate::field::FieldElement;
 pub struct AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -32,8 +32,8 @@ pub struct AffinePoint<C>
 impl<C> AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -65,8 +65,8 @@ impl<C> AffinePoint<C>
 impl<C> ConditionallySelectable for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -83,8 +83,8 @@ impl<C> ConditionallySelectable for AffinePoint<C>
 impl<C> ConstantTimeEq for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -99,8 +99,8 @@ impl<C> ConstantTimeEq for AffinePoint<C>
 impl<C> PartialEq for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -113,8 +113,8 @@ impl<C> PartialEq for AffinePoint<C>
 impl<C> Eq for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -123,8 +123,8 @@ impl<C> Eq for AffinePoint<C>
 impl<C> Mul<Scalar<C>> for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -139,8 +139,8 @@ impl<C> Mul<Scalar<C>> for AffinePoint<C>
 impl<C> Neg for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -160,8 +160,8 @@ impl<C> Neg for AffinePoint<C>
 impl<C> Zeroize for AffinePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,

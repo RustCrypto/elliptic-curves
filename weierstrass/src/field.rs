@@ -1,15 +1,15 @@
 use core::{fmt, mem};
 use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg};
+use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl};
 use generic_array::ArrayLength;
-use generic_array::typenum::{U1, Unsigned};
+use generic_array::typenum::{B1, U1, Unsigned};
 use subtle::{ConditionallySelectable, Choice, ConstantTimeEq, CtOption};
 use rand_core::{RngCore, CryptoRng};
 
 use crate::{
     WeirstrassCurve, Word, WordWidth,
     Words, WordsLen,
-    WideWords, WideWordsLen,
+    DoubleWords, DoubleWordsLen,
     WordsBytes, WordsBytesLen,
     WordsP1, WordsP1Len,
     random_word
@@ -20,8 +20,8 @@ use crate::utils::{adc, sbb, mac};
 pub struct FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -32,8 +32,8 @@ pub struct FieldElement<C>
 impl<C> FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -54,7 +54,7 @@ impl<C> FieldElement<C>
     pub fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
         // We reduce a random value with a double length, which results in a
         // negligible bias from the uniform distribution.
-        let mut t = WideWords::<C>::default();
+        let mut t = DoubleWords::<C>::default();
         t.iter_mut().for_each(|wt| *wt = random_word(&mut rng));
         FieldElement::montgomery_reduce(t)
     }
@@ -84,7 +84,7 @@ impl<C> FieldElement<C>
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(&self) -> WordsBytes<C> {
         // Convert from Montgomery form to canonical form
-        let mut w = WideWords::<C>::default();
+        let mut w = DoubleWords::<C>::default();
         let n = self.words.len();
         w[..n].copy_from_slice(&self.words);
         let t = Self::montgomery_reduce(w);
@@ -154,8 +154,8 @@ impl<C> FieldElement<C>
     }
 
     /// Montgomery Reduction
-    fn montgomery_reduce(v: WideWords<C>) -> Self {
-        // `WideWords` length is always multiple of 2
+    fn montgomery_reduce(v: DoubleWords<C>) -> Self {
+        // `DoubleWords` length is always multiple of 2
         let n = v.len() / 2;
         let mut r = WordsP1::<C>::default();
         r[..n].copy_from_slice(&v[..n]);
@@ -176,7 +176,7 @@ impl<C> FieldElement<C>
 
     /// Returns self * rhs mod p
     pub fn mul(&self, rhs: &Self) -> Self {
-        let mut w = WideWords::<C>::default();
+        let mut w = DoubleWords::<C>::default();
         let n = rhs.words.len();
 
         // Schoolbook multiplication.
@@ -238,8 +238,8 @@ impl<C> FieldElement<C>
 impl<C> fmt::UpperHex for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -255,8 +255,8 @@ impl<C> fmt::UpperHex for FieldElement<C>
 impl<C> ConditionallySelectable for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -274,8 +274,8 @@ impl<C> ConditionallySelectable for FieldElement<C>
 impl<C> ConstantTimeEq for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -292,8 +292,8 @@ impl<C> ConstantTimeEq for FieldElement<C>
 impl<C> PartialEq for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -306,8 +306,8 @@ impl<C> PartialEq for FieldElement<C>
 impl<C> Add<FieldElement<C>> for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -323,8 +323,8 @@ impl<C> Add<FieldElement<C>> for FieldElement<C>
 impl<C> AddAssign<FieldElement<C>> for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -338,8 +338,8 @@ impl<C> AddAssign<FieldElement<C>> for FieldElement<C>
 impl<C> Sub<FieldElement<C>> for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -355,8 +355,8 @@ impl<C> Sub<FieldElement<C>> for FieldElement<C>
 impl<C> SubAssign<FieldElement<C>> for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -371,8 +371,8 @@ impl<C> SubAssign<FieldElement<C>> for FieldElement<C>
 impl<C> Mul<FieldElement<C>> for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -388,8 +388,8 @@ impl<C> Mul<FieldElement<C>> for FieldElement<C>
 impl<C> MulAssign<FieldElement<C>> for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -403,8 +403,8 @@ impl<C> MulAssign<FieldElement<C>> for FieldElement<C>
 impl<C> Neg for FieldElement<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,

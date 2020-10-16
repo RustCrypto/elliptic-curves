@@ -1,13 +1,13 @@
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign, Shl};
 use core::iter::Sum;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-use generic_array::{ArrayLength, typenum::{U1, Unsigned}};
+use generic_array::{ArrayLength, typenum::{B1, U1, Unsigned}};
 
 use crate::{
     WeirstrassCurve, CurveKind,
     Word, WordWidth,
     Words, WordsLen,
-    WideWordsLen,
+    DoubleWordsLen,
     WordsBytesLen,
     WordsP1Len,
 };
@@ -20,8 +20,8 @@ use crate::scalar::Scalar;
 pub struct ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -34,8 +34,8 @@ pub struct ProjectivePoint<C>
 impl<C> From<AffinePoint<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -53,8 +53,8 @@ impl<C> From<AffinePoint<C>> for ProjectivePoint<C>
 impl<C> ConditionallySelectable for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -71,8 +71,8 @@ impl<C> ConditionallySelectable for ProjectivePoint<C>
 impl<C> ConstantTimeEq for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -85,8 +85,8 @@ impl<C> ConstantTimeEq for ProjectivePoint<C>
 impl<C> PartialEq for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -99,8 +99,8 @@ impl<C> PartialEq for ProjectivePoint<C>
 impl<C> Eq for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -109,8 +109,8 @@ impl<C> Eq for ProjectivePoint<C>
 impl<C> ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -652,8 +652,8 @@ impl<C> ProjectivePoint<C>
 impl<C> Default for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -666,8 +666,8 @@ impl<C> Default for ProjectivePoint<C>
 impl<C> Add<Self> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -682,8 +682,8 @@ impl<C> Add<Self> for ProjectivePoint<C>
 impl<C> AddAssign<Self> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -696,8 +696,8 @@ impl<C> AddAssign<Self> for ProjectivePoint<C>
 impl<C> Add<AffinePoint<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -712,8 +712,8 @@ impl<C> Add<AffinePoint<C>> for ProjectivePoint<C>
 impl<C> AddAssign<AffinePoint<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -726,8 +726,8 @@ impl<C> AddAssign<AffinePoint<C>> for ProjectivePoint<C>
 impl<C> Sum for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -740,8 +740,8 @@ impl<C> Sum for ProjectivePoint<C>
 impl<C> Sub<Self> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -756,8 +756,8 @@ impl<C> Sub<Self> for ProjectivePoint<C>
 impl<C> SubAssign<Self> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -770,8 +770,8 @@ impl<C> SubAssign<Self> for ProjectivePoint<C>
 impl<C> Sub<AffinePoint<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -786,8 +786,8 @@ impl<C> Sub<AffinePoint<C>> for ProjectivePoint<C>
 impl<C> SubAssign<AffinePoint<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -800,8 +800,8 @@ impl<C> SubAssign<AffinePoint<C>> for ProjectivePoint<C>
 impl<C> Mul<Scalar<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -816,8 +816,8 @@ impl<C> Mul<Scalar<C>> for ProjectivePoint<C>
 impl<C> MulAssign<Scalar<C>> for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,
@@ -830,8 +830,8 @@ impl<C> MulAssign<Scalar<C>> for ProjectivePoint<C>
 impl<C> Neg for ProjectivePoint<C>
     where
         C: WeirstrassCurve,
-        WordsLen<C>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<C>: ArrayLength<Word>,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
         WordsBytesLen<C>: ArrayLength<u8>,
         Words<C>: Copy,

@@ -2,12 +2,12 @@ pub use {generic_array, subtle};
 use generic_array::{ArrayLength, GenericArray};
 use generic_array::typenum::{
     self,
-    U1, U4, U8,
+    B1, U1, U2,
     Unsigned,
-    operator_aliases::{Sum, Quot},
+    operator_aliases::{Sum, Quot, Double},
 };
 use rand_core::{RngCore, CryptoRng};
-use core::ops::{Div, Add};
+use core::ops::{Div, Add, Shl};
 
 mod affine;
 mod field;
@@ -23,27 +23,23 @@ pub use projective::ProjectivePoint;
 // TODO: add cfgs for other word sizes
 pub type Word = u64;
 type DoubleWord = u128;
-type WordWidth = typenum::U64;
-/// Divisor for getting number of words in the wider buffer, it's equal
-/// to `Quot<WordWidth, U2>`, but to simplify trait bounds we use an explicit
-/// value
-type WideWordsDiv = typenum::U32;
+type WordWidth = typenum::U8;
 fn random_word(mut rng: impl CryptoRng + RngCore) -> Word {
     rng.next_u64()
 }
 
-pub type WordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WordWidth>;
+pub type WordsLen<C> = Quot<<C as WeirstrassCurve>::Size, WordWidth>;
 pub type Words<C> = GenericArray<Word, WordsLen<C>>;
-pub type WordsBytesLen<C> = Quot<<C as WeirstrassCurve>::Bits, U8>;
+pub type WordsBytesLen<C> = <C as WeirstrassCurve>::Size;
 pub type WordsBytes<C> = GenericArray<u8, WordsBytesLen<C>>;
-pub type DoubleWordsBytesLen<C> = Quot<<C as WeirstrassCurve>::Bits, U4>;
-pub type DoubleWordsBytes<C> = GenericArray<u8, DoubleWordsBytesLen<C>>;
 
 pub type WordsP1Len<C> = Sum<WordsLen<C>, U1>;
 pub type WordsP1<C> = GenericArray<Word, WordsP1Len<C>>;
 
-pub type WideWordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WideWordsDiv>;
-pub type WideWords<C> = GenericArray<Word, WideWordsLen<C>>;
+pub type DoubleWordsLen<C> = Double<WordsLen<C>>;
+pub type DoubleWords<C> = GenericArray<Word, DoubleWordsLen<C>>;
+pub type DoubleWordsBytesLen<C> = Double<<C as WeirstrassCurve>::Size>;
+pub type DoubleWordsBytes<C> = GenericArray<u8, DoubleWordsBytesLen<C>>;
 
 pub enum CurveKind {
     General,
@@ -54,13 +50,13 @@ pub enum CurveKind {
 pub trait WeirstrassCurve
     where
         Self: Sized + Copy + Default,
-        WordsLen<Self>: ArrayLength<Word> + Add<U1>,
-        WideWordsLen<Self>: ArrayLength<Word>,
+        WordsLen<Self>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<Self>: ArrayLength<Word>,
         WordsP1Len<Self>: ArrayLength<Word>,
         WordsBytesLen<Self>: ArrayLength<u8>,
         Words<Self>: Copy,
 {
-    type Bits: Unsigned + Div<WordWidth> + Div<WideWordsDiv> + Div<U8> + Div<U4>;
+    type Size: Unsigned + Div<WordWidth> + Div<U2>;
 
     const A: FieldElement<Self>;
     const B: FieldElement<Self>;
