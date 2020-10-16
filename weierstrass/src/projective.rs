@@ -495,7 +495,7 @@ impl<C> ProjectivePoint<C>
         let &ProjectivePoint { x: x1, y: y1, z: z1 } = self;
 
         let b1 = C::B;
-        let b3 = C::B3const B: FieldElement<Self>;;
+        let b3 = C::B3;
         let a1 = C::A;
 
         let (mut t0, mut t1, mut t2, mut t3);
