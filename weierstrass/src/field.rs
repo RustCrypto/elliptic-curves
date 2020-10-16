@@ -7,7 +7,7 @@ use subtle::{ConditionallySelectable, Choice, ConstantTimeEq, CtOption};
 use rand_core::{RngCore, CryptoRng};
 
 use crate::{
-    WeirstrassCurve, Word, WordWidth,
+    WeierstrassCurve, Word, WordWidth,
     Words, WordsLen,
     DoubleWords, DoubleWordsLen,
     WordsBytes, WordsBytesLen,
@@ -19,7 +19,7 @@ use crate::utils::{adc, sbb, mac};
 #[derive(Default, Debug, Copy, Clone)]
 pub struct FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -31,7 +31,7 @@ pub struct FieldElement<C>
 
 impl<C> FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -237,7 +237,7 @@ impl<C> FieldElement<C>
 
 impl<C> fmt::UpperHex for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -254,7 +254,7 @@ impl<C> fmt::UpperHex for FieldElement<C>
 
 impl<C> ConditionallySelectable for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -273,7 +273,7 @@ impl<C> ConditionallySelectable for FieldElement<C>
 
 impl<C> ConstantTimeEq for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -291,7 +291,7 @@ impl<C> ConstantTimeEq for FieldElement<C>
 
 impl<C> PartialEq for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -305,7 +305,7 @@ impl<C> PartialEq for FieldElement<C>
 
 impl<C> Add<FieldElement<C>> for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -322,7 +322,7 @@ impl<C> Add<FieldElement<C>> for FieldElement<C>
 
 impl<C> AddAssign<FieldElement<C>> for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -337,7 +337,7 @@ impl<C> AddAssign<FieldElement<C>> for FieldElement<C>
 
 impl<C> Sub<FieldElement<C>> for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -354,7 +354,7 @@ impl<C> Sub<FieldElement<C>> for FieldElement<C>
 
 impl<C> SubAssign<FieldElement<C>> for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -370,7 +370,7 @@ impl<C> SubAssign<FieldElement<C>> for FieldElement<C>
 
 impl<C> Mul<FieldElement<C>> for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -387,7 +387,7 @@ impl<C> Mul<FieldElement<C>> for FieldElement<C>
 
 impl<C> MulAssign<FieldElement<C>> for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -402,7 +402,7 @@ impl<C> MulAssign<FieldElement<C>> for FieldElement<C>
 
 impl<C> Neg for FieldElement<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,

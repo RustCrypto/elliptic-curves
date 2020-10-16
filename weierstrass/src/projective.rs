@@ -4,7 +4,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 use generic_array::{ArrayLength, typenum::{B1, U1, Unsigned}};
 
 use crate::{
-    WeirstrassCurve, CurveKind,
+    WeierstrassCurve, CurveKind,
     Word, WordWidth,
     Words, WordsLen,
     DoubleWordsLen,
@@ -19,7 +19,7 @@ use crate::scalar::Scalar;
 #[derive(Clone, Copy, Debug)]
 pub struct ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -33,7 +33,7 @@ pub struct ProjectivePoint<C>
 
 impl<C> From<AffinePoint<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -52,7 +52,7 @@ impl<C> From<AffinePoint<C>> for ProjectivePoint<C>
 
 impl<C> ConditionallySelectable for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -70,7 +70,7 @@ impl<C> ConditionallySelectable for ProjectivePoint<C>
 
 impl<C> ConstantTimeEq for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -84,7 +84,7 @@ impl<C> ConstantTimeEq for ProjectivePoint<C>
 
 impl<C> PartialEq for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -98,7 +98,7 @@ impl<C> PartialEq for ProjectivePoint<C>
 
 impl<C> Eq for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -108,7 +108,7 @@ impl<C> Eq for ProjectivePoint<C>
 
 impl<C> ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -651,7 +651,7 @@ impl<C> ProjectivePoint<C>
 
 impl<C> Default for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -665,7 +665,7 @@ impl<C> Default for ProjectivePoint<C>
 
 impl<C> Add<Self> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -681,7 +681,7 @@ impl<C> Add<Self> for ProjectivePoint<C>
 
 impl<C> AddAssign<Self> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -695,7 +695,7 @@ impl<C> AddAssign<Self> for ProjectivePoint<C>
 
 impl<C> Add<AffinePoint<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -711,7 +711,7 @@ impl<C> Add<AffinePoint<C>> for ProjectivePoint<C>
 
 impl<C> AddAssign<AffinePoint<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -725,7 +725,7 @@ impl<C> AddAssign<AffinePoint<C>> for ProjectivePoint<C>
 
 impl<C> Sum for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -739,7 +739,7 @@ impl<C> Sum for ProjectivePoint<C>
 
 impl<C> Sub<Self> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -755,7 +755,7 @@ impl<C> Sub<Self> for ProjectivePoint<C>
 
 impl<C> SubAssign<Self> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -769,7 +769,7 @@ impl<C> SubAssign<Self> for ProjectivePoint<C>
 
 impl<C> Sub<AffinePoint<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -785,7 +785,7 @@ impl<C> Sub<AffinePoint<C>> for ProjectivePoint<C>
 
 impl<C> SubAssign<AffinePoint<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -799,7 +799,7 @@ impl<C> SubAssign<AffinePoint<C>> for ProjectivePoint<C>
 
 impl<C> Mul<Scalar<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -815,7 +815,7 @@ impl<C> Mul<Scalar<C>> for ProjectivePoint<C>
 
 impl<C> MulAssign<Scalar<C>> for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -829,7 +829,7 @@ impl<C> MulAssign<Scalar<C>> for ProjectivePoint<C>
 
 impl<C> Neg for ProjectivePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,

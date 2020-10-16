@@ -6,7 +6,7 @@ use generic_array::ArrayLength;
 use generic_array::typenum::{B1, U1, Unsigned};
 
 use super::{
-    WeirstrassCurve, Word, WordWidth, Words, WordsLen,
+    WeierstrassCurve, Word, WordWidth, Words, WordsLen,
     DoubleWordsLen, DoubleWords,
     WordsBytesLen, WordsBytes,
     WordsP1Len, WordsP1,
@@ -16,7 +16,7 @@ use crate::utils::{adc, sbb, mac};
 #[derive(Default, Copy, Clone, Debug, Eq)]
 pub struct Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -28,7 +28,7 @@ pub struct Scalar<C>
 
 impl<C> Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -202,7 +202,7 @@ impl<C> Scalar<C>
 
         fn sub_mod_if_necessary<C>(r: &mut WordsP1<C>)
             where
-                C: WeirstrassCurve,
+                C: WeierstrassCurve,
                 WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
                 DoubleWordsLen<C>: ArrayLength<Word>,
                 WordsP1Len<C>: ArrayLength<Word>,
@@ -342,7 +342,7 @@ impl<C> Scalar<C>
 
 impl<C> fmt::UpperHex for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -359,7 +359,7 @@ impl<C> fmt::UpperHex for Scalar<C>
 
 impl<C> ConditionallySelectable for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -378,7 +378,7 @@ impl<C> ConditionallySelectable for Scalar<C>
 
 impl<C> ConstantTimeEq for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -396,7 +396,7 @@ impl<C> ConstantTimeEq for Scalar<C>
 
 impl<C> PartialEq for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -410,7 +410,7 @@ impl<C> PartialEq for Scalar<C>
 
 impl<C> Add<Scalar<C>> for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -427,7 +427,7 @@ impl<C> Add<Scalar<C>> for Scalar<C>
 
 impl<C> AddAssign<Scalar<C>> for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -442,7 +442,7 @@ impl<C> AddAssign<Scalar<C>> for Scalar<C>
 
 impl<C> Sub<Scalar<C>> for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -459,7 +459,7 @@ impl<C> Sub<Scalar<C>> for Scalar<C>
 
 impl<C> SubAssign<Scalar<C>> for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -475,7 +475,7 @@ impl<C> SubAssign<Scalar<C>> for Scalar<C>
 
 impl<C> Mul<Scalar<C>> for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -492,7 +492,7 @@ impl<C> Mul<Scalar<C>> for Scalar<C>
 
 impl<C> MulAssign<Scalar<C>> for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -507,7 +507,7 @@ impl<C> MulAssign<Scalar<C>> for Scalar<C>
 
 impl<C> Neg for Scalar<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,

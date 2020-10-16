@@ -4,7 +4,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 use core::ops::Add;
 
 use crate::{
-    WeirstrassCurve, Word, 
+    WeierstrassCurve, Word, 
     Words, WordsLen,
     DoubleWordsLen,
     WordsBytesLen,
@@ -17,7 +17,7 @@ use crate::field::FieldElement;
 #[derive(Clone, Copy)]
 pub struct AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -31,7 +31,7 @@ pub struct AffinePoint<C>
 
 impl<C> AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -64,7 +64,7 @@ impl<C> AffinePoint<C>
 
 impl<C> ConditionallySelectable for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -82,7 +82,7 @@ impl<C> ConditionallySelectable for AffinePoint<C>
 
 impl<C> ConstantTimeEq for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -98,7 +98,7 @@ impl<C> ConstantTimeEq for AffinePoint<C>
 
 impl<C> PartialEq for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -112,7 +112,7 @@ impl<C> PartialEq for AffinePoint<C>
 
 impl<C> Eq for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -122,7 +122,7 @@ impl<C> Eq for AffinePoint<C>
 
 impl<C> Mul<Scalar<C>> for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -138,7 +138,7 @@ impl<C> Mul<Scalar<C>> for AffinePoint<C>
 
 impl<C> Neg for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,
@@ -159,7 +159,7 @@ impl<C> Neg for AffinePoint<C>
 #[cfg(feature = "zeroize")]
 impl<C> Zeroize for AffinePoint<C>
     where
-        C: WeirstrassCurve,
+        C: WeierstrassCurve,
         WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
         DoubleWordsLen<C>: ArrayLength<Word>,
         WordsP1Len<C>: ArrayLength<Word>,

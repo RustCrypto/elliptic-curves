@@ -29,9 +29,9 @@ fn random_word(mut rng: impl CryptoRng + RngCore) -> Word {
     rng.next_u64()
 }
 
-pub type WordsLen<C> = Quot<<C as WeirstrassCurve>::Size, WordWidth>;
+pub type WordsLen<C> = Quot<<C as WeierstrassCurve>::Size, WordWidth>;
 pub type Words<C> = GenericArray<Word, WordsLen<C>>;
-pub type WordsBytesLen<C> = <C as WeirstrassCurve>::Size;
+pub type WordsBytesLen<C> = <C as WeierstrassCurve>::Size;
 pub type WordsBytes<C> = GenericArray<u8, WordsBytesLen<C>>;
 
 pub type WordsP1Len<C> = Sum<WordsLen<C>, U1>;
@@ -39,7 +39,7 @@ pub type WordsP1<C> = GenericArray<Word, WordsP1Len<C>>;
 
 pub type DoubleWordsLen<C> = Double<WordsLen<C>>;
 pub type DoubleWords<C> = GenericArray<Word, DoubleWordsLen<C>>;
-pub type DoubleWordsBytesLen<C> = Double<<C as WeirstrassCurve>::Size>;
+pub type DoubleWordsBytesLen<C> = Double<<C as WeierstrassCurve>::Size>;
 pub type DoubleWordsBytes<C> = GenericArray<u8, DoubleWordsBytesLen<C>>;
 
 pub enum CurveKind {
@@ -48,7 +48,7 @@ pub enum CurveKind {
     Zero,
 }
 
-pub trait WeirstrassCurve
+pub trait WeierstrassCurve
     where
         Self: Sized + Copy + Default,
         WordsLen<Self>: ArrayLength<Word> + Add<U1> + Shl<B1>,
