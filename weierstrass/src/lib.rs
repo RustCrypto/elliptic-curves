@@ -1,3 +1,4 @@
+#![no_std]
 pub use {generic_array, subtle};
 use generic_array::{ArrayLength, GenericArray};
 use generic_array::typenum::{
@@ -56,7 +57,7 @@ pub trait WeirstrassCurve
         WordsBytesLen<Self>: ArrayLength<u8>,
         Words<Self>: Copy,
 {
-    type Size: Unsigned + Div<WordWidth> + Div<U2>;
+    type Size: Unsigned + Div<WordWidth> + Div<U2> + Shl<B1>;
 
     const A: FieldElement<Self>;
     const B: FieldElement<Self>;
