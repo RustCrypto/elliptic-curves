@@ -13,7 +13,7 @@ use super::{
 };
 use crate::utils::{adc, sbb, mac};
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Default, Copy, Clone, Debug, Eq)]
 pub struct Scalar<C>
     where
         C: WeirstrassCurve,
@@ -57,7 +57,12 @@ impl<C> Scalar<C>
         for (w, chunk) in iter {
             *w = Word::from_be_bytes(chunk.try_into().unwrap());
         }
-        Self::sub_inner(words, Self { words: C::MODULUS_Q })
+        let modulus = Self { words: C::MODULUS_Q };
+        let mut res = Self::sub_inner(words, modulus);
+        for _ in 1..C::MODULUS_Q_REDUCE_N {
+            res -= modulus;
+        }
+        res
     }
 
     /// Returns the SEC1 encoding of this scalar.

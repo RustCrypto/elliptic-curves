@@ -66,6 +66,9 @@ pub trait WeirstrassCurve
     const MODULUS_Q: Words<Self>;
     /// q - 2
     const MODULUS_Q_M2: Words<Self>;
+    /// floor(q/m), where `m` is a biggest representable number with given
+    /// number of bits (i.e. `0xFFFF...FFFF`)
+    const MODULUS_Q_REDUCE_N: usize;
 
     // we can't define GENERATOR, bacause `Choice` does not
     // support const construction
