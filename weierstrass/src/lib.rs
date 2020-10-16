@@ -64,6 +64,8 @@ pub trait WeirstrassCurve
 
     const A: FieldElement<Self>;
     const B: FieldElement<Self>;
+    /// 3*B
+    const B3: FieldElement<Self>;
     const CURVE_KIND: CurveKind;
     const MODULUS_P: Words<Self>;
     /// p - 2
