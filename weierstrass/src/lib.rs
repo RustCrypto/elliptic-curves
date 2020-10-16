@@ -45,6 +45,12 @@ pub type WordsP1<C> = GenericArray<Word, WordsP1Len<C>>;
 pub type WideWordsLen<C> = Quot<<C as WeirstrassCurve>::Bits, WideWordsDiv>;
 pub type WideWords<C> = GenericArray<Word, WideWordsLen<C>>;
 
+pub enum CurveKind {
+    General,
+    Minus3,
+    Zero,
+}
+
 pub trait WeirstrassCurve
     where
         Self: Sized + Copy + Default,
@@ -57,8 +63,8 @@ pub trait WeirstrassCurve
     type Bits: Unsigned + Div<WordWidth> + Div<WideWordsDiv> + Div<U8> + Div<U4>;
 
     const A: FieldElement<Self>;
-    const A_IS_MINUS_3: bool;
     const B: FieldElement<Self>;
+    const CURVE_KIND: CurveKind;
     const MODULUS_P: Words<Self>;
     /// p - 2
     const MODULUS_P_M2: Words<Self>;
