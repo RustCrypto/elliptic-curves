@@ -71,29 +71,59 @@ jobs:
     strategy:
       matrix:
         include:
-          - rust: 1.44.0 # MSRV
-            target: i686-unknown-linux-gnu # 32-bit Linux
-            deps: sudo apt install gcc-multilib # 32-bit support packages
-          - rust: 1.44.0 # MSRV
-            target: x86_64-unknown-linux-gnu
-            deps: true
-          - rust: stable
-            target: i686-unknown-linux-gnu # 32-bit Linux
-            deps: sudo apt install gcc-multilib # 32-bit support packages
-          - rust: stable
-            target: x86_64-unknown-linux-gnu
-            deps: true
+          # 32-bit Linux
+          - target: i686-unknown-linux-gnu
+            rust: 1.44.0 # MSRV
+            deps: sudo apt install gcc-multilib
+          - target: i686-unknown-linux-gnu
+            rust: stable
+            deps: sudo apt install gcc-multilib
+
+          # 64-bit Linux
+          - target: x86_64-unknown-linux-gnu
+            rust: 1.44.0 # MSRV
+          - target: x86_64-unknown-linux-gnu
+            rust: stable
+
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: ${{ matrix.rust }}
-        target: ${{ matrix.target }}
-        override: true
-    - run: ${{ matrix.deps }}
-    - run: cargo check --target ${{ matrix.target }} --all-features
-    - run: cargo test --target ${{ matrix.target }} --no-default-features
-    - run: cargo test --target ${{ matrix.target }}
-    - run: cargo test --target ${{ matrix.target }} --features field-montgomery
-    - run: cargo test --target ${{ matrix.target }} --all-features
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - run: ${{ matrix.deps }}
+      - run: cargo check --target ${{ matrix.target }} --all-features
+      - run: cargo test --release --target ${{ matrix.target }} --no-default-features
+      - run: cargo test --release --target ${{ matrix.target }}
+      - run: cargo test --release --target ${{ matrix.target }} --features field-montgomery
+      - run: cargo test --release --target ${{ matrix.target }} --all-features
+
+  # Cross-compiled tests
+  cross:
+    strategy:
+      matrix:
+        include:
+          # ARM64
+          - target: aarch64-unknown-linux-gnu
+            rust: 1.43.0 # MSRV
+          - target: aarch64-unknown-linux-gnu
+            rust: stable
+
+          # PPC32 (TODO: doesn't build on MSRV)
+          - target: powerpc-unknown-linux-gnu
+            rust: stable
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - run: ${{ matrix.deps }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - run: cargo install cross
+      - run: cross test --release --target ${{ matrix.target }} --all-features
