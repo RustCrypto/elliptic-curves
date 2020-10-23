@@ -325,25 +325,13 @@ impl<C> Scalar<C>
             *wm = Word::from_be_bytes(chunk.try_into().unwrap());
         }
 
-        for w in words.iter().rev() {
-            print!("{:016X}", w);
-        }
-        println!();
-
-        for w in C::MODULUS_Q.iter().rev() {
-            print!("{:016X}", w);
-        }
-        println!();
-
         // If w is in the range [0, n) then w - n will overflow, resulting
         // in a borrow value of 2^64 - 1.
         let mut borrow = Word::default();
         for (&w, &wm) in words.iter().zip(C::MODULUS_Q.iter()) {
             borrow = sbb(w, wm, borrow).1;
-            println!("{:016X}", borrow);
         }
         let is_some = (borrow as u8) & 1;
-        println!("========");
 
         CtOption::new(Self { words }, Choice::from(is_some)).into()
     }

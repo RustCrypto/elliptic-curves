@@ -1,4 +1,4 @@
-// #![no_std]
+#![no_std]
 pub use {generic_array, subtle};
 use generic_array::{ArrayLength, GenericArray};
 use generic_array::typenum::{
