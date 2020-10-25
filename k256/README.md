@@ -27,9 +27,9 @@ The secp256k1 elliptic curve arithmetic contained in this crate has never been
 independently audited!
 
 This crate has been designed with the goal of ensuring that secret-dependent
-operations are performed in constant time (using the `subtle` crate and
-constant-time formulas). However, it has not been thoroughly assessed to ensure
-that generated assembly is constant time on common CPU architectures.
+secp256k1 operations are performed in constant time (using the `subtle` crate
+and constant-time formulas). However, it has not been thoroughly assessed to
+ensure that generated assembly is constant time on common CPU architectures.
 
 USE AT YOUR OWN RISK!
 
@@ -58,6 +58,8 @@ The curve is specified as `secp256k1` by Certicom's SECG in
 secp256k1 is primarily notable for usage in Bitcoin and other cryptocurrencies,
 particularly in conjunction with the
 [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA].
+Owing to its wide deployment in these applications, secp256k1 is one of the
+most popular and commonly used elliptic curves.
 
 ## Minimum Supported Rust Version
 
