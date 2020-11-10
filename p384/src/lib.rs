@@ -2,7 +2,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.44** or higher.
+//! Rust **1.46** or higher.
 //!
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
@@ -67,15 +67,15 @@ impl elliptic_curve::Identifier for NistP384 {
     const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 34]);
 }
 
-/// NIST P-384 Serialized Field Element.
+/// NIST P-384 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 
-/// NIST P-384 SEC1 Encoded Point.
+/// NIST P-384 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 
-/// NIST P-384 Secret Key
+/// NIST P-384 secret key.
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;

@@ -119,10 +119,10 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256r1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8)).into()
             }
             sec1::Coordinates::Uncompressed { x, y } => {
                 let x = FieldElement::from_bytes(x);
@@ -141,6 +141,7 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
                         CtOption::new(point, lhs.ct_eq(&rhs))
                     })
                 })
+                .into()
             }
         }
     }

@@ -12,7 +12,7 @@ use elliptic_curve::{
     point::ProjectiveArithmetic,
     rand_core::RngCore,
     sec1::FromEncodedPoint,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
 
 #[rustfmt::skip]
@@ -48,7 +48,7 @@ impl From<AffinePoint> for ProjectivePoint {
 }
 
 impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
+    fn from_encoded_point(p: &EncodedPoint) -> Option<Self> {
         AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
     }
 }
