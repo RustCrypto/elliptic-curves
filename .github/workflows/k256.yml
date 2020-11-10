@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.44.0 # MSRV
+          - 1.46.0 # MSRV
           - stable
         target:
           - thumbv7em-none-eabi
@@ -56,7 +56,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.44.0 # MSRV
+          - 1.46.0 # MSRV
           - stable
     steps:
       - uses: actions/checkout@v1
@@ -73,7 +73,7 @@ jobs:
         include:
           # 32-bit Linux
           - target: i686-unknown-linux-gnu
-            rust: 1.44.0 # MSRV
+            rust: 1.46.0 # MSRV
             deps: sudo apt install gcc-multilib
           - target: i686-unknown-linux-gnu
             rust: stable
@@ -81,7 +81,7 @@ jobs:
 
           # 64-bit Linux
           - target: x86_64-unknown-linux-gnu
-            rust: 1.44.0 # MSRV
+            rust: 1.46.0 # MSRV
           - target: x86_64-unknown-linux-gnu
             rust: stable
 
@@ -101,29 +101,32 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
   # Cross-compiled tests
-  cross:
-    strategy:
-      matrix:
-        include:
-          # ARM64
-          - target: aarch64-unknown-linux-gnu
-            rust: 1.43.0 # MSRV
-          - target: aarch64-unknown-linux-gnu
-            rust: stable
-
-          # PPC32 (TODO: doesn't build on MSRV)
-          - target: powerpc-unknown-linux-gnu
-            rust: stable
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - run: ${{ matrix.deps }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-          override: true
-      - run: cargo install cross
-      - run: cross test --release --target ${{ matrix.target }} --all-features
+  # TODO(tarcieri): re-enable these after deps are no longer git-sourced
+#  cross:
+#    strategy:
+#      matrix:
+#        include:
+#          # ARM64
+#          - target: aarch64-unknown-linux-gnu
+#            rust: 1.46.0 # MSRV
+#          - target: aarch64-unknown-linux-gnu
+#            rust: stable
+#
+#          # PPC32
+#          - target: aarch64-unknown-linux-gnu
+#            rust: 1.46.0 # MSRV
+#          - target: powerpc-unknown-linux-gnu
+#            rust: stable
+#
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v1
+#      - run: ${{ matrix.deps }}
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: ${{ matrix.rust }}
+#          target: ${{ matrix.target }}
+#          override: true
+#      - run: cargo install cross
+#      - run: cross test --release --target ${{ matrix.target }} --all-features

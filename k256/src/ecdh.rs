@@ -11,24 +11,28 @@
 //! ```
 //! # #[cfg(feature = "ecdh")]
 //! # {
-//! use k256::{EncodedPoint, ecdh::EphemeralSecret};
+//! use k256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::random(&mut OsRng);
-//! let alice_public = EncodedPoint::from(&alice_secret);
+//! let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
 //!
 //! // Bob
 //! let bob_secret = EphemeralSecret::random(&mut OsRng);
-//! let bob_public = EncodedPoint::from(&bob_secret);
+//! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
 //!
-//! // Alice computes shared secret from Bob's public key
-//! let alice_shared = alice_secret.diffie_hellman(&bob_public)
-//!     .expect("bob's public key is invalid!");
+//! // Alice decodes Bob's serialized public key and computes a shared secret from it
+//! let bob_public = PublicKey::new(bob_pk_bytes.as_ref())
+//!     .expect("bob's public key is invalid!"); // In real usage, don't panic, handle this!
 //!
-//! // Bob computes the same shared secret from Alice's public key
-//! let bob_shared = bob_secret.diffie_hellman(&alice_public)
-//!     .expect("alice's public key is invalid!");
+//! let alice_shared = alice_secret.diffie_hellman(&bob_public);
+//!
+//! // Bob deocdes Alice's serialized public key and computes the same shared secret
+//! let alice_public = PublicKey::new(alice_pk_bytes.as_ref())
+//!     .expect("alice's public key is invalid!"); // In real usage, don't panic, handle this!
+//!
+//! let bob_shared = bob_secret.diffie_hellman(&alice_public);
 //!
 //! // Both participants arrive on the same shared secret
 //! assert_eq!(alice_shared.as_bytes(), bob_shared.as_bytes());

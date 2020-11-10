@@ -31,7 +31,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.44** or higher.
+//! Rust **1.46** or higher.
 //!
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
@@ -123,10 +123,14 @@ impl elliptic_curve::Identifier for NistP256 {
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP256>;
 
-/// NIST P-256 SEC1 Encoded Point.
+/// NIST P-256 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
 
-/// NIST P-256 Secret Key.
+/// NIST P-256 public key.
+#[cfg(feature = "arithmetic")]
+pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
+
+/// NIST P-256 secret key.
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP256>;

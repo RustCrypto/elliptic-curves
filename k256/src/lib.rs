@@ -30,7 +30,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.44** or higher.
+//! Rust **1.46** or higher.
 //!
 //! Minimum supported Rust version can be changed in the future, but it will be
 //! done with a minor version bump.
@@ -122,6 +122,10 @@ pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
 
 /// SEC1-encoded secp256k1 (K-256) curve point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
+
+/// secp256k1 (K-256) public key.
+#[cfg(feature = "arithmetic")]
+pub type PublicKey = elliptic_curve::PublicKey<Secp256k1>;
 
 /// secp256k1 (K-256) secret key.
 #[cfg(feature = "zeroize")]

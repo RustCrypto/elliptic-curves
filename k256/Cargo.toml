@@ -18,14 +18,14 @@ keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
 [dependencies]
 cfg-if = "1.0"
-ecdsa-core = { version = "0.8.1", package = "ecdsa", optional = true, default-features = false }
-elliptic-curve = { version = "0.6.6", default-features = false }
+ecdsa-core = { version = "=0.9.0-pre", package = "ecdsa", optional = true, default-features = false }
+elliptic-curve = { version = "=0.7.0-pre", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 sha3 = { version = "0.9", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.3"
-ecdsa-core = { version = "0.8.2", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "=0.9.0-pre", package = "ecdsa", default-features = false, features = ["dev"] }
 hex = "0.4" # TODO: switch to hex-literal
 hex-literal = "0.2"
 num-bigint = "0.3"
@@ -39,7 +39,6 @@ arithmetic = ["elliptic-curve/arithmetic"]
 digest = ["elliptic-curve/digest", "ecdsa-core/digest"]
 ecdh = ["elliptic-curve/ecdh", "zeroize"]
 ecdsa = ["arithmetic", "digest", "ecdsa-core/sign", "ecdsa-core/verify", "zeroize"]
-endomorphism-mul = [] # TODO(tarcieri): remove before v0.6 release
 expose-field = ["arithmetic"]
 field-montgomery = []
 force-32-bit = []
