@@ -259,6 +259,26 @@ impl<C> Scalar<C>
         Self::barrett_reduce(w)
     }
 
+    pub fn mul_word(&self, rhs: Word) -> Self {
+        let mut w = DoubleWords::<C>::default();
+        let n = self.words.len();
+
+        // Schoolbook multiplication.
+        for i in 0..n {
+            let mut carry = Word::default();
+            let t = mac(w[i], self.words[i], rhs, carry);
+            w[i] = t.0;
+            carry = t.1;
+            for j in 1..n {
+                let t = mac(w[i + j], self.words[i], 0, carry);
+                w[i + j] = t.0;
+                carry = t.1;
+            }
+            w[i + n] = carry;
+        }
+        Self::barrett_reduce(w)
+    }
+
     /// Returns self * self mod p
     pub fn square(&self) -> Self {
         self.mul(self)
@@ -500,6 +520,38 @@ impl<C> MulAssign<Scalar<C>> for Scalar<C>
     #[inline]
     fn mul_assign(&mut self, other: Self) {
         *self = Scalar::mul(self, &other);
+    }
+}
+
+impl<C> Mul<Word> for Scalar<C>
+    where
+        C: WeierstrassCurve,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
+        WordsP1Len<C>: ArrayLength<Word>,
+        WordsBytesLen<C>: ArrayLength<u8>,
+        Words<C>: Copy,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mul(self, other: Word) -> Self {
+        Scalar::mul_word(&self, other)
+    }
+}
+
+impl<C> MulAssign<Word> for Scalar<C>
+    where
+        C: WeierstrassCurve,
+        WordsLen<C>: ArrayLength<Word> + Add<U1> + Shl<B1>,
+        DoubleWordsLen<C>: ArrayLength<Word>,
+        WordsP1Len<C>: ArrayLength<Word>,
+        WordsBytesLen<C>: ArrayLength<u8>,
+        Words<C>: Copy,
+{
+    #[inline]
+    fn mul_assign(&mut self, other: Word) {
+        *self = Scalar::mul_word(self, other);
     }
 }
 

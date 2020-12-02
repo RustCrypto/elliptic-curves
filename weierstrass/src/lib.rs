@@ -78,7 +78,7 @@ pub trait WeierstrassCurve
     /// number of bits (i.e. `0xFFFF...FFFF`)
     const MODULUS_Q_REDUCE_N: usize;
 
-    // we can't define GENERATOR, bacause `Choice` does not
+    // we can't define GENERATOR, because `Choice` does not
     // support const construction
     const GENERATOR_X: FieldElement<Self>;
     const GENERATOR_Y: FieldElement<Self>;
@@ -91,4 +91,7 @@ pub trait WeierstrassCurve
     const MU: WordsP1<Self>;
     /// P*PT (mod 2^WORD_WIDTH) == -1
     const PT: Word;
+
+    /// The elliptic curve group order divided by subgroup order (m/q)
+    const N: Word;
 }
