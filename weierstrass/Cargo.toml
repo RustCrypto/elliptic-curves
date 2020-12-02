@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 generic-array = "0.14"
+byteorder = "1"
 subtle = { version = "2.3", default-features = false }
 rand_core = { version = "0.5", default-features = false }
 biguint-literal = { git = "https://github.com/RustCrypto/utils", branch = "biguint" }

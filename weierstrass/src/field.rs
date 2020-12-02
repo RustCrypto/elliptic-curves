@@ -1,10 +1,9 @@
-use core::{fmt, mem};
-use core::convert::TryInto;
-use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl};
+use core::{fmt, ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl}};
 use generic_array::ArrayLength;
 use generic_array::typenum::{B1, U1};
 use subtle::{ConditionallySelectable, Choice, ConstantTimeEq, CtOption};
 use rand_core::{RngCore, CryptoRng};
+use crate::utils::BigUintExt;
 
 use crate::{
     WeierstrassCurve, Word, WORD_WIDTH_BITS,
@@ -59,17 +58,11 @@ impl<C> FieldElement<C>
         FieldElement::montgomery_reduce(t)
     }
 
-    /// Attempts to parse the given byte array as an SEC1-encoded field element.
+    /// Attempts to parse the given byte array.
     ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    pub fn from_bytes(bytes: &WordsBytes<C>) -> CtOption<Self> {
-        let mut words = Words::<C>::default();
-        let m = mem::size_of::<Word>();
-        let iter = words.iter_mut().zip(bytes.chunks_exact(m).rev());
-        for (w, chunk) in iter {
-            *w = Word::from_be_bytes(chunk.try_into().unwrap());
-        }
+    /// Returns None if resulting integer is not in the range [0, p).
+    pub fn from_bytes<B: BigUintExt>(bytes: &WordsBytes<C>) -> CtOption<Self> {
+        let words = B::bytes2biguint(bytes);
 
         let mut borrow = Word::default();
         for (&w, &wm) in words.iter().zip(C::MODULUS_P.iter()) {
@@ -81,21 +74,14 @@ impl<C> FieldElement<C>
         CtOption::new(Self { words }.mul(C::R2), Choice::from(is_some))
     }
 
-    /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> WordsBytes<C> {
+    /// Returns byte encoding of this field element.
+    pub fn to_bytes<B: BigUintExt>(&self) -> WordsBytes<C> {
         // Convert from Montgomery form to canonical form
         let mut w = DoubleWords::<C>::default();
         let n = self.words.len();
         w[..n].copy_from_slice(&self.words);
-        let t = Self::montgomery_reduce(w);
-
-        let m = mem::size_of::<Word>();
-        let mut buf = WordsBytes::<C>::default();
-        let iter = buf.chunks_exact_mut(m).rev().zip(t.words.iter());
-        for (chunk, wt) in iter {
-            chunk.copy_from_slice(&wt.to_be_bytes());
-        }
-        buf
+        let t = Self::montgomery_reduce(w).words;
+        B::biguint2bytes(&t)
     }
 
     /// Determine if this `FieldElement` is zero.

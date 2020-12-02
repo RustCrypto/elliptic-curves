@@ -1027,6 +1027,7 @@ name = "weierstrass"
 version = "0.1.0"
 dependencies = [
  "biguint-literal",
+ "byteorder",
  "generic-array",
  "hex-literal",
  "rand_core",

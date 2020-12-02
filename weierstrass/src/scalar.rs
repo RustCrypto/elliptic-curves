@@ -1,8 +1,7 @@
-use core::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl};
-use core::{fmt, mem};
-use core::convert::TryInto;
+use core::{fmt, ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign, Neg, Shl}};
 use subtle::{ConditionallySelectable, Choice, ConstantTimeEq, CtOption};
 use generic_array::{ArrayLength, typenum::{B1, U1}};
+use crate::utils::BigUintExt;
 
 use super::{
     WeierstrassCurve, Word, WORD_WIDTH_BITS, Words, WordsLen,
@@ -44,35 +43,6 @@ impl<C> Scalar<C>
         let mut t = Self::default();
         t.words[0] = 1;
         t
-    }
-
-    /// Parses the given byte array as a scalar.
-    ///
-    /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &WordsBytes<C>) -> Self {
-        let mut words = WordsP1::<C>::default();
-        let m = mem::size_of::<Word>();
-        let iter = words.iter_mut().zip(bytes.chunks_exact(m).rev());
-        for (w, chunk) in iter {
-            *w = Word::from_be_bytes(chunk.try_into().unwrap());
-        }
-        let modulus = Self { words: C::MODULUS_Q };
-        let mut res = Self::sub_inner(words, modulus);
-        for _ in 1..C::MODULUS_Q_REDUCE_N {
-            res -= modulus;
-        }
-        res
-    }
-
-    /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> WordsBytes<C> {
-        let mut buf = WordsBytes::<C>::default();
-        let m = mem::size_of::<Word>();
-        let iter = buf.chunks_exact_mut(m).zip(self.words.iter().rev());
-        for (chunk, w) in iter {
-            chunk.copy_from_slice(&w.to_be_bytes());
-        }
-        buf
     }
 
     /// Determine if this `Scalar` is zero.
@@ -337,13 +307,8 @@ impl<C> Scalar<C>
         todo!();
     }
 
-    pub fn from_repr(bytes: WordsBytes<C>) -> Option<Self> {
-        let mut words = Words::<C>::default();
-        let n = mem::size_of::<Word>();
-        let iter = words.iter_mut().rev().zip(bytes.chunks_exact(n));
-        for (wm, chunk) in iter {
-            *wm = Word::from_be_bytes(chunk.try_into().unwrap());
-        }
+    pub fn from_bytes<B: BigUintExt>(bytes: WordsBytes<C>) -> Option<Self> {
+        let words = B::bytes2biguint(&bytes);
 
         // If w is in the range [0, n) then w - n will overflow, resulting
         // in a borrow value of 2^64 - 1.
@@ -354,6 +319,27 @@ impl<C> Scalar<C>
         let is_some = (borrow as u8) & 1;
 
         CtOption::new(Self { words }, Choice::from(is_some)).into()
+    }
+
+    /// Parse the given byte array as a scalar.
+    ///
+    /// Subtracts the modulus when the byte array is larger than the modulus.
+    pub fn from_bytes_reduced<B: BigUintExt>(bytes: &WordsBytes<C>) -> Self {
+        let mut words = WordsP1::<C>::default();
+        let t = B::bytes2biguint(bytes);
+        words[..t.len()].copy_from_slice(&t);
+
+        let modulus = Self { words: C::MODULUS_Q };
+        let mut res = Self::sub_inner(words, modulus);
+        for _ in 1..C::MODULUS_Q_REDUCE_N {
+            res -= modulus;
+        }
+        res
+    }
+
+    /// Returns BE encoding of this scalar.
+    pub fn to_bytes<B: BigUintExt>(&self) -> WordsBytes<C> {
+        B::biguint2bytes(&self.words)
     }
 }
 

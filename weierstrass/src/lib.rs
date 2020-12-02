@@ -1,5 +1,5 @@
 #![no_std]
-pub use {generic_array, subtle};
+pub use {generic_array, subtle, byteorder};
 use generic_array::{ArrayLength, GenericArray};
 use generic_array::typenum::{
     self,
@@ -20,6 +20,7 @@ pub use affine::AffinePoint;
 pub use field::FieldElement;
 pub use scalar::Scalar;
 pub use projective::ProjectivePoint;
+pub use utils::BigUintExt;
 
 // TODO: add cfgs for other word sizes
 pub type Word = u64;
