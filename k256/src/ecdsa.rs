@@ -11,7 +11,7 @@
 //!   software implementations of ECDSA/secp256k1 and wrappers for cloud KMS
 //!   services or hardware devices (HSM or crypto hardware wallet).
 //! - `ecdsa`: provides `ecdsa-core` features plus the [`SigningKey`] and
-//!   [`VerifyKey`] types which natively implement ECDSA/secp256k1 signing and
+//!   [`VerifyingKey`] types which natively implement ECDSA/secp256k1 signing and
 //!   verification.
 //!
 //! Additionally, this crate contains support for computing ECDSA signatures
@@ -51,9 +51,9 @@
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use k256::{EncodedPoint, ecdsa::{VerifyKey, signature::Verifier}};
+//! use k256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
-//! let verify_key = VerifyKey::from(&signing_key); // Serialize with `::to_encoded_point()`
+//! let verify_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
 //! assert!(verify_key.verify(message, &signature).is_ok());
 //! # }
 //! ```
@@ -73,7 +73,7 @@ pub use ecdsa_core::signature::{self, Error};
 pub use ecdsa_core::signature::digest;
 
 #[cfg(feature = "ecdsa")]
-pub use self::{sign::SigningKey, verify::VerifyKey};
+pub use self::{sign::SigningKey, verify::VerifyingKey};
 
 use crate::Secp256k1;
 

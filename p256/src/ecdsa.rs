@@ -11,7 +11,7 @@
 //!   software implementations of ECDSA/P-256 and wrappers for cloud KMS
 //!   services or hardware devices (HSM or crypto hardware wallet).
 //! - `ecdsa`: provides `ecdsa-core` features plus the [`SigningKey`] and
-//!   [`VerifyKey`] types which natively implement ECDSA/P-256 signing and
+//!   [`VerifyingKey`] types which natively implement ECDSA/P-256 signing and
 //!   verification.
 //!
 //! ## Signing/Verification Example
@@ -32,9 +32,9 @@
 //! let signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use p256::ecdsa::{VerifyKey, signature::Verifier};
+//! use p256::ecdsa::{VerifyingKey, signature::Verifier};
 //!
-//! let verify_key = VerifyKey::from(&signing_key); // Serialize with `::to_encoded_point()`
+//! let verify_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
 //! assert!(verify_key.verify(message, &signature).is_ok());
 //! # }
 //! ```
@@ -65,7 +65,7 @@ pub type SigningKey = ecdsa_core::SigningKey<NistP256>;
 /// ECDSA/P-256 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type VerifyKey = ecdsa_core::VerifyKey<NistP256>;
+pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
 
 #[cfg(not(feature = "ecdsa"))]
 impl ecdsa_core::CheckSignatureBytes for NistP256 {}
