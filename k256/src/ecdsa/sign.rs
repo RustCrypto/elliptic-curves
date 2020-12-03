@@ -2,7 +2,7 @@
 
 use super::{recoverable, Error, Signature, VerifyingKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
-use core::{borrow::Borrow, convert::TryInto};
+use core::borrow::Borrow;
 use ecdsa_core::{
     hazmat::RecoverableSignPrimitive,
     rfc6979,
@@ -22,38 +22,36 @@ use ecdsa_core::signature::{self, digest::Digest, PrehashSignature, RandomizedSi
 /// ECDSA/secp256k1 signing key
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub struct SigningKey {
-    /// Secret scalar value
-    secret_scalar: NonZeroScalar,
+    /// Inner secret key value
+    inner: SecretKey,
 }
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
     pub fn random(rng: impl CryptoRng + RngCore) -> Self {
         Self {
-            secret_scalar: NonZeroScalar::random(rng),
+            inner: SecretKey::random(rng),
         }
     }
 
     /// Initialize [`SigningKey`] from a raw scalar value (big endian).
     // TODO(tarcieri): PKCS#8 support
-    pub fn new(bytes: &[u8]) -> Result<Self, Error> {
-        bytes
-            .try_into()
-            .ok()
-            .map(|secret_scalar| Self { secret_scalar })
-            .ok_or_else(Error::new)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        SecretKey::from_bytes(bytes)
+            .map(|sk| Self { inner: sk })
+            .map_err(|_| Error::new())
     }
 
     /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`]
     pub fn verify_key(&self) -> VerifyingKey {
         VerifyingKey {
-            inner: ecdsa_core::SigningKey::from(self.secret_scalar).verify_key(),
+            inner: ecdsa_core::VerifyingKey::from(self.inner.public_key()),
         }
     }
 
     /// Serialize this [`SigningKey`] as bytes
     pub fn to_bytes(&self) -> FieldBytes {
-        self.secret_scalar.to_bytes()
+        self.inner.to_bytes()
     }
 }
 
@@ -84,7 +82,8 @@ where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
-        ecdsa_core::SigningKey::from(self.secret_scalar).try_sign_digest(digest)
+        let sig: recoverable::Signature = self.try_sign_digest(digest)?;
+        Ok(sig.into())
     }
 }
 
@@ -93,13 +92,14 @@ where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
     fn try_sign_digest(&self, digest: D) -> Result<recoverable::Signature, Error> {
-        let ephemeral_scalar = rfc6979::generate_k(&self.secret_scalar, digest.clone(), &[]);
+        let ephemeral_scalar = rfc6979::generate_k(self.inner.secret_value(), digest.clone(), &[]);
         let msg_scalar = Scalar::from_digest(digest);
-        let (signature, is_r_odd) = self
-            .secret_scalar
+        let (signature, recovery_id) = self
+            .inner
+            .secret_scalar()
             .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
 
-        recoverable::Signature::new(&signature, recoverable::Id(is_r_odd as u8))
+        recoverable::Signature::new(&signature, recoverable::Id(recovery_id as u8))
     }
 }
 
@@ -112,7 +112,8 @@ where
         rng: impl CryptoRng + RngCore,
         digest: D,
     ) -> Result<Signature, Error> {
-        ecdsa_core::SigningKey::from(self.secret_scalar).try_sign_digest_with_rng(rng, digest)
+        let sig: recoverable::Signature = self.try_sign_digest_with_rng(rng, digest)?;
+        Ok(sig.into())
     }
 }
 
@@ -129,29 +130,45 @@ where
         rng.fill_bytes(&mut added_entropy);
 
         let ephemeral_scalar =
-            rfc6979::generate_k(&self.secret_scalar, digest.clone(), &added_entropy);
+            rfc6979::generate_k(self.inner.secret_value(), digest.clone(), &added_entropy);
 
         let msg_scalar = Scalar::from_digest(digest);
         let (signature, is_r_odd) = self
-            .secret_scalar
+            .inner
+            .secret_scalar()
             .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
 
         recoverable::Signature::new(&signature, recoverable::Id(is_r_odd as u8))
     }
 }
 
+impl From<SecretKey> for SigningKey {
+    fn from(secret_key: SecretKey) -> SigningKey {
+        Self { inner: secret_key }
+    }
+}
+
 impl From<&SecretKey> for SigningKey {
     fn from(secret_key: &SecretKey) -> SigningKey {
-        Self {
-            secret_scalar: NonZeroScalar::new(*secret_key.secret_scalar())
-                .expect("invalid secret scalar"),
-        }
+        secret_key.clone().into()
+    }
+}
+
+impl From<SigningKey> for SecretKey {
+    fn from(signing_key: SigningKey) -> SecretKey {
+        signing_key.inner
     }
 }
 
 impl From<&SigningKey> for SecretKey {
     fn from(signing_key: &SigningKey) -> SecretKey {
-        SecretKey::new(signing_key.secret_scalar)
+        signing_key.inner.clone()
+    }
+}
+
+impl From<SigningKey> for VerifyingKey {
+    fn from(signing_key: SigningKey) -> VerifyingKey {
+        signing_key.verify_key()
     }
 }
 
@@ -163,7 +180,15 @@ impl From<&SigningKey> for VerifyingKey {
 
 impl From<NonZeroScalar> for SigningKey {
     fn from(secret_scalar: NonZeroScalar) -> Self {
-        Self { secret_scalar }
+        Self {
+            inner: SecretKey::new(secret_scalar),
+        }
+    }
+}
+
+impl From<&NonZeroScalar> for SigningKey {
+    fn from(secret_scalar: &NonZeroScalar) -> Self {
+        secret_scalar.clone().into()
     }
 }
 
