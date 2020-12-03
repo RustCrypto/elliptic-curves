@@ -1,9 +1,9 @@
 //! Ethereum-style "recoverable signatures".
 //!
 //! These signatures include an additional [`Id`] field which allows for
-//! recovery of the [`VerifyKey`] which can be used to verify them.
+//! recovery of the [`VerifyingKey`] which can be used to verify them.
 //!
-//! This is helpful in cases where a hash/fingerprint of a [`VerifyKey`]
+//! This is helpful in cases where a hash/fingerprint of a [`VerifyingKey`]
 //! for a given signature in known in advance.
 //!
 //! ## Signing/Recovery Example
@@ -43,7 +43,7 @@ use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "ecdsa")]
 use crate::{
-    ecdsa::{signature::DigestVerifier, VerifyKey},
+    ecdsa::{signature::DigestVerifier, VerifyingKey},
     elliptic_curve::{
         consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
         weierstrass::point::Decompress, Digest,
@@ -58,7 +58,7 @@ use sha3::Keccak256;
 pub const SIZE: usize = 65;
 
 /// Ethereum-style "recoverable signatures" which allow for the recovery of
-/// the signer's [`VerifyKey`] from the signature itself.
+/// the signer's [`VerifyingKey`] from the signature itself.
 ///
 /// This format consists of [`Signature`] followed by a 1-byte recovery [`Id`]
 /// (65-bytes total):
@@ -103,7 +103,7 @@ impl Signature {
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
     pub fn from_trial_recovery(
-        public_key: &VerifyKey,
+        public_key: &VerifyingKey,
         msg: &[u8],
         signature: &super::Signature,
     ) -> Result<Self, Error> {
@@ -116,7 +116,7 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn from_digest_trial_recovery<D>(
-        public_key: &VerifyKey,
+        public_key: &VerifyingKey,
         digest: D,
         signature: &super::Signature,
     ) -> Result<Self, Error>
@@ -144,19 +144,19 @@ impl Signature {
     }
 
     /// Recover the public key used to create the given signature as a
-    /// [`VerifyKey`].
+    /// [`VerifyingKey`].
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
-    pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyKey, Error> {
+    pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyingKey, Error> {
         self.recover_verify_key_from_digest(Keccak256::new().chain(msg))
     }
 
     /// Recover the public key used to create the given signature as a
-    /// [`VerifyKey`] from the provided precomputed [`Digest`].
+    /// [`VerifyingKey`] from the provided precomputed [`Digest`].
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-    pub fn recover_verify_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyKey, Error>
+    pub fn recover_verify_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyingKey, Error>
     where
         D: Digest<OutputSize = U32>,
     {
@@ -164,14 +164,14 @@ impl Signature {
     }
 
     /// Recover the public key used to create the given signature as a
-    /// [`VerifyKey`] from the raw bytes of a message digest.
+    /// [`VerifyingKey`] from the raw bytes of a message digest.
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
     pub fn recover_verify_key_from_digest_bytes(
         &self,
         digest_bytes: &FieldBytes,
-    ) -> Result<VerifyKey, Error> {
+    ) -> Result<VerifyingKey, Error> {
         let r = self.r();
         let s = self.s();
         let z = Scalar::from_bytes_reduced(digest_bytes);
@@ -185,7 +185,7 @@ impl Signature {
             let pk = ((ProjectivePoint::generator() * u1) + (R * u2)).to_affine();
 
             // TODO(tarcieri): ensure the signature verifies?
-            Ok(VerifyKey::from(&pk))
+            Ok(VerifyingKey::from(&pk))
         } else {
             Err(Error::new())
         }
@@ -261,10 +261,10 @@ impl ecdsa_core::signature::PrehashSignature for Signature {
     type Digest = Keccak256;
 }
 
-/// Identifier used to compute a [`VerifyKey`] from a [`Signature`].
+/// Identifier used to compute a [`VerifyingKey`] from a [`Signature`].
 ///
 /// In practice these values are always either `0` or `1`, and indicate
-/// whether or not the y-coordinate of the original [`VerifyKey`] is odd.
+/// whether or not the y-coordinate of the original [`VerifyingKey`] is odd.
 ///
 /// While values `2` and `3` are also defined to capture whether `r`
 /// overflowed the curve's order, this crate does *not* support them.

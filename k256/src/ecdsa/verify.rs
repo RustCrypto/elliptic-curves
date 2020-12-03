@@ -12,25 +12,26 @@ use signature::PrehashSignature;
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct VerifyKey {
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VerifyingKey {
     /// Core ECDSA verify key
-    pub(super) key: ecdsa_core::VerifyKey<Secp256k1>,
+    pub(super) inner: ecdsa_core::VerifyingKey<Secp256k1>,
 }
 
-impl VerifyKey {
-    /// Initialize [`VerifyKey`] from a SEC1-encoded public key.
-    pub fn new(bytes: &[u8]) -> Result<Self, Error> {
-        ecdsa_core::VerifyKey::new(bytes).map(|key| VerifyKey { key })
+impl VerifyingKey {
+    /// Initialize [`VerifyingKey`] from a SEC1-encoded public key.
+    pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        ecdsa_core::VerifyingKey::from_sec1_bytes(bytes).map(|key| VerifyingKey { inner: key })
     }
 
-    /// Initialize [`VerifyKey`] from a SEC1 [`EncodedPoint`].
+    /// Initialize [`VerifyingKey`] from a SEC1 [`EncodedPoint`].
     // TODO(tarcieri): switch to using `FromEncodedPoint` trait?
     pub fn from_encoded_point(public_key: &EncodedPoint) -> Result<Self, Error> {
-        ecdsa_core::VerifyKey::from_encoded_point(public_key).map(|key| VerifyKey { key })
+        ecdsa_core::VerifyingKey::from_encoded_point(public_key)
+            .map(|key| VerifyingKey { inner: key })
     }
 
-    /// Serialize this [`VerifyKey`] as a SEC1-encoded bytestring
+    /// Serialize this [`VerifyingKey`] as a SEC1-encoded bytestring
     /// (with point compression applied)
     pub fn to_bytes(&self) -> CompressedPoint {
         let mut result = [0u8; 33];
@@ -40,7 +41,7 @@ impl VerifyKey {
 }
 
 #[cfg(feature = "sha256")]
-impl<S> signature::Verifier<S> for VerifyKey
+impl<S> signature::Verifier<S> for VerifyingKey
 where
     S: PrehashSignature,
     Self: DigestVerifier<S::Digest, S>,
@@ -50,43 +51,44 @@ where
     }
 }
 
-impl<D> DigestVerifier<D, Signature> for VerifyKey
+impl<D> DigestVerifier<D, Signature> for VerifyingKey
 where
     D: Digest<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
-        self.key.verify_digest(digest, signature)
+        self.inner.verify_digest(digest, signature)
     }
 }
 
-impl<D> DigestVerifier<D, recoverable::Signature> for VerifyKey
+impl<D> DigestVerifier<D, recoverable::Signature> for VerifyingKey
 where
     D: Digest<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &recoverable::Signature) -> Result<(), Error> {
-        self.key.verify_digest(digest, &Signature::from(*signature))
+        self.inner
+            .verify_digest(digest, &Signature::from(*signature))
     }
 }
 
-impl From<&AffinePoint> for VerifyKey {
-    fn from(affine_point: &AffinePoint) -> VerifyKey {
-        VerifyKey::from_encoded_point(&affine_point.to_encoded_point(false)).unwrap()
+impl From<&AffinePoint> for VerifyingKey {
+    fn from(affine_point: &AffinePoint) -> VerifyingKey {
+        VerifyingKey::from_encoded_point(&affine_point.to_encoded_point(false)).unwrap()
     }
 }
 
-impl From<&VerifyKey> for EncodedPoint {
-    fn from(verify_key: &VerifyKey) -> EncodedPoint {
+impl From<&VerifyingKey> for EncodedPoint {
+    fn from(verify_key: &VerifyingKey) -> EncodedPoint {
         verify_key.to_encoded_point(true)
     }
 }
 
-impl ToEncodedPoint<Secp256k1> for VerifyKey {
+impl ToEncodedPoint<Secp256k1> for VerifyingKey {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.key.to_encoded_point(compress)
+        self.inner.to_encoded_point(compress)
     }
 }
 
-impl TryFrom<&EncodedPoint> for VerifyKey {
+impl TryFrom<&EncodedPoint> for VerifyingKey {
     type Error = Error;
 
     fn try_from(encoded_point: &EncodedPoint) -> Result<Self, Error> {

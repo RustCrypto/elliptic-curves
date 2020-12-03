@@ -1,6 +1,6 @@
 //! ECDSA signer
 
-use super::{recoverable, Error, Signature, VerifyKey};
+use super::{recoverable, Error, Signature, VerifyingKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::{borrow::Borrow, convert::TryInto};
 use ecdsa_core::{
@@ -44,10 +44,10 @@ impl SigningKey {
             .ok_or_else(Error::new)
     }
 
-    /// Get the [`VerifyKey`] which corresponds to this [`SigningKey`]
-    pub fn verify_key(&self) -> VerifyKey {
-        VerifyKey {
-            key: ecdsa_core::SigningKey::from(self.secret_scalar).verify_key(),
+    /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`]
+    pub fn verify_key(&self) -> VerifyingKey {
+        VerifyingKey {
+            inner: ecdsa_core::SigningKey::from(self.secret_scalar).verify_key(),
         }
     }
 
@@ -155,8 +155,8 @@ impl From<&SigningKey> for SecretKey {
     }
 }
 
-impl From<&SigningKey> for VerifyKey {
-    fn from(signing_key: &SigningKey) -> VerifyKey {
+impl From<&SigningKey> for VerifyingKey {
+    fn from(signing_key: &SigningKey) -> VerifyingKey {
         signing_key.verify_key()
     }
 }
