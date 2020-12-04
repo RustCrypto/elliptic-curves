@@ -74,10 +74,11 @@ pub use arithmetic::{
     scalar::{NonZeroScalar, Scalar, ScalarBits},
 };
 
-use elliptic_curve::consts::U32;
+#[cfg(feature = "pkcs8")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
+pub use elliptic_curve::pkcs8;
 
-#[cfg(feature = "oid")]
-use elliptic_curve::oid::ObjectIdentifier;
+use elliptic_curve::consts::U32;
 
 /// NIST P-256 elliptic curve.
 ///
@@ -113,9 +114,9 @@ impl elliptic_curve::weierstrass::point::Compression for NistP256 {
     const COMPRESS_POINTS: bool = false;
 }
 
-#[cfg(feature = "oid")]
-impl elliptic_curve::Identifier for NistP256 {
-    const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
+#[cfg(feature = "pkcs8")]
+impl elliptic_curve::AlgorithmParameters for NistP256 {
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
 }
 
 /// NIST P-256 field element serialized as bytes.
