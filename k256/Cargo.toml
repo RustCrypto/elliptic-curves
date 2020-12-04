@@ -34,7 +34,7 @@ proptest = "0.10"
 rand_core = { version = "0.5", features = ["getrandom"] }
 
 [features]
-default = ["arithmetic", "oid", "std"]
+default = ["arithmetic", "pkcs8", "std"]
 arithmetic = ["elliptic-curve/arithmetic"]
 digest = ["elliptic-curve/digest", "ecdsa-core/digest"]
 ecdh = ["elliptic-curve/ecdh", "zeroize"]
@@ -43,7 +43,7 @@ expose-field = ["arithmetic"]
 field-montgomery = []
 force-32-bit = []
 keccak256 = ["digest", "sha3"]
-oid = ["elliptic-curve/oid"]
+pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
 sha256 = ["digest", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]

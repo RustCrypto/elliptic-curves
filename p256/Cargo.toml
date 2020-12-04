@@ -28,12 +28,12 @@ proptest = "0.10"
 rand_core = { version = "0.5", features = ["getrandom"] }
 
 [features]
-default = ["arithmetic", "std"]
+default = ["arithmetic", "pkcs8", "std"]
 arithmetic = ["elliptic-curve/arithmetic"]
 digest = ["elliptic-curve/digest", "ecdsa-core/digest"]
 ecdh = ["elliptic-curve/ecdh", "zeroize"]
 ecdsa = ["arithmetic", "ecdsa-core/sign", "ecdsa-core/verify", "sha256", "zeroize"]
-oid = ["elliptic-curve/oid"]
+pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
 sha256 = ["digest", "ecdsa-core/hazmat", "sha2"]
 test-vectors = []
 std = ["elliptic-curve/std"]

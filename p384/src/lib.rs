@@ -23,10 +23,10 @@ pub mod ecdsa;
 
 pub use elliptic_curve;
 
-use elliptic_curve::consts::U48;
+#[cfg(feature = "pkcs8")]
+pub use elliptic_curve::pkcs8;
 
-#[cfg(feature = "oid")]
-use elliptic_curve::oid::ObjectIdentifier;
+use elliptic_curve::consts::U48;
 
 /// NIST P-384 elliptic curve.
 ///
@@ -62,9 +62,9 @@ impl elliptic_curve::weierstrass::point::Compression for NistP384 {
     const COMPRESS_POINTS: bool = false;
 }
 
-#[cfg(feature = "oid")]
-impl elliptic_curve::Identifier for NistP384 {
-    const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 34]);
+#[cfg(feature = "pkcs8")]
+impl elliptic_curve::AlgorithmParameters for NistP384 {
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 3, 132, 0, 34]);
 }
 
 /// NIST P-384 field element serialized as bytes.

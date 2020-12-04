@@ -9,4 +9,5 @@ p384 = { path = "../../p384", default-features = false }
 
 [features]
 ecdsa = ["p384/ecdsa"]
+pkcs8 = ["p384/pkcs8"]
 sha384 = ["p384/sha384"]

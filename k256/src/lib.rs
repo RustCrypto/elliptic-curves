@@ -76,10 +76,11 @@ pub use arithmetic::{
 #[cfg(feature = "expose-field")]
 pub use arithmetic::FieldElement;
 
-use elliptic_curve::consts::U32;
+#[cfg(feature = "pkcs8")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
+pub use elliptic_curve::pkcs8;
 
-#[cfg(feature = "oid")]
-use elliptic_curve::oid::ObjectIdentifier;
+use elliptic_curve::consts::U32;
 
 /// K-256 (secp256k1) elliptic curve.
 ///
@@ -107,9 +108,9 @@ impl elliptic_curve::weierstrass::point::Compression for Secp256k1 {
     const COMPRESS_POINTS: bool = true;
 }
 
-#[cfg(feature = "oid")]
-impl elliptic_curve::Identifier for Secp256k1 {
-    const OID: ObjectIdentifier = ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
+#[cfg(feature = "pkcs8")]
+impl elliptic_curve::AlgorithmParameters for Secp256k1 {
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
 }
 
 /// Compressed SEC1-encoded secp256k1 (K-256) point (i.e. public key)

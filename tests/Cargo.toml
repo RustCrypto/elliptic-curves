@@ -6,5 +6,7 @@ members = [
 ]
 
 [patch.crates-io]
+const-oid = { git = "https://github.com/RustCrypto/utils.git" }
 ecdsa = { git = "https://github.com/RustCrypto/signatures" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
+pkcs8 = { git = "https://github.com/RustCrypto/utils.git" }

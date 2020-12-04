@@ -123,15 +123,8 @@ dependencies = [
 
 [[package]]
 name = "const-oid"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2d9162b7289a46e86208d6af2c686ca5bfde445878c41a458a9fac706252d0b"
-
-[[package]]
-name = "const-oid"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fc33f77ab0b4232f30cb9049a156775c5ad814b030e929d234d14cd6d7ec17f"
+version = "0.3.0-pre"
+source = "git+https://github.com/RustCrypto/utils.git#8e6ab88981e2ab5c7b9090f6c29baa1f92c8534b"
 
 [[package]]
 name = "const_fn"
@@ -270,20 +263,10 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.8.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87bf8bfb05ea8a6f74ddf48c7d1774851ba77bbe51ac984fdfa6c30310e1ff5f"
-dependencies = [
- "elliptic-curve 0.6.6",
- "signature",
-]
-
-[[package]]
-name = "ecdsa"
 version = "0.9.0-pre"
 source = "git+https://github.com/RustCrypto/signatures#be52d7c20457d47832a66cb74ec72e946969e6fa"
 dependencies = [
- "elliptic-curve 0.7.0-pre",
+ "elliptic-curve",
  "hmac",
  "signature",
 ]
@@ -296,29 +279,15 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "396db09c483e7fca5d4fdb9112685632b3e76c9a607a2649c1bf904404a01366"
-dependencies = [
- "const-oid 0.1.0",
- "digest",
- "generic-array",
- "rand_core",
- "subtle",
- "zeroize",
-]
-
-[[package]]
-name = "elliptic-curve"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/traits#fdff330484c9d03f67ba1eda533a24e757f3e204"
+source = "git+https://github.com/RustCrypto/traits#5d5754259a6801f5e32373e635be6865ac510e73"
 dependencies = [
  "bitvec",
- "const-oid 0.2.0",
  "digest",
  "ff",
  "generic-array",
  "group",
+ "pkcs8",
  "rand_core",
  "subtle",
  "zeroize",
@@ -465,8 +434,8 @@ version = "0.5.10"
 dependencies = [
  "cfg-if 1.0.0",
  "criterion",
- "ecdsa 0.9.0-pre",
- "elliptic-curve 0.7.0-pre",
+ "ecdsa",
+ "elliptic-curve",
  "hex",
  "hex-literal 0.2.1",
  "num-bigint",
@@ -575,8 +544,8 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 name = "p256"
 version = "0.5.2"
 dependencies = [
- "ecdsa 0.9.0-pre",
- "elliptic-curve 0.7.0-pre",
+ "ecdsa",
+ "elliptic-curve",
  "hex",
  "hex-literal 0.3.1",
  "proptest",
@@ -588,9 +557,17 @@ dependencies = [
 name = "p384"
 version = "0.4.1"
 dependencies = [
- "ecdsa 0.8.5",
- "elliptic-curve 0.6.6",
+ "ecdsa",
+ "elliptic-curve",
  "sha2",
+]
+
+[[package]]
+name = "pkcs8"
+version = "0.0.0"
+source = "git+https://github.com/RustCrypto/utils.git#8e6ab88981e2ab5c7b9090f6c29baa1f92c8534b"
+dependencies = [
+ "const-oid",
 ]
 
 [[package]]
