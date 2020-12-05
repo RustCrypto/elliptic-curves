@@ -123,8 +123,8 @@ dependencies = [
 
 [[package]]
 name = "const-oid"
-version = "0.3.0-pre"
-source = "git+https://github.com/RustCrypto/utils.git#8e6ab88981e2ab5c7b9090f6c29baa1f92c8534b"
+version = "0.3.2"
+source = "git+https://github.com/RustCrypto/utils.git#18b058a3692f9f22001f81b5e700f9b4bbbfc4b4"
 
 [[package]]
 name = "const_fn"
@@ -280,7 +280,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/traits#5d5754259a6801f5e32373e635be6865ac510e73"
+source = "git+https://github.com/RustCrypto/traits#2425c994969708c5089ef74f4463ff8140fc175c"
 dependencies = [
  "bitvec",
  "digest",
@@ -565,7 +565,7 @@ dependencies = [
 [[package]]
 name = "pkcs8"
 version = "0.0.0"
-source = "git+https://github.com/RustCrypto/utils.git#8e6ab88981e2ab5c7b9090f6c29baa1f92c8534b"
+source = "git+https://github.com/RustCrypto/utils.git#18b058a3692f9f22001f81b5e700f9b4bbbfc4b4"
 dependencies = [
  "const-oid",
  "subtle-encoding",
