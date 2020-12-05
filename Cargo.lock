@@ -123,8 +123,9 @@ dependencies = [
 
 [[package]]
 name = "const-oid"
-version = "0.3.2"
-source = "git+https://github.com/RustCrypto/utils.git#18b058a3692f9f22001f81b5e700f9b4bbbfc4b4"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9718eb58510ebba591b25cb8b2327050138fbbef581990944317097cf8a4198f"
 
 [[package]]
 name = "const_fn"
@@ -280,7 +281,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/traits#2425c994969708c5089ef74f4463ff8140fc175c"
+source = "git+https://github.com/RustCrypto/traits#2221f59715a9594e807e0d51b99f04cf0c1454da"
 dependencies = [
  "bitvec",
  "digest",
@@ -564,8 +565,9 @@ dependencies = [
 
 [[package]]
 name = "pkcs8"
-version = "0.0.0"
-source = "git+https://github.com/RustCrypto/utils.git#18b058a3692f9f22001f81b5e700f9b4bbbfc4b4"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a2298039b56d6be1d9bf341c9ba6aa0936bd508152c2829c8cab6d3f57675f4"
 dependencies = [
  "const-oid",
  "subtle-encoding",
@@ -1105,3 +1107,8 @@ name = "zeroize"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f33972566adbd2d3588b0491eb94b98b43695c4ef897903470ede4f3f5a28a"
+
+[[patch.unused]]
+name = "pkcs8"
+version = "0.0.0"
+source = "git+https://github.com/RustCrypto/utils.git#18b058a3692f9f22001f81b5e700f9b4bbbfc4b4"
