@@ -10,6 +10,15 @@ use signature::{digest::Digest, DigestVerifier};
 #[cfg(feature = "sha256")]
 use signature::PrehashSignature;
 
+#[cfg(feature = "pkcs8")]
+use crate::{
+    elliptic_curve::PublicKey,
+    pkcs8::{self, FromPublicKey},
+};
+
+#[cfg(feature = "pem")]
+use core::str::FromStr;
+
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -119,6 +128,24 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         } else {
             Err(Error::new())
         }
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
+impl FromPublicKey for VerifyingKey {
+    fn from_spki(spki: pkcs8::SubjectPublicKeyInfo<'_>) -> pkcs8::Result<Self> {
+        PublicKey::from_spki(spki).map(|pk| Self { inner: pk.into() })
+    }
+}
+
+#[cfg(feature = "pem")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
+impl FromStr for VerifyingKey {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Self::from_public_key_pem(s).map_err(|_| Error::new())
     }
 }
 
