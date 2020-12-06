@@ -113,7 +113,7 @@ impl elliptic_curve::AlgorithmParameters for Secp256k1 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
 }
 
-/// Compressed SEC1-encoded secp256k1 (K-256) point (i.e. public key)
+/// Compressed SEC1-encoded secp256k1 (K-256) point.
 pub type CompressedPoint = [u8; 33];
 
 /// secp256k1 (K-256) field element serialized as bytes.
@@ -133,7 +133,7 @@ pub type PublicKey = elliptic_curve::PublicKey<Secp256k1>;
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 
-/// Bytes containing a secp256k1 secret scalar
+/// Bytes containing a secp256k1 secret scalar.
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretBytes = elliptic_curve::secret_key::SecretBytes<Secp256k1>;
