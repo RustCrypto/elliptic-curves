@@ -19,6 +19,12 @@ use elliptic_curve::{
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
 use ecdsa_core::signature::{self, digest::Digest, PrehashSignature, RandomizedSigner};
 
+#[cfg(feature = "pkcs8")]
+use crate::pkcs8::{self, FromPrivateKey};
+
+#[cfg(feature = "pem")]
+use core::str::FromStr;
+
 /// ECDSA/secp256k1 signing key
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub struct SigningKey {
@@ -35,7 +41,6 @@ impl SigningKey {
     }
 
     /// Initialize [`SigningKey`] from a raw scalar value (big endian).
-    // TODO(tarcieri): PKCS#8 support
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         SecretKey::from_bytes(bytes)
             .map(|sk| Self { inner: sk })
@@ -229,6 +234,26 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         let is_r_odd = bool::from(R.y.normalize().is_odd());
         let is_s_high = signature.normalize_s()?;
         Ok((signature, is_r_odd ^ is_s_high))
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
+impl FromPrivateKey for SigningKey {
+    fn from_pkcs8_private_key_info(
+        private_key_info: pkcs8::PrivateKeyInfo<'_>,
+    ) -> pkcs8::Result<Self> {
+        SecretKey::from_pkcs8_private_key_info(private_key_info).map(|inner| Self { inner })
+    }
+}
+
+#[cfg(feature = "pem")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
+impl FromStr for SigningKey {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Self::from_pkcs8_pem(s).map_err(|_| Error::new())
     }
 }
 
