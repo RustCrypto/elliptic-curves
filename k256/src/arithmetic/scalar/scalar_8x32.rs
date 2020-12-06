@@ -1,5 +1,5 @@
 //! ProjectiveArithmetic modulo curve base order using 32-bit limbs.
-//! Ported from https://github.com/bitcoin-core/secp256k1
+//! Ported from <https://github.com/bitcoin-core/secp256k1>
 
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},

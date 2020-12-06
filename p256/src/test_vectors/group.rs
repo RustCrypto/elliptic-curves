@@ -4,7 +4,7 @@ use hex_literal::hex;
 
 /// Repeated addition of the generator.
 ///
-/// These are the first 20 test vectors from http://point-at-infinity.org/ecc/nisttv
+/// These are the first 20 test vectors from <http://point-at-infinity.org/ecc/nisttv>
 pub const ADD_TEST_VECTORS: &[([u8; 32], [u8; 32])] = &[
     (
         hex!("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296"),
@@ -90,7 +90,7 @@ pub const ADD_TEST_VECTORS: &[([u8; 32], [u8; 32])] = &[
 
 /// Scalar multiplication with the generator.
 ///
-/// These are the test vectors from http://point-at-infinity.org/ecc/nisttv that are not
+/// These are the test vectors from <http://point-at-infinity.org/ecc/nisttv> that are not
 /// part of [`ADD_TEST_VECTORS`].
 pub const MUL_TEST_VECTORS: &[([u8; 32], [u8; 32], [u8; 32])] = &[
     (
