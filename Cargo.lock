@@ -264,8 +264,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.9.0-pre"
-source = "git+https://github.com/RustCrypto/signatures#be52d7c20457d47832a66cb74ec72e946969e6fa"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f488ad19df443921d9fa5b9ce13a282b552709c511d2d90b1fd635e0204d74d5"
 dependencies = [
  "elliptic-curve",
  "hmac",
@@ -280,8 +281,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/traits#2221f59715a9594e807e0d51b99f04cf0c1454da"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64b8d753346ae41b448a0a97f5d5cbe787a05ee1bda63d629def34c679eaa0d6"
 dependencies = [
  "bitvec",
  "digest",
@@ -431,7 +433,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.5.10"
+version = "0.6.0-pre"
 dependencies = [
  "cfg-if 1.0.0",
  "criterion",
@@ -543,7 +545,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "p256"
-version = "0.5.2"
+version = "0.6.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -1107,8 +1109,3 @@ name = "zeroize"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f33972566adbd2d3588b0491eb94b98b43695c4ef897903470ede4f3f5a28a"
-
-[[patch.unused]]
-name = "pkcs8"
-version = "0.0.0"
-source = "git+https://github.com/RustCrypto/utils.git#18b058a3692f9f22001f81b5e700f9b4bbbfc4b4"

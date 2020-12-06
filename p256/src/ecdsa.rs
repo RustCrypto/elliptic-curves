@@ -146,7 +146,7 @@ mod tests {
     #[test]
     fn rfc6979() {
         let x = &hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
-        let signer = SigningKey::new(x).unwrap();
+        let signer = SigningKey::from_bytes(x).unwrap();
         let signature = signer.sign(b"sample");
         assert_eq!(
             signature.as_ref(),
