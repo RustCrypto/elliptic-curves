@@ -20,14 +20,14 @@ keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 cfg-if = "1.0"
 ecdsa-core = { version = "0.9", package = "ecdsa", optional = true, default-features = false }
 elliptic-curve = { version = "0.7", default-features = false }
+hex-literal = { version = "0.3", optional = true }
 sha2 = { version = "0.9", optional = true, default-features = false }
 sha3 = { version = "0.9", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.3"
 ecdsa-core = { version = "0.9", package = "ecdsa", default-features = false, features = ["dev"] }
-hex = "0.4" # TODO: switch to hex-literal
-hex-literal = "0.2"
+hex-literal = "0.3"
 num-bigint = "0.3"
 num-traits = "0.2"
 proptest = "0.10"
@@ -46,7 +46,7 @@ keccak256 = ["digest", "sha3"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
 sha256 = ["digest", "sha2"]
-test-vectors = []
+test-vectors = ["hex-literal"]
 std = ["elliptic-curve/std"]
 zeroize = ["elliptic-curve/zeroize"]
 
