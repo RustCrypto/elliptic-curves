@@ -33,8 +33,8 @@
 //!
 //! Rust **1.46** or higher.
 //!
-//! Minimum supported Rust version can be changed in the future, but it will be
-//! done with a minor version bump.
+//! Minimum supported Rust version may be changed in the future, but it will be
+//! accompanied with a minor version bump.
 //!
 //! [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 //! [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman

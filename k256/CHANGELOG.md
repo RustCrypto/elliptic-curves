@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2020-12-06)
+### Added
+- PKCS#8 support ([#243], [#244], [#251])
+- `PublicKey` type ([#239])
+
+### Changed
+- Bump `elliptic-curve` crate dependency to v0.7; MSRV 1.46+ ([#247])
+- Bump `ecdsa` crate dependency to v0.9 ([#247])
+- Make `SigningKey` a newtype of `elliptic_curve::SecretKey` ([#242])
+
+[#251]: https://github.com/RustCrypto/elliptic-curves/pull/251
+[#247]: https://github.com/RustCrypto/elliptic-curves/pull/247
+[#244]: https://github.com/RustCrypto/elliptic-curves/pull/244
+[#243]: https://github.com/RustCrypto/elliptic-curves/pull/243
+[#242]: https://github.com/RustCrypto/elliptic-curves/pull/242
+[#239]: https://github.com/RustCrypto/elliptic-curves/pull/239
+
 ## 0.5.10 (2020-10-25)
 ### Changed
 - Expand README.md ([#233])
