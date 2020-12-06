@@ -38,8 +38,8 @@
 //!
 //! To be precise, the method used here is based on "An Alternate Decomposition of an Integer for
 //! Faster Point Multiplication on Certain Elliptic Curves" by Young-Ho Park, Sangtae Jeong,
-//! Chang Han Kim, and Jongin Lim
-//! (https://link.springer.com/chapter/10.1007%2F3-540-45664-3_23)
+//! Chang Han Kim, and Jongin Lim:
+//! <https://link.springer.com/chapter/10.1007%2F3-540-45664-3_23>
 //!
 //! The precision used for `g1` and `g2` is not enough to ensure correct approximation at all times.
 //! For example, `2^272 * b1 / n` used to calculate `g2` is rounded down.

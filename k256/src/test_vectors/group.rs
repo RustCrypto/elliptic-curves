@@ -5,7 +5,7 @@ use hex_literal::hex;
 /// Repeated addition of the generator.
 ///
 /// Vectors for secp256k1 are difficult to find. These are the vectors from:
-/// https://web.archive.org/web/20190724010836/https://chuckbatson.wordpress.com/2014/11/26/secp256k1-test-vectors/
+/// <https://web.archive.org/web/20190724010836/https://chuckbatson.wordpress.com/2014/11/26/secp256k1-test-vectors/>
 pub const ADD_TEST_VECTORS: &[([u8; 32], [u8; 32])] = &[
     (
         hex!("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"),
@@ -92,7 +92,7 @@ pub const ADD_TEST_VECTORS: &[([u8; 32], [u8; 32])] = &[
 /// Scalar multiplication with the generator.
 ///
 /// Vectors for secp256k1 are difficult to find. These are the vectors from:
-/// https://web.archive.org/web/20190724010836/https://chuckbatson.wordpress.com/2014/11/26/secp256k1-test-vectors/
+/// <https://web.archive.org/web/20190724010836/https://chuckbatson.wordpress.com/2014/11/26/secp256k1-test-vectors/>
 pub const MUL_TEST_VECTORS: &[([u8; 32], [u8; 32], [u8; 32])] = &[
     (
         hex!("000000000000000000000000000000000000000000000000018EBBB95EED0E13"),

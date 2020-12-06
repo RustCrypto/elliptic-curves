@@ -1,5 +1,5 @@
 //! ProjectiveArithmetic modulo curve base order using 64-bit limbs.
-//! Ported from https://github.com/bitcoin-core/secp256k1
+//! Ported from <https://github.com/bitcoin-core/secp256k1>
 
 use core::convert::TryInto;
 use elliptic_curve::{
