@@ -18,11 +18,11 @@ keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 [dependencies]
 ecdsa-core = { version = "0.9", package = "ecdsa", optional = true, default-features = false }
 elliptic-curve = { version = "0.7", default-features = false }
+hex-literal = { version = "0.3", optional = true }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [dev-dependencies]
 ecdsa-core = { version = "0.9", package = "ecdsa", default-features = false, features = ["dev"] }
-hex = "0.4" # TODO: switch to hex-literal
 hex-literal = "0.3"
 proptest = "0.10"
 rand_core = { version = "0.5", features = ["getrandom"] }
@@ -36,7 +36,7 @@ ecdsa = ["arithmetic", "ecdsa-core/sign", "ecdsa-core/verify", "sha256", "zeroiz
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
 sha256 = ["digest", "ecdsa-core/hazmat", "sha2"]
-test-vectors = []
+test-vectors = ["hex-literal"]
 std = ["elliptic-curve/std"]
 zeroize = ["elliptic-curve/zeroize"]
 

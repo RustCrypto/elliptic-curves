@@ -466,7 +466,7 @@ impl<'a> Neg for &'a ProjectivePoint {
 mod tests {
     use super::{AffinePoint, ProjectivePoint, Scalar};
     use crate::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS};
-    use elliptic_curve::{ff::PrimeField, generic_array::GenericArray};
+    use elliptic_curve::ff::PrimeField;
 
     #[test]
     fn affine_to_projective() {
@@ -514,13 +514,10 @@ mod tests {
 
         for i in 0..ADD_TEST_VECTORS.len() {
             let affine = p.to_affine();
-            assert_eq!(
-                (
-                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
-                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
-                ),
-                ADD_TEST_VECTORS[i]
-            );
+
+            let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
+            assert_eq!(affine.x.to_bytes(), expected_x.into());
+            assert_eq!(affine.y.to_bytes(), expected_y.into());
 
             p += &generator;
         }
@@ -533,13 +530,10 @@ mod tests {
 
         for i in 0..ADD_TEST_VECTORS.len() {
             let affine = p.to_affine();
-            assert_eq!(
-                (
-                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
-                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
-                ),
-                ADD_TEST_VECTORS[i]
-            );
+
+            let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
+            assert_eq!(affine.x.to_bytes(), expected_x.into());
+            assert_eq!(affine.y.to_bytes(), expected_y.into());
 
             p += &generator;
         }
@@ -552,13 +546,10 @@ mod tests {
 
         for i in 0..2 {
             let affine = p.to_affine();
-            assert_eq!(
-                (
-                    hex::encode(affine.x.to_bytes()).to_uppercase().as_str(),
-                    hex::encode(affine.y.to_bytes()).to_uppercase().as_str(),
-                ),
-                ADD_TEST_VECTORS[i]
-            );
+
+            let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
+            assert_eq!(affine.x.to_bytes(), expected_x.into());
+            assert_eq!(affine.y.to_bytes(), expected_y.into());
 
             p = p.double();
         }
@@ -567,7 +558,6 @@ mod tests {
     #[test]
     fn projective_add_vs_double() {
         let generator = ProjectivePoint::generator();
-
         assert_eq!(generator + &generator, generator.double());
     }
 
@@ -589,7 +579,6 @@ mod tests {
     #[test]
     fn projective_double_and_sub() {
         let generator = ProjectivePoint::generator();
-
         assert_eq!(generator.double() - &generator, generator);
     }
 
@@ -601,22 +590,16 @@ mod tests {
             .iter()
             .enumerate()
             .map(|(k, coords)| (Scalar::from(k as u64 + 1), *coords))
-            .chain(MUL_TEST_VECTORS.iter().cloned().map(|(k, x, y)| {
-                (
-                    Scalar::from_repr(GenericArray::clone_from_slice(&hex::decode(k).unwrap()[..]))
-                        .unwrap(),
-                    (x, y),
-                )
-            }))
+            .chain(
+                MUL_TEST_VECTORS
+                    .iter()
+                    .cloned()
+                    .map(|(k, x, y)| (Scalar::from_repr(k.into()).unwrap(), (x, y))),
+            )
         {
             let res = (generator * &k).to_affine();
-            assert_eq!(
-                (
-                    hex::encode(res.x.to_bytes()).to_uppercase().as_str(),
-                    hex::encode(res.y.to_bytes()).to_uppercase().as_str(),
-                ),
-                coords,
-            );
+            assert_eq!(res.x.to_bytes(), coords.0.into());
+            assert_eq!(res.y.to_bytes(), coords.1.into());
         }
     }
 }

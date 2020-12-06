@@ -513,9 +513,11 @@ mod tests {
 
         for i in 0..ADD_TEST_VECTORS.len() {
             let affine = p.to_affine();
+
             let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
             assert_eq!(affine.x.to_bytes(), expected_x.into());
             assert_eq!(affine.y.to_bytes(), expected_y.into());
+
             p += &generator;
         }
     }
@@ -527,9 +529,11 @@ mod tests {
 
         for i in 0..ADD_TEST_VECTORS.len() {
             let affine = p.to_affine();
+
             let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
             assert_eq!(affine.x.to_bytes(), expected_x.into());
             assert_eq!(affine.y.to_bytes(), expected_y.into());
+
             p += &generator;
         }
     }
@@ -541,9 +545,11 @@ mod tests {
 
         for i in 0..2 {
             let affine = p.to_affine();
+
             let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
             assert_eq!(affine.x.to_bytes(), expected_x.into());
             assert_eq!(affine.y.to_bytes(), expected_y.into());
+
             p = p.double();
         }
     }
