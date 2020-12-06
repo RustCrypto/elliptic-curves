@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2020-12-06)
+### Added
+- PKCS#8 support ([#243], [#244])
+
+### Changed
+- Bump `elliptic-curve` crate dependency to v0.7; MSRV 1.46+ ([#247])
+- Bump `ecdsa` crate dependency to v0.9 ([#247])
+
+[#247]: https://github.com/RustCrypto/elliptic-curves/pull/247
+[#244]: https://github.com/RustCrypto/elliptic-curves/pull/244
+[#243]: https://github.com/RustCrypto/elliptic-curves/pull/243
+
 ## 0.4.1 (2020-10-08)
 ### Added
 - `SecretValue` impl when `arithmetic` feature is disabled ([#222])
