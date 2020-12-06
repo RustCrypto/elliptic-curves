@@ -32,8 +32,8 @@
 //!
 //! Rust **1.46** or higher.
 //!
-//! Minimum supported Rust version can be changed in the future, but it will be
-//! done with a minor version bump.
+//! Minimum supported Rust version may be changed in the future, but it will be
+//! accompanied with a minor version bump.
 //!
 //! [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
 //! [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
@@ -44,7 +44,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
-    html_root_url = "https://docs.rs/k256/0.5.10"
+    html_root_url = "https://docs.rs/k256/0.6.0"
 )]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]

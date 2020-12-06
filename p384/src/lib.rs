@@ -4,8 +4,8 @@
 //!
 //! Rust **1.46** or higher.
 //!
-//! Minimum supported Rust version can be changed in the future, but it will be
-//! done with a minor version bump.
+//! Minimum supported Rust version may be changed in the future, but it will be
+//! accompanied with a minor version bump.
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
