@@ -150,13 +150,15 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
 
 impl ToEncodedPoint<NistP256> for AffinePoint {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        // TODO(tarcieri): use `EncodedPoint::conditional_select` when available
-        if self.infinity.into() {
-            // TODO(tarcieri): use `EncodedPoint::identity` when available
-            EncodedPoint::from_bytes(&[0]).unwrap()
-        } else {
-            EncodedPoint::from_affine_coordinates(&self.x.to_bytes(), &self.y.to_bytes(), compress)
-        }
+        EncodedPoint::conditional_select(
+            &EncodedPoint::from_affine_coordinates(
+                &self.x.to_bytes(),
+                &self.y.to_bytes(),
+                compress,
+            ),
+            &EncodedPoint::identity(),
+            self.infinity,
+        )
     }
 }
 
