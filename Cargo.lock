@@ -264,9 +264,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fa9459c0f3be75c1ede60e02e9cd69ed1279a1421a5c2fe4d23e829adc43d36"
+checksum = "d39be153f0e278ffba17d1c05e8999641fcf3df7584a7251b5e660742fcab1ef"
 dependencies = [
  "elliptic-curve",
  "hmac",
@@ -281,9 +281,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4cf86631e1e5cf5fa77372d1d4d7bcaa26eba12d695012e93ef980a50dc5250"
+checksum = "02b76528f382c916bbb94470b4e7ad107a3d01619503f7ffba86c93aea04e215"
 dependencies = [
  "bitvec",
  "digest",
@@ -408,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "cfg-if 1.0.0",
  "criterion",
@@ -519,7 +519,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "p256"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -531,7 +531,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
