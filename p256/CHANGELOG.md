@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.7.0 (2020-12-16)
 ### Changed
 - Bump `elliptic-curve` dependency to v0.8 ([#260])
-- `ecdsa` to v0.10 ([#260])
+- Bump `ecdsa` to v0.10 ([#260])
 
 [#260]: https://github.com/RustCrypto/elliptic-curves/pull/260
 
