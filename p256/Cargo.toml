@@ -5,7 +5,7 @@ Pure Rust implementation of the NIST P-256 (a.k.a. secp256r1, prime256v1)
 elliptic curve with support for ECDH, ECDSA signing/verification, and general
 purpose curve arithmetic
 """
-version = "0.6.0"
+version = "0.7.0" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
