@@ -861,7 +861,7 @@ impl From<&Scalar> for FieldBytes {
 #[cfg(feature = "zeroize")]
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.secret_scalar()
+        **secret_key.secret_scalar()
     }
 }
 

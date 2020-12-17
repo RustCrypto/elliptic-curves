@@ -123,6 +123,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
     fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
         match encoded_point.coordinates() {
+            sec1::Coordinates::Identity => Some(Self::identity()),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8)).into()
             }
@@ -151,7 +152,13 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
 
 impl ToEncodedPoint<Secp256k1> for AffinePoint {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        EncodedPoint::from_affine_coordinates(&self.x.to_bytes(), &self.y.to_bytes(), compress)
+        // TODO(tarcieri): use `EncodedPoint::conditional_select` when available
+        if self.infinity.into() {
+            // TODO(tarcieri): use `EncodedPoint::identity` when available
+            EncodedPoint::from_bytes(&[0]).unwrap()
+        } else {
+            EncodedPoint::from_affine_coordinates(&self.x.to_bytes(), &self.y.to_bytes(), compress)
+        }
     }
 }
 

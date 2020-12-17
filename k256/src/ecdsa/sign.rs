@@ -97,7 +97,7 @@ where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
     fn try_sign_digest(&self, digest: D) -> Result<recoverable::Signature, Error> {
-        let ephemeral_scalar = rfc6979::generate_k(self.inner.secret_value(), digest.clone(), &[]);
+        let ephemeral_scalar = rfc6979::generate_k(self.inner.secret_scalar(), digest.clone(), &[]);
         let msg_scalar = Scalar::from_digest(digest);
         let (signature, recovery_id) = self
             .inner
@@ -135,7 +135,7 @@ where
         rng.fill_bytes(&mut added_entropy);
 
         let ephemeral_scalar =
-            rfc6979::generate_k(self.inner.secret_value(), digest.clone(), &added_entropy);
+            rfc6979::generate_k(self.inner.secret_scalar(), digest.clone(), &added_entropy);
 
         let msg_scalar = Scalar::from_digest(digest);
         let (signature, is_r_odd) = self
