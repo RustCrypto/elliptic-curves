@@ -76,10 +76,10 @@ jobs:
           # 32-bit Linux
           - target: i686-unknown-linux-gnu
             rust: 1.46.0 # MSRV
-            deps: sudo apt install gcc-multilib
+            deps: sudo apt update && sudo apt install gcc-multilib
           - target: i686-unknown-linux-gnu
             rust: stable
-            deps: sudo apt install gcc-multilib
+            deps: sudo apt update && sudo apt install gcc-multilib
 
           # 64-bit Linux
           - target: x86_64-unknown-linux-gnu
