@@ -96,6 +96,11 @@ impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
 }
 
+#[cfg(all(feature = "ecdsa", feature = "keccak256"))]
+impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
+    type Digest = sha3::Keccak256;
+}
+
 /// Validate that the scalars of an ECDSA signature are modulo the order
 #[cfg(feature = "ecdsa")]
 fn check_scalars(signature: &Signature) -> Result<(), Error> {
