@@ -28,6 +28,12 @@
 //! Most users of this library who want to sign/verify signatures will want to
 //! enable the `ecdsa` and `sha256` Cargo features.
 //!
+//! ## Ethereum Support
+//!
+//! This crate natively supports Ethereum-style recoverable signatures.
+//! Please see the toplevel documentation of the [`recoverable`] module
+//! for more information.
+//!
 //! ## Signing/Verification Example
 //!
 //! This example requires the `ecdsa` and `sha256` Cargo features are enabled:
