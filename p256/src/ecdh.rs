@@ -9,8 +9,6 @@
 //! exchange, nicknamed "Alice" and "Bob".
 //!
 //! ```
-//! # #[cfg(feature = "ecdh")]
-//! # {
 //! use p256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
@@ -36,13 +34,18 @@
 //!
 //! // Both participants arrive on the same shared secret
 //! assert_eq!(alice_shared.as_bytes(), bob_shared.as_bytes());
-//! # }
 //! ```
 
-use crate::NistP256;
+use crate::{AffinePoint, NistP256};
 
 /// NIST P-256 Ephemeral Diffie-Hellman Secret.
 pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<NistP256>;
 
 /// Shared secret value computed via ECDH key agreement.
 pub type SharedSecret = elliptic_curve::ecdh::SharedSecret<NistP256>;
+
+impl From<&AffinePoint> for SharedSecret {
+    fn from(affine: &AffinePoint) -> SharedSecret {
+        affine.x.to_bytes().into()
+    }
+}
