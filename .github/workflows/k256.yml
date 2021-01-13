@@ -102,31 +102,32 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }} --features field-montgomery
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
-  cross:
-    strategy:
-      matrix:
-        include:
-          # ARM64
-          - target: aarch64-unknown-linux-gnu
-            rust: 1.46.0 # MSRV
-          - target: aarch64-unknown-linux-gnu
-            rust: stable
-
-          # PPC32
-          - target: aarch64-unknown-linux-gnu
-            rust: 1.46.0 # MSRV
-          - target: powerpc-unknown-linux-gnu
-            rust: stable
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - run: ${{ matrix.deps }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-          override: true
-      - run: cargo install cross
-      - run: cross test --release --target ${{ matrix.target }} --all-features
+# TODO(tarcieri): re-enable when `[patch.crates-io]` directives removed from workspace Cargo.toml
+#  cross:
+#    strategy:
+#      matrix:
+#        include:
+#          # ARM64
+#          - target: aarch64-unknown-linux-gnu
+#            rust: 1.46.0 # MSRV
+#          - target: aarch64-unknown-linux-gnu
+#            rust: stable
+#
+#          # PPC32
+#          - target: aarch64-unknown-linux-gnu
+#            rust: 1.46.0 # MSRV
+#          - target: powerpc-unknown-linux-gnu
+#            rust: stable
+#
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v1
+#      - run: ${{ matrix.deps }}
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: ${{ matrix.rust }}
+#          target: ${{ matrix.target }}
+#          override: true
+#      - run: cargo install cross
+#      - run: cross test --release --target ${{ matrix.target }} --all-features

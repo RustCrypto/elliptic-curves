@@ -92,7 +92,7 @@ use elliptic_curve::generic_array::GenericArray;
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
 /// ECDSA/secp256k1 signature (ASN.1 DER encoded)
-pub type Asn1Signature = ecdsa_core::asn1::Signature<Secp256k1>;
+pub type Asn1Signature = ecdsa_core::der::Signature<Secp256k1>;
 
 #[cfg(not(feature = "arithmetic"))]
 impl ecdsa_core::CheckSignatureBytes for Secp256k1 {}
