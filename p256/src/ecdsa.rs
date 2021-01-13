@@ -67,7 +67,7 @@ pub type SigningKey = ecdsa_core::SigningKey<NistP256>;
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
 
-#[cfg(not(feature = "ecdsa"))]
+#[cfg(not(feature = "arithmetic"))]
 impl ecdsa_core::CheckSignatureBytes for NistP256 {}
 
 #[cfg(all(feature = "ecdsa", feature = "sha256"))]

@@ -37,7 +37,7 @@ pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
 sha256 = ["digest", "ecdsa-core/hazmat", "sha2"]
 test-vectors = ["hex-literal"]
-std = ["elliptic-curve/std"]
+std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
 zeroize = ["elliptic-curve/zeroize"]
 
 [package.metadata.docs.rs]
