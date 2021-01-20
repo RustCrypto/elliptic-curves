@@ -3,6 +3,7 @@ members = [
     "k256",
     "p256",
     "p384",
+    "weierstrass",
 ]
 
 [patch.crates-io]

@@ -18,6 +18,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
+name = "biguint-literal"
+version = "0.1.0"
+source = "git+https://github.com/RustCrypto/utils?branch=biguint#f7b73ea9042a8f34728e92bb369cfcf9278b4979"
+
+[[package]]
 name = "bit-set"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1072,6 +1077,18 @@ checksum = "222b1ef9334f92a21d3fb53dc3fd80f30836959a90f9274a626d7e06315ba3c3"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "weierstrass"
+version = "0.1.0"
+dependencies = [
+ "biguint-literal",
+ "byteorder",
+ "generic-array",
+ "hex-literal",
+ "rand_core",
+ "subtle",
 ]
 
 [[package]]
