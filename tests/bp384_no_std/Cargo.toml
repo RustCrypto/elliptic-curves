@@ -1,0 +1,14 @@
+[package]
+name = "bp384_no_std"
+version = "0.1.0"
+authors = ["RustCrypto Developers"]
+edition = "2018"
+
+[dependencies]
+bp384 = { path = "../../bp384", default-features = false }
+
+[features]
+ecdsa = ["bp384/ecdsa"]
+pem = ["bp384/pem"]
+pkcs8 = ["bp384/pkcs8"]
+sha384 = ["bp384/sha384"]

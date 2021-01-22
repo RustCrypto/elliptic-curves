@@ -12,11 +12,12 @@ and can be easily used for bare-metal or WebAssembly programming.
 
 ## Crates
 
-| Name     | Curve        | `arithmetic`? | Crates.io | Documentation | Build Status |
-|----------|--------------|---------------|-----------|---------------|--------------|
-| [`k256`] | [secp256k1]  | ✅ | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256) | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push) |
-| [`p256`] | [NIST P-256] | ✅ | [![crates.io](https://img.shields.io/crates/v/p256.svg)](https://crates.io/crates/p256) | [![Documentation](https://docs.rs/p256/badge.svg)](https://docs.rs/p256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p256/badge.svg?branch=master&event=push) |
-| [`p384`] | [NIST P-384] | 🚫 | [![crates.io](https://img.shields.io/crates/v/p384.svg)](https://crates.io/crates/p384) | [![Documentation](https://docs.rs/p384/badge.svg)](https://docs.rs/p384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push) |
+| Name      | Curve             | `arithmetic`? | Crates.io | Documentation | Build Status |
+|-----------|-------------------|---------------|-----------|---------------|--------------|
+| [`bp384`] | [brainpoolP384r1] | 🚫 | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
+| [`k256`]  | [secp256k1]  | ✅ | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256) | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push) |
+| [`p256`]  | [NIST P-256] | ✅ | [![crates.io](https://img.shields.io/crates/v/p256.svg)](https://crates.io/crates/p256) | [![Documentation](https://docs.rs/p256/badge.svg)](https://docs.rs/p256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p256/badge.svg?branch=master&event=push) |
+| [`p384`]  | [NIST P-384] | 🚫 | [![crates.io](https://img.shields.io/crates/v/p384.svg)](https://crates.io/crates/p384) | [![Documentation](https://docs.rs/p384/badge.svg)](https://docs.rs/p384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push) |
 
 NOTE: Some crates contain field/point arithmetic implementations gated under the
 `arithmetic` cargo feature as noted above.
@@ -56,6 +57,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (crates)
 
+[`bp384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/bp384
 [`k256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/k256
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
 [`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
@@ -63,6 +65,7 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # (curves)
 
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
+[brainpoolP384r1]: http://oid-info.com/get/1.3.36.3.3.2.8.1.1.11
 [NIST P-256]: http://oid-info.com/get/1.2.840.10045.3.1.7
 [NIST P-384]: http://oid-info.com/get/1.3.132.0.34
 

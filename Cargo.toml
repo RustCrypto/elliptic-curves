@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "bp384",
     "k256",
     "p256",
     "p384",
