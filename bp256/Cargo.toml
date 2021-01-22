@@ -1,11 +1,11 @@
 [package]
-name = "bp384"
-description = "Brainpool P-384 (brainpoolP384r1) elliptic curve"
+name = "bp256"
+description = "Brainpool P-256 (brainpoolP256r1) elliptic curve"
 version = "0.0.0" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/bp384"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/bp256"
 readme = "README.md"
 edition = "2018"
 categories = ["cryptography", "no-std"]
@@ -25,7 +25,7 @@ features = ["der"]
 default = ["pkcs8", "std"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
-sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]
 zeroize = ["elliptic-curve/zeroize"]
 
