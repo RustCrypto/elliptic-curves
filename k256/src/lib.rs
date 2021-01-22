@@ -9,7 +9,7 @@
 //!
 //! secp256k1 is a Koblitz curve commonly used in cryptocurrency applications.
 //! The "K-256" name follows NIST notation where P = prime fields,
-//! B = binary fields, and K = Koblitz curves (defined over F₂).
+//! B = binary fields, and K = Koblitz curves.
 //!
 //! The curve is specified as `secp256k1` by Certicom's SECG in
 //! "SEC 2: Recommended Elliptic Curve Domain Parameters":
@@ -136,10 +136,10 @@ pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 /// Bytes containing a secp256k1 secret scalar.
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
-pub type SecretBytes = elliptic_curve::secret_key::SecretBytes<Secp256k1>;
+pub type SecretBytes = elliptic_curve::SecretBytes<Secp256k1>;
 
 #[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
-impl elliptic_curve::secret_key::SecretValue for Secp256k1 {
+impl elliptic_curve::SecretValue for Secp256k1 {
     type Secret = SecretBytes;
 
     /// Parse the secret value from bytes
@@ -147,3 +147,6 @@ impl elliptic_curve::secret_key::SecretValue for Secp256k1 {
         Some(bytes.clone().into())
     }
 }
+
+#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}

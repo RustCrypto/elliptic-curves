@@ -48,7 +48,7 @@ USE AT YOUR OWN RISK!
 
 [secp256k1] is a Koblitz curve commonly used in cryptocurrency applications.
 The "K-256" name follows NIST notation where P = prime fields,
-B = binary fields, and K = Koblitz curves (defined over F₂).
+B = binary fields, and K = Koblitz curves.
 
 The curve is specified as `secp256k1` by Certicom's SECG in
 "SEC 2: Recommended Elliptic Curve Domain Parameters":

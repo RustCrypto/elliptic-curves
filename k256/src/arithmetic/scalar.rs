@@ -35,10 +35,10 @@ use elliptic_curve::zeroize::Zeroize;
 use num_bigint::{BigUint, ToBigUint};
 
 /// Non-zero scalar value.
-pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<Secp256k1>;
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Secp256k1>;
 
 /// secp256k1 field element serialized as bits.
-pub type ScalarBits = elliptic_curve::scalar::ScalarBits<Secp256k1>;
+pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
 
 /// An element in the finite field modulo curve order.
 #[derive(Clone, Copy, Debug, Default)]

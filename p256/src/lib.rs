@@ -139,10 +139,10 @@ pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
 /// Bytes containing a NIST P-256 secret scalar
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
-pub type SecretBytes = elliptic_curve::secret_key::SecretBytes<NistP256>;
+pub type SecretBytes = elliptic_curve::SecretBytes<NistP256>;
 
 #[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
-impl elliptic_curve::secret_key::SecretValue for NistP256 {
+impl elliptic_curve::SecretValue for NistP256 {
     type Secret = SecretBytes;
 
     /// Parse the secret value from bytes
@@ -150,3 +150,6 @@ impl elliptic_curve::secret_key::SecretValue for NistP256 {
         Some(bytes.clone().into())
     }
 }
+
+#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
