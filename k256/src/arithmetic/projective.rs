@@ -9,10 +9,10 @@ use core::{
 use elliptic_curve::{
     ff::Field,
     group::{Curve, Group},
-    point::ProjectiveArithmetic,
     rand_core::RngCore,
     sec1::FromEncodedPoint,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+    ProjectiveArithmetic,
 };
 
 #[rustfmt::skip]

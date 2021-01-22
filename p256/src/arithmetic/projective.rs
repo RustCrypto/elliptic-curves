@@ -9,9 +9,9 @@ use core::{
 use elliptic_curve::{
     ff::Field,
     group::{Curve, Group},
-    point::ProjectiveArithmetic,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+    ProjectiveArithmetic,
 };
 
 impl ProjectiveArithmetic for NistP256 {

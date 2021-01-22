@@ -66,10 +66,10 @@ pub const MU: [u64; 5] = [
 ];
 
 /// Non-zero scalar value.
-pub type NonZeroScalar = elliptic_curve::scalar::NonZeroScalar<NistP256>;
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
 
 /// NIST P-256 field element serialized as bits.
-pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
+pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
 
 /// An element in the finite field modulo n.
 // The internal representation is as little-endian ordered u64 words.
