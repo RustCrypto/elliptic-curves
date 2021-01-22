@@ -42,10 +42,12 @@ jobs:
       - run: cp ../../Cargo.lock .. # Use same Cargo.lock resolution that's checked in
       - run: cargo build --release --target ${{ matrix.target }}
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
+      - run: cargo build --release --target ${{ matrix.target }} --features jwk
       - run: cargo build --release --target ${{ matrix.target }} --features pem
       - run: cargo build --release --target ${{ matrix.target }} --features pkcs8
       - run: cargo build --release --target ${{ matrix.target }} --features sha384
       - run: cargo build --release --target ${{ matrix.target }} --all-features
+
   test:
     runs-on: ubuntu-latest
     strategy:
