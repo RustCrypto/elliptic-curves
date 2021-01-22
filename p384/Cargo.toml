@@ -23,6 +23,7 @@ features = ["der"]
 
 [features]
 default = ["pkcs8", "std"]
+jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]

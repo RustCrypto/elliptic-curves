@@ -114,6 +114,12 @@ impl elliptic_curve::weierstrass::point::Compression for NistP256 {
     const COMPRESS_POINTS: bool = false;
 }
 
+#[cfg(feature = "jwk")]
+#[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
+impl elliptic_curve::JwkParameters for NistP256 {
+    const CRV: &'static str = "P-256";
+}
+
 #[cfg(feature = "pkcs8")]
 impl elliptic_curve::AlgorithmParameters for NistP256 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
