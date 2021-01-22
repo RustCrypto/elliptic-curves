@@ -1,0 +1,34 @@
+[package]
+name = "bp384"
+description = "Brainpool P-384 (brainpoolP384r1) elliptic curve"
+version = "0.0.0" # Also update html_root_url in lib.rs when bumping this
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/elliptic-curve"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/bp384"
+readme = "README.md"
+edition = "2018"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "nist", "brainpoolp384r1"]
+
+[dependencies]
+elliptic-curve = { version = "=0.9.0-pre", default-features = false, features = ["hazmat"] }
+sha2 = { version = "0.9", optional = true, default-features = false }
+
+[dependencies.ecdsa]
+version = "=0.11.0-pre"
+optional = true
+default-features = false
+features = ["der"]
+
+[features]
+default = ["pkcs8", "std"]
+pem = ["elliptic-curve/pem", "pkcs8"]
+pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
+sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+std = ["elliptic-curve/std"]
+zeroize = ["elliptic-curve/zeroize"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
