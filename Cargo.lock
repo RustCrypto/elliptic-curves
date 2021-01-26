@@ -23,6 +23,12 @@ version = "0.0.0"
 source = "git+https://github.com/RustCrypto/utils.git#0fe3e15b868778c92959f3fa03b62b47b6842f60"
 
 [[package]]
+name = "base64ct"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c502cbac2e4ffc38047434d0c88b54da5e7c76829ff16f0a479f90116336d9f3"
+
+[[package]]
 name = "bit-set"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -322,9 +328,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.9.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#b03736b733bb22b77b1650346eaadbe6e71bfe32"
+source = "git+https://github.com/RustCrypto/traits.git#465ddb25c009e50f083a19dd4d04c441229490b3"
 dependencies = [
- "base64ct",
+ "base64ct 0.1.0",
  "digest",
  "ff",
  "generic-array",
@@ -604,7 +610,7 @@ name = "pkcs8"
 version = "0.4.0-pre"
 source = "git+https://github.com/RustCrypto/utils.git#0fe3e15b868778c92959f3fa03b62b47b6842f60"
 dependencies = [
- "base64ct",
+ "base64ct 0.0.0",
  "der 0.2.0 (git+https://github.com/RustCrypto/utils.git)",
  "zeroize",
 ]
