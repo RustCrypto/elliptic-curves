@@ -1,4 +1,4 @@
-# RustCrypto: Brainpool P-384 (brainpoolP384r1) elliptic curve
+# RustCrypto: Brainpool P-384 elliptic curves
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -7,8 +7,8 @@
 [![Project Chat][chat-image]][chat-link]
 [![Build Status][build-image]][build-link]
 
-Brainpool P-384 (a.k.a. brainpoolP384r1) elliptic curve types implemented in
-terms of  traits from the [`elliptic-curve`] crate.
+Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curve types
+implemented in terms of traits from the [`elliptic-curve`] crate.
 
 [Documentation][docs-link]
 

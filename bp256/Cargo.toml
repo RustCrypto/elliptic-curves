@@ -1,6 +1,6 @@
 [package]
 name = "bp256"
-description = "Brainpool P-256 (brainpoolP256r1) elliptic curve"
+description = "Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curves"
 version = "0.0.0" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
