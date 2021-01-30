@@ -6,7 +6,7 @@ pub use super::BrainpoolP384r1;
 pub type Signature = ecdsa::Signature<BrainpoolP384r1>;
 
 /// ECDSA/brainpoolP384r1 signature (ASN.1 DER encoded)
-pub type Asn1Signature = ecdsa::der::Signature<BrainpoolP384r1>;
+pub type DerSignature = ecdsa::der::Signature<BrainpoolP384r1>;
 
 impl ecdsa::CheckSignatureBytes for BrainpoolP384r1 {}
 
