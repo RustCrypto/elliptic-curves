@@ -4,16 +4,17 @@ use super::{recoverable, Error, Signature, VerifyingKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1, SecretKey};
 use core::borrow::Borrow;
 use ecdsa_core::{
-    hazmat::RecoverableSignPrimitive,
+    hazmat::{FromDigest, RecoverableSignPrimitive},
     rfc6979,
-    signature::{DigestSigner, RandomizedDigestSigner},
+    signature::{
+        digest::{BlockInput, FixedOutput, Reset, Update},
+        DigestSigner, RandomizedDigestSigner,
+    },
 };
 use elliptic_curve::{
     consts::U32,
-    digest::{BlockInput, FixedOutput, Reset, Update},
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
-    FromDigest,
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]

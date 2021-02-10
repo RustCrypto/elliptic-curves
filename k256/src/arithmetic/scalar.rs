@@ -26,7 +26,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "digest")]
-use elliptic_curve::{consts::U32, Digest, FromDigest};
+use ecdsa_core::{generic_array::typenum::U32, hazmat::FromDigest, signature::digest::Digest};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;

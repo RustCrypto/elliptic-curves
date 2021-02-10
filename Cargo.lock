@@ -92,9 +92,9 @@ dependencies = [
 
 [[package]]
 name = "bstr"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "473fc6b38233f9af7baa94fb5852dca389e3d95b8e21c8e3719301462c5d9faf"
+checksum = "a40b47ad93e1a5404e6c18dec46b628214fee441c70f4ab5d6942142cc268a3d"
 dependencies = [
  "lazy_static",
  "memchr",
@@ -274,9 +274,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65ade418c7a9e4edd2dab3b4749ef6c56ee4b137bc1600215c158cff8e5d39b2"
+checksum = "10c1413b32f5b6235186f806ecdab2ffa1e38898f6dfe1ecde1fef80a6b53151"
 dependencies = [
  "const-oid",
  "typenum",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.11.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#63967617a6b2a3bc79a3963f1a924433ad920ef9"
+source = "git+https://github.com/RustCrypto/signatures.git#19558849ad46bd054f2f68faa55f5c28f262f9ff"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -311,13 +311,13 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.9.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#130e8c431f21a43a1de36fbace59f978705ef4a4"
+source = "git+https://github.com/RustCrypto/traits.git#c577e14f887a0f984c6f403617aa02e893536704"
 dependencies = [
  "base64ct",
- "digest",
  "ff",
  "generic-array",
  "group",
+ "hex-literal",
  "pkcs8",
  "rand_core 0.6.1",
  "serde",
@@ -487,9 +487,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.84"
+version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cca32fa0182e8c0989459524dc356b8f2b5c10f1b9eb521b7d182c03cf8c5ff"
+checksum = "b7282d924be3275cec7f6756ff4121987bc6481325397dde6ba3e7802b1a8b1c"
 
 [[package]]
 name = "log"
@@ -926,9 +926,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.61"
+version = "1.0.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fceb2595057b6891a4ee808f70054bd2d12f0e97f1cbb78689b59f676df325a"
+checksum = "ea1c6153794552ea7cf7cf63b1231a25de00ec90db326ba6264440fa08e31486"
 dependencies = [
  "itoa",
  "ryu",
