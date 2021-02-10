@@ -43,10 +43,13 @@ use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "ecdsa")]
 use crate::{
-    ecdsa::{signature::DigestVerifier, VerifyingKey},
+    ecdsa::{
+        signature::{digest::Digest, DigestVerifier},
+        VerifyingKey,
+    },
     elliptic_curve::{
         consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
-        weierstrass::point::Decompress, Digest,
+        weierstrass::point::Decompress,
     },
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
