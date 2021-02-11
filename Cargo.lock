@@ -74,7 +74,7 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bp256"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -83,7 +83,7 @@ dependencies = [
 
 [[package]]
 name = "bp384"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
