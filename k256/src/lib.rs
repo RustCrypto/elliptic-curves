@@ -108,6 +108,12 @@ impl elliptic_curve::weierstrass::point::Compression for Secp256k1 {
     const COMPRESS_POINTS: bool = true;
 }
 
+#[cfg(feature = "jwk")]
+#[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
+impl elliptic_curve::JwkParameters for Secp256k1 {
+    const CRV: &'static str = "secp256k1";
+}
+
 #[cfg(feature = "pkcs8")]
 impl elliptic_curve::AlgorithmParameters for Secp256k1 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 3, 132, 0, 10]);
