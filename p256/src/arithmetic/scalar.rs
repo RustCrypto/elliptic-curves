@@ -75,7 +75,7 @@ pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
 // The internal representation is as little-endian ordered u64 words.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub struct Scalar(pub(crate) [u64; LIMBS]);
+pub struct Scalar(pub(crate) U256);
 
 impl Field for Scalar {
     fn random(mut rng: impl RngCore) -> Self {
@@ -831,8 +831,8 @@ impl From<&Scalar> for ScalarBits {
         let mut output = [0u32; 8];
 
         for (input, output) in scalar.0.iter().zip(output.chunks_mut(2)) {
-            output[0] = (input >> 32) as u32;
-            output[1] = (input & 0xFFFF) as u32;
+            output[0] = (input & 0xFFFFFFFF) as u32;
+            output[1] = (input >> 32) as u32;
         }
 
         output.into()
