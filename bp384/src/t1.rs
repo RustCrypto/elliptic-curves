@@ -20,7 +20,7 @@ impl elliptic_curve::Curve for BrainpoolP384t1 {
 
 impl elliptic_curve::weierstrass::Curve for BrainpoolP384t1 {}
 
-impl elliptic_curve::weierstrass::point::Compression for BrainpoolP384t1 {
+impl elliptic_curve::weierstrass::PointCompression for BrainpoolP384t1 {
     const COMPRESS_POINTS: bool = false;
 }
 

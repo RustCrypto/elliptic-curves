@@ -58,7 +58,7 @@ impl elliptic_curve::Curve for NistP384 {
 
 impl elliptic_curve::weierstrass::Curve for NistP384 {}
 
-impl elliptic_curve::weierstrass::point::Compression for NistP384 {
+impl elliptic_curve::weierstrass::PointCompression for NistP384 {
     const COMPRESS_POINTS: bool = false;
 }
 
