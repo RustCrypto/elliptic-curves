@@ -107,6 +107,12 @@ jobs:
     strategy:
       matrix:
         include:
+          # ARM32
+          - target: armv7-unknown-linux-gnueabihf
+            rust: 1.46.0 # MSRV
+          - target: armv7-unknown-linux-gnueabihf
+            rust: stable
+
           # ARM64
           - target: aarch64-unknown-linux-gnu
             rust: 1.46.0 # MSRV
@@ -114,7 +120,7 @@ jobs:
             rust: stable
 
           # PPC32
-          - target: aarch64-unknown-linux-gnu
+          - target: powerpc-unknown-linux-gnu
             rust: 1.46.0 # MSRV
           - target: powerpc-unknown-linux-gnu
             rust: stable
