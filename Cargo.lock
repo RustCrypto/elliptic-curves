@@ -460,7 +460,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.7.2"
+version = "0.8.0-pre"
 dependencies = [
  "cfg-if",
  "criterion",
