@@ -45,6 +45,7 @@ jobs:
       - run: cargo build --release --target ${{ matrix.target }} --features ecdh
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa-core
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
+      - run: cargo build --release --target ${{ matrix.target }} --features jwk
       - run: cargo build --release --target ${{ matrix.target }} --features keccak256
       - run: cargo build --release --target ${{ matrix.target }} --features pem
       - run: cargo build --release --target ${{ matrix.target }} --features pkcs8
