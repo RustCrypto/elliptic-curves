@@ -49,7 +49,7 @@ use crate::{
     },
     elliptic_curve::{
         consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
-        weierstrass::point::Decompress,
+        weierstrass::DecompressPoint,
     },
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };

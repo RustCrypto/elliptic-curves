@@ -7,7 +7,7 @@ use elliptic_curve::{
     generic_array::arr,
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::point::Decompress,
+    weierstrass::DecompressPoint,
 };
 
 #[cfg(feature = "zeroize")]
@@ -90,7 +90,7 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-impl Decompress<NistP256> for AffinePoint {
+impl DecompressPoint<NistP256> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
