@@ -321,7 +321,7 @@ dependencies = [
  "group",
  "hex-literal",
  "pkcs8",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
  "serde",
  "serde_json",
  "subtle",
@@ -335,7 +335,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72a4d941a5b7c2a75222e2d44fcdf634a67133d9db31e177ae5ff6ecda852bfe"
 dependencies = [
  "bitvec",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
  "subtle",
 ]
 
@@ -390,7 +390,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61b3c1e8b4f1ca07e6605ea1be903a5f6956aec5c8a67fd44d56076631675ed8"
 dependencies = [
  "ff",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
  "subtle",
 ]
 
@@ -470,7 +470,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "proptest",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
  "sha2",
  "sha3",
 ]
@@ -577,7 +577,7 @@ dependencies = [
  "elliptic-curve",
  "hex-literal",
  "proptest",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
  "sha2",
 ]
 
@@ -706,7 +706,7 @@ checksum = "0ef9e7e66b4468674bfcb0c81af8b7fa0bb154fa9f28eb840da5c447baeb8d7e"
 dependencies = [
  "libc",
  "rand_chacha 0.3.0",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
  "rand_hc 0.3.0",
 ]
 
@@ -727,7 +727,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e12735cf05c9e10bf21534da50a147b924d555dc7a547c42e6bb2d5b6017ae0d"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
 ]
 
 [[package]]
@@ -741,9 +741,9 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c026d7df8b298d90ccbbc5190bd04d85e159eaf5576caeacf8741da93ccbd2e5"
+checksum = "34cf66eb183df1c5876e2dcf6b13d57340741e8dc255b48e40a26de954d06ae7"
 dependencies = [
  "getrandom 0.2.2",
 ]
@@ -763,7 +763,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3190ef7066a446f2e7f42e239d161e905420ccab01eb967c9eb27d21b2322a73"
 dependencies = [
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
 ]
 
 [[package]]
@@ -969,7 +969,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f0242b8e50dd9accdd56170e94ca1ebd223b098eb9c83539a6e367d0f36ae68"
 dependencies = [
  "digest",
- "rand_core 0.6.1",
+ "rand_core 0.6.2",
 ]
 
 [[package]]
