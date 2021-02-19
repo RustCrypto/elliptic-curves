@@ -104,9 +104,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.6.0"
+version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "099e596ef14349721d9016f6b80dd3419ea1bf289ab9b44df8e4dfd3a005d5d9"
+checksum = "63396b8a4b9de3f4fdfb320ab6080762242f66a8ef174c49d8e19b674db4cdbe"
 
 [[package]]
 name = "byteorder"
@@ -274,9 +274,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b70f809fb1678da4d5ea334095cbe8d6c64fea35fc52836db6c241caee68e17e"
+checksum = "c59822d0b3c6c83d3419a6caa1b47cfefe3c494074bdc0ee95db7a52284d21e4"
 dependencies = [
  "const-oid",
  "typenum",
@@ -311,9 +311,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4df0e7de89c5c4e29c5c9a8576d1484603c16b8156765923e650cf99864ddc1f"
+checksum = "203d2ca86d44931f12e9104dcf8f4735a632eb4dd8d8dfe583c87fe41bb8a862"
 dependencies = [
  "base64ct",
  "ff",
@@ -593,9 +593,9 @@ dependencies = [
 
 [[package]]
 name = "pkcs8"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cef7f3bd1bd1bb7b347609085a8ef84e326de2e400bc2b53eba16f77a3dc5bfb"
+checksum = "7f3e7a05338645bdc206ac5b5883d9050ed3351776eebd577e5b15e7ca019811"
 dependencies = [
  "base64ct",
  "der",
@@ -976,9 +976,9 @@ dependencies = [
 
 [[package]]
 name = "spki"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc22de9c8a841f9508de9f6849b018d414199e4682cc094e5677286c81de80f8"
+checksum = "48250aa51181e87d253cfbef4f3652a90fa5fb9395970309c7afc01a6f860df0"
 dependencies = [
  "der",
 ]
