@@ -122,7 +122,7 @@ impl elliptic_curve::JwkParameters for NistP256 {
 
 #[cfg(feature = "pkcs8")]
 impl elliptic_curve::AlgorithmParameters for NistP256 {
-    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new(&[1, 2, 840, 10045, 3, 1, 7]);
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::parse("1.2.840.10045.3.1.7");
 }
 
 /// NIST P-256 field element serialized as bytes.

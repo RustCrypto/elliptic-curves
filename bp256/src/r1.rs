@@ -26,8 +26,7 @@ impl elliptic_curve::weierstrass::PointCompression for BrainpoolP256r1 {
 
 #[cfg(feature = "pkcs8")]
 impl elliptic_curve::AlgorithmParameters for BrainpoolP256r1 {
-    const OID: pkcs8::ObjectIdentifier =
-        pkcs8::ObjectIdentifier::new(&[1, 3, 36, 3, 3, 2, 8, 1, 1, 7]);
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::parse("1.3.36.3.3.2.8.1.1.7");
 }
 
 /// brainpoolP256r1 field element serialized as bytes.
