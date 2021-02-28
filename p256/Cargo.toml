@@ -28,6 +28,7 @@ default-features = false
 features = ["der"]
 
 [dev-dependencies]
+blobby = "0.3"
 ecdsa-core = { version = "=0.11.0-pre.2", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.3"
 proptest = "1.0"
