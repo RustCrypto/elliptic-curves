@@ -79,6 +79,32 @@ where
     }
 }
 
+impl From<PublicKey<Secp256k1>> for VerifyingKey {
+    fn from(public_key: PublicKey<Secp256k1>) -> VerifyingKey {
+        Self {
+            inner: public_key.into(),
+        }
+    }
+}
+
+impl From<&PublicKey<Secp256k1>> for VerifyingKey {
+    fn from(public_key: &PublicKey<Secp256k1>) -> VerifyingKey {
+        public_key.clone().into()
+    }
+}
+
+impl From<VerifyingKey> for PublicKey<Secp256k1> {
+    fn from(verifying_key: VerifyingKey) -> PublicKey<Secp256k1> {
+        verifying_key.inner.into()
+    }
+}
+
+impl From<&VerifyingKey> for PublicKey<Secp256k1> {
+    fn from(verifying_key: &VerifyingKey) -> PublicKey<Secp256k1> {
+        verifying_key.inner.clone().into()
+    }
+}
+
 impl From<&AffinePoint> for VerifyingKey {
     fn from(affine_point: &AffinePoint) -> VerifyingKey {
         VerifyingKey::from_encoded_point(&affine_point.to_encoded_point(false)).unwrap()
