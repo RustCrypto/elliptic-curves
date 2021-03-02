@@ -1,7 +1,9 @@
 //! ECDSA verifier
 
 use super::{recoverable, Error, Signature};
-use crate::{AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, Scalar, Secp256k1};
+use crate::{
+    AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar, Secp256k1,
+};
 use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint};
@@ -11,10 +13,7 @@ use signature::{digest::Digest, DigestVerifier};
 use signature::PrehashSignature;
 
 #[cfg(feature = "pkcs8")]
-use crate::{
-    elliptic_curve::PublicKey,
-    pkcs8::{self, FromPublicKey},
-};
+use crate::pkcs8::{self, FromPublicKey};
 
 #[cfg(feature = "pem")]
 use core::str::FromStr;
@@ -79,28 +78,28 @@ where
     }
 }
 
-impl From<PublicKey<Secp256k1>> for VerifyingKey {
-    fn from(public_key: PublicKey<Secp256k1>) -> VerifyingKey {
+impl From<PublicKey> for VerifyingKey {
+    fn from(public_key: PublicKey) -> VerifyingKey {
         Self {
             inner: public_key.into(),
         }
     }
 }
 
-impl From<&PublicKey<Secp256k1>> for VerifyingKey {
-    fn from(public_key: &PublicKey<Secp256k1>) -> VerifyingKey {
+impl From<&PublicKey> for VerifyingKey {
+    fn from(public_key: &PublicKey) -> VerifyingKey {
         public_key.clone().into()
     }
 }
 
-impl From<VerifyingKey> for PublicKey<Secp256k1> {
-    fn from(verifying_key: VerifyingKey) -> PublicKey<Secp256k1> {
+impl From<VerifyingKey> for PublicKey {
+    fn from(verifying_key: VerifyingKey) -> PublicKey {
         verifying_key.inner.into()
     }
 }
 
-impl From<&VerifyingKey> for PublicKey<Secp256k1> {
-    fn from(verifying_key: &VerifyingKey) -> PublicKey<Secp256k1> {
+impl From<&VerifyingKey> for PublicKey {
+    fn from(verifying_key: &VerifyingKey) -> PublicKey {
         verifying_key.inner.clone().into()
     }
 }
