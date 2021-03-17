@@ -2,7 +2,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.46** or higher.
+//! Rust **1.47** or higher.
 //!
 //! Minimum supported Rust version may be changed in the future, but it will be
 //! accompanied with a minor version bump.
