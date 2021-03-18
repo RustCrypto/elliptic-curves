@@ -179,4 +179,9 @@ mod tests {
         use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
         ecdsa_core::new_verification_test!(NistP256, ECDSA_TEST_VECTORS);
     }
+
+    mod wycheproof {
+        use crate::NistP256;
+        ecdsa_core::new_wycheproof_test!(wycheproof, "wycheproof", NistP256);
+    }
 }
