@@ -1,7 +1,7 @@
 [package]
 name = "bp384"
 description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
-version = "0.0.1" # Also update html_root_url in lib.rs when bumping this
+version = "0.0.2" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
