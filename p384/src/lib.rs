@@ -70,7 +70,7 @@ impl elliptic_curve::JwkParameters for NistP384 {
 
 #[cfg(feature = "pkcs8")]
 impl elliptic_curve::AlgorithmParameters for NistP384 {
-    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::parse("1.3.132.0.34");
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.3.132.0.34");
 }
 
 /// NIST P-384 field element serialized as bytes.
