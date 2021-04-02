@@ -97,7 +97,8 @@ pub type DerSignature = ecdsa_core::der::Signature<Secp256k1>;
 #[cfg(not(feature = "arithmetic"))]
 impl ecdsa_core::CheckSignatureBytes for Secp256k1 {}
 
-#[cfg(all(feature = "ecdsa", feature = "sha256"))]
+#[cfg(feature = "sha256")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
 }

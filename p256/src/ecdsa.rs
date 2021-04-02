@@ -70,7 +70,8 @@ pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
 #[cfg(not(feature = "arithmetic"))]
 impl ecdsa_core::CheckSignatureBytes for NistP256 {}
 
-#[cfg(all(feature = "ecdsa", feature = "sha256"))]
+#[cfg(feature = "sha256")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
     type Digest = sha2::Sha256;
 }
