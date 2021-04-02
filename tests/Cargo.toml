@@ -6,6 +6,3 @@ members = [
     "p256_no_std",
     "p384_no_std",
 ]
-
-[patch.crates-io]
-ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }

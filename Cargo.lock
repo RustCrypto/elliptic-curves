@@ -275,20 +275,12 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.2.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce93ba4502a73722aa4b955d97f4b1bd26f4f8da74315399ca58fb88fe2bdaae"
-dependencies = [
- "typenum",
-]
-
-[[package]]
-name = "der"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7516ff8d4f25ddd138caba1b7836ceb3ddd07660213b50e83ae3165320257ba2"
 dependencies = [
  "const-oid",
+ "typenum",
 ]
 
 [[package]]
@@ -302,11 +294,11 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.11.0-pre.2"
+version = "0.11.0-pre.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9892ebdbc4623a0ccdc7b2264af26fad5281163da5cfaf7dd8428ea6b5ce60ab"
+checksum = "9cae6ee8d621666ce49476f2611056a95e7ba7f0f37356d5085b3cd2fdbac797"
 dependencies = [
- "der 0.2.10",
+ "der",
  "elliptic-curve",
  "hmac",
  "signature",
@@ -597,7 +589,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b813f58dc6e5d1820868a3c3df3a7ae7852aa2d3d18e98f0d6b20ddd01fe25d7"
 dependencies = [
  "base64ct",
- "der 0.3.0",
+ "der",
  "spki",
  "zeroize",
 ]
@@ -944,7 +936,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9dae7e047abc519c96350e9484a96c6bf1492348af912fd3446dd2dc323f6268"
 dependencies = [
- "der 0.3.0",
+ "der",
 ]
 
 [[package]]
