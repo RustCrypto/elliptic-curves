@@ -42,7 +42,7 @@ rand_core = { version = "0.6", features = ["getrandom"] }
 [features]
 default = ["arithmetic", "pkcs8", "std"]
 arithmetic = ["elliptic-curve/arithmetic"]
-digest = ["ecdsa-core/digest"]
+digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh", "zeroize"]
 ecdsa = ["arithmetic", "digest", "ecdsa-core/sign", "ecdsa-core/verify", "zeroize"]
 expose-field = ["arithmetic"]
