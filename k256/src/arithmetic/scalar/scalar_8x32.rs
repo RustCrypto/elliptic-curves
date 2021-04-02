@@ -1,12 +1,12 @@
 //! ProjectiveArithmetic modulo curve base order using 32-bit limbs.
 //! Ported from <https://github.com/bitcoin-core/secp256k1>
 
+use crate::{FieldBytes, ScalarBits};
+use core::convert::TryInto;
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    util::{adc32, sbb32}
+    util::{adc32, sbb32},
 };
-use core::convert::TryInto;
-use crate::{FieldBytes, ScalarBits};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
@@ -189,22 +189,38 @@ impl Scalar8x32 {
 
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         // Interpret the bytes as a big-endian integer w.
-        let w7 =
-            ((bytes[0] as u32) << 24) | ((bytes[1] as u32) << 16) | ((bytes[2] as u32) << 8) | (bytes[3] as u32);
-        let w6 =
-            ((bytes[4] as u32) << 24) | ((bytes[5] as u32) << 16) | ((bytes[6] as u32) << 8) | (bytes[7] as u32);
-        let w5 =
-            ((bytes[8] as u32) << 24) | ((bytes[9] as u32) << 16) | ((bytes[10] as u32) << 8) | (bytes[11] as u32);
-        let w4 =
-            ((bytes[12] as u32) << 24) | ((bytes[13] as u32) << 16) | ((bytes[14] as u32) << 8) | (bytes[15] as u32);
-        let w3 =
-            ((bytes[16] as u32) << 24) | ((bytes[17] as u32) << 16) | ((bytes[18] as u32) << 8) | (bytes[19] as u32);
-        let w2 =
-            ((bytes[20] as u32) << 24) | ((bytes[21] as u32) << 16) | ((bytes[22] as u32) << 8) | (bytes[23] as u32);
-        let w1 =
-            ((bytes[24] as u32) << 24) | ((bytes[25] as u32) << 16) | ((bytes[26] as u32) << 8) | (bytes[27] as u32);
-        let w0 =
-            ((bytes[28] as u32) << 24) | ((bytes[29] as u32) << 16) | ((bytes[30] as u32) << 8) | (bytes[31] as u32);
+        let w7 = ((bytes[0] as u32) << 24)
+            | ((bytes[1] as u32) << 16)
+            | ((bytes[2] as u32) << 8)
+            | (bytes[3] as u32);
+        let w6 = ((bytes[4] as u32) << 24)
+            | ((bytes[5] as u32) << 16)
+            | ((bytes[6] as u32) << 8)
+            | (bytes[7] as u32);
+        let w5 = ((bytes[8] as u32) << 24)
+            | ((bytes[9] as u32) << 16)
+            | ((bytes[10] as u32) << 8)
+            | (bytes[11] as u32);
+        let w4 = ((bytes[12] as u32) << 24)
+            | ((bytes[13] as u32) << 16)
+            | ((bytes[14] as u32) << 8)
+            | (bytes[15] as u32);
+        let w3 = ((bytes[16] as u32) << 24)
+            | ((bytes[17] as u32) << 16)
+            | ((bytes[18] as u32) << 8)
+            | (bytes[19] as u32);
+        let w2 = ((bytes[20] as u32) << 24)
+            | ((bytes[21] as u32) << 16)
+            | ((bytes[22] as u32) << 8)
+            | (bytes[23] as u32);
+        let w1 = ((bytes[24] as u32) << 24)
+            | ((bytes[25] as u32) << 16)
+            | ((bytes[26] as u32) << 8)
+            | (bytes[27] as u32);
+        let w0 = ((bytes[28] as u32) << 24)
+            | ((bytes[29] as u32) << 16)
+            | ((bytes[30] as u32) << 8)
+            | (bytes[31] as u32);
         Self([w0, w1, w2, w3, w4, w5, w6, w7])
     }
 
@@ -474,7 +490,13 @@ impl Scalar8x32 {
     pub fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
         debug_assert!(shift >= 256);
 
-        fn ifelse(c: bool, x: u32, y: u32) -> u32 { if c {x} else {y} }
+        fn ifelse(c: bool, x: u32, y: u32) -> u32 {
+            if c {
+                x
+            } else {
+                y
+            }
+        }
 
         let l = self.mul_wide(b);
         let shiftlimbs = shift >> 5;
@@ -482,34 +504,75 @@ impl Scalar8x32 {
         let shifthigh = 32 - shiftlow;
         let r0 = ifelse(
             shift < 512,
-            (l.0[shiftlimbs] >> shiftlow) | ifelse(shift < 480 && shiftlow != 0, l.0[1 + shiftlimbs] << shifthigh, 0),
-            0);
+            (l.0[shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 480 && shiftlow != 0,
+                    l.0[1 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
         let r1 = ifelse(
             shift < 480,
-            (l.0[1 + shiftlimbs] >> shiftlow) | ifelse(shift < 448 && shiftlow != 0, l.0[2 + shiftlimbs] << shifthigh, 0),
-            0);
+            (l.0[1 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 448 && shiftlow != 0,
+                    l.0[2 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
         let r2 = ifelse(
             shift < 448,
-            (l.0[2 + shiftlimbs] >> shiftlow) | ifelse(shift < 416 && shiftlow != 0, l.0[3 + shiftlimbs] << shifthigh, 0),
-            0);
+            (l.0[2 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 416 && shiftlow != 0,
+                    l.0[3 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
         let r3 = ifelse(
             shift < 416,
-            (l.0[3 + shiftlimbs] >> shiftlow) | ifelse(shift < 384 && shiftlow != 0, l.0[4 + shiftlimbs] << shifthigh, 0),
-            0);
+            (l.0[3 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 384 && shiftlow != 0,
+                    l.0[4 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
         let r4 = ifelse(
             shift < 384,
-            (l.0[4 + shiftlimbs] >> shiftlow) | ifelse(shift < 352 && shiftlow != 0, l.0[5 + shiftlimbs] << shifthigh, 0),
-            0);
+            (l.0[4 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 352 && shiftlow != 0,
+                    l.0[5 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
         let r5 = ifelse(
             shift < 352,
-            (l.0[5 + shiftlimbs] >> shiftlow) | ifelse(shift < 320 && shiftlow != 0, l.0[6 + shiftlimbs] << shifthigh, 0),
-            0);
+            (l.0[5 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 320 && shiftlow != 0,
+                    l.0[6 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
         let r6 = ifelse(
             shift < 320,
-            (l.0[6 + shiftlimbs] >> shiftlow) | ifelse(shift < 288 && shiftlow != 0, l.0[7 + shiftlimbs] << shifthigh, 0),
-            0);
-        let r7 = ifelse(
-            shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
+            (l.0[6 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 288 && shiftlow != 0,
+                    l.0[7 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+        let r7 = ifelse(shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
 
         let res = Self([r0, r1, r2, r3, r4, r5, r6, r7]);
 
@@ -517,7 +580,6 @@ impl Scalar8x32 {
         let c = (l.0[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
         res.conditional_add_bit(0, Choice::from(c as u8))
     }
-
 }
 
 #[cfg(feature = "zeroize")]

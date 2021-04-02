@@ -1,10 +1,10 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
+use crate::FieldBytes;
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    util::{adc64, mac64, sbb64}
+    util::{adc64, mac64, sbb64},
 };
-use crate::FieldBytes;
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
