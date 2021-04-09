@@ -39,7 +39,7 @@
 //! This example requires the `ecdsa` and `sha256` Cargo features are enabled:
 //!
 //! ```
-//! # #[cfg(feature = "ecdsa")]
+//! # #[cfg(all(feature = "ecdsa", feature = "sha256"))]
 //! # {
 //! use k256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
