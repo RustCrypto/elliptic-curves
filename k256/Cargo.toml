@@ -40,7 +40,7 @@ proptest = "1.0"
 rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
-default = ["arithmetic", "pkcs8", "std"]
+default = ["arithmetic", "ecdsa", "pkcs8", "sha256", "std"]
 arithmetic = ["elliptic-curve/arithmetic"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh", "zeroize"]
