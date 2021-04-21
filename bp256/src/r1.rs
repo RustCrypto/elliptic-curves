@@ -18,6 +18,34 @@ impl elliptic_curve::Curve for BrainpoolP256r1 {
     type FieldSize = U32;
 }
 
+#[cfg(target_pointer_width = "32")]
+impl elliptic_curve::Order for BrainpoolP256r1 {
+    type Limbs = [u32; 8];
+
+    const ORDER: [u32; 8] = [
+        0x9748_56a7,
+        0x901e_0e82,
+        0xb561_a6f7,
+        0x8c39_7aa3,
+        0x9d83_8d71,
+        0x3e66_0a90,
+        0xa1ee_a9bc,
+        0xa9fb_57db,
+    ];
+}
+
+#[cfg(target_pointer_width = "64")]
+impl elliptic_curve::Order for BrainpoolP256r1 {
+    type Limbs = [u64; 4];
+
+    const ORDER: Self::Limbs = [
+        0x901e_0e82_9748_56a7,
+        0x8c39_7aa3_b561_a6f7,
+        0x3e66_0a90_9d83_8d71,
+        0xa9fb_57db_a1ee_a9bc,
+    ];
+}
+
 impl elliptic_curve::weierstrass::Curve for BrainpoolP256r1 {}
 
 impl elliptic_curve::weierstrass::PointCompression for BrainpoolP256r1 {

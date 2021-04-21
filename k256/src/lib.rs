@@ -101,6 +101,34 @@ impl elliptic_curve::Curve for Secp256k1 {
     type FieldSize = U32;
 }
 
+#[cfg(target_pointer_width = "32")]
+impl elliptic_curve::Order for Secp256k1 {
+    type Limbs = [u32; 8];
+
+    const ORDER: Self::Limbs = [
+        0xD036_4141,
+        0xBFD2_5E8C,
+        0xAF48_A03B,
+        0xBAAE_DCE6,
+        0xFFFF_FFFE,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+        0xFFFF_FFFF,
+    ];
+}
+
+#[cfg(target_pointer_width = "64")]
+impl elliptic_curve::Order for Secp256k1 {
+    type Limbs = [u64; 4];
+
+    const ORDER: Self::Limbs = [
+        0xBFD2_5E8C_D036_4141,
+        0xBAAE_DCE6_AF48_A03B,
+        0xFFFF_FFFF_FFFF_FFFE,
+        0xFFFF_FFFF_FFFF_FFFF,
+    ];
+}
+
 impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
 
 impl elliptic_curve::weierstrass::PointCompression for Secp256k1 {

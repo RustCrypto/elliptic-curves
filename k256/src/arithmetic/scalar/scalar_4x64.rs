@@ -1,11 +1,12 @@
 //! ProjectiveArithmetic modulo curve base order using 64-bit limbs.
 //! Ported from <https://github.com/bitcoin-core/secp256k1>
 
-use crate::{FieldBytes, ScalarBits};
+use crate::{FieldBytes, ScalarBits, Secp256k1};
 use core::convert::TryInto;
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     util::{adc64, sbb64},
+    Order,
 };
 
 #[cfg(feature = "zeroize")]
@@ -13,12 +14,7 @@ use elliptic_curve::zeroize::Zeroize;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-pub const MODULUS: [u64; 4] = [
-    0xBFD2_5E8C_D036_4141,
-    0xBAAE_DCE6_AF48_A03B,
-    0xFFFF_FFFF_FFFF_FFFE,
-    0xFFFF_FFFF_FFFF_FFFF,
-];
+pub const MODULUS: [u64; 4] = Secp256k1::ORDER;
 
 /// Limbs of 2^256 minus the secp256k1 order.
 pub const NEG_MODULUS: [u64; 4] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
