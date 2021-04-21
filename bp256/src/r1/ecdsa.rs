@@ -8,8 +8,6 @@ pub type Signature = ecdsa::Signature<BrainpoolP256r1>;
 /// ECDSA/brainpoolP256r1 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa::der::Signature<BrainpoolP256r1>;
 
-impl ecdsa::CheckSignatureBytes for BrainpoolP256r1 {}
-
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa::hazmat::DigestPrimitive for BrainpoolP256r1 {
