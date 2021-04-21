@@ -58,6 +58,40 @@ impl elliptic_curve::Curve for NistP384 {
 
 impl elliptic_curve::weierstrass::Curve for NistP384 {}
 
+#[cfg(target_pointer_width = "32")]
+impl elliptic_curve::Order for NistP384 {
+    type Limbs = [u32; 12];
+
+    const ORDER: Self::Limbs = [
+        0xccc5_2973,
+        0xecec_196a,
+        0x48b0_a77a,
+        0x581a_0db2,
+        0xf437_2ddf,
+        0xc763_4d81,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+        0xffff_ffff,
+    ];
+}
+
+#[cfg(target_pointer_width = "64")]
+impl elliptic_curve::Order for NistP384 {
+    type Limbs = [u64; 6];
+
+    const ORDER: Self::Limbs = [
+        0xecec_196a_ccc5_2973,
+        0x581a_0db2_48b0_a77a,
+        0xc763_4d81_f437_2ddf,
+        0xffff_ffff_ffff_ffff,
+        0xffff_ffff_ffff_ffff,
+        0xffff_ffff_ffff_ffff,
+    ];
+}
+
 impl elliptic_curve::weierstrass::PointCompression for NistP384 {
     const COMPRESS_POINTS: bool = false;
 }

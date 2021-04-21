@@ -107,6 +107,34 @@ impl elliptic_curve::Curve for NistP256 {
     type FieldSize = U32;
 }
 
+#[cfg(target_pointer_width = "32")]
+impl elliptic_curve::Order for NistP256 {
+    type Limbs = [u32; 8];
+
+    const ORDER: Self::Limbs = [
+        0xfc63_2551,
+        0xf3b9_cac2,
+        0xa717_9e84,
+        0xbce6_faad,
+        0xffff_ffff,
+        0xffff_ffff,
+        0x0000_0000,
+        0xffff_ffff,
+    ];
+}
+
+#[cfg(target_pointer_width = "64")]
+impl elliptic_curve::Order for NistP256 {
+    type Limbs = [u64; 4];
+
+    const ORDER: Self::Limbs = [
+        0xf3b9_cac2_fc63_2551,
+        0xbce6_faad_a717_9e84,
+        0xffff_ffff_ffff_ffff,
+        0xffff_ffff_0000_0000,
+    ];
+}
+
 impl elliptic_curve::weierstrass::Curve for NistP256 {}
 
 impl elliptic_curve::weierstrass::PointCompression for NistP256 {
