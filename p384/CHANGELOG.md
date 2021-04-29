@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0 (2021-04-29)
+### Added
+- `jwk` feature ([#279])
+- `Order` constant ([#328])
+
+### Changed
+- Rename `ecdsa::Asn1Signature` to `::DerSignature` ([#288])
+- Bump `elliptic-curve` crate dependency to v0.9 ([#293])
+- Bump `pkcs8` crate dependency to v0.6 ([#319])
+- Bump `ecdsa` crate dependency to v0.11 ([#330])
+
+[#279]: https://github.com/RustCrypto/elliptic-curves/pull/279
+[#288]: https://github.com/RustCrypto/elliptic-curves/pull/288
+[#293]: https://github.com/RustCrypto/elliptic-curves/pull/293
+[#319]: https://github.com/RustCrypto/elliptic-curves/pull/319
+[#328]: https://github.com/RustCrypto/elliptic-curves/pull/328
+[#330]: https://github.com/RustCrypto/elliptic-curves/pull/330
+
 ## 0.6.1 (2020-12-16)
 ### Fixed
 - Trigger docs.rs rebuild with nightly bugfix ([RustCrypto/traits#412])
