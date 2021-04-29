@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0 (2021-04-29)
+### Added
+- `jwk` feature ([#279])
+- Wycheproof ECDSA P-256 test vectors ([#313])
+- `Order` constant ([#328])
+
+### Changed
+- Rename `ecdsa::Asn1Signature` to `::DerSignature` ([#288])
+- Migrate to `FromDigest` trait from `ecdsa` crate ([#292])
+- Bump `elliptic-curve` to v0.9.2 ([#296])
+- Bump `pkcs8` to v0.6 ([#319])
+- Bump `ecdsa` crate dependency to v0.11 ([#330])
+
+### Fixed
+- `DigestPrimitive` feature gating ([#324])
+
+[#279]: https://github.com/RustCrypto/elliptic-curves/pull/279
+[#288]: https://github.com/RustCrypto/elliptic-curves/pull/288
+[#292]: https://github.com/RustCrypto/elliptic-curves/pull/292
+[#296]: https://github.com/RustCrypto/elliptic-curves/pull/296
+[#313]: https://github.com/RustCrypto/elliptic-curves/pull/313
+[#319]: https://github.com/RustCrypto/elliptic-curves/pull/319
+[#324]: https://github.com/RustCrypto/elliptic-curves/pull/324
+[#328]: https://github.com/RustCrypto/elliptic-curves/pull/328
+[#330]: https://github.com/RustCrypto/elliptic-curves/pull/330
+
 ## 0.7.3 (2021-04-16)
 ### Changed
 - Make `ecdsa` a default feature ([#325])
