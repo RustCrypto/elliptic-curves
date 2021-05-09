@@ -186,11 +186,13 @@ impl ProjectivePoint {
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
 
-        ProjectivePoint {
+        let mut ret = ProjectivePoint {
             x: ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(),
             y: ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak(),
             z: ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak(),
-        }
+        };
+        ret.conditional_assign(self, other.is_identity());
+        ret
     }
 
     /// Doubles this point.
@@ -536,6 +538,14 @@ mod tests {
 
             p += &generator;
         }
+    }
+
+    #[test]
+    fn test_vector_add_mixed_identity() {
+        let generator = ProjectivePoint::generator();
+        let p0 = generator + ProjectivePoint::identity();
+        let p1 = generator + AffinePoint::identity();
+        assert_eq!(p0, p1);
     }
 
     #[test]
