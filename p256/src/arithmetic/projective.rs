@@ -184,11 +184,13 @@ impl ProjectivePoint {
         let bxz3_part = bxz_part.double() + &bxz_part; // 23, 24
         let xx3_m_zz3 = xx.double() + &xx - &z3; // 25, 26, 27
 
-        ProjectivePoint {
+        let mut ret = ProjectivePoint {
             x: (yy_p_bzz3 * &xy_pairs) - &(yz_pairs * &bxz3_part), // 28, 32, 33
             y: (yy_p_bzz3 * &yy_m_bzz3) + &(xx3_m_zz3 * &bxz3_part), // 29, 30, 31
             z: (yy_m_bzz3 * &yz_pairs) + &(xy_pairs * &xx3_m_zz3), // 34, 35, 36
-        }
+        };
+        ret.conditional_assign(self, other.is_identity());
+        ret
     }
 
     /// Doubles this point.
@@ -537,6 +539,14 @@ mod tests {
 
             p += &generator;
         }
+    }
+
+    #[test]
+    fn test_vector_add_mixed_identity() {
+        let generator = ProjectivePoint::generator();
+        let p0 = generator + ProjectivePoint::identity();
+        let p1 = generator + AffinePoint::identity();
+        assert_eq!(p0, p1);
     }
 
     #[test]
