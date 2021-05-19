@@ -13,7 +13,7 @@ keywords = ["brainpool", "crypto", "ecc"]
 
 [dependencies]
 ecdsa = { version = "0.11", optional = true, default-features = false, features = ["der"] }
-elliptic-curve = { version = "0.9.11", default-features = false, features = ["hazmat"] }
+elliptic-curve = { version = "0.9.12", default-features = false, features = ["hazmat"] }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
