@@ -20,7 +20,7 @@ use core::str::FromStr;
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VerifyingKey {
     /// Core ECDSA verify key
     pub(super) inner: ecdsa_core::VerifyingKey<Secp256k1>,
