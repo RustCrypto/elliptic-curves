@@ -40,7 +40,27 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Secp256k1>;
 /// secp256k1 field element serialized as bits.
 pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
 
-/// An element in the finite field modulo curve order.
+/// Scalars are elements in the finite field modulo n.
+///
+/// # Trait impls
+///
+/// Much of the important functionality of scalars is provided by traits from
+/// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
+/// `k256::elliptic_curve::ff`:
+///
+/// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
+///   represents elements of finite fields and provides:
+///   - [`Field::random`](https://docs.rs/ff/latest/ff/trait.Field.html#tymethod.random) -
+///     generate a random scalar
+///   - `double`, `square`, and `invert` operations
+///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
+///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
+/// - [`PrimeField`](https://docs.rs/ff/0.9.0/ff/trait.PrimeField.html) -
+///   represents elements of prime fields and provides:
+///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
+///   - `char_le_bits`, `multiplicative_generator`, `root_of_unity` constants.
+///
+/// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(ScalarImpl);

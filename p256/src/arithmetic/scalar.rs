@@ -30,16 +30,18 @@ type U256 = [u64; LIMBS];
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
-
-// One way to calculate the modulus is with `GP/PARI`:
-// ```
-// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
-// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
-// E = ellinit([Mod(-3, p), Mod(b, p)])
-// default(parisize, 120000000)
-// n = ellsea(E)
-// isprime(n)
-// ```
+///
+/// # Calculating the modulus
+/// One way to calculate the modulus is with `GP/PARI`:
+///
+/// ```text
+/// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
+/// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
+/// E = ellinit([Mod(-3, p), Mod(b, p)])
+/// default(parisize, 120000000)
+/// n = ellsea(E)
+/// isprime(n)
+/// ```
 pub const MODULUS: U256 = [
     0xf3b9_cac2_fc63_2551,
     0xbce6_faad_a717_9e84,
@@ -71,8 +73,27 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
 /// NIST P-256 field element serialized as bits.
 pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
 
-/// An element in the finite field modulo n.
-// The internal representation is as little-endian ordered u64 words.
+/// Scalars are elements in the finite field modulo n.
+///
+/// # Trait impls
+///
+/// Much of the important functionality of scalars is provided by traits from
+/// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
+/// `p256::elliptic_curve::ff`:
+///
+/// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
+///   represents elements of finite fields and provides:
+///   - [`Field::random`](https://docs.rs/ff/latest/ff/trait.Field.html#tymethod.random) -
+///     generate a random scalar
+///   - `double`, `square`, and `invert` operations
+///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
+///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
+/// - [`PrimeField`](https://docs.rs/ff/0.9.0/ff/trait.PrimeField.html) -
+///   represents elements of prime fields and provides:
+///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
+///   - `char_le_bits`, `multiplicative_generator`, `root_of_unity` constants.
+///
+/// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(pub(crate) U256);
