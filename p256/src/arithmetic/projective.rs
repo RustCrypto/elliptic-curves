@@ -70,6 +70,12 @@ impl From<AffinePoint> for ProjectivePoint {
     }
 }
 
+impl From<ProjectivePoint> for AffinePoint {
+    fn from(p: ProjectivePoint) -> AffinePoint {
+        p.to_affine()
+    }
+}
+
 impl ConditionallySelectable for ProjectivePoint {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         ProjectivePoint {
