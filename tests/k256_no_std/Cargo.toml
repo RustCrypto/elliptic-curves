@@ -9,6 +9,7 @@ k256 = { path = "../../k256", default-features = false }
 
 [features]
 arithmetic = ["k256/arithmetic"]
+bits = ["k256/bits"]
 ecdh = ["k256/ecdh"]
 ecdsa = ["k256/ecdsa"]
 ecdsa-core = ["k256/ecdsa-core"]

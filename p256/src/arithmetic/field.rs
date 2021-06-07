@@ -1,12 +1,14 @@
 //! Field arithmetic modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 
-use crate::FieldBytes;
+use crate::{
+    arithmetic::util::{adc, mac, sbb},
+    FieldBytes,
+};
 use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    util::{adc64, mac64, sbb64},
 };
 
 #[cfg(feature = "zeroize")]
@@ -126,10 +128,10 @@ impl FieldElement {
 
         // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
         // value of 2^64 - 1.
-        let (_, borrow) = sbb64(w[0], MODULUS.0[0], 0);
-        let (_, borrow) = sbb64(w[1], MODULUS.0[1], borrow);
-        let (_, borrow) = sbb64(w[2], MODULUS.0[2], borrow);
-        let (_, borrow) = sbb64(w[3], MODULUS.0[3], borrow);
+        let (_, borrow) = sbb(w[0], MODULUS.0[0], 0);
+        let (_, borrow) = sbb(w[1], MODULUS.0[1], borrow);
+        let (_, borrow) = sbb(w[2], MODULUS.0[2], borrow);
+        let (_, borrow) = sbb(w[3], MODULUS.0[3], borrow);
         let is_some = (borrow as u8) & 1;
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
@@ -172,10 +174,10 @@ impl FieldElement {
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
         // Bit 256 of p is set, so addition can result in five words.
-        let (w0, carry) = adc64(self.0[0], rhs.0[0], 0);
-        let (w1, carry) = adc64(self.0[1], rhs.0[1], carry);
-        let (w2, carry) = adc64(self.0[2], rhs.0[2], carry);
-        let (w3, w4) = adc64(self.0[3], rhs.0[3], carry);
+        let (w0, carry) = adc(self.0[0], rhs.0[0], 0);
+        let (w1, carry) = adc(self.0[1], rhs.0[1], carry);
+        let (w2, carry) = adc(self.0[2], rhs.0[2], carry);
+        let (w3, w4) = adc(self.0[3], rhs.0[3], carry);
 
         // Attempt to subtract the modulus, to ensure the result is in the field.
         Self::sub_inner(
@@ -219,19 +221,19 @@ impl FieldElement {
         r3: u64,
         r4: u64,
     ) -> Self {
-        let (w0, borrow) = sbb64(l0, r0, 0);
-        let (w1, borrow) = sbb64(l1, r1, borrow);
-        let (w2, borrow) = sbb64(l2, r2, borrow);
-        let (w3, borrow) = sbb64(l3, r3, borrow);
-        let (_, borrow) = sbb64(l4, r4, borrow);
+        let (w0, borrow) = sbb(l0, r0, 0);
+        let (w1, borrow) = sbb(l1, r1, borrow);
+        let (w2, borrow) = sbb(l2, r2, borrow);
+        let (w3, borrow) = sbb(l3, r3, borrow);
+        let (_, borrow) = sbb(l4, r4, borrow);
 
         // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
         // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
         // modulus.
-        let (w0, carry) = adc64(w0, MODULUS.0[0] & borrow, 0);
-        let (w1, carry) = adc64(w1, MODULUS.0[1] & borrow, carry);
-        let (w2, carry) = adc64(w2, MODULUS.0[2] & borrow, carry);
-        let (w3, _) = adc64(w3, MODULUS.0[3] & borrow, carry);
+        let (w0, carry) = adc(w0, MODULUS.0[0] & borrow, 0);
+        let (w1, carry) = adc(w1, MODULUS.0[1] & borrow, carry);
+        let (w2, carry) = adc(w2, MODULUS.0[2] & borrow, carry);
+        let (w3, _) = adc(w3, MODULUS.0[3] & borrow, carry);
 
         FieldElement([w0, w1, w2, w3])
     }
@@ -287,25 +289,25 @@ impl FieldElement {
         r6: u64,
         r7: u64,
     ) -> Self {
-        let (r1, carry) = mac64(r1, r0, MODULUS.0[1], r0);
-        let (r2, carry) = adc64(r2, 0, carry);
-        let (r3, carry) = mac64(r3, r0, MODULUS.0[3], carry);
-        let (r4, carry2) = adc64(r4, 0, carry);
+        let (r1, carry) = mac(r1, r0, MODULUS.0[1], r0);
+        let (r2, carry) = adc(r2, 0, carry);
+        let (r3, carry) = mac(r3, r0, MODULUS.0[3], carry);
+        let (r4, carry2) = adc(r4, 0, carry);
 
-        let (r2, carry) = mac64(r2, r1, MODULUS.0[1], r1);
-        let (r3, carry) = adc64(r3, 0, carry);
-        let (r4, carry) = mac64(r4, r1, MODULUS.0[3], carry);
-        let (r5, carry2) = adc64(r5, carry2, carry);
+        let (r2, carry) = mac(r2, r1, MODULUS.0[1], r1);
+        let (r3, carry) = adc(r3, 0, carry);
+        let (r4, carry) = mac(r4, r1, MODULUS.0[3], carry);
+        let (r5, carry2) = adc(r5, carry2, carry);
 
-        let (r3, carry) = mac64(r3, r2, MODULUS.0[1], r2);
-        let (r4, carry) = adc64(r4, 0, carry);
-        let (r5, carry) = mac64(r5, r2, MODULUS.0[3], carry);
-        let (r6, carry2) = adc64(r6, carry2, carry);
+        let (r3, carry) = mac(r3, r2, MODULUS.0[1], r2);
+        let (r4, carry) = adc(r4, 0, carry);
+        let (r5, carry) = mac(r5, r2, MODULUS.0[3], carry);
+        let (r6, carry2) = adc(r6, carry2, carry);
 
-        let (r4, carry) = mac64(r4, r3, MODULUS.0[1], r3);
-        let (r5, carry) = adc64(r5, 0, carry);
-        let (r6, carry) = mac64(r6, r3, MODULUS.0[3], carry);
-        let (r7, r8) = adc64(r7, carry2, carry);
+        let (r4, carry) = mac(r4, r3, MODULUS.0[1], r3);
+        let (r5, carry) = adc(r5, 0, carry);
+        let (r6, carry) = mac(r6, r3, MODULUS.0[3], carry);
+        let (r7, r8) = adc(r7, carry2, carry);
 
         // Result may be within MODULUS of the correct value
         Self::sub_inner(
@@ -326,25 +328,25 @@ impl FieldElement {
     pub const fn mul(&self, rhs: &Self) -> Self {
         // Schoolbook multiplication.
 
-        let (w0, carry) = mac64(0, self.0[0], rhs.0[0], 0);
-        let (w1, carry) = mac64(0, self.0[0], rhs.0[1], carry);
-        let (w2, carry) = mac64(0, self.0[0], rhs.0[2], carry);
-        let (w3, w4) = mac64(0, self.0[0], rhs.0[3], carry);
+        let (w0, carry) = mac(0, self.0[0], rhs.0[0], 0);
+        let (w1, carry) = mac(0, self.0[0], rhs.0[1], carry);
+        let (w2, carry) = mac(0, self.0[0], rhs.0[2], carry);
+        let (w3, w4) = mac(0, self.0[0], rhs.0[3], carry);
 
-        let (w1, carry) = mac64(w1, self.0[1], rhs.0[0], 0);
-        let (w2, carry) = mac64(w2, self.0[1], rhs.0[1], carry);
-        let (w3, carry) = mac64(w3, self.0[1], rhs.0[2], carry);
-        let (w4, w5) = mac64(w4, self.0[1], rhs.0[3], carry);
+        let (w1, carry) = mac(w1, self.0[1], rhs.0[0], 0);
+        let (w2, carry) = mac(w2, self.0[1], rhs.0[1], carry);
+        let (w3, carry) = mac(w3, self.0[1], rhs.0[2], carry);
+        let (w4, w5) = mac(w4, self.0[1], rhs.0[3], carry);
 
-        let (w2, carry) = mac64(w2, self.0[2], rhs.0[0], 0);
-        let (w3, carry) = mac64(w3, self.0[2], rhs.0[1], carry);
-        let (w4, carry) = mac64(w4, self.0[2], rhs.0[2], carry);
-        let (w5, w6) = mac64(w5, self.0[2], rhs.0[3], carry);
+        let (w2, carry) = mac(w2, self.0[2], rhs.0[0], 0);
+        let (w3, carry) = mac(w3, self.0[2], rhs.0[1], carry);
+        let (w4, carry) = mac(w4, self.0[2], rhs.0[2], carry);
+        let (w5, w6) = mac(w5, self.0[2], rhs.0[3], carry);
 
-        let (w3, carry) = mac64(w3, self.0[3], rhs.0[0], 0);
-        let (w4, carry) = mac64(w4, self.0[3], rhs.0[1], carry);
-        let (w5, carry) = mac64(w5, self.0[3], rhs.0[2], carry);
-        let (w6, w7) = mac64(w6, self.0[3], rhs.0[3], carry);
+        let (w3, carry) = mac(w3, self.0[3], rhs.0[0], 0);
+        let (w4, carry) = mac(w4, self.0[3], rhs.0[1], carry);
+        let (w5, carry) = mac(w5, self.0[3], rhs.0[2], carry);
+        let (w6, w7) = mac(w6, self.0[3], rhs.0[3], carry);
 
         FieldElement::montgomery_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
     }

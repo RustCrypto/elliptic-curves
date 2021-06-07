@@ -2,18 +2,24 @@
 
 pub mod blinding;
 
-use crate::{FieldBytes, NistP256};
+use crate::{
+    arithmetic::util::{adc, mac, sbb},
+    FieldBytes, NistP256,
+};
 use core::{
     convert::TryInto,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    ff::{Field, PrimeField},
     generic_array::arr,
+    group::ff::{Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    util::{adc64, mac64, sbb64},
+    ScalarArithmetic,
 };
+
+#[cfg(feature = "bits")]
+use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "digest")]
 use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
@@ -67,11 +73,9 @@ pub const MU: [u64; 5] = [
     0x0000_0000_0000_0001,
 ];
 
-/// Non-zero scalar value.
-pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
-
-/// NIST P-256 field element serialized as bits.
-pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
+impl ScalarArithmetic for NistP256 {
+    type Scalar = Scalar;
+}
 
 /// Scalars are elements in the finite field modulo n.
 ///
@@ -92,6 +96,8 @@ pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
 ///   represents elements of prime fields and provides:
 ///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
 ///   - `char_le_bits`, `multiplicative_generator`, `root_of_unity` constants.
+/// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
+///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default)]
@@ -154,12 +160,6 @@ impl Field for Scalar {
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
-    #[cfg(target_pointer_width = "32")]
-    type ReprBits = [u32; 8];
-
-    #[cfg(target_pointer_width = "64")]
-    type ReprBits = [u64; 4];
-
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
     const S: u32 = 4;
@@ -179,10 +179,10 @@ impl PrimeField for Scalar {
 
         // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
         // value of 2^64 - 1.
-        let (_, borrow) = sbb64(w[0], MODULUS[0], 0);
-        let (_, borrow) = sbb64(w[1], MODULUS[1], borrow);
-        let (_, borrow) = sbb64(w[2], MODULUS[2], borrow);
-        let (_, borrow) = sbb64(w[3], MODULUS[3], borrow);
+        let (_, borrow) = sbb(w[0], MODULUS[0], 0);
+        let (_, borrow) = sbb(w[1], MODULUS[1], borrow);
+        let (_, borrow) = sbb(w[2], MODULUS[2], borrow);
+        let (_, borrow) = sbb(w[3], MODULUS[3], borrow);
         let is_some = (borrow as u8) & 1;
 
         CtOption::new(Scalar(w), Choice::from(is_some)).into()
@@ -192,12 +192,35 @@ impl PrimeField for Scalar {
         self.to_bytes()
     }
 
-    fn to_le_bits(&self) -> ScalarBits {
-        self.into()
-    }
-
     fn is_odd(&self) -> bool {
         self.0[0] as u8 == 1
+    }
+
+    fn multiplicative_generator() -> Self {
+        7u64.into()
+    }
+
+    fn root_of_unity() -> Self {
+        Scalar::from_repr(arr![u8;
+            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
+            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
+            0xb4, 0x1e, 0x66, 0x00,
+        ])
+        .unwrap()
+    }
+}
+
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl PrimeFieldBits for Scalar {
+    #[cfg(target_pointer_width = "32")]
+    type ReprBits = [u32; 8];
+
+    #[cfg(target_pointer_width = "64")]
+    type ReprBits = [u64; 4];
+
+    fn to_le_bits(&self) -> ScalarBits {
+        self.into()
     }
 
     #[cfg(target_pointer_width = "32")]
@@ -218,19 +241,6 @@ impl PrimeField for Scalar {
     #[cfg(target_pointer_width = "64")]
     fn char_le_bits() -> ScalarBits {
         MODULUS.into()
-    }
-
-    fn multiplicative_generator() -> Self {
-        7u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Scalar::from_repr(arr![u8;
-            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
-            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
-            0xb4, 0x1e, 0x66, 0x00,
-        ])
-        .unwrap()
     }
 }
 
@@ -354,10 +364,10 @@ impl Scalar {
     /// Returns self + rhs mod n
     pub const fn add(&self, rhs: &Self) -> Self {
         // Bit 256 of n is set, so addition can result in five words.
-        let (w0, carry) = adc64(self.0[0], rhs.0[0], 0);
-        let (w1, carry) = adc64(self.0[1], rhs.0[1], carry);
-        let (w2, carry) = adc64(self.0[2], rhs.0[2], carry);
-        let (w3, w4) = adc64(self.0[3], rhs.0[3], carry);
+        let (w0, carry) = adc(self.0[0], rhs.0[0], 0);
+        let (w1, carry) = adc(self.0[1], rhs.0[1], carry);
+        let (w2, carry) = adc(self.0[2], rhs.0[2], carry);
+        let (w3, w4) = adc(self.0[3], rhs.0[3], carry);
 
         // Attempt to subtract the modulus, to ensure the result is in the field.
         Self::sub_inner(
@@ -392,19 +402,19 @@ impl Scalar {
         r3: u64,
         r4: u64,
     ) -> Self {
-        let (w0, borrow) = sbb64(l0, r0, 0);
-        let (w1, borrow) = sbb64(l1, r1, borrow);
-        let (w2, borrow) = sbb64(l2, r2, borrow);
-        let (w3, borrow) = sbb64(l3, r3, borrow);
-        let (_, borrow) = sbb64(l4, r4, borrow);
+        let (w0, borrow) = sbb(l0, r0, 0);
+        let (w1, borrow) = sbb(l1, r1, borrow);
+        let (w2, borrow) = sbb(l2, r2, borrow);
+        let (w3, borrow) = sbb(l3, r3, borrow);
+        let (_, borrow) = sbb(l4, r4, borrow);
 
         // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
         // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
         // modulus.
-        let (w0, carry) = adc64(w0, MODULUS[0] & borrow, 0);
-        let (w1, carry) = adc64(w1, MODULUS[1] & borrow, carry);
-        let (w2, carry) = adc64(w2, MODULUS[2] & borrow, carry);
-        let (w3, _) = adc64(w3, MODULUS[3] & borrow, carry);
+        let (w0, carry) = adc(w0, MODULUS[0] & borrow, 0);
+        let (w1, carry) = adc(w1, MODULUS[1] & borrow, carry);
+        let (w2, carry) = adc(w2, MODULUS[2] & borrow, carry);
+        let (w3, _) = adc(w3, MODULUS[3] & borrow, carry);
 
         Scalar([w0, w1, w2, w3])
     }
@@ -454,35 +464,35 @@ impl Scalar {
         const fn q1_times_mu_shift_five(q1: &[u64; 5]) -> [u64; 5] {
             // Schoolbook multiplication.
 
-            let (_w0, carry) = mac64(0, q1[0], MU[0], 0);
-            let (w1, carry) = mac64(0, q1[0], MU[1], carry);
-            let (w2, carry) = mac64(0, q1[0], MU[2], carry);
-            let (w3, carry) = mac64(0, q1[0], MU[3], carry);
-            let (w4, w5) = mac64(0, q1[0], MU[4], carry);
+            let (_w0, carry) = mac(0, q1[0], MU[0], 0);
+            let (w1, carry) = mac(0, q1[0], MU[1], carry);
+            let (w2, carry) = mac(0, q1[0], MU[2], carry);
+            let (w3, carry) = mac(0, q1[0], MU[3], carry);
+            let (w4, w5) = mac(0, q1[0], MU[4], carry);
 
-            let (_w1, carry) = mac64(w1, q1[1], MU[0], 0);
-            let (w2, carry) = mac64(w2, q1[1], MU[1], carry);
-            let (w3, carry) = mac64(w3, q1[1], MU[2], carry);
-            let (w4, carry) = mac64(w4, q1[1], MU[3], carry);
-            let (w5, w6) = mac64(w5, q1[1], MU[4], carry);
+            let (_w1, carry) = mac(w1, q1[1], MU[0], 0);
+            let (w2, carry) = mac(w2, q1[1], MU[1], carry);
+            let (w3, carry) = mac(w3, q1[1], MU[2], carry);
+            let (w4, carry) = mac(w4, q1[1], MU[3], carry);
+            let (w5, w6) = mac(w5, q1[1], MU[4], carry);
 
-            let (_w2, carry) = mac64(w2, q1[2], MU[0], 0);
-            let (w3, carry) = mac64(w3, q1[2], MU[1], carry);
-            let (w4, carry) = mac64(w4, q1[2], MU[2], carry);
-            let (w5, carry) = mac64(w5, q1[2], MU[3], carry);
-            let (w6, w7) = mac64(w6, q1[2], MU[4], carry);
+            let (_w2, carry) = mac(w2, q1[2], MU[0], 0);
+            let (w3, carry) = mac(w3, q1[2], MU[1], carry);
+            let (w4, carry) = mac(w4, q1[2], MU[2], carry);
+            let (w5, carry) = mac(w5, q1[2], MU[3], carry);
+            let (w6, w7) = mac(w6, q1[2], MU[4], carry);
 
-            let (_w3, carry) = mac64(w3, q1[3], MU[0], 0);
-            let (w4, carry) = mac64(w4, q1[3], MU[1], carry);
-            let (w5, carry) = mac64(w5, q1[3], MU[2], carry);
-            let (w6, carry) = mac64(w6, q1[3], MU[3], carry);
-            let (w7, w8) = mac64(w7, q1[3], MU[4], carry);
+            let (_w3, carry) = mac(w3, q1[3], MU[0], 0);
+            let (w4, carry) = mac(w4, q1[3], MU[1], carry);
+            let (w5, carry) = mac(w5, q1[3], MU[2], carry);
+            let (w6, carry) = mac(w6, q1[3], MU[3], carry);
+            let (w7, w8) = mac(w7, q1[3], MU[4], carry);
 
-            let (_w4, carry) = mac64(w4, q1[4], MU[0], 0);
-            let (w5, carry) = mac64(w5, q1[4], MU[1], carry);
-            let (w6, carry) = mac64(w6, q1[4], MU[2], carry);
-            let (w7, carry) = mac64(w7, q1[4], MU[3], carry);
-            let (w8, w9) = mac64(w8, q1[4], MU[4], carry);
+            let (_w4, carry) = mac(w4, q1[4], MU[0], 0);
+            let (w5, carry) = mac(w5, q1[4], MU[1], carry);
+            let (w6, carry) = mac(w6, q1[4], MU[2], carry);
+            let (w7, carry) = mac(w7, q1[4], MU[3], carry);
+            let (w8, w9) = mac(w8, q1[4], MU[4], carry);
 
             // let q2 = [_w0, _w1, _w2, _w3, _w4, w5, w6, w7, w8, w9];
             [w5, w6, w7, w8, w9]
@@ -495,25 +505,25 @@ impl Scalar {
         const fn q3_times_n_keep_five(q3: &[u64; 5]) -> [u64; 5] {
             // Schoolbook multiplication.
 
-            let (w0, carry) = mac64(0, q3[0], MODULUS[0], 0);
-            let (w1, carry) = mac64(0, q3[0], MODULUS[1], carry);
-            let (w2, carry) = mac64(0, q3[0], MODULUS[2], carry);
-            let (w3, carry) = mac64(0, q3[0], MODULUS[3], carry);
-            let (w4, _) = mac64(0, q3[0], 0, carry);
+            let (w0, carry) = mac(0, q3[0], MODULUS[0], 0);
+            let (w1, carry) = mac(0, q3[0], MODULUS[1], carry);
+            let (w2, carry) = mac(0, q3[0], MODULUS[2], carry);
+            let (w3, carry) = mac(0, q3[0], MODULUS[3], carry);
+            let (w4, _) = mac(0, q3[0], 0, carry);
 
-            let (w1, carry) = mac64(w1, q3[1], MODULUS[0], 0);
-            let (w2, carry) = mac64(w2, q3[1], MODULUS[1], carry);
-            let (w3, carry) = mac64(w3, q3[1], MODULUS[2], carry);
-            let (w4, _) = mac64(w4, q3[1], MODULUS[3], carry);
+            let (w1, carry) = mac(w1, q3[1], MODULUS[0], 0);
+            let (w2, carry) = mac(w2, q3[1], MODULUS[1], carry);
+            let (w3, carry) = mac(w3, q3[1], MODULUS[2], carry);
+            let (w4, _) = mac(w4, q3[1], MODULUS[3], carry);
 
-            let (w2, carry) = mac64(w2, q3[2], MODULUS[0], 0);
-            let (w3, carry) = mac64(w3, q3[2], MODULUS[1], carry);
-            let (w4, _) = mac64(w4, q3[2], MODULUS[2], carry);
+            let (w2, carry) = mac(w2, q3[2], MODULUS[0], 0);
+            let (w3, carry) = mac(w3, q3[2], MODULUS[1], carry);
+            let (w4, _) = mac(w4, q3[2], MODULUS[2], carry);
 
-            let (w3, carry) = mac64(w3, q3[3], MODULUS[0], 0);
-            let (w4, _) = mac64(w4, q3[3], MODULUS[1], carry);
+            let (w3, carry) = mac(w3, q3[3], MODULUS[0], 0);
+            let (w4, _) = mac(w4, q3[3], MODULUS[1], carry);
 
-            let (w4, _) = mac64(w4, q3[4], MODULUS[0], 0);
+            let (w4, _) = mac(w4, q3[4], MODULUS[0], 0);
 
             [w0, w1, w2, w3, w4]
         }
@@ -523,11 +533,11 @@ impl Scalar {
         #[inline]
         #[allow(clippy::too_many_arguments)]
         const fn sub_inner_five(l: [u64; 5], r: [u64; 5]) -> [u64; 5] {
-            let (w0, borrow) = sbb64(l[0], r[0], 0);
-            let (w1, borrow) = sbb64(l[1], r[1], borrow);
-            let (w2, borrow) = sbb64(l[2], r[2], borrow);
-            let (w3, borrow) = sbb64(l[3], r[3], borrow);
-            let (w4, _borrow) = sbb64(l[4], r[4], borrow);
+            let (w0, borrow) = sbb(l[0], r[0], 0);
+            let (w1, borrow) = sbb(l[1], r[1], borrow);
+            let (w2, borrow) = sbb(l[2], r[2], borrow);
+            let (w3, borrow) = sbb(l[3], r[3], borrow);
+            let (w4, _borrow) = sbb(l[4], r[4], borrow);
 
             // If underflow occurred on the final limb - don't care (= add b^{k+1}).
             [w0, w1, w2, w3, w4]
@@ -538,20 +548,20 @@ impl Scalar {
         #[inline]
         #[allow(clippy::too_many_arguments)]
         const fn subtract_n_if_necessary(r0: u64, r1: u64, r2: u64, r3: u64, r4: u64) -> [u64; 5] {
-            let (w0, borrow) = sbb64(r0, MODULUS[0], 0);
-            let (w1, borrow) = sbb64(r1, MODULUS[1], borrow);
-            let (w2, borrow) = sbb64(r2, MODULUS[2], borrow);
-            let (w3, borrow) = sbb64(r3, MODULUS[3], borrow);
-            let (w4, borrow) = sbb64(r4, 0, borrow);
+            let (w0, borrow) = sbb(r0, MODULUS[0], 0);
+            let (w1, borrow) = sbb(r1, MODULUS[1], borrow);
+            let (w2, borrow) = sbb(r2, MODULUS[2], borrow);
+            let (w3, borrow) = sbb(r3, MODULUS[3], borrow);
+            let (w4, borrow) = sbb(r4, 0, borrow);
 
             // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
             // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
             // modulus.
-            let (w0, carry) = adc64(w0, MODULUS[0] & borrow, 0);
-            let (w1, carry) = adc64(w1, MODULUS[1] & borrow, carry);
-            let (w2, carry) = adc64(w2, MODULUS[2] & borrow, carry);
-            let (w3, carry) = adc64(w3, MODULUS[3] & borrow, carry);
-            let (w4, _carry) = adc64(w4, 0, carry);
+            let (w0, carry) = adc(w0, MODULUS[0] & borrow, 0);
+            let (w1, carry) = adc(w1, MODULUS[1] & borrow, carry);
+            let (w2, carry) = adc(w2, MODULUS[2] & borrow, carry);
+            let (w3, carry) = adc(w3, MODULUS[3] & borrow, carry);
+            let (w4, _carry) = adc(w4, 0, carry);
 
             [w0, w1, w2, w3, w4]
         }
@@ -567,25 +577,25 @@ impl Scalar {
     pub const fn mul(&self, rhs: &Self) -> Self {
         // Schoolbook multiplication.
 
-        let (w0, carry) = mac64(0, self.0[0], rhs.0[0], 0);
-        let (w1, carry) = mac64(0, self.0[0], rhs.0[1], carry);
-        let (w2, carry) = mac64(0, self.0[0], rhs.0[2], carry);
-        let (w3, w4) = mac64(0, self.0[0], rhs.0[3], carry);
+        let (w0, carry) = mac(0, self.0[0], rhs.0[0], 0);
+        let (w1, carry) = mac(0, self.0[0], rhs.0[1], carry);
+        let (w2, carry) = mac(0, self.0[0], rhs.0[2], carry);
+        let (w3, w4) = mac(0, self.0[0], rhs.0[3], carry);
 
-        let (w1, carry) = mac64(w1, self.0[1], rhs.0[0], 0);
-        let (w2, carry) = mac64(w2, self.0[1], rhs.0[1], carry);
-        let (w3, carry) = mac64(w3, self.0[1], rhs.0[2], carry);
-        let (w4, w5) = mac64(w4, self.0[1], rhs.0[3], carry);
+        let (w1, carry) = mac(w1, self.0[1], rhs.0[0], 0);
+        let (w2, carry) = mac(w2, self.0[1], rhs.0[1], carry);
+        let (w3, carry) = mac(w3, self.0[1], rhs.0[2], carry);
+        let (w4, w5) = mac(w4, self.0[1], rhs.0[3], carry);
 
-        let (w2, carry) = mac64(w2, self.0[2], rhs.0[0], 0);
-        let (w3, carry) = mac64(w3, self.0[2], rhs.0[1], carry);
-        let (w4, carry) = mac64(w4, self.0[2], rhs.0[2], carry);
-        let (w5, w6) = mac64(w5, self.0[2], rhs.0[3], carry);
+        let (w2, carry) = mac(w2, self.0[2], rhs.0[0], 0);
+        let (w3, carry) = mac(w3, self.0[2], rhs.0[1], carry);
+        let (w4, carry) = mac(w4, self.0[2], rhs.0[2], carry);
+        let (w5, w6) = mac(w5, self.0[2], rhs.0[3], carry);
 
-        let (w3, carry) = mac64(w3, self.0[3], rhs.0[0], 0);
-        let (w4, carry) = mac64(w4, self.0[3], rhs.0[1], carry);
-        let (w5, carry) = mac64(w5, self.0[3], rhs.0[2], carry);
-        let (w6, w7) = mac64(w6, self.0[3], rhs.0[3], carry);
+        let (w3, carry) = mac(w3, self.0[3], rhs.0[0], 0);
+        let (w4, carry) = mac(w4, self.0[3], rhs.0[1], carry);
+        let (w5, carry) = mac(w5, self.0[3], rhs.0[2], carry);
+        let (w6, w7) = mac(w6, self.0[3], rhs.0[3], carry);
 
         Scalar::barrett_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
     }
@@ -846,7 +856,8 @@ impl ConstantTimeEq for Scalar {
     }
 }
 
-#[cfg(target_pointer_width = "32")]
+#[cfg(all(feature = "bits", target_pointer_width = "32"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         let mut output = [0u32; 8];
@@ -860,7 +871,8 @@ impl From<&Scalar> for ScalarBits {
     }
 }
 
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(feature = "bits", target_pointer_width = "64"))]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         scalar.0.into()
@@ -882,7 +894,7 @@ impl From<&Scalar> for FieldBytes {
 #[cfg(feature = "zeroize")]
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
-        **secret_key.secret_scalar()
+        *secret_key.to_secret_scalar()
     }
 }
 
@@ -897,7 +909,7 @@ impl Zeroize for Scalar {
 mod tests {
     use super::Scalar;
     use crate::FieldBytes;
-    use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::group::ff::PrimeField;
 
     #[cfg(feature = "zeroize")]
     use crate::SecretKey;
@@ -957,9 +969,9 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_pointer_width = "32")]
+    #[cfg(all(feature = "bits", target_pointer_width = "32"))]
     fn scalar_into_scalarbits() {
-        use super::ScalarBits;
+        use crate::ScalarBits;
 
         let minus_one = ScalarBits::from([
             0xfc63_2550,

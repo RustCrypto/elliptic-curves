@@ -6,7 +6,7 @@
 use super::Scalar;
 use core::borrow::Borrow;
 use elliptic_curve::{
-    ff::Field,
+    group::ff::Field,
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::CtOption,

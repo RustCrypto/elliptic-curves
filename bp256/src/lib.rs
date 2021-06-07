@@ -21,7 +21,7 @@ pub mod r1;
 pub mod t1;
 
 pub use crate::{r1::BrainpoolP256r1, t1::BrainpoolP256t1};
-pub use elliptic_curve;
+pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;

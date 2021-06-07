@@ -136,7 +136,7 @@ mod tests {
         BlindedScalar, Scalar,
     };
     use ecdsa_core::hazmat::SignPrimitive;
-    use elliptic_curve::{ff::PrimeField, generic_array::GenericArray, rand_core::OsRng};
+    use elliptic_curve::{generic_array::GenericArray, group::ff::PrimeField, rand_core::OsRng};
     use hex_literal::hex;
 
     // Test vector from RFC 6979 Appendix 2.5 (NIST P-256 + SHA-256)

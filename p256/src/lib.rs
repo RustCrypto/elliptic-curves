@@ -64,21 +64,18 @@ pub mod ecdsa;
 #[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
 pub mod test_vectors;
 
-pub use elliptic_curve;
+pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{
     affine::AffinePoint,
     projective::ProjectivePoint,
-    scalar::blinding::BlindedScalar,
-    scalar::{NonZeroScalar, Scalar, ScalarBits},
+    scalar::{blinding::BlindedScalar, Scalar},
 };
 
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
-
-use elliptic_curve::consts::U32;
 
 /// NIST P-256 elliptic curve.
 ///
@@ -103,36 +100,12 @@ use elliptic_curve::consts::U32;
 pub struct NistP256;
 
 impl elliptic_curve::Curve for NistP256 {
-    /// 256-bit (32-byte)
-    type FieldSize = U32;
-}
+    /// 256-bit field modulus
+    type UInt = U256;
 
-#[cfg(target_pointer_width = "32")]
-impl elliptic_curve::Order for NistP256 {
-    type Limbs = [u32; 8];
-
-    const ORDER: Self::Limbs = [
-        0xfc63_2551,
-        0xf3b9_cac2,
-        0xa717_9e84,
-        0xbce6_faad,
-        0xffff_ffff,
-        0xffff_ffff,
-        0x0000_0000,
-        0xffff_ffff,
-    ];
-}
-
-#[cfg(target_pointer_width = "64")]
-impl elliptic_curve::Order for NistP256 {
-    type Limbs = [u64; 4];
-
-    const ORDER: Self::Limbs = [
-        0xf3b9_cac2_fc63_2551,
-        0xbce6_faad_a717_9e84,
-        0xffff_ffff_ffff_ffff,
-        0xffff_ffff_0000_0000,
-    ];
+    /// Curve order
+    const ORDER: U256 =
+        U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
 }
 
 impl elliptic_curve::weierstrass::Curve for NistP256 {}
@@ -161,6 +134,10 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP256>;
 /// NIST P-256 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
 
+/// Non-zero NIST P-256 scalar field element.
+#[cfg(feature = "arithmetic")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
+
 /// NIST P-256 public key.
 #[cfg(feature = "arithmetic")]
 pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
@@ -170,20 +147,14 @@ pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
 
-/// Bytes containing a NIST P-256 secret scalar
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
-pub type SecretBytes = elliptic_curve::SecretBytes<NistP256>;
-
-#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
-impl elliptic_curve::SecretValue for NistP256 {
-    type Secret = SecretBytes;
-
-    /// Parse the secret value from bytes
-    fn from_secret_bytes(bytes: &FieldBytes) -> Option<SecretBytes> {
-        Some(bytes.clone().into())
-    }
-}
-
 #[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
+
+/// Bit representation of a NIST P-256 scalar field element.
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
+
+/// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
+/// inner byte value is within range of the [`Curve::ORDER`].
+pub type ScalarBytes = elliptic_curve::ScalarBytes<NistP256>;
