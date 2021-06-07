@@ -26,7 +26,7 @@ pub use elliptic_curve;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::consts::U48;
+use elliptic_curve::bigint::U384;
 
 /// NIST P-384 elliptic curve.
 ///
@@ -52,45 +52,15 @@ use elliptic_curve::consts::U48;
 pub struct NistP384;
 
 impl elliptic_curve::Curve for NistP384 {
-    /// 384-bit (48-byte)
-    type FieldSize = U48;
+    /// 384-bit field modulus
+    type UInt = U384;
+
+    /// Curve order
+    const ORDER: U384 =
+        U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
 }
 
 impl elliptic_curve::weierstrass::Curve for NistP384 {}
-
-#[cfg(target_pointer_width = "32")]
-impl elliptic_curve::Order for NistP384 {
-    type Limbs = [u32; 12];
-
-    const ORDER: Self::Limbs = [
-        0xccc5_2973,
-        0xecec_196a,
-        0x48b0_a77a,
-        0x581a_0db2,
-        0xf437_2ddf,
-        0xc763_4d81,
-        0xffff_ffff,
-        0xffff_ffff,
-        0xffff_ffff,
-        0xffff_ffff,
-        0xffff_ffff,
-        0xffff_ffff,
-    ];
-}
-
-#[cfg(target_pointer_width = "64")]
-impl elliptic_curve::Order for NistP384 {
-    type Limbs = [u64; 6];
-
-    const ORDER: Self::Limbs = [
-        0xecec_196a_ccc5_2973,
-        0x581a_0db2_48b0_a77a,
-        0xc763_4d81_f437_2ddf,
-        0xffff_ffff_ffff_ffff,
-        0xffff_ffff_ffff_ffff,
-        0xffff_ffff_ffff_ffff,
-    ];
-}
 
 impl elliptic_curve::weierstrass::PointCompression for NistP384 {
     const COMPRESS_POINTS: bool = false;
@@ -119,21 +89,6 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 #[cfg(feature = "zeroize")]
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
-
-/// Bytes containing a NIST P-384 secret scalar
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
-pub type SecretBytes = elliptic_curve::SecretBytes<NistP384>;
-
-#[cfg(feature = "zeroize")]
-impl elliptic_curve::SecretValue for NistP384 {
-    type Secret = SecretBytes;
-
-    /// Parse the secret value from bytes
-    fn from_secret_bytes(bytes: &FieldBytes) -> Option<SecretBytes> {
-        Some(bytes.clone().into())
-    }
-}
 
 #[cfg(feature = "zeroize")]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP384 {}

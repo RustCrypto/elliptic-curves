@@ -1,12 +1,14 @@
 //! ProjectiveArithmetic modulo curve base order using 64-bit limbs.
 //! Ported from <https://github.com/bitcoin-core/secp256k1>
 
-use crate::{FieldBytes, ScalarBits, Secp256k1};
+use crate::{
+    arithmetic::util::{adc64, sbb64},
+    FieldBytes, Secp256k1,
+};
 use core::convert::TryInto;
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    util::{adc64, sbb64},
-    Order,
+    Curve,
 };
 
 #[cfg(feature = "zeroize")]
@@ -14,7 +16,7 @@ use elliptic_curve::zeroize::Zeroize;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-pub const MODULUS: [u64; 4] = Secp256k1::ORDER;
+pub const MODULUS: [u64; 4] = Secp256k1::ORDER.into_limbs();
 
 /// Limbs of 2^256 minus the secp256k1 order.
 pub const NEG_MODULUS: [u64; 4] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
@@ -459,8 +461,10 @@ impl ConstantTimeEq for Scalar4x64 {
     }
 }
 
-impl From<Scalar4x64> for ScalarBits {
-    fn from(scalar: Scalar4x64) -> ScalarBits {
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl From<Scalar4x64> for crate::ScalarBits {
+    fn from(scalar: Scalar4x64) -> crate::ScalarBits {
         scalar.0.into()
     }
 }

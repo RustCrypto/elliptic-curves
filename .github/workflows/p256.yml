@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.47.0 # MSRV
+          - 1.51.0 # MSRV
           - stable
         target:
           - thumbv7em-none-eabi
@@ -42,6 +42,7 @@ jobs:
       - run: cp ../../Cargo.lock .. # Use same Cargo.lock resolution that's checked in
       - run: cargo build --release --target ${{ matrix.target }}
       - run: cargo build --release --target ${{ matrix.target }} --features arithmetic
+      - run: cargo build --release --target ${{ matrix.target }} --features bits
       - run: cargo build --release --target ${{ matrix.target }} --features ecdh
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa-core
       - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
@@ -58,7 +59,7 @@ jobs:
         include:
           # 32-bit Linux
           - target: i686-unknown-linux-gnu
-            rust: 1.47.0 # MSRV
+            rust: 1.51.0 # MSRV
             deps: sudo apt update && sudo apt install gcc-multilib
           - target: i686-unknown-linux-gnu
             rust: stable
@@ -66,7 +67,7 @@ jobs:
 
           # 64-bit Linux
           - target: x86_64-unknown-linux-gnu
-            rust: 1.47.0 # MSRV
+            rust: 1.51.0 # MSRV
           - target: x86_64-unknown-linux-gnu
             rust: stable
 
@@ -84,37 +85,38 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
-  cross:
-    strategy:
-      matrix:
-        include:
-          # ARM32
-          - target: armv7-unknown-linux-gnueabihf
-            rust: 1.47.0 # MSRV
-          - target: armv7-unknown-linux-gnueabihf
-            rust: stable
-
-          # ARM64
-          - target: aarch64-unknown-linux-gnu
-            rust: 1.47.0 # MSRV
-          - target: aarch64-unknown-linux-gnu
-            rust: stable
-
-          # PPC32
-          - target: powerpc-unknown-linux-gnu
-            rust: 1.47.0 # MSRV
-          - target: powerpc-unknown-linux-gnu
-            rust: stable
-
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - run: ${{ matrix.deps }}
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-          override: true
-      - run: cargo install cross
-      - run: cross test --release --target ${{ matrix.target }} --all-features
+# TODO(tarcieri): re-enable when git-based dependencies are removed and replaced with releases
+#  cross:
+#    strategy:
+#      matrix:
+#        include:
+#          # ARM32
+#          - target: armv7-unknown-linux-gnueabihf
+#            rust: 1.51.0 # MSRV
+#          - target: armv7-unknown-linux-gnueabihf
+#            rust: stable
+#
+#          # ARM64
+#          - target: aarch64-unknown-linux-gnu
+#            rust: 1.51.0 # MSRV
+#          - target: aarch64-unknown-linux-gnu
+#            rust: stable
+#
+#          # PPC32
+#          - target: powerpc-unknown-linux-gnu
+#            rust: 1.51.0 # MSRV
+#          - target: powerpc-unknown-linux-gnu
+#            rust: stable
+#
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - run: ${{ matrix.deps }}
+#      - uses: actions-rs/toolchain@v1
+#        with:
+#          profile: minimal
+#          toolchain: ${{ matrix.rust }}
+#          target: ${{ matrix.target }}
+#          override: true
+#      - run: cargo install cross
+#      - run: cross test --release --target ${{ matrix.target }} --all-features

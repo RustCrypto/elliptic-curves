@@ -1,10 +1,13 @@
 //! secp256k1 benchmarks
 
-use criterion::measurement::Measurement;
-use criterion::{criterion_group, criterion_main, BenchmarkGroup, Criterion};
+use criterion::{
+    criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
+};
 use hex_literal::hex;
-use k256::elliptic_curve::{ff::PrimeField, generic_array::arr};
-use k256::{FieldElement, ProjectivePoint, Scalar};
+use k256::{
+    elliptic_curve::{generic_array::arr, group::ff::PrimeField},
+    FieldElement, ProjectivePoint, Scalar,
+};
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(arr![u8;

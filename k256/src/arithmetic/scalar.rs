@@ -5,25 +5,33 @@ use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
         mod scalar_8x32;
-        use scalar_8x32::MODULUS;
         use scalar_8x32::Scalar8x32 as ScalarImpl;
         use scalar_8x32::WideScalar16x32 as WideScalarImpl;
+
+        #[cfg(feature = "bits")]
+        use scalar_8x32::MODULUS;
     } else if #[cfg(target_pointer_width = "64")] {
         mod scalar_4x64;
-        use scalar_4x64::MODULUS;
         use scalar_4x64::Scalar4x64 as ScalarImpl;
         use scalar_4x64::WideScalar8x64 as WideScalarImpl;
+
+        #[cfg(feature = "bits")]
+        use scalar_4x64::MODULUS;
     }
 }
 
 use crate::{FieldBytes, Secp256k1};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
-    ff::{Field, PrimeField},
     generic_array::arr,
+    group::ff::{Field, PrimeField},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    ScalarArithmetic,
 };
+
+#[cfg(feature = "bits")]
+use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "digest")]
 use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
@@ -34,11 +42,9 @@ use elliptic_curve::zeroize::Zeroize;
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
-/// Non-zero scalar value.
-pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Secp256k1>;
-
-/// secp256k1 field element serialized as bits.
-pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
+impl ScalarArithmetic for Secp256k1 {
+    type Scalar = Scalar;
+}
 
 /// Scalars are elements in the finite field modulo n.
 ///
@@ -55,10 +61,12 @@ pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
 ///   - `double`, `square`, and `invert` operations
 ///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
 ///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
-/// - [`PrimeField`](https://docs.rs/ff/0.9.0/ff/trait.PrimeField.html) -
+/// - [`PrimeField`](https://docs.rs/ff/latest/ff/trait.PrimeField.html) -
 ///   represents elements of prime fields and provides:
 ///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
 ///   - `char_le_bits`, `multiplicative_generator`, `root_of_unity` constants.
+/// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
+///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default)]
@@ -114,14 +122,6 @@ impl Field for Scalar {
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
-    cfg_if! {
-        if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
-            type ReprBits = [u32; 8];
-        } else if #[cfg(target_pointer_width = "64")] {
-            type ReprBits = [u64; 4];
-        }
-    }
-
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
     const S: u32 = 6;
@@ -138,16 +138,8 @@ impl PrimeField for Scalar {
         self.to_bytes()
     }
 
-    fn to_le_bits(&self) -> ScalarBits {
-        self.into()
-    }
-
     fn is_odd(&self) -> bool {
         self.0.is_odd().into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        MODULUS.into()
     }
 
     fn multiplicative_generator() -> Self {
@@ -161,6 +153,26 @@ impl PrimeField for Scalar {
             0x2b, 0x05, 0x2f, 0x2,
         ])
         .unwrap()
+    }
+}
+
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl PrimeFieldBits for Scalar {
+    cfg_if! {
+        if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+            type ReprBits = [u32; 8];
+        } else if #[cfg(target_pointer_width = "64")] {
+            type ReprBits = [u64; 4];
+        }
+    }
+
+    fn to_le_bits(&self) -> ScalarBits {
+        self.into()
+    }
+
+    fn char_le_bits() -> ScalarBits {
+        MODULUS.into()
     }
 }
 
@@ -534,6 +546,8 @@ impl MulAssign<&Scalar> for Scalar {
     }
 }
 
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         scalar.0.into()
@@ -562,8 +576,8 @@ impl Zeroize for Scalar {
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
-    use elliptic_curve::ff::PrimeField;
+    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
+    use elliptic_curve::group::ff::PrimeField;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 

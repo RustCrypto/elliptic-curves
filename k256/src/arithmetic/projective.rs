@@ -7,8 +7,7 @@ use core::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    ff::Field,
-    group::{Curve, Group},
+    group::{ff::Field, Curve, Group},
     rand_core::RngCore,
     sec1::FromEncodedPoint,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
@@ -467,7 +466,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         Scalar,
     };
-    use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::group::ff::PrimeField;
 
     #[test]
     fn affine_to_projective() {

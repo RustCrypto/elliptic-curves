@@ -64,14 +64,10 @@ pub mod ecdsa;
 #[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
 pub mod test_vectors;
 
-pub use elliptic_curve;
+pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{
-    affine::AffinePoint,
-    projective::ProjectivePoint,
-    scalar::{NonZeroScalar, Scalar, ScalarBits},
-};
+pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::FieldElement;
@@ -79,8 +75,6 @@ pub use arithmetic::FieldElement;
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
-
-use elliptic_curve::consts::U32;
 
 /// K-256 (secp256k1) elliptic curve.
 ///
@@ -97,36 +91,12 @@ use elliptic_curve::consts::U32;
 pub struct Secp256k1;
 
 impl elliptic_curve::Curve for Secp256k1 {
-    /// 256-bit (32-byte)
-    type FieldSize = U32;
-}
+    /// 256-bit field modulus
+    type UInt = U256;
 
-#[cfg(target_pointer_width = "32")]
-impl elliptic_curve::Order for Secp256k1 {
-    type Limbs = [u32; 8];
-
-    const ORDER: Self::Limbs = [
-        0xD036_4141,
-        0xBFD2_5E8C,
-        0xAF48_A03B,
-        0xBAAE_DCE6,
-        0xFFFF_FFFE,
-        0xFFFF_FFFF,
-        0xFFFF_FFFF,
-        0xFFFF_FFFF,
-    ];
-}
-
-#[cfg(target_pointer_width = "64")]
-impl elliptic_curve::Order for Secp256k1 {
-    type Limbs = [u64; 4];
-
-    const ORDER: Self::Limbs = [
-        0xBFD2_5E8C_D036_4141,
-        0xBAAE_DCE6_AF48_A03B,
-        0xFFFF_FFFF_FFFF_FFFE,
-        0xFFFF_FFFF_FFFF_FFFF,
-    ];
+    /// Curve order
+    const ORDER: U256 =
+        U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 }
 
 impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
@@ -158,6 +128,10 @@ pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
 /// SEC1-encoded secp256k1 (K-256) curve point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
 
+/// Non-zero secp256k1 (K-256) scalar field element.
+#[cfg(feature = "arithmetic")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Secp256k1>;
+
 /// secp256k1 (K-256) public key.
 #[cfg(feature = "arithmetic")]
 pub type PublicKey = elliptic_curve::PublicKey<Secp256k1>;
@@ -167,20 +141,14 @@ pub type PublicKey = elliptic_curve::PublicKey<Secp256k1>;
 #[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 
-/// Bytes containing a secp256k1 secret scalar.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
-pub type SecretBytes = elliptic_curve::SecretBytes<Secp256k1>;
-
-#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
-impl elliptic_curve::SecretValue for Secp256k1 {
-    type Secret = SecretBytes;
-
-    /// Parse the secret value from bytes
-    fn from_secret_bytes(bytes: &FieldBytes) -> Option<SecretBytes> {
-        Some(bytes.clone().into())
-    }
-}
-
 #[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
+
+/// Bit representation of a K-256 scalar field element.
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
+
+/// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
+/// inner byte value is within range of the [`Curve::ORDER`].
+pub type ScalarBytes = elliptic_curve::ScalarBytes<Secp256k1>;

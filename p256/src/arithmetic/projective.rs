@@ -7,8 +7,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    ff::Field,
-    group::{Curve, Group},
+    group::{ff::Field, Curve, Group},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
     ProjectiveArithmetic,
@@ -468,7 +467,7 @@ impl<'a> Neg for &'a ProjectivePoint {
 mod tests {
     use super::{AffinePoint, ProjectivePoint, Scalar};
     use crate::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS};
-    use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::group::ff::PrimeField;
 
     #[test]
     fn affine_to_projective() {

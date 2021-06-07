@@ -9,6 +9,7 @@ p256 = { path = "../../p256", default-features = false }
 
 [features]
 arithmetic = ["p256/arithmetic"]
+bits = ["p256/bits"]
 ecdh = ["p256/ecdh"]
 ecdsa = ["p256/ecdsa"]
 ecdsa-core = ["p256/ecdsa-core"]

@@ -5,9 +5,7 @@ mod field;
 mod mul;
 pub(crate) mod projective;
 pub(crate) mod scalar;
-
-#[cfg(test)]
-mod dev;
+mod util;
 
 pub use field::FieldElement;
 
