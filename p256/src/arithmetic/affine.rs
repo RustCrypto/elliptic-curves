@@ -8,10 +8,15 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::DecompressPoint,
+    AffineArithmetic,
 };
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
+
+impl AffineArithmetic for NistP256 {
+    type AffinePoint = AffinePoint;
+}
 
 /// A point on the secp256r1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
