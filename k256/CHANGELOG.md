@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0 (2021-06-08)
+### Added
+- Derive `Ord` on `ecdsa::VerifyingKey` ([#343])
+- `AffineArithmetic` trait impl ([#347])
+- `PrimeCurve` trait impls ([#350])
+
+### Changed
+- Bump `elliptic-curve` to v0.10; MSRV 1.51+ ([#349])
+- Bump `ecdsa` to v0.12 ([#349])
+
+[#343]: https://github.com/RustCrypto/elliptic-curves/pull/343
+[#347]: https://github.com/RustCrypto/elliptic-curves/pull/347
+[#349]: https://github.com/RustCrypto/elliptic-curves/pull/349
+[#350]: https://github.com/RustCrypto/elliptic-curves/pull/350
+
 ## 0.8.1 (2021-05-10)
 ### Fixed
 - Mixed coordinate addition with the point at infinity ([#337])
