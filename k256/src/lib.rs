@@ -30,7 +30,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.47** or higher.
+//! Rust **1.51** or higher.
 //!
 //! Minimum supported Rust version may be changed in the future, but it will be
 //! accompanied with a minor version bump.
@@ -44,7 +44,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
-    html_root_url = "https://docs.rs/k256/0.8.1"
+    html_root_url = "https://docs.rs/k256/0.9.0"
 )]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
