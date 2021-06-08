@@ -6,10 +6,3 @@ members = [
     "p256_no_std",
     "p384_no_std",
 ]
-
-[patch.crates-io]
-crypto-bigint = { git = "https://github.com/rustcrypto/utils.git" }
-der = { git = "https://github.com/rustcrypto/utils.git" }
-ecdsa = { git = "https://github.com/rustcrypto/signatures.git" }
-elliptic-curve = { git = "https://github.com/rustcrypto/traits.git" }
-pkcs8 = { git = "https://github.com/rustcrypto/utils.git" }

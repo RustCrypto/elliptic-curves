@@ -26,11 +26,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0d27fb6b6f1e43147af148af49d49329413ba781aa0d5e10979831c210173b5"
 
 [[package]]
-name = "base64ct"
-version = "1.0.0"
-source = "git+https://github.com/rustcrypto/utils.git#dd17922cba2798f9a002850acf455cf2d6215483"
-
-[[package]]
 name = "bit-set"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -156,7 +151,8 @@ dependencies = [
 [[package]]
 name = "const-oid"
 version = "0.6.0"
-source = "git+https://github.com/rustcrypto/utils.git#dd17922cba2798f9a002850acf455cf2d6215483"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44c32f031ea41b4291d695026c023b95d59db2d8a2c7640800ed56bc8f510f22"
 
 [[package]]
 name = "cpufeatures"
@@ -249,8 +245,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-bigint"
-version = "0.2.0-pre"
-source = "git+https://github.com/rustcrypto/utils.git#dd17922cba2798f9a002850acf455cf2d6215483"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "281d926f72b42bf3ba840b88cd53e39f36be9f66e34c8df3fb336372b3753d41"
 dependencies = [
  "generic-array",
  "subtle",
@@ -290,8 +287,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.4.0-pre"
-source = "git+https://github.com/rustcrypto/utils.git#dd17922cba2798f9a002850acf455cf2d6215483"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49f215f706081a44cb702c71c39a52c05da637822e9c1645a50b7202689e982d"
 dependencies = [
  "const-oid",
 ]
@@ -307,8 +305,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.12.0-pre"
-source = "git+https://github.com/rustcrypto/signatures.git#a0b6eaa3b56bc37e45ee338efba36d95e8cb0038"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a6cc9051fd9ca5710db0141855d83e666d12f3987359986d52ba4d200343052"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -324,10 +323,11 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.10.0-pre"
-source = "git+https://github.com/rustcrypto/traits.git#23fb60e731179833bf8b0da51dbc51bbd5531dc7"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ade912ac38a947c8bff6d07bcf0ef97327027837963b0452e6f2a9e78b734ebf"
 dependencies = [
- "base64ct 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "base64ct",
  "crypto-bigint",
  "ff",
  "generic-array",
@@ -604,10 +604,11 @@ dependencies = [
 
 [[package]]
 name = "pkcs8"
-version = "0.7.0-pre"
-source = "git+https://github.com/rustcrypto/utils.git#dd17922cba2798f9a002850acf455cf2d6215483"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09d156817ae0125e8aa5067710b0db24f0984830614f99875a70aa5e3b74db69"
 dependencies = [
- "base64ct 1.0.0 (git+https://github.com/rustcrypto/utils.git)",
+ "base64ct",
  "der",
  "spki",
  "zeroize",
@@ -951,8 +952,9 @@ dependencies = [
 
 [[package]]
 name = "spki"
-version = "0.4.0-pre"
-source = "git+https://github.com/rustcrypto/utils.git#dd17922cba2798f9a002850acf455cf2d6215483"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "987637c5ae6b3121aba9d513f869bd2bff11c4cc086c22473befd6649c0bd521"
 dependencies = [
  "der",
 ]
