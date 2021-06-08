@@ -76,6 +76,8 @@ pub use arithmetic::FieldElement;
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
+use elliptic_curve::{consts::U33, generic_array::GenericArray};
+
 /// K-256 (secp256k1) elliptic curve.
 ///
 /// Specified in Certicom's SECG in "SEC 2: Recommended Elliptic Curve Domain Parameters":
@@ -117,8 +119,8 @@ impl elliptic_curve::AlgorithmParameters for Secp256k1 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.3.132.0.10");
 }
 
-/// Compressed SEC1-encoded secp256k1 (K-256) point.
-pub type CompressedPoint = [u8; 33];
+/// Compressed SEC1-encoded secp256k1 (K-256) curve point.
+pub type CompressedPoint = GenericArray<u8, U33>;
 
 /// secp256k1 (K-256) field element serialized as bytes.
 ///

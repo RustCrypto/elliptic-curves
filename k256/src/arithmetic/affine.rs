@@ -1,10 +1,11 @@
 //! Affine points
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
-use crate::{EncodedPoint, FieldBytes, NonZeroScalar, Secp256k1};
+use crate::{CompressedPoint, EncodedPoint, FieldBytes, Scalar, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     generic_array::arr,
+    group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::DecompressPoint,
@@ -27,9 +28,21 @@ pub struct AffinePoint {
     pub(super) infinity: Choice,
 }
 
-impl AffinePoint {
+impl PrimeCurveAffine for AffinePoint {
+    type Scalar = Scalar;
+    type Curve = ProjectivePoint;
+
+    /// Returns the identity of the group: the point at infinity.
+    fn identity() -> Self {
+        Self {
+            x: FieldElement::zero(),
+            y: FieldElement::zero(),
+            infinity: Choice::from(1),
+        }
+    }
+
     /// Returns the base point of SECP256k1.
-    pub fn generator() -> AffinePoint {
+    fn generator() -> Self {
         // SECP256k1 basepoint in affine coordinates:
         // x = 79be667e f9dcbbac 55a06295 ce870b07 029bfcdb 2dce28d9 59f2815b 16f81798
         // y = 483ada77 26a3c465 5da4fbfc 0e1108a8 fd17b448 a6855419 9c47d08f fb10d4b8
@@ -50,18 +63,14 @@ impl AffinePoint {
         }
     }
 
-    /// Returns the identity of the group: the point at infinity.
-    pub fn identity() -> AffinePoint {
-        Self {
-            x: FieldElement::zero(),
-            y: FieldElement::zero(),
-            infinity: Choice::from(1),
-        }
+    /// Is this point the identity point?
+    fn is_identity(&self) -> Choice {
+        self.infinity
     }
 
-    /// Is this point the identity point?
-    pub fn is_identity(&self) -> Choice {
-        self.infinity
+    /// Convert to curve representation.
+    fn to_curve(&self) -> ProjectivePoint {
+        ProjectivePoint::from(*self)
     }
 }
 
@@ -97,6 +106,40 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
+impl AffinePoint {
+    /// Decode this point from a SEC1-encoded point.
+    pub(crate) fn decode(encoded_point: &EncodedPoint) -> CtOption<Self> {
+        match encoded_point.coordinates() {
+            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
+            sec1::Coordinates::Compact { .. } => {
+                // TODO(tarcieri): add decompaction support
+                CtOption::new(Self::default(), 0.into())
+            }
+            sec1::Coordinates::Compressed { x, y_is_odd } => {
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
+            }
+            sec1::Coordinates::Uncompressed { x, y } => {
+                let x = FieldElement::from_bytes(x);
+                let y = FieldElement::from_bytes(y);
+
+                x.and_then(|x| {
+                    y.and_then(|y| {
+                        // Check that the point is on the curve
+                        let lhs = (y * &y).negate(1);
+                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
+                        let point = AffinePoint {
+                            x,
+                            y,
+                            infinity: Choice::from(0),
+                        };
+                        CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
+                    })
+                })
+            }
+        }
+    }
+}
+
 impl DecompressPoint<Secp256k1> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
@@ -120,6 +163,27 @@ impl DecompressPoint<Secp256k1> for AffinePoint {
     }
 }
 
+impl GroupEncoding for AffinePoint {
+    type Repr = CompressedPoint;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        let tag = bytes[0];
+        let y_is_odd = tag.ct_eq(&sec1::Tag::CompressedOddY.into());
+        let is_compressed_point = y_is_odd | tag.ct_eq(&sec1::Tag::CompressedEvenY.into());
+        Self::decompress(FieldBytes::from_slice(&bytes[1..]), y_is_odd)
+            .and_then(|point| CtOption::new(point, is_compressed_point))
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        CompressedPoint::clone_from_slice(self.to_encoded_point(true).as_bytes())
+    }
+}
+
 impl FromEncodedPoint<Secp256k1> for AffinePoint {
     /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded [`AffinePoint`].
     ///
@@ -127,32 +191,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     ///
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
     fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
-        match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => Some(Self::identity()),
-            sec1::Coordinates::Compact { .. } => None, // TODO(tarcieri): add support
-            sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8)).into()
-            }
-            sec1::Coordinates::Uncompressed { x, y } => {
-                let x = FieldElement::from_bytes(x);
-                let y = FieldElement::from_bytes(y);
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = (y * &y).negate(1);
-                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        let point = AffinePoint {
-                            x,
-                            y,
-                            infinity: Choice::from(0),
-                        };
-                        CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
-                    })
-                })
-                .into()
-            }
-        }
+        Self::decode(encoded_point).into()
     }
 }
 
@@ -177,11 +216,19 @@ impl From<AffinePoint> for EncodedPoint {
     }
 }
 
-impl Mul<NonZeroScalar> for AffinePoint {
-    type Output = AffinePoint;
+impl Mul<Scalar> for AffinePoint {
+    type Output = ProjectivePoint;
 
-    fn mul(self, scalar: NonZeroScalar) -> Self {
-        (ProjectivePoint::from(self) * scalar.as_ref()).to_affine()
+    fn mul(self, scalar: Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self) * scalar
+    }
+}
+
+impl Mul<&Scalar> for AffinePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, scalar: &Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self) * scalar
     }
 }
 
@@ -209,7 +256,10 @@ impl Zeroize for AffinePoint {
 mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
-    use elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
+    use elliptic_curve::{
+        group::prime::PrimeCurveAffine,
+        sec1::{FromEncodedPoint, ToEncodedPoint},
+    };
     use hex_literal::hex;
 
     const UNCOMPRESSED_BASEPOINT: &[u8] = &hex!(

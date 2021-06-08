@@ -77,6 +77,8 @@ pub use arithmetic::{
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
+use elliptic_curve::{consts::U33, generic_array::GenericArray};
+
 /// NIST P-256 elliptic curve.
 ///
 /// This curve is also known as prime256v1 (ANSI X9.62) and secp256r1 (SECG)
@@ -125,6 +127,9 @@ impl elliptic_curve::JwkParameters for NistP256 {
 impl elliptic_curve::AlgorithmParameters for NistP256 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.2.840.10045.3.1.7");
 }
+
+/// Compressed SEC1-encoded NIST P-256 curve point.
+pub type CompressedPoint = GenericArray<u8, U33>;
 
 /// NIST P-256 field element serialized as bytes.
 ///
