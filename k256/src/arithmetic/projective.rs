@@ -1,16 +1,20 @@
 //! Projective points
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
-use crate::{EncodedPoint, Secp256k1};
+use crate::{CompressedPoint, EncodedPoint, Secp256k1};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    group::{ff::Field, Curve, Group},
+    group::{
+        ff::Field,
+        prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
+        Curve, Group, GroupEncoding,
+    },
     rand_core::RngCore,
-    sec1::FromEncodedPoint,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+    sec1::{FromEncodedPoint, ToEncodedPoint},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     ProjectiveArithmetic,
 };
 
@@ -55,6 +59,12 @@ impl From<ProjectivePoint> for AffinePoint {
 impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
     fn from_encoded_point(p: &EncodedPoint) -> Option<Self> {
         AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
+    }
+}
+
+impl ToEncodedPoint<Secp256k1> for ProjectivePoint {
+    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+        self.to_affine().to_encoded_point(compress)
     }
 }
 
@@ -279,12 +289,35 @@ impl Group for ProjectivePoint {
     }
 }
 
+impl GroupEncoding for ProjectivePoint {
+    type Repr = CompressedPoint;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        <AffinePoint as GroupEncoding>::from_bytes(bytes).map(|point| point.into())
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        CompressedPoint::clone_from_slice(self.to_affine().to_encoded_point(true).as_bytes())
+    }
+}
+
+impl PrimeGroup for ProjectivePoint {}
+
 impl Curve for ProjectivePoint {
     type AffineRepr = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {
         ProjectivePoint::to_affine(self)
     }
+}
+
+impl PrimeCurve for ProjectivePoint {
+    type Affine = AffinePoint;
 }
 
 impl Default for ProjectivePoint {
@@ -472,7 +505,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         Scalar,
     };
-    use elliptic_curve::group::ff::PrimeField;
+    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
 
     #[test]
     fn affine_to_projective() {

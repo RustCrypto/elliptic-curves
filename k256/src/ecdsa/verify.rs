@@ -42,9 +42,7 @@ impl VerifyingKey {
     /// Serialize this [`VerifyingKey`] as a SEC1-encoded bytestring
     /// (with point compression applied)
     pub fn to_bytes(&self) -> CompressedPoint {
-        let mut result = [0u8; 33];
-        result.copy_from_slice(EncodedPoint::from(self).as_ref());
-        result
+        CompressedPoint::clone_from_slice(EncodedPoint::from(self).as_bytes())
     }
 }
 
