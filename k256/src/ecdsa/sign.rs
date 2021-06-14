@@ -18,6 +18,7 @@ use elliptic_curve::{
     consts::U32,
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
+    subtle::{Choice, ConstantTimeEq},
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
@@ -189,10 +190,24 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
     }
 }
 
+impl ConstantTimeEq for SigningKey {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.inner.ct_eq(&other.inner)
+    }
+}
+
 impl Debug for SigningKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO(tarcieri): use `finish_non_exhaustive` when stable
         f.debug_tuple("SigningKey").field(&"...").finish()
+    }
+}
+
+impl Eq for SigningKey {}
+
+impl PartialEq for SigningKey {
+    fn eq(&self, other: &SigningKey) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
