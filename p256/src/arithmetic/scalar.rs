@@ -279,15 +279,6 @@ fn cmp_vartime(left: &U256, right: &U256) -> i32 {
     0
 }
 
-fn shr1(u256: &mut U256) {
-    let mut bit: u64 = 0;
-    for digit in u256.iter_mut().rev() {
-        let new_digit = (bit << 63) | (*digit >> 1);
-        bit = *digit & 1;
-        *digit = new_digit;
-    }
-}
-
 impl Ord for Scalar {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         use core::cmp::Ordering::*;
@@ -646,31 +637,15 @@ impl Scalar {
         CtOption::new(inverse, !self.is_zero())
     }
 
-    /// Is integer representing equivalence class odd
-    pub fn is_odd(&self) -> Choice {
-        ((self.0[0] & 1) as u8).into()
-    }
-
-    /// Is integer representing equivalence class even
-    pub fn is_even(&self) -> Choice {
-        !self.is_odd()
-    }
-
-    fn shr1(&mut self) {
-        shr1(&mut self.0);
-    }
-
     /// Faster inversion using Stein's algorithm
+    #[allow(non_snake_case)]
     pub fn invert_vartime(&self) -> CtOption<Self> {
         // https://link.springer.com/article/10.1007/s13389-016-0135-4
 
         let mut u = *self;
         // currently an invalid scalar
         let mut v = Scalar(MODULUS);
-
-        #[allow(non_snake_case)]
         let mut A = Self::one();
-        #[allow(non_snake_case)]
         let mut C = Self::zero();
 
         while !bool::from(u.is_zero()) {
@@ -709,6 +684,26 @@ impl Scalar {
         }
 
         CtOption::new(C, !self.is_zero())
+    }
+
+    /// Is integer representing equivalence class odd?
+    pub fn is_odd(&self) -> Choice {
+        ((self.0[0] & 1) as u8).into()
+    }
+
+    /// Is integer representing equivalence class even?
+    pub fn is_even(&self) -> Choice {
+        !self.is_odd()
+    }
+
+    /// Shift right by one bit
+    fn shr1(&mut self) {
+        let mut bit: u64 = 0;
+        for digit in self.0.iter_mut().rev() {
+            let new_digit = (bit << 63) | (*digit >> 1);
+            bit = *digit & 1;
+            *digit = new_digit;
+        }
     }
 }
 
