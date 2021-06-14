@@ -2,7 +2,10 @@
 
 use super::{recoverable, Error, Signature, VerifyingKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, Secp256k1, SecretKey};
-use core::borrow::Borrow;
+use core::{
+    borrow::Borrow,
+    fmt::{self, Debug},
+};
 use ecdsa_core::{
     hazmat::{FromDigest, RecoverableSignPrimitive},
     rfc6979,
@@ -146,6 +149,53 @@ where
     }
 }
 
+impl RecoverableSignPrimitive<Secp256k1> for Scalar {
+    #[allow(non_snake_case, clippy::many_single_char_names)]
+    fn try_sign_recoverable_prehashed<K>(
+        &self,
+        ephemeral_scalar: &K,
+        z: &Scalar,
+    ) -> Result<(Signature, bool), Error>
+    where
+        K: Borrow<Scalar> + Invert<Output = Scalar>,
+    {
+        let k_inverse = ephemeral_scalar.invert();
+        let k = ephemeral_scalar.borrow();
+
+        if k_inverse.is_none().into() || k.is_zero().into() {
+            return Err(Error::new());
+        }
+
+        let k_inverse = k_inverse.unwrap();
+
+        // Compute 𝐑 = 𝑘×𝑮
+        let R = (ProjectivePoint::generator() * k).to_affine();
+
+        // Lift x-coordinate of 𝐑 (element of base field) into a serialized big
+        // integer, then reduce it into an element of the scalar field
+        let r = Scalar::from_bytes_reduced(&R.x.to_bytes());
+
+        // Compute `s` as a signature over `r` and `z`.
+        let s = k_inverse * (z + (r * self));
+
+        if s.is_zero().into() {
+            return Err(Error::new());
+        }
+
+        let mut signature = Signature::from_scalars(r, s)?;
+        let is_r_odd = bool::from(R.y.normalize().is_odd());
+        let is_s_high = signature.normalize_s()?;
+        Ok((signature, is_r_odd ^ is_s_high))
+    }
+}
+
+impl Debug for SigningKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO(tarcieri): use `finish_non_exhaustive` when stable
+        f.debug_tuple("SigningKey").field(&"...").finish()
+    }
+}
+
 impl From<SecretKey> for SigningKey {
     fn from(secret_key: SecretKey) -> SigningKey {
         Self::from(&secret_key)
@@ -197,46 +247,6 @@ impl From<&NonZeroScalar> for SigningKey {
         Self {
             inner: *secret_scalar,
         }
-    }
-}
-
-impl RecoverableSignPrimitive<Secp256k1> for Scalar {
-    #[allow(non_snake_case, clippy::many_single_char_names)]
-    fn try_sign_recoverable_prehashed<K>(
-        &self,
-        ephemeral_scalar: &K,
-        z: &Scalar,
-    ) -> Result<(Signature, bool), Error>
-    where
-        K: Borrow<Scalar> + Invert<Output = Scalar>,
-    {
-        let k_inverse = ephemeral_scalar.invert();
-        let k = ephemeral_scalar.borrow();
-
-        if k_inverse.is_none().into() || k.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let k_inverse = k_inverse.unwrap();
-
-        // Compute 𝐑 = 𝑘×𝑮
-        let R = (ProjectivePoint::generator() * k).to_affine();
-
-        // Lift x-coordinate of 𝐑 (element of base field) into a serialized big
-        // integer, then reduce it into an element of the scalar field
-        let r = Scalar::from_bytes_reduced(&R.x.to_bytes());
-
-        // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * (z + (r * self));
-
-        if s.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let mut signature = Signature::from_scalars(r, s)?;
-        let is_r_odd = bool::from(R.y.normalize().is_odd());
-        let is_s_high = signature.normalize_s()?;
-        Ok((signature, is_r_odd ^ is_s_high))
     }
 }
 
