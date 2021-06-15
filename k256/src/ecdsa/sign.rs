@@ -54,11 +54,17 @@ impl SigningKey {
         Ok(Self { inner })
     }
 
-    /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`]
-    pub fn verify_key(&self) -> VerifyingKey {
+    /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`].
+    pub fn verifying_key(&self) -> VerifyingKey {
         VerifyingKey {
             inner: PublicKey::from_secret_scalar(&self.inner).into(),
         }
+    }
+
+    /// Legacy alias for [`SigningKey::verifying_key`].
+    #[deprecated(since = "0.9.3", note = "use `verifying_key()` instead")]
+    pub fn verify_key(&self) -> VerifyingKey {
+        self.verifying_key()
     }
 
     /// Serialize this [`SigningKey`] as bytes
@@ -239,13 +245,13 @@ impl From<&SigningKey> for SecretKey {
 
 impl From<SigningKey> for VerifyingKey {
     fn from(signing_key: SigningKey) -> VerifyingKey {
-        signing_key.verify_key()
+        signing_key.verifying_key()
     }
 }
 
 impl From<&SigningKey> for VerifyingKey {
     fn from(signing_key: &SigningKey) -> VerifyingKey {
-        signing_key.verify_key()
+        signing_key.verifying_key()
     }
 }
 
