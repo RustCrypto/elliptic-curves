@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "k256/**"
-      - "tests/k256_no_std/**"
       - "Cargo.*"
   push:
     branches: master
@@ -28,9 +27,6 @@ jobs:
         target:
           - thumbv7em-none-eabi
           - wasm32-unknown-unknown
-    defaults:
-      run:
-        working-directory: tests/k256_no_std
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -39,21 +35,20 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
-      - run: cp ../../Cargo.lock .. # Use same Cargo.lock resolution that's checked in
-      - run: cargo build --release --target ${{ matrix.target }}
-      - run: cargo build --release --target ${{ matrix.target }} --features arithmetic
-      - run: cargo build --release --target ${{ matrix.target }} --features bits
-      - run: cargo build --release --target ${{ matrix.target }} --features ecdh
-      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa-core
-      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa
-      - run: cargo build --release --target ${{ matrix.target }} --features jwk
-      - run: cargo build --release --target ${{ matrix.target }} --features keccak256
-      - run: cargo build --release --target ${{ matrix.target }} --features pem
-      - run: cargo build --release --target ${{ matrix.target }} --features pkcs8
-      - run: cargo build --release --target ${{ matrix.target }} --features sha256
-      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa,keccak256
-      - run: cargo build --release --target ${{ matrix.target }} --features ecdsa,sha256
-      - run: cargo build --release --target ${{ matrix.target }} --all-features
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdh
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features keccak256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,keccak256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,jwk,keccak256,pem,pkcs8,sha256
 
   benches:
     runs-on: ubuntu-latest

@@ -1,8 +1,0 @@
-[workspace]
-members = [
-    "bp256_no_std",
-    "bp384_no_std",
-    "k256_no_std",
-    "p256_no_std",
-    "p384_no_std",
-]
