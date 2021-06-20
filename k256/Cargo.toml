@@ -65,6 +65,12 @@ features = ["ecdh", "ecdsa", "sha256", "keccak256"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
-name = "bench"
-path = "bench/bench.rs"
+name = "field"
+path = "bench/field.rs"
+harness = false
+required-features = ["expose-field"]
+
+[[bench]]
+name = "scalar"
+path = "bench/scalar.rs"
 harness = false
