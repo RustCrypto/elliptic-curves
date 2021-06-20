@@ -6,8 +6,11 @@ use criterion::{
 use hex_literal::hex;
 use k256::{
     elliptic_curve::{generic_array::arr, group::ff::PrimeField},
-    FieldElement, ProjectivePoint, Scalar,
+    ProjectivePoint, Scalar,
 };
+
+#[cfg(feature = "expose-field")]
+use k256::FieldElement;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(arr![u8;
@@ -78,6 +81,7 @@ fn bench_scalar(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(feature = "expose-field")]
 fn test_field_element_x() -> FieldElement {
     FieldElement::from_bytes(
         &[
@@ -90,6 +94,7 @@ fn test_field_element_x() -> FieldElement {
     .unwrap()
 }
 
+#[cfg(feature = "expose-field")]
 fn test_field_element_y() -> FieldElement {
     FieldElement::from_bytes(
         &[
@@ -102,37 +107,44 @@ fn test_field_element_y() -> FieldElement {
     .unwrap()
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element_normalize_weak<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("normalize_weak", |b| b.iter(|| x.normalize_weak()));
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element_normalize<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("normalize", |b| b.iter(|| x.normalize()));
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     let y = test_field_element_y();
     group.bench_function("mul", |b| b.iter(|| &x * &y));
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element_square<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("square", |b| b.iter(|| x.square()));
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element_sqrt<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("sqrt", |b| b.iter(|| x.sqrt()));
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("invert", |b| b.iter(|| x.invert()));
 }
 
+#[cfg(feature = "expose-field")]
 fn bench_field_element(c: &mut Criterion) {
     let mut group = c.benchmark_group("field element operations");
     bench_field_element_normalize_weak(&mut group);
@@ -144,5 +156,9 @@ fn bench_field_element(c: &mut Criterion) {
     group.finish();
 }
 
+#[cfg(not(feature = "expose-field"))]
+criterion_group!(benches, bench_high_level, bench_scalar);
+#[cfg(feature = "expose-field")]
 criterion_group!(benches, bench_high_level, bench_scalar, bench_field_element);
+
 criterion_main!(benches);
