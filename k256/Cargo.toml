@@ -68,4 +68,3 @@ rustdoc-args = ["--cfg", "docsrs"]
 name = "bench"
 path = "bench/bench.rs"
 harness = false
-required-features = ["expose-field"]
