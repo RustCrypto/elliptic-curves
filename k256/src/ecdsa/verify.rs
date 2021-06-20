@@ -76,6 +76,32 @@ where
     }
 }
 
+impl VerifyPrimitive<Secp256k1> for AffinePoint {
+    fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
+        let r = signature.r();
+        let s = signature.s();
+
+        // Ensure signature is "low S" normalized ala BIP 0062
+        if s.is_high().into() {
+            return Err(Error::new());
+        }
+
+        let s_inv = s.invert().unwrap();
+        let u1 = z * &s_inv;
+        let u2 = *r * s_inv;
+
+        let x = ((ProjectivePoint::generator() * u1) + (ProjectivePoint::from(*self) * u2))
+            .to_affine()
+            .x;
+
+        if Scalar::from_bytes_reduced(&x.to_bytes()).eq(&r) {
+            Ok(())
+        } else {
+            Err(Error::new())
+        }
+    }
+}
+
 impl From<PublicKey> for VerifyingKey {
     fn from(public_key: PublicKey) -> VerifyingKey {
         Self {
@@ -125,32 +151,6 @@ impl TryFrom<&EncodedPoint> for VerifyingKey {
 
     fn try_from(encoded_point: &EncodedPoint) -> Result<Self, Error> {
         Self::from_encoded_point(encoded_point)
-    }
-}
-
-impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
-        let r = signature.r();
-        let s = signature.s();
-
-        // Ensure signature is "low S" normalized ala BIP 0062
-        if s.is_high().into() {
-            return Err(Error::new());
-        }
-
-        let s_inv = s.invert().unwrap();
-        let u1 = z * &s_inv;
-        let u2 = *r * s_inv;
-
-        let x = ((ProjectivePoint::generator() * u1) + (ProjectivePoint::from(*self) * u2))
-            .to_affine()
-            .x;
-
-        if Scalar::from_bytes_reduced(&x.to_bytes()).eq(&r) {
-            Ok(())
-        } else {
-            Err(Error::new())
-        }
     }
 }
 

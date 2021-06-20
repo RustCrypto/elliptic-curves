@@ -65,6 +65,12 @@ features = ["ecdh", "ecdsa", "sha256", "keccak256"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
+name = "ecdsa"
+path = "bench/ecdsa.rs"
+harness = false
+required-features = ["ecdsa", "sha256"]
+
+[[bench]]
 name = "field"
 path = "bench/field.rs"
 harness = false
