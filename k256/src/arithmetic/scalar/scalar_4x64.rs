@@ -3,20 +3,22 @@
 
 use crate::{
     arithmetic::util::{adc64, sbb64},
-    FieldBytes, Secp256k1,
+    FieldBytes,
 };
 use core::convert::TryInto;
-use elliptic_curve::{
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    Curve,
-};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-pub const MODULUS: [u64; 4] = Secp256k1::ORDER.into_limbs();
+pub const MODULUS: [u64; 4] = [
+    0xBFD2_5E8C_D036_4141,
+    0xBAAE_DCE6_AF48_A03B,
+    0xFFFF_FFFF_FFFF_FFFE,
+    0xFFFF_FFFF_FFFF_FFFF,
+];
 
 /// Limbs of 2^256 minus the secp256k1 order.
 pub const NEG_MODULUS: [u64; 4] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
