@@ -4,7 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.9.2 (2021-06-14)
+## 0.9.3 (2021-06-21)
+### Changed
+- Bump `elliptic-curve` dependency to v0.10.3 ([#371])
+
+[#371]: https://github.com/RustCrypto/elliptic-curves/pull/371
+
+## 0.9.2 (2021-06-14) [YANKED]
 ### Added
 - `Debug` impl for `ecdsa::SigningKey` ([#358])
 - `ConstantTimeEq`/`Eq`/`PartialEq` impls for `ecdsa::SigningKey` ([#359])
@@ -12,13 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#358]: https://github.com/RustCrypto/elliptic-curves/pull/358
 [#359]: https://github.com/RustCrypto/elliptic-curves/pull/359
 
-## 0.9.1 (2021-06-09)
+## 0.9.1 (2021-06-09) [YANKED]
 ### Added
 - `Copy` impl for `ecdsa::VerifyingKey` ([#355])
 
 [#355]: https://github.com/RustCrypto/elliptic-curves/pull/355
 
-## 0.9.0 (2021-06-08)
+## 0.9.0 (2021-06-08) [YANKED]
 ### Added
 - Derive `Ord` on `ecdsa::VerifyingKey` ([#343])
 - `AffineArithmetic` trait impl ([#347])
