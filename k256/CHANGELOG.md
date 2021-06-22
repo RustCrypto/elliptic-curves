@@ -5,9 +5,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 0.9.3 (2021-06-21)
+### Added
+- `ecdsa::SigningKey::verifying_key()` method ([#363])
+
 ### Changed
+- Deprecate `SigningKey::verify_key()` - use `verifying_key` instead ([#363])
 - Bump `elliptic-curve` dependency to v0.10.3 ([#371])
 
+[#363]: https://github.com/RustCrypto/elliptic-curves/pull/363
 [#371]: https://github.com/RustCrypto/elliptic-curves/pull/371
 
 ## 0.9.2 (2021-06-14) [YANKED]
