@@ -32,6 +32,7 @@ use core::str::FromStr;
 
 /// ECDSA/secp256k1 signing key
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+#[derive(Clone)]
 pub struct SigningKey {
     /// Inner secret key value
     inner: NonZeroScalar,
