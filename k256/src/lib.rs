@@ -44,7 +44,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
-    html_root_url = "https://docs.rs/k256/0.9.3"
+    html_root_url = "https://docs.rs/k256/0.9.4"
 )]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
@@ -152,5 +152,7 @@ impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
 pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
 
 /// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
-/// inner byte value is within range of the [`Curve::ORDER`].
+/// inner byte value is within range of [`Secp256k1::ORDER`].
+///
+/// [`Secp256k1::ORDER`]: ./struct.Secp256k1.html#associatedconstant.ORDER
 pub type ScalarBytes = elliptic_curve::ScalarBytes<Secp256k1>;
