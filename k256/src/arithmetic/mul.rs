@@ -31,7 +31,7 @@
 //! g1 = round((2^272)*b2/d)
 //! g2 = round((2^272)*b1/d)
 //!
-//! (Note that 'd' is also equal to the curve order here because [a1,b1] and [a2,b2] are found
+//! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 //!
 //! @fjarri:
