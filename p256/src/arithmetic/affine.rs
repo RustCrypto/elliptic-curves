@@ -183,13 +183,16 @@ impl GroupEncoding for AffinePoint {
 impl DecompactPoint<NistP256> for AffinePoint {
     fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
-            let y = (x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B).sqrt();
-            y.map(|y| {
+            let montgomery_y = (x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B).sqrt();
+            montgomery_y.map(|montgomery_y| {
+                // Convert to canonical form for comparisons
+                let y = montgomery_y.as_canonical();
                 let p_y = MODULUS.subtract(&y);
                 let (_, borrow) = p_y.informed_subtract(&y);
+                let recovered_y = if borrow == 0 { y } else { p_y };
                 AffinePoint {
                     x,
-                    y: if borrow != 0 { y } else { p_y },
+                    y: recovered_y.as_montgomery(),
                     infinity: Choice::from(0),
                 }
             })
@@ -225,13 +228,15 @@ impl ToEncodedPoint<NistP256> for AffinePoint {
 impl ToCompactEncodedPoint<NistP256> for AffinePoint {
     /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
     fn to_compact_encoded_point(&self) -> Option<EncodedPoint> {
-        let canonical_y = self.y.as_canonical();
-        let (p_y, borrow) = MODULUS.informed_subtract(&canonical_y);
+        // Convert to canonical form for comparisons
+        let y = self.y.as_canonical();
+        let (p_y, borrow) = MODULUS.informed_subtract(&y);
         assert_eq!(borrow, 0);
-        let (_, borrow) = p_y.informed_subtract(&canonical_y);
+        let (_, borrow) = p_y.informed_subtract(&y);
         if borrow != 0 {
             return None;
         }
+        // Reuse the CompressedPoint type since it's the same size as a compact point
         let mut bytes = CompressedPoint::default();
         bytes[0] = Tag::Compact.into();
         bytes[1..(<NistP256 as Curve>::UInt::BYTE_SIZE + 1)].copy_from_slice(&self.x.to_bytes());

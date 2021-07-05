@@ -135,7 +135,7 @@ impl FieldElement {
         let is_some = (borrow as u8) & 1;
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        CtOption::new(FieldElement(w).mul(&R2), Choice::from(is_some))
+        CtOption::new(FieldElement(w).as_montgomery(), Choice::from(is_some))
     }
 
     /// Returns the SEC1 encoding of this field element.
@@ -336,6 +336,10 @@ impl FieldElement {
 
     pub(crate) const fn as_canonical(&self) -> Self {
         FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0)
+    }
+
+    pub(crate) const fn as_montgomery(&self) -> Self {
+        self.mul(&R2)
     }
 
     /// Returns self * rhs mod p
