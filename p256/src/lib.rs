@@ -117,6 +117,11 @@ impl elliptic_curve::weierstrass::PointCompression for NistP256 {
     const COMPRESS_POINTS: bool = false;
 }
 
+impl elliptic_curve::weierstrass::PointCompaction for NistP256 {
+    /// NIST P-256 points are typically uncompressed.
+    const COMPACT_POINTS: bool = false;
+}
+
 #[cfg(feature = "jwk")]
 #[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
 impl elliptic_curve::JwkParameters for NistP256 {
