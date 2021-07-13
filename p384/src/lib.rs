@@ -21,12 +21,16 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub mod ecdsa;
 
-pub use elliptic_curve;
+#[cfg(feature = "arithmetic")]
+mod scalar;
+
+pub use elliptic_curve::{self, bigint::U384};
+
+#[cfg(feature = "arithmetic")]
+pub use crate::scalar::Scalar;
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
-
-use elliptic_curve::bigint::U384;
 
 /// NIST P-384 elliptic curve.
 ///
