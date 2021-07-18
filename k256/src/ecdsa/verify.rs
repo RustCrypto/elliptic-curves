@@ -2,7 +2,8 @@
 
 use super::{recoverable, Error, Signature};
 use crate::{
-    AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar, Secp256k1,
+    lincomb, AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar,
+    Secp256k1,
 };
 use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
@@ -90,9 +91,14 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         let u1 = z * &s_inv;
         let u2 = *r * s_inv;
 
-        let x = ((ProjectivePoint::generator() * u1) + (ProjectivePoint::from(*self) * u2))
-            .to_affine()
-            .x;
+        let x = lincomb(
+            &ProjectivePoint::generator(),
+            &u1,
+            &ProjectivePoint::from(*self),
+            &u2,
+        )
+        .to_affine()
+        .x;
 
         if Scalar::from_bytes_reduced(&x.to_bytes()).eq(&r) {
             Ok(())

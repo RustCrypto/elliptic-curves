@@ -51,7 +51,7 @@ use crate::{
         consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
         weierstrass::DecompressPoint,
     },
-    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
+    lincomb, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
 #[cfg(feature = "keccak256")]
@@ -185,7 +185,7 @@ impl Signature {
             let r_inv = r.invert().unwrap();
             let u1 = -(r_inv * z);
             let u2 = r_inv * *s;
-            let pk = ((ProjectivePoint::generator() * u1) + (R * u2)).to_affine();
+            let pk = lincomb(&ProjectivePoint::generator(), &u1, &R, &u2).to_affine();
 
             // TODO(tarcieri): ensure the signature verifies?
             Ok(VerifyingKey::from(&pk))
