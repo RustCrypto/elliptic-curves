@@ -113,3 +113,11 @@ fn check_scalars(signature: &Signature) -> Result<(), Error> {
         Err(Error::new())
     }
 }
+
+#[cfg(all(test, feature = "ecdsa"))]
+mod tests {
+    mod wycheproof {
+        use crate::Secp256k1;
+        ecdsa_core::new_wycheproof_test!(wycheproof, "wycheproof", Secp256k1);
+    }
+}
