@@ -33,6 +33,7 @@ default-features = false
 features = ["der"]
 
 [dev-dependencies]
+blobby = "0.3"
 criterion = "0.3"
 ecdsa-core = { version = "0.12.1", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.3"
