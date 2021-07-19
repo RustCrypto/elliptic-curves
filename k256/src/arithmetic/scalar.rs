@@ -607,16 +607,20 @@ mod tests {
         let high: bool = Scalar::zero().is_high().into();
         assert!(!high);
 
-        let m = Scalar::modulus_as_biguint();
-        let m_by_2 = &m >> 1;
+        // 1 is not high
         let one = 1.to_biguint().unwrap();
-
-        // M / 2 - 1 is not high
-        let high: bool = Scalar::from(&m_by_2 - &one).is_high().into();
+        let high: bool = Scalar::from(&one).is_high().into();
         assert!(!high);
 
-        // M / 2 is high
+        let m = Scalar::modulus_as_biguint();
+        let m_by_2 = &m >> 1;
+
+        // M / 2 is not high
         let high: bool = Scalar::from(&m_by_2).is_high().into();
+        assert!(!high);
+
+        // M / 2 + 1 is high
+        let high: bool = Scalar::from(&m_by_2 + &one).is_high().into();
         assert!(high);
 
         // MODULUS - 1 is high

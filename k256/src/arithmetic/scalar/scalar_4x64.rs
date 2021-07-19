@@ -240,8 +240,8 @@ impl Scalar4x64 {
 
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
-        let (_, underflow) = sbb_array_with_underflow(&(self.0), &FRAC_MODULUS_2);
-        !underflow
+        let (_, underflow) = sbb_array_with_underflow(&FRAC_MODULUS_2, &self.0);
+        underflow
     }
 
     /// Is this scalar equal to 0?
