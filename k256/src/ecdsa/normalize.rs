@@ -47,8 +47,7 @@ mod tests {
         ]).unwrap();
 
         let mut sig_normalized = sig_hi;
-        sig_normalized.normalize_s().unwrap();
-
+        assert!(sig_normalized.normalize_s().unwrap());
         assert_eq!(sig_lo, sig_normalized);
     }
 
@@ -63,8 +62,7 @@ mod tests {
         ]).unwrap();
 
         let mut sig_normalized = sig;
-        sig_normalized.normalize_s().unwrap();
-
+        assert!(!sig_normalized.normalize_s().unwrap());
         assert_eq!(sig, sig_normalized);
     }
 }

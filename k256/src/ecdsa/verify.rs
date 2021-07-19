@@ -180,6 +180,22 @@ impl FromStr for VerifyingKey {
 
 #[cfg(test)]
 mod tests {
+    use super::VerifyingKey;
     use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, Secp256k1};
+    use ecdsa_core::signature::Verifier;
+    use hex_literal::hex;
+
     ecdsa_core::new_verification_test!(Secp256k1, ECDSA_TEST_VECTORS);
+
+    /// Wycheproof tcId: 304
+    #[test]
+    fn malleability_edge_case_valid() {
+        let verifying_key_bytes = hex!("043a3150798c8af69d1e6e981f3a45402ba1d732f4be8330c5164f49e10ec555b4221bd842bc5e4d97eff37165f60e3998a424d72a450cf95ea477c78287d0343a");
+        let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes).unwrap();
+
+        let msg = hex!("313233343030");
+        let mut sig = Signature::from_der(&hex!("304402207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a002207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")).unwrap();
+        assert!(!sig.normalize_s().unwrap());
+        assert!(verifying_key.verify(&msg, &sig).is_ok());
+    }
 }
