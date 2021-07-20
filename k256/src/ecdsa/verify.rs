@@ -187,9 +187,21 @@ mod tests {
 
     ecdsa_core::new_verification_test!(Secp256k1, ECDSA_TEST_VECTORS);
 
+    /// Wycheproof tcId: 296
+    #[test]
+    fn small_r_and_s_edge_case() {
+        let verifying_key_bytes = hex!("04464f4ff715729cae5072ca3bd801d3195b67aec65e9b01aad20a2943dcbcb584b1afd29d31a39a11d570aa1597439b3b2d1971bf2f1abf15432d0207b10d1d08");
+        let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes).unwrap();
+
+        let msg = hex!("313233343030");
+        let mut sig = Signature::from_der(&hex!("302c02072d9b4d347952cc022100fcbc5103d0da267477d1791461cf2aa44bf9d43198f79507bd8779d69a13108e")).unwrap();
+        assert!(sig.normalize_s().unwrap());
+        assert!(verifying_key.verify(&msg, &sig).is_ok());
+    }
+
     /// Wycheproof tcId: 304
     #[test]
-    fn malleability_edge_case_valid() {
+    fn malleability_edge_case() {
         let verifying_key_bytes = hex!("043a3150798c8af69d1e6e981f3a45402ba1d732f4be8330c5164f49e10ec555b4221bd842bc5e4d97eff37165f60e3998a424d72a450cf95ea477c78287d0343a");
         let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes).unwrap();
 
