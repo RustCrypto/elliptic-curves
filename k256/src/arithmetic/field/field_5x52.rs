@@ -493,3 +493,45 @@ impl Zeroize for FieldElement5x52 {
         self.0.zeroize();
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::FieldElement5x52;
+
+    #[test]
+    fn overflow_check_after_weak_normalize() {
+        // A regression test for a missing condition in `get_overflow()`.
+        // The condition was only missing in the 32-bit case,
+        // but we're adding a 64-bit testcase nevertheless.
+
+        // In `normalize()`, after the `normalize_weak()` call,
+        // the excess bit from the limb 0 is propagated all the way to the last limb.
+        // This constitutes an overflow, since the last bit becomes equal to (1 << 22),
+        // that is 23 bits in total.
+        // When `get_overflow()` is called afterwards, this was not detected,
+        // since the corresponding condition (checking for the last limb being > 22 bits)
+        // was missing.
+        // This resulted in a debug assert firing later.
+
+        // This is essentially 2^256
+        let z = FieldElement5x52([
+            (1 << 52), // an excess bit here
+            // the remaining full-sized limbs are at top normalized capacity
+            (1 << 52) - 1,
+            (1 << 52) - 1,
+            (1 << 52) - 1,
+            // the last limb is also at top normalized capacity
+            (1 << 48) - 1,
+        ]);
+
+        // Used to fail here (debug_assert firing because overflow happened at an unexpected place):
+        let z_normalized = z.normalize();
+
+        // Properly normalized result, just to be sure
+        // The initial number is 2^256, so the result is 0x1000003d1
+        let z_reference = FieldElement5x52([0x1000003d1, 0, 0, 0, 0]);
+
+        assert_eq!(z_normalized.0, z_reference.0);
+    }
+}

@@ -175,15 +175,16 @@ impl FieldElement10x26 {
     /// Checks if the field element is greater or equal to the modulus.
     fn get_overflow(&self) -> Choice {
         let m = self.0[2] & self.0[3] & self.0[4] & self.0[5] & self.0[6] & self.0[7] & self.0[8];
-        let x = (self.0[9] == 0x3FFFFFu32)
-            & (m == 0x3FFFFFFu32)
-            & ((self.0[1] + 0x40u32 + ((self.0[0] + 0x3D1u32) >> 26)) > 0x3FFFFFFu32);
+        let x = (self.0[9] >> 22 != 0)
+            | ((self.0[9] == 0x3FFFFFu32)
+                & (m == 0x3FFFFFFu32)
+                & ((self.0[1] + 0x40u32 + ((self.0[0] + 0x3D1u32) >> 26)) > 0x3FFFFFFu32));
         Choice::from(x as u8)
     }
 
     /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
     pub fn normalize_weak(&self) -> Self {
-        // Reduce t4 at the start so there will be at most a single carry from the first pass
+        // Reduce t9 at the start so there will be at most a single carry from the first pass
         let (t, x) = self.subtract_modulus_approximation();
 
         // The first pass ensures the magnitude is 1, ...
@@ -704,5 +705,50 @@ impl ConstantTimeEq for FieldElement10x26 {
 impl Zeroize for FieldElement10x26 {
     fn zeroize(&mut self) {
         self.0.zeroize();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::FieldElement10x26;
+
+    #[test]
+    fn overflow_check_after_weak_normalize() {
+        // A regression test for a missing condition in `get_overflow()`.
+
+        // In `normalize()`, after the `normalize_weak()` call,
+        // the excess bit from the limb 0 is propagated all the way to the last limb.
+        // This constitutes an overflow, since the last bit becomes equal to (1 << 22),
+        // that is 23 bits in total.
+        // When `get_overflow()` is called afterwards, this was not detected,
+        // since the corresponding condition (checking for the last limb being > 22 bits)
+        // was missing.
+        // This resulted in a debug assert firing later.
+
+        // This is essentially 2^256
+        let z = FieldElement10x26([
+            (1 << 26), // an excess bit here
+            // the remaining full-sized limbs are at top normalized capacity
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            (1 << 26) - 1,
+            // the last limb is also at top normalized capacity
+            (1 << 22) - 1,
+        ]);
+
+        // Used to fail here (debug_assert firing because overflow happened at an unexpected place):
+        let z_normalized = z.normalize();
+
+        // Properly normalized result, just to be sure
+        // The initial number is 2^256, so the result is 0x1000003d1
+        let z_reference = FieldElement10x26([0x3d1, 0x40, 0, 0, 0, 0, 0, 0, 0, 0]);
+
+        assert_eq!(z_normalized.0, z_reference.0);
     }
 }
