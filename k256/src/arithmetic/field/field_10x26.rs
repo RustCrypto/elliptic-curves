@@ -175,15 +175,16 @@ impl FieldElement10x26 {
     /// Checks if the field element is greater or equal to the modulus.
     fn get_overflow(&self) -> Choice {
         let m = self.0[2] & self.0[3] & self.0[4] & self.0[5] & self.0[6] & self.0[7] & self.0[8];
-        let x = (self.0[9] == 0x3FFFFFu32)
-            & (m == 0x3FFFFFFu32)
-            & ((self.0[1] + 0x40u32 + ((self.0[0] + 0x3D1u32) >> 26)) > 0x3FFFFFFu32);
+        let x = (self.0[9] >> 22 != 0)
+            | ((self.0[9] == 0x3FFFFFu32)
+                & (m == 0x3FFFFFFu32)
+                & ((self.0[1] + 0x40u32 + ((self.0[0] + 0x3D1u32) >> 26)) > 0x3FFFFFFu32));
         Choice::from(x as u8)
     }
 
     /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
     pub fn normalize_weak(&self) -> Self {
-        // Reduce t4 at the start so there will be at most a single carry from the first pass
+        // Reduce t9 at the start so there will be at most a single carry from the first pass
         let (t, x) = self.subtract_modulus_approximation();
 
         // The first pass ensures the magnitude is 1, ...
