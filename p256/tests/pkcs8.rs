@@ -84,10 +84,7 @@ fn encode_pkcs8_public_key_to_der() {
 fn encode_pkcs8_private_key_to_pem() {
     let original_secret_key = p256::SecretKey::from_pkcs8_der(&PKCS8_PRIVATE_KEY_DER[..]).unwrap();
     let reencoded_secret_key = original_secret_key.to_pkcs8_pem().unwrap();
-    assert_eq!(
-        reencoded_secret_key.as_str(),
-        PKCS8_PRIVATE_KEY_PEM.trim_end()
-    );
+    assert_eq!(reencoded_secret_key.as_str(), PKCS8_PRIVATE_KEY_PEM);
 }
 
 #[test]
@@ -96,8 +93,5 @@ fn encode_pkcs8_public_key_to_pem() {
     let original_public_key =
         p256::PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
     let reencoded_public_key = original_public_key.to_string();
-    assert_eq!(
-        reencoded_public_key.as_str(),
-        PKCS8_PUBLIC_KEY_PEM.trim_end()
-    );
+    assert_eq!(reencoded_public_key.as_str(), PKCS8_PUBLIC_KEY_PEM);
 }
