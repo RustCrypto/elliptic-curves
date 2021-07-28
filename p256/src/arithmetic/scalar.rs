@@ -151,9 +151,45 @@ impl Field for Scalar {
         Scalar::invert(self)
     }
 
-    // TODO(tarcieri); stub! See: https://github.com/RustCrypto/elliptic-curves/issues/170
+    /// Tonelli-Shank's algorithm for q mod 16 = 1
+    /// https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
+    #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
-        todo!("see RustCrypto/elliptic-curves#170");
+        let w = self.pow_vartime(&[
+            0x279dce5617e3192a,
+            0xfde737d56d38bcf4,
+            0x07ffffffffffffff,
+            0x07fffffff8000000,
+        ]);
+
+        let mut v = Self::S;
+        let mut x = *self * w;
+        let mut b = x * w;
+        let mut z = Self::root_of_unity();
+
+        for max_v in (1..=Self::S).rev() {
+            let mut k = 1;
+            let mut tmp = b.square();
+            let mut j_less_than_v = Choice::from(1);
+
+            for j in 2..max_v {
+                let tmp_is_one = tmp.ct_eq(&Self::one());
+                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
+                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
+                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
+                j_less_than_v &= !j.ct_eq(&v);
+                k = u32::conditional_select(&j, &k, tmp_is_one);
+                z = Self::conditional_select(&z, &new_z, j_less_than_v);
+            }
+
+            let result = x * z;
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
+            z = z.square();
+            b *= z;
+            v = k;
+        }
+
+        CtOption::new(x, x.square().ct_eq(self))
     }
 }
 
@@ -204,7 +240,7 @@ impl PrimeField for Scalar {
         Scalar::from_repr(arr![u8;
             0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
             0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
-            0xb4, 0x1e, 0x66, 0x00,
+            0xb4, 0x1e, 0x66, 0x02,
         ])
         .unwrap()
     }
@@ -904,7 +940,7 @@ impl Zeroize for Scalar {
 mod tests {
     use super::Scalar;
     use crate::FieldBytes;
-    use elliptic_curve::group::ff::PrimeField;
+    use elliptic_curve::group::ff::{Field, PrimeField};
 
     #[cfg(feature = "zeroize")]
     use crate::SecretKey;
@@ -919,8 +955,8 @@ mod tests {
         assert_eq!(bytes, scalar.to_bytes());
     }
 
+    /// Basic tests that multiplication works.
     #[test]
-    // Basic tests that multiplication works.
     fn multiply() {
         let one = Scalar::one();
         let two = one + &one;
@@ -936,8 +972,8 @@ mod tests {
         assert_eq!(six, minus_two * &minus_three);
     }
 
+    /// Basic tests that scalar inversion works.
     #[test]
-    // Basic tests that scalar inversion works.
     fn invert() {
         let one = Scalar::one();
         let three = one + &one + &one;
@@ -953,7 +989,17 @@ mod tests {
         assert_eq!(three * &inv_minus_three, -one);
     }
 
-    // Tests that a Scalar can be safely converted to a SecretKey and back
+    /// Basic tests that sqrt works.
+    #[test]
+    fn sqrt() {
+        for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
+            let scalar = Scalar::from(n);
+            let sqrt = scalar.sqrt().unwrap();
+            assert_eq!(sqrt.square(), scalar);
+        }
+    }
+
+    /// Tests that a Scalar can be safely converted to a SecretKey and back
     #[test]
     #[cfg(feature = "zeroize")]
     fn from_ec_secret() {
