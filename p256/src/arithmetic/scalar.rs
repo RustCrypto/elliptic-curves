@@ -2,8 +2,8 @@
 
 pub mod blinding;
 
-use crate::{
-    arithmetic::util::{adc, mac, sbb},
+use crate::{    
+    arithmetic::util::{adc, mac, sbb, sbb64},
     FieldBytes, NistP256,
 };
 use core::{
@@ -28,6 +28,9 @@ use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::dig
 use crate::SecretKey;
 #[cfg(feature = "zeroize")]
 use elliptic_curve::zeroize::Zeroize;
+
+#[cfg(test)]
+use num_bigint::{BigUint, ToBigUint};
 
 /// The number of 64-bit limbs used to represent a [`Scalar`].
 const LIMBS: usize = 4;
@@ -377,6 +380,18 @@ impl Scalar {
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
         ret[24..32].copy_from_slice(&self.0[0].to_be_bytes());
         ret
+    }
+
+    /// Is this scalar greater than or equal to n / 2?
+    pub fn is_high(&self) -> Choice {
+        let (_, underflow) = sbb_array_with_underflow(&MODULUS_SHR1, &self.0);
+        underflow
+    }
+
+    /// Returns the scalar modulus as a `BigUint` object.
+    #[cfg(test)]
+    pub fn modulus_as_biguint() -> BigUint {
+        Self::one().neg().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 
     /// Determine if this `Scalar` is zero.
@@ -936,11 +951,35 @@ impl Zeroize for Scalar {
     }
 }
 
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a sinle-limb value.
+/// The borrow can be either `0` or `<u64>::MAX`.
+#[inline(always)]
+fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
+    let borrow = 0;
+    let (r0, borrow) = sbb64(lhs[0], rhs[0], borrow);
+    let (r1, borrow) = sbb64(lhs[1], rhs[1], borrow);
+    let (r2, borrow) = sbb64(lhs[2], rhs[2], borrow);
+    let (r3, borrow) = sbb64(lhs[3], rhs[3], borrow);
+    ([r0, r1, r2, r3], borrow)
+}
+
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a constant-time `Choice`
+/// (`0` if there was no borrow and `1` if there was).
+#[inline(always)]
+fn sbb_array_with_underflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
+    let (res, borrow) = sbb_array(lhs, rhs);
+    (res, Choice::from((borrow >> 63) as u8))
+}
+
 #[cfg(test)]
 mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::group::ff::{Field, PrimeField};
+    use num_bigint::{BigUint, ToBigUint};
+    use crate::arithmetic::util::{bytes_to_biguint, biguint_to_bytes};
 
     #[cfg(feature = "zeroize")]
     use crate::SecretKey;
@@ -1028,4 +1067,52 @@ mod tests {
         let scalar_bits = ScalarBits::from(&-Scalar::from(1));
         assert_eq!(minus_one, scalar_bits);
     }
+
+    impl From<&BigUint> for Scalar {
+        fn from(x: &BigUint) -> Self {
+            debug_assert!(x < &Scalar::modulus_as_biguint());
+            let bytes = biguint_to_bytes(x);
+            Self::from_repr(bytes.into()).unwrap()
+        }
+    }
+
+    impl From<BigUint> for Scalar {
+        fn from(x: BigUint) -> Self {
+            Self::from(&x)
+        }
+    }
+
+    impl ToBigUint for Scalar {
+        fn to_biguint(&self) -> Option<BigUint> {
+            Some(bytes_to_biguint(self.to_bytes().as_ref()))
+        }
+    }
+
+    #[test]
+    fn is_high() {
+        // 0 is not high
+        let high: bool = Scalar::zero().is_high().into();
+        assert!(!high);
+
+        // 1 is not high
+        let one = 1.to_biguint().unwrap();
+        let high: bool = Scalar::from(&one).is_high().into();
+        assert!(!high);
+
+        let m = Scalar::modulus_as_biguint();
+        let m_by_2 = &m >> 1;
+
+        // M / 2 is not high
+        let high: bool = Scalar::from(&m_by_2).is_high().into();
+        assert!(!high);
+
+        // M / 2 + 1 is high
+        let high: bool = Scalar::from(&m_by_2 + &one).is_high().into();
+        assert!(high);
+
+        // MODULUS - 1 is high
+        let high: bool = Scalar::from(&m - &one).is_high().into();
+        assert!(high);
+    }
+
 }

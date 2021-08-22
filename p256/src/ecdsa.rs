@@ -40,6 +40,7 @@
 //! ```
 
 pub use ecdsa_core::signature::{self, Error};
+use ecdsa_core::NormalizeLow;
 
 use super::NistP256;
 
@@ -124,6 +125,16 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
             Ok(())
         } else {
             Err(Error::new())
+        }
+    }
+}
+
+impl NormalizeLow for Scalar {
+    fn normalize_low(&self) -> (Self, bool) {
+        if self.is_high().into() {
+            (-self, true)
+        } else {
+            (*self, false)
         }
     }
 }

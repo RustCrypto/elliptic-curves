@@ -573,6 +573,8 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
+ "num-bigint",
+ "num-traits",
  "proptest",
  "rand_core",
  "sha2",
