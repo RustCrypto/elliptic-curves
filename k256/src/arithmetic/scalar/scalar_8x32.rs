@@ -13,7 +13,7 @@ use elliptic_curve::zeroize::Zeroize;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-// TODO(tarcieri): use `Secp256k1::ORDER.into_limbs()`
+// TODO(tarcieri): use `Secp256k1::ORDER.to_uint_array()`
 pub const MODULUS: [u32; 8] = [
     0xD036_4141,
     0xBFD2_5E8C,

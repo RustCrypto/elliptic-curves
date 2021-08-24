@@ -78,7 +78,11 @@ pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{consts::U33, generic_array::GenericArray};
 
-/// K-256 (secp256k1) elliptic curve.
+/// Order of the secp256k1 elliptic curve
+const ORDER: U256 =
+    U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+
+/// secp256k1 (K-256) elliptic curve.
 ///
 /// Specified in Certicom's SECG in "SEC 2: Recommended Elliptic Curve Domain Parameters":
 ///
@@ -97,8 +101,7 @@ impl elliptic_curve::Curve for Secp256k1 {
     type UInt = U256;
 
     /// Curve order
-    const ORDER: U256 =
-        U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    const ORDER: U256 = ORDER;
 }
 
 impl elliptic_curve::weierstrass::Curve for Secp256k1 {}

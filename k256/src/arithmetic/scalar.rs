@@ -5,18 +5,22 @@ use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
         mod scalar_8x32;
-        use scalar_8x32::Scalar8x32 as ScalarImpl;
-        use scalar_8x32::WideScalar16x32 as WideScalarImpl;
+        use scalar_8x32::{
+            Scalar8x32 as ScalarImpl,
+            WideScalar16x32 as WideScalarImpl,
+        };
 
         #[cfg(feature = "bits")]
-        use scalar_8x32::MODULUS;
+        use scalar_8x32::MODULUS as MODULUS_ARR;
     } else if #[cfg(target_pointer_width = "64")] {
         mod scalar_4x64;
-        use scalar_4x64::Scalar4x64 as ScalarImpl;
-        use scalar_4x64::WideScalar8x64 as WideScalarImpl;
+        use scalar_4x64::{
+            Scalar4x64 as ScalarImpl,
+            WideScalar8x64 as WideScalarImpl,
+        };
 
         #[cfg(feature = "bits")]
-        use scalar_4x64::MODULUS;
+        use scalar_4x64::MODULUS as MODULUS_ARR;
     }
 }
 
@@ -172,7 +176,7 @@ impl PrimeFieldBits for Scalar {
     }
 
     fn char_le_bits() -> ScalarBits {
-        MODULUS.into()
+        MODULUS_ARR.into()
     }
 }
 
