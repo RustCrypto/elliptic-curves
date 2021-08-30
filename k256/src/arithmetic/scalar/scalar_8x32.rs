@@ -13,17 +13,7 @@ use elliptic_curve::zeroize::Zeroize;
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-// TODO(tarcieri): use `Secp256k1::ORDER.to_uint_array()`
-pub const MODULUS: [u32; 8] = [
-    0xD036_4141,
-    0xBFD2_5E8C,
-    0xAF48_A03B,
-    0xBAAE_DCE6,
-    0xFFFF_FFFE,
-    0xFFFF_FFFF,
-    0xFFFF_FFFF,
-    0xFFFF_FFFF,
-];
+pub const MODULUS: [u32; 8] = crate::ORDER.to_uint_array();
 
 /// Limbs of 2^256 minus the secp256k1 order.
 pub const NEG_MODULUS: [u32; 8] = [
@@ -38,16 +28,7 @@ pub const NEG_MODULUS: [u32; 8] = [
 ];
 
 /// Constant representing the modulus / 2
-const FRAC_MODULUS_2: [u32; 8] = [
-    0x681B_20A0,
-    0xDFE9_2F46,
-    0x57A4_501D,
-    0x5D57_6E73,
-    0xFFFF_FFFF,
-    0xFFFF_FFFF,
-    0xFFFF_FFFF,
-    0x7FFF_FFFF,
-];
+const FRAC_MODULUS_2: [u32; 8] = crate::ORDER.shr_vartime(1).to_uint_array();
 
 /// Subtracts a (little-endian) multi-limb number from another multi-limb number,
 /// returning the result and the resulting borrow as a sinle-limb value.
