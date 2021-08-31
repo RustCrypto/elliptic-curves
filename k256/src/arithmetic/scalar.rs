@@ -252,7 +252,7 @@ impl Scalar {
 
     /// Modulo squares the scalar.
     pub fn square(&self) -> Self {
-        self.mul(&self)
+        self.mul(self)
     }
 
     /// Right shifts the scalar. Note: not constant-time in `shift`.
@@ -468,7 +468,7 @@ impl AddAssign<Scalar> for Scalar {
 
 impl AddAssign<&Scalar> for Scalar {
     fn add_assign(&mut self, rhs: &Scalar) {
-        *self = Scalar::add(self, &rhs);
+        *self = Scalar::add(self, rhs);
     }
 }
 

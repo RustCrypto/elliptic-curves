@@ -252,7 +252,7 @@ fn lincomb_generic<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) 
 
     let tables1 = static_zip_map(
         |x, r_sign| LookupTable::from(&ProjectivePoint::conditional_select(&x, &-x, r_sign)),
-        &xs,
+        xs,
         &r1_signs,
         LookupTable::default(),
     );

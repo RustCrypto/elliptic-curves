@@ -118,7 +118,7 @@ impl From<PublicKey> for VerifyingKey {
 
 impl From<&PublicKey> for VerifyingKey {
     fn from(public_key: &PublicKey) -> VerifyingKey {
-        public_key.clone().into()
+        VerifyingKey::from(*public_key)
     }
 }
 
@@ -130,7 +130,7 @@ impl From<VerifyingKey> for PublicKey {
 
 impl From<&VerifyingKey> for PublicKey {
     fn from(verifying_key: &VerifyingKey) -> PublicKey {
-        verifying_key.inner.clone().into()
+        verifying_key.inner.into()
     }
 }
 
