@@ -91,7 +91,7 @@ impl FieldElement {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         self.0.normalize().to_bytes()
     }
 
@@ -204,8 +204,8 @@ impl FieldElement {
         // { 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
         // 1, [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        let x2 = self.pow2k(1).mul(&self);
-        let x3 = x2.pow2k(1).mul(&self);
+        let x2 = self.pow2k(1).mul(self);
+        let x3 = x2.pow2k(1).mul(self);
         let x6 = x3.pow2k(3).mul(&x3);
         let x9 = x6.pow2k(3).mul(&x3);
         let x11 = x9.pow2k(2).mul(&x2);

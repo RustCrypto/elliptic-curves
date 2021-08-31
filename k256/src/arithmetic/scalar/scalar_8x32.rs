@@ -248,7 +248,7 @@ impl Scalar8x32 {
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         let mut ret = FieldBytes::default();
         ret[0..4].copy_from_slice(&self.0[7].to_be_bytes());
         ret[4..8].copy_from_slice(&self.0[6].to_be_bytes());
@@ -413,8 +413,8 @@ impl Scalar8x32 {
     /// in constant time.
     /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
     fn from_overflow(w: &[u32; 8], high_bit: Choice) -> Self {
-        let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
-        Self(conditional_select(&w, &r2, !underflow | high_bit))
+        let (r2, underflow) = sbb_array_with_underflow(w, &MODULUS);
+        Self(conditional_select(w, &r2, !underflow | high_bit))
     }
 
     /// Right shifts a scalar by given number of bits.

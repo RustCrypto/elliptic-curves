@@ -84,7 +84,7 @@ impl FieldElement10x26 {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         let mut r = FieldBytes::default();
         r[0] = (self.0[9] >> 14) as u8;
         r[1] = (self.0[9] >> 6) as u8;

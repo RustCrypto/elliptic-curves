@@ -66,7 +66,7 @@ impl FieldElementImpl {
         CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         debug_assert!(self.normalized);
         self.value.to_bytes()
     }

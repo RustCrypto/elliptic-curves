@@ -219,7 +219,7 @@ impl Scalar4x64 {
     }
 
     /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         let mut ret = FieldBytes::default();
         ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
         ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
@@ -312,8 +312,8 @@ impl Scalar4x64 {
     /// in constant time.
     /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
     fn from_overflow(w: &[u64; 4], high_bit: Choice) -> Self {
-        let (r2, underflow) = sbb_array_with_underflow(&w, &MODULUS);
-        Self(conditional_select(&w, &r2, !underflow | high_bit))
+        let (r2, underflow) = sbb_array_with_underflow(w, &MODULUS);
+        Self(conditional_select(w, &r2, !underflow | high_bit))
     }
 
     /// Right shifts a scalar by given number of bits.
