@@ -3,9 +3,7 @@
 use cfg_if::cfg_if;
 
 cfg_if! {
-    if #[cfg(feature = "field-montgomery")] {
-        mod field_montgomery;
-    } else if #[cfg(target_pointer_width = "32")] {
+    if #[cfg(target_pointer_width = "32")] {
         mod field_10x26;
     } else if #[cfg(target_pointer_width = "64")] {
         mod field_5x52;
@@ -15,14 +13,12 @@ cfg_if! {
 }
 
 cfg_if! {
-    if #[cfg(all(debug_assertions, not(feature = "field-montgomery")))] {
+    if #[cfg(debug_assertions)] {
         mod field_impl;
         use field_impl::FieldElementImpl;
     } else {
         cfg_if! {
-            if #[cfg(feature = "field-montgomery")] {
-                use field_montgomery::FieldElementMontgomery as FieldElementImpl;
-            } else if #[cfg(target_pointer_width = "32")] {
+            if #[cfg(target_pointer_width = "32")] {
                 use field_10x26::FieldElement10x26 as FieldElementImpl;
             } else if #[cfg(target_pointer_width = "64")] {
                 use field_5x52::FieldElement5x52 as FieldElementImpl;

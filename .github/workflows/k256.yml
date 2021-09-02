@@ -96,7 +96,6 @@ jobs:
       - run: cargo check --target ${{ matrix.target }} --all-features
       - run: cargo test --release --target ${{ matrix.target }} --no-default-features
       - run: cargo test --release --target ${{ matrix.target }}
-      - run: cargo test --release --target ${{ matrix.target }} --features field-montgomery
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
 # TODO(tarcieri): re-enable when new `elliptic-curve` and `ecdsa` crates are released
