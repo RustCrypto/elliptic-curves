@@ -151,6 +151,7 @@ impl Field for Scalar {
     /// https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
     #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
+        // Note: `pow_vartime` is constant-time with respect to `self`
         let w = self.pow_vartime(&[
             0x279dce5617e3192a,
             0xfde737d56d38bcf4,
