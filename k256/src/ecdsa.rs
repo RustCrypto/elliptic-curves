@@ -83,11 +83,6 @@ pub use self::{sign::SigningKey, verify::VerifyingKey};
 
 use crate::Secp256k1;
 
-#[cfg(feature = "ecdsa")]
-use crate::NonZeroScalar;
-#[cfg(feature = "ecdsa")]
-use elliptic_curve::generic_array::GenericArray;
-
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
@@ -98,20 +93,6 @@ pub type DerSignature = ecdsa_core::der::Signature<Secp256k1>;
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
-}
-
-/// Validate that the scalars of an ECDSA signature are modulo the order
-#[cfg(feature = "ecdsa")]
-fn check_scalars(signature: &Signature) -> Result<(), Error> {
-    let (r_bytes, s_bytes) = signature.as_ref().split_at(32);
-    let r_valid = NonZeroScalar::from_repr(GenericArray::clone_from_slice(r_bytes)).is_some();
-    let s_valid = NonZeroScalar::from_repr(GenericArray::clone_from_slice(s_bytes)).is_some();
-
-    if r_valid && s_valid {
-        Ok(())
-    } else {
-        Err(Error::new())
-    }
 }
 
 #[cfg(all(test, feature = "ecdsa", feature = "arithmetic"))]
@@ -165,7 +146,7 @@ mod tests {
                     Err(_) => return Some("failed to parse signature ASN.1"),
                 };
 
-                sig.normalize_s().unwrap();
+                sig.normalize_s();
 
                 match verifying_key.verify(msg, &sig) {
                     Ok(_) if pass => None,

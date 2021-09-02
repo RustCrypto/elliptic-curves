@@ -119,7 +119,7 @@ impl Field for Scalar {
         // iterations is vanishingly small.
         loop {
             rng.fill_bytes(&mut bytes);
-            if let Some(scalar) = Scalar::from_repr(bytes) {
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
                 return scalar;
             }
         }
@@ -131,10 +131,6 @@ impl Field for Scalar {
 
     fn one() -> Self {
         Scalar::one()
-    }
-
-    fn is_zero(&self) -> bool {
-        self.is_zero().into()
     }
 
     #[must_use]
@@ -204,7 +200,7 @@ impl PrimeField for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_repr(bytes: FieldBytes) -> Option<Self> {
+    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         let mut w = [0u64; LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
@@ -221,15 +217,15 @@ impl PrimeField for Scalar {
         let (_, borrow) = sbb(w[3], MODULUS[3], borrow);
         let is_some = (borrow as u8) & 1;
 
-        CtOption::new(Scalar(w), Choice::from(is_some)).into()
+        CtOption::new(Scalar(w), Choice::from(is_some))
     }
 
     fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
     }
 
-    fn is_odd(&self) -> bool {
-        self.0[0] as u8 == 1
+    fn is_odd(&self) -> Choice {
+        (self.0[0] as u8 & 1).into()
     }
 
     fn multiplicative_generator() -> Self {
@@ -377,15 +373,6 @@ impl Scalar {
         ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
         ret[24..32].copy_from_slice(&self.0[0].to_be_bytes());
         ret
-    }
-
-    /// Determine if this `Scalar` is zero.
-    ///
-    /// # Returns
-    ///
-    /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&Scalar::zero())
     }
 
     /// Returns self + rhs mod n
@@ -633,24 +620,6 @@ impl Scalar {
         self.mul(self)
     }
 
-    /// Returns `self^by`, where `by` is a little-endian integer exponent.
-    ///
-    /// **This operation is variable time with respect to the exponent.** If the exponent
-    /// is fixed, this operation is effectively constant time.
-    pub fn pow_vartime(&self, by: &[u64; 4]) -> Self {
-        let mut res = Self::one();
-        for e in by.iter().rev() {
-            for i in (0..64).rev() {
-                res = res.square();
-
-                if ((*e >> i) & 1) == 1 {
-                    res *= self;
-                }
-            }
-        }
-        res
-    }
-
     /// Returns the multiplicative inverse of self, if self is non-zero
     pub fn invert(&self) -> CtOption<Self> {
         // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
@@ -688,10 +657,11 @@ impl Scalar {
             // u-loop
             while bool::from(u.is_even()) {
                 u.shr1();
-                if bool::from(A.is_even()) {
-                    A.shr1();
-                } else {
-                    A.shr1();
+
+                let was_odd: bool = A.is_odd().into();
+                A.shr1();
+
+                if was_odd {
                     A += Scalar(MODULUS_SHR1);
                     A += Self::one();
                 }
@@ -700,10 +670,11 @@ impl Scalar {
             // v-loop
             while bool::from(v.is_even()) {
                 v.shr1();
-                if bool::from(C.is_even()) {
-                    C.shr1();
-                } else {
-                    C.shr1();
+
+                let was_odd: bool = C.is_odd().into();
+                C.shr1();
+
+                if was_odd {
                     C += Scalar(MODULUS_SHR1);
                     C += Self::one();
                 }
