@@ -195,7 +195,7 @@ mod tests {
 
         let msg = hex!("313233343030");
         let mut sig = Signature::from_der(&hex!("304402207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a002207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")).unwrap();
-        assert!(!sig.normalize_s().unwrap());
+        assert!(!sig.normalize_s());
         assert!(verifying_key.verify(&msg, &sig).is_ok());
     }
 }

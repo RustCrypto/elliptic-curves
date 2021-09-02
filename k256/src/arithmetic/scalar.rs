@@ -95,10 +95,6 @@ impl Field for Scalar {
         Scalar::one()
     }
 
-    fn is_zero(&self) -> bool {
-        self.0.is_zero().into()
-    }
-
     #[must_use]
     fn square(&self) -> Self {
         Scalar::square(self)
@@ -493,16 +489,16 @@ impl PrimeField for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_repr(bytes: FieldBytes) -> Option<Self> {
-        ScalarImpl::from_bytes(bytes.as_ref()).map(Self).into()
+    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
+        ScalarImpl::from_bytes(bytes.as_ref()).map(Self)
     }
 
     fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
     }
 
-    fn is_odd(&self) -> bool {
-        self.0.is_odd().into()
+    fn is_odd(&self) -> Choice {
+        self.0.is_odd()
     }
 
     fn multiplicative_generator() -> Self {
@@ -707,7 +703,7 @@ impl Scalar {
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
             rng.fill_bytes(&mut bytes);
-            if let Some(scalar) = Scalar::from_repr(bytes) {
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
                 return scalar;
             }
         }

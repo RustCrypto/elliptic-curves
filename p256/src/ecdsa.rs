@@ -48,7 +48,7 @@ use {
     crate::{AffinePoint, ProjectivePoint, Scalar},
     core::borrow::Borrow,
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-    elliptic_curve::ops::Invert,
+    elliptic_curve::{group::ff::Field, ops::Invert},
 };
 
 /// ECDSA/P-256 signature (fixed-size)

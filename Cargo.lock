@@ -82,7 +82,7 @@ checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "bp256"
-version = "0.2.0"
+version = "0.3.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -91,7 +91,7 @@ dependencies = [
 
 [[package]]
 name = "bp384"
-version = "0.2.0"
+version = "0.3.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -307,9 +307,8 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43ee23aa5b4f68c7a092b5c3beb25f50c406adc75e2363634f242f28ab255372"
+version = "0.13.0-pre"
+source = "git+https://github.com/RustCrypto/signatures.git#ec279220173f4a43d870a2f08a593662463eaaaf"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -325,9 +324,8 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.10.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "beca177dcb8eb540133e7680baff45e7cc4d93bf22002676cec549f82343721b"
+version = "0.11.0-pre"
+source = "git+https://github.com/RustCrypto/traits.git#133f12ad8368ba1d31973d88d7c6986a57ca3351"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -345,9 +343,9 @@ dependencies = [
 
 [[package]]
 name = "ff"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63eec06c61e487eecf0f7e6e6372e596a81922c28d33e645d6983ca6493a1af0"
+checksum = "b2958d04124b9f27f175eaeb9a9f383d026098aa837eadd8ba22c11f13a05b9e"
 dependencies = [
  "bitvec",
  "rand_core",
@@ -389,9 +387,9 @@ dependencies = [
 
 [[package]]
 name = "group"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c363a5301b8f153d80747126a04b3c82073b9fe3130571a9d170cacdeaf7912"
+checksum = "bc5ac374b108929de78460075f3dc439fa66df9d8fc77e8f12caa5165fcf0c89"
 dependencies = [
  "ff",
  "rand_core",
@@ -455,7 +453,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.9.6"
+version = "0.10.0-pre"
 dependencies = [
  "blobby",
  "cfg-if",
@@ -567,7 +565,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "p256"
-version = "0.9.0"
+version = "0.10.0-pre"
 dependencies = [
  "blobby",
  "ecdsa",
@@ -580,7 +578,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.8.0"
+version = "0.9.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",

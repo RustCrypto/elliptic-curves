@@ -139,7 +139,7 @@ impl FieldElement {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         // Convert from Montgomery form to canonical form
         let tmp =
             FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);

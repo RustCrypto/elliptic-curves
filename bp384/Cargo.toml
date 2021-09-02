@@ -1,7 +1,7 @@
 [package]
 name = "bp384"
 description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
-version = "0.2.0" # Also update html_root_url in lib.rs when bumping this
+version = "0.3.0-pre" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
@@ -12,10 +12,10 @@ categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
 
 [dependencies]
-elliptic-curve = { version = "0.10", default-features = false, features = ["hazmat"] }
+elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat"] }
 
 # optional dependencies
-ecdsa = { version = "0.12", optional = true, default-features = false, features = ["der"] }
+ecdsa = { version = "=0.13.0-pre", optional = true, default-features = false, features = ["der"] }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
