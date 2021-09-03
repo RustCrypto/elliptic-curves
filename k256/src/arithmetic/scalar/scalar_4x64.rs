@@ -1,8 +1,8 @@
-//! ProjectiveArithmetic modulo curve base order using 64-bit limbs.
+//! Scalar arithmetic modulo curve base order using 64-bit limbs.
 //! Ported from <https://github.com/bitcoin-core/secp256k1>
 
 use crate::{
-    arithmetic::util::{adc64, sbb64},
+    arithmetic::util::{adc, sbb},
     FieldBytes,
 };
 use core::convert::TryInto;
@@ -27,10 +27,10 @@ const FRAC_MODULUS_2: [u64; 4] = crate::ORDER.shr_vartime(1).to_uint_array();
 #[inline(always)]
 fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     let borrow = 0;
-    let (r0, borrow) = sbb64(lhs[0], rhs[0], borrow);
-    let (r1, borrow) = sbb64(lhs[1], rhs[1], borrow);
-    let (r2, borrow) = sbb64(lhs[2], rhs[2], borrow);
-    let (r3, borrow) = sbb64(lhs[3], rhs[3], borrow);
+    let (r0, borrow) = sbb(lhs[0], rhs[0], borrow);
+    let (r1, borrow) = sbb(lhs[1], rhs[1], borrow);
+    let (r2, borrow) = sbb(lhs[2], rhs[2], borrow);
+    let (r3, borrow) = sbb(lhs[3], rhs[3], borrow);
     ([r0, r1, r2, r3], borrow)
 }
 
@@ -49,10 +49,10 @@ fn sbb_array_with_underflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice
 #[inline(always)]
 fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     let carry = 0;
-    let (r0, carry) = adc64(lhs[0], rhs[0], carry);
-    let (r1, carry) = adc64(lhs[1], rhs[1], carry);
-    let (r2, carry) = adc64(lhs[2], rhs[2], carry);
-    let (r3, carry) = adc64(lhs[3], rhs[3], carry);
+    let (r0, carry) = adc(lhs[0], rhs[0], carry);
+    let (r1, carry) = adc(lhs[1], rhs[1], carry);
+    let (r2, carry) = adc(lhs[2], rhs[2], carry);
+    let (r3, carry) = adc(lhs[3], rhs[3], carry);
     ([r0, r1, r2, r3], carry)
 }
 
