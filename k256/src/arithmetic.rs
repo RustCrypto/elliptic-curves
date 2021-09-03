@@ -38,13 +38,12 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "zeroize")]
     fn generate_secret_key() {
         use crate::SecretKey;
         use elliptic_curve::rand_core::OsRng;
         let key = SecretKey::random(&mut OsRng);
 
         // Sanity check
-        assert!(!key.to_bytes().iter().all(|b| *b == 0))
+        assert!(!key.to_bytes_be().iter().all(|b| *b == 0))
     }
 }

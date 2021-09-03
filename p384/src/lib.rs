@@ -48,7 +48,7 @@ use elliptic_curve::bigint::U384;
 ///
 /// † *NOTE: the specific origins of this constant have never been fully disclosed
 ///   (it is the SHA-1 digest of an inexplicable NSA-selected constant)*
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP384;
 
 impl elliptic_curve::Curve for NistP384 {
@@ -86,9 +86,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 
 /// NIST P-384 secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
 
-#[cfg(feature = "zeroize")]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP384 {}

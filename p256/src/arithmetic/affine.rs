@@ -11,11 +11,9 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::{DecompactPoint, DecompressPoint},
+    zeroize::DefaultIsZeroes,
     AffineArithmetic, Curve,
 };
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 impl AffineArithmetic for NistP256 {
     type AffinePoint = AffinePoint;
@@ -98,13 +96,15 @@ impl Default for AffinePoint {
     }
 }
 
+impl DefaultIsZeroes for AffinePoint {}
+
+impl Eq for AffinePoint {}
+
 impl PartialEq for AffinePoint {
     fn eq(&self, other: &AffinePoint) -> bool {
         self.ct_eq(other).into()
     }
 }
-
-impl Eq for AffinePoint {}
 
 impl AffinePoint {
     fn decode(encoded_point: &EncodedPoint) -> CtOption<Self> {
@@ -276,14 +276,6 @@ impl Neg for AffinePoint {
             y: -self.y,
             infinity: self.infinity,
         }
-    }
-}
-
-#[cfg(feature = "zeroize")]
-impl Zeroize for AffinePoint {
-    fn zeroize(&mut self) {
-        self.x.zeroize();
-        self.y.zeroize();
     }
 }
 

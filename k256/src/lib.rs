@@ -93,7 +93,7 @@ const ORDER: U256 =
 /// It's primarily notable for usage in Bitcoin and other cryptocurrencies,
 /// particularly in conjunction with the Elliptic Curve Digital Signature
 /// Algorithm (ECDSA).
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Secp256k1;
 
 impl elliptic_curve::Curve for Secp256k1 {
@@ -142,20 +142,12 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Secp256k1>;
 pub type PublicKey = elliptic_curve::PublicKey<Secp256k1>;
 
 /// secp256k1 (K-256) secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 
-#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
 
-/// Bit representation of a K-256 scalar field element.
+/// Bit representation of a secp256k1 (K-256) scalar field element.
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
-
-/// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
-/// inner byte value is within range of [`Secp256k1::ORDER`].
-///
-/// [`Secp256k1::ORDER`]: ./struct.Secp256k1.html#associatedconstant.ORDER
-pub type ScalarBytes = elliptic_curve::ScalarBytes<Secp256k1>;

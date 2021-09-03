@@ -15,6 +15,7 @@ use elliptic_curve::{
     rand_core::RngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::DefaultIsZeroes,
     ProjectiveArithmetic,
 };
 
@@ -325,6 +326,8 @@ impl Default for ProjectivePoint {
         Self::identity()
     }
 }
+
+impl DefaultIsZeroes for ProjectivePoint {}
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;

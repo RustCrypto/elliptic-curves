@@ -9,11 +9,9 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     weierstrass::DecompressPoint,
+    zeroize::DefaultIsZeroes,
     AffineArithmetic,
 };
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 impl AffineArithmetic for Secp256k1 {
     type AffinePoint = AffinePoint;
@@ -97,6 +95,8 @@ impl Default for AffinePoint {
         Self::identity()
     }
 }
+
+impl DefaultIsZeroes for AffinePoint {}
 
 impl PartialEq for AffinePoint {
     fn eq(&self, other: &AffinePoint) -> bool {
@@ -241,14 +241,6 @@ impl Neg for AffinePoint {
             y: self.y.negate(1).normalize_weak(),
             infinity: self.infinity,
         }
-    }
-}
-
-#[cfg(feature = "zeroize")]
-impl Zeroize for AffinePoint {
-    fn zeroize(&mut self) {
-        self.x.zeroize();
-        self.y.zeroize();
     }
 }
 

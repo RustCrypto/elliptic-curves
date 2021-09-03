@@ -9,10 +9,8 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::DefaultIsZeroes,
 };
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 /// The number of 64-bit limbs used to represent a [`FieldElement`].
 const LIMBS: usize = 4;
@@ -79,6 +77,8 @@ impl Default for FieldElement {
         FieldElement::zero()
     }
 }
+
+impl DefaultIsZeroes for FieldElement {}
 
 impl FieldElement {
     /// Returns the zero element.
@@ -516,13 +516,6 @@ impl<'a> Neg for &'a FieldElement {
 
     fn neg(self) -> FieldElement {
         FieldElement::zero() - self
-    }
-}
-
-#[cfg(feature = "zeroize")]
-impl Zeroize for FieldElement {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
     }
 }
 

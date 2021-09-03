@@ -1,10 +1,10 @@
 //! Scalar field arithmetic modulo n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 
-pub mod blinding;
+pub mod blinded;
 
 use crate::{
     arithmetic::util::{adc, mac, sbb},
-    FieldBytes, NistP256,
+    FieldBytes, NistP256, SecretKey,
 };
 use core::{
     convert::TryInto,
@@ -15,6 +15,7 @@ use elliptic_curve::{
     group::ff::{Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::DefaultIsZeroes,
     ScalarArithmetic,
 };
 
@@ -23,11 +24,6 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "digest")]
 use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
-
-#[cfg(feature = "zeroize")]
-use crate::SecretKey;
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 /// The number of 64-bit limbs used to represent a [`Scalar`].
 const LIMBS: usize = 4;
@@ -283,13 +279,15 @@ impl From<u64> for Scalar {
     }
 }
 
+impl DefaultIsZeroes for Scalar {}
+
+impl Eq for Scalar {}
+
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
 }
-
-impl Eq for Scalar {}
 
 impl PartialOrd for Scalar {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
@@ -894,28 +892,17 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
         *secret_key.to_secret_scalar()
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl Zeroize for Scalar {
-    fn zeroize(&mut self) {
-        self.0.as_mut().zeroize()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::FieldBytes;
+    use crate::{FieldBytes, SecretKey};
     use elliptic_curve::group::ff::{Field, PrimeField};
-
-    #[cfg(feature = "zeroize")]
-    use crate::SecretKey;
 
     #[test]
     fn from_to_bytes_roundtrip() {
@@ -973,10 +960,9 @@ mod tests {
 
     /// Tests that a Scalar can be safely converted to a SecretKey and back
     #[test]
-    #[cfg(feature = "zeroize")]
     fn from_ec_secret() {
         let scalar = Scalar::one();
-        let secret = SecretKey::from_bytes(scalar.to_bytes()).unwrap();
+        let secret = SecretKey::from_bytes_be(&scalar.to_bytes()).unwrap();
         let rederived_scalar = Scalar::from(&secret);
         assert_eq!(scalar.0, rederived_scalar.0);
     }

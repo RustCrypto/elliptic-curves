@@ -3,10 +3,10 @@
 //! Only enabled when `debug_assertions` feature is on.
 
 use crate::FieldBytes;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::Zeroize,
+};
 
 #[cfg(target_pointer_width = "32")]
 use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
@@ -159,7 +159,6 @@ impl ConstantTimeEq for FieldElementImpl {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for FieldElementImpl {
     fn zeroize(&mut self) {
         self.value.zeroize();
