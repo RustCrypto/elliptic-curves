@@ -190,10 +190,12 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
             return Err(Error::new());
         }
 
-        let mut signature = Signature::from_scalars(r, s)?;
-        let is_r_odd = bool::from(R.y.normalize().is_odd());
-        let is_s_high = signature.normalize_s();
-        Ok((signature, is_r_odd ^ is_s_high))
+        let signature = Signature::from_scalars(r, s)?;
+        let is_r_odd: bool = R.y.normalize().is_odd().into();
+        let is_s_high: bool = signature.s().is_high().into();
+        let signature_low = signature.normalize_s().unwrap_or(signature);
+
+        Ok((signature_low, is_r_odd ^ is_s_high))
     }
 }
 

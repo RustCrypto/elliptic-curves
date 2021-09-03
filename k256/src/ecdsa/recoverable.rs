@@ -120,8 +120,7 @@ impl Signature {
     where
         D: Clone + Digest<OutputSize = U32>,
     {
-        let mut signature = *signature;
-        signature.normalize_s();
+        let signature = signature.normalize_s().unwrap_or(*signature);
 
         for recovery_id in 0..=1 {
             if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {

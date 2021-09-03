@@ -6,11 +6,11 @@ use crate::Scalar;
 use ecdsa_core::NormalizeLow;
 
 impl NormalizeLow for Scalar {
-    fn normalize_low(&self) -> (Self, bool) {
+    fn normalize_low(&self) -> Option<Self> {
         if self.is_high().into() {
-            (-self, true)
+            Some(-self)
         } else {
-            (*self, false)
+            None
         }
     }
 }
@@ -46,8 +46,7 @@ mod tests {
             0xfb, 0x42, 0xef, 0x20, 0xe3, 0xc6, 0xad, 0xb2,
         ]).unwrap();
 
-        let mut sig_normalized = sig_hi;
-        assert!(sig_normalized.normalize_s());
+        let sig_normalized = sig_hi.normalize_s().unwrap();
         assert_eq!(sig_lo, sig_normalized);
     }
 
@@ -61,8 +60,6 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ]).unwrap();
 
-        let mut sig_normalized = sig;
-        assert!(!sig_normalized.normalize_s());
-        assert_eq!(sig, sig_normalized);
+        assert_eq!(sig.normalize_s(), None);
     }
 }
