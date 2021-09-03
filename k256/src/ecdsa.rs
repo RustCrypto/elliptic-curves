@@ -140,13 +140,11 @@ mod tests {
                 let verifying_key =
                     ecdsa_core::VerifyingKey::from_encoded_point(&q_encoded).unwrap();
 
-                let mut sig = match Signature::<Secp256k1>::from_der(sig) {
-                    Ok(s) => s,
+                let sig = match Signature::<Secp256k1>::from_der(sig) {
+                    Ok(s) => s.normalize_s().unwrap_or(s),
                     Err(_) if !pass => return None,
                     Err(_) => return Some("failed to parse signature ASN.1"),
                 };
-
-                sig.normalize_s();
 
                 match verifying_key.verify(msg, &sig) {
                     Ok(_) if pass => None,
