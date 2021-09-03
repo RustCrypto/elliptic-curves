@@ -48,7 +48,7 @@ impl SigningKey {
 
     /// Initialize [`SigningKey`] from a raw scalar value (big endian).
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let inner = SecretKey::from_bytes(bytes)
+        let inner = SecretKey::from_bytes_be(bytes)
             .map(|sk| sk.to_secret_scalar())
             .map_err(|_| Error::new())?;
 

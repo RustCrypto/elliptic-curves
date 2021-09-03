@@ -10,7 +10,7 @@ use elliptic_curve::bigint::U256;
 use crate::pkcs8;
 
 /// brainpoolP256t1 elliptic curve: twisted variant
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct BrainpoolP256t1;
 
 impl elliptic_curve::Curve for BrainpoolP256t1 {
@@ -42,9 +42,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<BrainpoolP256t1>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<BrainpoolP256t1>;
 
 /// brainpoolP256t1 secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<BrainpoolP256t1>;
 
-#[cfg(feature = "zeroize")]
 impl elliptic_curve::sec1::ValidatePublicKey for BrainpoolP256t1 {}

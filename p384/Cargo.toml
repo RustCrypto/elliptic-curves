@@ -20,10 +20,9 @@ sha2 = { version = "0.9", optional = true, default-features = false }
 default = ["pkcs8", "std"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
-pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
+pkcs8 = ["elliptic-curve/pkcs8"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]
-zeroize = ["elliptic-curve/zeroize"]
 
 [package.metadata.docs.rs]
 all-features = true

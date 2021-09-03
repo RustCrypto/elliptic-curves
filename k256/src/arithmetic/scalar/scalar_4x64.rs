@@ -6,10 +6,10 @@ use crate::{
     FieldBytes,
 };
 use core::convert::TryInto;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::Zeroize,
+};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
@@ -419,7 +419,6 @@ impl Scalar4x64 {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for Scalar4x64 {
     fn zeroize(&mut self) {
         self.0.as_mut().zeroize()

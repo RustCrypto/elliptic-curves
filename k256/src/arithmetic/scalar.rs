@@ -27,6 +27,7 @@ use elliptic_curve::{
     group::ff::{Field, PrimeField},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::DefaultIsZeroes,
     ScalarArithmetic,
 };
 
@@ -35,9 +36,6 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "digest")]
 use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -396,6 +394,8 @@ impl Scalar {
     }
 }
 
+impl DefaultIsZeroes for Scalar {}
+
 #[cfg(feature = "digest")]
 #[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
 impl FromDigest<Secp256k1> for Scalar {
@@ -594,13 +594,6 @@ impl From<Scalar> for FieldBytes {
 impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
-    }
-}
-
-#[cfg(feature = "zeroize")]
-impl Zeroize for Scalar {
-    fn zeroize(&mut self) {
-        self.0.zeroize()
     }
 }
 

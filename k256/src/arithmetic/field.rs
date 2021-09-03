@@ -31,10 +31,10 @@ cfg_if! {
 
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign};
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::Zeroize,
+};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -295,7 +295,6 @@ impl MulAssign<FieldElement> for FieldElement {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for FieldElement {
     fn zeroize(&mut self) {
         self.0.zeroize();

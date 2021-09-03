@@ -70,7 +70,7 @@ pub use elliptic_curve::{self, bigint::U256};
 pub use arithmetic::{
     affine::AffinePoint,
     projective::ProjectivePoint,
-    scalar::{blinding::BlindedScalar, Scalar},
+    scalar::{blinded::BlindedScalar, Scalar},
 };
 
 #[cfg(feature = "pkcs8")]
@@ -98,7 +98,7 @@ use elliptic_curve::{consts::U33, generic_array::GenericArray};
 ///
 /// † *NOTE: the specific origins of this constant have never been fully disclosed
 ///   (it is the SHA-1 digest of an inexplicable NSA-selected constant)*
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP256;
 
 impl elliptic_curve::Curve for NistP256 {
@@ -153,18 +153,12 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
 pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
 
 /// NIST P-256 secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
 
-#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 
 /// Bit representation of a NIST P-256 scalar field element.
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
-
-/// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
-/// inner byte value is within range of the [`Curve::ORDER`].
-pub type ScalarBytes = elliptic_curve::ScalarBytes<NistP256>;
