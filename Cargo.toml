@@ -12,4 +12,3 @@ members = [
 crypto-bigint = { git = "https://github.com/RustCrypto/utils.git" }
 ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-

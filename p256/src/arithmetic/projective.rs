@@ -284,7 +284,7 @@ impl ProjectivePoint {
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
         let mut ret = ProjectivePoint::identity();
 
-        for limb in k.0.iter().rev() {
+        for limb in k.to_u64x4().iter().rev() {
             for i in (0..64).rev() {
                 ret = ret.double();
                 ret.conditional_assign(&(ret + self), Choice::from(((limb >> i) & 1u64) as u8));
