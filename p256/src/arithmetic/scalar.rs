@@ -6,12 +6,9 @@ use crate::{
     arithmetic::util::{adc, mac, sbb},
     FieldBytes, NistP256, SecretKey,
 };
-use core::{
-    convert::TryInto,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Limb, U256},
+    bigint::{limb, nlimbs, ArrayEncoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::RngCore,
@@ -272,18 +269,7 @@ impl Scalar {
     ///
     /// Subtracts the modulus when decoded integer is larger than the modulus.
     pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        Self::sub_inner(
-            u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
-            u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
-            u64::from_be_bytes(bytes[8..16].try_into().unwrap()),
-            u64::from_be_bytes(bytes[0..8].try_into().unwrap()),
-            0,
-            MODULUS[0],
-            MODULUS[1],
-            MODULUS[2],
-            MODULUS[3],
-            0,
-        )
+        Self::sub_order(&U256::from_be_slice(bytes), Limb::ZERO)
     }
 
     /// Returns the SEC1 encoding of this scalar.
@@ -294,19 +280,10 @@ impl Scalar {
     /// Returns self + rhs mod n
     // TODO(tarcieri): use `UInt::add_mod`
     pub const fn add(&self, rhs: &Self) -> Self {
-        let a = self.to_u64x4();
-        let b = rhs.to_u64x4();
-
-        // Bit 256 of n is set, so addition can result in five words.
-        let (w0, carry) = adc(a[0], b[0], 0);
-        let (w1, carry) = adc(a[1], b[1], carry);
-        let (w2, carry) = adc(a[2], b[2], carry);
-        let (w3, w4) = adc(a[3], b[3], carry);
+        let (w, carry) = self.0.adc(&rhs.0, Limb::ZERO);
 
         // Attempt to subtract the modulus, to ensure the result is in the field.
-        Self::sub_inner(
-            w0, w1, w2, w3, w4, MODULUS[0], MODULUS[1], MODULUS[2], MODULUS[3], 0,
-        )
+        Self::sub_order(&w, carry)
     }
 
     /// Returns 2*self.
@@ -317,9 +294,7 @@ impl Scalar {
     /// Returns self - rhs mod n
     // TODO(tarcieri): use `UInt::sub_mod`
     pub const fn subtract(&self, rhs: &Self) -> Self {
-        let a = self.to_u64x4();
-        let b = rhs.to_u64x4();
-        Self::sub_inner(a[0], a[1], a[2], a[3], 0, b[0], b[1], b[2], b[3], 0)
+        Self(self.0.sub_mod(&rhs.0, &NistP256::ORDER))
     }
 
     /// Perform unchecked conversion from a U64x4 to a Scalar.
@@ -376,34 +351,27 @@ impl Scalar {
     }
 
     #[inline]
-    #[allow(clippy::too_many_arguments)]
-    const fn sub_inner(
-        l0: u64,
-        l1: u64,
-        l2: u64,
-        l3: u64,
-        l4: u64,
-        r0: u64,
-        r1: u64,
-        r2: u64,
-        r3: u64,
-        r4: u64,
-    ) -> Self {
-        let (w0, borrow) = sbb(l0, r0, 0);
-        let (w1, borrow) = sbb(l1, r1, borrow);
-        let (w2, borrow) = sbb(l2, r2, borrow);
-        let (w3, borrow) = sbb(l3, r3, borrow);
-        let (_, borrow) = sbb(l4, r4, borrow);
+    const fn sub_order(uint: &U256, limb: Limb) -> Self {
+        let order = NistP256::ORDER;
+        let (w, borrow) = uint.sbb(&order, Limb::ZERO);
+        let (_, borrow) = limb.sbb(Limb::ZERO, borrow);
 
         // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
         // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
         // modulus.
-        let (w0, carry) = adc(w0, MODULUS[0] & borrow, 0);
-        let (w1, carry) = adc(w1, MODULUS[1] & borrow, carry);
-        let (w2, carry) = adc(w2, MODULUS[2] & borrow, carry);
-        let (w3, _) = adc(w3, MODULUS[3] & borrow, carry);
+        let mut i = 0;
+        let mut res: [limb::Inner; nlimbs!(256)] = [0; nlimbs!(256)];
+        let mut carry = Limb::ZERO;
 
-        Scalar::from_u64x4_unchecked([w0, w1, w2, w3])
+        while i < nlimbs!(256) {
+            let rhs = Limb(order.limbs()[i].0 & borrow.0);
+            let (limb, c) = w.limbs()[i].adc(rhs, carry);
+            res[i] = limb.0;
+            carry = c;
+            i += 1;
+        }
+
+        Self(U256::from_uint_array(res))
     }
 
     /// Barrett Reduction
