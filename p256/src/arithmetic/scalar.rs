@@ -97,11 +97,11 @@ impl Field for Scalar {
     }
 
     fn zero() -> Self {
-        Scalar::ZERO
+        Self::ZERO
     }
 
     fn one() -> Self {
-        Scalar::ONE
+        Self::ONE
     }
 
     #[must_use]
@@ -174,7 +174,7 @@ impl PrimeField for Scalar {
     /// [0, p).
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         let inner = U256::from_be_byte_array(bytes);
-        CtOption::new(Scalar(inner), inner.ct_lt(&NistP256::ORDER))
+        CtOption::new(Self(inner), inner.ct_lt(&NistP256::ORDER))
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -219,10 +219,10 @@ impl PrimeFieldBits for Scalar {
 
 impl Scalar {
     /// Zero scalar.
-    pub const ZERO: Scalar = Scalar(U256::ZERO);
+    pub const ZERO: Self = Self(U256::ZERO);
 
-    /// The multiplicative identity.
-    pub const ONE: Scalar = Scalar(U256::ONE);
+    /// Multiplicative identity.
+    pub const ONE: Self = Self(U256::ONE);
 
     /// Parses the given byte array as a scalar.
     ///
@@ -610,12 +610,6 @@ impl Scalar {
     }
 }
 
-impl From<u64> for Scalar {
-    fn from(k: u64) -> Self {
-        Scalar(k.into())
-    }
-}
-
 impl DefaultIsZeroes for Scalar {}
 
 impl Eq for Scalar {}
@@ -635,6 +629,12 @@ impl PartialOrd for Scalar {
 impl Ord for Scalar {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         self.0.cmp(&other.0)
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(k: u64) -> Self {
+        Scalar(k.into())
     }
 }
 
