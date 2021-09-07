@@ -11,12 +11,13 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    bigint::{ArrayEncoding, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::RngCore,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
-    ScalarArithmetic,
+    Curve, ScalarArithmetic,
 };
 
 #[cfg(feature = "bits")]
@@ -28,7 +29,7 @@ use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::dig
 /// The number of 64-bit limbs used to represent a [`Scalar`].
 const LIMBS: usize = 4;
 
-type U256 = [u64; LIMBS];
+type U64x4 = [u64; LIMBS];
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
@@ -44,19 +45,14 @@ type U256 = [u64; LIMBS];
 /// n = ellsea(E)
 /// isprime(n)
 /// ```
-pub const MODULUS: U256 = [
+pub const MODULUS: U64x4 = [
     0xf3b9_cac2_fc63_2551,
     0xbce6_faad_a717_9e84,
     0xffff_ffff_ffff_ffff,
     0xffff_ffff_0000_0000,
 ];
 
-const MODULUS_SHR1: U256 = [
-    0x79dc_e561_7e31_92a8,
-    0xde73_7d56_d38b_cf42,
-    0x7fff_ffff_ffff_ffff,
-    0x7fff_ffff_8000_0000,
-];
+const MODULUS_SHR1: Scalar = Scalar(NistP256::ORDER.shr_vartime(1));
 
 /// MU = floor(2^512 / n)
 ///    = 115792089264276142090721624801893421302707618245269942344307673200490803338238
@@ -198,23 +194,8 @@ impl PrimeField for Scalar {
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        let mut w = [0u64; LIMBS];
-
-        // Interpret the bytes as a big-endian integer w.
-        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-
-        // If w is in the range [0, n) then w - n will overflow, resulting in a borrow
-        // value of 2^64 - 1.
-        let (_, borrow) = sbb(w[0], MODULUS[0], 0);
-        let (_, borrow) = sbb(w[1], MODULUS[1], borrow);
-        let (_, borrow) = sbb(w[2], MODULUS[2], borrow);
-        let (_, borrow) = sbb(w[3], MODULUS[3], borrow);
-        let is_some = (borrow as u8) & 1;
-
-        CtOption::new(Scalar(w), Choice::from(is_some))
+        let inner = U256::from_be_byte_array(bytes);
+        CtOption::new(Scalar(inner), inner.ct_lt(&NistP256::ORDER))
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -222,7 +203,7 @@ impl PrimeField for Scalar {
     }
 
     fn is_odd(&self) -> Choice {
-        (self.0[0] as u8 & 1).into()
+        self.0.is_odd()
     }
 
     fn multiplicative_generator() -> Self {
@@ -275,7 +256,7 @@ impl PrimeFieldBits for Scalar {
 
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
-        Scalar([k, 0, 0, 0])
+        Scalar(k.into())
     }
 }
 
@@ -295,30 +276,9 @@ impl PartialOrd for Scalar {
     }
 }
 
-/// Returns sign of left - right
-fn cmp_vartime(left: &U256, right: &U256) -> i32 {
-    use core::cmp::Ordering::*;
-
-    // since we're little-endian, need to reverse iterate
-    for (l, r) in left.iter().rev().zip(right.iter().rev()) {
-        match l.cmp(r) {
-            Less => return -1,
-            Greater => return 1,
-            Equal => continue,
-        }
-    }
-    0
-}
-
 impl Ord for Scalar {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        use core::cmp::Ordering::*;
-        match cmp_vartime(&self.0, &other.0) {
-            -1 => Less,
-            0 => Equal,
-            1 => Greater,
-            _ => unreachable!(),
-        }
+        self.0.cmp(&other.0)
     }
 }
 
@@ -338,12 +298,12 @@ impl FromDigest<NistP256> for Scalar {
 impl Scalar {
     /// Returns the zero scalar.
     pub const fn zero() -> Scalar {
-        Scalar([0, 0, 0, 0])
+        Scalar(U256::ZERO)
     }
 
     /// Returns the multiplicative identity.
     pub const fn one() -> Scalar {
-        Scalar([1, 0, 0, 0])
+        Scalar(U256::ONE)
     }
 
     /// Parses the given byte array as a scalar.
@@ -366,21 +326,20 @@ impl Scalar {
 
     /// Returns the SEC1 encoding of this scalar.
     pub fn to_bytes(&self) -> FieldBytes {
-        let mut ret = FieldBytes::default();
-        ret[0..8].copy_from_slice(&self.0[3].to_be_bytes());
-        ret[8..16].copy_from_slice(&self.0[2].to_be_bytes());
-        ret[16..24].copy_from_slice(&self.0[1].to_be_bytes());
-        ret[24..32].copy_from_slice(&self.0[0].to_be_bytes());
-        ret
+        self.0.to_be_byte_array()
     }
 
     /// Returns self + rhs mod n
+    // TODO(tarcieri): use `UInt::add_mod`
     pub const fn add(&self, rhs: &Self) -> Self {
+        let a = self.to_u64x4();
+        let b = rhs.to_u64x4();
+
         // Bit 256 of n is set, so addition can result in five words.
-        let (w0, carry) = adc(self.0[0], rhs.0[0], 0);
-        let (w1, carry) = adc(self.0[1], rhs.0[1], carry);
-        let (w2, carry) = adc(self.0[2], rhs.0[2], carry);
-        let (w3, w4) = adc(self.0[3], rhs.0[3], carry);
+        let (w0, carry) = adc(a[0], b[0], 0);
+        let (w1, carry) = adc(a[1], b[1], carry);
+        let (w2, carry) = adc(a[2], b[2], carry);
+        let (w3, w4) = adc(a[3], b[3], carry);
 
         // Attempt to subtract the modulus, to ensure the result is in the field.
         Self::sub_inner(
@@ -394,11 +353,59 @@ impl Scalar {
     }
 
     /// Returns self - rhs mod n
+    // TODO(tarcieri): use `UInt::sub_mod`
     pub const fn subtract(&self, rhs: &Self) -> Self {
-        Self::sub_inner(
-            self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
-            0,
-        )
+        let a = self.to_u64x4();
+        let b = rhs.to_u64x4();
+        Self::sub_inner(a[0], a[1], a[2], a[3], 0, b[0], b[1], b[2], b[3], 0)
+    }
+
+    /// Perform unchecked conversion from a U64x4 to a Scalar.
+    ///
+    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "32")]
+    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
+        Self(U256::from_uint_array([
+            (limbs[0] & 0xFFFFFFFF) as u32,
+            (limbs[0] >> 32) as u32,
+            (limbs[1] & 0xFFFFFFFF) as u32,
+            (limbs[1] >> 32) as u32,
+            (limbs[2] & 0xFFFFFFFF) as u32,
+            (limbs[2] >> 32) as u32,
+            (limbs[3] & 0xFFFFFFFF) as u32,
+            (limbs[3] >> 32) as u32,
+        ]))
+    }
+
+    /// Perform unchecked conversion from a U64x4 to a Scalar.
+    ///
+    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "64")]
+    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
+        Self(U256::from_uint_array(limbs))
+    }
+
+    /// Convert to a [`U64x4`] array.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "32")]
+    pub(crate) const fn to_u64x4(&self) -> U64x4 {
+        let limbs = self.0.to_uint_array();
+
+        [
+            (limbs[0] as u64) | ((limbs[1] as u64) << 32),
+            (limbs[2] as u64) | ((limbs[3] as u64) << 32),
+            (limbs[4] as u64) | ((limbs[5] as u64) << 32),
+            (limbs[6] as u64) | ((limbs[7] as u64) << 32),
+        ]
+    }
+
+    /// Convert to a [`U64x4`] array.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "64")]
+    pub(crate) const fn to_u64x4(&self) -> U64x4 {
+        self.0.to_uint_array()
     }
 
     #[inline]
@@ -429,7 +436,7 @@ impl Scalar {
         let (w2, carry) = adc(w2, MODULUS[2] & borrow, carry);
         let (w3, _) = adc(w3, MODULUS[3] & borrow, carry);
 
-        Scalar([w0, w1, w2, w3])
+        Scalar::from_u64x4_unchecked([w0, w1, w2, w3])
     }
 
     /// Barrett Reduction
@@ -583,32 +590,34 @@ impl Scalar {
         // and 90% of the time, no subtraction will be needed.
         let r = subtract_n_if_necessary(r[0], r[1], r[2], r[3], r[4]);
         let r = subtract_n_if_necessary(r[0], r[1], r[2], r[3], r[4]);
-        Scalar([r[0], r[1], r[2], r[3]])
+        Scalar::from_u64x4_unchecked([r[0], r[1], r[2], r[3]])
     }
 
     /// Returns self * rhs mod n
     pub const fn mul(&self, rhs: &Self) -> Self {
         // Schoolbook multiplication.
+        let a = self.to_u64x4();
+        let b = rhs.to_u64x4();
 
-        let (w0, carry) = mac(0, self.0[0], rhs.0[0], 0);
-        let (w1, carry) = mac(0, self.0[0], rhs.0[1], carry);
-        let (w2, carry) = mac(0, self.0[0], rhs.0[2], carry);
-        let (w3, w4) = mac(0, self.0[0], rhs.0[3], carry);
+        let (w0, carry) = mac(0, a[0], b[0], 0);
+        let (w1, carry) = mac(0, a[0], b[1], carry);
+        let (w2, carry) = mac(0, a[0], b[2], carry);
+        let (w3, w4) = mac(0, a[0], b[3], carry);
 
-        let (w1, carry) = mac(w1, self.0[1], rhs.0[0], 0);
-        let (w2, carry) = mac(w2, self.0[1], rhs.0[1], carry);
-        let (w3, carry) = mac(w3, self.0[1], rhs.0[2], carry);
-        let (w4, w5) = mac(w4, self.0[1], rhs.0[3], carry);
+        let (w1, carry) = mac(w1, a[1], b[0], 0);
+        let (w2, carry) = mac(w2, a[1], b[1], carry);
+        let (w3, carry) = mac(w3, a[1], b[2], carry);
+        let (w4, w5) = mac(w4, a[1], b[3], carry);
 
-        let (w2, carry) = mac(w2, self.0[2], rhs.0[0], 0);
-        let (w3, carry) = mac(w3, self.0[2], rhs.0[1], carry);
-        let (w4, carry) = mac(w4, self.0[2], rhs.0[2], carry);
-        let (w5, w6) = mac(w5, self.0[2], rhs.0[3], carry);
+        let (w2, carry) = mac(w2, a[2], b[0], 0);
+        let (w3, carry) = mac(w3, a[2], b[1], carry);
+        let (w4, carry) = mac(w4, a[2], b[2], carry);
+        let (w5, w6) = mac(w5, a[2], b[3], carry);
 
-        let (w3, carry) = mac(w3, self.0[3], rhs.0[0], 0);
-        let (w4, carry) = mac(w4, self.0[3], rhs.0[1], carry);
-        let (w5, carry) = mac(w5, self.0[3], rhs.0[2], carry);
-        let (w6, w7) = mac(w6, self.0[3], rhs.0[3], carry);
+        let (w3, carry) = mac(w3, a[3], b[0], 0);
+        let (w4, carry) = mac(w4, a[3], b[1], carry);
+        let (w5, carry) = mac(w5, a[3], b[2], carry);
+        let (w6, w7) = mac(w6, a[3], b[3], carry);
 
         Scalar::barrett_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
     }
@@ -648,7 +657,7 @@ impl Scalar {
 
         let mut u = *self;
         // currently an invalid scalar
-        let mut v = Scalar(MODULUS);
+        let mut v = Scalar::from_u64x4_unchecked(MODULUS);
         let mut A = Self::one();
         let mut C = Self::zero();
 
@@ -661,7 +670,7 @@ impl Scalar {
                 A.shr1();
 
                 if was_odd {
-                    A += Scalar(MODULUS_SHR1);
+                    A += MODULUS_SHR1;
                     A += Self::one();
                 }
             }
@@ -674,7 +683,7 @@ impl Scalar {
                 C.shr1();
 
                 if was_odd {
-                    C += Scalar(MODULUS_SHR1);
+                    C += MODULUS_SHR1;
                     C += Self::one();
                 }
             }
@@ -694,7 +703,7 @@ impl Scalar {
 
     /// Is integer representing equivalence class odd?
     pub fn is_odd(&self) -> Choice {
-        ((self.0[0] & 1) as u8).into()
+        self.0.is_odd()
     }
 
     /// Is integer representing equivalence class even?
@@ -704,12 +713,7 @@ impl Scalar {
 
     /// Shift right by one bit
     fn shr1(&mut self) {
-        let mut bit: u64 = 0;
-        for digit in self.0.iter_mut().rev() {
-            let new_digit = (bit << 63) | (*digit >> 1);
-            bit = *digit & 1;
-            *digit = new_digit;
-        }
+        self.0 >>= 1;
     }
 }
 
@@ -839,44 +843,21 @@ impl<'a> Neg for &'a Scalar {
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Scalar([
-            u64::conditional_select(&a.0[0], &b.0[0], choice),
-            u64::conditional_select(&a.0[1], &b.0[1], choice),
-            u64::conditional_select(&a.0[2], &b.0[2], choice),
-            u64::conditional_select(&a.0[3], &b.0[3], choice),
-        ])
+        Self(U256::conditional_select(&a.0, &b.0, choice))
     }
 }
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0[0].ct_eq(&other.0[0])
-            & self.0[1].ct_eq(&other.0[1])
-            & self.0[2].ct_eq(&other.0[2])
-            & self.0[3].ct_eq(&other.0[3])
+        self.0.ct_eq(&other.0)
     }
 }
 
-#[cfg(all(feature = "bits", target_pointer_width = "32"))]
+#[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
-        let mut output = [0u32; 8];
-
-        for (input, output) in scalar.0.iter().zip(output.chunks_mut(2)) {
-            output[0] = (input & 0xFFFFFFFF) as u32;
-            output[1] = (input >> 32) as u32;
-        }
-
-        output.into()
-    }
-}
-
-#[cfg(all(feature = "bits", target_pointer_width = "64"))]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
-impl From<&Scalar> for ScalarBits {
-    fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.into()
+        scalar.0.to_uint_array().into()
     }
 }
 
