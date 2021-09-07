@@ -7,6 +7,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    bigint::{Encoding, Limb},
     group::{
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
@@ -284,10 +285,10 @@ impl ProjectivePoint {
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
         let mut ret = ProjectivePoint::identity();
 
-        for limb in k.to_u64x4().iter().rev() {
-            for i in (0..64).rev() {
+        for limb in k.limbs().iter().rev() {
+            for i in (0..Limb::BIT_SIZE).rev() {
                 ret = ret.double();
-                ret.conditional_assign(&(ret + self), Choice::from(((limb >> i) & 1u64) as u8));
+                ret.conditional_assign(&(ret + self), Choice::from(((limb.0 >> i) & 1) as u8));
             }
         }
 

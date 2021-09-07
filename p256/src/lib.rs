@@ -102,10 +102,26 @@ use elliptic_curve::{consts::U33, generic_array::GenericArray};
 pub struct NistP256;
 
 impl elliptic_curve::Curve for NistP256 {
-    /// 256-bit field modulus
+    /// 256-bit integer type used for internally representing field elements.
     type UInt = U256;
 
-    /// Curve order
+    /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus).
+    ///
+    /// ```text
+    /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
+    /// ```
+    ///
+    /// # Calculating the order
+    /// One way to calculate the order is with `GP/PARI`:
+    ///
+    /// ```text
+    /// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
+    /// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
+    /// E = ellinit([Mod(-3, p), Mod(b, p)])
+    /// default(parisize, 120000000)
+    /// n = ellsea(E)
+    /// isprime(n)
+    /// ```
     const ORDER: U256 =
         U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
 }
