@@ -11,7 +11,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{ArrayEncoding, U256},
+    bigint::{ArrayEncoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::RngCore,
@@ -26,31 +26,13 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 #[cfg(feature = "digest")]
 use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
 
-/// The number of 64-bit limbs used to represent a [`Scalar`].
-const LIMBS: usize = 4;
-
-type U64x4 = [u64; LIMBS];
+/// Array containing 4 x 64-bit unsigned integers.
+// TODO(tarcieri): replace this entirely with `U256`
+type U64x4 = [u64; 4];
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
-///
-/// # Calculating the modulus
-/// One way to calculate the modulus is with `GP/PARI`:
-///
-/// ```text
-/// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
-/// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
-/// E = ellinit([Mod(-3, p), Mod(b, p)])
-/// default(parisize, 120000000)
-/// n = ellsea(E)
-/// isprime(n)
-/// ```
-pub const MODULUS: U64x4 = [
-    0xf3b9_cac2_fc63_2551,
-    0xbce6_faad_a717_9e84,
-    0xffff_ffff_ffff_ffff,
-    0xffff_ffff_0000_0000,
-];
+const MODULUS: U64x4 = Scalar(NistP256::ORDER).to_u64x4();
 
 const MODULUS_SHR1: Scalar = Scalar(NistP256::ORDER.shr_vartime(1));
 
@@ -118,11 +100,11 @@ impl Field for Scalar {
     }
 
     fn zero() -> Self {
-        Scalar::zero()
+        Scalar::ZERO
     }
 
     fn one() -> Self {
-        Scalar::one()
+        Scalar::ONE
     }
 
     #[must_use]
@@ -233,24 +215,8 @@ impl PrimeFieldBits for Scalar {
         self.into()
     }
 
-    #[cfg(target_pointer_width = "32")]
     fn char_le_bits() -> ScalarBits {
-        [
-            0xfc63_2551,
-            0xf3b9_cac2,
-            0xa717_9e84,
-            0xbce6_faad,
-            0xffff_ffff,
-            0xffff_ffff,
-            0x0000_0000,
-            0xffff_ffff,
-        ]
-        .into()
-    }
-
-    #[cfg(target_pointer_width = "64")]
-    fn char_le_bits() -> ScalarBits {
-        MODULUS.into()
+        NistP256::ORDER.to_uint_array().into()
     }
 }
 
@@ -296,19 +262,15 @@ impl FromDigest<NistP256> for Scalar {
 }
 
 impl Scalar {
-    /// Returns the zero scalar.
-    pub const fn zero() -> Scalar {
-        Scalar(U256::ZERO)
-    }
+    /// Zero scalar.
+    pub const ZERO: Scalar = Scalar(U256::ZERO);
 
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Scalar {
-        Scalar(U256::ONE)
-    }
+    /// The multiplicative identity.
+    pub const ONE: Scalar = Scalar(U256::ONE);
 
     /// Parses the given byte array as a scalar.
     ///
-    /// Subtracts the modulus when the byte array is larger than the modulus.
+    /// Subtracts the modulus when decoded integer is larger than the modulus.
     pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
         Self::sub_inner(
             u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
@@ -385,6 +347,11 @@ impl Scalar {
     #[cfg(target_pointer_width = "64")]
     const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
         Self(U256::from_uint_array(limbs))
+    }
+
+    /// Borrow the inner limbs array.
+    pub(crate) fn limbs(&self) -> &[Limb] {
+        self.0.limbs()
     }
 
     /// Convert to a [`U64x4`] array.
