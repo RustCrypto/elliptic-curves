@@ -22,9 +22,9 @@ impl elliptic_curve::Curve for BrainpoolP256r1 {
         U256::from_be_hex("a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7");
 }
 
-impl elliptic_curve::weierstrass::Curve for BrainpoolP256r1 {}
+impl elliptic_curve::PrimeCurve for BrainpoolP256r1 {}
 
-impl elliptic_curve::weierstrass::PointCompression for BrainpoolP256r1 {
+impl elliptic_curve::PointCompression for BrainpoolP256r1 {
     const COMPRESS_POINTS: bool = false;
 }
 
