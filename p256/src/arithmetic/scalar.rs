@@ -821,7 +821,7 @@ impl From<&Scalar> for FieldBytes {
 
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.to_secret_scalar()
+        *secret_key.to_nonzero_scalar()
     }
 }
 
@@ -889,7 +889,7 @@ mod tests {
     #[test]
     fn from_ec_secret() {
         let scalar = Scalar::one();
-        let secret = SecretKey::from_bytes_be(&scalar.to_bytes()).unwrap();
+        let secret = SecretKey::from_be_bytes(&scalar.to_bytes()).unwrap();
         let rederived_scalar = Scalar::from(&secret);
         assert_eq!(scalar.0, rederived_scalar.0);
     }
