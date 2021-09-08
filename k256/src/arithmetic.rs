@@ -44,6 +44,6 @@ mod tests {
         let key = SecretKey::random(&mut OsRng);
 
         // Sanity check
-        assert!(!key.to_bytes_be().iter().all(|b| *b == 0))
+        assert!(!key.to_be_bytes().iter().all(|b| *b == 0))
     }
 }

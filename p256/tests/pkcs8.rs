@@ -29,7 +29,7 @@ const PKCS8_PUBLIC_KEY_PEM: &str = include_str!("examples/pkcs8-public-key.pem")
 fn decode_pkcs8_private_key_from_der() {
     let secret_key = p256::SecretKey::from_pkcs8_der(&PKCS8_PRIVATE_KEY_DER[..]).unwrap();
     let expected_scalar = hex!("69624171561A63340DE0E7D869F2A05492558E1A04868B6A9F854A866788188D");
-    assert_eq!(secret_key.to_bytes_be().as_slice(), &expected_scalar[..]);
+    assert_eq!(secret_key.to_be_bytes().as_slice(), &expected_scalar[..]);
 }
 
 #[test]
@@ -49,7 +49,7 @@ fn decode_pkcs8_private_key_from_pem() {
 
     // Ensure key parses equivalently to DER
     let der_key = p256::SecretKey::from_pkcs8_der(&PKCS8_PRIVATE_KEY_DER[..]).unwrap();
-    assert_eq!(secret_key.to_bytes_be(), der_key.to_bytes_be());
+    assert_eq!(secret_key.to_be_bytes(), der_key.to_be_bytes());
 }
 
 #[test]
