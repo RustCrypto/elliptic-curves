@@ -1,8 +1,12 @@
 //! Wide scalar (64-bit limbs)
 
 use super::{Scalar, MODULUS};
+use crate::ORDER;
 use core::convert::TryInto;
-use elliptic_curve::subtle::Choice;
+use elliptic_curve::{
+    bigint::{Limb, U256},
+    subtle::{Choice, ConditionallySelectable},
+};
 
 /// Limbs of 2^256 minus the secp256k1 order.
 const NEG_MODULUS: [u64; 4] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
@@ -134,8 +138,11 @@ impl WideScalar {
         c >>= 64;
 
         /* Final reduction of r. */
+        let r = U256::from([r0, r1, r2, r3]);
+        let (r2, underflow) = r.sbb(&ORDER, Limb::ZERO);
         let high_bit = Choice::from(c as u8);
-        Scalar::from_overflow(&[r0, r1, r2, r3], high_bit)
+        let underflow = Choice::from((underflow.0 >> 63) as u8);
+        Scalar(U256::conditional_select(&r, &r2, !underflow | high_bit))
     }
 }
 

@@ -4,7 +4,7 @@
 #[cfg_attr(target_pointer_width = "64", path = "scalar/wide64.rs")]
 mod wide;
 
-use crate::{arithmetic::util::sbb, FieldBytes, Secp256k1, ORDER};
+use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
@@ -562,14 +562,6 @@ impl Scalar {
         Self::conditional_select(self, &(self.add(&w)), flag)
     }
 
-    /// Creates a normalized scalar from four given limbs and a possible high (carry) bit
-    /// in constant time.
-    /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
-    fn from_overflow(w: &[limb::Inner; nlimbs!(256)], high_bit: Choice) -> Self {
-        let (r2, underflow) = sbb_array_with_underflow(w, &MODULUS);
-        conditional_select_array(w, &r2, !underflow | high_bit)
-    }
-
     /// Raises the scalar to the power `2^k`.
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
@@ -830,88 +822,10 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-#[cfg(target_pointer_width = "32")]
-#[inline(always)]
-fn conditional_select_array(a: &[u32; 8], b: &[u32; 8], choice: Choice) -> Scalar {
-    Scalar(U256::from_uint_array([
-        u32::conditional_select(&a[0], &b[0], choice),
-        u32::conditional_select(&a[1], &b[1], choice),
-        u32::conditional_select(&a[2], &b[2], choice),
-        u32::conditional_select(&a[3], &b[3], choice),
-        u32::conditional_select(&a[4], &b[4], choice),
-        u32::conditional_select(&a[5], &b[5], choice),
-        u32::conditional_select(&a[6], &b[6], choice),
-        u32::conditional_select(&a[7], &b[7], choice),
-    ]))
-}
-
-/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
-/// returning the result and the resulting borrow as a sinle-limb value.
-/// The borrow can be either `0` or `<u64>::MAX`.
-#[cfg(target_pointer_width = "32")]
-#[inline(always)]
-fn sbb_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
-    let borrow = 0;
-    let (r0, borrow) = sbb(lhs[0], rhs[0], borrow);
-    let (r1, borrow) = sbb(lhs[1], rhs[1], borrow);
-    let (r2, borrow) = sbb(lhs[2], rhs[2], borrow);
-    let (r3, borrow) = sbb(lhs[3], rhs[3], borrow);
-    let (r4, borrow) = sbb(lhs[4], rhs[4], borrow);
-    let (r5, borrow) = sbb(lhs[5], rhs[5], borrow);
-    let (r6, borrow) = sbb(lhs[6], rhs[6], borrow);
-    let (r7, borrow) = sbb(lhs[7], rhs[7], borrow);
-    ([r0, r1, r2, r3, r4, r5, r6, r7], borrow)
-}
-
-/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
-/// returning the result and the resulting borrow as a constant-time `Choice`
-/// (`0` if there was no borrow and `1` if there was).
-#[cfg(target_pointer_width = "32")]
-#[inline(always)]
-fn sbb_array_with_underflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
-    let (res, borrow) = sbb_array(lhs, rhs);
-    (res, Choice::from((borrow >> 31) as u8))
-}
-
-#[cfg(target_pointer_width = "64")]
-#[inline(always)]
-fn conditional_select_array(a: &[u64; 4], b: &[u64; 4], choice: Choice) -> Scalar {
-    Scalar(U256::from_uint_array([
-        u64::conditional_select(&a[0], &b[0], choice),
-        u64::conditional_select(&a[1], &b[1], choice),
-        u64::conditional_select(&a[2], &b[2], choice),
-        u64::conditional_select(&a[3], &b[3], choice),
-    ]))
-}
-
-/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
-/// returning the result and the resulting borrow as a sinle-limb value.
-/// The borrow can be either `0` or `<u32>::MAX`.
-#[cfg(target_pointer_width = "64")]
-#[inline(always)]
-fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
-    let borrow = 0;
-    let (r0, borrow) = sbb(lhs[0], rhs[0], borrow);
-    let (r1, borrow) = sbb(lhs[1], rhs[1], borrow);
-    let (r2, borrow) = sbb(lhs[2], rhs[2], borrow);
-    let (r3, borrow) = sbb(lhs[3], rhs[3], borrow);
-    ([r0, r1, r2, r3], borrow)
-}
-
-/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
-/// returning the result and the resulting borrow as a constant-time `Choice`
-/// (`0` if there was no borrow and `1` if there was).
-#[cfg(target_pointer_width = "64")]
-#[inline(always)]
-fn sbb_array_with_underflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
-    let (res, borrow) = sbb_array(lhs, rhs);
-    (res, Choice::from((borrow >> 63) as u8))
-}
-
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
+    use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
     use elliptic_curve::group::ff::{Field, PrimeField};
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;

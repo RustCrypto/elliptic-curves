@@ -308,7 +308,7 @@ mod tests {
 
     use super::FieldElement;
     use crate::{
-        arithmetic::util::{biguint_to_bytes, bytes_to_biguint},
+        arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         test_vectors::field::DBL_TEST_VECTORS,
         FieldBytes,
     };
