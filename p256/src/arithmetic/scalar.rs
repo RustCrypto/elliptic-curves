@@ -217,47 +217,6 @@ impl PrimeFieldBits for Scalar {
     }
 }
 
-impl From<u64> for Scalar {
-    fn from(k: u64) -> Self {
-        Scalar(k.into())
-    }
-}
-
-impl DefaultIsZeroes for Scalar {}
-
-impl Eq for Scalar {}
-
-impl PartialEq for Scalar {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl PartialOrd for Scalar {
-    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for Scalar {
-    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        self.0.cmp(&other.0)
-    }
-}
-
-#[cfg(feature = "digest")]
-#[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
-impl FromDigest<NistP256> for Scalar {
-    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
-    /// modulo n.
-    fn from_digest<D>(digest: D) -> Self
-    where
-        D: Digest<OutputSize = U32>,
-    {
-        Self::from_bytes_reduced(&digest.finalize())
-    }
-}
-
 impl Scalar {
     /// Zero scalar.
     pub const ZERO: Scalar = Scalar(U256::ZERO);
@@ -291,63 +250,132 @@ impl Scalar {
         self.add(self)
     }
 
-    /// Returns self - rhs mod n
-    // TODO(tarcieri): use `UInt::sub_mod`
+    /// Returns self - rhs mod n.
     pub const fn subtract(&self, rhs: &Self) -> Self {
         Self(self.0.sub_mod(&rhs.0, &NistP256::ORDER))
     }
 
-    /// Perform unchecked conversion from a U64x4 to a Scalar.
-    ///
-    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "32")]
-    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
-        Self(U256::from_uint_array([
-            (limbs[0] & 0xFFFFFFFF) as u32,
-            (limbs[0] >> 32) as u32,
-            (limbs[1] & 0xFFFFFFFF) as u32,
-            (limbs[1] >> 32) as u32,
-            (limbs[2] & 0xFFFFFFFF) as u32,
-            (limbs[2] >> 32) as u32,
-            (limbs[3] & 0xFFFFFFFF) as u32,
-            (limbs[3] >> 32) as u32,
-        ]))
+    /// Returns self * rhs mod n
+    pub const fn mul(&self, rhs: &Self) -> Self {
+        // Schoolbook multiplication.
+        let a = self.to_u64x4();
+        let b = rhs.to_u64x4();
+
+        let (w0, carry) = mac(0, a[0], b[0], 0);
+        let (w1, carry) = mac(0, a[0], b[1], carry);
+        let (w2, carry) = mac(0, a[0], b[2], carry);
+        let (w3, w4) = mac(0, a[0], b[3], carry);
+
+        let (w1, carry) = mac(w1, a[1], b[0], 0);
+        let (w2, carry) = mac(w2, a[1], b[1], carry);
+        let (w3, carry) = mac(w3, a[1], b[2], carry);
+        let (w4, w5) = mac(w4, a[1], b[3], carry);
+
+        let (w2, carry) = mac(w2, a[2], b[0], 0);
+        let (w3, carry) = mac(w3, a[2], b[1], carry);
+        let (w4, carry) = mac(w4, a[2], b[2], carry);
+        let (w5, w6) = mac(w5, a[2], b[3], carry);
+
+        let (w3, carry) = mac(w3, a[3], b[0], 0);
+        let (w4, carry) = mac(w4, a[3], b[1], carry);
+        let (w5, carry) = mac(w5, a[3], b[2], carry);
+        let (w6, w7) = mac(w6, a[3], b[3], carry);
+
+        Scalar::barrett_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
     }
 
-    /// Perform unchecked conversion from a U64x4 to a Scalar.
-    ///
-    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "64")]
-    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
-        Self(U256::from_uint_array(limbs))
+    /// Returns self * self mod p
+    pub const fn square(&self) -> Self {
+        // Schoolbook multiplication.
+        self.mul(self)
+    }
+
+    /// Returns the multiplicative inverse of self, if self is non-zero
+    pub fn invert(&self) -> CtOption<Self> {
+        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
+        // field, we can apply Fermat's Little Theorem:
+        //
+        //    a^p         ≡ a mod p
+        //    a^(p-1)     ≡ 1 mod p
+        //    a^(p-2) * a ≡ 1 mod p
+        //
+        // Thus inversion can be implemented with a single exponentiation.
+        //
+        // This is `n - 2`, so the top right two digits are `4f` instead of `51`.
+        let inverse = self.pow_vartime(&[
+            0xf3b9_cac2_fc63_254f,
+            0xbce6_faad_a717_9e84,
+            0xffff_ffff_ffff_ffff,
+            0xffff_ffff_0000_0000,
+        ]);
+
+        CtOption::new(inverse, !self.is_zero())
+    }
+
+    /// Faster inversion using Stein's algorithm
+    #[allow(non_snake_case)]
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        // https://link.springer.com/article/10.1007/s13389-016-0135-4
+
+        let mut u = *self;
+        // currently an invalid scalar
+        let mut v = Scalar(NistP256::ORDER);
+        let mut A = Self::one();
+        let mut C = Self::zero();
+
+        while !bool::from(u.is_zero()) {
+            // u-loop
+            while bool::from(u.is_even()) {
+                u.shr1();
+
+                let was_odd: bool = A.is_odd().into();
+                A.shr1();
+
+                if was_odd {
+                    A += MODULUS_SHR1;
+                    A += Self::one();
+                }
+            }
+
+            // v-loop
+            while bool::from(v.is_even()) {
+                v.shr1();
+
+                let was_odd: bool = C.is_odd().into();
+                C.shr1();
+
+                if was_odd {
+                    C += MODULUS_SHR1;
+                    C += Self::one();
+                }
+            }
+
+            // sub-step
+            if u >= v {
+                u -= &v;
+                A -= &C;
+            } else {
+                v -= &u;
+                C -= &A;
+            }
+        }
+
+        CtOption::new(C, !self.is_zero())
+    }
+
+    /// Is integer representing equivalence class odd?
+    pub fn is_odd(&self) -> Choice {
+        self.0.is_odd()
+    }
+
+    /// Is integer representing equivalence class even?
+    pub fn is_even(&self) -> Choice {
+        !self.is_odd()
     }
 
     /// Borrow the inner limbs array.
-    pub(crate) fn limbs(&self) -> &[Limb] {
+    pub(crate) const fn limbs(&self) -> &[Limb] {
         self.0.limbs()
-    }
-
-    /// Convert to a [`U64x4`] array.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "32")]
-    pub(crate) const fn to_u64x4(&self) -> U64x4 {
-        let limbs = self.0.to_uint_array();
-
-        [
-            (limbs[0] as u64) | ((limbs[1] as u64) << 32),
-            (limbs[2] as u64) | ((limbs[3] as u64) << 32),
-            (limbs[4] as u64) | ((limbs[5] as u64) << 32),
-            (limbs[6] as u64) | ((limbs[7] as u64) << 32),
-        ]
-    }
-
-    /// Convert to a [`U64x4`] array.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) const fn to_u64x4(&self) -> U64x4 {
-        self.0.to_uint_array()
     }
 
     #[inline]
@@ -528,127 +556,98 @@ impl Scalar {
         Scalar::from_u64x4_unchecked([r[0], r[1], r[2], r[3]])
     }
 
-    /// Returns self * rhs mod n
-    pub const fn mul(&self, rhs: &Self) -> Self {
-        // Schoolbook multiplication.
-        let a = self.to_u64x4();
-        let b = rhs.to_u64x4();
-
-        let (w0, carry) = mac(0, a[0], b[0], 0);
-        let (w1, carry) = mac(0, a[0], b[1], carry);
-        let (w2, carry) = mac(0, a[0], b[2], carry);
-        let (w3, w4) = mac(0, a[0], b[3], carry);
-
-        let (w1, carry) = mac(w1, a[1], b[0], 0);
-        let (w2, carry) = mac(w2, a[1], b[1], carry);
-        let (w3, carry) = mac(w3, a[1], b[2], carry);
-        let (w4, w5) = mac(w4, a[1], b[3], carry);
-
-        let (w2, carry) = mac(w2, a[2], b[0], 0);
-        let (w3, carry) = mac(w3, a[2], b[1], carry);
-        let (w4, carry) = mac(w4, a[2], b[2], carry);
-        let (w5, w6) = mac(w5, a[2], b[3], carry);
-
-        let (w3, carry) = mac(w3, a[3], b[0], 0);
-        let (w4, carry) = mac(w4, a[3], b[1], carry);
-        let (w5, carry) = mac(w5, a[3], b[2], carry);
-        let (w6, w7) = mac(w6, a[3], b[3], carry);
-
-        Scalar::barrett_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
+    /// Perform unchecked conversion from a U64x4 to a Scalar.
+    ///
+    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "32")]
+    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
+        Self(U256::from_uint_array([
+            (limbs[0] & 0xFFFFFFFF) as u32,
+            (limbs[0] >> 32) as u32,
+            (limbs[1] & 0xFFFFFFFF) as u32,
+            (limbs[1] >> 32) as u32,
+            (limbs[2] & 0xFFFFFFFF) as u32,
+            (limbs[2] >> 32) as u32,
+            (limbs[3] & 0xFFFFFFFF) as u32,
+            (limbs[3] >> 32) as u32,
+        ]))
     }
 
-    /// Returns self * self mod p
-    pub const fn square(&self) -> Self {
-        // Schoolbook multiplication.
-        self.mul(self)
+    /// Perform unchecked conversion from a U64x4 to a Scalar.
+    ///
+    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "64")]
+    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
+        Self(U256::from_uint_array(limbs))
     }
 
-    /// Returns the multiplicative inverse of self, if self is non-zero
-    pub fn invert(&self) -> CtOption<Self> {
-        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
-        // field, we can apply Fermat's Little Theorem:
-        //
-        //    a^p         ≡ a mod p
-        //    a^(p-1)     ≡ 1 mod p
-        //    a^(p-2) * a ≡ 1 mod p
-        //
-        // Thus inversion can be implemented with a single exponentiation.
-        //
-        // This is `n - 2`, so the top right two digits are `4f` instead of `51`.
-        let inverse = self.pow_vartime(&[
-            0xf3b9_cac2_fc63_254f,
-            0xbce6_faad_a717_9e84,
-            0xffff_ffff_ffff_ffff,
-            0xffff_ffff_0000_0000,
-        ]);
+    /// Convert to a [`U64x4`] array.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "32")]
+    pub(crate) const fn to_u64x4(&self) -> U64x4 {
+        let limbs = self.0.to_uint_array();
 
-        CtOption::new(inverse, !self.is_zero())
+        [
+            (limbs[0] as u64) | ((limbs[1] as u64) << 32),
+            (limbs[2] as u64) | ((limbs[3] as u64) << 32),
+            (limbs[4] as u64) | ((limbs[5] as u64) << 32),
+            (limbs[6] as u64) | ((limbs[7] as u64) << 32),
+        ]
     }
 
-    /// Faster inversion using Stein's algorithm
-    #[allow(non_snake_case)]
-    pub fn invert_vartime(&self) -> CtOption<Self> {
-        // https://link.springer.com/article/10.1007/s13389-016-0135-4
-
-        let mut u = *self;
-        // currently an invalid scalar
-        let mut v = Scalar::from_u64x4_unchecked(MODULUS);
-        let mut A = Self::one();
-        let mut C = Self::zero();
-
-        while !bool::from(u.is_zero()) {
-            // u-loop
-            while bool::from(u.is_even()) {
-                u.shr1();
-
-                let was_odd: bool = A.is_odd().into();
-                A.shr1();
-
-                if was_odd {
-                    A += MODULUS_SHR1;
-                    A += Self::one();
-                }
-            }
-
-            // v-loop
-            while bool::from(v.is_even()) {
-                v.shr1();
-
-                let was_odd: bool = C.is_odd().into();
-                C.shr1();
-
-                if was_odd {
-                    C += MODULUS_SHR1;
-                    C += Self::one();
-                }
-            }
-
-            // sub-step
-            if u >= v {
-                u -= &v;
-                A -= &C;
-            } else {
-                v -= &u;
-                C -= &A;
-            }
-        }
-
-        CtOption::new(C, !self.is_zero())
-    }
-
-    /// Is integer representing equivalence class odd?
-    pub fn is_odd(&self) -> Choice {
-        self.0.is_odd()
-    }
-
-    /// Is integer representing equivalence class even?
-    pub fn is_even(&self) -> Choice {
-        !self.is_odd()
+    /// Convert to a [`U64x4`] array.
+    // TODO(tarcieri): implement all algorithms in terms of `U256`?
+    #[cfg(target_pointer_width = "64")]
+    pub(crate) const fn to_u64x4(&self) -> U64x4 {
+        self.0.to_uint_array()
     }
 
     /// Shift right by one bit
     fn shr1(&mut self) {
         self.0 >>= 1;
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(k: u64) -> Self {
+        Scalar(k.into())
+    }
+}
+
+impl DefaultIsZeroes for Scalar {}
+
+impl Eq for Scalar {}
+
+impl PartialEq for Scalar {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl PartialOrd for Scalar {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Scalar {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.0.cmp(&other.0)
+    }
+}
+
+#[cfg(feature = "digest")]
+#[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
+impl FromDigest<NistP256> for Scalar {
+    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
+    /// modulo n.
+    fn from_digest<D>(digest: D) -> Self
+    where
+        D: Digest<OutputSize = U32>,
+    {
+        Self::from_bytes_reduced(&digest.finalize())
     }
 }
 
