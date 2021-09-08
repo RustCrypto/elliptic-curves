@@ -14,7 +14,7 @@ use elliptic_curve::{
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
-    Curve, ScalarArithmetic,
+    Curve, ScalarArithmetic, ScalarCore,
 };
 
 #[cfg(feature = "bits")]
@@ -635,6 +635,18 @@ impl Ord for Scalar {
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
         Scalar(k.into())
+    }
+}
+
+impl From<ScalarCore<NistP256>> for Scalar {
+    fn from(scalar: ScalarCore<NistP256>) -> Scalar {
+        Scalar(*scalar.as_uint())
+    }
+}
+
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> U256 {
+        scalar.0
     }
 }
 

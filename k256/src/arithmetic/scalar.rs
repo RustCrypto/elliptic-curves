@@ -22,7 +22,7 @@ use elliptic_curve::{
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, ScalarArithmetic,
+    Curve, ScalarArithmetic, ScalarCore,
 };
 use wide::WideScalar;
 
@@ -644,6 +644,18 @@ impl From<u32> for Scalar {
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
         Self(k.into())
+    }
+}
+
+impl From<ScalarCore<Secp256k1>> for Scalar {
+    fn from(scalar: ScalarCore<Secp256k1>) -> Scalar {
+        Scalar(*scalar.as_uint())
+    }
+}
+
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> U256 {
+        scalar.0
     }
 }
 
