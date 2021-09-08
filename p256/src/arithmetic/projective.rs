@@ -16,6 +16,7 @@ use elliptic_curve::{
     rand_core::RngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::DefaultIsZeroes,
     ProjectiveArithmetic,
 };
 
@@ -133,13 +134,15 @@ impl ConstantTimeEq for ProjectivePoint {
     }
 }
 
+impl DefaultIsZeroes for ProjectivePoint {}
+
+impl Eq for ProjectivePoint {}
+
 impl PartialEq for ProjectivePoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
 }
-
-impl Eq for ProjectivePoint {}
 
 impl ProjectivePoint {
     /// Returns the additive identity of P-256, also known as the "neutral element" or
