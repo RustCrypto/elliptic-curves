@@ -4,10 +4,7 @@
 #[cfg_attr(target_pointer_width = "64", path = "scalar/wide64.rs")]
 mod wide;
 
-use crate::{
-    arithmetic::util::{adc, sbb},
-    FieldBytes, Secp256k1, ORDER,
-};
+use crate::{arithmetic::util::sbb, FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
@@ -248,7 +245,7 @@ impl Scalar {
         )
     }
 
-    /// Returns self + rhs mod n
+    /// Returns self + rhs mod n.
     // TODO(tarcieri): use `UInt::add_mod`
     pub const fn add(&self, rhs: &Self) -> Self {
         let (w, carry) = self.0.adc(&rhs.0, Limb::ZERO);
@@ -257,14 +254,9 @@ impl Scalar {
         Self::sub_order(&w, carry)
     }
 
-    /// Modulo subtracts one scalar from the other.
-    pub fn sub(&self, rhs: &Scalar) -> Scalar {
-        let (res1, underflow) =
-            sbb_array_with_underflow(&self.0.to_uint_array(), &rhs.0.to_uint_array());
-
-        let (res2, _) = adc_array(&res1, &MODULUS);
-
-        conditional_select_array(&res1, &res2, underflow)
+    /// Returns self - rhs mod n.
+    pub const fn sub(&self, rhs: &Self) -> Self {
+        Self(self.0.sub_mod(&rhs.0, &ORDER))
     }
 
     /// Modulo multiplies two scalars.
@@ -844,24 +836,6 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-/// Adds a (little-endian) multi-limb number to another multi-limb number,
-/// returning the result and the resulting carry as a sinle-limb value.
-/// The carry can be either `0` or `1`.
-#[cfg(target_pointer_width = "32")]
-#[inline(always)]
-fn adc_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
-    let carry = 0;
-    let (r0, carry) = adc(lhs[0], rhs[0], carry);
-    let (r1, carry) = adc(lhs[1], rhs[1], carry);
-    let (r2, carry) = adc(lhs[2], rhs[2], carry);
-    let (r3, carry) = adc(lhs[3], rhs[3], carry);
-    let (r4, carry) = adc(lhs[4], rhs[4], carry);
-    let (r5, carry) = adc(lhs[5], rhs[5], carry);
-    let (r6, carry) = adc(lhs[6], rhs[6], carry);
-    let (r7, carry) = adc(lhs[7], rhs[7], carry);
-    ([r0, r1, r2, r3, r4, r5, r6, r7], carry)
-}
-
 #[cfg(target_pointer_width = "32")]
 #[inline(always)]
 fn conditional_select_array(a: &[u32; 8], b: &[u32; 8], choice: Choice) -> Scalar {
@@ -903,20 +877,6 @@ fn sbb_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
 fn sbb_array_with_underflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
     let (res, borrow) = sbb_array(lhs, rhs);
     (res, Choice::from((borrow >> 31) as u8))
-}
-
-/// Adds a (little-endian) multi-limb number to another multi-limb number,
-/// returning the result and the resulting carry as a sinle-limb value.
-/// The carry can be either `0` or `1`.
-#[cfg(target_pointer_width = "64")]
-#[inline(always)]
-fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
-    let carry = 0;
-    let (r0, carry) = adc(lhs[0], rhs[0], carry);
-    let (r1, carry) = adc(lhs[1], rhs[1], carry);
-    let (r2, carry) = adc(lhs[2], rhs[2], carry);
-    let (r3, carry) = adc(lhs[3], rhs[3], carry);
-    ([r0, r1, r2, r3], carry)
 }
 
 #[cfg(target_pointer_width = "64")]
