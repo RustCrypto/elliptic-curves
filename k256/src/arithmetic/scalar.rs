@@ -212,20 +212,6 @@ impl Scalar {
     /// Multiplicative identity.
     pub const ONE: Self = Self(U256::ONE);
 
-    /// Attempts to parse the given byte array as a scalar.
-    /// Does not check the result for being in the correct range.
-    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        Self(U256::from_be_slice(bytes))
-    }
-
-    /// Creates a normalized scalar from four given limbs and a possible high (carry) bit
-    /// in constant time.
-    /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
-    fn from_overflow(w: &[limb::Inner; nlimbs!(256)], high_bit: Choice) -> Self {
-        let (r2, underflow) = sbb_array_with_underflow(w, &MODULUS);
-        conditional_select_array(w, &r2, !underflow | high_bit)
-    }
-
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
@@ -262,14 +248,13 @@ impl Scalar {
         )
     }
 
-    /// Modulo adds two scalars
-    pub fn add(&self, rhs: &Scalar) -> Scalar {
-        let (res1, overflow) =
-            adc_array_with_overflow(&self.0.to_uint_array(), &rhs.0.to_uint_array());
+    /// Returns self + rhs mod n
+    // TODO(tarcieri): use `UInt::add_mod`
+    pub const fn add(&self, rhs: &Self) -> Self {
+        let (w, carry) = self.0.adc(&rhs.0, Limb::ZERO);
 
-        let (res2, underflow) = sbb_array_with_underflow(&res1, &MODULUS);
-
-        conditional_select_array(&res1, &res2, overflow | !underflow)
+        // Attempt to subtract the modulus, to ensure the result is in the field.
+        Self::sub_order(&w, carry)
     }
 
     /// Modulo subtracts one scalar from the other.
@@ -297,15 +282,6 @@ impl Scalar {
     /// Note: not constant-time with respect to the `shift` parameter.
     pub fn shr_vartime(&self, shift: usize) -> Scalar {
         Self(self.0.shr_vartime(shift))
-    }
-
-    /// Raises the scalar to the power `2^k`.
-    fn pow2k(&self, k: usize) -> Self {
-        let mut x = *self;
-        for _j in 0..k {
-            x = x.square();
-        }
-        x
     }
 
     /// Inverts the scalar.
@@ -386,6 +362,12 @@ impl Scalar {
                 return scalar;
             }
         }
+    }
+
+    /// Attempts to parse the given byte array as a scalar.
+    /// Does not check the result for being in the correct range.
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(U256::from_be_slice(bytes))
     }
 
     /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
@@ -592,6 +574,46 @@ impl Scalar {
         ]));
 
         Self::conditional_select(self, &(self.add(&w)), flag)
+    }
+
+    /// Creates a normalized scalar from four given limbs and a possible high (carry) bit
+    /// in constant time.
+    /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
+    fn from_overflow(w: &[limb::Inner; nlimbs!(256)], high_bit: Choice) -> Self {
+        let (r2, underflow) = sbb_array_with_underflow(w, &MODULUS);
+        conditional_select_array(w, &r2, !underflow | high_bit)
+    }
+
+    /// Raises the scalar to the power `2^k`.
+    fn pow2k(&self, k: usize) -> Self {
+        let mut x = *self;
+        for _j in 0..k {
+            x = x.square();
+        }
+        x
+    }
+
+    #[inline]
+    const fn sub_order(uint: &U256, limb: Limb) -> Self {
+        let (w, borrow) = uint.sbb(&ORDER, Limb::ZERO);
+        let (_, borrow) = limb.sbb(Limb::ZERO, borrow);
+
+        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
+        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
+        // modulus.
+        let mut i = 0;
+        let mut res: [limb::Inner; nlimbs!(256)] = [0; nlimbs!(256)];
+        let mut carry = Limb::ZERO;
+
+        while i < nlimbs!(256) {
+            let rhs = Limb(ORDER.limbs()[i].0 & borrow.0);
+            let (limb, c) = w.limbs()[i].adc(rhs, carry);
+            res[i] = limb.0;
+            carry = c;
+            i += 1;
+        }
+
+        Self(U256::from_uint_array(res))
     }
 }
 
@@ -840,16 +862,6 @@ fn adc_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
     ([r0, r1, r2, r3, r4, r5, r6, r7], carry)
 }
 
-/// Adds a (little-endian) multi-limb number to another multi-limb number,
-/// returning the result and the resulting carry as a constant-time `Choice`
-/// (`0` if there was no carry and `1` if there was).
-#[cfg(target_pointer_width = "32")]
-#[inline(always)]
-fn adc_array_with_overflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
-    let (res, carry) = adc_array(lhs, rhs);
-    (res, Choice::from(carry as u8))
-}
-
 #[cfg(target_pointer_width = "32")]
 #[inline(always)]
 fn conditional_select_array(a: &[u32; 8], b: &[u32; 8], choice: Choice) -> Scalar {
@@ -905,16 +917,6 @@ fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
     let (r2, carry) = adc(lhs[2], rhs[2], carry);
     let (r3, carry) = adc(lhs[3], rhs[3], carry);
     ([r0, r1, r2, r3], carry)
-}
-
-/// Adds a (little-endian) multi-limb number to another multi-limb number,
-/// returning the result and the resulting carry as a constant-time `Choice`
-/// (`0` if there was no carry and `1` if there was).
-#[cfg(target_pointer_width = "64")]
-#[inline(always)]
-fn adc_array_with_overflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
-    let (res, carry) = adc_array(lhs, rhs);
-    (res, Choice::from(carry as u8))
 }
 
 #[cfg(target_pointer_width = "64")]
