@@ -47,7 +47,7 @@ use crate::{
         signature::{digest::Digest, DigestVerifier},
         VerifyingKey,
     },
-    elliptic_curve::{consts::U32, ops::Invert, subtle::Choice, weierstrass::DecompressPoint},
+    elliptic_curve::{consts::U32, ops::Invert, subtle::Choice, DecompressPoint},
     lincomb, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
 

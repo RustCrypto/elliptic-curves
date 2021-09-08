@@ -8,9 +8,8 @@ use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::DecompressPoint,
     zeroize::DefaultIsZeroes,
-    AffineArithmetic,
+    AffineArithmetic, DecompressPoint,
 };
 
 impl AffineArithmetic for Secp256k1 {

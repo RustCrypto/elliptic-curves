@@ -126,14 +126,14 @@ impl elliptic_curve::Curve for NistP256 {
         U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP256 {}
+impl elliptic_curve::PrimeCurve for NistP256 {}
 
-impl elliptic_curve::weierstrass::PointCompression for NistP256 {
+impl elliptic_curve::PointCompression for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPRESS_POINTS: bool = false;
 }
 
-impl elliptic_curve::weierstrass::PointCompaction for NistP256 {
+impl elliptic_curve::PointCompaction for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPACT_POINTS: bool = false;
 }

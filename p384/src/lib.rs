@@ -60,9 +60,9 @@ impl elliptic_curve::Curve for NistP384 {
         U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP384 {}
+impl elliptic_curve::PrimeCurve for NistP384 {}
 
-impl elliptic_curve::weierstrass::PointCompression for NistP384 {
+impl elliptic_curve::PointCompression for NistP384 {
     const COMPRESS_POINTS: bool = false;
 }
 

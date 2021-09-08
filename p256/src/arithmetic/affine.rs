@@ -10,9 +10,8 @@ use elliptic_curve::{
     sec1::Tag,
     sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    weierstrass::{DecompactPoint, DecompressPoint},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, Curve,
+    AffineArithmetic, Curve, DecompactPoint, DecompressPoint,
 };
 
 impl AffineArithmetic for NistP256 {
