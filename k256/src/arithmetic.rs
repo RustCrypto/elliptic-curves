@@ -5,7 +5,9 @@ mod field;
 mod mul;
 pub(crate) mod projective;
 pub(crate) mod scalar;
-mod util;
+
+#[cfg(test)]
+mod dev;
 
 pub use field::FieldElement;
 pub use mul::lincomb;
