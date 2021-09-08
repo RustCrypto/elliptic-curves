@@ -235,14 +235,8 @@ impl Scalar {
     }
 
     /// Negates the scalar.
-    pub fn negate(&self) -> Self {
-        let (res, _) = sbb_array(&MODULUS, &self.0.to_uint_array());
-
-        Self::conditional_select(
-            &Self(U256::from_uint_array(res)),
-            &Self::zero(),
-            self.is_zero(),
-        )
+    pub const fn negate(&self) -> Self {
+        Self(self.0.neg_mod(&ORDER))
     }
 
     /// Returns self + rhs mod n.
