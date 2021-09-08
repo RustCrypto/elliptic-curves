@@ -8,12 +8,9 @@ use crate::{
     arithmetic::util::{adc, sbb},
     FieldBytes, Secp256k1, ORDER,
 };
-use core::{
-    convert::TryInto,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign},
-};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{limb, nlimbs, ArrayEncoding, U256},
+    bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::{CryptoRng, RngCore},
@@ -215,17 +212,6 @@ impl Scalar {
     /// Multiplicative identity.
     pub const ONE: Self = Self(U256::ONE);
 
-    /// Checks if the scalar is zero.
-    pub fn is_zero(&self) -> Choice {
-        self.0.is_zero()
-    }
-
-    /// Returns the value of the scalar truncated to a 32-bit unsigned integer.
-    #[allow(trivial_casts)]
-    pub fn truncate_to_u32(&self) -> u32 {
-        limb::Inner::from(self.0.limbs()[0]) as u32
-    }
-
     /// Attempts to parse the given byte array as a scalar.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
@@ -243,50 +229,26 @@ impl Scalar {
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
-    #[cfg(target_pointer_width = "32")]
     pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        // Interpret the bytes as a big-endian integer w.
-        let w7 = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
-        let w6 = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
-        let w5 = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
-        let w4 = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
-        let w3 = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
-        let w2 = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
-        let w1 = u32::from_be_bytes(bytes[24..28].try_into().unwrap());
-        let w0 = u32::from_be_bytes(bytes[28..32].try_into().unwrap());
-        let w = [w0, w1, w2, w3, w4, w5, w6, w7];
-
-        // If w is in the range [0, n) then w - n will underflow
-        let (r2, underflow) = sbb_array_with_underflow(&w, &ORDER.to_uint_array());
-        conditional_select_array(&w, &r2, !underflow)
-    }
-
-    /// Parses the given byte array as a scalar.
-    ///
-    /// Subtracts the modulus when the byte array is larger than the modulus.
-    #[cfg(target_pointer_width = "64")]
-    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        // Interpret the bytes as a big-endian integer w.
-        let w3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        let w2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        let w1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        let w0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-        let w = [w0, w1, w2, w3];
-
-        // If w is in the range [0, n) then w - n will underflow
-        let (r2, underflow) = sbb_array_with_underflow(&w, &ORDER.to_uint_array());
-
-        conditional_select_array(&w, &r2, !underflow)
-    }
-
-    /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.0.to_be_byte_array()
+        let w = U256::from_be_slice(bytes);
+        let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        Self(U256::conditional_select(&w, &r, !underflow))
     }
 
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
         self.0.ct_gt(&FRAC_MODULUS_2)
+    }
+
+    /// Checks if the scalar is zero.
+    pub fn is_zero(&self) -> Choice {
+        self.0.is_zero()
+    }
+
+    /// Returns the SEC1 encoding of this scalar.
+    pub fn to_bytes(&self) -> FieldBytes {
+        self.0.to_be_byte_array()
     }
 
     /// Negates the scalar.
