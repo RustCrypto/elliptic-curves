@@ -1,35 +1,30 @@
 //! Scalar field arithmetic.
 
-use cfg_if::cfg_if;
+#[cfg_attr(not(target_pointer_width = "64"), path = "scalar/wide32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/wide64.rs")]
+mod wide;
 
-cfg_if! {
-    if #[cfg(target_pointer_width = "32")] {
-        mod scalar_8x32;
-        use scalar_8x32::{
-            Scalar8x32 as ScalarImpl,
-            WideScalar16x32 as WideScalarImpl,
-        };
-    } else if #[cfg(target_pointer_width = "64")] {
-        mod scalar_4x64;
-        use scalar_4x64::{
-            Scalar4x64 as ScalarImpl,
-            WideScalar8x64 as WideScalarImpl,
-        };
-    } else {
-        compile_error!("unsupported target word size (i.e. target_pointer_width)");
-    }
-}
-
-use crate::{FieldBytes, Secp256k1};
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
+use crate::{
+    arithmetic::util::{adc, sbb},
+    FieldBytes, Secp256k1, ORDER,
+};
+use core::{
+    convert::TryInto,
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign},
+};
 use elliptic_curve::{
+    bigint::{limb, nlimbs, ArrayEncoding, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::{CryptoRng, RngCore},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{
+        Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
+        CtOption,
+    },
     zeroize::DefaultIsZeroes,
-    ScalarArithmetic,
+    Curve, ScalarArithmetic,
 };
+use wide::WideScalar;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -43,6 +38,13 @@ use num_bigint::{BigUint, ToBigUint};
 impl ScalarArithmetic for Secp256k1 {
     type Scalar = Scalar;
 }
+
+/// Constant representing the modulus
+/// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
+const MODULUS: [limb::Inner; nlimbs!(256)] = ORDER.to_uint_array();
+
+/// Constant representing the modulus / 2
+const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 
 /// Scalars are elements in the finite field modulo n.
 ///
@@ -69,7 +71,7 @@ impl ScalarArithmetic for Secp256k1 {
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub struct Scalar(ScalarImpl);
+pub struct Scalar(U256);
 
 impl Field for Scalar {
     fn random(rng: impl RngCore) -> Self {
@@ -86,11 +88,11 @@ impl Field for Scalar {
     }
 
     fn zero() -> Self {
-        Scalar::zero()
+        Self::ZERO
     }
 
     fn one() -> Self {
-        Scalar::one()
+        Self::ONE
     }
 
     #[must_use]
@@ -162,7 +164,8 @@ impl PrimeField for Scalar {
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        ScalarImpl::from_bytes(bytes.as_ref()).map(Self)
+        let inner = U256::from_be_byte_array(bytes);
+        CtOption::new(Self(inner), inner.ct_lt(&Secp256k1::ORDER))
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -201,32 +204,16 @@ impl PrimeFieldBits for Scalar {
     }
 
     fn char_le_bits() -> ScalarBits {
-        crate::ORDER.to_uint_array().into()
-    }
-}
-
-impl From<u32> for Scalar {
-    fn from(k: u32) -> Self {
-        Self(ScalarImpl::from(k))
-    }
-}
-
-impl From<u64> for Scalar {
-    fn from(k: u64) -> Self {
-        Self(ScalarImpl::from(k))
+        ORDER.to_uint_array().into()
     }
 }
 
 impl Scalar {
-    /// Returns the zero scalar.
-    pub const fn zero() -> Self {
-        Self(ScalarImpl::zero())
-    }
+    /// Zero scalar.
+    pub const ZERO: Self = Self(U256::ZERO);
 
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Scalar {
-        Self(ScalarImpl::one())
-    }
+    /// Multiplicative identity.
+    pub const ONE: Self = Self(U256::ONE);
 
     /// Checks if the scalar is zero.
     pub fn is_zero(&self) -> Choice {
@@ -234,51 +221,108 @@ impl Scalar {
     }
 
     /// Returns the value of the scalar truncated to a 32-bit unsigned integer.
+    #[allow(trivial_casts)]
     pub fn truncate_to_u32(&self) -> u32 {
-        self.0.truncate_to_u32()
+        limb::Inner::from(self.0.limbs()[0]) as u32
     }
 
     /// Attempts to parse the given byte array as a scalar.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        Self(ScalarImpl::from_bytes_unchecked(bytes))
+        Self(U256::from_be_slice(bytes))
+    }
+
+    /// Creates a normalized scalar from four given limbs and a possible high (carry) bit
+    /// in constant time.
+    /// In other words, calculates `(high_bit * 2^256 + limbs) % modulus`.
+    fn from_overflow(w: &[limb::Inner; nlimbs!(256)], high_bit: Choice) -> Self {
+        let (r2, underflow) = sbb_array_with_underflow(w, &MODULUS);
+        conditional_select_array(w, &r2, !underflow | high_bit)
     }
 
     /// Parses the given byte array as a scalar.
     ///
     /// Subtracts the modulus when the byte array is larger than the modulus.
+    #[cfg(target_pointer_width = "32")]
     pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        Self(ScalarImpl::from_bytes_reduced(bytes.as_ref()))
+        // Interpret the bytes as a big-endian integer w.
+        let w7 = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
+        let w6 = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        let w5 = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+        let w4 = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
+        let w3 = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
+        let w2 = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
+        let w1 = u32::from_be_bytes(bytes[24..28].try_into().unwrap());
+        let w0 = u32::from_be_bytes(bytes[28..32].try_into().unwrap());
+        let w = [w0, w1, w2, w3, w4, w5, w6, w7];
+
+        // If w is in the range [0, n) then w - n will underflow
+        let (r2, underflow) = sbb_array_with_underflow(&w, &ORDER.to_uint_array());
+        conditional_select_array(&w, &r2, !underflow)
+    }
+
+    /// Parses the given byte array as a scalar.
+    ///
+    /// Subtracts the modulus when the byte array is larger than the modulus.
+    #[cfg(target_pointer_width = "64")]
+    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
+        // Interpret the bytes as a big-endian integer w.
+        let w3 = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        let w2 = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        let w1 = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        let w0 = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        let w = [w0, w1, w2, w3];
+
+        // If w is in the range [0, n) then w - n will underflow
+        let (r2, underflow) = sbb_array_with_underflow(&w, &ORDER.to_uint_array());
+
+        conditional_select_array(&w, &r2, !underflow)
     }
 
     /// Returns the SEC1 encoding of this scalar.
     pub fn to_bytes(&self) -> FieldBytes {
-        self.0.to_bytes()
+        self.0.to_be_byte_array()
     }
 
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
-        self.0.is_high()
+        self.0.ct_gt(&FRAC_MODULUS_2)
     }
 
     /// Negates the scalar.
     pub fn negate(&self) -> Self {
-        Self(self.0.negate())
+        let (res, _) = sbb_array(&MODULUS, &self.0.to_uint_array());
+
+        Self::conditional_select(
+            &Self(U256::from_uint_array(res)),
+            &Self::zero(),
+            self.is_zero(),
+        )
     }
 
     /// Modulo adds two scalars
     pub fn add(&self, rhs: &Scalar) -> Scalar {
-        Self(self.0.add(&(rhs.0)))
+        let (res1, overflow) =
+            adc_array_with_overflow(&self.0.to_uint_array(), &rhs.0.to_uint_array());
+
+        let (res2, underflow) = sbb_array_with_underflow(&res1, &MODULUS);
+
+        conditional_select_array(&res1, &res2, overflow | !underflow)
     }
 
     /// Modulo subtracts one scalar from the other.
     pub fn sub(&self, rhs: &Scalar) -> Scalar {
-        Self(self.0.sub(&(rhs.0)))
+        let (res1, underflow) =
+            sbb_array_with_underflow(&self.0.to_uint_array(), &rhs.0.to_uint_array());
+
+        let (res2, _) = adc_array(&res1, &MODULUS);
+
+        conditional_select_array(&res1, &res2, underflow)
     }
 
     /// Modulo multiplies two scalars.
     pub fn mul(&self, rhs: &Scalar) -> Scalar {
-        Self(self.0.mul(&(rhs.0)))
+        WideScalar::mul_wide(self, rhs).reduce()
     }
 
     /// Modulo squares the scalar.
@@ -286,12 +330,14 @@ impl Scalar {
         self.mul(self)
     }
 
-    /// Right shifts the scalar. Note: not constant-time in `shift`.
-    pub fn rshift(&self, shift: usize) -> Scalar {
-        Self(self.0.rshift(shift))
+    /// Right shifts the scalar.
+    ///
+    /// Note: not constant-time with respect to the `shift` parameter.
+    pub fn shr_vartime(&self, shift: usize) -> Scalar {
+        Self(self.0.shr_vartime(shift))
     }
 
-    /// Raises the scalar to the power `2^k`
+    /// Raises the scalar to the power `2^k`.
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
         for _j in 0..k {
@@ -304,7 +350,6 @@ impl Scalar {
     pub fn invert(&self) -> CtOption<Self> {
         // Using an addition chain from
         // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
-
         let x_1 = *self;
         let x_10 = self.pow2k(1);
         let x_11 = x_10.mul(&x_1);
@@ -364,7 +409,7 @@ impl Scalar {
         // negligible bias from the uniform distribution, but the process is constant-time.
         let mut buf = [0u8; 64];
         rng.fill_bytes(&mut buf);
-        Scalar(WideScalarImpl::from_bytes(&buf).reduce())
+        WideScalar::from_bytes(&buf).reduce()
     }
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
@@ -381,20 +426,226 @@ impl Scalar {
         }
     }
 
-    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
-    pub fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
-        Self(self.0.conditional_add_bit(bit, flag))
+    /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
+    /// (rounding to the nearest integer).
+    /// Variable time in `shift`.
+    #[cfg(target_pointer_width = "32")]
+    pub(crate) fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
+        debug_assert!(shift >= 256);
+
+        fn ifelse(c: bool, x: u32, y: u32) -> u32 {
+            if c {
+                x
+            } else {
+                y
+            }
+        }
+
+        let l = WideScalar::mul_wide(self, b);
+        let shiftlimbs = shift >> 5;
+        let shiftlow = shift & 0x1F;
+        let shifthigh = 32 - shiftlow;
+        let r0 = ifelse(
+            shift < 512,
+            (l.0[shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 480 && shiftlow != 0,
+                    l.0[1 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r1 = ifelse(
+            shift < 480,
+            (l.0[1 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 448 && shiftlow != 0,
+                    l.0[2 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r2 = ifelse(
+            shift < 448,
+            (l.0[2 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 416 && shiftlow != 0,
+                    l.0[3 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r3 = ifelse(
+            shift < 416,
+            (l.0[3 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 384 && shiftlow != 0,
+                    l.0[4 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r4 = ifelse(
+            shift < 384,
+            (l.0[4 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 352 && shiftlow != 0,
+                    l.0[5 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r5 = ifelse(
+            shift < 352,
+            (l.0[5 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 320 && shiftlow != 0,
+                    l.0[6 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r6 = ifelse(
+            shift < 320,
+            (l.0[6 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 288 && shiftlow != 0,
+                    l.0[7 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r7 = ifelse(shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
+
+        let res = Self(U256::from_uint_array([r0, r1, r2, r3, r4, r5, r6, r7]));
+
+        // Check the highmost discarded bit and round up if it is set.
+        let c = (l.0[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
+        res.conditional_add_bit(0, Choice::from(c as u8))
     }
 
     /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
     /// (rounding to the nearest integer).
     /// Variable time in `shift`.
-    pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
-        Self(self.0.mul_shift_var(&(b.0), shift))
+    #[cfg(target_pointer_width = "64")]
+    pub(crate) fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
+        debug_assert!(shift >= 256);
+
+        fn ifelse(c: bool, x: u64, y: u64) -> u64 {
+            if c {
+                x
+            } else {
+                y
+            }
+        }
+
+        let l = WideScalar::mul_wide(self, b);
+        let shiftlimbs = shift >> 6;
+        let shiftlow = shift & 0x3F;
+        let shifthigh = 64 - shiftlow;
+        let r0 = ifelse(
+            shift < 512,
+            (l.0[shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 448 && shiftlow != 0,
+                    l.0[1 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r1 = ifelse(
+            shift < 448,
+            (l.0[1 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 448 && shiftlow != 0,
+                    l.0[2 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r2 = ifelse(
+            shift < 384,
+            (l.0[2 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 320 && shiftlow != 0,
+                    l.0[3 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r3 = ifelse(shift < 320, l.0[3 + shiftlimbs] >> shiftlow, 0);
+
+        let res = Self(U256::from_uint_array([r0, r1, r2, r3]));
+
+        // Check the highmost discarded bit and round up if it is set.
+        let c = (l.0[(shift - 1) >> 6] >> ((shift - 1) & 0x3f)) & 1;
+        res.conditional_add_bit(0, Choice::from(c as u8))
+    }
+
+    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
+    #[cfg(target_pointer_width = "32")]
+    fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
+        debug_assert!(bit < 256);
+
+        // Construct Scalar(1 << bit).
+        // Since the 255-th bit of the modulus is 1, this will always be within range.
+        let bit_lo = bit & 0x1F;
+        let w = Self(U256::from_uint_array([
+            (((bit >> 5) == 0) as u32) << bit_lo,
+            (((bit >> 5) == 1) as u32) << bit_lo,
+            (((bit >> 5) == 2) as u32) << bit_lo,
+            (((bit >> 5) == 3) as u32) << bit_lo,
+            (((bit >> 5) == 4) as u32) << bit_lo,
+            (((bit >> 5) == 5) as u32) << bit_lo,
+            (((bit >> 5) == 6) as u32) << bit_lo,
+            (((bit >> 5) == 7) as u32) << bit_lo,
+        ]));
+
+        Self::conditional_select(self, &(self.add(&w)), flag)
+    }
+
+    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
+    #[cfg(target_pointer_width = "64")]
+    fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
+        debug_assert!(bit < 256);
+
+        // Construct Scalar(1 << bit).
+        // Since the 255-th bit of the modulus is 1, this will always be within range.
+        let bit_lo = bit & 0x3F;
+        let w = Self(U256::from_uint_array([
+            (((bit >> 6) == 0) as u64) << bit_lo,
+            (((bit >> 6) == 1) as u64) << bit_lo,
+            (((bit >> 6) == 2) as u64) << bit_lo,
+            (((bit >> 6) == 3) as u64) << bit_lo,
+        ]));
+
+        Self::conditional_select(self, &(self.add(&w)), flag)
     }
 }
 
 impl DefaultIsZeroes for Scalar {}
+
+impl From<u32> for Scalar {
+    fn from(k: u32) -> Self {
+        Self::from(k as u64)
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(k: u64) -> Self {
+        Self(k.into())
+    }
+}
 
 #[cfg(feature = "digest")]
 #[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
@@ -413,7 +664,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.rshift(rhs)
+        self.shr_vartime(rhs)
     }
 }
 
@@ -421,13 +672,13 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.rshift(rhs)
+        self.shr_vartime(rhs)
     }
 }
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(ScalarImpl::conditional_select(&(a.0), &(b.0), choice))
+        Self(U256::conditional_select(&a.0, &b.0, choice))
     }
 }
 
@@ -581,7 +832,7 @@ impl MulAssign<&Scalar> for Scalar {
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.into()
+        scalar.0.to_uint_array().into()
     }
 }
 
@@ -595,6 +846,136 @@ impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
     }
+}
+
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a sinle-limb value.
+/// The carry can be either `0` or `1`.
+#[cfg(target_pointer_width = "32")]
+#[inline(always)]
+fn adc_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
+    let carry = 0;
+    let (r0, carry) = adc(lhs[0], rhs[0], carry);
+    let (r1, carry) = adc(lhs[1], rhs[1], carry);
+    let (r2, carry) = adc(lhs[2], rhs[2], carry);
+    let (r3, carry) = adc(lhs[3], rhs[3], carry);
+    let (r4, carry) = adc(lhs[4], rhs[4], carry);
+    let (r5, carry) = adc(lhs[5], rhs[5], carry);
+    let (r6, carry) = adc(lhs[6], rhs[6], carry);
+    let (r7, carry) = adc(lhs[7], rhs[7], carry);
+    ([r0, r1, r2, r3, r4, r5, r6, r7], carry)
+}
+
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a constant-time `Choice`
+/// (`0` if there was no carry and `1` if there was).
+#[cfg(target_pointer_width = "32")]
+#[inline(always)]
+fn adc_array_with_overflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
+    let (res, carry) = adc_array(lhs, rhs);
+    (res, Choice::from(carry as u8))
+}
+
+#[cfg(target_pointer_width = "32")]
+#[inline(always)]
+fn conditional_select_array(a: &[u32; 8], b: &[u32; 8], choice: Choice) -> Scalar {
+    Scalar(U256::from_uint_array([
+        u32::conditional_select(&a[0], &b[0], choice),
+        u32::conditional_select(&a[1], &b[1], choice),
+        u32::conditional_select(&a[2], &b[2], choice),
+        u32::conditional_select(&a[3], &b[3], choice),
+        u32::conditional_select(&a[4], &b[4], choice),
+        u32::conditional_select(&a[5], &b[5], choice),
+        u32::conditional_select(&a[6], &b[6], choice),
+        u32::conditional_select(&a[7], &b[7], choice),
+    ]))
+}
+
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a sinle-limb value.
+/// The borrow can be either `0` or `<u64>::MAX`.
+#[cfg(target_pointer_width = "32")]
+#[inline(always)]
+fn sbb_array(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], u32) {
+    let borrow = 0;
+    let (r0, borrow) = sbb(lhs[0], rhs[0], borrow);
+    let (r1, borrow) = sbb(lhs[1], rhs[1], borrow);
+    let (r2, borrow) = sbb(lhs[2], rhs[2], borrow);
+    let (r3, borrow) = sbb(lhs[3], rhs[3], borrow);
+    let (r4, borrow) = sbb(lhs[4], rhs[4], borrow);
+    let (r5, borrow) = sbb(lhs[5], rhs[5], borrow);
+    let (r6, borrow) = sbb(lhs[6], rhs[6], borrow);
+    let (r7, borrow) = sbb(lhs[7], rhs[7], borrow);
+    ([r0, r1, r2, r3, r4, r5, r6, r7], borrow)
+}
+
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a constant-time `Choice`
+/// (`0` if there was no borrow and `1` if there was).
+#[cfg(target_pointer_width = "32")]
+#[inline(always)]
+fn sbb_array_with_underflow(lhs: &[u32; 8], rhs: &[u32; 8]) -> ([u32; 8], Choice) {
+    let (res, borrow) = sbb_array(lhs, rhs);
+    (res, Choice::from((borrow >> 31) as u8))
+}
+
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a sinle-limb value.
+/// The carry can be either `0` or `1`.
+#[cfg(target_pointer_width = "64")]
+#[inline(always)]
+fn adc_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
+    let carry = 0;
+    let (r0, carry) = adc(lhs[0], rhs[0], carry);
+    let (r1, carry) = adc(lhs[1], rhs[1], carry);
+    let (r2, carry) = adc(lhs[2], rhs[2], carry);
+    let (r3, carry) = adc(lhs[3], rhs[3], carry);
+    ([r0, r1, r2, r3], carry)
+}
+
+/// Adds a (little-endian) multi-limb number to another multi-limb number,
+/// returning the result and the resulting carry as a constant-time `Choice`
+/// (`0` if there was no carry and `1` if there was).
+#[cfg(target_pointer_width = "64")]
+#[inline(always)]
+fn adc_array_with_overflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
+    let (res, carry) = adc_array(lhs, rhs);
+    (res, Choice::from(carry as u8))
+}
+
+#[cfg(target_pointer_width = "64")]
+#[inline(always)]
+fn conditional_select_array(a: &[u64; 4], b: &[u64; 4], choice: Choice) -> Scalar {
+    Scalar(U256::from_uint_array([
+        u64::conditional_select(&a[0], &b[0], choice),
+        u64::conditional_select(&a[1], &b[1], choice),
+        u64::conditional_select(&a[2], &b[2], choice),
+        u64::conditional_select(&a[3], &b[3], choice),
+    ]))
+}
+
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a sinle-limb value.
+/// The borrow can be either `0` or `<u32>::MAX`.
+#[cfg(target_pointer_width = "64")]
+#[inline(always)]
+fn sbb_array(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], u64) {
+    let borrow = 0;
+    let (r0, borrow) = sbb(lhs[0], rhs[0], borrow);
+    let (r1, borrow) = sbb(lhs[1], rhs[1], borrow);
+    let (r2, borrow) = sbb(lhs[2], rhs[2], borrow);
+    let (r3, borrow) = sbb(lhs[3], rhs[3], borrow);
+    ([r0, r1, r2, r3], borrow)
+}
+
+/// Subtracts a (little-endian) multi-limb number from another multi-limb number,
+/// returning the result and the resulting borrow as a constant-time `Choice`
+/// (`0` if there was no borrow and `1` if there was).
+#[cfg(target_pointer_width = "64")]
+#[inline(always)]
+fn sbb_array_with_underflow(lhs: &[u64; 4], rhs: &[u64; 4]) -> ([u64; 4], Choice) {
+    let (res, borrow) = sbb_array(lhs, rhs);
+    (res, Choice::from((borrow >> 63) as u8))
 }
 
 #[cfg(test)]
