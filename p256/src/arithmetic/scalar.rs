@@ -251,7 +251,7 @@ impl Scalar {
     }
 
     /// Returns self - rhs mod n.
-    pub const fn subtract(&self, rhs: &Self) -> Self {
+    pub const fn sub(&self, rhs: &Self) -> Self {
         Self(self.0.sub_mod(&rhs.0, &NistP256::ORDER))
     }
 
@@ -703,7 +703,7 @@ impl Sub<Scalar> for Scalar {
     type Output = Scalar;
 
     fn sub(self, other: Scalar) -> Scalar {
-        Scalar::subtract(&self, &other)
+        Scalar::sub(&self, &other)
     }
 }
 
@@ -711,7 +711,7 @@ impl Sub<&Scalar> for &Scalar {
     type Output = Scalar;
 
     fn sub(self, other: &Scalar) -> Scalar {
-        Scalar::subtract(self, other)
+        Scalar::sub(self, other)
     }
 }
 
@@ -719,19 +719,19 @@ impl Sub<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn sub(self, other: &Scalar) -> Scalar {
-        Scalar::subtract(&self, other)
+        Scalar::sub(&self, other)
     }
 }
 
 impl SubAssign<Scalar> for Scalar {
     fn sub_assign(&mut self, rhs: Scalar) {
-        *self = Scalar::subtract(self, &rhs);
+        *self = Scalar::sub(self, &rhs);
     }
 }
 
 impl SubAssign<&Scalar> for Scalar {
     fn sub_assign(&mut self, rhs: &Scalar) {
-        *self = Scalar::subtract(self, rhs);
+        *self = Scalar::sub(self, rhs);
     }
 }
 
