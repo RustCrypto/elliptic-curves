@@ -17,11 +17,15 @@ use elliptic_curve::{
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    ProjectiveArithmetic,
+    PrimeCurveArithmetic, ProjectiveArithmetic,
 };
 
 impl ProjectiveArithmetic for NistP256 {
     type ProjectivePoint = ProjectivePoint;
+}
+
+impl PrimeCurveArithmetic for NistP256 {
+    type CurveGroup = ProjectivePoint;
 }
 
 /// A point on the secp256r1 curve in projective coordinates.

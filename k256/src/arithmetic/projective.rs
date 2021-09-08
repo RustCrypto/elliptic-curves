@@ -16,7 +16,7 @@ use elliptic_curve::{
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    ProjectiveArithmetic,
+    PrimeCurveArithmetic, ProjectiveArithmetic,
 };
 
 #[rustfmt::skip]
@@ -29,6 +29,10 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
 
 impl ProjectiveArithmetic for Secp256k1 {
     type ProjectivePoint = ProjectivePoint;
+}
+
+impl PrimeCurveArithmetic for Secp256k1 {
+    type CurveGroup = ProjectivePoint;
 }
 
 /// A point on the secp256k1 curve in projective coordinates.
