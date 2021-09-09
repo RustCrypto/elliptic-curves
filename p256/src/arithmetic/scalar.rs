@@ -29,7 +29,7 @@ type U64x4 = [u64; 4];
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
-const MODULUS: U64x4 = Scalar(NistP256::ORDER).to_u64x4();
+const MODULUS: U64x4 = u256_to_u64x4(NistP256::ORDER);
 
 const MODULUS_SHR1: Scalar = Scalar(NistP256::ORDER.shr_vartime(1));
 
@@ -257,31 +257,9 @@ impl Scalar {
 
     /// Returns self * rhs mod n
     pub const fn mul(&self, rhs: &Self) -> Self {
-        // Schoolbook multiplication.
-        let a = self.to_u64x4();
-        let b = rhs.to_u64x4();
-
-        let (w0, carry) = mac(0, a[0], b[0], 0);
-        let (w1, carry) = mac(0, a[0], b[1], carry);
-        let (w2, carry) = mac(0, a[0], b[2], carry);
-        let (w3, w4) = mac(0, a[0], b[3], carry);
-
-        let (w1, carry) = mac(w1, a[1], b[0], 0);
-        let (w2, carry) = mac(w2, a[1], b[1], carry);
-        let (w3, carry) = mac(w3, a[1], b[2], carry);
-        let (w4, w5) = mac(w4, a[1], b[3], carry);
-
-        let (w2, carry) = mac(w2, a[2], b[0], 0);
-        let (w3, carry) = mac(w3, a[2], b[1], carry);
-        let (w4, carry) = mac(w4, a[2], b[2], carry);
-        let (w5, w6) = mac(w5, a[2], b[3], carry);
-
-        let (w3, carry) = mac(w3, a[3], b[0], 0);
-        let (w4, carry) = mac(w4, a[3], b[1], carry);
-        let (w5, carry) = mac(w5, a[3], b[2], carry);
-        let (w6, w7) = mac(w6, a[3], b[3], carry);
-
-        Scalar::barrett_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
+        // TODO(tarcieri): reverse hi/lo? See RustCrypto/utils#620
+        let (hi, lo) = self.0.mul_wide(&rhs.0);
+        Self::barrett_reduce(lo, hi)
     }
 
     /// Returns self * self mod p
@@ -432,16 +410,17 @@ impl Scalar {
     ///   https://csrc.nist.gov/csrc/media/events/workshop-on-elliptic-curve-cryptography-standards/documents/papers/session6-adalier-mehmet.pdf
     #[inline]
     #[allow(clippy::too_many_arguments)]
-    const fn barrett_reduce(
-        a0: u64,
-        a1: u64,
-        a2: u64,
-        a3: u64,
-        a4: u64,
-        a5: u64,
-        a6: u64,
-        a7: u64,
-    ) -> Self {
+    const fn barrett_reduce(lo: U256, hi: U256) -> Self {
+        let lo = u256_to_u64x4(lo);
+        let hi = u256_to_u64x4(hi);
+        let a0 = lo[0];
+        let a1 = lo[1];
+        let a2 = lo[2];
+        let a3 = lo[3];
+        let a4 = hi[0];
+        let a5 = hi[1];
+        let a6 = hi[2];
+        let a7 = hi[3];
         let q1: [u64; 5] = [a3, a4, a5, a6, a7];
 
         const fn q1_times_mu_shift_five(q1: &[u64; 5]) -> [u64; 5] {
@@ -581,27 +560,6 @@ impl Scalar {
     #[cfg(target_pointer_width = "64")]
     const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
         Self(U256::from_uint_array(limbs))
-    }
-
-    /// Convert to a [`U64x4`] array.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "32")]
-    pub(crate) const fn to_u64x4(&self) -> U64x4 {
-        let limbs = self.0.to_uint_array();
-
-        [
-            (limbs[0] as u64) | ((limbs[1] as u64) << 32),
-            (limbs[2] as u64) | ((limbs[3] as u64) << 32),
-            (limbs[4] as u64) | ((limbs[5] as u64) << 32),
-            (limbs[6] as u64) | ((limbs[7] as u64) << 32),
-        ]
-    }
-
-    /// Convert to a [`U64x4`] array.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) const fn to_u64x4(&self) -> U64x4 {
-        self.0.to_uint_array()
     }
 
     /// Shift right by one bit
@@ -823,6 +781,27 @@ impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
         *secret_key.to_nonzero_scalar()
     }
+}
+
+/// Convert to a [`U64x4`] array.
+// TODO(tarcieri): implement all algorithms in terms of `U256`?
+#[cfg(target_pointer_width = "32")]
+pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
+    let limbs = u256.to_uint_array();
+
+    [
+        (limbs[0] as u64) | ((limbs[1] as u64) << 32),
+        (limbs[2] as u64) | ((limbs[3] as u64) << 32),
+        (limbs[4] as u64) | ((limbs[5] as u64) << 32),
+        (limbs[6] as u64) | ((limbs[7] as u64) << 32),
+    ]
+}
+
+/// Convert to a [`U64x4`] array.
+// TODO(tarcieri): implement all algorithms in terms of `U256`?
+#[cfg(target_pointer_width = "64")]
+pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
+    u256.to_uint_array()
 }
 
 #[cfg(test)]
