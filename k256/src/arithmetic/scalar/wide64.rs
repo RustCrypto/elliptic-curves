@@ -12,7 +12,7 @@ use elliptic_curve::{
 const NEG_MODULUS: [u64; 4] = [!MODULUS[0] + 1, !MODULUS[1], !MODULUS[2], !MODULUS[3]];
 
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct WideScalar(pub(super) [u64; 8]);
+pub(crate) struct WideScalar([u64; 8]);
 
 impl WideScalar {
     pub fn from_bytes(bytes: &[u8; 64]) -> Self {
