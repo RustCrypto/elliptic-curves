@@ -240,7 +240,6 @@ impl Scalar {
     }
 
     /// Returns self + rhs mod n.
-    // TODO(tarcieri): use `UInt::add_mod`
     pub const fn add(&self, rhs: &Self) -> Self {
         Self(self.0.add_mod(&rhs.0, &ORDER))
     }
