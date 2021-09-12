@@ -8,7 +8,7 @@ use crate::{
 };
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{limb, nlimbs, ArrayEncoding, Limb, U256},
+    bigint::{ArrayEncoding, Encoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::RngCore,
@@ -228,7 +228,10 @@ impl Scalar {
     ///
     /// Subtracts the modulus when decoded integer is larger than the modulus.
     pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        Self::sub_order(&U256::from_be_slice(bytes), Limb::ZERO)
+        let w = U256::from_be_slice(bytes);
+        let (r, underflow) = w.sbb(&NistP256::ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        Self(U256::conditional_select(&w, &r, !underflow))
     }
 
     /// Returns the SEC1 encoding of this scalar.
@@ -237,12 +240,8 @@ impl Scalar {
     }
 
     /// Returns self + rhs mod n
-    // TODO(tarcieri): use `UInt::add_mod`
     pub const fn add(&self, rhs: &Self) -> Self {
-        let (w, carry) = self.0.adc(&rhs.0, Limb::ZERO);
-
-        // Attempt to subtract the modulus, to ensure the result is in the field.
-        Self::sub_order(&w, carry)
+        Self(self.0.add_mod(&rhs.0, &NistP256::ORDER))
     }
 
     /// Returns 2*self.
@@ -354,30 +353,6 @@ impl Scalar {
     /// Borrow the inner limbs array.
     pub(crate) const fn limbs(&self) -> &[Limb] {
         self.0.limbs()
-    }
-
-    #[inline]
-    const fn sub_order(uint: &U256, limb: Limb) -> Self {
-        let order = NistP256::ORDER;
-        let (w, borrow) = uint.sbb(&order, Limb::ZERO);
-        let (_, borrow) = limb.sbb(Limb::ZERO, borrow);
-
-        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
-        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
-        // modulus.
-        let mut i = 0;
-        let mut res: [limb::Inner; nlimbs!(256)] = [0; nlimbs!(256)];
-        let mut carry = Limb::ZERO;
-
-        while i < nlimbs!(256) {
-            let rhs = Limb(order.limbs()[i].0 & borrow.0);
-            let (limb, c) = w.limbs()[i].adc(rhs, carry);
-            res[i] = limb.0;
-            carry = c;
-            i += 1;
-        }
-
-        Self(U256::from_uint_array(res))
     }
 
     /// Barrett Reduction
