@@ -2,9 +2,8 @@
 
 use super::{Scalar, MODULUS};
 use crate::ORDER;
-use core::convert::TryInto;
 use elliptic_curve::{
-    bigint::{Limb, U256},
+    bigint::{Limb, U256, U512},
     subtle::{Choice, ConditionallySelectable},
 };
 
@@ -21,19 +20,11 @@ const NEG_MODULUS: [u32; 8] = [
 ];
 
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct WideScalar([u32; 16]);
+pub(crate) struct WideScalar(U512);
 
 impl WideScalar {
-    pub fn from_bytes(bytes: &[u8; 64]) -> Self {
-        let mut w = [0u32; 16];
-        for i in 0..16 {
-            w[i] = u32::from_be_bytes(
-                bytes[((15 - i) * 4)..((15 - i) * 4 + 4)]
-                    .try_into()
-                    .unwrap(),
-            );
-        }
-        Self(w)
+    pub const fn from_bytes(bytes: &[u8; 64]) -> Self {
+        Self(U512::from_be_slice(bytes))
     }
 
     /// Multiplies two scalars without modulo reduction, producing up to a 512-bit scalar.
@@ -42,12 +33,12 @@ impl WideScalar {
         let a = a.0.to_uint_array();
         let b = b.0.to_uint_array();
 
-        /* 96 bit accumulator. */
+        // 96 bit accumulator.
         let c0 = 0;
         let c1 = 0;
         let c2 = 0;
 
-        /* l[0..15] = a[0..7] * b[0..7]. */
+        // l[0..15] = a[0..7] * b[0..7].
         let (c0, c1) = muladd_fast(a[0], b[0], c0, c1);
         let (l0, c0, c1) = (c0, c1, 0);
         let (c0, c1, c2) = muladd(a[0], b[1], c0, c1, c2);
@@ -130,9 +121,9 @@ impl WideScalar {
         debug_assert!(c1 == 0);
         let l15 = c0;
 
-        Self([
+        Self(U512::from_uint_array([
             l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15,
-        ])
+        ]))
     }
 
     /// Multiplies `a` by `b` (without modulo reduction) divide the result by `2^shift`
@@ -149,16 +140,16 @@ impl WideScalar {
             }
         }
 
-        let l = Self::mul_wide(a, b);
+        let l = Self::mul_wide(a, b).0.to_uint_array();
         let shiftlimbs = shift >> 5;
         let shiftlow = shift & 0x1F;
         let shifthigh = 32 - shiftlow;
         let r0 = ifelse(
             shift < 512,
-            (l.0[shiftlimbs] >> shiftlow)
+            (l[shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 480 && shiftlow != 0,
-                    l.0[1 + shiftlimbs] << shifthigh,
+                    l[1 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
@@ -166,10 +157,10 @@ impl WideScalar {
 
         let r1 = ifelse(
             shift < 480,
-            (l.0[1 + shiftlimbs] >> shiftlow)
+            (l[1 + shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 448 && shiftlow != 0,
-                    l.0[2 + shiftlimbs] << shifthigh,
+                    l[2 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
@@ -177,10 +168,10 @@ impl WideScalar {
 
         let r2 = ifelse(
             shift < 448,
-            (l.0[2 + shiftlimbs] >> shiftlow)
+            (l[2 + shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 416 && shiftlow != 0,
-                    l.0[3 + shiftlimbs] << shifthigh,
+                    l[3 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
@@ -188,10 +179,10 @@ impl WideScalar {
 
         let r3 = ifelse(
             shift < 416,
-            (l.0[3 + shiftlimbs] >> shiftlow)
+            (l[3 + shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 384 && shiftlow != 0,
-                    l.0[4 + shiftlimbs] << shifthigh,
+                    l[4 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
@@ -199,10 +190,10 @@ impl WideScalar {
 
         let r4 = ifelse(
             shift < 384,
-            (l.0[4 + shiftlimbs] >> shiftlow)
+            (l[4 + shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 352 && shiftlow != 0,
-                    l.0[5 + shiftlimbs] << shifthigh,
+                    l[5 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
@@ -210,10 +201,10 @@ impl WideScalar {
 
         let r5 = ifelse(
             shift < 352,
-            (l.0[5 + shiftlimbs] >> shiftlow)
+            (l[5 + shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 320 && shiftlow != 0,
-                    l.0[6 + shiftlimbs] << shifthigh,
+                    l[6 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
@@ -221,81 +212,82 @@ impl WideScalar {
 
         let r6 = ifelse(
             shift < 320,
-            (l.0[6 + shiftlimbs] >> shiftlow)
+            (l[6 + shiftlimbs] >> shiftlow)
                 | ifelse(
                     shift < 288 && shiftlow != 0,
-                    l.0[7 + shiftlimbs] << shifthigh,
+                    l[7 + shiftlimbs] << shifthigh,
                     0,
                 ),
             0,
         );
 
-        let r7 = ifelse(shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
+        let r7 = ifelse(shift < 288, l[7 + shiftlimbs] >> shiftlow, 0);
 
         let res = Scalar(U256::from_uint_array([r0, r1, r2, r3, r4, r5, r6, r7]));
 
         // Check the highmost discarded bit and round up if it is set.
-        let c = (l.0[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
+        let c = (l[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
         res.conditional_add_bit(0, Choice::from(c as u8))
     }
 
     #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
     pub(super) fn reduce(&self) -> Scalar {
-        let n0 = self.0[8];
-        let n1 = self.0[9];
-        let n2 = self.0[10];
-        let n3 = self.0[11];
-        let n4 = self.0[12];
-        let n5 = self.0[13];
-        let n6 = self.0[14];
-        let n7 = self.0[15];
+        let w = self.0.to_uint_array();
+        let n0 = w[8];
+        let n1 = w[9];
+        let n2 = w[10];
+        let n3 = w[11];
+        let n4 = w[12];
+        let n5 = w[13];
+        let n6 = w[14];
+        let n7 = w[15];
 
-        /* 96 bit accumulator. */
-
-        /* Reduce 512 bits into 385. */
-        /* m[0..12] = l[0..7] + n[0..7] * NEG_MODULUS. */
-        let c0 = self.0[0];
+        // 96 bit accumulator.
+        //
+        // Reduce 512 bits into 385.
+        // m[0..12] = l[0..7] + n[0..7] * NEG_MODULUS.
+        let c0 = w[0];
         let c1 = 0;
         let c2 = 0;
         let (c0, c1) = muladd_fast(n0, NEG_MODULUS[0], c0, c1);
         let (m0, c0, c1) = (c0, c1, 0);
-        let (c0, c1) = sumadd_fast(self.0[1], c0, c1);
+        let (c0, c1) = sumadd_fast(w[1], c0, c1);
         let (c0, c1, c2) = muladd(n1, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n0, NEG_MODULUS[1], c0, c1, c2);
         let (m1, c0, c1, c2) = (c0, c1, c2, 0);
-        let (c0, c1, c2) = sumadd(self.0[2], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(w[2], c0, c1, c2);
         let (c0, c1, c2) = muladd(n2, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n1, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = muladd(n0, NEG_MODULUS[2], c0, c1, c2);
         let (m2, c0, c1, c2) = (c0, c1, c2, 0);
-        let (c0, c1, c2) = sumadd(self.0[3], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(w[3], c0, c1, c2);
         let (c0, c1, c2) = muladd(n3, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n2, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = muladd(n1, NEG_MODULUS[2], c0, c1, c2);
         let (c0, c1, c2) = muladd(n0, NEG_MODULUS[3], c0, c1, c2);
         let (m3, c0, c1, c2) = (c0, c1, c2, 0);
-        let (c0, c1, c2) = sumadd(self.0[4], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(w[4], c0, c1, c2);
         let (c0, c1, c2) = muladd(n4, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n3, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = muladd(n2, NEG_MODULUS[2], c0, c1, c2);
         let (c0, c1, c2) = muladd(n1, NEG_MODULUS[3], c0, c1, c2);
         let (c0, c1, c2) = sumadd(n0, c0, c1, c2);
         let (m4, c0, c1, c2) = (c0, c1, c2, 0);
-        let (c0, c1, c2) = sumadd(self.0[5], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(w[5], c0, c1, c2);
         let (c0, c1, c2) = muladd(n5, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n4, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = muladd(n3, NEG_MODULUS[2], c0, c1, c2);
         let (c0, c1, c2) = muladd(n2, NEG_MODULUS[3], c0, c1, c2);
         let (c0, c1, c2) = sumadd(n1, c0, c1, c2);
         let (m5, c0, c1, c2) = (c0, c1, c2, 0);
-        let (c0, c1, c2) = sumadd(self.0[6], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(w[6], c0, c1, c2);
         let (c0, c1, c2) = muladd(n6, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n5, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = muladd(n4, NEG_MODULUS[2], c0, c1, c2);
         let (c0, c1, c2) = muladd(n3, NEG_MODULUS[3], c0, c1, c2);
         let (c0, c1, c2) = sumadd(n2, c0, c1, c2);
         let (m6, c0, c1, c2) = (c0, c1, c2, 0);
-        let (c0, c1, c2) = sumadd(self.0[7], c0, c1, c2);
+        let (c0, c1, c2) = sumadd(w[7], c0, c1, c2);
         let (c0, c1, c2) = muladd(n7, NEG_MODULUS[0], c0, c1, c2);
         let (c0, c1, c2) = muladd(n6, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = muladd(n5, NEG_MODULUS[2], c0, c1, c2);
@@ -319,8 +311,8 @@ impl WideScalar {
         debug_assert!(c0 <= 1);
         let m12 = c0;
 
-        /* Reduce 385 bits into 258. */
-        /* p[0..8] = m[0..7] + m[8..12] * NEG_MODULUS. */
+        // Reduce 385 bits into 258.
+        // p[0..8] = m[0..7] + m[8..12] * NEG_MODULUS.
         let c0 = m0;
         let c1 = 0;
         let c2 = 0;
@@ -366,8 +358,8 @@ impl WideScalar {
         let p8 = c0 + m12;
         debug_assert!(p8 <= 2);
 
-        /* Reduce 258 bits into 256. */
-        /* r[0..7] = p[0..7] + p[8] * NEG_MODULUS. */
+        // Reduce 258 bits into 256.
+        // r[0..7] = p[0..7] + p[8] * NEG_MODULUS.
         let mut c = p0 as u64 + (NEG_MODULUS[0] as u64) * (p8 as u64);
         let r0 = (c & 0xFFFFFFFFu64) as u32;
         c >>= 32;
@@ -393,7 +385,7 @@ impl WideScalar {
         let r7 = (c & 0xFFFFFFFFu64) as u32;
         c >>= 32;
 
-        /* Final reduction of r. */
+        // Final reduction of r.
         let r = U256::from([r0, r1, r2, r3, r4, r5, r6, r7]);
         let (r2, underflow) = r.sbb(&ORDER, Limb::ZERO);
         let high_bit = Choice::from(c as u8);
