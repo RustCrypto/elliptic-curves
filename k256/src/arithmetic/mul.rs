@@ -65,7 +65,10 @@
 //! In experiments, I was not able to detect any case where they would go outside the 128 bit bound,
 //! but I cannot be sure that it cannot happen.
 
-use crate::arithmetic::{scalar::Scalar, ProjectivePoint};
+use crate::arithmetic::{
+    scalar::{Scalar, WideScalar},
+    ProjectivePoint,
+};
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
@@ -136,12 +139,9 @@ const G2: Scalar = Scalar::from_bytes_unchecked(&[
 
 /// Find r1 and r2 given k, such that r1 + r2 * lambda == k mod n.
 fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
-    // these _var calls are constant time since the shift amount is constant
-    let c1 = k.mul_shift_var(&G1, 272);
-    let c2 = k.mul_shift_var(&G2, 272);
-
-    let c1 = c1 * MINUS_B1;
-    let c2 = c2 * MINUS_B2;
+    // these _vartime calls are constant time since the shift amount is constant
+    let c1 = WideScalar::mul_shift_vartime(k, &G1, 272) * MINUS_B1;
+    let c2 = WideScalar::mul_shift_vartime(k, &G2, 272) * MINUS_B2;
     let r2 = c1 + c2;
     let r1 = k + r2 * MINUS_LAMBDA;
 

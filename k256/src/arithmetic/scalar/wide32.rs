@@ -21,7 +21,7 @@ const NEG_MODULUS: [u32; 8] = [
 ];
 
 #[derive(Clone, Copy, Debug, Default)]
-pub(super) struct WideScalar(pub(super) [u32; 16]);
+pub(crate) struct WideScalar(pub(super) [u32; 16]);
 
 impl WideScalar {
     pub fn from_bytes(bytes: &[u8; 64]) -> Self {
@@ -135,8 +135,112 @@ impl WideScalar {
         ])
     }
 
+    /// Multiplies `a` by `b` (without modulo reduction) divide the result by `2^shift`
+    /// (rounding to the nearest integer).
+    /// Variable time in respect to `shift`.
+    pub(crate) fn mul_shift_vartime(a: &Scalar, b: &Scalar, shift: usize) -> Scalar {
+        debug_assert!(shift >= 256);
+
+        fn ifelse(c: bool, x: u32, y: u32) -> u32 {
+            if c {
+                x
+            } else {
+                y
+            }
+        }
+
+        let l = Self::mul_wide(a, b);
+        let shiftlimbs = shift >> 5;
+        let shiftlow = shift & 0x1F;
+        let shifthigh = 32 - shiftlow;
+        let r0 = ifelse(
+            shift < 512,
+            (l.0[shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 480 && shiftlow != 0,
+                    l.0[1 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r1 = ifelse(
+            shift < 480,
+            (l.0[1 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 448 && shiftlow != 0,
+                    l.0[2 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r2 = ifelse(
+            shift < 448,
+            (l.0[2 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 416 && shiftlow != 0,
+                    l.0[3 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r3 = ifelse(
+            shift < 416,
+            (l.0[3 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 384 && shiftlow != 0,
+                    l.0[4 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r4 = ifelse(
+            shift < 384,
+            (l.0[4 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 352 && shiftlow != 0,
+                    l.0[5 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r5 = ifelse(
+            shift < 352,
+            (l.0[5 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 320 && shiftlow != 0,
+                    l.0[6 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r6 = ifelse(
+            shift < 320,
+            (l.0[6 + shiftlimbs] >> shiftlow)
+                | ifelse(
+                    shift < 288 && shiftlow != 0,
+                    l.0[7 + shiftlimbs] << shifthigh,
+                    0,
+                ),
+            0,
+        );
+
+        let r7 = ifelse(shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
+
+        let res = Scalar(U256::from_uint_array([r0, r1, r2, r3, r4, r5, r6, r7]));
+
+        // Check the highmost discarded bit and round up if it is set.
+        let c = (l.0[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
+        res.conditional_add_bit(0, Choice::from(c as u8))
+    }
+
     #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
-    pub fn reduce(&self) -> Scalar {
+    pub(super) fn reduce(&self) -> Scalar {
         let n0 = self.0[8];
         let n1 = self.0[9];
         let n2 = self.0[10];
