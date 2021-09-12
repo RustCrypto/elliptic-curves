@@ -4,6 +4,8 @@
 #[cfg_attr(target_pointer_width = "64", path = "scalar/wide64.rs")]
 mod wide;
 
+pub(crate) use self::wide::WideScalar;
+
 use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
@@ -18,7 +20,6 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
     Curve, ScalarArithmetic, ScalarCore,
 };
-use wide::WideScalar;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -352,209 +353,13 @@ impl Scalar {
         Self(U256::from_be_slice(bytes))
     }
 
-    /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
-    /// (rounding to the nearest integer).
-    /// Variable time in `shift`.
-    #[cfg(target_pointer_width = "32")]
-    pub(crate) fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
-        debug_assert!(shift >= 256);
-
-        fn ifelse(c: bool, x: u32, y: u32) -> u32 {
-            if c {
-                x
-            } else {
-                y
-            }
-        }
-
-        let l = WideScalar::mul_wide(self, b);
-        let shiftlimbs = shift >> 5;
-        let shiftlow = shift & 0x1F;
-        let shifthigh = 32 - shiftlow;
-        let r0 = ifelse(
-            shift < 512,
-            (l.0[shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 480 && shiftlow != 0,
-                    l.0[1 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r1 = ifelse(
-            shift < 480,
-            (l.0[1 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 448 && shiftlow != 0,
-                    l.0[2 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r2 = ifelse(
-            shift < 448,
-            (l.0[2 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 416 && shiftlow != 0,
-                    l.0[3 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r3 = ifelse(
-            shift < 416,
-            (l.0[3 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 384 && shiftlow != 0,
-                    l.0[4 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r4 = ifelse(
-            shift < 384,
-            (l.0[4 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 352 && shiftlow != 0,
-                    l.0[5 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r5 = ifelse(
-            shift < 352,
-            (l.0[5 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 320 && shiftlow != 0,
-                    l.0[6 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r6 = ifelse(
-            shift < 320,
-            (l.0[6 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 288 && shiftlow != 0,
-                    l.0[7 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r7 = ifelse(shift < 288, l.0[7 + shiftlimbs] >> shiftlow, 0);
-
-        let res = Self(U256::from_uint_array([r0, r1, r2, r3, r4, r5, r6, r7]));
-
-        // Check the highmost discarded bit and round up if it is set.
-        let c = (l.0[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
-        res.conditional_add_bit(0, Choice::from(c as u8))
-    }
-
-    /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
-    /// (rounding to the nearest integer).
-    /// Variable time in `shift`.
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) fn mul_shift_var(&self, b: &Self, shift: usize) -> Self {
-        debug_assert!(shift >= 256);
-
-        fn ifelse(c: bool, x: u64, y: u64) -> u64 {
-            if c {
-                x
-            } else {
-                y
-            }
-        }
-
-        let l = WideScalar::mul_wide(self, b);
-        let shiftlimbs = shift >> 6;
-        let shiftlow = shift & 0x3F;
-        let shifthigh = 64 - shiftlow;
-        let r0 = ifelse(
-            shift < 512,
-            (l.0[shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 448 && shiftlow != 0,
-                    l.0[1 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r1 = ifelse(
-            shift < 448,
-            (l.0[1 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 448 && shiftlow != 0,
-                    l.0[2 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r2 = ifelse(
-            shift < 384,
-            (l.0[2 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 320 && shiftlow != 0,
-                    l.0[3 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
-
-        let r3 = ifelse(shift < 320, l.0[3 + shiftlimbs] >> shiftlow, 0);
-
-        let res = Self(U256::from_uint_array([r0, r1, r2, r3]));
-
-        // Check the highmost discarded bit and round up if it is set.
-        let c = (l.0[(shift - 1) >> 6] >> ((shift - 1) & 0x3f)) & 1;
-        res.conditional_add_bit(0, Choice::from(c as u8))
-    }
-
     /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
-    #[cfg(target_pointer_width = "32")]
     fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
         debug_assert!(bit < 256);
 
         // Construct Scalar(1 << bit).
         // Since the 255-th bit of the modulus is 1, this will always be within range.
-        let bit_lo = bit & 0x1F;
-        let w = Self(U256::from_uint_array([
-            (((bit >> 5) == 0) as u32) << bit_lo,
-            (((bit >> 5) == 1) as u32) << bit_lo,
-            (((bit >> 5) == 2) as u32) << bit_lo,
-            (((bit >> 5) == 3) as u32) << bit_lo,
-            (((bit >> 5) == 4) as u32) << bit_lo,
-            (((bit >> 5) == 5) as u32) << bit_lo,
-            (((bit >> 5) == 6) as u32) << bit_lo,
-            (((bit >> 5) == 7) as u32) << bit_lo,
-        ]));
-
-        Self::conditional_select(self, &(self.add(&w)), flag)
-    }
-
-    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
-    #[cfg(target_pointer_width = "64")]
-    fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
-        debug_assert!(bit < 256);
-
-        // Construct Scalar(1 << bit).
-        // Since the 255-th bit of the modulus is 1, this will always be within range.
-        let bit_lo = bit & 0x3F;
-        let w = Self(U256::from_uint_array([
-            (((bit >> 6) == 0) as u64) << bit_lo,
-            (((bit >> 6) == 1) as u64) << bit_lo,
-            (((bit >> 6) == 2) as u64) << bit_lo,
-            (((bit >> 6) == 3) as u64) << bit_lo,
-        ]));
-
+        let w = Scalar(U256::ONE << bit);
         Self::conditional_select(self, &(self.add(&w)), flag)
     }
 
