@@ -242,10 +242,7 @@ impl Scalar {
     /// Returns self + rhs mod n.
     // TODO(tarcieri): use `UInt::add_mod`
     pub const fn add(&self, rhs: &Self) -> Self {
-        let (w, carry) = self.0.adc(&rhs.0, Limb::ZERO);
-
-        // Attempt to subtract the modulus, to ensure the result is in the field.
-        Self::sub_order(&w, carry)
+        Self(self.0.add_mod(&rhs.0, &ORDER))
     }
 
     /// Returns self - rhs mod n.
@@ -569,29 +566,6 @@ impl Scalar {
             x = x.square();
         }
         x
-    }
-
-    #[inline]
-    const fn sub_order(uint: &U256, limb: Limb) -> Self {
-        let (w, borrow) = uint.sbb(&ORDER, Limb::ZERO);
-        let (_, borrow) = limb.sbb(Limb::ZERO, borrow);
-
-        // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
-        // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
-        // modulus.
-        let mut i = 0;
-        let mut res: [limb::Inner; nlimbs!(256)] = [0; nlimbs!(256)];
-        let mut carry = Limb::ZERO;
-
-        while i < nlimbs!(256) {
-            let rhs = Limb(ORDER.limbs()[i].0 & borrow.0);
-            let (limb, c) = w.limbs()[i].adc(rhs, carry);
-            res[i] = limb.0;
-            carry = c;
-            i += 1;
-        }
-
-        Self(U256::from_uint_array(res))
     }
 }
 
