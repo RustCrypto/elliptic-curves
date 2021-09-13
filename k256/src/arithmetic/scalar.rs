@@ -353,16 +353,6 @@ impl Scalar {
         Self(U256::from_be_slice(bytes))
     }
 
-    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
-    fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
-        debug_assert!(bit < 256);
-
-        // Construct Scalar(1 << bit).
-        // Since the 255-th bit of the modulus is 1, this will always be within range.
-        let w = Scalar(U256::ONE << bit);
-        Self::conditional_select(self, &(self.add(&w)), flag)
-    }
-
     /// Raises the scalar to the power `2^k`.
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
