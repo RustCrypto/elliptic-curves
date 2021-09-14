@@ -1,9 +1,10 @@
 //! Wide scalar (64-bit limbs)
 
 use super::{Scalar, MODULUS};
-use crate::ORDER;
+use crate::{NonZeroScalar, ORDER};
 use elliptic_curve::{
     bigint::{Limb, U256, U512},
+    group::ff::Field,
     subtle::{Choice, ConditionallySelectable},
 };
 
@@ -118,8 +119,13 @@ impl WideScalar {
         Scalar::conditional_select(&res, &res.add(&Scalar::ONE), Choice::from(c as u8))
     }
 
-    #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
-    pub(super) fn reduce(&self) -> Scalar {
+    fn reduce_impl(&self, modulus_minus_one: bool) -> Scalar {
+        let neg_modulus0 = if modulus_minus_one {
+            NEG_MODULUS[0] + 1
+        } else {
+            NEG_MODULUS[0]
+        };
+
         let w = self.0.to_uint_array();
         let n0 = w[4];
         let n1 = w[5];
@@ -127,23 +133,23 @@ impl WideScalar {
         let n3 = w[7];
 
         // Reduce 512 bits into 385.
-        // m[0..6] = self[0..3] + n[0..3] * NEG_MODULUS.
+        // m[0..6] = self[0..3] + n[0..3] * neg_modulus.
         let c0 = w[0];
         let c1 = 0;
         let c2 = 0;
-        let (c0, c1) = muladd_fast(n0, NEG_MODULUS[0], c0, c1);
+        let (c0, c1) = muladd_fast(n0, neg_modulus0, c0, c1);
         let (m0, c0, c1) = (c0, c1, 0);
         let (c0, c1) = sumadd_fast(w[1], c0, c1);
-        let (c0, c1, c2) = muladd(n1, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n1, neg_modulus0, c0, c1, c2);
         let (c0, c1, c2) = muladd(n0, NEG_MODULUS[1], c0, c1, c2);
         let (m1, c0, c1, c2) = (c0, c1, c2, 0);
         let (c0, c1, c2) = sumadd(w[2], c0, c1, c2);
-        let (c0, c1, c2) = muladd(n2, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n2, neg_modulus0, c0, c1, c2);
         let (c0, c1, c2) = muladd(n1, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = sumadd(n0, c0, c1, c2);
         let (m2, c0, c1, c2) = (c0, c1, c2, 0);
         let (c0, c1, c2) = sumadd(w[3], c0, c1, c2);
-        let (c0, c1, c2) = muladd(n3, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(n3, neg_modulus0, c0, c1, c2);
         let (c0, c1, c2) = muladd(n2, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = sumadd(n1, c0, c1, c2);
         let (m3, c0, c1, c2) = (c0, c1, c2, 0);
@@ -156,18 +162,18 @@ impl WideScalar {
         let m6 = c0;
 
         // Reduce 385 bits into 258.
-        // p[0..4] = m[0..3] + m[4..6] * NEG_MODULUS.
+        // p[0..4] = m[0..3] + m[4..6] * neg_modulus.
         let c0 = m0;
         let c1 = 0;
         let c2 = 0;
-        let (c0, c1) = muladd_fast(m4, NEG_MODULUS[0], c0, c1);
+        let (c0, c1) = muladd_fast(m4, neg_modulus0, c0, c1);
         let (p0, c0, c1) = (c0, c1, 0);
         let (c0, c1) = sumadd_fast(m1, c0, c1);
-        let (c0, c1, c2) = muladd(m5, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(m5, neg_modulus0, c0, c1, c2);
         let (c0, c1, c2) = muladd(m4, NEG_MODULUS[1], c0, c1, c2);
         let (p1, c0, c1) = (c0, c1, 0);
         let (c0, c1, c2) = sumadd(m2, c0, c1, c2);
-        let (c0, c1, c2) = muladd(m6, NEG_MODULUS[0], c0, c1, c2);
+        let (c0, c1, c2) = muladd(m6, neg_modulus0, c0, c1, c2);
         let (c0, c1, c2) = muladd(m5, NEG_MODULUS[1], c0, c1, c2);
         let (c0, c1, c2) = sumadd(m4, c0, c1, c2);
         let (p2, c0, c1, _c2) = (c0, c1, c2, 0);
@@ -179,8 +185,8 @@ impl WideScalar {
         debug_assert!(p4 <= 2);
 
         // Reduce 258 bits into 256.
-        // r[0..3] = p[0..3] + p[4] * NEG_MODULUS.
-        let mut c = (p0 as u128) + (NEG_MODULUS[0] as u128) * (p4 as u128);
+        // r[0..3] = p[0..3] + p[4] * neg_modulus.
+        let mut c = (p0 as u128) + (neg_modulus0 as u128) * (p4 as u128);
         let r0 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
         c >>= 64;
         c += (p1 as u128) + (NEG_MODULUS[1] as u128) * (p4 as u128);
@@ -199,6 +205,18 @@ impl WideScalar {
         let high_bit = Choice::from(c as u8);
         let underflow = Choice::from((underflow.0 >> 63) as u8);
         Scalar(U256::conditional_select(&r, &r2, !underflow | high_bit))
+    }
+
+    #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
+    pub(super) fn reduce(&self) -> Scalar {
+        self.reduce_impl(false)
+    }
+
+    // TODO(tarcieri): use this
+    #[allow(dead_code)]
+    pub(super) fn reduce_nonzero(&self) -> NonZeroScalar {
+        let s = self.reduce_impl(true);
+        NonZeroScalar::new(s + Scalar::one()).unwrap()
     }
 }
 

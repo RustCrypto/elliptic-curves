@@ -745,6 +745,16 @@ mod tests {
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
+    // TODO(tarcieri): test reduce impls
+    // #[test]
+    // fn from_wide_bytes_reduced() {
+    //     let m = Scalar::modulus_as_biguint();
+    //     let b = [0xffu8; 64];
+    //     let s = Scalar::from_wide_bytes_reduced(&b);
+    //     let s_bu = s.to_biguint().unwrap();
+    //     assert!(s_bu < m);
+    // }
+
     prop_compose! {
         fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
             let mut res = bytes_to_biguint(&bytes);
@@ -843,5 +853,17 @@ mod tests {
             let m = Scalar::modulus_as_biguint();
             assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
         }
+
+        // TODO(tarcieri): test reduce impls
+        // #[test]
+        // fn fuzzy_from_wide_bytes_reduced(bytes_hi in any::<[u8; 32]>(), bytes_lo in any::<[u8; 32]>()) {
+        //     let m = Scalar::modulus_as_biguint();
+        //     let mut bytes = [0u8; 64];
+        //     bytes[0..32].clone_from_slice(&bytes_hi);
+        //     bytes[32..64].clone_from_slice(&bytes_lo);
+        //     let s = Scalar::from_wide_bytes_reduced(&bytes);
+        //     let s_bu = s.to_biguint().unwrap();
+        //     assert!(s_bu < m);
+        // }
     }
 }
