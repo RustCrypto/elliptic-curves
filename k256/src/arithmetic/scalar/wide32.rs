@@ -227,7 +227,7 @@ impl WideScalar {
 
         // Check the highmost discarded bit and round up if it is set.
         let c = (l[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
-        res.conditional_add_bit(0, Choice::from(c as u8))
+        Scalar::conditional_select(&res, &res.add(&Scalar::ONE), Choice::from(c as u8))
     }
 
     #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
