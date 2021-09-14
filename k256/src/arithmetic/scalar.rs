@@ -6,7 +6,7 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, Secp256k1, ORDER};
+use crate::{FieldBytes, NonZeroScalar, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
@@ -25,7 +25,11 @@ use elliptic_curve::{
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "digest")]
-use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
+use ecdsa_core::{
+    elliptic_curve::consts::{U32, U64},
+    hazmat::FromDigest,
+    signature::digest::Digest,
+};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -218,6 +222,72 @@ impl Scalar {
         let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow))
+    }
+
+    /// Parses the given byte array as a scalar.
+    ///
+    /// Treats the byte array as a big-endian integer and reduces it by the curve order.
+    #[cfg(feature = "digest")]
+    fn from_wide_bytes_reduced(bytes: &[u8; 64]) -> Self {
+        let w = WideScalar::from_bytes(bytes);
+        w.reduce()
+    }
+
+    #[allow(dead_code)]
+    // TODO: this can be used instead of `generate_vartime_nonzero()`
+    fn generate_biased_nonzero(mut rng: impl CryptoRng + RngCore) -> NonZeroScalar {
+        let mut buf = [0u8; 64];
+        rng.fill_bytes(&mut buf);
+        WideScalar::from_bytes(&buf).reduce_nonzero()
+    }
+
+    fn generate_vartime_nonzero(mut rng: impl RngCore) -> NonZeroScalar {
+        let mut bytes = FieldBytes::default();
+
+        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
+        loop {
+            rng.fill_bytes(&mut bytes);
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+                if let Some(nz_scalar) = NonZeroScalar::new(scalar).into() {
+                    return nz_scalar;
+                }
+            }
+        }
+    }
+
+    // TODO: better located in the `Field` impl for `NonZeroScalar`.
+    /// Generates a non-zero scalar (in variable time).
+    pub fn random_nonzero(rng: impl RngCore) -> NonZeroScalar {
+        Self::generate_vartime_nonzero(rng)
+    }
+
+    // TODO: should `FromDigest` have this method instead?
+    /// Generates a scalar from a large enough digest to make the bias negligible.
+    #[cfg(feature = "digest")]
+    pub fn from_digest_safe<D>(digest: D) -> Self
+    where
+        D: Digest<OutputSize = U64>,
+    {
+        // TODO: A pretty awkward conversion. Is there an idiomatic way?
+        let garr = digest.finalize();
+        let mut arr = [0u8; 64];
+        arr[0..32].clone_from_slice(&garr[0..32]);
+        arr[32..64].clone_from_slice(&garr[32..64]);
+        Self::from_wide_bytes_reduced(&arr)
+    }
+
+    // TODO: should it be in `FromDigest`? Or a separate trait?
+    /// Generates a nonzero scalar from a large enough digest to make the bias negligible.
+    #[cfg(feature = "digest")]
+    pub fn from_digest_safe_nonzero<D>(digest: D) -> NonZeroScalar
+    where
+        D: Digest<OutputSize = U64>,
+    {
+        let garr = digest.finalize();
+        let mut arr = [0u8; 64];
+        arr[0..32].clone_from_slice(&garr[0..32]);
+        arr[32..64].clone_from_slice(&garr[32..64]);
+        WideScalar::from_bytes(&arr).reduce_nonzero()
     }
 
     /// Is this scalar greater than or equal to n / 2?
@@ -709,6 +779,15 @@ mod tests {
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
+    #[test]
+    fn from_wide_bytes_reduced() {
+        let m = Scalar::modulus_as_biguint();
+        let b = [0xffu8; 64];
+        let s = Scalar::from_wide_bytes_reduced(&b);
+        let s_bu = s.to_biguint().unwrap();
+        assert!(s_bu < m);
+    }
+
     prop_compose! {
         fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
             let mut res = bytes_to_biguint(&bytes);
@@ -806,6 +885,17 @@ mod tests {
             let inv_bi = inv.to_biguint().unwrap();
             let m = Scalar::modulus_as_biguint();
             assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
+        }
+
+        #[test]
+        fn fuzzy_from_wide_bytes_reduced(bytes_hi in any::<[u8; 32]>(), bytes_lo in any::<[u8; 32]>()) {
+            let m = Scalar::modulus_as_biguint();
+            let mut bytes = [0u8; 64];
+            bytes[0..32].clone_from_slice(&bytes_hi);
+            bytes[32..64].clone_from_slice(&bytes_lo);
+            let s = Scalar::from_wide_bytes_reduced(&bytes);
+            let s_bu = s.to_biguint().unwrap();
+            assert!(s_bu < m);
         }
     }
 }
