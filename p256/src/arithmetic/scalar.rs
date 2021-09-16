@@ -808,10 +808,10 @@ pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
 #[cfg(test)]
 mod tests {
     use super::Scalar;
+    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
     use crate::{FieldBytes, SecretKey};
     use elliptic_curve::group::ff::{Field, PrimeField};
     use num_bigint::{BigUint, ToBigUint};
-    use crate::arithmetic::util::{bytes_to_biguint, biguint_to_bytes};
 
     #[test]
     fn from_to_bytes_roundtrip() {
@@ -942,5 +942,4 @@ mod tests {
         let high: bool = Scalar::from(&m - &one).is_high().into();
         assert!(high);
     }
-
 }
