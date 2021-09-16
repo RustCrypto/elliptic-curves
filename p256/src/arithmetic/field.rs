@@ -9,10 +9,8 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::DefaultIsZeroes,
 };
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 /// The number of 64-bit limbs used to represent a [`FieldElement`].
 const LIMBS: usize = 4;
@@ -80,6 +78,8 @@ impl Default for FieldElement {
     }
 }
 
+impl DefaultIsZeroes for FieldElement {}
+
 impl FieldElement {
     /// Returns the zero element.
     pub const fn zero() -> FieldElement {
@@ -139,7 +139,7 @@ impl FieldElement {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         // Convert from Montgomery form to canonical form
         let tmp =
             FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
@@ -516,13 +516,6 @@ impl<'a> Neg for &'a FieldElement {
 
     fn neg(self) -> FieldElement {
         FieldElement::zero() - self
-    }
-}
-
-#[cfg(feature = "zeroize")]
-impl Zeroize for FieldElement {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
     }
 }
 

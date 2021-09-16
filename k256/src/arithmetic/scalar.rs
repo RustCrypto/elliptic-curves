@@ -1,33 +1,24 @@
 //! Scalar field arithmetic.
 
-use cfg_if::cfg_if;
+#[cfg_attr(not(target_pointer_width = "64"), path = "scalar/wide32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/wide64.rs")]
+mod wide;
 
-cfg_if! {
-    if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
-        mod scalar_8x32;
-        use scalar_8x32::Scalar8x32 as ScalarImpl;
-        use scalar_8x32::WideScalar16x32 as WideScalarImpl;
+pub(crate) use self::wide::WideScalar;
 
-        #[cfg(feature = "bits")]
-        use scalar_8x32::MODULUS;
-    } else if #[cfg(target_pointer_width = "64")] {
-        mod scalar_4x64;
-        use scalar_4x64::Scalar4x64 as ScalarImpl;
-        use scalar_4x64::WideScalar8x64 as WideScalarImpl;
-
-        #[cfg(feature = "bits")]
-        use scalar_4x64::MODULUS;
-    }
-}
-
-use crate::{FieldBytes, Secp256k1};
+use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
+    bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     rand_core::{CryptoRng, RngCore},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    ScalarArithmetic,
+    subtle::{
+        Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
+        CtOption,
+    },
+    zeroize::DefaultIsZeroes,
+    Curve, ScalarArithmetic, ScalarCore,
 };
 
 #[cfg(feature = "bits")]
@@ -36,15 +27,19 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 #[cfg(feature = "digest")]
 use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
 
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
-
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
 impl ScalarArithmetic for Secp256k1 {
     type Scalar = Scalar;
 }
+
+/// Constant representing the modulus
+/// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
+const MODULUS: [limb::Inner; nlimbs!(256)] = ORDER.to_uint_array();
+
+/// Constant representing the modulus / 2
+const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 
 /// Scalars are elements in the finite field modulo n.
 ///
@@ -71,7 +66,7 @@ impl ScalarArithmetic for Secp256k1 {
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub struct Scalar(ScalarImpl);
+pub struct Scalar(U256);
 
 impl Field for Scalar {
     fn random(rng: impl RngCore) -> Self {
@@ -88,15 +83,11 @@ impl Field for Scalar {
     }
 
     fn zero() -> Self {
-        Scalar::zero()
+        Self::ZERO
     }
 
     fn one() -> Self {
-        Scalar::one()
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero().into()
+        Self::ONE
     }
 
     #[must_use]
@@ -113,9 +104,46 @@ impl Field for Scalar {
         Scalar::invert(self)
     }
 
-    // TODO(tarcieri): stub! See: https://github.com/RustCrypto/elliptic-curves/issues/170
+    /// Tonelli-Shank's algorithm for q mod 16 = 1
+    /// https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
+    #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
-        todo!("see RustCrypto/elliptic-curves#170");
+        // Note: `pow_vartime` is constant-time with respect to `self`
+        let w = self.pow_vartime(&[
+            0x777fa4bd19a06c82,
+            0xfd755db9cd5e9140,
+            0xffffffffffffffff,
+            0x1ffffffffffffff,
+        ]);
+
+        let mut v = Self::S;
+        let mut x = *self * w;
+        let mut b = x * w;
+        let mut z = Self::root_of_unity();
+
+        for max_v in (1..=Self::S).rev() {
+            let mut k = 1;
+            let mut tmp = b.square();
+            let mut j_less_than_v = Choice::from(1);
+
+            for j in 2..max_v {
+                let tmp_is_one = tmp.ct_eq(&Self::one());
+                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
+                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
+                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
+                j_less_than_v &= !j.ct_eq(&v);
+                k = u32::conditional_select(&j, &k, tmp_is_one);
+                z = Self::conditional_select(&z, &new_z, j_less_than_v);
+            }
+
+            let result = x * z;
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
+            z = z.square();
+            b *= z;
+            v = k;
+        }
+
+        CtOption::new(x, x.square().ct_eq(self))
     }
 }
 
@@ -130,16 +158,17 @@ impl PrimeField for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_repr(bytes: FieldBytes) -> Option<Self> {
-        ScalarImpl::from_bytes(bytes.as_ref()).map(Self).into()
+    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
+        let inner = U256::from_be_byte_array(bytes);
+        CtOption::new(Self(inner), inner.ct_lt(&Secp256k1::ORDER))
     }
 
     fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
     }
 
-    fn is_odd(&self) -> bool {
-        self.0.is_odd().into()
+    fn is_odd(&self) -> Choice {
+        self.0.is_odd()
     }
 
     fn multiplicative_generator() -> Self {
@@ -148,9 +177,9 @@ impl PrimeField for Scalar {
 
     fn root_of_unity() -> Self {
         Scalar::from_repr(arr![u8;
-            0xc1, 0xdc, 0x06, 0x0e, 0x7a, 0x91, 0x98, 0x6d, 0xf9, 0x87, 0x9a, 0x3f, 0xbc, 0x48,
-            0x3a, 0x89, 0x8b, 0xde, 0xab, 0x68, 0x07, 0x56, 0x04, 0x59, 0x92, 0xf4, 0xb5, 0x40,
-            0x2b, 0x05, 0x2f, 0x2,
+            0x0c, 0x1d, 0xc0, 0x60, 0xe7, 0xa9, 0x19, 0x86, 0xdf, 0x98, 0x79, 0xa3, 0xfb, 0xc4,
+            0x83, 0xa8, 0x98, 0xbd, 0xea, 0xb6, 0x80, 0x75, 0x60, 0x45, 0x99, 0x2f, 0x4b, 0x54,
+            0x02, 0xb0, 0x52, 0xf2
         ])
         .unwrap()
     }
@@ -159,44 +188,41 @@ impl PrimeField for Scalar {
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl PrimeFieldBits for Scalar {
-    cfg_if! {
-        if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
-            type ReprBits = [u32; 8];
-        } else if #[cfg(target_pointer_width = "64")] {
-            type ReprBits = [u64; 4];
-        }
-    }
+    #[cfg(target_pointer_width = "32")]
+    type ReprBits = [u32; 8];
+
+    #[cfg(target_pointer_width = "64")]
+    type ReprBits = [u64; 4];
 
     fn to_le_bits(&self) -> ScalarBits {
         self.into()
     }
 
     fn char_le_bits() -> ScalarBits {
-        MODULUS.into()
-    }
-}
-
-impl From<u32> for Scalar {
-    fn from(k: u32) -> Self {
-        Self(ScalarImpl::from(k))
-    }
-}
-
-impl From<u64> for Scalar {
-    fn from(k: u64) -> Self {
-        Self(ScalarImpl::from(k))
+        ORDER.to_uint_array().into()
     }
 }
 
 impl Scalar {
-    /// Returns the zero scalar.
-    pub const fn zero() -> Self {
-        Self(ScalarImpl::zero())
+    /// Zero scalar.
+    pub const ZERO: Self = Self(U256::ZERO);
+
+    /// Multiplicative identity.
+    pub const ONE: Self = Self(U256::ONE);
+
+    /// Parses the given byte array as a scalar.
+    ///
+    /// Subtracts the modulus when the byte array is larger than the modulus.
+    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
+        let w = U256::from_be_slice(bytes);
+        let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        Self(U256::conditional_select(&w, &r, !underflow))
     }
 
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Scalar {
-        Self(ScalarImpl::one())
+    /// Is this scalar greater than or equal to n / 2?
+    pub fn is_high(&self) -> Choice {
+        self.0.ct_gt(&FRAC_MODULUS_2)
     }
 
     /// Checks if the scalar is zero.
@@ -204,78 +230,47 @@ impl Scalar {
         self.0.is_zero()
     }
 
-    /// Returns the value of the scalar truncated to a 32-bit unsigned integer.
-    pub fn truncate_to_u32(&self) -> u32 {
-        self.0.truncate_to_u32()
-    }
-
-    /// Attempts to parse the given byte array as a scalar.
-    /// Does not check the result for being in the correct range.
-    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        Self(ScalarImpl::from_bytes_unchecked(bytes))
-    }
-
-    /// Parses the given byte array as a scalar.
-    ///
-    /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        Self(ScalarImpl::from_bytes_reduced(bytes.as_ref()))
-    }
-
     /// Returns the SEC1 encoding of this scalar.
     pub fn to_bytes(&self) -> FieldBytes {
-        self.0.to_bytes()
-    }
-
-    /// Is this scalar greater than or equal to n / 2?
-    pub fn is_high(&self) -> Choice {
-        self.0.is_high()
+        self.0.to_be_byte_array()
     }
 
     /// Negates the scalar.
-    pub fn negate(&self) -> Self {
-        Self(self.0.negate())
+    pub const fn negate(&self) -> Self {
+        Self(self.0.neg_mod(&ORDER))
     }
 
-    /// Modulo adds two scalars
-    pub fn add(&self, rhs: &Scalar) -> Scalar {
-        Self(self.0.add(&(rhs.0)))
+    /// Returns self + rhs mod n.
+    pub const fn add(&self, rhs: &Self) -> Self {
+        Self(self.0.add_mod(&rhs.0, &ORDER))
     }
 
-    /// Modulo subtracts one scalar from the other.
-    pub fn sub(&self, rhs: &Scalar) -> Scalar {
-        Self(self.0.sub(&(rhs.0)))
+    /// Returns self - rhs mod n.
+    pub const fn sub(&self, rhs: &Self) -> Self {
+        Self(self.0.sub_mod(&rhs.0, &ORDER))
     }
 
     /// Modulo multiplies two scalars.
     pub fn mul(&self, rhs: &Scalar) -> Scalar {
-        Self(self.0.mul(&(rhs.0)))
+        WideScalar::mul_wide(self, rhs).reduce()
     }
 
     /// Modulo squares the scalar.
     pub fn square(&self) -> Self {
-        self.mul(&self)
+        self.mul(self)
     }
 
-    /// Right shifts the scalar. Note: not constant-time in `shift`.
-    pub fn rshift(&self, shift: usize) -> Scalar {
-        Self(self.0.rshift(shift))
-    }
-
-    /// Raises the scalar to the power `2^k`
-    fn pow2k(&self, k: usize) -> Self {
-        let mut x = *self;
-        for _j in 0..k {
-            x = x.square();
-        }
-        x
+    /// Right shifts the scalar.
+    ///
+    /// Note: not constant-time with respect to the `shift` parameter.
+    pub fn shr_vartime(&self, shift: usize) -> Scalar {
+        Self(self.0.shr_vartime(shift))
     }
 
     /// Inverts the scalar.
     pub fn invert(&self) -> CtOption<Self> {
         // Using an addition chain from
         // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
-
         let x_1 = *self;
         let x_10 = self.pow2k(1);
         let x_11 = x_10.mul(&x_1);
@@ -335,7 +330,7 @@ impl Scalar {
         // negligible bias from the uniform distribution, but the process is constant-time.
         let mut buf = [0u8; 64];
         rng.fill_bytes(&mut buf);
-        Scalar(WideScalarImpl::from_bytes(&buf).reduce())
+        WideScalar::from_bytes(&buf).reduce()
     }
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
@@ -346,22 +341,51 @@ impl Scalar {
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
             rng.fill_bytes(&mut bytes);
-            if let Some(scalar) = Scalar::from_repr(bytes) {
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
                 return scalar;
             }
         }
     }
 
-    /// If `flag` evaluates to `true`, adds `(1 << bit)` to `self`.
-    pub fn conditional_add_bit(&self, bit: usize, flag: Choice) -> Self {
-        Self(self.0.conditional_add_bit(bit, flag))
+    /// Attempts to parse the given byte array as a scalar.
+    /// Does not check the result for being in the correct range.
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(U256::from_be_slice(bytes))
     }
 
-    /// Multiplies `self` by `b` (without modulo reduction) divide the result by `2^shift`
-    /// (rounding to the nearest integer).
-    /// Variable time in `shift`.
-    pub fn mul_shift_var(&self, b: &Scalar, shift: usize) -> Self {
-        Self(self.0.mul_shift_var(&(b.0), shift))
+    /// Raises the scalar to the power `2^k`.
+    fn pow2k(&self, k: usize) -> Self {
+        let mut x = *self;
+        for _j in 0..k {
+            x = x.square();
+        }
+        x
+    }
+}
+
+impl DefaultIsZeroes for Scalar {}
+
+impl From<u32> for Scalar {
+    fn from(k: u32) -> Self {
+        Self::from(k as u64)
+    }
+}
+
+impl From<u64> for Scalar {
+    fn from(k: u64) -> Self {
+        Self(k.into())
+    }
+}
+
+impl From<ScalarCore<Secp256k1>> for Scalar {
+    fn from(scalar: ScalarCore<Secp256k1>) -> Scalar {
+        Scalar(*scalar.as_uint())
+    }
+}
+
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> U256 {
+        scalar.0
     }
 }
 
@@ -382,7 +406,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.rshift(rhs)
+        self.shr_vartime(rhs)
     }
 }
 
@@ -390,13 +414,13 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.rshift(rhs)
+        self.shr_vartime(rhs)
     }
 }
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(ScalarImpl::conditional_select(&(a.0), &(b.0), choice))
+        Self(U256::conditional_select(&a.0, &b.0, choice))
     }
 }
 
@@ -470,7 +494,7 @@ impl AddAssign<Scalar> for Scalar {
 
 impl AddAssign<&Scalar> for Scalar {
     fn add_assign(&mut self, rhs: &Scalar) {
-        *self = Scalar::add(self, &rhs);
+        *self = Scalar::add(self, rhs);
     }
 }
 
@@ -550,7 +574,7 @@ impl MulAssign<&Scalar> for Scalar {
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.into()
+        scalar.0.to_uint_array().into()
     }
 }
 
@@ -566,18 +590,11 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl Zeroize for Scalar {
-    fn zeroize(&mut self) {
-        self.0.zeroize()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::util::{biguint_to_bytes, bytes_to_biguint};
-    use elliptic_curve::group::ff::PrimeField;
+    use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
+    use elliptic_curve::group::ff::{Field, PrimeField};
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -626,6 +643,16 @@ mod tests {
         // MODULUS - 1 is high
         let high: bool = Scalar::from(&m - &one).is_high().into();
         assert!(high);
+    }
+
+    /// Basic tests that sqrt works.
+    #[test]
+    fn sqrt() {
+        for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
+            let scalar = Scalar::from(n);
+            let sqrt = scalar.sqrt().unwrap();
+            assert_eq!(sqrt.square(), scalar);
+        }
     }
 
     #[test]

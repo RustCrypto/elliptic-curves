@@ -10,15 +10,14 @@ use elliptic_curve::{
     ops::Invert,
     rand_core::{CryptoRng, RngCore},
     subtle::CtOption,
+    zeroize::Zeroize,
 };
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
 
 /// Scalar blinded with a randomly generated masking value.
 ///
 /// This provides a randomly blinded impl of [`Invert`] which is useful for
 /// ECDSA ephemeral (`k`) scalars.
+#[derive(Clone)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct BlindedScalar {
     /// Actual scalar value
@@ -56,7 +55,6 @@ impl Invert for BlindedScalar {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for BlindedScalar {
     fn zeroize(&mut self) {
         self.scalar.zeroize();
@@ -64,7 +62,6 @@ impl Zeroize for BlindedScalar {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Drop for BlindedScalar {
     fn drop(&mut self) {
         self.zeroize();

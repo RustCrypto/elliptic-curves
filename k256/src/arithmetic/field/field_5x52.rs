@@ -2,10 +2,10 @@
 //! Ported from https://github.com/bitcoin-core/secp256k1
 
 use crate::FieldBytes;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::Zeroize,
+};
 
 /// Scalars modulo SECP256k1 modulus (2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1).
 /// Uses 5 64-bit limbs (little-endian), where in the normalized form
@@ -82,7 +82,7 @@ impl FieldElement5x52 {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         let mut ret = FieldBytes::default();
         ret[0] = (self.0[4] >> 40) as u8;
         ret[1] = (self.0[4] >> 32) as u8;
@@ -487,7 +487,6 @@ impl ConstantTimeEq for FieldElement5x52 {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for FieldElement5x52 {
     fn zeroize(&mut self) {
         self.0.zeroize();
@@ -496,7 +495,6 @@ impl Zeroize for FieldElement5x52 {
 
 #[cfg(test)]
 mod tests {
-
     use super::FieldElement5x52;
 
     #[test]
@@ -504,7 +502,7 @@ mod tests {
         // A regression test for a missing condition in `get_overflow()`.
         // The condition was only missing in the 32-bit case,
         // but we're adding a 64-bit testcase nevertheless.
-
+        //
         // In `normalize()`, after the `normalize_weak()` call,
         // the excess bit from the limb 0 is propagated all the way to the last limb.
         // This constitutes an overflow, since the last bit becomes equal to (1 << 22),
@@ -513,7 +511,7 @@ mod tests {
         // since the corresponding condition (checking for the last limb being > 22 bits)
         // was missing.
         // This resulted in a debug assert firing later.
-
+        //
         // This is essentially 2^256
         let z = FieldElement5x52([
             (1 << 52), // an excess bit here

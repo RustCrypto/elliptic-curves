@@ -7,6 +7,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    bigint::{Encoding, Limb},
     group::{
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
@@ -15,11 +16,16 @@ use elliptic_curve::{
     rand_core::RngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    ProjectiveArithmetic,
+    zeroize::DefaultIsZeroes,
+    PrimeCurveArithmetic, ProjectiveArithmetic,
 };
 
 impl ProjectiveArithmetic for NistP256 {
     type ProjectivePoint = ProjectivePoint;
+}
+
+impl PrimeCurveArithmetic for NistP256 {
+    type CurveGroup = ProjectivePoint;
 }
 
 /// A point on the secp256r1 curve in projective coordinates.
@@ -132,13 +138,15 @@ impl ConstantTimeEq for ProjectivePoint {
     }
 }
 
+impl DefaultIsZeroes for ProjectivePoint {}
+
+impl Eq for ProjectivePoint {}
+
 impl PartialEq for ProjectivePoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
 }
-
-impl Eq for ProjectivePoint {}
 
 impl ProjectivePoint {
     /// Returns the additive identity of P-256, also known as the "neutral element" or
@@ -284,10 +292,10 @@ impl ProjectivePoint {
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
         let mut ret = ProjectivePoint::identity();
 
-        for limb in k.0.iter().rev() {
-            for i in (0..64).rev() {
+        for limb in k.limbs().iter().rev() {
+            for i in (0..Limb::BIT_SIZE).rev() {
                 ret = ret.double();
-                ret.conditional_assign(&(ret + self), Choice::from(((limb >> i) & 1u64) as u8));
+                ret.conditional_assign(&(ret + self), Choice::from(((limb.0 >> i) & 1) as u8));
             }
         }
 

@@ -31,7 +31,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.51** or higher.
+//! Rust **1.52** or higher.
 //!
 //! Minimum supported Rust version may be changed in the future, but it will be
 //! accompanied with a minor version bump.
@@ -44,7 +44,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
-    html_root_url = "https://docs.rs/p256/0.9.0"
+    html_root_url = "https://docs.rs/p256/0.10.0-pre"
 )]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
@@ -70,7 +70,7 @@ pub use elliptic_curve::{self, bigint::U256};
 pub use arithmetic::{
     affine::AffinePoint,
     projective::ProjectivePoint,
-    scalar::{blinding::BlindedScalar, Scalar},
+    scalar::{blinded::BlindedScalar, Scalar},
 };
 
 #[cfg(feature = "pkcs8")]
@@ -98,26 +98,42 @@ use elliptic_curve::{consts::U33, generic_array::GenericArray};
 ///
 /// † *NOTE: the specific origins of this constant have never been fully disclosed
 ///   (it is the SHA-1 digest of an inexplicable NSA-selected constant)*
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP256;
 
 impl elliptic_curve::Curve for NistP256 {
-    /// 256-bit field modulus
+    /// 256-bit integer type used for internally representing field elements.
     type UInt = U256;
 
-    /// Curve order
+    /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus).
+    ///
+    /// ```text
+    /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
+    /// ```
+    ///
+    /// # Calculating the order
+    /// One way to calculate the order is with `GP/PARI`:
+    ///
+    /// ```text
+    /// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
+    /// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
+    /// E = ellinit([Mod(-3, p), Mod(b, p)])
+    /// default(parisize, 120000000)
+    /// n = ellsea(E)
+    /// isprime(n)
+    /// ```
     const ORDER: U256 =
         U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP256 {}
+impl elliptic_curve::PrimeCurve for NistP256 {}
 
-impl elliptic_curve::weierstrass::PointCompression for NistP256 {
+impl elliptic_curve::PointCompression for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPRESS_POINTS: bool = false;
 }
 
-impl elliptic_curve::weierstrass::PointCompaction for NistP256 {
+impl elliptic_curve::PointCompaction for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPACT_POINTS: bool = false;
 }
@@ -153,18 +169,12 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
 pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
 
 /// NIST P-256 secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
 
-#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 
 /// Bit representation of a NIST P-256 scalar field element.
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
-
-/// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
-/// inner byte value is within range of the [`Curve::ORDER`].
-pub type ScalarBytes = elliptic_curve::ScalarBytes<NistP256>;

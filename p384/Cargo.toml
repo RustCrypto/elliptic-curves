@@ -1,7 +1,7 @@
 [package]
 name = "p384"
 description = "NIST P-384 (secp384r1) elliptic curve"
-version = "0.8.0" # Also update html_root_url in lib.rs when bumping this
+version = "0.9.0-pre" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
@@ -12,18 +12,17 @@ categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "secp384r1"]
 
 [dependencies]
-ecdsa = { version = "0.12", optional = true, default-features = false, features = ["der"] }
-elliptic-curve = { version = "0.10", default-features = false, features = ["hazmat"] }
+ecdsa = { version = "=0.13.0-pre", optional = true, default-features = false, features = ["der"] }
+elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat"] }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
 default = ["pkcs8", "std"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
-pkcs8 = ["elliptic-curve/pkcs8", "zeroize"]
+pkcs8 = ["elliptic-curve/pkcs8"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]
-zeroize = ["elliptic-curve/zeroize"]
 
 [package.metadata.docs.rs]
 all-features = true

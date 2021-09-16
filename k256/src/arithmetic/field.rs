@@ -3,27 +3,27 @@
 use cfg_if::cfg_if;
 
 cfg_if! {
-    if #[cfg(feature = "field-montgomery")] {
-        mod field_montgomery;
-    } else if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+    if #[cfg(target_pointer_width = "32")] {
         mod field_10x26;
     } else if #[cfg(target_pointer_width = "64")] {
         mod field_5x52;
+    } else {
+        compile_error!("unsupported target word size (i.e. target_pointer_width)");
     }
 }
 
 cfg_if! {
-    if #[cfg(all(debug_assertions, not(feature = "field-montgomery")))] {
+    if #[cfg(debug_assertions)] {
         mod field_impl;
         use field_impl::FieldElementImpl;
     } else {
         cfg_if! {
-            if #[cfg(feature = "field-montgomery")] {
-                use field_montgomery::FieldElementMontgomery as FieldElementImpl;
-            } else if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
+            if #[cfg(target_pointer_width = "32")] {
                 use field_10x26::FieldElement10x26 as FieldElementImpl;
             } else if #[cfg(target_pointer_width = "64")] {
                 use field_5x52::FieldElement5x52 as FieldElementImpl;
+            } else {
+                compile_error!("unsupported target word size (i.e. target_pointer_width)");
             }
         }
     }
@@ -31,10 +31,10 @@ cfg_if! {
 
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign};
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::Zeroize,
+};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -87,7 +87,7 @@ impl FieldElement {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         self.0.normalize().to_bytes()
     }
 
@@ -200,8 +200,8 @@ impl FieldElement {
         // { 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
         // 1, [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
 
-        let x2 = self.pow2k(1).mul(&self);
-        let x3 = x2.pow2k(1).mul(&self);
+        let x2 = self.pow2k(1).mul(self);
+        let x3 = x2.pow2k(1).mul(self);
         let x6 = x3.pow2k(3).mul(&x3);
         let x9 = x6.pow2k(3).mul(&x3);
         let x11 = x9.pow2k(2).mul(&x2);
@@ -295,7 +295,6 @@ impl MulAssign<FieldElement> for FieldElement {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for FieldElement {
     fn zeroize(&mut self) {
         self.0.zeroize();
@@ -309,7 +308,7 @@ mod tests {
 
     use super::FieldElement;
     use crate::{
-        arithmetic::util::{biguint_to_bytes, bytes_to_biguint},
+        arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         test_vectors::field::DBL_TEST_VECTORS,
         FieldBytes,
     };

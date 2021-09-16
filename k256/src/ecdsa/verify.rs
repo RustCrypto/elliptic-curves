@@ -118,7 +118,7 @@ impl From<PublicKey> for VerifyingKey {
 
 impl From<&PublicKey> for VerifyingKey {
     fn from(public_key: &PublicKey) -> VerifyingKey {
-        public_key.clone().into()
+        VerifyingKey::from(*public_key)
     }
 }
 
@@ -130,7 +130,7 @@ impl From<VerifyingKey> for PublicKey {
 
 impl From<&VerifyingKey> for PublicKey {
     fn from(verifying_key: &VerifyingKey) -> PublicKey {
-        verifying_key.inner.clone().into()
+        verifying_key.inner.into()
     }
 }
 
@@ -194,8 +194,8 @@ mod tests {
         let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes).unwrap();
 
         let msg = hex!("313233343030");
-        let mut sig = Signature::from_der(&hex!("304402207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a002207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")).unwrap();
-        assert!(!sig.normalize_s().unwrap());
+        let sig = Signature::from_der(&hex!("304402207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a002207fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a0")).unwrap();
+        assert!(sig.normalize_s().is_none()); // Ensure signature is already normalized
         assert!(verifying_key.verify(&msg, &sig).is_ok());
     }
 }

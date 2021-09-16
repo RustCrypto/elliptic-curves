@@ -2,7 +2,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.51** or higher.
+//! Rust **1.52** or higher.
 //!
 //! Minimum supported Rust version may be changed in the future, but it will be
 //! accompanied with a minor version bump.
@@ -12,7 +12,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
-    html_root_url = "https://docs.rs/p384/0.8.0"
+    html_root_url = "https://docs.rs/p384/0.9.0-pre"
 )]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
@@ -48,7 +48,7 @@ use elliptic_curve::bigint::U384;
 ///
 /// † *NOTE: the specific origins of this constant have never been fully disclosed
 ///   (it is the SHA-1 digest of an inexplicable NSA-selected constant)*
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP384;
 
 impl elliptic_curve::Curve for NistP384 {
@@ -60,9 +60,9 @@ impl elliptic_curve::Curve for NistP384 {
         U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
 }
 
-impl elliptic_curve::weierstrass::Curve for NistP384 {}
+impl elliptic_curve::PrimeCurve for NistP384 {}
 
-impl elliptic_curve::weierstrass::PointCompression for NistP384 {
+impl elliptic_curve::PointCompression for NistP384 {
     const COMPRESS_POINTS: bool = false;
 }
 
@@ -86,9 +86,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 
 /// NIST P-384 secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
 
-#[cfg(feature = "zeroize")]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP384 {}

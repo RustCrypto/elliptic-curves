@@ -47,10 +47,7 @@ use crate::{
         signature::{digest::Digest, DigestVerifier},
         VerifyingKey,
     },
-    elliptic_curve::{
-        consts::U32, generic_array::GenericArray, ops::Invert, subtle::Choice,
-        weierstrass::DecompressPoint,
-    },
+    elliptic_curve::{consts::U32, ops::Invert, subtle::Choice, DecompressPoint},
     lincomb, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
@@ -81,9 +78,6 @@ impl Signature {
     /// This is an "unchecked" conversion and assumes the provided [`Id`]
     /// is valid for this signature.
     pub fn new(signature: &super::Signature, recovery_id: Id) -> Result<Self, Error> {
-        #[cfg(feature = "ecdsa")]
-        super::check_scalars(signature)?;
-
         let mut bytes = [0u8; SIZE];
         bytes[..64].copy_from_slice(signature.as_ref());
         bytes[64] = recovery_id.0;
@@ -126,8 +120,7 @@ impl Signature {
     where
         D: Clone + Digest<OutputSize = U32>,
     {
-        let mut signature = *signature;
-        signature.normalize_s()?;
+        let signature = signature.normalize_s().unwrap_or(*signature);
 
         for recovery_id in 0..=1 {
             if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {
@@ -198,16 +191,16 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn r(&self) -> NonZeroScalar {
-        NonZeroScalar::from_repr(GenericArray::clone_from_slice(&self.bytes[..32]))
-            .unwrap_or_else(|| unreachable!("r-component ensured valid in constructor"))
+        NonZeroScalar::try_from(&self.bytes[..32])
+            .expect("r-component ensured valid in constructor")
     }
 
     /// Parse the `s` component of this signature to a [`NonZeroScalar`]
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     pub fn s(&self) -> NonZeroScalar {
-        NonZeroScalar::from_repr(GenericArray::clone_from_slice(&self.bytes[32..64]))
-            .unwrap_or_else(|| unreachable!("s-component ensured valid in constructor"))
+        NonZeroScalar::try_from(&self.bytes[32..64])
+            .expect("s-component ensured valid in constructor")
     }
 }
 

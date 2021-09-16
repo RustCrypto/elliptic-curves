@@ -30,7 +30,7 @@
 //!
 //! ## Minimum Supported Rust Version
 //!
-//! Rust **1.51** or higher.
+//! Rust **1.52** or higher.
 //!
 //! Minimum supported Rust version may be changed in the future, but it will be
 //! accompanied with a minor version bump.
@@ -44,7 +44,7 @@
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
-    html_root_url = "https://docs.rs/k256/0.9.6"
+    html_root_url = "https://docs.rs/k256/0.10.0-pre"
 )]
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
@@ -78,7 +78,11 @@ pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{consts::U33, generic_array::GenericArray};
 
-/// K-256 (secp256k1) elliptic curve.
+/// Order of the secp256k1 elliptic curve
+const ORDER: U256 =
+    U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+
+/// secp256k1 (K-256) elliptic curve.
 ///
 /// Specified in Certicom's SECG in "SEC 2: Recommended Elliptic Curve Domain Parameters":
 ///
@@ -89,7 +93,7 @@ use elliptic_curve::{consts::U33, generic_array::GenericArray};
 /// It's primarily notable for usage in Bitcoin and other cryptocurrencies,
 /// particularly in conjunction with the Elliptic Curve Digital Signature
 /// Algorithm (ECDSA).
-#[derive(Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Secp256k1;
 
 impl elliptic_curve::Curve for Secp256k1 {
@@ -97,13 +101,12 @@ impl elliptic_curve::Curve for Secp256k1 {
     type UInt = U256;
 
     /// Curve order
-    const ORDER: U256 =
-        U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    const ORDER: U256 = ORDER;
 }
 
-impl elliptic_curve::weierstrass::Curve for Secp256k1 {}
+impl elliptic_curve::PrimeCurve for Secp256k1 {}
 
-impl elliptic_curve::weierstrass::PointCompression for Secp256k1 {
+impl elliptic_curve::PointCompression for Secp256k1 {
     /// secp256k1 points are typically compressed.
     const COMPRESS_POINTS: bool = true;
 }
@@ -139,20 +142,12 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Secp256k1>;
 pub type PublicKey = elliptic_curve::PublicKey<Secp256k1>;
 
 /// secp256k1 (K-256) secret key.
-#[cfg(feature = "zeroize")]
-#[cfg_attr(docsrs, doc(cfg(feature = "zeroize")))]
 pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 
-#[cfg(all(not(feature = "arithmetic"), feature = "zeroize"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
 
-/// Bit representation of a K-256 scalar field element.
+/// Bit representation of a secp256k1 (K-256) scalar field element.
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
-
-/// Scalar bytes: wrapper for [`FieldBytes`] which guarantees that the the
-/// inner byte value is within range of [`Secp256k1::ORDER`].
-///
-/// [`Secp256k1::ORDER`]: ./struct.Secp256k1.html#associatedconstant.ORDER
-pub type ScalarBytes = elliptic_curve::ScalarBytes<Secp256k1>;

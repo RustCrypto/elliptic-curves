@@ -49,7 +49,7 @@ use {
     crate::{AffinePoint, ProjectivePoint, Scalar},
     core::borrow::Borrow,
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-    elliptic_curve::ops::Invert,
+    elliptic_curve::{ops::Invert},
 };
 
 /// ECDSA/P-256 signature (fixed-size)
@@ -130,11 +130,11 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
 }
 
 impl NormalizeLow for Scalar {
-    fn normalize_low(&self) -> (Self, bool) {
+    fn normalize_low(&self) -> Option<Self> {
         if self.is_high().into() {
-            (-self, true)
+            Some(-self)
         } else {
-            (*self, false)
+            None
         }
     }
 }

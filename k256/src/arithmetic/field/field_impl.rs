@@ -3,19 +3,16 @@
 //! Only enabled when `debug_assertions` feature is on.
 
 use crate::FieldBytes;
-use cfg_if::cfg_if;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    zeroize::Zeroize,
+};
 
-#[cfg(feature = "zeroize")]
-use elliptic_curve::zeroize::Zeroize;
+#[cfg(target_pointer_width = "32")]
+use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
 
-cfg_if! {
-    if #[cfg(any(target_pointer_width = "32", feature = "force-32-bit"))] {
-        use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
-    } else if #[cfg(target_pointer_width = "64")] {
-        use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
-    }
-}
+#[cfg(target_pointer_width = "64")]
+use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
 
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElementImpl {
@@ -69,7 +66,7 @@ impl FieldElementImpl {
         CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         debug_assert!(self.normalized);
         self.value.to_bytes()
     }
@@ -162,7 +159,6 @@ impl ConstantTimeEq for FieldElementImpl {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl Zeroize for FieldElementImpl {
     fn zeroize(&mut self) {
         self.value.zeroize();
