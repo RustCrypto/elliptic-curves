@@ -129,6 +129,7 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
     }
 }
 
+#[cfg(feature = "ecdsa")]
 impl NormalizeLow for Scalar {
     fn normalize_low(&self) -> Option<Self> {
         if self.is_high().into() {
