@@ -16,7 +16,7 @@ use ecdsa_core::{
 };
 use elliptic_curve::{
     consts::U32,
-    ops::Invert,
+    ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq},
 };
@@ -181,7 +181,7 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
 
         // Lift x-coordinate of 𝐑 (element of base field) into a serialized big
         // integer, then reduce it into an element of the scalar field
-        let r = Scalar::from_bytes_reduced(&R.x.to_bytes());
+        let r = Scalar::from_be_bytes_reduced(R.x.to_bytes());
 
         // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * (z + (r * self));

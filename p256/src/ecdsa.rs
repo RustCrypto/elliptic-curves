@@ -48,7 +48,10 @@ use {
     crate::{AffinePoint, ProjectivePoint, Scalar},
     core::borrow::Borrow,
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-    elliptic_curve::{group::ff::Field, ops::Invert},
+    elliptic_curve::{
+        group::ff::Field,
+        ops::{Invert, Reduce},
+    },
 };
 
 /// ECDSA/P-256 signature (fixed-size)
@@ -94,7 +97,7 @@ impl SignPrimitive<NistP256> for Scalar {
 
         // Lift `x` (element of base field) to serialized big endian integer,
         // then reduce it to an element of the scalar field
-        let r = Scalar::from_bytes_reduced(&x.to_bytes());
+        let r = Scalar::from_be_bytes_reduced(x.to_bytes());
 
         // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * (z + &(r * self));
@@ -120,7 +123,7 @@ impl VerifyPrimitive<NistP256> for AffinePoint {
             .to_affine()
             .x;
 
-        if Scalar::from_bytes_reduced(&x.to_bytes()) == *r {
+        if Scalar::from_be_bytes_reduced(x.to_bytes()) == *r {
             Ok(())
         } else {
             Err(Error::new())

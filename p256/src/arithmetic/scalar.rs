@@ -11,6 +11,7 @@ use elliptic_curve::{
     bigint::{ArrayEncoding, Encoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
+    ops::Reduce,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
@@ -223,16 +224,6 @@ impl Scalar {
 
     /// Multiplicative identity.
     pub const ONE: Self = Self(U256::ONE);
-
-    /// Parses the given byte array as a scalar.
-    ///
-    /// Subtracts the modulus when decoded integer is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        let w = U256::from_be_slice(bytes);
-        let (r, underflow) = w.sbb(&NistP256::ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
-        Self(U256::conditional_select(&w, &r, !underflow))
-    }
 
     /// Returns the SEC1 encoding of this scalar.
     pub fn to_bytes(&self) -> FieldBytes {
@@ -592,7 +583,7 @@ impl FromDigest<NistP256> for Scalar {
     where
         D: Digest<OutputSize = U32>,
     {
-        Self::from_bytes_reduced(&digest.finalize())
+        Self::from_be_bytes_reduced(digest.finalize())
     }
 }
 
@@ -717,6 +708,14 @@ impl<'a> Neg for &'a Scalar {
 
     fn neg(self) -> Scalar {
         Scalar::zero() - self
+    }
+}
+
+impl Reduce<U256> for Scalar {
+    fn from_uint_reduced(w: U256) -> Self {
+        let (r, underflow) = w.sbb(&NistP256::ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        Self(U256::conditional_select(&w, &r, !underflow))
     }
 }
 

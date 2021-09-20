@@ -7,7 +7,11 @@ use crate::{
 };
 use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
-use elliptic_curve::{consts::U32, ops::Invert, sec1::ToEncodedPoint};
+use elliptic_curve::{
+    consts::U32,
+    ops::{Invert, Reduce},
+    sec1::ToEncodedPoint,
+};
 use signature::{digest::Digest, DigestVerifier};
 
 #[cfg(feature = "sha256")]
@@ -100,7 +104,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         .to_affine()
         .x;
 
-        if Scalar::from_bytes_reduced(&x.to_bytes()).eq(&r) {
+        if Scalar::from_be_bytes_reduced(x.to_bytes()).eq(&r) {
             Ok(())
         } else {
             Err(Error::new())

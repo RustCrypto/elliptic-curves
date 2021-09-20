@@ -12,6 +12,7 @@ use elliptic_curve::{
     bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
+    ops::Reduce,
     rand_core::{CryptoRng, RngCore},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -210,16 +211,6 @@ impl Scalar {
     /// Multiplicative identity.
     pub const ONE: Self = Self(U256::ONE);
 
-    /// Parses the given byte array as a scalar.
-    ///
-    /// Subtracts the modulus when the byte array is larger than the modulus.
-    pub fn from_bytes_reduced(bytes: &FieldBytes) -> Self {
-        let w = U256::from_be_slice(bytes);
-        let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
-        Self(U256::conditional_select(&w, &r, !underflow))
-    }
-
     /// Is this scalar greater than or equal to n / 2?
     pub fn is_high(&self) -> Choice {
         self.0.ct_gt(&FRAC_MODULUS_2)
@@ -398,7 +389,7 @@ impl FromDigest<Secp256k1> for Scalar {
     where
         D: Digest<OutputSize = U32>,
     {
-        Self::from_bytes_reduced(&digest.finalize())
+        Self::from_be_bytes_reduced(digest.finalize())
     }
 }
 
@@ -567,6 +558,14 @@ impl MulAssign<Scalar> for Scalar {
 impl MulAssign<&Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: &Scalar) {
         *self = Scalar::mul(self, rhs);
+    }
+}
+
+impl Reduce<U256> for Scalar {
+    fn from_uint_reduced(w: U256) -> Self {
+        let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        Self(U256::conditional_select(&w, &r, !underflow))
     }
 }
 
