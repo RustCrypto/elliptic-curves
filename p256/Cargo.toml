@@ -16,7 +16,7 @@ categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "prime256v1", "secp256r1"]
 
 [dependencies]
-elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat"] }
+elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
 ecdsa-core = { version = "=0.13.0-pre", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
