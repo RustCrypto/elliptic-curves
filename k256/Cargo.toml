@@ -18,7 +18,7 @@ keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 
 [dependencies]
 cfg-if = "1.0"
-elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat"] }
+elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
 ecdsa-core = { version = "=0.13.0-pre", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
