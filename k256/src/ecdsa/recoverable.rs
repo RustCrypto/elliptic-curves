@@ -47,7 +47,12 @@ use crate::{
         signature::{digest::Digest, DigestVerifier},
         VerifyingKey,
     },
-    elliptic_curve::{consts::U32, ops::Invert, subtle::Choice, DecompressPoint},
+    elliptic_curve::{
+        consts::U32,
+        ops::{Invert, Reduce},
+        subtle::Choice,
+        DecompressPoint,
+    },
     lincomb, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
@@ -170,7 +175,7 @@ impl Signature {
     ) -> Result<VerifyingKey, Error> {
         let r = self.r();
         let s = self.s();
-        let z = Scalar::from_bytes_reduced(digest_bytes);
+        let z = Scalar::from_be_bytes_reduced(*digest_bytes);
         let R = AffinePoint::decompress(&r.to_bytes(), self.recovery_id().is_y_odd());
 
         if R.is_some().into() {

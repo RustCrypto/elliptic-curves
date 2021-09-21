@@ -98,8 +98,8 @@ impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
 #[cfg(all(test, feature = "ecdsa", feature = "arithmetic"))]
 mod tests {
     mod wycheproof {
-        use crate::Secp256k1;
-        use ecdsa_core::{elliptic_curve::sec1::EncodedPoint, signature::Verifier, Signature};
+        use crate::{EncodedPoint, Secp256k1};
+        use ecdsa_core::{signature::Verifier, Signature};
 
         #[test]
         fn wycheproof() {
@@ -135,7 +135,7 @@ mod tests {
             ) -> Option<&'static str> {
                 let x = element_from_padded_slice::<Secp256k1>(wx);
                 let y = element_from_padded_slice::<Secp256k1>(wy);
-                let q_encoded: EncodedPoint<Secp256k1> =
+                let q_encoded =
                     EncodedPoint::from_affine_coordinates(&x, &y, /* compress= */ false);
                 let verifying_key =
                     ecdsa_core::VerifyingKey::from_encoded_point(&q_encoded).unwrap();

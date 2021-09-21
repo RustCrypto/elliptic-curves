@@ -349,13 +349,6 @@ mod tests {
     }
 
     #[test]
-    fn decompress() {
-        let encoded = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
-        let decompressed = encoded.decompress().unwrap();
-        assert_eq!(decompressed.as_bytes(), UNCOMPRESSED_BASEPOINT);
-    }
-
-    #[test]
     fn affine_negation() {
         let basepoint = AffinePoint::generator();
         assert_eq!(-(-basepoint), basepoint);
