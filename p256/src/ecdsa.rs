@@ -40,6 +40,7 @@
 //! ```
 
 pub use ecdsa_core::signature::{self, Error};
+#[cfg(feature = "ecdsa")]
 use ecdsa_core::NormalizeLow;
 
 use super::NistP256;
