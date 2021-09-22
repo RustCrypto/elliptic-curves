@@ -9,7 +9,5 @@ members = [
 ]
 
 [patch.crates-io]
-der = { git = "https://github.com/rustcrypto/formats" }
 ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-sec1 = { git = "https://github.com/rustcrypto/formats" }
