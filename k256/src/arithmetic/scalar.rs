@@ -25,9 +25,6 @@ use elliptic_curve::{
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
-#[cfg(feature = "digest")]
-use ecdsa_core::{elliptic_curve::consts::U32, hazmat::FromDigest, signature::digest::Digest};
-
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
@@ -377,19 +374,6 @@ impl From<ScalarCore<Secp256k1>> for Scalar {
 impl From<Scalar> for U256 {
     fn from(scalar: Scalar) -> U256 {
         scalar.0
-    }
-}
-
-#[cfg(feature = "digest")]
-#[cfg_attr(docsrs, doc(cfg(feature = "digest")))]
-impl FromDigest<Secp256k1> for Scalar {
-    /// Convert the output of a digest algorithm into a [`Scalar`] reduced
-    /// modulo n.
-    fn from_digest<D>(digest: D) -> Self
-    where
-        D: Digest<OutputSize = U32>,
-    {
-        Self::from_be_bytes_reduced(digest.finalize())
     }
 }
 
