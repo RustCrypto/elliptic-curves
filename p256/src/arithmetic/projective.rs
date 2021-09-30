@@ -75,7 +75,11 @@ impl GroupEncoding for ProjectivePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        CompressedPoint::clone_from_slice(self.to_affine().to_encoded_point(true).as_bytes())
+        let bytes = self.to_affine().to_encoded_point(true);
+        let bytes = bytes.as_bytes();
+        let mut result = CompressedPoint::default();
+        result[..bytes.len()].copy_from_slice(bytes);
+        result
     }
 }
 
@@ -521,7 +525,7 @@ impl<'a> Neg for &'a ProjectivePoint {
 mod tests {
     use super::{AffinePoint, ProjectivePoint, Scalar};
     use crate::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS};
-    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
+    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine, GroupEncoding};
 
     #[test]
     fn affine_to_projective() {
@@ -664,5 +668,10 @@ mod tests {
             assert_eq!(res.x.to_bytes(), coords.0.into());
             assert_eq!(res.y.to_bytes(), coords.1.into());
         }
+    }
+
+    #[test]
+    fn projective_to_bytes() {
+        assert_eq!([0; 33], ProjectivePoint::identity().to_bytes().as_slice());
     }
 }
