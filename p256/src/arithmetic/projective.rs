@@ -671,7 +671,8 @@ mod tests {
     }
 
     #[test]
-    fn projective_to_bytes() {
+    fn projective_identity_to_bytes() {
+        // This is technically an invalid SEC1 encoding, but is preferable to panicking.
         assert_eq!([0; 33], ProjectivePoint::identity().to_bytes().as_slice());
     }
 }
