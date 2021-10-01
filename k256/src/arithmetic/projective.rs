@@ -307,7 +307,11 @@ impl GroupEncoding for ProjectivePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        CompressedPoint::clone_from_slice(self.to_affine().to_encoded_point(true).as_bytes())
+        let bytes = self.to_affine().to_encoded_point(true);
+        let bytes = bytes.as_bytes();
+        let mut result = CompressedPoint::default();
+        result[..bytes.len()].copy_from_slice(bytes);
+        result
     }
 }
 
@@ -512,7 +516,7 @@ mod tests {
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         Scalar,
     };
-    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
+    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine, Group, GroupEncoding};
 
     #[test]
     fn affine_to_projective() {
@@ -662,5 +666,16 @@ mod tests {
             assert_eq!(res.x.to_bytes(), coords.0.into());
             assert_eq!(res.y.to_bytes(), coords.1.into());
         }
+    }
+
+    #[test]
+    fn identity_encoding() {
+        // This is technically an invalid SEC1 encoding, but is preferable to panicking.
+        assert_eq!([0; 33], ProjectivePoint::identity().to_bytes().as_slice());
+        assert!(bool::from(
+            ProjectivePoint::from_bytes(&ProjectivePoint::identity().to_bytes())
+                .unwrap()
+                .is_identity()
+        ))
     }
 }

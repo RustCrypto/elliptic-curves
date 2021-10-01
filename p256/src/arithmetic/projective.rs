@@ -525,7 +525,7 @@ impl<'a> Neg for &'a ProjectivePoint {
 mod tests {
     use super::{AffinePoint, ProjectivePoint, Scalar};
     use crate::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS};
-    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine, GroupEncoding};
+    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine, Group, GroupEncoding};
 
     #[test]
     fn affine_to_projective() {
@@ -671,8 +671,13 @@ mod tests {
     }
 
     #[test]
-    fn projective_identity_to_bytes() {
+    fn identity_encoding() {
         // This is technically an invalid SEC1 encoding, but is preferable to panicking.
         assert_eq!([0; 33], ProjectivePoint::identity().to_bytes().as_slice());
+        assert!(bool::from(
+            ProjectivePoint::from_bytes(&ProjectivePoint::identity().to_bytes())
+                .unwrap()
+                .is_identity()
+        ))
     }
 }

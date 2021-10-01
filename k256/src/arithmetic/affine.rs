@@ -171,6 +171,12 @@ impl GroupEncoding for AffinePoint {
         let is_compressed_point = y_is_odd | tag.ct_eq(&sec1::Tag::CompressedEvenY.into());
         Self::decompress(FieldBytes::from_slice(&bytes[1..]), y_is_odd)
             .and_then(|point| CtOption::new(point, is_compressed_point))
+            .or_else(|| {
+                CtOption::new(
+                    AffinePoint::identity(),
+                    tag.ct_eq(&sec1::Tag::Identity.into()),
+                )
+            })
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
@@ -179,7 +185,11 @@ impl GroupEncoding for AffinePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        CompressedPoint::clone_from_slice(self.to_encoded_point(true).as_bytes())
+        let bytes = self.to_encoded_point(true);
+        let bytes = bytes.as_bytes();
+        let mut result = CompressedPoint::default();
+        result[..bytes.len()].copy_from_slice(bytes);
+        result
     }
 }
 
@@ -248,7 +258,7 @@ mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
     use elliptic_curve::{
-        group::prime::PrimeCurveAffine,
+        group::{prime::PrimeCurveAffine, GroupEncoding},
         sec1::{FromEncodedPoint, ToEncodedPoint},
     };
     use hex_literal::hex;
@@ -306,5 +316,16 @@ mod tests {
     fn affine_negation() {
         let basepoint = AffinePoint::generator();
         assert_eq!((-(-basepoint)), basepoint);
+    }
+
+    #[test]
+    fn identity_encoding() {
+        // This is technically an invalid SEC1 encoding, but is preferable to panicking.
+        assert_eq!([0; 33], AffinePoint::identity().to_bytes().as_slice());
+        assert!(bool::from(
+            AffinePoint::from_bytes(&AffinePoint::identity().to_bytes())
+                .unwrap()
+                .is_identity()
+        ))
     }
 }
