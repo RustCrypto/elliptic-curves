@@ -105,36 +105,6 @@ impl PartialEq for AffinePoint {
     }
 }
 
-impl AffinePoint {
-    fn decode(encoded_point: &EncodedPoint) -> CtOption<Self> {
-        match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
-            sec1::Coordinates::Compact { x } => AffinePoint::decompact(x),
-            sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
-            }
-            sec1::Coordinates::Uncompressed { x, y } => {
-                let x = FieldElement::from_bytes(x);
-                let y = FieldElement::from_bytes(y);
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = y * &y;
-                        let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
-                        let point = AffinePoint {
-                            x,
-                            y,
-                            infinity: Choice::from(0),
-                        };
-                        CtOption::new(point, lhs.ct_eq(&rhs))
-                    })
-                })
-            }
-        }
-    }
-}
-
 impl DecompressPoint<NistP256> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
@@ -205,8 +175,32 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256r1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
-        Self::decode(encoded_point).into()
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
+        match encoded_point.coordinates() {
+            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
+            sec1::Coordinates::Compact { x } => AffinePoint::decompact(x),
+            sec1::Coordinates::Compressed { x, y_is_odd } => {
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
+            }
+            sec1::Coordinates::Uncompressed { x, y } => {
+                let x = FieldElement::from_bytes(x);
+                let y = FieldElement::from_bytes(y);
+
+                x.and_then(|x| {
+                    y.and_then(|y| {
+                        // Check that the point is on the curve
+                        let lhs = y * &y;
+                        let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
+                        let point = AffinePoint {
+                            x,
+                            y,
+                            infinity: Choice::from(0),
+                        };
+                        CtOption::new(point, lhs.ct_eq(&rhs))
+                    })
+                })
+            }
+        }
     }
 }
 

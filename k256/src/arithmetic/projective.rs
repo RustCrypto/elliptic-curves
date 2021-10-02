@@ -62,7 +62,7 @@ impl From<ProjectivePoint> for AffinePoint {
 }
 
 impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn from_encoded_point(p: &EncodedPoint) -> Option<Self> {
+    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
         AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
     }
 }
