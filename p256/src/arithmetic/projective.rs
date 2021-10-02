@@ -66,7 +66,7 @@ impl GroupEncoding for ProjectivePoint {
     type Repr = CompressedPoint;
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        <AffinePoint as GroupEncoding>::from_bytes(bytes).map(|point| point.into())
+        <AffinePoint as GroupEncoding>::from_bytes(bytes).map(Into::into)
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
@@ -75,11 +75,7 @@ impl GroupEncoding for ProjectivePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        let bytes = self.to_affine().to_encoded_point(true);
-        let bytes = bytes.as_bytes();
-        let mut result = CompressedPoint::default();
-        result[..bytes.len()].copy_from_slice(bytes);
-        result
+        self.to_affine().to_bytes()
     }
 }
 

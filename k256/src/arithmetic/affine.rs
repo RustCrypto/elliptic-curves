@@ -132,11 +132,15 @@ impl GroupEncoding for AffinePoint {
     type Repr = CompressedPoint;
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        let tag = bytes[0];
-        let y_is_odd = tag.ct_eq(&sec1::Tag::CompressedOddY.into());
-        let is_compressed_point = y_is_odd | tag.ct_eq(&sec1::Tag::CompressedEvenY.into());
-        Self::decompress(FieldBytes::from_slice(&bytes[1..]), y_is_odd)
-            .and_then(|point| CtOption::new(point, is_compressed_point))
+        EncodedPoint::from_bytes(bytes)
+            .map(|point| CtOption::new(point, Choice::from(1)))
+            .unwrap_or_else(|_| {
+                // SEC1 identity encoding is technically 1-byte 0x00, but the
+                // `GroupEncoding` API requires a fixed-width `Repr`
+                let is_identity = bytes.ct_eq(&Self::Repr::default());
+                CtOption::new(EncodedPoint::identity(), is_identity)
+            })
+            .and_then(|point| Self::from_encoded_point(&point))
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
@@ -145,7 +149,10 @@ impl GroupEncoding for AffinePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        CompressedPoint::clone_from_slice(self.to_encoded_point(true).as_bytes())
+        let encoded = self.to_encoded_point(true);
+        let mut result = CompressedPoint::default();
+        result[..encoded.len()].copy_from_slice(encoded.as_bytes());
+        result
     }
 }
 
@@ -241,7 +248,7 @@ mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
     use elliptic_curve::{
-        group::prime::PrimeCurveAffine,
+        group::{prime::PrimeCurveAffine, GroupEncoding},
         sec1::{FromEncodedPoint, ToEncodedPoint},
     };
     use hex_literal::hex;
@@ -299,5 +306,16 @@ mod tests {
     fn affine_negation() {
         let basepoint = AffinePoint::generator();
         assert_eq!((-(-basepoint)), basepoint);
+    }
+
+    #[test]
+    fn identity_encoding() {
+        // This is technically an invalid SEC1 encoding, but is preferable to panicking.
+        assert_eq!([0; 33], AffinePoint::identity().to_bytes().as_slice());
+        assert!(bool::from(
+            AffinePoint::from_bytes(&AffinePoint::identity().to_bytes())
+                .unwrap()
+                .is_identity()
+        ))
     }
 }
