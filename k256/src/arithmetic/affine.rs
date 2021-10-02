@@ -105,40 +105,6 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-impl AffinePoint {
-    /// Decode this point from a SEC1-encoded point.
-    pub(crate) fn decode(encoded_point: &EncodedPoint) -> CtOption<Self> {
-        match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
-            sec1::Coordinates::Compact { .. } => {
-                // TODO(tarcieri): add decompaction support
-                CtOption::new(Self::default(), 0.into())
-            }
-            sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
-            }
-            sec1::Coordinates::Uncompressed { x, y } => {
-                let x = FieldElement::from_bytes(x);
-                let y = FieldElement::from_bytes(y);
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = (y * &y).negate(1);
-                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        let point = AffinePoint {
-                            x,
-                            y,
-                            infinity: Choice::from(0),
-                        };
-                        CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
-                    })
-                })
-            }
-        }
-    }
-}
-
 impl DecompressPoint<Secp256k1> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
@@ -189,8 +155,35 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
-        Self::decode(encoded_point).into()
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
+        match encoded_point.coordinates() {
+            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
+            sec1::Coordinates::Compact { .. } => {
+                // TODO(tarcieri): add decompaction support
+                CtOption::new(Self::default(), 0.into())
+            }
+            sec1::Coordinates::Compressed { x, y_is_odd } => {
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
+            }
+            sec1::Coordinates::Uncompressed { x, y } => {
+                let x = FieldElement::from_bytes(x);
+                let y = FieldElement::from_bytes(y);
+
+                x.and_then(|x| {
+                    y.and_then(|y| {
+                        // Check that the point is on the curve
+                        let lhs = (y * &y).negate(1);
+                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
+                        let point = AffinePoint {
+                            x,
+                            y,
+                            infinity: Choice::from(0),
+                        };
+                        CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
+                    })
+                })
+            }
+        }
     }
 }
 
