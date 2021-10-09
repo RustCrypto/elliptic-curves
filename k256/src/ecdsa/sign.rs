@@ -19,6 +19,7 @@ use elliptic_curve::{
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq},
+    zeroize::Zeroize,
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
@@ -271,6 +272,12 @@ impl From<&NonZeroScalar> for SigningKey {
         Self {
             inner: *secret_scalar,
         }
+    }
+}
+
+impl Drop for SigningKey {
+    fn drop(&mut self) {
+        self.inner.zeroize();
     }
 }
 
