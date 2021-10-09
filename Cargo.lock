@@ -26,6 +26,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40a96587c05c810ddbb79e2674d519cff1379517e7b91d166dff7a7cc0e9af6e"
 
 [[package]]
+name = "base64ct"
+version = "1.1.0"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
+
+[[package]]
 name = "bit-set"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -151,8 +156,7 @@ dependencies = [
 [[package]]
 name = "const-oid"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdab415d6744056100f40250a66bc430c1a46f7a02e20bc11c94c79a0f0464df"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
 
 [[package]]
 name = "cpufeatures"
@@ -292,6 +296,11 @@ name = "der"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28e98c534e9c8a0483aa01d6f6913bc063de254311bd267c9cf535e9b70e15b2"
+
+[[package]]
+name = "der"
+version = "0.5.0-pre"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
 dependencies = [
  "const-oid",
 ]
@@ -308,9 +317,9 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#cdaf662a420b919aa59205e9faaf36c925d80100"
+source = "git+https://github.com/RustCrypto/signatures.git#cbafd1b474b03b2757f2e8ca1d255b3c5b5ba23e"
 dependencies = [
- "der",
+ "der 0.4.4",
  "elliptic-curve",
  "hmac",
  "signature",
@@ -325,16 +334,16 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.11.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#97fe329f4d2f102075cd2cf5ad119f945af2ce1f"
+source = "git+https://github.com/RustCrypto/traits.git#28576f8807942cb5d606d8ed4bb7846cf80a5400"
 dependencies = [
- "base64ct",
+ "base64ct 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "crypto-bigint",
- "der",
+ "der 0.5.0-pre",
  "ff",
  "generic-array",
  "group",
  "hex-literal",
- "pem-rfc7468",
+ "pem-rfc7468 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pkcs8",
  "rand_core",
  "sec1",
@@ -594,17 +603,24 @@ version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e71fb2d401a15271d52aade6d9410fb4ead603a86da5503f92e872e1df790265"
 dependencies = [
- "base64ct",
+ "base64ct 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "pem-rfc7468"
+version = "0.2.2"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
+dependencies = [
+ "base64ct 1.1.0 (git+https://github.com/RustCrypto/formats.git)",
 ]
 
 [[package]]
 name = "pkcs8"
-version = "0.7.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee3ef9b64d26bad0536099c816c6734379e45bbd5f14798def6809e5cc350447"
+version = "0.8.0-pre"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
 dependencies = [
- "der",
- "pem-rfc7468",
+ "der 0.5.0-pre",
+ "pem-rfc7468 0.2.2 (git+https://github.com/RustCrypto/formats.git)",
  "spki",
  "zeroize",
 ]
@@ -856,11 +872,10 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "sec1"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "821f61b502d21d297a599436b55d03fff2340961a13bfd0a2c010380b8435823"
+version = "0.2.0"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
 dependencies = [
- "der",
+ "der 0.5.0-pre",
  "generic-array",
  "subtle",
  "zeroize",
@@ -947,11 +962,10 @@ dependencies = [
 
 [[package]]
 name = "spki"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c01a0c15da1b0b0e1494112e7af814a678fec9bd157881b49beac661e9b6f32"
+version = "0.5.0-pre"
+source = "git+https://github.com/RustCrypto/formats.git#74742f5691a6ec10a04e0bc8e7f774f754137ca4"
 dependencies = [
- "der",
+ "der 0.5.0-pre",
 ]
 
 [[package]]
