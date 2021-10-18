@@ -5,11 +5,11 @@
 use hex_literal::hex;
 use p256::{
     elliptic_curve::sec1::ToEncodedPoint,
-    pkcs8::{FromPrivateKey, FromPublicKey},
+    pkcs8::{DecodePrivateKey, DecodePublicKey},
 };
 
 #[cfg(feature = "pem")]
-use p256::elliptic_curve::pkcs8::{ToPrivateKey, ToPublicKey};
+use p256::elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey};
 
 /// DER-encoded PKCS#8 private key
 const PKCS8_PRIVATE_KEY_DER: &[u8; 138] = include_bytes!("examples/pkcs8-private-key.der");
@@ -83,7 +83,9 @@ fn encode_pkcs8_public_key_to_der() {
 #[cfg(feature = "pem")]
 fn encode_pkcs8_private_key_to_pem() {
     let original_secret_key = p256::SecretKey::from_pkcs8_der(&PKCS8_PRIVATE_KEY_DER[..]).unwrap();
-    let reencoded_secret_key = original_secret_key.to_pkcs8_pem().unwrap();
+    let reencoded_secret_key = original_secret_key
+        .to_pkcs8_pem(Default::default())
+        .unwrap();
     assert_eq!(reencoded_secret_key.as_str(), PKCS8_PRIVATE_KEY_PEM);
 }
 

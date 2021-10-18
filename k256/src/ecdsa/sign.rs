@@ -1,4 +1,4 @@
-//! ECDSA signer
+//! ECDSA signing support.
 
 use super::{recoverable, Error, Signature, VerifyingKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, Secp256k1, SecretKey};
@@ -26,7 +26,7 @@ use elliptic_curve::{
 use ecdsa_core::signature::{self, digest::Digest, PrehashSignature, RandomizedSigner};
 
 #[cfg(feature = "pkcs8")]
-use crate::pkcs8::{self, FromPrivateKey};
+use crate::pkcs8::{self, DecodePrivateKey};
 
 #[cfg(feature = "pem")]
 use core::str::FromStr;
@@ -283,7 +283,7 @@ impl Drop for SigningKey {
 
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
-impl FromPrivateKey for SigningKey {
+impl DecodePrivateKey for SigningKey {
     fn from_pkcs8_private_key_info(
         private_key_info: pkcs8::PrivateKeyInfo<'_>,
     ) -> pkcs8::Result<Self> {
