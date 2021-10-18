@@ -1,4 +1,4 @@
-//! ECDSA verifier
+//! ECDSA verification support.
 
 use super::{recoverable, Error, Signature};
 use crate::{
@@ -18,7 +18,7 @@ use signature::{digest::Digest, DigestVerifier};
 use signature::PrehashSignature;
 
 #[cfg(feature = "pkcs8")]
-use crate::pkcs8::{self, FromPublicKey};
+use crate::pkcs8::{self, DecodePublicKey};
 
 #[cfg(feature = "pem")]
 use core::str::FromStr;
@@ -166,8 +166,8 @@ impl TryFrom<&EncodedPoint> for VerifyingKey {
 
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
-impl FromPublicKey for VerifyingKey {
-    fn from_spki(spki: pkcs8::SubjectPublicKeyInfo<'_>) -> pkcs8::Result<Self> {
+impl DecodePublicKey for VerifyingKey {
+    fn from_spki(spki: pkcs8::SubjectPublicKeyInfo<'_>) -> pkcs8::der::Result<Self> {
         PublicKey::from_spki(spki).map(|pk| Self { inner: pk.into() })
     }
 }
