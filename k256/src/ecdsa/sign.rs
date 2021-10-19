@@ -1,4 +1,4 @@
-//! ECDSA signer
+//! ECDSA signing support.
 
 use super::{recoverable, Error, Signature, VerifyingKey};
 use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, Secp256k1, SecretKey};
@@ -7,7 +7,7 @@ use core::{
     fmt::{self, Debug},
 };
 use ecdsa_core::{
-    hazmat::{FromDigest, RecoverableSignPrimitive},
+    hazmat::RecoverableSignPrimitive,
     rfc6979,
     signature::{
         digest::{BlockInput, FixedOutput, Reset, Update},
@@ -19,13 +19,14 @@ use elliptic_curve::{
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq},
+    zeroize::Zeroize,
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
 use ecdsa_core::signature::{self, digest::Digest, PrehashSignature, RandomizedSigner};
 
 #[cfg(feature = "pkcs8")]
-use crate::pkcs8::{self, FromPrivateKey};
+use crate::pkcs8::{self, DecodePrivateKey};
 
 #[cfg(feature = "pem")]
 use core::str::FromStr;
@@ -110,9 +111,9 @@ impl<D> DigestSigner<D, recoverable::Signature> for SigningKey
 where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
-    fn try_sign_digest(&self, digest: D) -> Result<recoverable::Signature, Error> {
-        let ephemeral_scalar = rfc6979::generate_k(&self.inner, digest.clone(), &[]);
-        let msg_scalar = Scalar::from_digest(digest);
+    fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
+        let ephemeral_scalar = rfc6979::generate_k(&self.inner, msg_digest.clone(), &[]);
+        let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
         let (signature, recovery_id) = self
             .inner
             .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
@@ -142,13 +143,13 @@ where
     fn try_sign_digest_with_rng(
         &self,
         mut rng: impl CryptoRng + RngCore,
-        digest: D,
+        msg_digest: D,
     ) -> Result<recoverable::Signature, Error> {
         let mut added_entropy = FieldBytes::default();
         rng.fill_bytes(&mut added_entropy);
 
-        let ephemeral_scalar = rfc6979::generate_k(&self.inner, digest.clone(), &added_entropy);
-        let msg_scalar = Scalar::from_digest(digest);
+        let ephemeral_scalar = rfc6979::generate_k(&self.inner, msg_digest.clone(), &added_entropy);
+        let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
         let (signature, is_r_odd) = self
             .inner
             .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
@@ -274,9 +275,15 @@ impl From<&NonZeroScalar> for SigningKey {
     }
 }
 
+impl Drop for SigningKey {
+    fn drop(&mut self) {
+        self.inner.zeroize();
+    }
+}
+
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
-impl FromPrivateKey for SigningKey {
+impl DecodePrivateKey for SigningKey {
     fn from_pkcs8_private_key_info(
         private_key_info: pkcs8::PrivateKeyInfo<'_>,
     ) -> pkcs8::Result<Self> {

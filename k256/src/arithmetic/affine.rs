@@ -105,9 +105,64 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-impl AffinePoint {
-    /// Decode this point from a SEC1-encoded point.
-    pub(crate) fn decode(encoded_point: &EncodedPoint) -> CtOption<Self> {
+impl DecompressPoint<Secp256k1> for AffinePoint {
+    fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
+        FieldElement::from_bytes(x_bytes).and_then(|x| {
+            let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
+            let beta = alpha.sqrt();
+
+            beta.map(|beta| {
+                let y = FieldElement::conditional_select(
+                    &beta.negate(1),
+                    &beta,
+                    beta.normalize().is_odd().ct_eq(&y_is_odd),
+                );
+
+                Self {
+                    x,
+                    y: y.normalize(),
+                    infinity: Choice::from(0),
+                }
+            })
+        })
+    }
+}
+
+impl GroupEncoding for AffinePoint {
+    type Repr = CompressedPoint;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        EncodedPoint::from_bytes(bytes)
+            .map(|point| CtOption::new(point, Choice::from(1)))
+            .unwrap_or_else(|_| {
+                // SEC1 identity encoding is technically 1-byte 0x00, but the
+                // `GroupEncoding` API requires a fixed-width `Repr`
+                let is_identity = bytes.ct_eq(&Self::Repr::default());
+                CtOption::new(EncodedPoint::identity(), is_identity)
+            })
+            .and_then(|point| Self::from_encoded_point(&point))
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        let encoded = self.to_encoded_point(true);
+        let mut result = CompressedPoint::default();
+        result[..encoded.len()].copy_from_slice(encoded.as_bytes());
+        result
+    }
+}
+
+impl FromEncodedPoint<Secp256k1> for AffinePoint {
+    /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded [`AffinePoint`].
+    ///
+    /// # Returns
+    ///
+    /// `None` value if `encoded_point` is not on the secp256k1 curve.
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
             sec1::Coordinates::Compact { .. } => {
@@ -136,61 +191,6 @@ impl AffinePoint {
                 })
             }
         }
-    }
-}
-
-impl DecompressPoint<Secp256k1> for AffinePoint {
-    fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
-        FieldElement::from_bytes(x_bytes).and_then(|x| {
-            let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
-            let beta = alpha.sqrt();
-
-            beta.map(|beta| {
-                let y = FieldElement::conditional_select(
-                    &beta.negate(1),
-                    &beta,
-                    beta.normalize().is_odd().ct_eq(&y_is_odd),
-                );
-
-                Self {
-                    x,
-                    y: y.normalize(),
-                    infinity: Choice::from(0),
-                }
-            })
-        })
-    }
-}
-
-impl GroupEncoding for AffinePoint {
-    type Repr = CompressedPoint;
-
-    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        let tag = bytes[0];
-        let y_is_odd = tag.ct_eq(&sec1::Tag::CompressedOddY.into());
-        let is_compressed_point = y_is_odd | tag.ct_eq(&sec1::Tag::CompressedEvenY.into());
-        Self::decompress(FieldBytes::from_slice(&bytes[1..]), y_is_odd)
-            .and_then(|point| CtOption::new(point, is_compressed_point))
-    }
-
-    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
-        // No unchecked conversion possible for compressed points
-        Self::from_bytes(bytes)
-    }
-
-    fn to_bytes(&self) -> Self::Repr {
-        CompressedPoint::clone_from_slice(self.to_encoded_point(true).as_bytes())
-    }
-}
-
-impl FromEncodedPoint<Secp256k1> for AffinePoint {
-    /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded [`AffinePoint`].
-    ///
-    /// # Returns
-    ///
-    /// `None` value if `encoded_point` is not on the secp256k1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
-        Self::decode(encoded_point).into()
     }
 }
 
@@ -248,7 +248,7 @@ mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
     use elliptic_curve::{
-        group::prime::PrimeCurveAffine,
+        group::{prime::PrimeCurveAffine, GroupEncoding},
         sec1::{FromEncodedPoint, ToEncodedPoint},
     };
     use hex_literal::hex;
@@ -306,5 +306,16 @@ mod tests {
     fn affine_negation() {
         let basepoint = AffinePoint::generator();
         assert_eq!((-(-basepoint)), basepoint);
+    }
+
+    #[test]
+    fn identity_encoding() {
+        // This is technically an invalid SEC1 encoding, but is preferable to panicking.
+        assert_eq!([0; 33], AffinePoint::identity().to_bytes().as_slice());
+        assert!(bool::from(
+            AffinePoint::from_bytes(&AffinePoint::identity().to_bytes())
+                .unwrap()
+                .is_identity()
+        ))
     }
 }

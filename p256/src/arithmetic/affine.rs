@@ -105,36 +105,6 @@ impl PartialEq for AffinePoint {
     }
 }
 
-impl AffinePoint {
-    fn decode(encoded_point: &EncodedPoint) -> CtOption<Self> {
-        match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
-            sec1::Coordinates::Compact { x } => AffinePoint::decompact(x),
-            sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
-            }
-            sec1::Coordinates::Uncompressed { x, y } => {
-                let x = FieldElement::from_bytes(x);
-                let y = FieldElement::from_bytes(y);
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = y * &y;
-                        let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
-                        let point = AffinePoint {
-                            x,
-                            y,
-                            infinity: Choice::from(0),
-                        };
-                        CtOption::new(point, lhs.ct_eq(&rhs))
-                    })
-                })
-            }
-        }
-    }
-}
-
 impl DecompressPoint<NistP256> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
@@ -161,12 +131,17 @@ impl DecompressPoint<NistP256> for AffinePoint {
 impl GroupEncoding for AffinePoint {
     type Repr = CompressedPoint;
 
+    /// NOTE: not constant-time with respect to identity point
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        let tag = bytes[0];
-        let y_is_odd = tag.ct_eq(&sec1::Tag::CompressedOddY.into());
-        let is_compressed_point = y_is_odd | tag.ct_eq(&sec1::Tag::CompressedEvenY.into());
-        Self::decompress(FieldBytes::from_slice(&bytes[1..]), y_is_odd)
-            .and_then(|point| CtOption::new(point, is_compressed_point))
+        EncodedPoint::from_bytes(bytes)
+            .map(|point| CtOption::new(point, Choice::from(1)))
+            .unwrap_or_else(|_| {
+                // SEC1 identity encoding is technically 1-byte 0x00, but the
+                // `GroupEncoding` API requires a fixed-width `Repr`
+                let is_identity = bytes.ct_eq(&Self::Repr::default());
+                CtOption::new(EncodedPoint::identity(), is_identity)
+            })
+            .and_then(|point| Self::from_encoded_point(&point))
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
@@ -175,7 +150,10 @@ impl GroupEncoding for AffinePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        CompressedPoint::clone_from_slice(self.to_encoded_point(true).as_bytes())
+        let encoded = self.to_encoded_point(true);
+        let mut result = CompressedPoint::default();
+        result[..encoded.len()].copy_from_slice(encoded.as_bytes());
+        result
     }
 }
 
@@ -205,8 +183,32 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256r1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> Option<Self> {
-        Self::decode(encoded_point).into()
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
+        match encoded_point.coordinates() {
+            sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
+            sec1::Coordinates::Compact { x } => AffinePoint::decompact(x),
+            sec1::Coordinates::Compressed { x, y_is_odd } => {
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
+            }
+            sec1::Coordinates::Uncompressed { x, y } => {
+                let x = FieldElement::from_bytes(x);
+                let y = FieldElement::from_bytes(y);
+
+                x.and_then(|x| {
+                    y.and_then(|y| {
+                        // Check that the point is on the curve
+                        let lhs = y * &y;
+                        let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
+                        let point = AffinePoint {
+                            x,
+                            y,
+                            infinity: Choice::from(0),
+                        };
+                        CtOption::new(point, lhs.ct_eq(&rhs))
+                    })
+                })
+            }
+        }
     }
 }
 
@@ -283,7 +285,7 @@ mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
     use elliptic_curve::{
-        group::prime::PrimeCurveAffine,
+        group::{prime::PrimeCurveAffine, GroupEncoding},
         sec1::{FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
     };
     use hex_literal::hex;
@@ -383,5 +385,16 @@ mod tests {
         // Do not do compact encoding as we want to keep uncompressed point
         let res = point.to_encoded_point(false);
         assert_eq!(res.as_bytes(), UNCOMPACT_BASEPOINT);
+    }
+
+    #[test]
+    fn identity_encoding() {
+        // This is technically an invalid SEC1 encoding, but is preferable to panicking.
+        assert_eq!([0; 33], AffinePoint::identity().to_bytes().as_slice());
+        assert!(bool::from(
+            AffinePoint::from_bytes(&AffinePoint::identity().to_bytes())
+                .unwrap()
+                .is_identity()
+        ))
     }
 }
