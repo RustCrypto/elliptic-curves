@@ -22,7 +22,7 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.55.0 # MSRV
+          - 1.56.0 # MSRV
           - stable
         target:
           - thumbv7em-none-eabi
@@ -31,10 +31,10 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
+          profile: minimal
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
@@ -47,14 +47,15 @@ jobs:
     strategy:
       matrix:
         rust:
-          - 1.55.0 # MSRV
+          - 1.56.0 # MSRV
           - stable
     steps:
     - uses: actions/checkout@v2
     - uses: actions-rs/toolchain@v1
       with:
-        profile: minimal
         toolchain: ${{ matrix.rust }}
+        override: true
+        profile: minimal
     - run: cargo check --all-features
     - run: cargo test --no-default-features
     - run: cargo test

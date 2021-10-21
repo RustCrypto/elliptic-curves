@@ -1,20 +1,21 @@
 [package]
 name = "k256"
+version = "0.10.0-pre" # Also update html_root_url in lib.rs when bumping this
 description = """
 secp256k1 elliptic curve library written in pure Rust with support for ECDSA
 signing/verification (including Ethereum-style signatures with public-key
 recovery), Elliptic Curve Diffie-Hellman (ECDH), and general purpose secp256k1
 curve arithmetic useful for implementing arbitrary group-based protocols.
 """
-version = "0.10.0-pre" # Also update html_root_url in lib.rs when bumping this
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
 readme = "README.md"
-edition = "2018"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 cfg-if = "1.0"
