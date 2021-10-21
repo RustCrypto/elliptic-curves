@@ -5,7 +5,6 @@ use crate::{
     lincomb, AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar,
     Secp256k1,
 };
-use core::convert::TryFrom;
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{
     consts::U32,
