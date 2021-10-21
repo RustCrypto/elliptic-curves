@@ -14,11 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Cache cargo bin
-        uses: actions/cache@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+      - uses: actions/cache@v1
         with:
           path: ~/.cargo/bin
-          key: ${{ runner.os }}-cargo-audit-v0.13.1
+          key: ${{ runner.os }}-cargo-audit-v0.15.2
       - uses: actions-rs/audit-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

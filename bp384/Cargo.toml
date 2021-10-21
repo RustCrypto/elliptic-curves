@@ -1,15 +1,16 @@
 [package]
 name = "bp384"
-description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
 version = "0.3.0-pre" # Also update html_root_url in lib.rs when bumping this
+description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/elliptic-curve"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/bp384"
 readme = "README.md"
-edition = "2018"
 categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat", "sec1"] }
