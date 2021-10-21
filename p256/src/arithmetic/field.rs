@@ -4,7 +4,6 @@ use crate::{
     arithmetic::util::{adc, mac, sbb},
     FieldBytes,
 };
-use core::convert::TryInto;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},

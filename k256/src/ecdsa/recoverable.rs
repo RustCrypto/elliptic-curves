@@ -35,10 +35,7 @@
 //! # }
 //! ```
 
-use core::{
-    convert::{TryFrom, TryInto},
-    fmt::{self, Debug},
-};
+use core::fmt::{self, Debug};
 use ecdsa_core::{signature::Signature as _, Error};
 
 #[cfg(feature = "ecdsa")]
@@ -310,7 +307,6 @@ impl From<Id> for u8 {
 mod tests {
     use super::Signature;
     use crate::EncodedPoint;
-    use core::convert::TryFrom;
     use hex_literal::hex;
     use sha2::{Digest, Sha256};
 
