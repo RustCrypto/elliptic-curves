@@ -9,7 +9,7 @@ pub(crate) use self::wide::WideScalar;
 use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{limb, nlimbs, ArrayEncoding, Encoding, Limb, U256},
+    bigint::{nlimbs, prelude::*, Limb, LimbUInt, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     ops::Reduce,
@@ -34,7 +34,7 @@ impl ScalarArithmetic for Secp256k1 {
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-const MODULUS: [limb::Inner; nlimbs!(256)] = ORDER.to_uint_array();
+const MODULUS: [LimbUInt; nlimbs!(256)] = ORDER.to_uint_array();
 
 /// Constant representing the modulus / 2
 const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);

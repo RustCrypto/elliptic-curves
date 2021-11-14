@@ -166,7 +166,7 @@ impl TryFrom<&EncodedPoint> for VerifyingKey {
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 impl DecodePublicKey for VerifyingKey {
-    fn from_spki(spki: pkcs8::SubjectPublicKeyInfo<'_>) -> pkcs8::der::Result<Self> {
+    fn from_spki(spki: pkcs8::SubjectPublicKeyInfo<'_>) -> pkcs8::spki::Result<Self> {
         PublicKey::from_spki(spki).map(|pk| Self { inner: pk.into() })
     }
 }
