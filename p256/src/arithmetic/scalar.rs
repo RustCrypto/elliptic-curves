@@ -8,7 +8,7 @@ use crate::{
 };
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Encoding, Limb, U256},
+    bigint::{prelude::*, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     ops::Reduce,
@@ -244,8 +244,7 @@ impl Scalar {
 
     /// Returns self * rhs mod n
     pub const fn mul(&self, rhs: &Self) -> Self {
-        // TODO(tarcieri): reverse hi/lo? See RustCrypto/utils#620
-        let (hi, lo) = self.0.mul_wide(&rhs.0);
+        let (lo, hi) = self.0.mul_wide(&rhs.0);
         Self::barrett_reduce(lo, hi)
     }
 

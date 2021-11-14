@@ -7,7 +7,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{Encoding, Limb},
+    bigint::Limb,
     group::{
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
