@@ -283,13 +283,17 @@ impl Drop for SigningKey {
 
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
-impl DecodePrivateKey for SigningKey {
-    fn from_pkcs8_private_key_info(
-        private_key_info: pkcs8::PrivateKeyInfo<'_>,
-    ) -> pkcs8::Result<Self> {
-        SecretKey::from_pkcs8_private_key_info(private_key_info).map(Into::into)
+impl TryFrom<pkcs8::PrivateKeyInfo<'_>> for SigningKey {
+    type Error = pkcs8::Error;
+
+    fn try_from(private_key_info: pkcs8::PrivateKeyInfo<'_>) -> pkcs8::Result<Self> {
+        SecretKey::try_from(private_key_info).map(Into::into)
     }
 }
+
+#[cfg(feature = "pkcs8")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
+impl DecodePrivateKey for SigningKey {}
 
 #[cfg(feature = "pem")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pem")))]
