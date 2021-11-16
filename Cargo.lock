@@ -28,7 +28,7 @@ checksum = "392c772b012d685a640cdad68a5a21f4a45e696f85a2c2c907aab2fe49a91e19"
 [[package]]
 name = "base64ct"
 version = "1.2.0"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 
 [[package]]
 name = "bit-set"
@@ -155,8 +155,8 @@ dependencies = [
 
 [[package]]
 name = "const-oid"
-version = "0.7.0-pre"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+version = "0.7.0"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 
 [[package]]
 name = "cpufeatures"
@@ -249,9 +249,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-bigint"
-version = "0.3.0-pre.1"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d174cafe51590ef0e0a6e540b9ffc8b35a1ff47fb3adda3ab272bcc9f5bfc86c"
+checksum = "476ecdba12db8402a1664482de8c37fff7dc96241258bd0de1f0d70e760a45fd"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -293,11 +293,11 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.5.0-pre.1"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+version = "0.5.0"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 dependencies = [
  "const-oid",
- "pem-rfc7468 0.3.0-pre",
+ "pem-rfc7468 0.3.0",
 ]
 
 [[package]]
@@ -312,7 +312,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#6c439598c17a3dd29a454b14893513ff9c27a383"
+source = "git+https://github.com/RustCrypto/signatures.git#6d4dab7128330f53888e791980837c4dabe6c9c3"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -329,7 +329,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.11.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#03acdd168e01b0a38e41293ca82472c138ecdab3"
+source = "git+https://github.com/RustCrypto/traits.git#0d6f582e941ce60d5876288664e3fccfc29cbe8d"
 dependencies = [
  "base64ct 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "crypto-bigint",
@@ -339,7 +339,6 @@ dependencies = [
  "group",
  "hex-literal",
  "pem-rfc7468 0.2.3",
- "pkcs8",
  "rand_core",
  "sec1",
  "serde",
@@ -603,8 +602,8 @@ dependencies = [
 
 [[package]]
 name = "pem-rfc7468"
-version = "0.3.0-pre"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+version = "0.3.0"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 dependencies = [
  "base64ct 1.2.0 (git+https://github.com/RustCrypto/formats.git)",
 ]
@@ -612,7 +611,7 @@ dependencies = [
 [[package]]
 name = "pkcs8"
 version = "0.8.0-pre"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 dependencies = [
  "der",
  "spki",
@@ -867,10 +866,11 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 [[package]]
 name = "sec1"
 version = "0.2.0-pre"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 dependencies = [
  "der",
  "generic-array",
+ "pkcs8",
  "subtle",
  "zeroize",
 ]
@@ -956,8 +956,8 @@ dependencies = [
 
 [[package]]
 name = "spki"
-version = "0.5.0-pre"
-source = "git+https://github.com/RustCrypto/formats.git#3d1aaeed5d22cef4620edcb2c4f95133f24e22d9"
+version = "0.5.0"
+source = "git+https://github.com/RustCrypto/formats.git#43d3ca3f8bca8d7f0a779489885d21a77b0f64a5"
 dependencies = [
  "base64ct 1.2.0 (git+https://github.com/RustCrypto/formats.git)",
  "der",
