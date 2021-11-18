@@ -7,7 +7,7 @@ use core::{
     fmt::{self, Debug},
 };
 use ecdsa_core::{
-    hazmat::RecoverableSignPrimitive,
+    hazmat::SignPrimitive,
     rfc6979,
     signature::{
         digest::{BlockInput, FixedOutput, Reset, Update},
@@ -20,6 +20,7 @@ use elliptic_curve::{
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq},
     zeroize::Zeroize,
+    IsHigh,
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
@@ -108,11 +109,12 @@ where
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
         let ephemeral_scalar = rfc6979::generate_k(&self.inner, msg_digest.clone(), &[]);
         let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
-        let (signature, recovery_id) = self
+        let (signature, recid) = self
             .inner
-            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
+            .try_sign_prehashed(**ephemeral_scalar, msg_scalar)?;
 
-        recoverable::Signature::new(&signature, recoverable::Id(recovery_id as u8))
+        let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
+        recoverable::Signature::new(&signature, recoverable_id)
     }
 }
 
@@ -144,21 +146,22 @@ where
 
         let ephemeral_scalar = rfc6979::generate_k(&self.inner, msg_digest.clone(), &added_entropy);
         let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
-        let (signature, is_r_odd) = self
+        let (signature, recid) = self
             .inner
-            .try_sign_recoverable_prehashed(ephemeral_scalar.as_ref(), &msg_scalar)?;
+            .try_sign_prehashed(**ephemeral_scalar, msg_scalar)?;
 
-        recoverable::Signature::new(&signature, recoverable::Id(is_r_odd as u8))
+        let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
+        recoverable::Signature::new(&signature, recoverable_id)
     }
 }
 
-impl RecoverableSignPrimitive<Secp256k1> for Scalar {
+impl SignPrimitive<Secp256k1> for Scalar {
     #[allow(non_snake_case, clippy::many_single_char_names)]
-    fn try_sign_recoverable_prehashed<K>(
+    fn try_sign_prehashed<K>(
         &self,
-        ephemeral_scalar: &K,
-        z: &Scalar,
-    ) -> Result<(Signature, bool), Error>
+        ephemeral_scalar: K,
+        z: Scalar,
+    ) -> Result<(Signature, Option<ecdsa_core::RecoveryId>), Error>
     where
         K: Borrow<Scalar> + Invert<Output = Scalar>,
     {
@@ -189,8 +192,9 @@ impl RecoverableSignPrimitive<Secp256k1> for Scalar {
         let is_r_odd: bool = R.y.normalize().is_odd().into();
         let is_s_high: bool = signature.s().is_high().into();
         let signature_low = signature.normalize_s().unwrap_or(signature);
+        let recovery_id = ecdsa_core::RecoveryId::new(is_r_odd ^ is_s_high, false);
 
-        Ok((signature_low, is_r_odd ^ is_s_high))
+        Ok((signature_low, Some(recovery_id)))
     }
 }
 

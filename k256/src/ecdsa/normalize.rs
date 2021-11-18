@@ -2,19 +2,6 @@
 //!
 //! [1]: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki
 
-use crate::Scalar;
-use ecdsa_core::NormalizeLow;
-
-impl NormalizeLow for Scalar {
-    fn normalize_low(&self) -> Option<Self> {
-        if self.is_high().into() {
-            Some(-self)
-        } else {
-            None
-        }
-    }
-}
-
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::ecdsa::Signature;

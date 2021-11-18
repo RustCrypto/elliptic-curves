@@ -36,7 +36,8 @@
 //! ```
 
 use core::fmt::{self, Debug};
-use ecdsa_core::{signature::Signature as _, Error};
+use ecdsa_core::{signature::Signature as _, Error, Result};
+use elliptic_curve::subtle::Choice;
 
 #[cfg(feature = "ecdsa")]
 use crate::{
@@ -47,7 +48,6 @@ use crate::{
     elliptic_curve::{
         consts::U32,
         ops::{Invert, Reduce},
-        subtle::Choice,
         DecompressPoint,
     },
     lincomb, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
@@ -79,7 +79,7 @@ impl Signature {
     ///
     /// This is an "unchecked" conversion and assumes the provided [`Id`]
     /// is valid for this signature.
-    pub fn new(signature: &super::Signature, recovery_id: Id) -> Result<Self, Error> {
+    pub fn new(signature: &super::Signature, recovery_id: Id) -> Result<Self> {
         let mut bytes = [0u8; SIZE];
         bytes[..64].copy_from_slice(signature.as_ref());
         bytes[64] = recovery_id.0;
@@ -105,7 +105,7 @@ impl Signature {
         public_key: &VerifyingKey,
         msg: &[u8],
         signature: &super::Signature,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self> {
         Self::from_digest_trial_recovery(public_key, Keccak256::new().chain(msg), signature)
     }
 
@@ -118,7 +118,7 @@ impl Signature {
         public_key: &VerifyingKey,
         digest: D,
         signature: &super::Signature,
-    ) -> Result<Self, Error>
+    ) -> Result<Self>
     where
         D: Clone + Digest<OutputSize = U32>,
     {
@@ -146,7 +146,7 @@ impl Signature {
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
-    pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyingKey, Error> {
+    pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyingKey> {
         self.recover_verify_key_from_digest(Keccak256::new().chain(msg))
     }
 
@@ -154,7 +154,7 @@ impl Signature {
     /// [`VerifyingKey`] from the provided precomputed [`Digest`].
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-    pub fn recover_verify_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyingKey, Error>
+    pub fn recover_verify_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyingKey>
     where
         D: Digest<OutputSize = U32>,
     {
@@ -169,7 +169,7 @@ impl Signature {
     pub fn recover_verify_key_from_digest_bytes(
         &self,
         digest_bytes: &FieldBytes,
-    ) -> Result<VerifyingKey, Error> {
+    ) -> Result<VerifyingKey> {
         let r = self.r();
         let s = self.s();
         let z = Scalar::from_be_bytes_reduced(*digest_bytes);
@@ -207,7 +207,7 @@ impl Signature {
 }
 
 impl ecdsa_core::signature::Signature for Signature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+    fn from_bytes(bytes: &[u8]) -> Result<Self> {
         bytes.try_into()
     }
 }
@@ -237,7 +237,7 @@ impl PartialEq for Signature {
 impl TryFrom<&[u8]> for Signature {
     type Error = Error;
 
-    fn try_from(bytes: &[u8]) -> Result<Self, Error> {
+    fn try_from(bytes: &[u8]) -> Result<Self> {
         if bytes.len() != SIZE {
             return Err(Error::new());
         }
@@ -275,7 +275,7 @@ pub struct Id(pub(super) u8);
 
 impl Id {
     /// Create a new [`Id`] from the given byte value
-    pub fn new(byte: u8) -> Result<Self, Error> {
+    pub fn new(byte: u8) -> Result<Self> {
         match byte {
             0 | 1 => Ok(Self(byte)),
             _ => Err(Error::new()),
@@ -283,7 +283,6 @@ impl Id {
     }
 
     /// Is `y` odd?
-    #[cfg(feature = "ecdsa")]
     fn is_y_odd(self) -> Choice {
         self.0.into()
     }
@@ -292,7 +291,7 @@ impl Id {
 impl TryFrom<u8> for Id {
     type Error = Error;
 
-    fn try_from(byte: u8) -> Result<Self, Error> {
+    fn try_from(byte: u8) -> Result<Self> {
         Self::new(byte)
     }
 }
@@ -300,6 +299,26 @@ impl TryFrom<u8> for Id {
 impl From<Id> for u8 {
     fn from(recovery_id: Id) -> u8 {
         recovery_id.0
+    }
+}
+
+impl TryFrom<ecdsa_core::RecoveryId> for Id {
+    type Error = Error;
+
+    fn try_from(id: ecdsa_core::RecoveryId) -> Result<Id> {
+        if id.is_x_reduced() {
+            Err(Error::new())
+        } else if id.is_y_odd() {
+            Ok(Id(1))
+        } else {
+            Ok(Id(0))
+        }
+    }
+}
+
+impl From<Id> for ecdsa_core::RecoveryId {
+    fn from(id: Id) -> ecdsa_core::RecoveryId {
+        ecdsa_core::RecoveryId::new(id.is_y_odd().into(), false)
     }
 }
 

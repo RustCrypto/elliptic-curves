@@ -45,13 +45,8 @@ use super::NistP256;
 
 #[cfg(feature = "ecdsa")]
 use {
-    crate::{AffinePoint, ProjectivePoint, Scalar},
-    core::borrow::Borrow,
+    crate::{AffinePoint, Scalar},
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-    elliptic_curve::{
-        group::ff::Field,
-        ops::{Invert, Reduce},
-    },
 };
 
 /// ECDSA/P-256 signature (fixed-size)
@@ -77,59 +72,10 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
 }
 
 #[cfg(feature = "ecdsa")]
-impl SignPrimitive<NistP256> for Scalar {
-    #[allow(clippy::many_single_char_names)]
-    fn try_sign_prehashed<K>(&self, ephemeral_scalar: &K, z: &Scalar) -> Result<Signature, Error>
-    where
-        K: Borrow<Scalar> + Invert<Output = Scalar>,
-    {
-        let k_inverse = ephemeral_scalar.invert();
-        let k = ephemeral_scalar.borrow();
-
-        if k_inverse.is_none().into() || k.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let k_inverse = k_inverse.unwrap();
-
-        // Compute `x`-coordinate of affine point 𝑘×𝑮
-        let x = (ProjectivePoint::generator() * k).to_affine().x;
-
-        // Lift `x` (element of base field) to serialized big endian integer,
-        // then reduce it to an element of the scalar field
-        let r = Scalar::from_be_bytes_reduced(x.to_bytes());
-
-        // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * (z + &(r * self));
-
-        if s.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        Signature::from_scalars(r, s)
-    }
-}
+impl SignPrimitive<NistP256> for Scalar {}
 
 #[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<NistP256> for AffinePoint {
-    fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
-        let r = signature.r();
-        let s = signature.s();
-        let s_inv = s.invert().unwrap();
-        let u1 = z * &s_inv;
-        let u2 = *r * s_inv;
-
-        let x = ((ProjectivePoint::generator() * u1) + (ProjectivePoint::from(*self) * u2))
-            .to_affine()
-            .x;
-
-        if Scalar::from_be_bytes_reduced(x.to_bytes()) == *r {
-            Ok(())
-        } else {
-            Err(Error::new())
-        }
-    }
-}
+impl VerifyPrimitive<NistP256> for AffinePoint {}
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
@@ -165,7 +111,7 @@ mod tests {
         let k = Scalar::from_repr(GenericArray::clone_from_slice(vector.k)).unwrap();
         let k_blinded = BlindedScalar::new(k, &mut OsRng);
         let z = Scalar::from_repr(GenericArray::clone_from_slice(vector.m)).unwrap();
-        let sig = d.try_sign_prehashed(&k_blinded, &z).unwrap();
+        let sig = d.try_sign_prehashed(k_blinded, z).unwrap().0;
 
         assert_eq!(vector.r, sig.r().to_bytes().as_slice());
         assert_eq!(vector.s, sig.s().to_bytes().as_slice());
