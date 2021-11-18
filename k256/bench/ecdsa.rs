@@ -3,7 +3,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ecdsa_core::{
     elliptic_curve::group::prime::PrimeCurveAffine,
-    hazmat::{RecoverableSignPrimitive, VerifyPrimitive},
+    hazmat::{SignPrimitive, VerifyPrimitive},
 };
 use k256::{
     elliptic_curve::{generic_array::arr, group::ff::PrimeField},
@@ -44,15 +44,15 @@ fn bench_ecdsa(c: &mut Criterion) {
     let k = test_scalar_k();
     let z = test_scalar_z();
 
-    group.bench_function("try_sign_recoverable_prehashed", |b| {
-        b.iter(|| d.try_sign_recoverable_prehashed(&k, &z).unwrap())
+    group.bench_function("try_sign_prehashed", |b| {
+        b.iter(|| d.try_sign_prehashed(k, z).unwrap())
     });
 
     let q = (AffinePoint::generator() * d).to_affine();
-    let s = d.try_sign_recoverable_prehashed(&k, &z).unwrap().0;
+    let s = d.try_sign_prehashed(k, z).unwrap().0;
 
     group.bench_function("verify_prehashed", |b| {
-        b.iter(|| q.verify_prehashed(&z, &s).unwrap())
+        b.iter(|| q.verify_prehashed(z, &s).unwrap())
     });
 
     group.finish();

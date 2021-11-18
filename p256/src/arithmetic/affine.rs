@@ -11,7 +11,7 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, Curve, DecompactPoint, DecompressPoint,
+    AffineArithmetic, AffineXCoordinate, Curve, DecompactPoint, DecompressPoint,
 };
 
 impl AffineArithmetic for NistP256 {
@@ -70,6 +70,12 @@ impl PrimeCurveAffine for AffinePoint {
     /// Convert to curve representation.
     fn to_curve(&self) -> ProjectivePoint {
         ProjectivePoint::from(*self)
+    }
+}
+
+impl AffineXCoordinate<NistP256> for AffinePoint {
+    fn x(&self) -> FieldBytes {
+        self.x.to_bytes()
     }
 }
 

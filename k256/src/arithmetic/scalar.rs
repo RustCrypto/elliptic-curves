@@ -19,7 +19,7 @@ use elliptic_curve::{
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, ScalarArithmetic, ScalarCore,
+    Curve, IsHigh, ScalarArithmetic, ScalarCore,
 };
 
 #[cfg(feature = "bits")]
@@ -208,11 +208,6 @@ impl Scalar {
     /// Multiplicative identity.
     pub const ONE: Self = Self(U256::ONE);
 
-    /// Is this scalar greater than or equal to n / 2?
-    pub fn is_high(&self) -> Choice {
-        self.0.ct_gt(&FRAC_MODULUS_2)
-    }
-
     /// Checks if the scalar is zero.
     pub fn is_zero(&self) -> Choice {
         self.0.is_zero()
@@ -368,6 +363,12 @@ impl From<u64> for Scalar {
 impl From<ScalarCore<Secp256k1>> for Scalar {
     fn from(scalar: ScalarCore<Secp256k1>) -> Scalar {
         Scalar(*scalar.as_uint())
+    }
+}
+
+impl IsHigh for Scalar {
+    fn is_high(&self) -> Choice {
+        self.0.ct_gt(&FRAC_MODULUS_2)
     }
 }
 
@@ -577,7 +578,10 @@ impl From<&Scalar> for FieldBytes {
 mod tests {
     use super::Scalar;
     use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
-    use elliptic_curve::group::ff::{Field, PrimeField};
+    use elliptic_curve::{
+        ff::{Field, PrimeField},
+        IsHigh,
+    };
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 

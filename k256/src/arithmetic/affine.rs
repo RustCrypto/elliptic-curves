@@ -9,7 +9,7 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, DecompressPoint,
+    AffineArithmetic, AffineXCoordinate, DecompressPoint,
 };
 
 impl AffineArithmetic for Secp256k1 {
@@ -68,6 +68,12 @@ impl PrimeCurveAffine for AffinePoint {
     /// Convert to curve representation.
     fn to_curve(&self) -> ProjectivePoint {
         ProjectivePoint::from(*self)
+    }
+}
+
+impl AffineXCoordinate<Secp256k1> for AffinePoint {
+    fn x(&self) -> FieldBytes {
+        self.x.to_bytes()
     }
 }
 

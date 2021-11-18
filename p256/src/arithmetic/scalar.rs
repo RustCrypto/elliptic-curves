@@ -13,9 +13,12 @@ use elliptic_curve::{
     group::ff::{Field, PrimeField},
     ops::Reduce,
     rand_core::RngCore,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
+    subtle::{
+        Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
+        CtOption,
+    },
     zeroize::DefaultIsZeroes,
-    Curve, ScalarArithmetic, ScalarCore,
+    Curve, IsHigh, ScalarArithmetic, ScalarCore,
 };
 
 #[cfg(feature = "bits")]
@@ -29,7 +32,7 @@ type U64x4 = [u64; 4];
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
 const MODULUS: U64x4 = u256_to_u64x4(NistP256::ORDER);
 
-const MODULUS_SHR1: Scalar = Scalar(NistP256::ORDER.shr_vartime(1));
+const FRAC_MODULUS_2: Scalar = Scalar(NistP256::ORDER.shr_vartime(1));
 
 /// MU = floor(2^512 / n)
 ///    = 115792089264276142090721624801893421302707618245269942344307673200490803338238
@@ -296,7 +299,7 @@ impl Scalar {
                 A.shr1();
 
                 if was_odd {
-                    A += MODULUS_SHR1;
+                    A += FRAC_MODULUS_2;
                     A += Self::one();
                 }
             }
@@ -309,7 +312,7 @@ impl Scalar {
                 C.shr1();
 
                 if was_odd {
-                    C += MODULUS_SHR1;
+                    C += FRAC_MODULUS_2;
                     C += Self::one();
                 }
             }
@@ -533,6 +536,12 @@ impl Scalar {
 impl DefaultIsZeroes for Scalar {}
 
 impl Eq for Scalar {}
+
+impl IsHigh for Scalar {
+    fn is_high(&self) -> Choice {
+        self.0.ct_gt(&FRAC_MODULUS_2.0)
+    }
+}
 
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {

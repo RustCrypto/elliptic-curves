@@ -245,9 +245,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-bigint"
-version = "0.3.0"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "476ecdba12db8402a1664482de8c37fff7dc96241258bd0de1f0d70e760a45fd"
+checksum = "03c6a1d5fa1de37e071642dfa44ec552ca5b299adb128fab16138e24b548fd21"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -309,7 +309,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#1cd36321b7d59a570996d01538bc4b0d73eb73d3"
+source = "git+https://github.com/RustCrypto/signatures.git#97ebdb8dbe94e94825d4ab620142b52a0c7651b3"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -326,7 +326,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.11.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#31436a2eaf8bd3fb5292e11e9a0b1f93056a7817"
+source = "git+https://github.com/RustCrypto/traits.git#7d813023da0ce6e418e4f7bf3b0dda9914a891cb"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -910,9 +910,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.70"
+version = "1.0.71"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e277c495ac6cd1a01a58d0a0c574568b4d1ddf14f59965c6a58b8d96400b54f3"
+checksum = "063bf466a64011ac24040a49009724ee60a57da1b437617ceb32e53ad61bfb19"
 dependencies = [
  "itoa",
  "ryu",

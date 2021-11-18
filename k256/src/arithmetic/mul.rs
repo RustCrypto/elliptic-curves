@@ -70,7 +70,10 @@ use crate::arithmetic::{
     ProjectivePoint,
 };
 use core::ops::{Mul, MulAssign};
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use elliptic_curve::{
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+    IsHigh,
+};
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 #[derive(Copy, Clone, Default)]

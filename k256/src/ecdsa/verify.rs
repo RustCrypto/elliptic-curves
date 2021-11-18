@@ -10,6 +10,7 @@ use elliptic_curve::{
     consts::U32,
     ops::{Invert, Reduce},
     sec1::ToEncodedPoint,
+    IsHigh,
 };
 use signature::{digest::Digest, DigestVerifier};
 
@@ -81,7 +82,7 @@ where
 }
 
 impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(&self, z: &Scalar, signature: &Signature) -> Result<(), Error> {
+    fn verify_prehashed(&self, z: Scalar, signature: &Signature) -> Result<(), Error> {
         let r = signature.r();
         let s = signature.s();
 
@@ -91,7 +92,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         }
 
         let s_inv = s.invert().unwrap();
-        let u1 = z * &s_inv;
+        let u1 = z * s_inv;
         let u2 = *r * s_inv;
 
         let x = lincomb(
