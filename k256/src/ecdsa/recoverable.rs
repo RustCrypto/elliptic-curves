@@ -22,7 +22,7 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
-//! let verify_key = signing_key.verify_key();
+//! let verify_key = signing_key.verifying_key();
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as

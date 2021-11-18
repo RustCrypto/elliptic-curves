@@ -63,12 +63,6 @@ impl SigningKey {
         }
     }
 
-    /// Legacy alias for [`SigningKey::verifying_key`].
-    #[deprecated(since = "0.9.3", note = "use `verifying_key()` instead")]
-    pub fn verify_key(&self) -> VerifyingKey {
-        self.verifying_key()
-    }
-
     /// Serialize this [`SigningKey`] as bytes
     pub fn to_bytes(&self) -> FieldBytes {
         self.inner.to_bytes()
