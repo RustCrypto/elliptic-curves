@@ -86,6 +86,7 @@ version = "0.3.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
+ "sec1",
  "sha2",
 ]
 
@@ -95,6 +96,7 @@ version = "0.3.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
+ "sec1",
  "sha2",
 ]
 
@@ -309,7 +311,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#97ebdb8dbe94e94825d4ab620142b52a0c7651b3"
+source = "git+https://github.com/RustCrypto/signatures.git#62a3f860f800f7c17ff3f868827e0780c838abba"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -326,7 +328,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "elliptic-curve"
 version = "0.11.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#7d813023da0ce6e418e4f7bf3b0dda9914a891cb"
+source = "git+https://github.com/RustCrypto/traits.git#88d5ea3ad633d13c9ac3b064c084f645830d7713"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -468,6 +470,7 @@ dependencies = [
  "num-traits",
  "proptest",
  "rand_core",
+ "sec1",
  "sha2",
  "sha3",
 ]
@@ -576,6 +579,7 @@ dependencies = [
  "hex-literal",
  "proptest",
  "rand_core",
+ "sec1",
  "sha2",
 ]
 
@@ -585,6 +589,7 @@ version = "0.9.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
+ "sec1",
  "sha2",
 ]
 
@@ -864,13 +869,14 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "sec1"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2503adcd8c83e7081b3f9a3173f328f4d6cd50e116aaa324389b46f2d771d595"
+checksum = "08da66b8b0965a5555b6bd6639e68ccba85e1e2506f5fbb089e93f8a04e1a2d1"
 dependencies = [
  "der",
  "generic-array",
  "pkcs8",
+ "serde",
  "subtle",
  "zeroize",
 ]

@@ -45,10 +45,11 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features keccak256
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,keccak256
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,jwk,keccak256,pem,pkcs8,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,jwk,keccak256,pem,pkcs8,serde,sha256
 
   benches:
     runs-on: ubuntu-latest
