@@ -24,6 +24,9 @@ use elliptic_curve::{
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
+#[cfg(feature = "serde")]
+use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+
 /// Array containing 4 x 64-bit unsigned integers.
 // TODO(tarcieri): replace this entirely with `U256`
 type U64x4 = [u64; 4];
@@ -573,6 +576,24 @@ impl From<ScalarCore<NistP256>> for Scalar {
     }
 }
 
+impl From<&ScalarCore<NistP256>> for Scalar {
+    fn from(scalar: &ScalarCore<NistP256>) -> Scalar {
+        Scalar(*scalar.as_uint())
+    }
+}
+
+impl From<Scalar> for ScalarCore<NistP256> {
+    fn from(scalar: Scalar) -> ScalarCore<NistP256> {
+        ScalarCore::from(&scalar)
+    }
+}
+
+impl From<&Scalar> for ScalarCore<NistP256> {
+    fn from(scalar: &Scalar) -> ScalarCore<NistP256> {
+        ScalarCore::new(scalar.0).unwrap()
+    }
+}
+
 impl From<Scalar> for U256 {
     fn from(scalar: Scalar) -> U256 {
         scalar.0
@@ -746,6 +767,28 @@ impl From<&Scalar> for FieldBytes {
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
         *secret_key.to_nonzero_scalar()
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl Serialize for Scalar {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        ScalarCore::from(self).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de> Deserialize<'de> for Scalar {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        Ok(ScalarCore::deserialize(deserializer)?.into())
     }
 }
 
