@@ -25,6 +25,9 @@ use elliptic_curve::{
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
+#[cfg(feature = "serde")]
+use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
@@ -366,6 +369,24 @@ impl From<ScalarCore<Secp256k1>> for Scalar {
     }
 }
 
+impl From<&ScalarCore<Secp256k1>> for Scalar {
+    fn from(scalar: &ScalarCore<Secp256k1>) -> Scalar {
+        Scalar(*scalar.as_uint())
+    }
+}
+
+impl From<Scalar> for ScalarCore<Secp256k1> {
+    fn from(scalar: Scalar) -> ScalarCore<Secp256k1> {
+        ScalarCore::from(&scalar)
+    }
+}
+
+impl From<&Scalar> for ScalarCore<Secp256k1> {
+    fn from(scalar: &Scalar) -> ScalarCore<Secp256k1> {
+        ScalarCore::new(scalar.0).unwrap()
+    }
+}
+
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         self.0.ct_gt(&FRAC_MODULUS_2)
@@ -571,6 +592,28 @@ impl From<Scalar> for FieldBytes {
 impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl Serialize for Scalar {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        ScalarCore::from(self).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de> Deserialize<'de> for Scalar {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        Ok(ScalarCore::deserialize(deserializer)?.into())
     }
 }
 

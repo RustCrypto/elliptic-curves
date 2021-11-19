@@ -23,6 +23,10 @@ use crate::pkcs8::{self, DecodePublicKey};
 #[cfg(feature = "pem")]
 use core::str::FromStr;
 
+#[cfg(all(feature = "pem", feature = "serde"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "pem", feature = "serde"))))]
+use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -144,9 +148,17 @@ impl From<&AffinePoint> for VerifyingKey {
     }
 }
 
+impl From<ecdsa_core::VerifyingKey<Secp256k1>> for VerifyingKey {
+    fn from(verifying_key: ecdsa_core::VerifyingKey<Secp256k1>) -> VerifyingKey {
+        VerifyingKey {
+            inner: verifying_key,
+        }
+    }
+}
+
 impl From<&VerifyingKey> for EncodedPoint {
-    fn from(verify_key: &VerifyingKey) -> EncodedPoint {
-        verify_key.to_encoded_point(true)
+    fn from(verifying_key: &VerifyingKey) -> EncodedPoint {
+        verifying_key.to_encoded_point(true)
     }
 }
 
@@ -185,6 +197,28 @@ impl FromStr for VerifyingKey {
 
     fn from_str(s: &str) -> Result<Self, Error> {
         Self::from_public_key_pem(s).map_err(|_| Error::new())
+    }
+}
+
+#[cfg(all(feature = "pem", feature = "serde"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "pem", feature = "serde"))))]
+impl Serialize for VerifyingKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        self.inner.serialize(serializer)
+    }
+}
+
+#[cfg(all(feature = "pem", feature = "serde"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "pem", feature = "serde"))))]
+impl<'de> Deserialize<'de> for VerifyingKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        ecdsa_core::VerifyingKey::<Secp256k1>::deserialize(deserializer).map(Into::into)
     }
 }
 
