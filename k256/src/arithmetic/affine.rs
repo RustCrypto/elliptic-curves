@@ -9,12 +9,15 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, DecompressPoint,
+    AffineArithmetic, AffineXCoordinate, DecompressPoint, Error, Result,
 };
 
 impl AffineArithmetic for Secp256k1 {
     type AffinePoint = AffinePoint;
 }
+
+#[cfg(feature = "serde")]
+use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
 
 /// A point on the secp256k1 curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -214,6 +217,22 @@ impl ToEncodedPoint<Secp256k1> for AffinePoint {
     }
 }
 
+impl TryFrom<EncodedPoint> for AffinePoint {
+    type Error = Error;
+
+    fn try_from(point: EncodedPoint) -> Result<AffinePoint> {
+        AffinePoint::try_from(&point)
+    }
+}
+
+impl TryFrom<&EncodedPoint> for AffinePoint {
+    type Error = Error;
+
+    fn try_from(point: &EncodedPoint) -> Result<AffinePoint> {
+        Option::from(AffinePoint::from_encoded_point(point)).ok_or(Error)
+    }
+}
+
 impl From<AffinePoint> for EncodedPoint {
     /// Returns the SEC1 compressed encoding of this point.
     fn from(affine_point: AffinePoint) -> EncodedPoint {
@@ -246,6 +265,30 @@ impl Neg for AffinePoint {
             y: self.y.negate(1).normalize_weak(),
             infinity: self.infinity,
         }
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl Serialize for AffinePoint {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        self.to_encoded_point(true).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de> Deserialize<'de> for AffinePoint {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        EncodedPoint::deserialize(deserializer)?
+            .try_into()
+            .map_err(de::Error::custom)
     }
 }
 

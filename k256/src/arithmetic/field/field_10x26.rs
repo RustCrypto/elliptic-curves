@@ -1,5 +1,5 @@
 //! Field element modulo the curve internal modulus using 32-bit limbs.
-//! Ported from https://github.com/bitcoin-core/secp256k1
+//! Inspired by the implementation in <https://github.com/bitcoin-core/secp256k1>
 
 use crate::FieldBytes;
 use elliptic_curve::{
