@@ -18,6 +18,7 @@ rust-version = "1.56"
 
 [dependencies]
 elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat", "sec1"] }
+sec1 = { version = "0.2", default-features = false }
 
 # optional dependencies
 ecdsa-core = { version = "=0.13.0-pre", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
@@ -41,6 +42,7 @@ ecdsa = ["arithmetic", "ecdsa-core/sign", "ecdsa-core/verify", "sha256"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
+serde = ["ecdsa-core/serde", "elliptic-curve/serde", "sec1/serde"]
 sha256 = ["digest", "sha2"]
 std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
 test-vectors = ["hex-literal"]

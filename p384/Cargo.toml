@@ -15,6 +15,7 @@ rust-version = "1.56"
 [dependencies]
 ecdsa = { version = "=0.13.0-pre", optional = true, default-features = false, features = ["der"] }
 elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat", "sec1"] }
+sec1 = { version = "0.2", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
@@ -22,6 +23,7 @@ default = ["pkcs8", "std"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
+serde = ["ecdsa/serde", "elliptic-curve/serde", "sec1/serde"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]
 
