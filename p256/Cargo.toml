@@ -17,7 +17,7 @@ edition = "2021"
 rust-version = "1.56"
 
 [dependencies]
-elliptic-curve = { version = "=0.11.0-pre", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "0.11", default-features = false, features = ["hazmat", "sec1"] }
 sec1 = { version = "0.2", default-features = false }
 
 # optional dependencies
