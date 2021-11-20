@@ -311,7 +311,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#62a3f860f800f7c17ff3f868827e0780c838abba"
+source = "git+https://github.com/RustCrypto/signatures.git#7e6295ace4cbc48cae458c337d18f71d655d4a00"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -327,8 +327,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#bd1f7122d668a866037886462c380bdc89b5f412"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be5ff748dcb04505ce82b6447d4bad4ef9cf653a1d811bed2b04083127a44c3f"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -489,9 +490,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.107"
+version = "0.2.108"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbe5e23404da5b4f555ef85ebed98fb4083e55a00c317800bc2a50ede9f3d219"
+checksum = "8521a1b57e76b1ec69af7599e75e38e7b7fad6610f037db8c79b127201b5d119"
 
 [[package]]
 name = "log"
