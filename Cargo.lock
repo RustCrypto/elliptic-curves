@@ -310,12 +310,13 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.13.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#7e6295ace4cbc48cae458c337d18f71d655d4a00"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2053aa87c218a6af2aa96e0bfa27d23278ebe613322265b7b841bc7c5cd9279"
 dependencies = [
  "der",
  "elliptic-curve",
- "hmac",
+ "rfc6979",
  "signature",
 ]
 
@@ -327,9 +328,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be5ff748dcb04505ce82b6447d4bad4ef9cf653a1d811bed2b04083127a44c3f"
+checksum = "f73d21281779c2c22cade2a4ab34eee34271869942546a364f7d552d30c62434"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -824,6 +825,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "rfc6979"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96ef608575f6392792f9ecf7890c00086591d29a83910939d430753f7c050525"
+dependencies = [
+ "crypto-bigint",
+ "hmac",
+ "zeroize",
 ]
 
 [[package]]
