@@ -100,38 +100,37 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
-# TODO(tarcieri): re-enable when new `elliptic-curve` and `ecdsa` crates are released
-#  cross:
-#    strategy:
-#      matrix:
-#        include:
-#          # ARM32
-#          - target: armv7-unknown-linux-gnueabihf
-#            rust: 1.56.0 # MSRV
-#          - target: armv7-unknown-linux-gnueabihf
-#            rust: stable
-#
-#          # ARM64
-#          - target: aarch64-unknown-linux-gnu
-#            rust: 1.56.0 # MSRV
-#          - target: aarch64-unknown-linux-gnu
-#            rust: stable
-#
-#          # PPC32
-#          - target: powerpc-unknown-linux-gnu
-#            rust: 1.56.0 # MSRV
-#          - target: powerpc-unknown-linux-gnu
-#            rust: stable
-#
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - run: ${{ matrix.deps }}
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          profile: minimal
-#          toolchain: ${{ matrix.rust }}
-#          target: ${{ matrix.target }}
-#          override: true
-#      - run: cargo install cross
-#      - run: cross test --release --target ${{ matrix.target }} --all-features
+  cross:
+    strategy:
+      matrix:
+        include:
+          # ARM32
+          - target: armv7-unknown-linux-gnueabihf
+            rust: 1.56.0 # MSRV
+          - target: armv7-unknown-linux-gnueabihf
+            rust: stable
+
+          # ARM64
+          - target: aarch64-unknown-linux-gnu
+            rust: 1.56.0 # MSRV
+          - target: aarch64-unknown-linux-gnu
+            rust: stable
+
+          # PPC32
+          - target: powerpc-unknown-linux-gnu
+            rust: 1.56.0 # MSRV
+          - target: powerpc-unknown-linux-gnu
+            rust: stable
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: ${{ matrix.deps }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - run: cargo install cross
+      - run: cross test --release --target ${{ matrix.target }} --all-features

@@ -19,8 +19,8 @@ use elliptic_curve::{
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq},
-    zeroize::Zeroize,
-    IsHigh,
+    zeroize::{Zeroize, Zeroizing},
+    Curve, IsHigh, PrimeField, ScalarCore,
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
@@ -107,12 +107,18 @@ where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
-        let ephemeral_scalar = rfc6979::generate_k(&self.inner, msg_digest.clone(), &[]);
+        let x = Zeroizing::new(ScalarCore::from(self.inner));
         let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
-        let (signature, recid) = self
-            .inner
-            .try_sign_prehashed(**ephemeral_scalar, msg_scalar)?;
-
+        let k = Zeroizing::new(
+            NonZeroScalar::from_uint(*rfc6979::generate_k::<D, _>(
+                x.as_uint(),
+                &Secp256k1::ORDER,
+                &msg_scalar.to_repr(),
+                &[],
+            ))
+            .unwrap(),
+        );
+        let (signature, recid) = self.inner.try_sign_prehashed(**k, msg_scalar)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
@@ -144,12 +150,18 @@ where
         let mut added_entropy = FieldBytes::default();
         rng.fill_bytes(&mut added_entropy);
 
-        let ephemeral_scalar = rfc6979::generate_k(&self.inner, msg_digest.clone(), &added_entropy);
+        let x = Zeroizing::new(ScalarCore::from(self.inner));
         let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
-        let (signature, recid) = self
-            .inner
-            .try_sign_prehashed(**ephemeral_scalar, msg_scalar)?;
-
+        let k = Zeroizing::new(
+            NonZeroScalar::from_uint(*rfc6979::generate_k::<D, _>(
+                x.as_uint(),
+                &Secp256k1::ORDER,
+                &msg_scalar.to_repr(),
+                &added_entropy,
+            ))
+            .unwrap(),
+        );
+        let (signature, recid) = self.inner.try_sign_prehashed(**k, msg_scalar)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
