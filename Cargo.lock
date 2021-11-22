@@ -460,7 +460,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.10.0-pre"
+version = "0.10.0-pre.1"
 dependencies = [
  "blobby",
  "cfg-if",
