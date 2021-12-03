@@ -46,6 +46,7 @@ use crate::{
         VerifyingKey,
     },
     elliptic_curve::{
+        bigint::U256,
         consts::U32,
         ops::{Invert, Reduce},
         DecompressPoint,
@@ -172,7 +173,7 @@ impl Signature {
     ) -> Result<VerifyingKey> {
         let r = self.r();
         let s = self.s();
-        let z = Scalar::from_be_bytes_reduced(*digest_bytes);
+        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(*digest_bytes);
         let R = AffinePoint::decompress(&r.to_bytes(), self.recovery_id().is_y_odd());
 
         if R.is_some().into() {

@@ -9,7 +9,7 @@ pub(crate) use self::wide::WideScalar;
 use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{nlimbs, prelude::*, Limb, LimbUInt, U256},
+    bigint::{nlimbs, prelude::*, Limb, LimbUInt, U256, U512},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     ops::Reduce,
@@ -572,6 +572,12 @@ impl Reduce<U256> for Scalar {
         let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow))
+    }
+}
+
+impl Reduce<U512> for Scalar {
+    fn from_uint_reduced(w: U512) -> Self {
+        WideScalar(w).reduce()
     }
 }
 

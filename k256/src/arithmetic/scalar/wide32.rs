@@ -20,7 +20,7 @@ const NEG_MODULUS: [u32; 8] = [
 ];
 
 #[derive(Clone, Copy, Debug, Default)]
-pub(crate) struct WideScalar(U512);
+pub(crate) struct WideScalar(pub(super) U512);
 
 impl WideScalar {
     pub const fn from_bytes(bytes: &[u8; 64]) -> Self {
