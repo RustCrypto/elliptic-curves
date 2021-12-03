@@ -7,8 +7,7 @@ use core::{
     fmt::{self, Debug},
 };
 use ecdsa_core::{
-    hazmat::SignPrimitive,
-    rfc6979,
+    hazmat::{rfc6979_generate_k, SignPrimitive},
     signature::{
         digest::{BlockInput, FixedOutput, Reset, Update},
         DigestSigner, RandomizedDigestSigner,
@@ -20,8 +19,8 @@ use elliptic_curve::{
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq},
-    zeroize::{Zeroize, Zeroizing},
-    Curve, IsHigh, PrimeField, ScalarCore,
+    zeroize::Zeroize,
+    IsHigh,
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
@@ -108,19 +107,9 @@ where
     D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
-        let x = Zeroizing::new(ScalarCore::from(self.inner));
-        let msg_scalar =
-            <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
-        let k = Zeroizing::new(
-            NonZeroScalar::from_uint(*rfc6979::generate_k::<D, _>(
-                x.as_uint(),
-                &Secp256k1::ORDER,
-                &msg_scalar.to_repr(),
-                &[],
-            ))
-            .unwrap(),
-        );
-        let (signature, recid) = self.inner.try_sign_prehashed(**k, msg_scalar)?;
+        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
+        let k = rfc6979_generate_k::<_, D>(&self.inner, &z, &[]);
+        let (signature, recid) = self.inner.try_sign_prehashed(**k, z)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
@@ -152,19 +141,9 @@ where
         let mut added_entropy = FieldBytes::default();
         rng.fill_bytes(&mut added_entropy);
 
-        let x = Zeroizing::new(ScalarCore::from(self.inner));
-        let msg_scalar =
-            <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
-        let k = Zeroizing::new(
-            NonZeroScalar::from_uint(*rfc6979::generate_k::<D, _>(
-                x.as_uint(),
-                &Secp256k1::ORDER,
-                &msg_scalar.to_repr(),
-                &added_entropy,
-            ))
-            .unwrap(),
-        );
-        let (signature, recid) = self.inner.try_sign_prehashed(**k, msg_scalar)?;
+        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
+        let k = rfc6979_generate_k::<_, D>(&self.inner, &z, &added_entropy);
+        let (signature, recid) = self.inner.try_sign_prehashed(**k, z)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
