@@ -1,10 +1,9 @@
 //! Wide scalar (32-bit limbs)
 
 use super::{Scalar, MODULUS};
-use crate::{NonZeroScalar, ORDER};
+use crate::ORDER;
 use elliptic_curve::{
     bigint::{Limb, U256, U512},
-    group::ff::Field,
     subtle::{Choice, ConditionallySelectable},
 };
 
@@ -404,11 +403,8 @@ impl WideScalar {
         self.reduce_impl(false)
     }
 
-    // TODO(tarcieri): use this
-    #[allow(dead_code)]
-    pub(super) fn reduce_nonzero(&self) -> NonZeroScalar {
-        let s = self.reduce_impl(true);
-        NonZeroScalar::new(s + Scalar::one()).unwrap()
+    pub(super) fn reduce_nonzero(&self) -> Scalar {
+        self.reduce_impl(true) + Scalar::ONE
     }
 }
 
