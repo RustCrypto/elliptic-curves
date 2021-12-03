@@ -21,9 +21,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "base64ct"
-version = "1.2.0"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "392c772b012d685a640cdad68a5a21f4a45e696f85a2c2c907aab2fe49a91e19"
+checksum = "43a46022bae2c3bc5a17c2d45d59c1233ce0e2cca9ae9b92e92e9ce529874177"
 
 [[package]]
 name = "bit-set"
@@ -296,7 +296,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6919815d73839e7ad218de758883aae3a257ba6759ce7a9992501efbb53d705c"
 dependencies = [
  "const-oid",
- "pem-rfc7468 0.3.1",
+ "pem-rfc7468",
 ]
 
 [[package]]
@@ -310,9 +310,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2053aa87c218a6af2aa96e0bfa27d23278ebe613322265b7b841bc7c5cd9279"
+checksum = "b5e40959e82eac077dc034768956004b19c16a782119a1ed5e20ba8f5d3b3ede"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -328,9 +328,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.1"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f73d21281779c2c22cade2a4ab34eee34271869942546a364f7d552d30c62434"
+checksum = "befe3b23562c66e85abf1bcc872d4d59ac058fcd1db38afb16620cd45bbc65e4"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -339,7 +339,7 @@ dependencies = [
  "generic-array",
  "group",
  "hex-literal",
- "pem-rfc7468 0.2.3",
+ "pem-rfc7468",
  "rand_core",
  "sec1",
  "serde",
@@ -512,9 +512,9 @@ checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 
 [[package]]
 name = "memoffset"
-version = "0.6.4"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
 dependencies = [
  "autocfg",
 ]
@@ -593,15 +593,6 @@ dependencies = [
  "elliptic-curve",
  "sec1",
  "sha2",
-]
-
-[[package]]
-name = "pem-rfc7468"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f22eb0e3c593294a99e9ff4b24cf6b752d43f193aa4415fe5077c159996d497"
-dependencies = [
- "base64ct",
 ]
 
 [[package]]
