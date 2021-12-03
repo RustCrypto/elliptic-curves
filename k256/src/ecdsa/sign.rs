@@ -15,6 +15,7 @@ use ecdsa_core::{
     },
 };
 use elliptic_curve::{
+    bigint::U256,
     consts::U32,
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
@@ -108,7 +109,8 @@ where
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
         let x = Zeroizing::new(ScalarCore::from(self.inner));
-        let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
+        let msg_scalar =
+            <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
         let k = Zeroizing::new(
             NonZeroScalar::from_uint(*rfc6979::generate_k::<D, _>(
                 x.as_uint(),
@@ -151,7 +153,8 @@ where
         rng.fill_bytes(&mut added_entropy);
 
         let x = Zeroizing::new(ScalarCore::from(self.inner));
-        let msg_scalar = Scalar::from_be_bytes_reduced(msg_digest.finalize_fixed());
+        let msg_scalar =
+            <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
         let k = Zeroizing::new(
             NonZeroScalar::from_uint(*rfc6979::generate_k::<D, _>(
                 x.as_uint(),
@@ -191,7 +194,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
 
         // Lift x-coordinate of 𝐑 (element of base field) into a serialized big
         // integer, then reduce it into an element of the scalar field
-        let r = Scalar::from_be_bytes_reduced(R.x.to_bytes());
+        let r = <Scalar as Reduce<U256>>::from_be_bytes_reduced(R.x.to_bytes());
 
         // Compute `s` as a signature over `r` and `z`.
         let s = k_inverse * (z + (r * self));

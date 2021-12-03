@@ -7,6 +7,7 @@ use crate::{
 };
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{
+    bigint::U256,
     consts::U32,
     ops::{Invert, Reduce},
     sec1::ToEncodedPoint,
@@ -108,7 +109,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         .to_affine()
         .x;
 
-        if Scalar::from_be_bytes_reduced(x.to_bytes()).eq(&r) {
+        if <Scalar as Reduce<U256>>::from_be_bytes_reduced(x.to_bytes()).eq(&r) {
             Ok(())
         } else {
             Err(Error::new())
