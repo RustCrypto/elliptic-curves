@@ -12,7 +12,7 @@ use elliptic_curve::{
     bigint::{nlimbs, prelude::*, Limb, LimbUInt, U256, U512},
     generic_array::arr,
     group::ff::{Field, PrimeField},
-    ops::Reduce,
+    ops::{Reduce, ReduceNonZero},
     rand_core::{CryptoRng, RngCore},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -581,6 +581,12 @@ impl Reduce<U512> for Scalar {
     }
 }
 
+impl ReduceNonZero<U512> for Scalar {
+    fn from_uint_reduced_nonzero(w: U512) -> Self {
+        WideScalar(w).reduce_nonzero()
+    }
+}
+
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
@@ -628,7 +634,10 @@ mod tests {
     use super::Scalar;
     use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
     use elliptic_curve::{
+        bigint::U512,
         ff::{Field, PrimeField},
+        generic_array::GenericArray,
+        ops::Reduce,
         IsHigh,
     };
     use num_bigint::{BigUint, ToBigUint};
@@ -745,6 +754,15 @@ mod tests {
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
+    #[test]
+    fn from_wide_bytes_reduced() {
+        let m = Scalar::modulus_as_biguint();
+        let b = [0xffu8; 64];
+        let s = <Scalar as Reduce<U512>>::from_be_bytes_reduced(GenericArray::clone_from_slice(&b));
+        let s_bu = s.to_biguint().unwrap();
+        assert!(s_bu < m);
+    }
+
     prop_compose! {
         fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
             let mut res = bytes_to_biguint(&bytes);
@@ -842,6 +860,17 @@ mod tests {
             let inv_bi = inv.to_biguint().unwrap();
             let m = Scalar::modulus_as_biguint();
             assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
+        }
+
+        #[test]
+        fn fuzzy_from_wide_bytes_reduced(bytes_hi in any::<[u8; 32]>(), bytes_lo in any::<[u8; 32]>()) {
+            let m = Scalar::modulus_as_biguint();
+            let mut bytes = [0u8; 64];
+            bytes[0..32].clone_from_slice(&bytes_hi);
+            bytes[32..64].clone_from_slice(&bytes_lo);
+            let s = <Scalar as Reduce<U512>>::from_be_bytes_reduced(GenericArray::clone_from_slice(&bytes));
+            let s_bu = s.to_biguint().unwrap();
+            assert!(s_bu < m);
         }
     }
 }

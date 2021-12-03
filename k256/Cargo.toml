@@ -19,7 +19,7 @@ rust-version = "1.56"
 
 [dependencies]
 cfg-if = "1.0"
-elliptic-curve = { version = "0.11", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "0.11.3", default-features = false, features = ["hazmat", "sec1"] }
 sec1 = { version = "0.2", default-features = false }
 
 # optional dependencies
