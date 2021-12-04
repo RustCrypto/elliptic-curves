@@ -5,8 +5,8 @@ use criterion::{
 };
 use hex_literal::hex;
 use k256::{
-    elliptic_curve::{generic_array::arr, group::ff::PrimeField},
-    lincomb, ProjectivePoint, Scalar,
+    elliptic_curve::{generic_array::arr, group::ff::PrimeField, ops::LinearCombination},
+    ProjectivePoint, Scalar, Secp256k1,
 };
 
 fn test_scalar_x() -> Scalar {
@@ -39,7 +39,9 @@ fn bench_point_lincomb<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("lincomb via mul+add", |b| b.iter(|| &p * &s + &p * &s));
-    group.bench_function("lincomb()", |b| b.iter(|| lincomb(&p, &s, &p, &s)));
+    group.bench_function("lincomb()", |b| {
+        b.iter(|| Secp256k1::lincomb(&p, &s, &p, &s))
+    });
 }
 
 fn bench_high_level(c: &mut Criterion) {

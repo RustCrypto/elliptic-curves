@@ -328,9 +328,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.3"
+version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c4c31bb557a73d165c838b614521f888112f9d4fcff7421d35646376dd17caf"
+checksum = "d9be7b065e66163fd97787a4cadc56625f948e22e914a0deab1d22b1f48fde25"
 dependencies = [
  "base64ct",
  "crypto-bigint",
