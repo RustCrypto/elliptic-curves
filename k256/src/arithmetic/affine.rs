@@ -19,7 +19,20 @@ impl AffineArithmetic for Secp256k1 {
 #[cfg(feature = "serde")]
 use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
 
-/// A point on the secp256k1 curve in affine coordinates.
+/// secp256k1 curve point expressed in affine coordinates.
+///
+/// # `serde` support
+///
+/// When the `serde` feature of this crate is enabled, the `Serialize` and
+/// `Deserialize` traits are impl'd for this type.
+///
+/// The serialization uses the [SEC1] `Elliptic-Curve-Point-to-Octet-String`
+/// encoding, serialized as binary.
+///
+/// When serialized with a text-based format, the SEC1 representation is
+/// subsequently hex encoded.
+///
+/// [SEC1]: https://www.secg.org/sec1-v2.pdf
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct AffinePoint {

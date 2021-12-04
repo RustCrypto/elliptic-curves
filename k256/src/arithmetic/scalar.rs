@@ -65,6 +65,14 @@ const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
+///
+/// # `serde` support
+///
+/// When the `serde` feature of this crate is enabled, the `Serialize` and
+/// `Deserialize` traits are impl'd for this type.
+///
+/// The serialization is a fixed-width big endian encoding. When used with
+/// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U256);
@@ -106,7 +114,7 @@ impl Field for Scalar {
     }
 
     /// Tonelli-Shank's algorithm for q mod 16 = 1
-    /// https://eprint.iacr.org/2012/685.pdf (page 12, algorithm 5)
+    /// <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
     #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
         // Note: `pow_vartime` is constant-time with respect to `self`

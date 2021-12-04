@@ -1,43 +1,15 @@
-//! Pure Rust implementation of the [secp256k1] (K-256) elliptic curve,
-//! including support for the
-//! [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA],
-//! [Elliptic Curve Diffie-Hellman (ECDH)][ECDH], and general purpose
-//! elliptic curve/field arithmetic which can be used to implement
-//! protocols based on group operations.
+#![doc = include_str!("../README.md")]
+
+//! ## `serde` support
 //!
-//! ## About secp256k1 (K-256)
+//! When the `serde` feature of this crate is enabled, `Serialize` and
+//! `Deserialize` are impl'd for the following types:
 //!
-//! secp256k1 is a Koblitz curve commonly used in cryptocurrency applications.
-//! The "K-256" name follows NIST notation where P = prime fields,
-//! B = binary fields, and K = Koblitz curves.
+//! - [`AffinePoint`]
+//! - [`Scalar`]
+//! - [`ecdsa::VerifyingKey`]
 //!
-//! The curve is specified as `secp256k1` by Certicom's SECG in
-//! "SEC 2: Recommended Elliptic Curve Domain Parameters":
-//!
-//! <https://www.secg.org/sec2-v2.pdf>
-//!
-//! ## ⚠️ Security Warning
-//!
-//! The elliptic curve arithmetic contained in this crate has never been
-//! independently audited!
-//!
-//! This crate has been designed with the goal of ensuring that secret-dependent
-//! operations are performed in constant time (using the `subtle` crate and
-//! constant-time formulas). However, it has not been thoroughly assessed to ensure
-//! that generated assembly is constant time on common CPU architectures.
-//!
-//! USE AT YOUR OWN RISK!
-//!
-//! ## Minimum Supported Rust Version
-//!
-//! Rust **1.56** or higher.
-//!
-//! Minimum supported Rust version may be changed in the future, but it will be
-//! accompanied with a minor version bump.
-//!
-//! [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
-//! [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
-//! [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
+//! Please see type-specific documentation for more information.
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
