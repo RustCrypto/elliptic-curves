@@ -110,7 +110,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         let u1 = z * s_inv;
         let u2 = *r * s_inv;
 
-        let x = Secp256k1::lincomb(
+        let x = ProjectivePoint::lincomb(
             &ProjectivePoint::generator(),
             &u1,
             &ProjectivePoint::from(*self),

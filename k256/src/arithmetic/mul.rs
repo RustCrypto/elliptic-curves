@@ -65,12 +65,9 @@
 //! In experiments, I was not able to detect any case where they would go outside the 128 bit bound,
 //! but I cannot be sure that it cannot happen.
 
-use crate::{
-    arithmetic::{
-        scalar::{Scalar, WideScalar},
-        ProjectivePoint,
-    },
-    Secp256k1,
+use crate::arithmetic::{
+    scalar::{Scalar, WideScalar},
+    ProjectivePoint,
 };
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::{
@@ -305,7 +302,7 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     lincomb_generic(&[*x], &[*k])
 }
 
-impl LinearCombination for Secp256k1 {
+impl LinearCombination for ProjectivePoint {
     fn lincomb(
         x: &ProjectivePoint,
         k: &Scalar,
@@ -354,10 +351,7 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        arithmetic::{ProjectivePoint, Scalar},
-        Secp256k1,
-    };
+    use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::{ops::LinearCombination, rand_core::OsRng, Field, Group};
 
     #[test]
@@ -368,7 +362,7 @@ mod tests {
         let l = Scalar::random(&mut OsRng);
 
         let reference = &x * &k + &y * &l;
-        let test = Secp256k1::lincomb(&x, &k, &y, &l);
+        let test = ProjectivePoint::lincomb(&x, &k, &y, &l);
         assert_eq!(reference, test);
     }
 }

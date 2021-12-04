@@ -6,9 +6,7 @@ pub(crate) mod projective;
 pub(crate) mod scalar;
 pub(crate) mod util;
 
-use crate::NistP256;
 use affine::AffinePoint;
-use elliptic_curve::ops::LinearCombination;
 use field::{FieldElement, MODULUS};
 use projective::ProjectivePoint;
 use scalar::Scalar;
@@ -26,8 +24,6 @@ const CURVE_EQUATION_B: FieldElement = FieldElement([
     0xe5a2_20ab_f721_2ed6,
     0xdc30_061d_0487_4834,
 ]);
-
-impl LinearCombination for NistP256 {}
 
 #[cfg(test)]
 mod tests {

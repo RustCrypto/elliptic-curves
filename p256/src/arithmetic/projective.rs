@@ -13,6 +13,7 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
         Curve, Group, GroupEncoding,
     },
+    ops::LinearCombination,
     rand_core::RngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -92,6 +93,8 @@ impl Curve for ProjectivePoint {
 impl PrimeCurve for ProjectivePoint {
     type Affine = AffinePoint;
 }
+
+impl LinearCombination for ProjectivePoint {}
 
 impl From<AffinePoint> for ProjectivePoint {
     fn from(p: AffinePoint) -> Self {
