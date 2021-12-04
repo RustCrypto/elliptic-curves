@@ -2,14 +2,13 @@
 
 use super::{recoverable, Error, Signature};
 use crate::{
-    lincomb, AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar,
-    Secp256k1,
+    AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar, Secp256k1,
 };
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{
     bigint::U256,
     consts::U32,
-    ops::{Invert, Reduce},
+    ops::{Invert, LinearCombination, Reduce},
     sec1::ToEncodedPoint,
     IsHigh,
 };
@@ -111,7 +110,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         let u1 = z * s_inv;
         let u2 = *r * s_inv;
 
-        let x = lincomb(
+        let x = Secp256k1::lincomb(
             &ProjectivePoint::generator(),
             &u1,
             &ProjectivePoint::from(*self),

@@ -10,7 +10,6 @@ pub(crate) mod scalar;
 mod dev;
 
 pub use field::FieldElement;
-pub use mul::lincomb;
 
 use affine::AffinePoint;
 use projective::ProjectivePoint;

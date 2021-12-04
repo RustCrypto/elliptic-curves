@@ -65,12 +65,16 @@
 //! In experiments, I was not able to detect any case where they would go outside the 128 bit bound,
 //! but I cannot be sure that it cannot happen.
 
-use crate::arithmetic::{
-    scalar::{Scalar, WideScalar},
-    ProjectivePoint,
+use crate::{
+    arithmetic::{
+        scalar::{Scalar, WideScalar},
+        ProjectivePoint,
+    },
+    Secp256k1,
 };
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::{
+    ops::LinearCombination,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
     IsHigh,
 };
@@ -301,14 +305,15 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     lincomb_generic(&[*x], &[*k])
 }
 
-/// Calculates `x * k + y * l`.
-pub fn lincomb(
-    x: &ProjectivePoint,
-    k: &Scalar,
-    y: &ProjectivePoint,
-    l: &Scalar,
-) -> ProjectivePoint {
-    lincomb_generic(&[*x, *y], &[*k, *l])
+impl LinearCombination for Secp256k1 {
+    fn lincomb(
+        x: &ProjectivePoint,
+        k: &Scalar,
+        y: &ProjectivePoint,
+        l: &Scalar,
+    ) -> ProjectivePoint {
+        lincomb_generic(&[*x, *y], &[*k, *l])
+    }
 }
 
 impl Mul<Scalar> for ProjectivePoint {
@@ -349,10 +354,11 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 
 #[cfg(test)]
 mod tests {
-    use super::lincomb;
-    use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::rand_core::OsRng;
-    use elliptic_curve::{Field, Group};
+    use crate::{
+        arithmetic::{ProjectivePoint, Scalar},
+        Secp256k1,
+    };
+    use elliptic_curve::{ops::LinearCombination, rand_core::OsRng, Field, Group};
 
     #[test]
     fn test_lincomb() {
@@ -362,7 +368,7 @@ mod tests {
         let l = Scalar::random(&mut OsRng);
 
         let reference = &x * &k + &y * &l;
-        let test = lincomb(&x, &k, &y, &l);
+        let test = Secp256k1::lincomb(&x, &k, &y, &l);
         assert_eq!(reference, test);
     }
 }

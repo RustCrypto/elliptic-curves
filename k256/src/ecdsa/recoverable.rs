@@ -48,10 +48,10 @@ use crate::{
     elliptic_curve::{
         bigint::U256,
         consts::U32,
-        ops::{Invert, Reduce},
+        ops::{Invert, LinearCombination, Reduce},
         DecompressPoint,
     },
-    lincomb, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
+    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1,
 };
 
 #[cfg(feature = "keccak256")]
@@ -181,7 +181,7 @@ impl Signature {
             let r_inv = r.invert().unwrap();
             let u1 = -(r_inv * z);
             let u2 = r_inv * *s;
-            let pk = lincomb(&ProjectivePoint::generator(), &u1, &R, &u2).to_affine();
+            let pk = Secp256k1::lincomb(&ProjectivePoint::generator(), &u1, &R, &u2).to_affine();
 
             // TODO(tarcieri): ensure the signature verifies?
             Ok(VerifyingKey::from(&pk))
