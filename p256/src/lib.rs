@@ -1,43 +1,15 @@
-//! Pure Rust implementation of the NIST P-256 elliptic curve,
-//! including support for the
-//! [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA],
-//! [Elliptic Curve Diffie-Hellman (ECDH)][ECDH], and general purpose
-//! elliptic curve/field arithmetic which can be used to implement
-//! protocols based on group operations.
+#![doc = include_str!("../README.md")]
+
+//! ## `serde` support
 //!
-//! ## About NIST P-256
+//! When the `serde` feature of this crate is enabled, `Serialize` and
+//! `Deserialize` are impl'd for the following types:
 //!
-//! NIST P-256 is a Weierstrass curve specified in FIPS 186-4:
-//! Digital Signature Standard (DSS):
+//! - [`AffinePoint`]
+//! - [`Scalar`]
+//! - [`ecdsa::VerifyingKey`]
 //!
-//! <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
-//!
-//! Also known as `prime256v1` (ANSI X9.62) and `secp256r1` (SECG), P-256 is
-//! included in the US National Security Agency's "Suite B" and is widely used
-//! in Internet and connected device protocols like TLS, the X.509 PKI, and
-//! Bluetooth.
-//!
-//! ## ⚠️ Security Warning
-//!
-//! The elliptic curve arithmetic contained in this crate has never been
-//! independently audited!
-//!
-//! This crate has been designed with the goal of ensuring that secret-dependent
-//! operations are performed in constant time (using the `subtle` crate and
-//! constant-time formulas). However, it has not been thoroughly assessed to ensure
-//! that generated assembly is constant time on common CPU architectures.
-//!
-//! USE AT YOUR OWN RISK!
-//!
-//! ## Minimum Supported Rust Version
-//!
-//! Rust **1.56** or higher.
-//!
-//! Minimum supported Rust version may be changed in the future, but it will be
-//! accompanied with a minor version bump.
-//!
-//! [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
-//! [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman
+//! Please see type-specific documentation for more information.
 
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]

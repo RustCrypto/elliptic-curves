@@ -29,6 +29,17 @@ use core::str::FromStr;
 use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
+///
+/// # `serde` support
+///
+/// When the `serde` feature of this crate is enabled, the `Serialize` and
+/// `Deserialize` traits are impl'd for this type.
+///
+/// The serialization is binary-oriented and supports ASN.1 DER-encoded
+/// X.509 Subject Public Key Info (SPKI) as the encoding format.
+///
+/// For a more text-friendly encoding of public keys, use
+/// [`elliptic_curve::JwkEcKey`] instead.
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct VerifyingKey {
