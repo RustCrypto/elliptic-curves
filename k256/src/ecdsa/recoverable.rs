@@ -51,7 +51,7 @@ use crate::{
         ops::{Invert, LinearCombination, Reduce},
         DecompressPoint,
     },
-    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar, Secp256k1,
+    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
 };
 
 #[cfg(feature = "keccak256")]
@@ -176,18 +176,18 @@ impl Signature {
         let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(*digest_bytes);
         let R = AffinePoint::decompress(&r.to_bytes(), self.recovery_id().is_y_odd());
 
-        if R.is_some().into() {
-            let R = ProjectivePoint::from(R.unwrap());
-            let r_inv = r.invert().unwrap();
-            let u1 = -(r_inv * z);
-            let u2 = r_inv * *s;
-            let pk = Secp256k1::lincomb(&ProjectivePoint::generator(), &u1, &R, &u2).to_affine();
-
-            // TODO(tarcieri): ensure the signature verifies?
-            Ok(VerifyingKey::from(&pk))
-        } else {
-            Err(Error::new())
+        if R.is_none().into() {
+            return Err(Error::new());
         }
+
+        let R = ProjectivePoint::from(R.unwrap());
+        let r_inv = r.invert().unwrap();
+        let u1 = -(r_inv * z);
+        let u2 = r_inv * *s;
+        let pk = ProjectivePoint::lincomb(&ProjectivePoint::generator(), &u1, &R, &u2).to_affine();
+
+        // TODO(tarcieri): ensure the signature verifies?
+        Ok(VerifyingKey::from(&pk))
     }
 
     /// Parse the `r` component of this signature to a [`NonZeroScalar`]
