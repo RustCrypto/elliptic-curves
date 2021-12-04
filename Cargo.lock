@@ -310,9 +310,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5e40959e82eac077dc034768956004b19c16a782119a1ed5e20ba8f5d3b3ede"
+checksum = "c53b3bbf1444521719a1d36fb4aaac127522cd7bc8f2a6556b705cf81103a0a8"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -491,9 +491,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.108"
+version = "0.2.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8521a1b57e76b1ec69af7599e75e38e7b7fad6610f037db8c79b127201b5d119"
+checksum = "f98a04dce437184842841303488f70d0188c5f51437d2a834dc097eafa909a01"
 
 [[package]]
 name = "log"
