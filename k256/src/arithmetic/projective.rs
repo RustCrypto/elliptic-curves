@@ -117,11 +117,7 @@ impl ProjectivePoint {
     pub fn to_affine(&self) -> AffinePoint {
         self.z
             .invert()
-            .map(|zinv| AffinePoint {
-                x: self.x * &zinv,
-                y: self.y * &zinv,
-                infinity: Choice::from(0),
-            })
+            .map(|zinv| AffinePoint::new(self.x * &zinv, self.y * &zinv))
             .unwrap_or_else(AffinePoint::identity)
     }
 

@@ -27,6 +27,7 @@ ecdsa-core = { version = "0.13", package = "ecdsa", optional = true, default-fea
 hex-literal = { version = "0.3", optional = true }
 sha2 = { version = "0.9", optional = true, default-features = false }
 sha3 = { version = "0.9", optional = true, default-features = false }
+signature = { version = ">= 1.3.1, <1.5", optional = true, default-features = false }
 
 [dev-dependencies]
 blobby = "0.3"
@@ -50,6 +51,7 @@ jwk = ["elliptic-curve/jwk"]
 keccak256 = ["digest", "sha3"]
 pem = ["elliptic-curve/pem", "ecdsa-core/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
+schnorr = ["arithmetic", "sha256", "signature/digest-preview"]
 serde = ["ecdsa-core/serde", "elliptic-curve/serde", "sec1/serde"]
 sha256 = ["digest", "sha2"]
 std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available

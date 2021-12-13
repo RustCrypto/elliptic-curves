@@ -54,7 +54,7 @@ impl FieldElement {
         Self(FieldElementImpl::one())
     }
 
-    /// Determine if this `FieldElement10x26` is zero.
+    /// Determine if this `FieldElement` is zero.
     ///
     /// # Returns
     ///
@@ -63,7 +63,16 @@ impl FieldElement {
         self.0.is_zero()
     }
 
-    /// Determine if this `FieldElement10x26` is odd in the SEC1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement` is even in the SEC1 sense: `self mod 2 == 0`.
+    ///
+    /// # Returns
+    ///
+    /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    pub fn is_even(&self) -> Choice {
+        !self.0.is_odd()
+    }
+
+    /// Determine if this `FieldElement` is odd in the SEC1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///

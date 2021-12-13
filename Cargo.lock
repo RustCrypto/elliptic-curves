@@ -475,6 +475,7 @@ dependencies = [
  "sec1",
  "sha2",
  "sha3",
+ "signature",
 ]
 
 [[package]]
