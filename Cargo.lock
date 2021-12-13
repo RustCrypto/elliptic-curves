@@ -512,6 +512,7 @@ dependencies = [
  "serdect",
  "sha2",
  "sha3",
+ "signature",
 ]
 
 [[package]]
