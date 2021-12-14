@@ -1,6 +1,6 @@
 [package]
 name = "bp384"
-version = "0.3.0-pre" # Also update html_root_url in lib.rs when bumping this
+version = "0.3.0" # Also update html_root_url in lib.rs when bumping this
 description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
