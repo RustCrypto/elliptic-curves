@@ -4,6 +4,55 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.0 (2021-12-14)
+### Added
+- Implement `Scalar::sqrt` ([#400])
+- Impl `PrimeCurveArithmetic` ([#415])
+- Impl `Reduce<U256>` for `Scalar` ([#436])
+- Impl `Drop` for `ecdsa::SigningKey` ([#449])
+- `serde` feature ([#463], [#464])
+- Impl `Reduce<U512>` for `Scalar` ([#472])
+- Impl `ReduceNonZero<U512>` for `Scalar` ([#474])
+- Impl `LinearCombination` trait ([#476])
+
+### Changed
+- Make `ecdsa::Signature::normalize_s` non-mutating ([#405])
+- Use `PrimeCurve` trait ([#413])
+- Use `sec1` crate for `EncodedPoint` type ([#435])
+- Replace `ecdsa::hazmat::FromDigest` with `Reduce` ([#438])
+- Make `FromEncodedPoint` return a `CtOption` ([#445])
+- Rust 2021 edition upgrade; MSRV 1.56+ ([#453])
+- Bump `elliptic-curve` crate dependency to v0.11 ([#466])
+- Bump `ecdsa` crate dependency to v0.13 ([#467])
+
+### Removed
+- `force-32-bit` feature ([#399])
+- `field-montgomery` feature ([#404])
+- `Scalar::conditional_add_bit` ([#431])
+- Deprecated `SigningKey::verify_key` method ([#461])
+
+[#399]: https://github.com/RustCrypto/elliptic-curves/pull/399
+[#400]: https://github.com/RustCrypto/elliptic-curves/pull/400
+[#404]: https://github.com/RustCrypto/elliptic-curves/pull/404
+[#405]: https://github.com/RustCrypto/elliptic-curves/pull/405
+[#413]: https://github.com/RustCrypto/elliptic-curves/pull/413
+[#415]: https://github.com/RustCrypto/elliptic-curves/pull/415
+[#431]: https://github.com/RustCrypto/elliptic-curves/pull/431
+[#435]: https://github.com/RustCrypto/elliptic-curves/pull/435
+[#436]: https://github.com/RustCrypto/elliptic-curves/pull/436
+[#438]: https://github.com/RustCrypto/elliptic-curves/pull/438
+[#445]: https://github.com/RustCrypto/elliptic-curves/pull/445
+[#449]: https://github.com/RustCrypto/elliptic-curves/pull/449
+[#453]: https://github.com/RustCrypto/elliptic-curves/pull/453
+[#461]: https://github.com/RustCrypto/elliptic-curves/pull/461
+[#463]: https://github.com/RustCrypto/elliptic-curves/pull/463
+[#464]: https://github.com/RustCrypto/elliptic-curves/pull/464
+[#466]: https://github.com/RustCrypto/elliptic-curves/pull/466
+[#467]: https://github.com/RustCrypto/elliptic-curves/pull/467
+[#472]: https://github.com/RustCrypto/elliptic-curves/pull/472
+[#474]: https://github.com/RustCrypto/elliptic-curves/pull/474
+[#476]: https://github.com/RustCrypto/elliptic-curves/pull/476
+
 ## 0.9.6 (2021-07-22)
 ### Added
 - Wycheproof test vectors ([#384])
