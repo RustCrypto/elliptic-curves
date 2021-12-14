@@ -4,6 +4,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.0 (2021-12-14)
+### Added
+- Implement point compaction support ([#357])
+- Implement `Scalar::sqrt` ([#392])
+- Impl `DefaultIsZeroes` for `ProjectivePoint` ([#414])
+- Impl `PrimeCurveArithmetic` ([#415])
+- Impl `Reduce<U256>` for `Scalar` ([#436])
+- `serde` feature ([#463], [#465])
+- Impl `LinearCombination` trait ([#476])
+
+### Changed
+- Use `PrimeCurve` trait ([#413])
+- Use `sec1` crate for `EncodedPoint` type ([#435])
+- Replace `ecdsa::hazmat::FromDigest` with `Reduce` ([#438])
+- Make `FromEncodedPoint` return a `CtOption` ([#445])
+- Rust 2021 edition upgrade; MSRV 1.56+ ([#453])
+- Leverage generic ECDSA implementation from `ecdsa` crate ([#462])
+- Bump `elliptic-curve` crate dependency to v0.11 ([#466])
+- Bump `ecdsa` crate dependency to v0.13 ([#467])
+
+### Fixed
+- `ProjectivePoint::to_bytes()` encoding for identity ([#443])
+- Handle identity point in `GroupEncoding` ([#446])
+
+[#357]: https://github.com/RustCrypto/elliptic-curves/pull/357
+[#392]: https://github.com/RustCrypto/elliptic-curves/pull/392
+[#413]: https://github.com/RustCrypto/elliptic-curves/pull/413
+[#414]: https://github.com/RustCrypto/elliptic-curves/pull/414
+[#415]: https://github.com/RustCrypto/elliptic-curves/pull/415
+[#435]: https://github.com/RustCrypto/elliptic-curves/pull/435
+[#436]: https://github.com/RustCrypto/elliptic-curves/pull/436
+[#438]: https://github.com/RustCrypto/elliptic-curves/pull/438
+[#443]: https://github.com/RustCrypto/elliptic-curves/pull/443
+[#445]: https://github.com/RustCrypto/elliptic-curves/pull/445
+[#446]: https://github.com/RustCrypto/elliptic-curves/pull/446
+[#453]: https://github.com/RustCrypto/elliptic-curves/pull/453
+[#463]: https://github.com/RustCrypto/elliptic-curves/pull/463
+[#465]: https://github.com/RustCrypto/elliptic-curves/pull/465
+[#466]: https://github.com/RustCrypto/elliptic-curves/pull/466
+[#467]: https://github.com/RustCrypto/elliptic-curves/pull/467
+[#476]: https://github.com/RustCrypto/elliptic-curves/pull/476
+
 ## 0.9.0 (2021-06-08)
 ### Added
 - `AffineArithmetic` trait impl ([#347])
