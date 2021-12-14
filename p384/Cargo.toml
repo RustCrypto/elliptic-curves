@@ -1,6 +1,6 @@
 [package]
 name = "p384"
-version = "0.9.0-pre" # Also update html_root_url in lib.rs when bumping this
+version = "0.9.0" # Also update html_root_url in lib.rs when bumping this
 description = "NIST P-384 (secp384r1) elliptic curve"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"

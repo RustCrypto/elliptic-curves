@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.0 (2021-12-14)
+### Added
+- `serde` feature ([#463])
+
+### Changed
+- Use `sec1` crate for `EncodedPoint` type ([#435])
+- Rust 2021 edition upgrade; MSRV 1.56+ ([#453])
+- Bump `elliptic-curve` crate dependency to v0.11 ([#466])
+- Bump `ecdsa` crate dependency to v0.13 ([#467])
+
+[#435]: https://github.com/RustCrypto/elliptic-curves/pull/435
+[#453]: https://github.com/RustCrypto/elliptic-curves/pull/453
+[#463]: https://github.com/RustCrypto/elliptic-curves/pull/463
+[#466]: https://github.com/RustCrypto/elliptic-curves/pull/466
+[#467]: https://github.com/RustCrypto/elliptic-curves/pull/467
+
 ## 0.8.0 (2021-06-08)
 ### Changed
 - Bump `elliptic-curve` to v0.10; MSRV 1.51+ ([#349])
