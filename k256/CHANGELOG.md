@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `elliptic-curve` crate dependency to v0.11 ([#466])
 - Bump `ecdsa` crate dependency to v0.13 ([#467])
 
+### Fixed
+- Handle identity point in `GroupEncoding` ([#446])
+
 ### Removed
 - `force-32-bit` feature ([#399])
 - `field-montgomery` feature ([#404])
@@ -42,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#436]: https://github.com/RustCrypto/elliptic-curves/pull/436
 [#438]: https://github.com/RustCrypto/elliptic-curves/pull/438
 [#445]: https://github.com/RustCrypto/elliptic-curves/pull/445
+[#446]: https://github.com/RustCrypto/elliptic-curves/pull/446
 [#449]: https://github.com/RustCrypto/elliptic-curves/pull/449
 [#453]: https://github.com/RustCrypto/elliptic-curves/pull/453
 [#461]: https://github.com/RustCrypto/elliptic-curves/pull/461
