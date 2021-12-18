@@ -19,7 +19,8 @@ sec1 = { version = "0.2", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
 [features]
-default = ["pkcs8", "std"]
+default = ["arithmetic", "pkcs8", "std"]
+arithmetic = ["elliptic-curve/arithmetic"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]

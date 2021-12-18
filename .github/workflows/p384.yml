@@ -17,6 +17,7 @@ env:
   RUSTFLAGS: "-Dwarnings"
 
 jobs:
+  # TODO(tarcieri): test arithmetic on 32-bit platforms
   build:
     runs-on: ubuntu-latest
     strategy:
