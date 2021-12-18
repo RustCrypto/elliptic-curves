@@ -13,12 +13,22 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub mod ecdsa;
 
+#[cfg(feature = "arithmetic")]
+mod scalar;
+
 pub use elliptic_curve;
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::bigint::U384;
+#[cfg(feature = "arithmetic")]
+pub use crate::scalar::Scalar;
+
+pub use elliptic_curve::bigint::U384;
+
+/// Curve order.
+pub const ORDER: U384 =
+    U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
 
 /// NIST P-384 elliptic curve.
 ///
@@ -48,8 +58,7 @@ impl elliptic_curve::Curve for NistP384 {
     type UInt = U384;
 
     /// Curve order
-    const ORDER: U384 =
-        U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
+    const ORDER: U384 = ORDER;
 }
 
 impl elliptic_curve::PrimeCurve for NistP384 {}
@@ -76,6 +85,11 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 
 /// NIST P-384 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
+
+/// NIST P-384 scalar core type.
+///
+/// This is always available regardless of if the `arithmetic` feature is enabled.
+pub type ScalarCore = elliptic_curve::ScalarCore<NistP384>;
 
 /// NIST P-384 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;

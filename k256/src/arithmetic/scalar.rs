@@ -60,7 +60,7 @@ const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 /// - [`PrimeField`](https://docs.rs/ff/latest/ff/trait.PrimeField.html) -
 ///   represents elements of prime fields and provides:
 ///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
-///   - `char_le_bits`, `multiplicative_generator`, `root_of_unity` constants.
+///   - `multiplicative_generator` and `root_of_unity` constants.
 /// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
