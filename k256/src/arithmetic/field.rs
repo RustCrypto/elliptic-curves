@@ -54,7 +54,7 @@ impl FieldElement {
         Self(FieldElementImpl::one())
     }
 
-    /// Determine if this `FieldElement10x26` is zero.
+    /// Determine if this `FieldElement` is zero.
     ///
     /// # Returns
     ///
@@ -63,7 +63,7 @@ impl FieldElement {
         self.0.is_zero()
     }
 
-    /// Determine if this `FieldElement10x26` is odd in the SEC1 sense: `self mod 2 == 1`.
+    /// Determine if this `FieldElement` is odd in the SEC1 sense: `self mod 2 == 1`.
     ///
     /// # Returns
     ///
