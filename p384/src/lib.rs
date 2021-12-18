@@ -14,17 +14,18 @@
 pub mod ecdsa;
 
 #[cfg(feature = "arithmetic")]
-mod scalar;
+mod arithmetic;
 
-pub use elliptic_curve;
+pub use elliptic_curve::{self, bigint::U384};
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{
+    field::FieldElement, // TODO(tarcieri): make private
+    scalar::Scalar,
+};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
-
-#[cfg(feature = "arithmetic")]
-pub use crate::scalar::Scalar;
-
-pub use elliptic_curve::bigint::U384;
 
 /// Curve order.
 pub const ORDER: U384 =
