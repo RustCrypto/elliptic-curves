@@ -28,7 +28,8 @@ mod field_impl;
 pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as FieldElementImpl;
 
 use self::field_impl::{
-    fiat_p384_add, fiat_p384_mul, fiat_p384_opp, fiat_p384_square, fiat_p384_sub,
+    fiat_p384_add, fiat_p384_from_montgomery, fiat_p384_mul, fiat_p384_opp, fiat_p384_square,
+    fiat_p384_sub, fiat_p384_to_montgomery,
 };
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -47,6 +48,7 @@ const LIMBS: usize = 6;
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
+// TODO(tarcieri): convert to Montgomery form?
 pub(crate) const MODULUS: FieldElement = FieldElement([
     0x00000000ffffffff,
     0xffffffff00000000,
@@ -99,21 +101,22 @@ impl FieldElement {
         let (_, borrow) = sbb(w[5], MODULUS.0[5], borrow);
         let is_some = (borrow as u8) & 1;
 
-        // TODO(tarcieri): Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        //CtOption::new(FieldElement(w).as_montgomery(), Choice::from(is_some))
-        CtOption::new(FieldElement(w), Choice::from(is_some))
+        // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
+        CtOption::new(FieldElement(w).to_montgomery(), Choice::from(is_some))
     }
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
-        // TODO(tarcieri): convert from Montgomery form to canonical form
+        // Convert from Montgomery form to canonical form
+        let tmp = self.to_canonical();
+
         let mut ret = FieldBytes::default();
-        ret[0..8].copy_from_slice(&self.0[5].to_be_bytes());
-        ret[8..16].copy_from_slice(&self.0[4].to_be_bytes());
-        ret[16..24].copy_from_slice(&self.0[3].to_be_bytes());
-        ret[24..32].copy_from_slice(&self.0[2].to_be_bytes());
-        ret[32..40].copy_from_slice(&self.0[1].to_be_bytes());
-        ret[40..48].copy_from_slice(&self.0[0].to_be_bytes());
+        ret[0..8].copy_from_slice(&tmp.0[5].to_be_bytes());
+        ret[8..16].copy_from_slice(&tmp.0[4].to_be_bytes());
+        ret[16..24].copy_from_slice(&tmp.0[3].to_be_bytes());
+        ret[24..32].copy_from_slice(&tmp.0[2].to_be_bytes());
+        ret[32..40].copy_from_slice(&tmp.0[1].to_be_bytes());
+        ret[40..48].copy_from_slice(&tmp.0[0].to_be_bytes());
         ret
     }
 
@@ -186,6 +189,22 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root exists.
     pub fn sqrt(&self) -> CtOption<Self> {
         todo!()
+    }
+
+    /// Translate a field element out of the Montgomery domain.
+    #[inline]
+    fn to_canonical(self) -> Self {
+        let mut out = Self::ZERO;
+        fiat_p384_from_montgomery(&mut out.0, &self.0);
+        out
+    }
+
+    /// Translate a field element into the Montgomery domain.
+    #[inline]
+    fn to_montgomery(self) -> Self {
+        let mut out = Self::ZERO;
+        fiat_p384_to_montgomery(&mut out.0, &self.0);
+        out
     }
 }
 

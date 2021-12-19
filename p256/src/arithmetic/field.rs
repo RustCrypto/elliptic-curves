@@ -134,14 +134,13 @@ impl FieldElement {
         let is_some = (borrow as u8) & 1;
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        CtOption::new(FieldElement(w).as_montgomery(), Choice::from(is_some))
+        CtOption::new(FieldElement(w).to_montgomery(), Choice::from(is_some))
     }
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
         // Convert from Montgomery form to canonical form
-        let tmp =
-            FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0);
+        let tmp = self.to_canonical();
 
         let mut ret = FieldBytes::default();
         ret[0..8].copy_from_slice(&tmp.0[3].to_be_bytes());
@@ -333,12 +332,16 @@ impl FieldElement {
         result
     }
 
-    pub(crate) const fn as_canonical(&self) -> Self {
+    /// Translate a field element out of the Montgomery domain.
+    #[inline]
+    pub(crate) const fn to_canonical(self) -> Self {
         FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0)
     }
 
-    pub(crate) const fn as_montgomery(&self) -> Self {
-        self.mul(&R2)
+    /// Translate a field element into the Montgomery domain.
+    #[inline]
+    pub(crate) const fn to_montgomery(self) -> Self {
+        Self::mul(&self, &R2)
     }
 
     /// Returns self * rhs mod p
