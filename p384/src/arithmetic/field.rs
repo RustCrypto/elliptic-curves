@@ -25,36 +25,97 @@
 #[rustfmt::skip]
 mod field_impl;
 
+pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as FieldElementImpl;
+
 use self::field_impl::{
-    fiat_p384_add, fiat_p384_montgomery_domain_field_element as FieldElementImpl, fiat_p384_mul,
-    fiat_p384_opp, fiat_p384_square, fiat_p384_sub,
+    fiat_p384_add, fiat_p384_mul, fiat_p384_opp, fiat_p384_square, fiat_p384_sub,
 };
+use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
 
+/// Type used to represent a limb.
+// TODO(tarcieri): hardcoded for 64-bit; add 32-bit support
+type Limb = u64;
+
+/// Number of limbs used to represent a field element.
+// TODO(tarcieri): hardcoded for 64-bit; add 32-bit support
+const LIMBS: usize = 6;
+
+/// Constant representing the modulus
+/// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
+pub(crate) const MODULUS: FieldElement = FieldElement([
+    0x00000000ffffffff,
+    0xffffffff00000000,
+    0xfffffffffffffffe,
+    0xffffffffffffffff,
+    0xffffffffffffffff,
+    0xffffffffffffffff,
+]);
+
 /// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(FieldElementImpl);
+pub struct FieldElement(pub(super) FieldElementImpl);
 
 impl FieldElement {
     /// Zero element.
-    #[cfg(target_pointer_width = "32")]
-    pub const ZERO: Self = Self([0u32; 12]);
-
-    /// Zero element.
-    #[cfg(target_pointer_width = "64")]
-    pub const ZERO: Self = Self([0u64; 6]);
+    pub const ZERO: Self = Self([0; LIMBS]);
 
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "32")]
-    pub const ONE: Self = Self([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    pub const ONE: Self = Self([
+        0x1, 0xffffffff, 0xffffffff, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+    ]);
 
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "64")]
-    pub const ONE: Self = Self([1, 0, 0, 0, 0, 0]);
+    pub const ONE: Self = Self([0xffffffff00000001, 0xffffffff, 0x1, 0x0, 0x0, 0x0]);
+
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
+        let mut w = [Limb::default(); LIMBS];
+
+        // Interpret the bytes as a big-endian integer w.
+        w[5] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+        w[4] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+        w[3] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
+        w[2] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
+        w[1] = u64::from_be_bytes(bytes[32..40].try_into().unwrap());
+        w[0] = u64::from_be_bytes(bytes[40..48].try_into().unwrap());
+
+        // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
+        // value of 2^64 - 1.
+        let (_, borrow) = sbb(w[0], MODULUS.0[0], 0);
+        let (_, borrow) = sbb(w[1], MODULUS.0[1], borrow);
+        let (_, borrow) = sbb(w[2], MODULUS.0[2], borrow);
+        let (_, borrow) = sbb(w[3], MODULUS.0[3], borrow);
+        let (_, borrow) = sbb(w[4], MODULUS.0[4], borrow);
+        let (_, borrow) = sbb(w[5], MODULUS.0[5], borrow);
+        let is_some = (borrow as u8) & 1;
+
+        // TODO(tarcieri): Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
+        //CtOption::new(FieldElement(w).as_montgomery(), Choice::from(is_some))
+        CtOption::new(FieldElement(w), Choice::from(is_some))
+    }
+
+    /// Returns the SEC1 encoding of this field element.
+    pub fn to_bytes(self) -> FieldBytes {
+        // TODO(tarcieri): convert from Montgomery form to canonical form
+        let mut ret = FieldBytes::default();
+        ret[0..8].copy_from_slice(&self.0[5].to_be_bytes());
+        ret[8..16].copy_from_slice(&self.0[4].to_be_bytes());
+        ret[16..24].copy_from_slice(&self.0[3].to_be_bytes());
+        ret[24..32].copy_from_slice(&self.0[2].to_be_bytes());
+        ret[32..40].copy_from_slice(&self.0[1].to_be_bytes());
+        ret[40..48].copy_from_slice(&self.0[0].to_be_bytes());
+        ret
+    }
 
     /// Determine if this `FieldElement` is zero.
     ///
@@ -120,6 +181,11 @@ impl FieldElement {
         let mut out = Self::ZERO;
         fiat_p384_square(&mut out.0, &self.0);
         out
+    }
+
+    /// Returns the square root of self mod p, or `None` if no square root exists.
+    pub fn sqrt(&self) -> CtOption<Self> {
+        todo!()
     }
 }
 
@@ -230,4 +296,11 @@ impl Neg for FieldElement {
     fn neg(self) -> Self {
         self.neg()
     }
+}
+
+/// Computes `a - (b + borrow)`, returning the result and the new borrow.
+#[inline(always)]
+pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
+    let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
+    (ret as u64, (ret >> 64) as u64)
 }
