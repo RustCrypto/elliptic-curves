@@ -18,6 +18,9 @@ elliptic-curve = { version = "0.11", default-features = false, features = ["hazm
 sec1 = { version = "0.2", default-features = false }
 sha2 = { version = "0.9", optional = true, default-features = false }
 
+[dev-dependencies]
+hex-literal = "0.3"
+
 [features]
 default = ["arithmetic", "pkcs8", "std"]
 arithmetic = ["elliptic-curve/arithmetic"]

@@ -19,10 +19,7 @@ mod arithmetic;
 pub use elliptic_curve::{self, bigint::U384};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{
-    field::FieldElement, // TODO(tarcieri): make private
-    scalar::Scalar,
-};
+pub use arithmetic::{affine::AffinePoint, scalar::Scalar};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
@@ -30,6 +27,8 @@ pub use elliptic_curve::pkcs8;
 /// Curve order.
 pub const ORDER: U384 =
     U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
+
+use elliptic_curve::generic_array::{typenum::U49, GenericArray};
 
 /// NIST P-384 elliptic curve.
 ///
@@ -79,6 +78,9 @@ impl elliptic_curve::AlgorithmParameters for NistP384 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.3.132.0.34");
 }
 
+/// Compressed SEC1-encoded NIST P-384 curve point.
+pub type CompressedPoint = GenericArray<u8, U49>;
+
 /// NIST P-384 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
@@ -86,6 +88,14 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 
 /// NIST P-384 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
+
+/// Non-zero NIST P-384 scalar field element.
+#[cfg(feature = "arithmetic")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP384>;
+
+/// NIST P-384 public key.
+#[cfg(feature = "arithmetic")]
+pub type PublicKey = elliptic_curve::PublicKey<NistP384>;
 
 /// NIST P-384 scalar core type.
 ///

@@ -1,26 +1,25 @@
-//! Affine points
+//! Affine points on the NIST P-384 elliptic curve.
 
-use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
-use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP256, Scalar};
-use core::ops::{Mul, Neg};
+use super::{FieldElement, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
+use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384};
+use core::ops::Neg;
 use elliptic_curve::{
-    bigint::Encoding,
     generic_array::arr,
-    group::{prime::PrimeCurveAffine, GroupEncoding},
-    sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
+    group::GroupEncoding,
+    sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, Curve, DecompactPoint, DecompressPoint, Error, Result,
+    AffineArithmetic, AffineXCoordinate, DecompressPoint, Error, Result,
 };
 
 #[cfg(feature = "serde")]
 use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
 
-impl AffineArithmetic for NistP256 {
+impl AffineArithmetic for NistP384 {
     type AffinePoint = AffinePoint;
 }
 
-/// NIST P-256 (secp256r1) curve point expressed in affine coordinates.
+/// NIST P-384 (secp384r1) curve point expressed in affine coordinates.
 ///
 /// # `serde` support
 ///
@@ -42,35 +41,40 @@ pub struct AffinePoint {
     pub(super) infinity: Choice,
 }
 
-impl PrimeCurveAffine for AffinePoint {
-    type Scalar = Scalar;
-    type Curve = ProjectivePoint;
-
+impl AffinePoint {
     /// Returns the identity of the group: the point at infinity.
-    fn identity() -> AffinePoint {
+    pub fn identity() -> AffinePoint {
         Self {
-            x: FieldElement::zero(),
-            y: FieldElement::zero(),
+            x: FieldElement::ZERO,
+            y: FieldElement::ZERO,
             infinity: Choice::from(1),
         }
     }
 
-    /// Returns the base point of P-256.
-    fn generator() -> AffinePoint {
-        // NIST P-256 basepoint in affine coordinates:
-        // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
-        // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
+    /// Returns the base point of P-384.
+    ///
+    /// Defined in FIPS 186-4 § D.1.2.4:
+    ///
+    /// ```text
+    /// Gₓ = aa87ca22 be8b0537 8eb1c71e f320ad74 6e1d3b62 8ba79b98
+    ///      59f741e0 82542a38 5502f25d bf55296c 3a545e38 72760ab7
+    /// Gᵧ = 3617de4a 96262c6f 5d9e98bf 9292dc29 f8f41dbd 289a147c
+    ///      e9da3113 b5f0b8c0 0a60b1ce 1d7e819d 7a431d7c 90ea0e5f
+    /// ```
+    pub fn generator() -> AffinePoint {
         AffinePoint {
             x: FieldElement::from_bytes(&arr![u8;
-                0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
-                0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
-                0xd8, 0x98, 0xc2, 0x96
+                0xaa, 0x87, 0xca, 0x22, 0xbe, 0x8b, 0x05, 0x37, 0x8e, 0xb1, 0xc7, 0x1e,
+                0xf3, 0x20, 0xad, 0x74, 0x6e, 0x1d, 0x3b, 0x62, 0x8b, 0xa7, 0x9b, 0x98,
+                0x59, 0xf7, 0x41, 0xe0, 0x82, 0x54, 0x2a, 0x38, 0x55, 0x02, 0xf2, 0x5d,
+                0xbf, 0x55, 0x29, 0x6c, 0x3a, 0x54, 0x5e, 0x38, 0x72, 0x76, 0x0a, 0xb7
             ])
             .unwrap(),
             y: FieldElement::from_bytes(&arr![u8;
-                0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
-                0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
-                0x37, 0xbf, 0x51, 0xf5
+                0x36, 0x17, 0xde, 0x4a, 0x96, 0x26, 0x2c, 0x6f, 0x5d, 0x9e, 0x98, 0xbf,
+                0x92, 0x92, 0xdc, 0x29, 0xf8, 0xf4, 0x1d, 0xbd, 0x28, 0x9a, 0x14, 0x7c,
+                0xe9, 0xda, 0x31, 0x13, 0xb5, 0xf0, 0xb8, 0xc0, 0x0a, 0x60, 0xb1, 0xce,
+                0x1d, 0x7e, 0x81, 0x9d, 0x7a, 0x43, 0x1d, 0x7c, 0x90, 0xea, 0x0e, 0x5f
             ])
             .unwrap(),
             infinity: Choice::from(0),
@@ -78,17 +82,12 @@ impl PrimeCurveAffine for AffinePoint {
     }
 
     /// Is this point the identity point?
-    fn is_identity(&self) -> Choice {
+    pub fn is_identity(&self) -> Choice {
         self.infinity
-    }
-
-    /// Convert to curve representation.
-    fn to_curve(&self) -> ProjectivePoint {
-        ProjectivePoint::from(*self)
     }
 }
 
-impl AffineXCoordinate<NistP256> for AffinePoint {
+impl AffineXCoordinate<NistP384> for AffinePoint {
     fn x(&self) -> FieldBytes {
         self.x.to_bytes()
     }
@@ -126,7 +125,7 @@ impl PartialEq for AffinePoint {
     }
 }
 
-impl DecompressPoint<NistP256> for AffinePoint {
+impl DecompressPoint<NistP384> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
@@ -178,36 +177,19 @@ impl GroupEncoding for AffinePoint {
     }
 }
 
-impl DecompactPoint<NistP256> for AffinePoint {
-    fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
-        FieldElement::from_bytes(x_bytes).and_then(|x| {
-            let montgomery_y = (x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B).sqrt();
-            montgomery_y.map(|montgomery_y| {
-                // Convert to canonical form for comparisons
-                let y = montgomery_y.as_canonical();
-                let p_y = MODULUS.subtract(&y);
-                let (_, borrow) = p_y.informed_subtract(&y);
-                let recovered_y = if borrow == 0 { y } else { p_y };
-                AffinePoint {
-                    x,
-                    y: recovered_y.as_montgomery(),
-                    infinity: Choice::from(0),
-                }
-            })
-        })
-    }
-}
-
-impl FromEncodedPoint<NistP256> for AffinePoint {
+impl FromEncodedPoint<NistP384> for AffinePoint {
     /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded [`AffinePoint`].
     ///
     /// # Returns
     ///
-    /// `None` value if `encoded_point` is not on the secp256r1 curve.
+    /// `None` value if `encoded_point` is not on the secp384r1 curve.
     fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
-            sec1::Coordinates::Compact { x } => AffinePoint::decompact(x),
+            sec1::Coordinates::Compact { .. } => {
+                // TODO(tarcieri): point decompaction support
+                CtOption::new(Self::identity(), Choice::from(0))
+            }
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
@@ -233,7 +215,7 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
     }
 }
 
-impl ToEncodedPoint<NistP256> for AffinePoint {
+impl ToEncodedPoint<NistP384> for AffinePoint {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
         EncodedPoint::conditional_select(
             &EncodedPoint::from_affine_coordinates(
@@ -244,25 +226,6 @@ impl ToEncodedPoint<NistP256> for AffinePoint {
             &EncodedPoint::identity(),
             self.infinity,
         )
-    }
-}
-
-impl ToCompactEncodedPoint<NistP256> for AffinePoint {
-    /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
-    fn to_compact_encoded_point(&self) -> Option<EncodedPoint> {
-        // Convert to canonical form for comparisons
-        let y = self.y.as_canonical();
-        let (p_y, borrow) = MODULUS.informed_subtract(&y);
-        assert_eq!(borrow, 0);
-        let (_, borrow) = p_y.informed_subtract(&y);
-        if borrow != 0 {
-            return None;
-        }
-        // Reuse the CompressedPoint type since it's the same size as a compact point
-        let mut bytes = CompressedPoint::default();
-        bytes[0] = sec1::Tag::Compact.into();
-        bytes[1..(<NistP256 as Curve>::UInt::BYTE_SIZE + 1)].copy_from_slice(&self.x.to_bytes());
-        Some(EncodedPoint::from_bytes(bytes).expect("compact key"))
     }
 }
 
@@ -286,22 +249,6 @@ impl From<AffinePoint> for EncodedPoint {
     /// Returns the SEC1 compressed encoding of this point.
     fn from(affine_point: AffinePoint) -> EncodedPoint {
         affine_point.to_encoded_point(false)
-    }
-}
-
-impl Mul<Scalar> for AffinePoint {
-    type Output = ProjectivePoint;
-
-    fn mul(self, scalar: Scalar) -> ProjectivePoint {
-        ProjectivePoint::from(self) * scalar
-    }
-}
-
-impl Mul<&Scalar> for AffinePoint {
-    type Output = ProjectivePoint;
-
-    fn mul(self, scalar: &Scalar) -> ProjectivePoint {
-        ProjectivePoint::from(self) * scalar
     }
 }
 
@@ -346,30 +293,25 @@ mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
     use elliptic_curve::{
-        group::{prime::PrimeCurveAffine, GroupEncoding},
-        sec1::{FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
+        group::GroupEncoding,
+        sec1::{FromEncodedPoint, ToEncodedPoint},
     };
     use hex_literal::hex;
 
     const UNCOMPRESSED_BASEPOINT: &[u8] = &hex!(
-        "046B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296
-         4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5"
+        "04 aa87ca22 be8b0537 8eb1c71e f320ad74 6e1d3b62 8ba79b98
+         59f741e0 82542a38 5502f25d bf55296c 3a545e38 72760ab7
+         3617de4a 96262c6f 5d9e98bf 9292dc29 f8f41dbd 289a147c
+         e9da3113 b5f0b8c0 0a60b1ce 1d7e819d 7a431d7c 90ea0e5f"
     );
 
-    const COMPRESSED_BASEPOINT: &[u8] =
-        &hex!("036B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296");
-
-    // Tag compact with 05 as the first byte, to trigger tag based compaction
-    const COMPACT_BASEPOINT: &[u8] =
-        &hex!("058e38fc4ffe677662dde8e1a63fbcd45959d2a4c3004d27e98c4fedf2d0c14c01");
-
-    // Tag uncompact basepoint with 04 as the first byte as it is uncompressed
-    const UNCOMPACT_BASEPOINT: &[u8] = &hex!(
-        "048e38fc4ffe677662dde8e1a63fbcd45959d2a4c3004d27e98c4fedf2d0c14c0
-        13ca9d8667de0c07aa71d98b3c8065d2e97ab7bb9cb8776bcc0577a7ac58acd4e"
+    const COMPRESSED_BASEPOINT: &[u8] = &hex!(
+        "03 aa87ca22 be8b0537 8eb1c71e f320ad74 6e1d3b62 8ba79b98
+         59f741e0 82542a38 5502f25d bf55296c 3a545e38 72760ab7"
     );
 
     #[test]
+    #[ignore]
     fn uncompressed_round_trip() {
         let pubkey = EncodedPoint::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
         let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
@@ -380,6 +322,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn compressed_round_trip() {
         let pubkey = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
         let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
@@ -390,6 +333,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn uncompressed_to_compressed() {
         let encoded = EncodedPoint::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
 
@@ -401,6 +345,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn compressed_to_uncompressed() {
         let encoded = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
 
@@ -418,40 +363,9 @@ mod tests {
     }
 
     #[test]
-    fn compact_round_trip() {
-        let pubkey = EncodedPoint::from_bytes(COMPACT_BASEPOINT).unwrap();
-        assert!(pubkey.is_compact());
-
-        let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
-        let res = point.to_compact_encoded_point().unwrap();
-        assert_eq!(res, pubkey)
-    }
-
-    #[test]
-    fn uncompact_to_compact() {
-        let pubkey = EncodedPoint::from_bytes(UNCOMPACT_BASEPOINT).unwrap();
-        assert_eq!(false, pubkey.is_compact());
-
-        let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
-        let res = point.to_compact_encoded_point().unwrap();
-        assert_eq!(res.as_bytes(), COMPACT_BASEPOINT)
-    }
-
-    #[test]
-    fn compact_to_uncompact() {
-        let pubkey = EncodedPoint::from_bytes(COMPACT_BASEPOINT).unwrap();
-        assert!(pubkey.is_compact());
-
-        let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
-        // Do not do compact encoding as we want to keep uncompressed point
-        let res = point.to_encoded_point(false);
-        assert_eq!(res.as_bytes(), UNCOMPACT_BASEPOINT);
-    }
-
-    #[test]
     fn identity_encoding() {
         // This is technically an invalid SEC1 encoding, but is preferable to panicking.
-        assert_eq!([0; 33], AffinePoint::identity().to_bytes().as_slice());
+        assert_eq!([0; 49], AffinePoint::identity().to_bytes().as_slice());
         assert!(bool::from(
             AffinePoint::from_bytes(&AffinePoint::identity().to_bytes())
                 .unwrap()
