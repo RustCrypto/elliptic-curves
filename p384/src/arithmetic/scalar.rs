@@ -148,6 +148,71 @@ impl Scalar {
         self.0.to_be_bytes()
     }
 
+    /// Multiply a scalar by another scalar.
+    #[cfg(target_pointer_width = "64")]
+    #[inline]
+    pub fn mul(&self, other: &Scalar) -> Self {
+        // TODO(tarcieri): replace with a.mul_wide(&b)
+        let a = self.0.as_limbs();
+        let b = other.0.as_limbs();
+
+        let carry = Limb::ZERO;
+        let (r0, carry) = Limb::ZERO.mac(a[0], b[0], carry);
+        let (r1, carry) = Limb::ZERO.mac(a[0], b[1], carry);
+        let (r2, carry) = Limb::ZERO.mac(a[0], b[2], carry);
+        let (r3, carry) = Limb::ZERO.mac(a[0], b[3], carry);
+        let (r4, carry) = Limb::ZERO.mac(a[0], b[4], carry);
+        let (r5, carry) = Limb::ZERO.mac(a[0], b[5], carry);
+        let r6 = carry;
+
+        let carry = Limb::ZERO;
+        let (r1, carry) = r1.mac(a[1], b[0], carry);
+        let (r2, carry) = r2.mac(a[1], b[1], carry);
+        let (r3, carry) = r3.mac(a[1], b[2], carry);
+        let (r4, carry) = r4.mac(a[1], b[3], carry);
+        let (r5, carry) = r5.mac(a[1], b[4], carry);
+        let (r6, carry) = r6.mac(a[1], b[5], carry);
+        let r7 = carry;
+
+        let carry = Limb::ZERO;
+        let (r2, carry) = r2.mac(a[2], b[0], carry);
+        let (r3, carry) = r3.mac(a[2], b[1], carry);
+        let (r4, carry) = r4.mac(a[2], b[2], carry);
+        let (r5, carry) = r5.mac(a[2], b[3], carry);
+        let (r6, carry) = r6.mac(a[2], b[4], carry);
+        let (r7, carry) = r7.mac(a[2], b[5], carry);
+        let r8 = carry;
+
+        let carry = Limb::ZERO;
+        let (r3, carry) = r3.mac(a[3], b[0], carry);
+        let (r4, carry) = r4.mac(a[3], b[1], carry);
+        let (r5, carry) = r5.mac(a[3], b[2], carry);
+        let (r6, carry) = r6.mac(a[3], b[3], carry);
+        let (r7, carry) = r7.mac(a[3], b[4], carry);
+        let (r8, carry) = r8.mac(a[3], b[5], carry);
+        let r9 = carry;
+
+        let carry = Limb::ZERO;
+        let (r4, carry) = r4.mac(a[4], b[0], carry);
+        let (r5, carry) = r5.mac(a[4], b[1], carry);
+        let (r6, carry) = r6.mac(a[4], b[2], carry);
+        let (r7, carry) = r7.mac(a[4], b[3], carry);
+        let (r8, carry) = r8.mac(a[4], b[4], carry);
+        let (r9, carry) = r9.mac(a[4], b[5], carry);
+        let r10 = carry;
+
+        let carry = Limb::ZERO;
+        let (r5, carry) = r5.mac(a[5], b[0], carry);
+        let (r6, carry) = r6.mac(a[5], b[1], carry);
+        let (r7, carry) = r7.mac(a[5], b[2], carry);
+        let (r8, carry) = r8.mac(a[5], b[3], carry);
+        let (r9, carry) = r9.mac(a[5], b[4], carry);
+        let (r10, carry) = r10.mac(a[5], b[5], carry);
+        let r11 = carry;
+
+        Self::montgomery_reduce(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11)
+    }
+
     /// Compute modular square.
     #[must_use]
     pub fn square(&self) -> Self {
@@ -1450,9 +1515,7 @@ impl Mul<&Scalar> for Scalar {
 
     #[inline]
     fn mul(self, other: &Scalar) -> Self {
-        let mut result = self;
-        result.mul_assign(other);
-        result
+        Self::mul(&self, other)
     }
 }
 
@@ -1470,65 +1533,7 @@ impl MulAssign<&Scalar> for Scalar {
     #[cfg(target_pointer_width = "64")]
     #[inline]
     fn mul_assign(&mut self, other: &Scalar) {
-        // TODO(tarcieri): replace with a.mul_wide(&b)
-        let a = self.0.as_limbs();
-        let b = other.0.as_limbs();
-
-        let carry = Limb::ZERO;
-        let (r0, carry) = Limb::ZERO.mac(a[0], b[0], carry);
-        let (r1, carry) = Limb::ZERO.mac(a[0], b[1], carry);
-        let (r2, carry) = Limb::ZERO.mac(a[0], b[2], carry);
-        let (r3, carry) = Limb::ZERO.mac(a[0], b[3], carry);
-        let (r4, carry) = Limb::ZERO.mac(a[0], b[4], carry);
-        let (r5, carry) = Limb::ZERO.mac(a[0], b[5], carry);
-        let r6 = carry;
-
-        let carry = Limb::ZERO;
-        let (r1, carry) = r1.mac(a[1], b[0], carry);
-        let (r2, carry) = r2.mac(a[1], b[1], carry);
-        let (r3, carry) = r3.mac(a[1], b[2], carry);
-        let (r4, carry) = r4.mac(a[1], b[3], carry);
-        let (r5, carry) = r5.mac(a[1], b[4], carry);
-        let (r6, carry) = r6.mac(a[1], b[5], carry);
-        let r7 = carry;
-
-        let carry = Limb::ZERO;
-        let (r2, carry) = r2.mac(a[2], b[0], carry);
-        let (r3, carry) = r3.mac(a[2], b[1], carry);
-        let (r4, carry) = r4.mac(a[2], b[2], carry);
-        let (r5, carry) = r5.mac(a[2], b[3], carry);
-        let (r6, carry) = r6.mac(a[2], b[4], carry);
-        let (r7, carry) = r7.mac(a[2], b[5], carry);
-        let r8 = carry;
-
-        let carry = Limb::ZERO;
-        let (r3, carry) = r3.mac(a[3], b[0], carry);
-        let (r4, carry) = r4.mac(a[3], b[1], carry);
-        let (r5, carry) = r5.mac(a[3], b[2], carry);
-        let (r6, carry) = r6.mac(a[3], b[3], carry);
-        let (r7, carry) = r7.mac(a[3], b[4], carry);
-        let (r8, carry) = r8.mac(a[3], b[5], carry);
-        let r9 = carry;
-
-        let carry = Limb::ZERO;
-        let (r4, carry) = r4.mac(a[4], b[0], carry);
-        let (r5, carry) = r5.mac(a[4], b[1], carry);
-        let (r6, carry) = r6.mac(a[4], b[2], carry);
-        let (r7, carry) = r7.mac(a[4], b[3], carry);
-        let (r8, carry) = r8.mac(a[4], b[4], carry);
-        let (r9, carry) = r9.mac(a[4], b[5], carry);
-        let r10 = carry;
-
-        let carry = Limb::ZERO;
-        let (r5, carry) = r5.mac(a[5], b[0], carry);
-        let (r6, carry) = r6.mac(a[5], b[1], carry);
-        let (r7, carry) = r7.mac(a[5], b[2], carry);
-        let (r8, carry) = r8.mac(a[5], b[3], carry);
-        let (r9, carry) = r9.mac(a[5], b[4], carry);
-        let (r10, carry) = r10.mac(a[5], b[5], carry);
-        let r11 = carry;
-
-        Self::montgomery_reduce(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11);
+        *self = *self * other;
     }
 }
 
