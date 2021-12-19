@@ -25,11 +25,13 @@ const CURVE_EQUATION_A: FieldElement = FieldElement([
 
 /// b = b3312fa7 e23ee7e4 988e056b e3f82d19 181d9c6e fe814112
 ///     0314088f 5013875a c656398d 8a2ed19d 2a85c8ed d3ec2aef
+///
+/// NOTE: field element has been translated into the Montgomery domain.
 const CURVE_EQUATION_B: FieldElement = FieldElement([
-    0x2a85c8ed_d3ec2aef,
-    0xc656398d_8a2ed19d,
-    0x0314088f_5013875a,
-    0x181d9c6e_fe814112,
-    0x988e056b_e3f82d19,
-    0xb3312fa7_e23ee7e4,
+    0x81188719_d412dcc,
+    0xf729add8_7a4c32ec,
+    0x77f2209b_1920022e,
+    0xe3374bee_94938ae2,
+    0xb62b21f4_1f022094,
+    0xcd08114b_604fbff9,
 ]);

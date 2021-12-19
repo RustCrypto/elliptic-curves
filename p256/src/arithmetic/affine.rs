@@ -184,13 +184,13 @@ impl DecompactPoint<NistP256> for AffinePoint {
             let montgomery_y = (x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B).sqrt();
             montgomery_y.map(|montgomery_y| {
                 // Convert to canonical form for comparisons
-                let y = montgomery_y.as_canonical();
+                let y = montgomery_y.to_canonical();
                 let p_y = MODULUS.subtract(&y);
                 let (_, borrow) = p_y.informed_subtract(&y);
                 let recovered_y = if borrow == 0 { y } else { p_y };
                 AffinePoint {
                     x,
-                    y: recovered_y.as_montgomery(),
+                    y: recovered_y.to_montgomery(),
                     infinity: Choice::from(0),
                 }
             })
@@ -251,7 +251,7 @@ impl ToCompactEncodedPoint<NistP256> for AffinePoint {
     /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
     fn to_compact_encoded_point(&self) -> Option<EncodedPoint> {
         // Convert to canonical form for comparisons
-        let y = self.y.as_canonical();
+        let y = self.y.to_canonical();
         let (p_y, borrow) = MODULUS.informed_subtract(&y);
         assert_eq!(borrow, 0);
         let (_, borrow) = p_y.informed_subtract(&y);
