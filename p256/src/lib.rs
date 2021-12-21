@@ -49,6 +49,9 @@ pub use arithmetic::{
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
+#[cfg(feature = "hashing")]
+pub use hash2field;
+
 use elliptic_curve::{consts::U33, generic_array::GenericArray};
 
 /// NIST P-256 elliptic curve.

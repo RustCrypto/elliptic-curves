@@ -306,6 +306,68 @@ impl ProjectivePoint {
 
         ret
     }
+
+    /// Computes the hash to curve routine according to
+    /// <https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-13.html>
+    /// which says
+    /// Uniform encoding from byte strings to points in G.
+    /// That is, the distribution of its output is statistically close
+    /// to uniform in G.
+    /// This function is suitable for most applications requiring a random
+    /// oracle returning points in G assuming a cryptographically secure
+    /// hash function is used.
+    ///
+    /// Example using a fixed size hash function
+    ///
+    /// let pt = p256::ProjectivePoint::hash_from_bytes::<p256::hash2field::ExpandMsgXmd<sha2::Sha256>>(b"test data", b"P256_XMD:SHA-256_SSWU_RO_");
+    ///
+    ///
+    /// Example using an extendable output function
+    ///
+    /// let pt = p256::ProjectivePoint::hash_from_bytes::<p256::hash2field::ExpandMsgXof<sha3::Shake256>>(b"test data", b"P256_XOF:SHAKE-256_SSWU_RO_");
+    ///
+    #[cfg(feature = "hashing")]
+    pub fn hash_from_bytes<X>(msg: &[u8], dst: &[u8]) -> Self
+    where
+        X: hash2field::ExpandMsg<96>,
+    {
+        let u = FieldElement::hash::<X>(msg, dst);
+        let (q0x, q0y) = u[0].osswu();
+        let (q1x, q1y) = u[1].osswu();
+        let q0 = Self::from(AffinePoint {
+            x: q0x,
+            y: q0y,
+            infinity: Choice::from(0u8),
+        });
+        let q1 = Self::from(AffinePoint {
+            x: q1x,
+            y: q1y,
+            infinity: Choice::from(0u8),
+        });
+        q0 + q1
+    }
+
+    /// Computes the encode to curve routine according to
+    /// <https://www.ietf.org/archive/id/draft-irtf-cfrg-hash-to-curve-13.html>
+    /// which says
+    /// Nonuniform encoding from byte strings to
+    /// points in G. That is, the distribution of its output is not
+    /// uniformly random in G: the set of possible outputs of
+    /// encode_to_curve is only a fraction of the points in G, and some
+    /// points in this set are more likely to be output than others.
+    #[cfg(feature = "hashing")]
+    pub fn encode_from_bytes<X>(msg: &[u8], dst: &[u8]) -> Self
+    where
+        X: hash2field::ExpandMsg<48>,
+    {
+        let u = FieldElement::encode::<X>(msg, dst);
+        let (q0x, q0y) = u.osswu();
+        Self::from(AffinePoint {
+            x: q0x,
+            y: q0y,
+            infinity: Choice::from(0u8),
+        })
+    }
 }
 
 impl Default for ProjectivePoint {
@@ -675,5 +737,27 @@ mod tests {
     fn projective_identity_to_bytes() {
         // This is technically an invalid SEC1 encoding, but is preferable to panicking.
         assert_eq!([0; 33], ProjectivePoint::identity().to_bytes().as_slice());
+    }
+
+    #[cfg(feature = "hashing")]
+    #[test]
+    fn hash_to_curve() {
+        const DST: &[u8] = b"QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_";
+        use hex_literal::hex;
+
+        let tests: [(&[u8], &[u8], &[u8]); 5] = [
+            (b"", &hex!("2c15230b26dbc6fc9a37051158c95b79656e17a1a920b11394ca91c44247d3e4"), &hex!("8a7a74985cc5c776cdfe4b1f19884970453912e9d31528c060be9ab5c43e8415")),
+            (b"abc", &hex!("0bb8b87485551aa43ed54f009230450b492fead5f1cc91658775dac4a3388a0f"), &hex!("5c41b3d0731a27a7b14bc0bf0ccded2d8751f83493404c84a88e71ffd424212e")),
+            (b"abcdef0123456789", &hex!("65038ac8f2b1def042a5df0b33b1f4eca6bff7cb0f9c6c1526811864e544ed80"), &hex!("cad44d40a656e7aff4002a8de287abc8ae0482b5ae825822bb870d6df9b56ca3")),
+            (b"q128_qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", &hex!("4be61ee205094282ba8a2042bcb48d88dfbb609301c49aa8b078533dc65a0b5d"), &hex!("98f8df449a072c4721d241a3b1236d3caccba603f916ca680f4539d2bfb3c29e")),
+            (b"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", &hex!("457ae2981f70ca85d8e24c308b14db22f3e3862c5ea0f652ca38b5e49cd64bc5"), &hex!("ecb9f0eadc9aeed232dabc53235368c1394c78de05dd96893eefa62b0f4757dc"))
+        ];
+        for (t, x, y) in tests {
+            let pt =
+                ProjectivePoint::hash_from_bytes::<hash2field::ExpandMsgXmd<sha2::Sha256>>(t, DST);
+            let apt = pt.to_affine();
+            assert_eq!(apt.x.to_bytes()[..], x[..]);
+            assert_eq!(apt.y.to_bytes()[..], y[..]);
+        }
     }
 }

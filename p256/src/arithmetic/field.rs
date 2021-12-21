@@ -13,6 +13,8 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
+#[cfg(feature = "hashing")]
+use hash2field::FromOkm;
 
 /// The number of 64-bit limbs used to represent a [`FieldElement`].
 const LIMBS: usize = 4;
@@ -466,6 +468,118 @@ impl FieldElement {
             (&sqrt * &sqrt).ct_eq(self), // Only return Some if it's the square root.
         )
     }
+
+    #[cfg(feature = "hashing")]
+    /// Return the parity of the field
+    /// 1 == negative
+    /// 0 == non-negative
+    pub fn sgn0(&self) -> u8 {
+        let bytes = self.to_bytes();
+        bytes[31] & 1
+    }
+
+    /// Hash to field element
+    #[cfg(feature = "hashing")]
+    pub fn hash<X>(msg: &[u8], dst: &[u8]) -> [Self; 2]
+    where
+        X: hash2field::ExpandMsg<96>,
+    {
+        let random_bytes = X::expand_message(msg, dst);
+        [
+            Self::from_okm(&<[u8; 48]>::try_from(&random_bytes[..48]).unwrap()),
+            Self::from_okm(&<[u8; 48]>::try_from(&random_bytes[48..]).unwrap()),
+        ]
+    }
+
+    /// Encode to field element
+    #[cfg(feature = "hashing")]
+    pub fn encode<X>(msg: &[u8], dst: &[u8]) -> Self
+    where
+        X: hash2field::ExpandMsg<48>,
+    {
+        let random_bytes = X::expand_message(msg, dst);
+        Self::from_okm(&random_bytes)
+    }
+
+    /// Optimized Simplified Shallue-van de Woestijne-Ulas
+    #[cfg(feature = "hashing")]
+    pub fn osswu(&self) -> (FieldElement, FieldElement) {
+        // See section 8.2 in
+        // <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>
+        const C1: [u64; 4] = [
+            0xffff_ffff_ffff_ffff,
+            0x0000_0000_3fff_ffff,
+            0x4000_0000_0000_0000,
+            0x3fff_ffff_c000_0000,
+        ];
+        const C2: FieldElement = FieldElement([
+            0x53e4_3951_f64f_dbe7,
+            0xb280_6c63_966a_1a66,
+            0x1ac5_d59c_3298_bf50,
+            0xa332_3851_ba99_7e27,
+        ]);
+        const MAP_A: FieldElement = FieldElement([
+            0xffff_ffff_ffff_fffc,
+            0x0000_0003_ffff_ffff,
+            0x0000_0000_0000_0000,
+            0xffff_fffc_0000_0004,
+        ]);
+        const MAP_B: FieldElement = FieldElement([
+            0xd89c_df62_29c4_bddf,
+            0xacf0_05cd_7884_3090,
+            0xe5a2_20ab_f721_2ed6,
+            0xdc30_061d_0487_4834,
+        ]);
+        const Z: FieldElement = FieldElement([
+            0xffff_ffff_ffff_fff5,
+            0x0000_000a_ffff_ffff,
+            0x0000_0000_0000_0000,
+            0xffff_fff5_0000_000b,
+        ]);
+
+        let tv1 = self.square(); // u^2
+        let tv3 = Z * &tv1; // Z * u^2
+        let mut tv2 = tv3.square(); // tv3^2
+        let mut xd = tv2 + &tv3; // tv3^2 + tv3
+        let x1n = MAP_B * &(xd + &Self::one()); // B * (xd + 1)
+        let a_neg = -MAP_A;
+        xd *= a_neg; // -A * xd
+
+        let tv = &Z * &MAP_A;
+        xd.conditional_assign(&tv, xd.is_zero());
+
+        tv2 = xd.square(); //xd^2
+        let gxd = tv2 * &xd; // xd^3
+        tv2 = tv2 * &MAP_A; // A * tv2
+
+        let mut gx1 = x1n * &(tv2 + &x1n.square()); //x1n *(tv2 + x1n^2)
+        tv2 = gxd * &MAP_B; // B * gxd
+        gx1 += tv2; // gx1 + tv2
+
+        let mut tv4 = gxd.square(); // gxd^2
+        tv2 = gx1 * &gxd; // gx1 * gxd
+        tv4 *= tv2;
+
+        let y1 = tv4.pow_vartime(&C1) * &tv2; // tv4^C1 * tv2
+        let x2n = tv3 * &x1n; // tv3 * x1n
+
+        let y2 = y1 * &C2 * &tv1 * self; // y1 * c2 * tv1 * u
+
+        tv2 = y1.square() * &gxd; //y1^2 * gxd
+
+        let e2 = tv2.ct_eq(&gx1);
+
+        // if e2 , x = x1, else x = x2
+        let mut x = Self::conditional_select(&x2n, &x1n, e2);
+        // xn / xd
+        x *= xd.invert().unwrap();
+
+        // if e2, y = y1, else y = y2
+        let mut y = Self::conditional_select(&y2, &y1, e2);
+
+        y.conditional_assign(&-y, Choice::from(self.sgn0() ^ y.sgn0()));
+        (x, y)
+    }
 }
 
 impl Add<FieldElement> for FieldElement {
@@ -589,6 +703,33 @@ impl Neg for &FieldElement {
 
     fn neg(self) -> FieldElement {
         FieldElement::zero() - self
+    }
+}
+
+#[cfg(feature = "hashing")]
+impl FromOkm<48> for FieldElement {
+    fn from_okm(bytes: &[u8; 48]) -> Self {
+        const F_2_192: FieldElement = FieldElement([
+            0xffff_fffe_ffff_ffffu64,
+            0xffff_ffff_ffff_fffeu64,
+            0x0000_0002_0000_0000u64,
+            0x0000_0000_0000_0003u64,
+        ]);
+        let d0 = FieldElement([
+            u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
+            u64::from_be_bytes(bytes[8..16].try_into().unwrap()),
+            u64::from_be_bytes(bytes[0..8].try_into().unwrap()),
+            0,
+        ])
+        .to_montgomery();
+        let d1 = FieldElement([
+            u64::from_be_bytes(bytes[40..48].try_into().unwrap()),
+            u64::from_be_bytes(bytes[32..40].try_into().unwrap()),
+            u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
+            0,
+        ])
+        .to_montgomery();
+        d0 * &F_2_192 + &d1
     }
 }
 
