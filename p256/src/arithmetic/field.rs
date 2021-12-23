@@ -1,12 +1,15 @@
 //! Field arithmetic modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 
+#![allow(clippy::assign_op_pattern, clippy::op_ref)]
+
 use crate::{
     arithmetic::util::{adc, mac, sbb},
     FieldBytes,
 };
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    rand_core::{CryptoRng, RngCore},
+    ff::Field,
+    rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -40,10 +43,47 @@ const R2: FieldElement = FieldElement([
 ]);
 
 /// An element in the finite field modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1.
-// The internal representation is in little-endian order. Elements are always in
-// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
+///
+/// The internal representation is in little-endian order. Elements are always in
+/// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(crate) [u64; LIMBS]);
+
+impl Field for FieldElement {
+    fn random(mut rng: impl RngCore) -> Self {
+        // We reduce a random 512-bit value into a 256-bit field, which results in a
+        // negligible bias from the uniform distribution.
+        let mut buf = [0; 64];
+        rng.fill_bytes(&mut buf);
+        FieldElement::from_bytes_wide(buf)
+    }
+
+    fn zero() -> Self {
+        Self::ZERO
+    }
+
+    fn one() -> Self {
+        Self::ONE
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        self.square()
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.double()
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
+
+    fn sqrt(&self) -> CtOption<Self> {
+        self.sqrt()
+    }
+}
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
@@ -65,12 +105,6 @@ impl ConstantTimeEq for FieldElement {
     }
 }
 
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
 impl Default for FieldElement {
     fn default() -> Self {
         FieldElement::zero()
@@ -79,25 +113,20 @@ impl Default for FieldElement {
 
 impl DefaultIsZeroes for FieldElement {}
 
+impl Eq for FieldElement {}
+
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
 impl FieldElement {
-    /// Returns the zero element.
-    pub const fn zero() -> FieldElement {
-        FieldElement([0, 0, 0, 0])
-    }
+    /// Zero element.
+    pub const ZERO: Self = FieldElement([0, 0, 0, 0]);
 
-    /// Returns the multiplicative identity.
-    pub const fn one() -> FieldElement {
-        R
-    }
-
-    /// Returns a uniformly-random element within the field.
-    pub fn generate(mut rng: impl CryptoRng + RngCore) -> Self {
-        // We reduce a random 512-bit value into a 256-bit field, which results in a
-        // negligible bias from the uniform distribution.
-        let mut buf = [0; 64];
-        rng.fill_bytes(&mut buf);
-        FieldElement::from_bytes_wide(buf)
-    }
+    /// Multiplicative identity.
+    pub const ONE: Self = R;
 
     fn from_bytes_wide(bytes: [u8; 64]) -> Self {
         FieldElement::montgomery_reduce(
@@ -439,11 +468,11 @@ impl FieldElement {
     }
 }
 
-impl Add<&FieldElement> for &FieldElement {
+impl Add<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(self, other)
+    fn add(self, other: FieldElement) -> FieldElement {
+        FieldElement::add(&self, &other)
     }
 }
 
@@ -455,17 +484,31 @@ impl Add<&FieldElement> for FieldElement {
     }
 }
 
-impl AddAssign<FieldElement> for FieldElement {
-    fn add_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::add(self, &rhs);
+impl Add<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn add(self, other: &FieldElement) -> FieldElement {
+        FieldElement::add(self, other)
     }
 }
 
-impl Sub<&FieldElement> for &FieldElement {
+impl AddAssign<FieldElement> for FieldElement {
+    fn add_assign(&mut self, other: FieldElement) {
+        *self = FieldElement::add(self, &other);
+    }
+}
+
+impl AddAssign<&FieldElement> for FieldElement {
+    fn add_assign(&mut self, other: &FieldElement) {
+        *self = FieldElement::add(self, other);
+    }
+}
+
+impl Sub<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::subtract(self, other)
+    fn sub(self, other: FieldElement) -> FieldElement {
+        FieldElement::subtract(&self, &other)
     }
 }
 
@@ -477,17 +520,31 @@ impl Sub<&FieldElement> for FieldElement {
     }
 }
 
-impl SubAssign<FieldElement> for FieldElement {
-    fn sub_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::subtract(self, &rhs);
+impl Sub<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, other: &FieldElement) -> FieldElement {
+        FieldElement::subtract(self, other)
     }
 }
 
-impl Mul<&FieldElement> for &FieldElement {
+impl SubAssign<FieldElement> for FieldElement {
+    fn sub_assign(&mut self, other: FieldElement) {
+        *self = FieldElement::subtract(self, &other);
+    }
+}
+
+impl SubAssign<&FieldElement> for FieldElement {
+    fn sub_assign(&mut self, other: &FieldElement) {
+        *self = FieldElement::subtract(self, other);
+    }
+}
+
+impl Mul<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::mul(self, other)
+    fn mul(self, other: FieldElement) -> FieldElement {
+        FieldElement::mul(&self, &other)
     }
 }
 
@@ -499,9 +556,23 @@ impl Mul<&FieldElement> for FieldElement {
     }
 }
 
+impl Mul<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, other: &FieldElement) -> FieldElement {
+        FieldElement::mul(self, other)
+    }
+}
+
 impl MulAssign<FieldElement> for FieldElement {
-    fn mul_assign(&mut self, rhs: FieldElement) {
-        *self = FieldElement::mul(self, &rhs);
+    fn mul_assign(&mut self, other: FieldElement) {
+        *self = FieldElement::mul(self, &other);
+    }
+}
+
+impl MulAssign<&FieldElement> for FieldElement {
+    fn mul_assign(&mut self, other: &FieldElement) {
+        *self = FieldElement::mul(self, other);
     }
 }
 
@@ -513,7 +584,7 @@ impl Neg for FieldElement {
     }
 }
 
-impl<'a> Neg for &'a FieldElement {
+impl Neg for &FieldElement {
     type Output = FieldElement;
 
     fn neg(self) -> FieldElement {
@@ -525,6 +596,7 @@ impl<'a> Neg for &'a FieldElement {
 mod tests {
     use super::FieldElement;
     use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
+    use elliptic_curve::ff::Field;
     use proptest::{num::u64::ANY, prelude::*};
 
     #[test]

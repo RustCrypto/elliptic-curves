@@ -1,5 +1,7 @@
 //! Projective points
 
+#![allow(clippy::op_ref)]
+
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
 use crate::{CompressedPoint, EncodedPoint, Secp256k1};
 use core::{
@@ -102,9 +104,9 @@ impl ProjectivePoint {
     /// "point at infinity".
     pub const fn identity() -> ProjectivePoint {
         ProjectivePoint {
-            x: FieldElement::zero(),
-            y: FieldElement::one(),
-            z: FieldElement::zero(),
+            x: FieldElement::ZERO,
+            y: FieldElement::ONE,
+            z: FieldElement::ZERO,
         }
     }
 
