@@ -1,5 +1,7 @@
 //! Affine points
 
+#![allow(clippy::op_ref)]
+
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP256, Scalar};
 use core::ops::{Mul, Neg};
@@ -49,8 +51,8 @@ impl PrimeCurveAffine for AffinePoint {
     /// Returns the identity of the group: the point at infinity.
     fn identity() -> AffinePoint {
         Self {
-            x: FieldElement::zero(),
-            y: FieldElement::zero(),
+            x: FieldElement::ZERO,
+            y: FieldElement::ZERO,
             infinity: Choice::from(1),
         }
     }

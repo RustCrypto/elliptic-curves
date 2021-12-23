@@ -12,10 +12,10 @@ use projective::ProjectivePoint;
 use scalar::Scalar;
 
 /// a = -3
-const CURVE_EQUATION_A: FieldElement = FieldElement::zero()
-    .subtract(&FieldElement::one())
-    .subtract(&FieldElement::one())
-    .subtract(&FieldElement::one());
+const CURVE_EQUATION_A: FieldElement = FieldElement::ZERO
+    .subtract(&FieldElement::ONE)
+    .subtract(&FieldElement::ONE)
+    .subtract(&FieldElement::ONE);
 
 /// b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
 const CURVE_EQUATION_B: FieldElement = FieldElement([

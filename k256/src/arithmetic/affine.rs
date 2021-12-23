@@ -1,9 +1,12 @@
 //! Affine points
 
+#![allow(clippy::op_ref)]
+
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, Scalar, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
+    ff::Field,
     generic_array::arr,
     group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},

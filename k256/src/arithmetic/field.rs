@@ -1,5 +1,7 @@
 //! Field arithmetic modulo p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
 
+#![allow(clippy::assign_op_pattern, clippy::op_ref)]
+
 use cfg_if::cfg_if;
 
 cfg_if! {
@@ -30,10 +32,12 @@ cfg_if! {
 }
 
 use crate::FieldBytes;
-use core::ops::{Add, AddAssign, Mul, MulAssign};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    ff::Field,
+    rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    zeroize::Zeroize,
+    zeroize::DefaultIsZeroes,
 };
 
 #[cfg(test)]
@@ -43,16 +47,51 @@ use num_bigint::{BigUint, ToBigUint};
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(FieldElementImpl);
 
-impl FieldElement {
-    /// Returns the zero element.
-    pub const fn zero() -> Self {
-        Self(FieldElementImpl::zero())
+impl Field for FieldElement {
+    fn random(mut rng: impl RngCore) -> Self {
+        let mut bytes = FieldBytes::default();
+
+        loop {
+            rng.fill_bytes(&mut bytes);
+            if let Some(fe) = Self::from_bytes(&bytes).into() {
+                return fe;
+            }
+        }
     }
 
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Self {
-        Self(FieldElementImpl::one())
+    fn zero() -> Self {
+        Self::ZERO
     }
+
+    fn one() -> Self {
+        Self::ONE
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        self.square()
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.double()
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
+
+    fn sqrt(&self) -> CtOption<Self> {
+        self.sqrt()
+    }
+}
+
+impl FieldElement {
+    /// Zero element.
+    pub const ZERO: Self = Self(FieldElementImpl::zero());
+
+    /// Multiplicative identity.
+    pub const ONE: Self = Self(FieldElementImpl::one());
 
     /// Determine if this `FieldElement` is zero.
     ///
@@ -133,7 +172,8 @@ impl FieldElement {
         Self(self.0.mul(&(rhs.0)))
     }
 
-    /// Returns self * self
+    /// Returns self * self.
+    ///
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
     pub fn square(&self) -> Self {
@@ -227,18 +267,6 @@ impl FieldElement {
     }
 }
 
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.ct_eq(&(other.0)).into()
-    }
-}
-
-impl Default for FieldElement {
-    fn default() -> Self {
-        Self::zero()
-    }
-}
-
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self(FieldElementImpl::conditional_select(&(a.0), &(b.0), choice))
@@ -251,10 +279,26 @@ impl ConstantTimeEq for FieldElement {
     }
 }
 
-impl Add<&FieldElement> for &FieldElement {
+impl Default for FieldElement {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
+impl DefaultIsZeroes for FieldElement {}
+
+impl Eq for FieldElement {}
+
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.ct_eq(&(other.0)).into()
+    }
+}
+
+impl Add<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    fn add(self, other: &FieldElement) -> FieldElement {
+    fn add(self, other: FieldElement) -> FieldElement {
         FieldElement(self.0.add(&(other.0)))
     }
 }
@@ -267,13 +311,63 @@ impl Add<&FieldElement> for FieldElement {
     }
 }
 
-impl AddAssign<FieldElement> for FieldElement {
-    fn add_assign(&mut self, rhs: FieldElement) {
-        *self = *self + &rhs;
+impl Add<&FieldElement> for &FieldElement {
+    type Output = FieldElement;
+
+    fn add(self, other: &FieldElement) -> FieldElement {
+        FieldElement(self.0.add(&(other.0)))
     }
 }
 
-impl Mul<&FieldElement> for &FieldElement {
+impl AddAssign<FieldElement> for FieldElement {
+    fn add_assign(&mut self, other: FieldElement) {
+        *self = *self + &other;
+    }
+}
+
+impl AddAssign<&FieldElement> for FieldElement {
+    fn add_assign(&mut self, other: &FieldElement) {
+        *self = *self + other;
+    }
+}
+
+impl Sub<FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, other: FieldElement) -> FieldElement {
+        self + -other
+    }
+}
+
+impl Sub<&FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn sub(self, other: &FieldElement) -> FieldElement {
+        self + -other
+    }
+}
+
+impl SubAssign<FieldElement> for FieldElement {
+    fn sub_assign(&mut self, other: FieldElement) {
+        *self = *self + -other;
+    }
+}
+
+impl SubAssign<&FieldElement> for FieldElement {
+    fn sub_assign(&mut self, other: &FieldElement) {
+        *self = *self + -other;
+    }
+}
+
+impl Mul<FieldElement> for FieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, other: FieldElement) -> FieldElement {
+        FieldElement(self.0.mul(&(other.0)))
+    }
+}
+
+impl Mul<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
@@ -281,7 +375,7 @@ impl Mul<&FieldElement> for &FieldElement {
     }
 }
 
-impl Mul<&FieldElement> for FieldElement {
+impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
@@ -295,14 +389,31 @@ impl MulAssign<FieldElement> for FieldElement {
     }
 }
 
-impl Zeroize for FieldElement {
-    fn zeroize(&mut self) {
-        self.0.zeroize();
+impl MulAssign<&FieldElement> for FieldElement {
+    fn mul_assign(&mut self, rhs: &FieldElement) {
+        *self = *self * rhs;
+    }
+}
+
+impl Neg for FieldElement {
+    type Output = FieldElement;
+
+    fn neg(self) -> FieldElement {
+        self.negate(1)
+    }
+}
+
+impl Neg for &FieldElement {
+    type Output = FieldElement;
+
+    fn neg(self) -> FieldElement {
+        self.negate(1)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use elliptic_curve::ff::Field;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
