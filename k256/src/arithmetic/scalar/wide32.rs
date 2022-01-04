@@ -236,6 +236,11 @@ impl WideScalar {
         } else {
             NEG_MODULUS[0]
         };
+        let modulus = if modulus_minus_one {
+            ORDER.wrapping_sub(&U256::ONE)
+        } else {
+            ORDER
+        };
 
         let w = self.0.to_uint_array();
         let n0 = w[8];
@@ -392,7 +397,7 @@ impl WideScalar {
 
         // Final reduction of r.
         let r = U256::from([r0, r1, r2, r3, r4, r5, r6, r7]);
-        let (r2, underflow) = r.sbb(&ORDER, Limb::ZERO);
+        let (r2, underflow) = r.sbb(&modulus, Limb::ZERO);
         let high_bit = Choice::from(c as u8);
         let underflow = Choice::from((underflow.0 >> 31) as u8);
         Scalar(U256::conditional_select(&r, &r2, !underflow | high_bit))
