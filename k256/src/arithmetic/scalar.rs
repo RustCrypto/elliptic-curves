@@ -650,14 +650,16 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::Scalar;
     use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
+    use crate::{NonZeroScalar, ORDER};
     use elliptic_curve::{
-        bigint::U512,
+        bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
         generic_array::GenericArray,
         ops::Reduce,
         IsHigh,
     };
     use num_bigint::{BigUint, ToBigUint};
+    use num_traits::Zero;
     use proptest::prelude::*;
 
     impl From<&BigUint> for Scalar {
@@ -772,12 +774,91 @@ mod tests {
     }
 
     #[test]
+    fn from_bytes_reduced() {
+        let m = Scalar::modulus_as_biguint();
+
+        fn reduce<T: Reduce<U256>>(arr: &[u8]) -> T {
+            T::from_be_bytes_reduced(GenericArray::clone_from_slice(arr))
+        }
+
+        // Regular reduction
+
+        let s = reduce::<Scalar>(&[0xffu8; 32]).to_biguint().unwrap();
+        assert!(s < m);
+
+        let s = reduce::<Scalar>(&[0u8; 32]).to_biguint().unwrap();
+        assert!(s.is_zero());
+
+        let s = reduce::<Scalar>(&ORDER.to_be_byte_array())
+            .to_biguint()
+            .unwrap();
+        assert!(s.is_zero());
+
+        // Reduction to a non-zero scalar
+
+        let s = reduce::<NonZeroScalar>(&[0xffu8; 32]).to_biguint().unwrap();
+        assert!(s < m);
+
+        let s = reduce::<NonZeroScalar>(&[0u8; 32]).to_biguint().unwrap();
+        assert!(s < m);
+        assert!(!s.is_zero());
+
+        let s = reduce::<NonZeroScalar>(&ORDER.to_be_byte_array())
+            .to_biguint()
+            .unwrap();
+        assert!(s < m);
+        assert!(!s.is_zero());
+
+        let s = reduce::<NonZeroScalar>(&(ORDER.wrapping_sub(&U256::ONE)).to_be_byte_array())
+            .to_biguint()
+            .unwrap();
+        assert!(s < m);
+        assert!(!s.is_zero());
+    }
+
+    #[test]
     fn from_wide_bytes_reduced() {
         let m = Scalar::modulus_as_biguint();
-        let b = [0xffu8; 64];
-        let s = <Scalar as Reduce<U512>>::from_be_bytes_reduced(GenericArray::clone_from_slice(&b));
-        let s_bu = s.to_biguint().unwrap();
-        assert!(s_bu < m);
+
+        fn reduce<T: Reduce<U512>>(arr: &[u8]) -> T {
+            let mut full_arr = [0u8; 64];
+            full_arr[(64 - arr.len())..64].copy_from_slice(arr);
+            T::from_be_bytes_reduced(GenericArray::clone_from_slice(&full_arr))
+        }
+
+        // Regular reduction
+
+        let s = reduce::<Scalar>(&[0xffu8; 64]).to_biguint().unwrap();
+        assert!(s < m);
+
+        let s = reduce::<Scalar>(&[0u8; 64]).to_biguint().unwrap();
+        assert!(s.is_zero());
+
+        let s = reduce::<Scalar>(&ORDER.to_be_byte_array())
+            .to_biguint()
+            .unwrap();
+        assert!(s.is_zero());
+
+        // Reduction to a non-zero scalar
+
+        let s = reduce::<NonZeroScalar>(&[0xffu8; 64]).to_biguint().unwrap();
+        assert!(s < m);
+
+        let s = reduce::<NonZeroScalar>(&[0u8; 64]).to_biguint().unwrap();
+        assert!(s < m);
+        assert!(!s.is_zero());
+
+        let s = reduce::<NonZeroScalar>(&ORDER.to_be_byte_array())
+            .to_biguint()
+            .unwrap();
+        assert!(s < m);
+        assert!(!s.is_zero());
+
+        let s = reduce::<NonZeroScalar>(&(ORDER.wrapping_sub(&U256::ONE)).to_be_byte_array())
+            .to_biguint()
+            .unwrap();
+        assert!(s < m);
+        assert!(!s.is_zero());
     }
 
     prop_compose! {
