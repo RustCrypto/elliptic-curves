@@ -2,6 +2,8 @@
 
 pub(crate) mod affine;
 mod field;
+#[cfg(feature = "hash2curve")]
+mod hash2curve;
 pub(crate) mod projective;
 pub(crate) mod scalar;
 pub(crate) mod util;
