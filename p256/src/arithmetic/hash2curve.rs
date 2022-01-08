@@ -1,4 +1,4 @@
-use elliptic_curve::bigint::U256;
+use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::U48;
 use elliptic_curve::generic_array::GenericArray;
 use elliptic_curve::group::cofactor::CofactorGroup;
@@ -125,18 +125,15 @@ impl FromOkm for Scalar {
         const F_2_192: Scalar = Scalar(U256::from_be_hex(
             "0000000000000001000000000000000000000000000000000000000000000000",
         ));
-        let d0 = Scalar(U256::from([
-            u64::from_be_bytes(data[16..24].try_into().unwrap()),
-            u64::from_be_bytes(data[8..16].try_into().unwrap()),
-            u64::from_be_bytes(data[0..8].try_into().unwrap()),
-            0,
-        ]));
-        let d1 = Scalar(U256::from([
-            u64::from_be_bytes(data[40..48].try_into().unwrap()),
-            u64::from_be_bytes(data[32..40].try_into().unwrap()),
-            u64::from_be_bytes(data[24..32].try_into().unwrap()),
-            0,
-        ]));
+
+        let mut d0 = GenericArray::default();
+        d0[8..].copy_from_slice(&data[0..24]);
+        let d0 = Scalar(U256::from_be_byte_array(d0));
+
+        let mut d1 = GenericArray::default();
+        d1[8..].copy_from_slice(&data[24..]);
+        let d1 = Scalar(U256::from_be_byte_array(d1));
+
         d0 * F_2_192 + d1
     }
 }
