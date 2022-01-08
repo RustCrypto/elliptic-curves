@@ -87,12 +87,10 @@ impl OsswuMap for FieldElement {
     };
 }
 
-impl MapToCurve for ProjectivePoint {
-    type FieldElement = FieldElement;
+impl MapToCurve for FieldElement {
+    type Output = ProjectivePoint;
 
-    type Output = Self;
-
-    fn map_to_curve(u: Self::FieldElement) -> Self::Output {
+    fn map_to_curve(&self) -> Self::Output {
         let (rx, ry) = {
             // See section 8.7 in
             // <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>
@@ -127,7 +125,7 @@ impl MapToCurve for ProjectivePoint {
                 0xff, 0xff, 0xfc, 0x24,
             ]);
 
-            let tv1 = u.square(); // u^2
+            let tv1 = self.square(); // u^2
             let tv3 = Z * tv1; // Z * u^2
             let mut tv2 = tv3.square(); // tv3^2
             let mut xd = tv2 + tv3; // tv3^2 + tv3
@@ -152,7 +150,7 @@ impl MapToCurve for ProjectivePoint {
             let y1 = tv4.pow_vartime(C1) * tv2; // tv4^C1 * tv2
             let x2n = tv3 * x1n; // tv3 * x1n
 
-            let y2 = y1 * C2 * tv1 * u; // y1 * c2 * tv1 * u
+            let y2 = y1 * C2 * tv1 * self; // y1 * c2 * tv1 * u
 
             tv2 = y1.square() * gxd; //y1^2 * gxd
 
@@ -166,16 +164,17 @@ impl MapToCurve for ProjectivePoint {
             // if e2, y = y1, else y = y2
             let mut y = FieldElement::conditional_select(&y2, &y1, e2);
 
-            y.conditional_assign(&-y, u.sgn0() ^ y.sgn0());
+            y.conditional_assign(&-y, self.sgn0() ^ y.sgn0());
             (x, y)
         };
         let (qx, qy) = FieldElement::isogeny(rx, ry);
 
-        Self::from(AffinePoint {
+        AffinePoint {
             x: qx,
             y: qy,
             infinity: Choice::from(0u8),
-        })
+        }
+        .into()
     }
 }
 
@@ -368,16 +367,21 @@ fn hash_to_curve() {
     for test_vector in TEST_VECTORS {
         // in parts
         let mut u = [FieldElement::default(), FieldElement::default()];
-        hash2field::hash_to_field::<ExpandMsgXmd<Sha256>, _>(test_vector.msg, DST, &mut u);
+        hash2field::hash_to_field::<ExpandMsgXmd<Sha256>, FieldElement>(
+            &[test_vector.msg],
+            DST,
+            &mut u,
+        )
+        .unwrap();
         assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
         assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
-        let q0 = ProjectivePoint::map_to_curve(u[0]);
+        let q0 = u[0].map_to_curve();
         let aq0 = q0.to_affine();
         assert_eq!(aq0.x.to_bytes().as_slice(), test_vector.q0_x);
         assert_eq!(aq0.y.to_bytes().as_slice(), test_vector.q0_y);
 
-        let q1 = ProjectivePoint::map_to_curve(u[1]);
+        let q1 = u[1].map_to_curve();
         let aq1 = q1.to_affine();
         assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
         assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
@@ -388,7 +392,8 @@ fn hash_to_curve() {
         assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
 
         // complete run
-        let pt = Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(test_vector.msg, DST);
+        let pt =
+            Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], DST).unwrap();
         let apt = pt.to_affine();
         assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
         assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);

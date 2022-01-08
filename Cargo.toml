@@ -9,4 +9,4 @@ members = [
 ]
 
 [patch.crates-io]
-elliptic-curve = { git = "https://github.com/mikelodder7/traits" }
+elliptic-curve = { git = "https://github.com/khonsulabs/traits", branch = "expand-msg-improvements-3" }

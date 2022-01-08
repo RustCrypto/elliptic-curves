@@ -1195,4 +1195,4 @@ checksum = "d68d9dcec5f9b43a30d38c49f91dfedfaac384cb8f085faca366c26207dd1619"
 [[patch.unused]]
 name = "elliptic-curve"
 version = "0.11.6"
-source = "git+https://github.com/mikelodder7/traits#9106c294790683f7c23ad3d94ffbe42ff7f9b1e3"
+source = "git+https://github.com/khonsulabs/traits?branch=expand-msg-improvements-3#6394c3204005d155f42129d64cb9540b061be441"

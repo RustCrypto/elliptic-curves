@@ -1,3 +1,4 @@
+use elliptic_curve::bigint::{ArrayEncoding, NonZero, U256, U384};
 use elliptic_curve::consts::U48;
 use elliptic_curve::generic_array::GenericArray;
 use elliptic_curve::group::cofactor::CofactorGroup;
@@ -8,7 +9,7 @@ use elliptic_curve::{
     hash2field::FromOkm,
 };
 
-use crate::{AffinePoint, NistP256, ProjectivePoint};
+use crate::{AffinePoint, NistP256, ProjectivePoint, Scalar};
 
 use super::FieldElement;
 
@@ -86,19 +87,18 @@ impl OsswuMap for FieldElement {
     };
 }
 
-impl MapToCurve for ProjectivePoint {
-    type FieldElement = FieldElement;
+impl MapToCurve for FieldElement {
+    type Output = ProjectivePoint;
 
-    type Output = Self;
+    fn map_to_curve(&self) -> Self::Output {
+        let (qx, qy) = self.osswu();
 
-    fn map_to_curve(u: Self::FieldElement) -> Self::Output {
-        let (qx, qy) = u.osswu();
-
-        Self::from(AffinePoint {
+        AffinePoint {
             x: qx,
             y: qy,
             infinity: Choice::from(0u8),
-        })
+        }
+        .into()
     }
 }
 
@@ -115,6 +115,20 @@ impl CofactorGroup for ProjectivePoint {
 
     fn is_torsion_free(&self) -> Choice {
         1.into()
+    }
+}
+
+impl FromOkm for Scalar {
+    type Length = U48;
+
+    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
+        let n = NonZero::new(U384::from_be_hex(
+            "00000000000000000000000000000000ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+        ))
+        .unwrap();
+
+        let bytes = U256::from_be_slice(&(U384::from_be_slice(data) % n).to_be_byte_array()[16..]);
+        Scalar(bytes)
     }
 }
 
@@ -138,7 +152,7 @@ fn hash_to_curve() {
 
     const DST: &[u8] = b"QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_";
 
-    const TEST_VECTORS: [TestVector; 5] = [
+    const TEST_VECTORS: &[TestVector] = &[
         TestVector {
             msg: b"",
             p_x: hex!("2c15230b26dbc6fc9a37051158c95b79656e17a1a920b11394ca91c44247d3e4"),
@@ -199,16 +213,21 @@ fn hash_to_curve() {
     for test_vector in TEST_VECTORS {
         // in parts
         let mut u = [FieldElement::default(), FieldElement::default()];
-        hash2field::hash_to_field::<ExpandMsgXmd<Sha256>, _>(test_vector.msg, DST, &mut u);
+        hash2field::hash_to_field::<ExpandMsgXmd<Sha256>, FieldElement>(
+            &[test_vector.msg],
+            DST,
+            &mut u,
+        )
+        .unwrap();
         assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
         assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
-        let q0 = ProjectivePoint::map_to_curve(u[0]);
+        let q0 = u[0].map_to_curve();
         let aq0 = q0.to_affine();
         assert_eq!(aq0.x.to_bytes().as_slice(), test_vector.q0_x);
         assert_eq!(aq0.y.to_bytes().as_slice(), test_vector.q0_y);
 
-        let q1 = ProjectivePoint::map_to_curve(u[1]);
+        let q1 = u[1].map_to_curve();
         let aq1 = q1.to_affine();
         assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
         assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
@@ -219,9 +238,46 @@ fn hash_to_curve() {
         assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
 
         // complete run
-        let pt = NistP256::hash_from_bytes::<ExpandMsgXmd<Sha256>>(test_vector.msg, DST);
+        let pt =
+            NistP256::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], DST).unwrap();
         let apt = pt.to_affine();
         assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
         assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);
+    }
+}
+
+#[test]
+fn hash_to_scalar_voprf() {
+    use elliptic_curve::hash2field::ExpandMsgXmd;
+    use hex_literal::hex;
+    use sha2::Sha256;
+
+    struct TestVector {
+        dst: &'static [u8],
+        seed: &'static [u8],
+        sk_sm: &'static [u8],
+    }
+
+    const TEST_VECTORS: &[TestVector] = &[
+        TestVector {
+            dst: b"HashToScalar-VOPRF08-\x00\x00\x03",
+            seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+            sk_sm: &hex!("c15d9e9ab36d495d9d62954db6aafe06d3edabf41600d58f9be0737af2719e97"),
+        },
+        TestVector {
+            dst: b"HashToScalar-VOPRF08-\x01\x00\x03",
+            seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+            sk_sm: &hex!("7f62054fcd598b5e023c08ef0f04e05e26867438d5e355e846c9d8788d5c7a12"),
+        },
+    ];
+
+    for test_vector in TEST_VECTORS {
+        assert_eq!(
+            NistP256::hash_to_scalar::<ExpandMsgXmd<Sha256>>(&[test_vector.seed], test_vector.dst,)
+                .unwrap()
+                .to_bytes()
+                .as_slice(),
+            test_vector.sk_sm
+        );
     }
 }
