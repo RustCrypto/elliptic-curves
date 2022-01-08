@@ -328,8 +328,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.6"
-source = "git+https://github.com/mikelodder7/traits#9106c294790683f7c23ad3d94ffbe42ff7f9b1e3"
+version = "0.11.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fcbfdf46fd1157b49be0c2170bab2784ca19233b35c2dc772d60247b72f2071"
 dependencies = [
  "base64ct",
  "crypto-bigint",
@@ -1190,3 +1191,8 @@ name = "zeroize"
 version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d68d9dcec5f9b43a30d38c49f91dfedfaac384cb8f085faca366c26207dd1619"
+
+[[patch.unused]]
+name = "elliptic-curve"
+version = "0.11.6"
+source = "git+https://github.com/mikelodder7/traits#9106c294790683f7c23ad3d94ffbe42ff7f9b1e3"
