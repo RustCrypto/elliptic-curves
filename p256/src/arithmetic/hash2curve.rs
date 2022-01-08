@@ -287,3 +287,38 @@ fn hash_to_scalar_voprf() {
         );
     }
 }
+
+#[test]
+fn from_okm_fuzz() {
+    use elliptic_curve::bigint::{NonZero, U384};
+    use elliptic_curve::Curve;
+    use proptest::num::u64::ANY;
+    use proptest::{prelude::ProptestConfig, proptest};
+
+    let mut wide_order = GenericArray::default();
+    wide_order[16..].copy_from_slice(&NistP256::ORDER.to_be_byte_array());
+    let wide_order = NonZero::new(U384::from_be_byte_array(wide_order)).unwrap();
+
+    let simple_from_okm = move |data: GenericArray<u8, U48>| -> Scalar {
+        let data = U384::from_be_slice(&data);
+
+        let scalar = data % wide_order;
+        let reduced_scalar = U256::from_be_slice(&scalar.to_be_byte_array()[16..]);
+
+        Scalar(reduced_scalar)
+    };
+
+    proptest!(ProptestConfig::with_cases(1000), |(b0 in ANY, b1 in ANY, b2 in ANY, b3 in ANY, b4 in ANY, b5 in ANY)| {
+        let mut data = GenericArray::default();
+        data[..8].copy_from_slice(&b0.to_be_bytes());
+        data[8..16].copy_from_slice(&b1.to_be_bytes());
+        data[16..24].copy_from_slice(&b2.to_be_bytes());
+        data[24..32].copy_from_slice(&b3.to_be_bytes());
+        data[32..40].copy_from_slice(&b4.to_be_bytes());
+        data[40..].copy_from_slice(&b5.to_be_bytes());
+
+        let from_okm = Scalar::from_okm(&data);
+        let simple_from_okm = simple_from_okm(data);
+        assert_eq!(from_okm, simple_from_okm);
+    });
+}
