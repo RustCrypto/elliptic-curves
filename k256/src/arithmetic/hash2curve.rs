@@ -85,88 +85,57 @@ impl OsswuMap for FieldElement {
             0xff, 0xff, 0xfc, 0x24,
         ]),
     };
+
+    fn osswu(&self) -> (Self, Self) {
+        let tv1 = self.square(); // u^2
+        let tv3 = Self::PARAMS.z * tv1; // Z * u^2
+        let mut tv2 = tv3.square(); // tv3^2
+        let mut xd = tv2 + tv3; // tv3^2 + tv3
+        let x1n = Self::PARAMS.map_b * (xd + Self::one()); // B * (xd + 1)
+        xd = (xd * Self::PARAMS.map_a.negate(1)).normalize(); // -A * xd
+
+        let tv = Self::PARAMS.z * Self::PARAMS.map_a;
+        xd.conditional_assign(&tv, xd.is_zero());
+
+        tv2 = xd.square(); //xd^2
+        let gxd = tv2 * xd; // xd^3
+        tv2 *= Self::PARAMS.map_a; // A * tv2
+
+        let mut gx1 = x1n * (tv2 + x1n.square()); //x1n *(tv2 + x1n^2)
+        tv2 = gxd * Self::PARAMS.map_b; // B * gxd
+        gx1 += tv2; // gx1 + tv2
+
+        let mut tv4 = gxd.square(); // gxd^2
+        tv2 = gx1 * gxd; // gx1 * gxd
+        tv4 *= tv2;
+
+        let y1 = tv4.pow_vartime(&Self::PARAMS.c1) * tv2; // tv4^C1 * tv2
+        let x2n = tv3 * x1n; // tv3 * x1n
+
+        let y2 = y1 * Self::PARAMS.c2 * tv1 * self; // y1 * c2 * tv1 * u
+
+        tv2 = y1.square() * gxd; //y1^2 * gxd
+
+        let e2 = tv2.normalize().ct_eq(&gx1.normalize());
+
+        // if e2 , x = x1, else x = x2
+        let mut x = Self::conditional_select(&x2n, &x1n, e2);
+        // xn / xd
+        x *= xd.invert().unwrap();
+
+        // if e2, y = y1, else y = y2
+        let mut y = Self::conditional_select(&y2, &y1, e2);
+
+        y.conditional_assign(&-y, self.sgn0() ^ y.sgn0());
+        (x, y)
+    }
 }
 
 impl MapToCurve for FieldElement {
     type Output = ProjectivePoint;
 
     fn map_to_curve(&self) -> Self::Output {
-        let (rx, ry) = {
-            // See section 8.7 in
-            // <https://datatracker.ietf.org/doc/draft-irtf-cfrg-hash-to-curve/>
-            const C1: [u64; 4] = [
-                0xffff_ffff_bfff_ff0b,
-                0xffff_ffff_ffff_ffff,
-                0xffff_ffff_ffff_ffff,
-                0x3fff_ffff_ffff_ffff,
-            ];
-            // 0x25e9711ae8c0dadc 0x46fdbcb72aadd8f4 0x250b65073012ec80 0xbc6ecb9c12973975
-            const C2: FieldElement = FieldElement::from_bytes_unchecked(&[
-                0x25, 0xe9, 0x71, 0x1a, 0xe8, 0xc0, 0xda, 0xdc, 0x46, 0xfd, 0xbc, 0xb7, 0x2a, 0xad,
-                0xd8, 0xf4, 0x25, 0x0b, 0x65, 0x07, 0x30, 0x12, 0xec, 0x80, 0xbc, 0x6e, 0xcb, 0x9c,
-                0x12, 0x97, 0x39, 0x75,
-            ]);
-            // 0x3f8731abdd661adc 0xa08a5558f0f5d272 0xe953d363cb6f0e5d 0x405447c01a444533
-            const MAP_A: FieldElement = FieldElement::from_bytes_unchecked(&[
-                0x3f, 0x87, 0x31, 0xab, 0xdd, 0x66, 0x1a, 0xdc, 0xa0, 0x8a, 0x55, 0x58, 0xf0, 0xf5,
-                0xd2, 0x72, 0xe9, 0x53, 0xd3, 0x63, 0xcb, 0x6f, 0x0e, 0x5d, 0x40, 0x54, 0x47, 0xc0,
-                0x1a, 0x44, 0x45, 0x33,
-            ]);
-            // 0x00000000000006eb
-            const MAP_B: FieldElement = FieldElement::from_bytes_unchecked(&[
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x06, 0xeb,
-            ]);
-            // 0xffffffffffffffff 0xffffffffffffffff 0xffffffffffffffff 0xfffffffefffffc24
-            const Z: FieldElement = FieldElement::from_bytes_unchecked(&[
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
-                0xff, 0xff, 0xfc, 0x24,
-            ]);
-
-            let tv1 = self.square(); // u^2
-            let tv3 = Z * tv1; // Z * u^2
-            let mut tv2 = tv3.square(); // tv3^2
-            let mut xd = tv2 + tv3; // tv3^2 + tv3
-            let x1n = MAP_B * (xd + FieldElement::one()); // B * (xd + 1)
-            xd = (xd * MAP_A.negate(1)).normalize(); // -A * xd
-
-            let tv = Z * MAP_A;
-            xd.conditional_assign(&tv, xd.is_zero());
-
-            tv2 = xd.square(); //xd^2
-            let gxd = tv2 * xd; // xd^3
-            tv2 *= MAP_A; // A * tv2
-
-            let mut gx1 = x1n * (tv2 + x1n.square()); //x1n *(tv2 + x1n^2)
-            tv2 = gxd * MAP_B; // B * gxd
-            gx1 += tv2; // gx1 + tv2
-
-            let mut tv4 = gxd.square(); // gxd^2
-            tv2 = gx1 * gxd; // gx1 * gxd
-            tv4 *= tv2;
-
-            let y1 = tv4.pow_vartime(C1) * tv2; // tv4^C1 * tv2
-            let x2n = tv3 * x1n; // tv3 * x1n
-
-            let y2 = y1 * C2 * tv1 * self; // y1 * c2 * tv1 * u
-
-            tv2 = y1.square() * gxd; //y1^2 * gxd
-
-            let e2 = tv2.normalize().ct_eq(&gx1.normalize());
-
-            // if e2 , x = x1, else x = x2
-            let mut x = FieldElement::conditional_select(&x2n, &x1n, e2);
-            // xn / xd
-            x *= xd.invert().unwrap();
-
-            // if e2, y = y1, else y = y2
-            let mut y = FieldElement::conditional_select(&y2, &y1, e2);
-
-            y.conditional_assign(&-y, self.sgn0() ^ y.sgn0());
-            (x, y)
-        };
+        let (rx, ry) = self.osswu();
         let (qx, qy) = FieldElement::isogeny(rx, ry);
 
         AffinePoint {
