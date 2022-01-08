@@ -1,4 +1,4 @@
-use elliptic_curve::bigint::{ArrayEncoding, NonZero, U256, U384};
+use elliptic_curve::bigint::U256;
 use elliptic_curve::consts::U48;
 use elliptic_curve::generic_array::GenericArray;
 use elliptic_curve::group::cofactor::CofactorGroup;
@@ -122,13 +122,22 @@ impl FromOkm for Scalar {
     type Length = U48;
 
     fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
-        let n = NonZero::new(U384::from_be_hex(
-            "00000000000000000000000000000000ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
-        ))
-        .unwrap();
-
-        let bytes = U256::from_be_slice(&(U384::from_be_slice(data) % n).to_be_byte_array()[16..]);
-        Scalar(bytes)
+        const F_2_192: Scalar = Scalar(U256::from_be_hex(
+            "0000000000000001000000000000000000000000000000000000000000000000",
+        ));
+        let d0 = Scalar(U256::from([
+            u64::from_be_bytes(data[16..24].try_into().unwrap()),
+            u64::from_be_bytes(data[8..16].try_into().unwrap()),
+            u64::from_be_bytes(data[0..8].try_into().unwrap()),
+            0,
+        ]));
+        let d1 = Scalar(U256::from([
+            u64::from_be_bytes(data[40..48].try_into().unwrap()),
+            u64::from_be_bytes(data[32..40].try_into().unwrap()),
+            u64::from_be_bytes(data[24..32].try_into().unwrap()),
+            0,
+        ]));
+        d0 * F_2_192 + d1
     }
 }
 
