@@ -11,7 +11,7 @@ use elliptic_curve::{
     bigint::{prelude::*, Limb, U256},
     generic_array::arr,
     group::ff::{Field, PrimeField},
-    ops::Reduce,
+    ops::{Reduce, ReduceNonZero},
     rand_core::RngCore,
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -737,6 +737,15 @@ impl Reduce<U256> for Scalar {
         let (r, underflow) = w.sbb(&NistP256::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow))
+    }
+}
+
+impl ReduceNonZero<U256> for Scalar {
+    fn from_uint_reduced_nonzero(w: U256) -> Self {
+        const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
+        let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        Self(U256::conditional_select(&w, &r, !underflow).wrapping_add(&U256::ONE))
     }
 }
 
