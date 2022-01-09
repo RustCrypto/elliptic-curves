@@ -17,7 +17,7 @@ edition = "2021"
 rust-version = "1.56"
 
 [dependencies]
-elliptic-curve = { version = "0.11.6", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "0.11.7", default-features = false, features = ["hazmat", "sec1"] }
 sec1 = { version = "0.2", default-features = false }
 
 # optional dependencies
@@ -46,6 +46,7 @@ serde = ["ecdsa-core/serde", "elliptic-curve/serde", "sec1/serde"]
 sha256 = ["digest", "sha2"]
 std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
 test-vectors = ["hex-literal"]
+voprf = ["elliptic-curve/voprf", "sha2"]
 
 [package.metadata.docs.rs]
 all-features = true

@@ -150,3 +150,13 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 #[cfg(feature = "bits")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
+
+#[cfg(feature = "voprf")]
+#[cfg_attr(docsrs, doc(cfg(feature = "voprf")))]
+impl elliptic_curve::VoprfParameters for NistP256 {
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.3-1.3>.
+    const ID: u16 = 0x0003;
+
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.3-1.2>.
+    type Hash = sha2::Sha256;
+}
