@@ -54,122 +54,7 @@ impl ProjectivePoint {
         y: AffinePoint::GENERATOR.y,
         z: FieldElement::ONE,
     };
-}
 
-impl Group for ProjectivePoint {
-    type Scalar = Scalar;
-
-    fn random(mut rng: impl RngCore) -> Self {
-        Self::GENERATOR * Scalar::random(&mut rng)
-    }
-
-    fn identity() -> Self {
-        Self::IDENTITY
-    }
-
-    fn generator() -> Self {
-        Self::GENERATOR
-    }
-
-    fn is_identity(&self) -> Choice {
-        self.ct_eq(&Self::IDENTITY)
-    }
-
-    #[must_use]
-    fn double(&self) -> Self {
-        ProjectivePoint::double(self)
-    }
-}
-
-impl GroupEncoding for ProjectivePoint {
-    type Repr = CompressedPoint;
-
-    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        <AffinePoint as GroupEncoding>::from_bytes(bytes).map(Into::into)
-    }
-
-    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
-        // No unchecked conversion possible for compressed points
-        Self::from_bytes(bytes)
-    }
-
-    fn to_bytes(&self) -> Self::Repr {
-        self.to_affine().to_bytes()
-    }
-}
-
-impl PrimeGroup for ProjectivePoint {}
-
-impl Curve for ProjectivePoint {
-    type AffineRepr = AffinePoint;
-
-    fn to_affine(&self) -> AffinePoint {
-        ProjectivePoint::to_affine(self)
-    }
-}
-
-impl PrimeCurve for ProjectivePoint {
-    type Affine = AffinePoint;
-}
-
-impl LinearCombination for ProjectivePoint {}
-
-impl From<AffinePoint> for ProjectivePoint {
-    fn from(p: AffinePoint) -> Self {
-        let projective = ProjectivePoint {
-            x: p.x,
-            y: p.y,
-            z: FieldElement::ONE,
-        };
-        Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
-    }
-}
-
-impl From<ProjectivePoint> for AffinePoint {
-    fn from(p: ProjectivePoint) -> AffinePoint {
-        p.to_affine()
-    }
-}
-
-impl FromEncodedPoint<NistP256> for ProjectivePoint {
-    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
-        AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
-    }
-}
-
-impl ToEncodedPoint<NistP256> for ProjectivePoint {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.to_affine().to_encoded_point(compress)
-    }
-}
-
-impl ConditionallySelectable for ProjectivePoint {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        ProjectivePoint {
-            x: FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: FieldElement::conditional_select(&a.y, &b.y, choice),
-            z: FieldElement::conditional_select(&a.z, &b.z, choice),
-        }
-    }
-}
-
-impl ConstantTimeEq for ProjectivePoint {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.to_affine().ct_eq(&other.to_affine())
-    }
-}
-
-impl DefaultIsZeroes for ProjectivePoint {}
-
-impl Eq for ProjectivePoint {}
-
-impl PartialEq for ProjectivePoint {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl ProjectivePoint {
     /// Returns the additive identity of P-256, also known as the "neutral element" or
     /// "point at infinity".
     #[deprecated(since = "0.10.1", note = "use `ProjectivePoint::IDENTITY` instead")]
@@ -319,6 +204,131 @@ impl ProjectivePoint {
         }
 
         ret
+    }
+}
+
+impl Group for ProjectivePoint {
+    type Scalar = Scalar;
+
+    fn random(mut rng: impl RngCore) -> Self {
+        Self::GENERATOR * Scalar::random(&mut rng)
+    }
+
+    fn identity() -> Self {
+        Self::IDENTITY
+    }
+
+    fn generator() -> Self {
+        Self::GENERATOR
+    }
+
+    fn is_identity(&self) -> Choice {
+        self.ct_eq(&Self::IDENTITY)
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        ProjectivePoint::double(self)
+    }
+}
+
+impl GroupEncoding for ProjectivePoint {
+    type Repr = CompressedPoint;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        <AffinePoint as GroupEncoding>::from_bytes(bytes).map(Into::into)
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        self.to_affine().to_bytes()
+    }
+}
+
+impl PrimeGroup for ProjectivePoint {}
+
+impl Curve for ProjectivePoint {
+    type AffineRepr = AffinePoint;
+
+    fn to_affine(&self) -> AffinePoint {
+        ProjectivePoint::to_affine(self)
+    }
+}
+
+impl PrimeCurve for ProjectivePoint {
+    type Affine = AffinePoint;
+}
+
+impl LinearCombination for ProjectivePoint {}
+
+impl From<AffinePoint> for ProjectivePoint {
+    fn from(p: AffinePoint) -> Self {
+        let projective = ProjectivePoint {
+            x: p.x,
+            y: p.y,
+            z: FieldElement::ONE,
+        };
+        Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
+    }
+}
+
+impl From<&AffinePoint> for ProjectivePoint {
+    fn from(p: &AffinePoint) -> Self {
+        Self::from(*p)
+    }
+}
+
+impl From<ProjectivePoint> for AffinePoint {
+    fn from(p: ProjectivePoint) -> AffinePoint {
+        p.to_affine()
+    }
+}
+
+impl From<&ProjectivePoint> for AffinePoint {
+    fn from(p: &ProjectivePoint) -> AffinePoint {
+        p.to_affine()
+    }
+}
+
+impl FromEncodedPoint<NistP256> for ProjectivePoint {
+    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
+        AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
+    }
+}
+
+impl ToEncodedPoint<NistP256> for ProjectivePoint {
+    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+        self.to_affine().to_encoded_point(compress)
+    }
+}
+
+impl ConditionallySelectable for ProjectivePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        ProjectivePoint {
+            x: FieldElement::conditional_select(&a.x, &b.x, choice),
+            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            z: FieldElement::conditional_select(&a.z, &b.z, choice),
+        }
+    }
+}
+
+impl ConstantTimeEq for ProjectivePoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.to_affine().ct_eq(&other.to_affine())
+    }
+}
+
+impl DefaultIsZeroes for ProjectivePoint {}
+
+impl Eq for ProjectivePoint {}
+
+impl PartialEq for ProjectivePoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
