@@ -111,9 +111,9 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
         let u2 = *r * s_inv;
 
         let x = ProjectivePoint::lincomb(
-            &ProjectivePoint::generator(),
+            &ProjectivePoint::GENERATOR,
             &u1,
-            &ProjectivePoint::from(*self),
+            &ProjectivePoint::from(self),
             &u2,
         )
         .to_affine()

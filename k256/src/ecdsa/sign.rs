@@ -169,7 +169,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
         let k_inverse = k_inverse.unwrap();
 
         // Compute 𝐑 = 𝑘×𝑮
-        let R = (ProjectivePoint::generator() * k).to_affine();
+        let R = (ProjectivePoint::GENERATOR * k).to_affine();
 
         // Lift x-coordinate of 𝐑 (element of base field) into a serialized big
         // integer, then reduce it into an element of the scalar field
