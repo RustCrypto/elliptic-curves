@@ -13,12 +13,12 @@
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub mod ecdsa;
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "broken-arithmetic-do-not-use")]
 mod arithmetic;
 
 pub use elliptic_curve::{self, bigint::U384};
 
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "broken-arithmetic-do-not-use")]
 pub use arithmetic::{affine::AffinePoint, scalar::Scalar};
 
 #[cfg(feature = "pkcs8")]
@@ -90,16 +90,16 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
 
 /// Non-zero NIST P-384 scalar field element.
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "broken-arithmetic-do-not-use")]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP384>;
 
 /// NIST P-384 public key.
-#[cfg(feature = "arithmetic")]
+#[cfg(feature = "broken-arithmetic-do-not-use")]
 pub type PublicKey = elliptic_curve::PublicKey<NistP384>;
 
 /// NIST P-384 scalar core type.
 ///
-/// This is always available regardless of if the `arithmetic` feature is enabled.
+/// This is always available regardless of if the curve arithmetic feature is enabled.
 pub type ScalarCore = elliptic_curve::ScalarCore<NistP384>;
 
 /// NIST P-384 secret key.

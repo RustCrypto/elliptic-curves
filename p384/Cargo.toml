@@ -23,7 +23,7 @@ hex-literal = "0.3"
 
 [features]
 default = ["pkcs8", "std"]
-arithmetic = ["elliptic-curve/arithmetic"]
+broken-arithmetic-do-not-use = ["elliptic-curve/arithmetic"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
