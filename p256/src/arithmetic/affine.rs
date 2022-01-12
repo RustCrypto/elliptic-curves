@@ -7,7 +7,6 @@ use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP256, Scalar};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     bigint::Encoding,
-    generic_array::arr,
     group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -58,23 +57,30 @@ impl PrimeCurveAffine for AffinePoint {
     }
 
     /// Returns the base point of P-256.
+    ///
+    /// Defined in FIPS 186-4 § D.1.2.3:
+    ///
+    /// ```text
+    /// Gₓ = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
+    /// Gᵧ = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
+    /// ```
+    // TODO(tarcieri): extract inherent `const GENERATOR` constant
     fn generator() -> AffinePoint {
-        // NIST P-256 basepoint in affine coordinates:
-        // x = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
-        // y = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
-        AffinePoint {
-            x: FieldElement::from_bytes(&arr![u8;
-                0x6b, 0x17, 0xd1, 0xf2, 0xe1, 0x2c, 0x42, 0x47, 0xf8, 0xbc, 0xe6, 0xe5, 0x63, 0xa4,
-                0x40, 0xf2, 0x77, 0x03, 0x7d, 0x81, 0x2d, 0xeb, 0x33, 0xa0, 0xf4, 0xa1, 0x39, 0x45,
-                0xd8, 0x98, 0xc2, 0x96
+        Self {
+            x: FieldElement([
+                0xf4a1_3945_d898_c296,
+                0x7703_7d81_2deb_33a0,
+                0xf8bc_e6e5_63a4_40f2,
+                0x6b17_d1f2_e12c_4247,
             ])
-            .unwrap(),
-            y: FieldElement::from_bytes(&arr![u8;
-                0x4f, 0xe3, 0x42, 0xe2, 0xfe, 0x1a, 0x7f, 0x9b, 0x8e, 0xe7, 0xeb, 0x4a, 0x7c, 0x0f,
-                0x9e, 0x16, 0x2b, 0xce, 0x33, 0x57, 0x6b, 0x31, 0x5e, 0xce, 0xcb, 0xb6, 0x40, 0x68,
-                0x37, 0xbf, 0x51, 0xf5
+            .to_montgomery(),
+            y: FieldElement([
+                0xcbb6_4068_37bf_51f5,
+                0x2bce_3357_6b31_5ece,
+                0x8ee7_eb4a_7c0f_9e16,
+                0x4fe3_42e2_fe1a_7f9b,
             ])
-            .unwrap(),
+            .to_montgomery(),
             infinity: Choice::from(0),
         }
     }
