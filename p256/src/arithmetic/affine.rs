@@ -38,25 +38,28 @@ impl AffineArithmetic for NistP256 {
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct AffinePoint {
+    /// x-coordinate
     pub(crate) x: FieldElement,
+
+    /// y-coordinate
     pub(crate) y: FieldElement,
-    pub(super) infinity: Choice,
+
+    /// Is this point the point at infinity? 0 = no, 1 = yes
+    ///
+    /// This is a proxy for [`Choice`], but uses `u8` instead to permit `const`
+    /// constructors for `IDENTITY` and `GENERATOR`.
+    pub(super) infinity: u8,
 }
 
-impl PrimeCurveAffine for AffinePoint {
-    type Scalar = Scalar;
-    type Curve = ProjectivePoint;
+impl AffinePoint {
+    /// Additive identity of the group: the point at infinity.
+    pub const IDENTITY: Self = Self {
+        x: FieldElement::ZERO,
+        y: FieldElement::ZERO,
+        infinity: 1,
+    };
 
-    /// Returns the identity of the group: the point at infinity.
-    fn identity() -> AffinePoint {
-        Self {
-            x: FieldElement::ZERO,
-            y: FieldElement::ZERO,
-            infinity: Choice::from(1),
-        }
-    }
-
-    /// Returns the base point of P-256.
+    /// Base point of P-256.
     ///
     /// Defined in FIPS 186-4 § D.1.2.3:
     ///
@@ -64,33 +67,41 @@ impl PrimeCurveAffine for AffinePoint {
     /// Gₓ = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
     /// Gᵧ = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
     /// ```
-    // TODO(tarcieri): extract inherent `const GENERATOR` constant
+    pub const GENERATOR: Self = Self {
+        x: FieldElement([
+            0xf4a1_3945_d898_c296,
+            0x7703_7d81_2deb_33a0,
+            0xf8bc_e6e5_63a4_40f2,
+            0x6b17_d1f2_e12c_4247,
+        ])
+        .to_montgomery(),
+        y: FieldElement([
+            0xcbb6_4068_37bf_51f5,
+            0x2bce_3357_6b31_5ece,
+            0x8ee7_eb4a_7c0f_9e16,
+            0x4fe3_42e2_fe1a_7f9b,
+        ])
+        .to_montgomery(),
+        infinity: 0,
+    };
+}
+
+impl PrimeCurveAffine for AffinePoint {
+    type Scalar = Scalar;
+    type Curve = ProjectivePoint;
+
+    fn identity() -> AffinePoint {
+        Self::IDENTITY
+    }
+
     fn generator() -> AffinePoint {
-        Self {
-            x: FieldElement([
-                0xf4a1_3945_d898_c296,
-                0x7703_7d81_2deb_33a0,
-                0xf8bc_e6e5_63a4_40f2,
-                0x6b17_d1f2_e12c_4247,
-            ])
-            .to_montgomery(),
-            y: FieldElement([
-                0xcbb6_4068_37bf_51f5,
-                0x2bce_3357_6b31_5ece,
-                0x8ee7_eb4a_7c0f_9e16,
-                0x4fe3_42e2_fe1a_7f9b,
-            ])
-            .to_montgomery(),
-            infinity: Choice::from(0),
-        }
+        Self::GENERATOR
     }
 
-    /// Is this point the identity point?
     fn is_identity(&self) -> Choice {
-        self.infinity
+        Choice::from(self.infinity)
     }
 
-    /// Convert to curve representation.
     fn to_curve(&self) -> ProjectivePoint {
         ProjectivePoint::from(*self)
     }
@@ -107,7 +118,7 @@ impl ConditionallySelectable for AffinePoint {
         AffinePoint {
             x: FieldElement::conditional_select(&a.x, &b.x, choice),
             y: FieldElement::conditional_select(&a.y, &b.y, choice),
-            infinity: Choice::conditional_select(&a.infinity, &b.infinity, choice),
+            infinity: u8::conditional_select(&a.infinity, &b.infinity, choice),
         }
     }
 }
@@ -120,7 +131,7 @@ impl ConstantTimeEq for AffinePoint {
 
 impl Default for AffinePoint {
     fn default() -> Self {
-        Self::identity()
+        Self::IDENTITY
     }
 }
 
@@ -147,11 +158,7 @@ impl DecompressPoint<NistP256> for AffinePoint {
                     beta.is_odd().ct_eq(&y_is_odd),
                 );
 
-                Self {
-                    x,
-                    y,
-                    infinity: Choice::from(0),
-                }
+                Self { x, y, infinity: 0 }
             })
         })
     }
@@ -199,7 +206,7 @@ impl DecompactPoint<NistP256> for AffinePoint {
                 AffinePoint {
                     x,
                     y: recovered_y.to_montgomery(),
-                    infinity: Choice::from(0),
+                    infinity: 0,
                 }
             })
         })
@@ -228,11 +235,7 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
                         // Check that the point is on the curve
                         let lhs = y * &y;
                         let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
-                        let point = AffinePoint {
-                            x,
-                            y,
-                            infinity: Choice::from(0),
-                        };
+                        let point = AffinePoint { x, y, infinity: 0 };
                         CtOption::new(point, lhs.ct_eq(&rhs))
                     })
                 })
@@ -250,7 +253,7 @@ impl ToEncodedPoint<NistP256> for AffinePoint {
                 compress,
             ),
             &EncodedPoint::identity(),
-            self.infinity,
+            self.is_identity(),
         )
     }
 }
@@ -459,9 +462,9 @@ mod tests {
     #[test]
     fn identity_encoding() {
         // This is technically an invalid SEC1 encoding, but is preferable to panicking.
-        assert_eq!([0; 33], AffinePoint::identity().to_bytes().as_slice());
+        assert_eq!([0; 33], AffinePoint::IDENTITY.to_bytes().as_slice());
         assert!(bool::from(
-            AffinePoint::from_bytes(&AffinePoint::identity().to_bytes())
+            AffinePoint::from_bytes(&AffinePoint::IDENTITY.to_bytes())
                 .unwrap()
                 .is_identity()
         ))
