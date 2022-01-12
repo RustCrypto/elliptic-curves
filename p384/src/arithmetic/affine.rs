@@ -34,7 +34,7 @@ impl AffineArithmetic for NistP384 {
 ///
 /// [SEC1]: https://www.secg.org/sec1-v2.pdf
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "broken-arithmetic-do-not-use")))]
 pub struct AffinePoint {
     pub(crate) x: FieldElement,
     pub(crate) y: FieldElement,

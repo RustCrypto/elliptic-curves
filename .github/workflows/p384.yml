@@ -37,6 +37,8 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
+      # TODO(tarcieri): currently 64-bit only
+      # - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features broken-arithmetic-do-not-use
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
