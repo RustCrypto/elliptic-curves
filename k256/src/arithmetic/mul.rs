@@ -101,7 +101,7 @@ impl LookupTable {
         let xabs = (x + xmask) ^ xmask;
 
         // Get an array element in constant time
-        let mut t = ProjectivePoint::identity();
+        let mut t = ProjectivePoint::IDENTITY;
         for j in 1..9 {
             let c = (xabs as u8).ct_eq(&(j as u8));
             t.conditional_assign(&self.0[j - 1], c);
@@ -278,7 +278,7 @@ fn lincomb_generic<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) 
         Radix16Decomposition::default(),
     );
 
-    let mut acc = ProjectivePoint::identity();
+    let mut acc = ProjectivePoint::IDENTITY;
     for component in 0..N {
         acc += &tables1[component].select(digits1[component].0[32]);
         acc += &tables2[component].select(digits2[component].0[32]);

@@ -46,73 +46,32 @@ pub struct ProjectivePoint {
     z: FieldElement,
 }
 
-impl From<AffinePoint> for ProjectivePoint {
-    fn from(p: AffinePoint) -> Self {
-        let projective = ProjectivePoint {
-            x: p.x,
-            y: p.y,
-            z: FieldElement::one(),
-        };
-        Self::conditional_select(&projective, &Self::identity(), p.infinity)
-    }
-}
-
-impl From<ProjectivePoint> for AffinePoint {
-    fn from(p: ProjectivePoint) -> AffinePoint {
-        p.to_affine()
-    }
-}
-
-impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
-        AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
-    }
-}
-
-impl ToEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.to_affine().to_encoded_point(compress)
-    }
-}
-
-impl ConditionallySelectable for ProjectivePoint {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        ProjectivePoint {
-            x: FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: FieldElement::conditional_select(&a.y, &b.y, choice),
-            z: FieldElement::conditional_select(&a.z, &b.z, choice),
-        }
-    }
-}
-
-impl ConstantTimeEq for ProjectivePoint {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.to_affine().ct_eq(&other.to_affine())
-    }
-}
-
-impl PartialEq for ProjectivePoint {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Eq for ProjectivePoint {}
-
 impl ProjectivePoint {
+    /// Additive identity of the group: the point at infinity.
+    pub const IDENTITY: Self = Self {
+        x: FieldElement::ZERO,
+        y: FieldElement::ONE,
+        z: FieldElement::ZERO,
+    };
+
+    /// Base point of secp256k1.
+    pub const GENERATOR: Self = Self {
+        x: AffinePoint::GENERATOR.x,
+        y: AffinePoint::GENERATOR.y,
+        z: FieldElement::ONE,
+    };
+
     /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
     /// "point at infinity".
+    #[deprecated(since = "0.10.2", note = "use `ProjectivePoint::IDENTITY` instead")]
     pub const fn identity() -> ProjectivePoint {
-        ProjectivePoint {
-            x: FieldElement::ZERO,
-            y: FieldElement::ONE,
-            z: FieldElement::ZERO,
-        }
+        Self::IDENTITY
     }
 
     /// Returns the base point of SECP256k1.
+    #[deprecated(since = "0.10.2", note = "use `ProjectivePoint::GENERATOR` instead")]
     pub fn generator() -> ProjectivePoint {
-        AffinePoint::generator().into()
+        Self::GENERATOR
     }
 
     /// Returns the affine representation of this point, or `None` if it is the identity.
@@ -122,9 +81,9 @@ impl ProjectivePoint {
             .map(|zinv| AffinePoint {
                 x: self.x * &zinv,
                 y: self.y * &zinv,
-                infinity: Choice::from(0),
+                infinity: 0,
             })
-            .unwrap_or_else(AffinePoint::identity)
+            .unwrap_or(AffinePoint::IDENTITY)
     }
 
     /// Returns `-self`.
@@ -271,28 +230,87 @@ impl ProjectivePoint {
     }
 }
 
+impl From<AffinePoint> for ProjectivePoint {
+    fn from(p: AffinePoint) -> Self {
+        let projective = ProjectivePoint {
+            x: p.x,
+            y: p.y,
+            z: FieldElement::one(),
+        };
+        Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
+    }
+}
+
+impl From<&AffinePoint> for ProjectivePoint {
+    fn from(p: &AffinePoint) -> Self {
+        Self::from(*p)
+    }
+}
+
+impl From<ProjectivePoint> for AffinePoint {
+    fn from(p: ProjectivePoint) -> AffinePoint {
+        p.to_affine()
+    }
+}
+
+impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
+    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
+        AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
+    }
+}
+
+impl ToEncodedPoint<Secp256k1> for ProjectivePoint {
+    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+        self.to_affine().to_encoded_point(compress)
+    }
+}
+
+impl ConditionallySelectable for ProjectivePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        ProjectivePoint {
+            x: FieldElement::conditional_select(&a.x, &b.x, choice),
+            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            z: FieldElement::conditional_select(&a.z, &b.z, choice),
+        }
+    }
+}
+
+impl ConstantTimeEq for ProjectivePoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.to_affine().ct_eq(&other.to_affine())
+    }
+}
+
+impl PartialEq for ProjectivePoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl Eq for ProjectivePoint {}
+
 impl Group for ProjectivePoint {
     type Scalar = Scalar;
 
     fn random(mut rng: impl RngCore) -> Self {
-        Self::generator() * Scalar::random(&mut rng)
+        Self::GENERATOR * Scalar::random(&mut rng)
     }
 
     fn identity() -> Self {
-        ProjectivePoint::identity()
+        Self::IDENTITY
     }
 
     fn generator() -> Self {
-        ProjectivePoint::generator()
+        Self::GENERATOR
     }
 
     fn is_identity(&self) -> Choice {
-        self.ct_eq(&Self::identity())
+        self.ct_eq(&Self::IDENTITY)
     }
 
     #[must_use]
     fn double(&self) -> Self {
-        ProjectivePoint::double(self)
+        Self::double(self)
     }
 }
 
@@ -329,7 +347,7 @@ impl PrimeCurve for ProjectivePoint {
 
 impl Default for ProjectivePoint {
     fn default() -> Self {
-        Self::identity()
+        Self::IDENTITY
     }
 }
 
@@ -409,7 +427,7 @@ impl AddAssign<&AffinePoint> for ProjectivePoint {
 
 impl Sum for ProjectivePoint {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(ProjectivePoint::identity(), |a, b| a + b)
+        iter.fold(ProjectivePoint::IDENTITY, |a, b| a + b)
     }
 }
 
@@ -518,8 +536,8 @@ mod tests {
 
     #[test]
     fn affine_to_projective() {
-        let basepoint_affine = AffinePoint::generator();
-        let basepoint_projective = ProjectivePoint::generator();
+        let basepoint_affine = AffinePoint::GENERATOR;
+        let basepoint_projective = ProjectivePoint::GENERATOR;
 
         assert_eq!(
             ProjectivePoint::from(basepoint_affine),
@@ -529,14 +547,14 @@ mod tests {
         assert!(!bool::from(basepoint_projective.to_affine().is_identity()));
 
         assert!(bool::from(
-            ProjectivePoint::identity().to_affine().is_identity()
+            ProjectivePoint::IDENTITY.to_affine().is_identity()
         ));
     }
 
     #[test]
     fn projective_identity_addition() {
-        let identity = ProjectivePoint::identity();
-        let generator = ProjectivePoint::generator();
+        let identity = ProjectivePoint::IDENTITY;
+        let generator = ProjectivePoint::GENERATOR;
 
         assert_eq!(identity + &generator, generator);
         assert_eq!(generator + &identity, generator);
@@ -544,9 +562,9 @@ mod tests {
 
     #[test]
     fn projective_mixed_addition() {
-        let identity = ProjectivePoint::identity();
-        let basepoint_affine = AffinePoint::generator();
-        let basepoint_projective = ProjectivePoint::generator();
+        let identity = ProjectivePoint::IDENTITY;
+        let basepoint_affine = AffinePoint::GENERATOR;
+        let basepoint_projective = ProjectivePoint::GENERATOR;
 
         assert_eq!(identity + &basepoint_affine, basepoint_projective);
         assert_eq!(
@@ -557,7 +575,7 @@ mod tests {
 
     #[test]
     fn test_vector_repeated_add() {
-        let generator = ProjectivePoint::generator();
+        let generator = ProjectivePoint::GENERATOR;
         let mut p = generator;
 
         for i in 0..ADD_TEST_VECTORS.len() {
@@ -573,8 +591,8 @@ mod tests {
 
     #[test]
     fn test_vector_repeated_add_mixed() {
-        let generator = AffinePoint::generator();
-        let mut p = ProjectivePoint::generator();
+        let generator = AffinePoint::GENERATOR;
+        let mut p = ProjectivePoint::GENERATOR;
 
         for i in 0..ADD_TEST_VECTORS.len() {
             let affine = p.to_affine();
@@ -589,15 +607,15 @@ mod tests {
 
     #[test]
     fn test_vector_add_mixed_identity() {
-        let generator = ProjectivePoint::generator();
-        let p0 = generator + ProjectivePoint::identity();
-        let p1 = generator + AffinePoint::identity();
+        let generator = ProjectivePoint::GENERATOR;
+        let p0 = generator + ProjectivePoint::IDENTITY;
+        let p1 = generator + AffinePoint::IDENTITY;
         assert_eq!(p0, p1);
     }
 
     #[test]
     fn test_vector_double_generator() {
-        let generator = ProjectivePoint::generator();
+        let generator = ProjectivePoint::GENERATOR;
         let mut p = generator;
 
         for i in 0..2 {
@@ -613,7 +631,7 @@ mod tests {
 
     #[test]
     fn projective_add_vs_double() {
-        let generator = ProjectivePoint::generator();
+        let generator = ProjectivePoint::GENERATOR;
 
         let r1 = generator + &generator;
         let r2 = generator.double();
@@ -626,8 +644,8 @@ mod tests {
 
     #[test]
     fn projective_add_and_sub() {
-        let basepoint_affine = AffinePoint::generator();
-        let basepoint_projective = ProjectivePoint::generator();
+        let basepoint_affine = AffinePoint::GENERATOR;
+        let basepoint_projective = ProjectivePoint::GENERATOR;
 
         assert_eq!(
             (basepoint_projective + &basepoint_projective) - &basepoint_projective,
@@ -641,13 +659,13 @@ mod tests {
 
     #[test]
     fn projective_double_and_sub() {
-        let generator = ProjectivePoint::generator();
+        let generator = ProjectivePoint::GENERATOR;
         assert_eq!(generator.double() - &generator, generator);
     }
 
     #[test]
     fn test_vector_scalar_mult() {
-        let generator = ProjectivePoint::generator();
+        let generator = ProjectivePoint::GENERATOR;
 
         for (k, coords) in ADD_TEST_VECTORS
             .iter()

@@ -184,7 +184,7 @@ impl Signature {
         let r_inv = r.invert().unwrap();
         let u1 = -(r_inv * z);
         let u2 = r_inv * *s;
-        let pk = ProjectivePoint::lincomb(&ProjectivePoint::generator(), &u1, &R, &u2).to_affine();
+        let pk = ProjectivePoint::lincomb(&ProjectivePoint::GENERATOR, &u1, &R, &u2).to_affine();
 
         // TODO(tarcieri): ensure the signature verifies?
         Ok(VerifyingKey::from(&pk))
