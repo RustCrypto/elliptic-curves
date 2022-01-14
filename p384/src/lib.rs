@@ -106,3 +106,13 @@ pub type ScalarCore = elliptic_curve::ScalarCore<NistP384>;
 pub type SecretKey = elliptic_curve::SecretKey<NistP384>;
 
 impl elliptic_curve::sec1::ValidatePublicKey for NistP384 {}
+
+#[cfg(feature = "voprf")]
+#[cfg_attr(docsrs, doc(cfg(feature = "voprf")))]
+impl elliptic_curve::VoprfParameters for NistP384 {
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.4-1.3>.
+    const ID: u16 = 0x0004;
+
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.4-1.2>.
+    type Hash = sha2::Sha384;
+}

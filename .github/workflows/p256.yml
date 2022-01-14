@@ -46,7 +46,8 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,jwk,pem,pkcs8,serde,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features voprf
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,jwk,pem,pkcs8,serde,sha256,voprf
 
   test:
     runs-on: ubuntu-latest
