@@ -265,14 +265,6 @@ impl FieldElement {
     pub fn modulus_as_biguint() -> BigUint {
         Self::one().negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
-
-    /// Return the parity of the field
-    /// 1 == negative
-    /// 0 == non-negative
-    pub fn sgn0(&self) -> Choice {
-        let bytes = self.to_bytes();
-        (bytes[31] & 1).into()
-    }
 }
 
 impl ConditionallySelectable for FieldElement {

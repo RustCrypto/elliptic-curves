@@ -194,7 +194,8 @@ impl FieldElement {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        self.sgn0()
+        let bytes = self.to_bytes();
+        (bytes[31] & 1).into()
     }
 
     /// Returns self + rhs mod p
@@ -464,14 +465,6 @@ impl FieldElement {
             sqrt,
             (&sqrt * &sqrt).ct_eq(self), // Only return Some if it's the square root.
         )
-    }
-
-    /// Return the parity of the field
-    /// 1 == negative
-    /// 0 == non-negative
-    pub fn sgn0(&self) -> Choice {
-        let bytes = self.to_bytes();
-        (bytes[31] & 1).into()
     }
 }
 
