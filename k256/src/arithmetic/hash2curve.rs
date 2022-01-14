@@ -141,7 +141,7 @@ impl MapToCurve for FieldElement {
         AffinePoint {
             x: qx,
             y: qy,
-            infinity: Choice::from(0u8),
+            infinity: 0,
         }
         .into()
     }
