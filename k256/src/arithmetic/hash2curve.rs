@@ -126,7 +126,7 @@ impl OsswuMap for FieldElement {
         // if e2, y = y1, else y = y2
         let mut y = Self::conditional_select(&y2, &y1, e2);
 
-        y.conditional_assign(&-y, self.normalize().sgn0() ^ y.normalize().sgn0());
+        y.conditional_assign(&-y, self.sgn0() ^ y.sgn0());
         (x, y)
     }
 }

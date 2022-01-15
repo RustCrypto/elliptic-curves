@@ -154,7 +154,7 @@ impl DecompressPoint<Secp256k1> for AffinePoint {
                 let y = FieldElement::conditional_select(
                     &beta.negate(1),
                     &beta,
-                    beta.normalize().is_odd().ct_eq(&y_is_odd),
+                    beta.is_odd().ct_eq(&y_is_odd),
                 );
 
                 Self {
