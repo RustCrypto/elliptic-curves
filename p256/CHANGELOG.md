@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.1 (2022-01-17)
+### Added
+- Impl `ff::Field` trait for `FieldElement` ([#498])
+- hash2curve support: impl `GroupDigest` trait for `NistP256` ([#503])
+- Impl `VoprfParameters` trait for `NistP256` ([#506])
+- Impl `ReduceNonZero<U256>` trait for `Scalar` ([#507])
+- `IDENTITY` and `GENERATOR` point constants ([#509], [#511])
+
+[#498]: https://github.com/RustCrypto/elliptic-curves/pull/498
+[#503]: https://github.com/RustCrypto/elliptic-curves/pull/503
+[#506]: https://github.com/RustCrypto/elliptic-curves/pull/506
+[#507]: https://github.com/RustCrypto/elliptic-curves/pull/507
+[#509]: https://github.com/RustCrypto/elliptic-curves/pull/509
+[#511]: https://github.com/RustCrypto/elliptic-curves/pull/511
+
 ## 0.10.0 (2021-12-14)
 ### Added
 - Implement point compaction support ([#357])
