@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.2 (2022-01-17)
+### Added
+- hash2curve support: impl `GroupDigest` for `Secp256k1` ([#503])
+- `IDENTITY` and `GENERATOR` point constants ([#511])
+
+[#503]: https://github.com/RustCrypto/elliptic-curves/pull/503
+[#511]: https://github.com/RustCrypto/elliptic-curves/pull/511
+
 ## 0.10.1 (2022-01-04)
 ### Added
 - Impl `ff::Field` trait for `FieldElement` ([#498])
