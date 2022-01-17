@@ -87,148 +87,6 @@ impl ScalarArithmetic for NistP256 {
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(pub(crate) U256);
 
-impl Field for Scalar {
-    fn random(mut rng: impl RngCore) -> Self {
-        let mut bytes = FieldBytes::default();
-
-        // Generate a uniformly random scalar using rejection sampling,
-        // which produces a uniformly random distribution of scalars.
-        //
-        // This method is not constant time, but should be secure so long as
-        // rejected RNG outputs are unrelated to future ones (which is a
-        // necessary property of a `CryptoRng`).
-        //
-        // With an unbiased RNG, the probability of failing to complete after 4
-        // iterations is vanishingly small.
-        loop {
-            rng.fill_bytes(&mut bytes);
-            if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return scalar;
-            }
-        }
-    }
-
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    fn one() -> Self {
-        Self::ONE
-    }
-
-    #[must_use]
-    fn square(&self) -> Self {
-        Scalar::square(self)
-    }
-
-    #[must_use]
-    fn double(&self) -> Self {
-        self.add(self)
-    }
-
-    fn invert(&self) -> CtOption<Self> {
-        Scalar::invert(self)
-    }
-
-    /// Tonelli-Shank's algorithm for q mod 16 = 1
-    /// <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
-    #[allow(clippy::many_single_char_names)]
-    fn sqrt(&self) -> CtOption<Self> {
-        // Note: `pow_vartime` is constant-time with respect to `self`
-        let w = self.pow_vartime(&[
-            0x279dce5617e3192a,
-            0xfde737d56d38bcf4,
-            0x07ffffffffffffff,
-            0x07fffffff8000000,
-        ]);
-
-        let mut v = Self::S;
-        let mut x = *self * w;
-        let mut b = x * w;
-        let mut z = Self::root_of_unity();
-
-        for max_v in (1..=Self::S).rev() {
-            let mut k = 1;
-            let mut tmp = b.square();
-            let mut j_less_than_v = Choice::from(1);
-
-            for j in 2..max_v {
-                let tmp_is_one = tmp.ct_eq(&Self::one());
-                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
-                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
-                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
-                j_less_than_v &= !j.ct_eq(&v);
-                k = u32::conditional_select(&j, &k, tmp_is_one);
-                z = Self::conditional_select(&z, &new_z, j_less_than_v);
-            }
-
-            let result = x * z;
-            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
-            z = z.square();
-            b *= z;
-            v = k;
-        }
-
-        CtOption::new(x, x.square().ct_eq(self))
-    }
-}
-
-impl PrimeField for Scalar {
-    type Repr = FieldBytes;
-
-    const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 255;
-    const S: u32 = 4;
-
-    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        let inner = U256::from_be_byte_array(bytes);
-        CtOption::new(Self(inner), inner.ct_lt(&NistP256::ORDER))
-    }
-
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    fn is_odd(&self) -> Choice {
-        self.0.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        7u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Scalar::from_repr(arr![u8;
-            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
-            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
-            0xb4, 0x1e, 0x66, 0x02,
-        ])
-        .unwrap()
-    }
-}
-
-#[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
-impl PrimeFieldBits for Scalar {
-    #[cfg(target_pointer_width = "32")]
-    type ReprBits = [u32; 8];
-
-    #[cfg(target_pointer_width = "64")]
-    type ReprBits = [u64; 4];
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        NistP256::ORDER.to_uint_array().into()
-    }
-}
-
 impl Scalar {
     /// Zero scalar.
     pub const ZERO: Self = Self(U256::ZERO);
@@ -541,6 +399,148 @@ impl Scalar {
     /// Shift right by one bit
     fn shr1(&mut self) {
         self.0 >>= 1;
+    }
+}
+
+impl Field for Scalar {
+    fn random(mut rng: impl RngCore) -> Self {
+        let mut bytes = FieldBytes::default();
+
+        // Generate a uniformly random scalar using rejection sampling,
+        // which produces a uniformly random distribution of scalars.
+        //
+        // This method is not constant time, but should be secure so long as
+        // rejected RNG outputs are unrelated to future ones (which is a
+        // necessary property of a `CryptoRng`).
+        //
+        // With an unbiased RNG, the probability of failing to complete after 4
+        // iterations is vanishingly small.
+        loop {
+            rng.fill_bytes(&mut bytes);
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+                return scalar;
+            }
+        }
+    }
+
+    fn zero() -> Self {
+        Self::ZERO
+    }
+
+    fn one() -> Self {
+        Self::ONE
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        Scalar::square(self)
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.add(self)
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        Scalar::invert(self)
+    }
+
+    /// Tonelli-Shank's algorithm for q mod 16 = 1
+    /// <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
+    #[allow(clippy::many_single_char_names)]
+    fn sqrt(&self) -> CtOption<Self> {
+        // Note: `pow_vartime` is constant-time with respect to `self`
+        let w = self.pow_vartime(&[
+            0x279dce5617e3192a,
+            0xfde737d56d38bcf4,
+            0x07ffffffffffffff,
+            0x07fffffff8000000,
+        ]);
+
+        let mut v = Self::S;
+        let mut x = *self * w;
+        let mut b = x * w;
+        let mut z = Self::root_of_unity();
+
+        for max_v in (1..=Self::S).rev() {
+            let mut k = 1;
+            let mut tmp = b.square();
+            let mut j_less_than_v = Choice::from(1);
+
+            for j in 2..max_v {
+                let tmp_is_one = tmp.ct_eq(&Self::one());
+                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
+                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
+                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
+                j_less_than_v &= !j.ct_eq(&v);
+                k = u32::conditional_select(&j, &k, tmp_is_one);
+                z = Self::conditional_select(&z, &new_z, j_less_than_v);
+            }
+
+            let result = x * z;
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
+            z = z.square();
+            b *= z;
+            v = k;
+        }
+
+        CtOption::new(x, x.square().ct_eq(self))
+    }
+}
+
+impl PrimeField for Scalar {
+    type Repr = FieldBytes;
+
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 255;
+    const S: u32 = 4;
+
+    /// Attempts to parse the given byte array as an SEC1-encoded scalar.
+    ///
+    /// Returns None if the byte array does not contain a big-endian integer in the range
+    /// [0, p).
+    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
+        let inner = U256::from_be_byte_array(bytes);
+        CtOption::new(Self(inner), inner.ct_lt(&NistP256::ORDER))
+    }
+
+    fn to_repr(&self) -> FieldBytes {
+        self.to_bytes()
+    }
+
+    fn is_odd(&self) -> Choice {
+        self.0.is_odd()
+    }
+
+    fn multiplicative_generator() -> Self {
+        7u64.into()
+    }
+
+    fn root_of_unity() -> Self {
+        Scalar::from_repr(arr![u8;
+            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
+            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
+            0xb4, 0x1e, 0x66, 0x02,
+        ])
+        .unwrap()
+    }
+}
+
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl PrimeFieldBits for Scalar {
+    #[cfg(target_pointer_width = "32")]
+    type ReprBits = [u32; 8];
+
+    #[cfg(target_pointer_width = "64")]
+    type ReprBits = [u64; 4];
+
+    fn to_le_bits(&self) -> ScalarBits {
+        self.into()
+    }
+
+    fn char_le_bits() -> ScalarBits {
+        NistP256::ORDER.to_uint_array().into()
     }
 }
 
