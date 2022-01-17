@@ -13,12 +13,12 @@ edition = "2021"
 rust-version = "1.56"
 
 [dependencies]
-elliptic-curve = { version = "0.11", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { git = "https://github.com/khonsulabs/traits", branch = "digest", default-features = false, features = ["hazmat", "sec1"] }
 sec1 = { version = "0.2", default-features = false }
 
 # optional dependencies
-ecdsa = { version = "0.13", optional = true, default-features = false, features = ["der"] }
-sha2 = { version = "0.9", optional = true, default-features = false }
+ecdsa = { git = "https://github.com/khonsulabs/signatures", branch = "elliptic-curve-digest", optional = true, default-features = false, features = ["der"] }
+sha2 = { version = "0.10", optional = true, default-features = false }
 
 [features]
 default = ["pkcs8", "std"]

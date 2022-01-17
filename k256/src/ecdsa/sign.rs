@@ -9,7 +9,12 @@ use core::{
 use ecdsa_core::{
     hazmat::{rfc6979_generate_k, SignPrimitive},
     signature::{
-        digest::{BlockInput, FixedOutput, Reset, Update},
+        digest::{
+            block_buffer::Eager,
+            core_api::{BlockSizeUser, BufferKindUser, CoreProxy, FixedOutputCore},
+            generic_array::typenum::{self, IsLess, Le, NonZero},
+            Digest, HashMarker, OutputSizeUser,
+        },
         DigestSigner, RandomizedDigestSigner,
     },
 };
@@ -24,7 +29,7 @@ use elliptic_curve::{
 };
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
-use ecdsa_core::signature::{self, digest::Digest, PrehashSignature, RandomizedSigner};
+use ecdsa_core::signature::{self, PrehashSignature, RandomizedSigner};
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8::{self, DecodePrivateKey};
@@ -77,7 +82,7 @@ where
     Self: DigestSigner<S::Digest, S>,
 {
     fn try_sign(&self, msg: &[u8]) -> Result<S, Error> {
-        self.try_sign_digest(Digest::chain(S::Digest::new(), msg))
+        self.try_sign_digest(Digest::chain_update(S::Digest::new(), msg))
     }
 }
 
@@ -88,13 +93,22 @@ where
     Self: RandomizedDigestSigner<S::Digest, S>,
 {
     fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> Result<S, Error> {
-        self.try_sign_digest_with_rng(rng, S::Digest::new().chain(msg))
+        self.try_sign_digest_with_rng(rng, S::Digest::new().chain_update(msg))
     }
 }
 
 impl<D> DigestSigner<D, Signature> for SigningKey
 where
-    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+    D: CoreProxy + Digest + OutputSizeUser<OutputSize = U32>,
+    D::Core: BlockSizeUser
+        + BufferKindUser<BufferKind = Eager>
+        + Clone
+        + Default
+        + FixedOutputCore
+        + HashMarker
+        + OutputSizeUser<OutputSize = D::OutputSize>,
+    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
+    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
         let sig: recoverable::Signature = self.try_sign_digest(digest)?;
@@ -104,10 +118,19 @@ where
 
 impl<D> DigestSigner<D, recoverable::Signature> for SigningKey
 where
-    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+    D: CoreProxy + Digest + OutputSizeUser<OutputSize = U32>,
+    D::Core: BlockSizeUser
+        + BufferKindUser<BufferKind = Eager>
+        + Clone
+        + Default
+        + FixedOutputCore
+        + HashMarker
+        + OutputSizeUser<OutputSize = D::OutputSize>,
+    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
+    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
-        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
+        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize());
         let k = rfc6979_generate_k::<_, D>(&self.inner, &z, &[]);
         let (signature, recid) = self.inner.try_sign_prehashed(**k, z)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
@@ -117,7 +140,16 @@ where
 
 impl<D> RandomizedDigestSigner<D, Signature> for SigningKey
 where
-    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+    D: CoreProxy + OutputSizeUser<OutputSize = U32> + Digest,
+    D::Core: BlockSizeUser
+        + BufferKindUser<BufferKind = Eager>
+        + Clone
+        + Default
+        + FixedOutputCore
+        + HashMarker
+        + OutputSizeUser<OutputSize = D::OutputSize>,
+    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
+    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
 {
     fn try_sign_digest_with_rng(
         &self,
@@ -131,7 +163,16 @@ where
 
 impl<D> RandomizedDigestSigner<D, recoverable::Signature> for SigningKey
 where
-    D: BlockInput + FixedOutput<OutputSize = U32> + Clone + Default + Reset + Update,
+    D: CoreProxy + OutputSizeUser<OutputSize = U32> + Digest,
+    D::Core: BlockSizeUser
+        + BufferKindUser<BufferKind = Eager>
+        + Clone
+        + Default
+        + FixedOutputCore
+        + HashMarker
+        + OutputSizeUser<OutputSize = D::OutputSize>,
+    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
+    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
 {
     fn try_sign_digest_with_rng(
         &self,
@@ -141,7 +182,7 @@ where
         let mut added_entropy = FieldBytes::default();
         rng.fill_bytes(&mut added_entropy);
 
-        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize_fixed());
+        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(msg_digest.finalize());
         let k = rfc6979_generate_k::<_, D>(&self.inner, &z, &added_entropy);
         let (signature, recid) = self.inner.try_sign_prehashed(**k, z)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
