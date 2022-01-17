@@ -77,6 +77,151 @@ const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U256);
 
+impl Scalar {
+    /// Zero scalar.
+    pub const ZERO: Self = Self(U256::ZERO);
+
+    /// Multiplicative identity.
+    pub const ONE: Self = Self(U256::ONE);
+
+    /// Checks if the scalar is zero.
+    pub fn is_zero(&self) -> Choice {
+        self.0.is_zero()
+    }
+
+    /// Returns the SEC1 encoding of this scalar.
+    pub fn to_bytes(&self) -> FieldBytes {
+        self.0.to_be_byte_array()
+    }
+
+    /// Negates the scalar.
+    pub const fn negate(&self) -> Self {
+        Self(self.0.neg_mod(&ORDER))
+    }
+
+    /// Returns self + rhs mod n.
+    pub const fn add(&self, rhs: &Self) -> Self {
+        Self(self.0.add_mod(&rhs.0, &ORDER))
+    }
+
+    /// Returns self - rhs mod n.
+    pub const fn sub(&self, rhs: &Self) -> Self {
+        Self(self.0.sub_mod(&rhs.0, &ORDER))
+    }
+
+    /// Modulo multiplies two scalars.
+    pub fn mul(&self, rhs: &Scalar) -> Scalar {
+        WideScalar::mul_wide(self, rhs).reduce()
+    }
+
+    /// Modulo squares the scalar.
+    pub fn square(&self) -> Self {
+        self.mul(self)
+    }
+
+    /// Right shifts the scalar.
+    ///
+    /// Note: not constant-time with respect to the `shift` parameter.
+    pub fn shr_vartime(&self, shift: usize) -> Scalar {
+        Self(self.0.shr_vartime(shift))
+    }
+
+    /// Inverts the scalar.
+    pub fn invert(&self) -> CtOption<Self> {
+        // Using an addition chain from
+        // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
+        let x_1 = *self;
+        let x_10 = self.pow2k(1);
+        let x_11 = x_10.mul(&x_1);
+        let x_101 = x_10.mul(&x_11);
+        let x_111 = x_10.mul(&x_101);
+        let x_1001 = x_10.mul(&x_111);
+        let x_1011 = x_10.mul(&x_1001);
+        let x_1101 = x_10.mul(&x_1011);
+
+        let x6 = x_1101.pow2k(2).mul(&x_1011);
+        let x8 = x6.pow2k(2).mul(&x_11);
+        let x14 = x8.pow2k(6).mul(&x6);
+        let x28 = x14.pow2k(14).mul(&x14);
+        let x56 = x28.pow2k(28).mul(&x28);
+
+        #[rustfmt::skip]
+            let res = x56
+            .pow2k(56).mul(&x56)
+            .pow2k(14).mul(&x14)
+            .pow2k(3).mul(&x_101)
+            .pow2k(4).mul(&x_111)
+            .pow2k(4).mul(&x_101)
+            .pow2k(5).mul(&x_1011)
+            .pow2k(4).mul(&x_1011)
+            .pow2k(4).mul(&x_111)
+            .pow2k(5).mul(&x_111)
+            .pow2k(6).mul(&x_1101)
+            .pow2k(4).mul(&x_101)
+            .pow2k(3).mul(&x_111)
+            .pow2k(5).mul(&x_1001)
+            .pow2k(6).mul(&x_101)
+            .pow2k(10).mul(&x_111)
+            .pow2k(4).mul(&x_111)
+            .pow2k(9).mul(&x8)
+            .pow2k(5).mul(&x_1001)
+            .pow2k(6).mul(&x_1011)
+            .pow2k(4).mul(&x_1101)
+            .pow2k(5).mul(&x_11)
+            .pow2k(6).mul(&x_1101)
+            .pow2k(10).mul(&x_1101)
+            .pow2k(4).mul(&x_1001)
+            .pow2k(6).mul(&x_1)
+            .pow2k(8).mul(&x6);
+
+        CtOption::new(res, !self.is_zero())
+    }
+
+    /// Returns the scalar modulus as a `BigUint` object.
+    #[cfg(test)]
+    pub fn modulus_as_biguint() -> BigUint {
+        Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
+    }
+
+    /// Returns a (nearly) uniformly-random scalar, generated in constant time.
+    pub fn generate_biased(mut rng: impl CryptoRng + RngCore) -> Self {
+        // We reduce a random 512-bit value into a 256-bit field, which results in a
+        // negligible bias from the uniform distribution, but the process is constant-time.
+        let mut buf = [0u8; 64];
+        rng.fill_bytes(&mut buf);
+        WideScalar::from_bytes(&buf).reduce()
+    }
+
+    /// Returns a uniformly-random scalar, generated using rejection sampling.
+    // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
+    pub fn generate_vartime(mut rng: impl RngCore) -> Self {
+        let mut bytes = FieldBytes::default();
+
+        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
+        loop {
+            rng.fill_bytes(&mut bytes);
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+                return scalar;
+            }
+        }
+    }
+
+    /// Attempts to parse the given byte array as a scalar.
+    /// Does not check the result for being in the correct range.
+    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
+        Self(U256::from_be_slice(bytes))
+    }
+
+    /// Raises the scalar to the power `2^k`.
+    fn pow2k(&self, k: usize) -> Self {
+        let mut x = *self;
+        for _j in 0..k {
+            x = x.square();
+        }
+        x
+    }
+}
+
 impl Field for Scalar {
     fn random(rng: impl RngCore) -> Self {
         // Uses rejection sampling as the default random generation method,
@@ -209,151 +354,6 @@ impl PrimeFieldBits for Scalar {
 
     fn char_le_bits() -> ScalarBits {
         ORDER.to_uint_array().into()
-    }
-}
-
-impl Scalar {
-    /// Zero scalar.
-    pub const ZERO: Self = Self(U256::ZERO);
-
-    /// Multiplicative identity.
-    pub const ONE: Self = Self(U256::ONE);
-
-    /// Checks if the scalar is zero.
-    pub fn is_zero(&self) -> Choice {
-        self.0.is_zero()
-    }
-
-    /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.0.to_be_byte_array()
-    }
-
-    /// Negates the scalar.
-    pub const fn negate(&self) -> Self {
-        Self(self.0.neg_mod(&ORDER))
-    }
-
-    /// Returns self + rhs mod n.
-    pub const fn add(&self, rhs: &Self) -> Self {
-        Self(self.0.add_mod(&rhs.0, &ORDER))
-    }
-
-    /// Returns self - rhs mod n.
-    pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(self.0.sub_mod(&rhs.0, &ORDER))
-    }
-
-    /// Modulo multiplies two scalars.
-    pub fn mul(&self, rhs: &Scalar) -> Scalar {
-        WideScalar::mul_wide(self, rhs).reduce()
-    }
-
-    /// Modulo squares the scalar.
-    pub fn square(&self) -> Self {
-        self.mul(self)
-    }
-
-    /// Right shifts the scalar.
-    ///
-    /// Note: not constant-time with respect to the `shift` parameter.
-    pub fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(self.0.shr_vartime(shift))
-    }
-
-    /// Inverts the scalar.
-    pub fn invert(&self) -> CtOption<Self> {
-        // Using an addition chain from
-        // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
-        let x_1 = *self;
-        let x_10 = self.pow2k(1);
-        let x_11 = x_10.mul(&x_1);
-        let x_101 = x_10.mul(&x_11);
-        let x_111 = x_10.mul(&x_101);
-        let x_1001 = x_10.mul(&x_111);
-        let x_1011 = x_10.mul(&x_1001);
-        let x_1101 = x_10.mul(&x_1011);
-
-        let x6 = x_1101.pow2k(2).mul(&x_1011);
-        let x8 = x6.pow2k(2).mul(&x_11);
-        let x14 = x8.pow2k(6).mul(&x6);
-        let x28 = x14.pow2k(14).mul(&x14);
-        let x56 = x28.pow2k(28).mul(&x28);
-
-        #[rustfmt::skip]
-        let res = x56
-            .pow2k(56).mul(&x56)
-            .pow2k(14).mul(&x14)
-            .pow2k(3).mul(&x_101)
-            .pow2k(4).mul(&x_111)
-            .pow2k(4).mul(&x_101)
-            .pow2k(5).mul(&x_1011)
-            .pow2k(4).mul(&x_1011)
-            .pow2k(4).mul(&x_111)
-            .pow2k(5).mul(&x_111)
-            .pow2k(6).mul(&x_1101)
-            .pow2k(4).mul(&x_101)
-            .pow2k(3).mul(&x_111)
-            .pow2k(5).mul(&x_1001)
-            .pow2k(6).mul(&x_101)
-            .pow2k(10).mul(&x_111)
-            .pow2k(4).mul(&x_111)
-            .pow2k(9).mul(&x8)
-            .pow2k(5).mul(&x_1001)
-            .pow2k(6).mul(&x_1011)
-            .pow2k(4).mul(&x_1101)
-            .pow2k(5).mul(&x_11)
-            .pow2k(6).mul(&x_1101)
-            .pow2k(10).mul(&x_1101)
-            .pow2k(4).mul(&x_1001)
-            .pow2k(6).mul(&x_1)
-            .pow2k(8).mul(&x6);
-
-        CtOption::new(res, !self.is_zero())
-    }
-
-    /// Returns the scalar modulus as a `BigUint` object.
-    #[cfg(test)]
-    pub fn modulus_as_biguint() -> BigUint {
-        Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
-    }
-
-    /// Returns a (nearly) uniformly-random scalar, generated in constant time.
-    pub fn generate_biased(mut rng: impl CryptoRng + RngCore) -> Self {
-        // We reduce a random 512-bit value into a 256-bit field, which results in a
-        // negligible bias from the uniform distribution, but the process is constant-time.
-        let mut buf = [0u8; 64];
-        rng.fill_bytes(&mut buf);
-        WideScalar::from_bytes(&buf).reduce()
-    }
-
-    /// Returns a uniformly-random scalar, generated using rejection sampling.
-    // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
-    pub fn generate_vartime(mut rng: impl RngCore) -> Self {
-        let mut bytes = FieldBytes::default();
-
-        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
-        loop {
-            rng.fill_bytes(&mut bytes);
-            if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return scalar;
-            }
-        }
-    }
-
-    /// Attempts to parse the given byte array as a scalar.
-    /// Does not check the result for being in the correct range.
-    pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        Self(U256::from_be_slice(bytes))
-    }
-
-    /// Raises the scalar to the power `2^k`.
-    fn pow2k(&self, k: usize) -> Self {
-        let mut x = *self;
-        for _j in 0..k {
-            x = x.square();
-        }
-        x
     }
 }
 
