@@ -312,7 +312,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.4"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#e40669d20d045b354f4101ea84324570b24bda3d"
+source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#b4d16876c68bcae11e9897ea1b40462601dc82e3"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -328,8 +328,8 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.11.8"
-source = "git+https://github.com/khonsulabs/traits?branch=digest#0d6db2f38e89aed51c5ed44cba1b90103a955e59"
+version = "0.12.0-pre"
+source = "git+https://github.com/RustCrypto/traits#f899a15cb2cd293d69d1b6502e7cc537d3da480d"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -830,7 +830,7 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.1.0"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#e40669d20d045b354f4101ea84324570b24bda3d"
+source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#b4d16876c68bcae11e9897ea1b40462601dc82e3"
 dependencies = [
  "crypto-bigint",
  "hmac",

@@ -23,7 +23,7 @@ use elliptic_curve::{
     consts::U32,
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
-    subtle::{Choice, ConstantTimeEq},
+    subtle::{Choice, ConstantTimeEq, CtOption},
     zeroize::Zeroize,
     IsHigh,
 };
@@ -198,7 +198,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
         z: Scalar,
     ) -> Result<(Signature, Option<ecdsa_core::RecoveryId>), Error>
     where
-        K: Borrow<Scalar> + Invert<Output = Scalar>,
+        K: Borrow<Scalar> + Invert<Output = CtOption<Scalar>>,
     {
         let k_inverse = ephemeral_scalar.invert();
         let k = ephemeral_scalar.borrow();

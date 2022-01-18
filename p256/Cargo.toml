@@ -17,7 +17,7 @@ edition = "2021"
 rust-version = "1.56"
 
 [dependencies]
-elliptic-curve = { git = "https://github.com/khonsulabs/traits", branch = "digest", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { git = "https://github.com/RustCrypto/traits", version = "0.12.0-pre", default-features = false, features = ["hazmat", "sec1"] }
 sec1 = { version = "0.2", default-features = false }
 
 # optional dependencies

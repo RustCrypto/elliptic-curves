@@ -106,7 +106,7 @@ impl VerifyPrimitive<Secp256k1> for AffinePoint {
             return Err(Error::new());
         }
 
-        let s_inv = s.invert().unwrap();
+        let s_inv = *s.invert();
         let u1 = z * s_inv;
         let u2 = *r * s_inv;
 

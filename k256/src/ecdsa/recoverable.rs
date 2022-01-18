@@ -181,7 +181,7 @@ impl Signature {
         }
 
         let R = ProjectivePoint::from(R.unwrap());
-        let r_inv = r.invert().unwrap();
+        let r_inv = *r.invert();
         let u1 = -(r_inv * z);
         let u2 = r_inv * *s;
         let pk = ProjectivePoint::lincomb(&ProjectivePoint::GENERATOR, &u1, &R, &u2).to_affine();
