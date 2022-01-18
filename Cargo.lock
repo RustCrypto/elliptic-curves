@@ -312,7 +312,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.4"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#b4d16876c68bcae11e9897ea1b40462601dc82e3"
+source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#ea9faaaf85fb3fa36f969420acb6c56bcaa841d1"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -830,7 +830,7 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.1.0"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#b4d16876c68bcae11e9897ea1b40462601dc82e3"
+source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#ea9faaaf85fb3fa36f969420acb6c56bcaa841d1"
 dependencies = [
  "crypto-bigint",
  "hmac",
