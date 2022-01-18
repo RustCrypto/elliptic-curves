@@ -10,7 +10,7 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
 edition = "2021"
-rust-version = "1.56"
+rust-version = "1.57"
 
 [dependencies]
 elliptic-curve = { version = "0.12.0-pre.0", default-features = false, features = ["hazmat", "sec1"] }

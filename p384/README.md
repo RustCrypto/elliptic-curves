@@ -25,7 +25,7 @@ X.509 PKI.
 
 ## Minimum Supported Rust Version
 
-Rust **1.56** or higher.
+Rust **1.57** or higher.
 
 Minimum supported Rust version can be changed in the future, but it will be
 done with a minor version bump.
@@ -57,7 +57,7 @@ dual licensed as above, without any additional terms or conditions.
 [docs-image]: https://docs.rs/p384/badge.svg
 [docs-link]: https://docs.rs/p384/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.56+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.57+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 [build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push
