@@ -16,7 +16,7 @@ rust-version = "1.56"
 ecdsa = { version = "0.13", optional = true, default-features = false, features = ["der"] }
 elliptic-curve = { version = "0.11.7", default-features = false, features = ["hazmat", "sec1"] }
 sec1 = { version = "0.2", default-features = false }
-sha2 = { version = "0.9", optional = true, default-features = false }
+sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.3"
