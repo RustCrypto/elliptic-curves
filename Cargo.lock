@@ -246,9 +246,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-bigint"
-version = "0.3.2"
+version = "0.4.0-pre.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03c6a1d5fa1de37e071642dfa44ec552ca5b299adb128fab16138e24b548fd21"
+checksum = "6a9df9647255ed398be26379810e02ed1d58263570b3bcd243ee2481f79c88b1"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -312,7 +312,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.13.4"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#ea9faaaf85fb3fa36f969420acb6c56bcaa841d1"
+source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#574859fb19e121c3366a52ea03b89f4365717862"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -328,8 +328,9 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.12.0-pre"
-source = "git+https://github.com/RustCrypto/traits#f899a15cb2cd293d69d1b6502e7cc537d3da480d"
+version = "0.12.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91d80a4ec12dfafce02027223bef70efaca0dc2bef6d0a26e8e508e1061cefbc"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -830,7 +831,7 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.1.0"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#ea9faaaf85fb3fa36f969420acb6c56bcaa841d1"
+source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#574859fb19e121c3366a52ea03b89f4365717862"
 dependencies = [
  "crypto-bigint",
  "hmac",

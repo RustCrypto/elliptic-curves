@@ -9,5 +9,4 @@ members = [
 ]
 
 [patch.crates-io]
-elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
 ecdsa = { git = "https://github.com/khonsulabs/signatures", branch = "elliptic-curve-digest" }
