@@ -311,8 +311,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.13.4"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#574859fb19e121c3366a52ea03b89f4365717862"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5af2c84d2a2c98b2834e7b502fbd2de41028d707218fcd796a416672b6b01143"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -830,8 +831,9 @@ dependencies = [
 
 [[package]]
 name = "rfc6979"
-version = "0.1.0"
-source = "git+https://github.com/khonsulabs/signatures?branch=elliptic-curve-digest#574859fb19e121c3366a52ea03b89f4365717862"
+version = "0.2.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b5fc62eda367f95399820ccb69ffa1695519e053001ae0b7517d16438d26ef2"
 dependencies = [
  "crypto-bigint",
  "hmac",
