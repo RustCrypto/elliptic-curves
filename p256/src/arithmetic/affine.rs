@@ -273,7 +273,7 @@ impl ToCompactEncodedPoint<NistP256> for AffinePoint {
         bytes[1..(<NistP256 as Curve>::UInt::BYTE_SIZE + 1)].copy_from_slice(&self.x.to_bytes());
         CtOption::new(
             EncodedPoint::from_bytes(bytes).expect("compact key"),
-            Choice::from(u8::from(borrow == 0)),
+            borrow.ct_eq(&0),
         )
     }
 }
