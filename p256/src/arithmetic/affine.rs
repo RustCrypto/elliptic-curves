@@ -267,16 +267,13 @@ impl ToCompactEncodedPoint<NistP256> for AffinePoint {
         assert_eq!(borrow, 0);
         let (_, borrow) = p_y.informed_subtract(&y);
 
+        // Reuse the CompressedPoint type since it's the same size as a compact point
+        let mut bytes = CompressedPoint::default();
+        bytes[0] = sec1::Tag::Compact.into();
+        bytes[1..(<NistP256 as Curve>::UInt::BYTE_SIZE + 1)].copy_from_slice(&self.x.to_bytes());
         CtOption::new(
-            {
-                // Reuse the CompressedPoint type since it's the same size as a compact point
-                let mut bytes = CompressedPoint::default();
-                bytes[0] = sec1::Tag::Compact.into();
-                bytes[1..(<NistP256 as Curve>::UInt::BYTE_SIZE + 1)]
-                    .copy_from_slice(&self.x.to_bytes());
-                EncodedPoint::from_bytes(bytes).expect("compact key")
-            },
-            u8::from(borrow == 0).into(),
+            EncodedPoint::from_bytes(bytes).expect("compact key"),
+            Choice::from(u8::from(borrow == 0)),
         )
     }
 }
