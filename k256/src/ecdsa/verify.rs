@@ -12,7 +12,8 @@ use elliptic_curve::{
     sec1::ToEncodedPoint,
     IsHigh,
 };
-use signature::{digest::Digest, DigestVerifier};
+use signature::digest::{Digest, FixedOutput};
+use signature::DigestVerifier;
 
 #[cfg(feature = "sha256")]
 use signature::PrehashSignature;
@@ -79,7 +80,7 @@ where
 
 impl<D> DigestVerifier<D, Signature> for VerifyingKey
 where
-    D: Digest<OutputSize = U32>,
+    D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
         self.inner.verify_digest(digest, signature)
@@ -88,7 +89,7 @@ where
 
 impl<D> DigestVerifier<D, recoverable::Signature> for VerifyingKey
 where
-    D: Digest<OutputSize = U32>,
+    D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &recoverable::Signature) -> Result<(), Error> {
         self.inner

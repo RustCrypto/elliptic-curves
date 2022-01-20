@@ -42,7 +42,10 @@ use elliptic_curve::subtle::Choice;
 #[cfg(feature = "ecdsa")]
 use crate::{
     ecdsa::{
-        signature::{digest::Digest, DigestVerifier},
+        signature::{
+            digest::{Digest, FixedOutput},
+            DigestVerifier,
+        },
         VerifyingKey,
     },
     elliptic_curve::{
@@ -121,7 +124,7 @@ impl Signature {
         signature: &super::Signature,
     ) -> Result<Self>
     where
-        D: Clone + Digest<OutputSize = U32>,
+        D: Clone + Digest + FixedOutput<OutputSize = U32>,
     {
         let signature = signature.normalize_s().unwrap_or(*signature);
 

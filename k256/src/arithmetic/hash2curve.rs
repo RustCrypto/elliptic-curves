@@ -1,14 +1,11 @@
 use elliptic_curve::consts::{U4, U48};
 use elliptic_curve::generic_array::GenericArray;
 use elliptic_curve::group::cofactor::CofactorGroup;
+use elliptic_curve::hash2curve::{
+    FromOkm, GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
+};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 use elliptic_curve::Field;
-use elliptic_curve::{
-    hash2curve::{
-        GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
-    },
-    hash2field::FromOkm,
-};
 
 use crate::{AffinePoint, ProjectivePoint, Secp256k1};
 
@@ -16,7 +13,6 @@ use super::FieldElement;
 
 impl GroupDigest for Secp256k1 {
     type FieldElement = FieldElement;
-    type Output = ProjectivePoint;
 }
 
 impl FromOkm for FieldElement {
@@ -257,7 +253,7 @@ impl CofactorGroup for ProjectivePoint {
 
 #[test]
 fn hash_to_curve() {
-    use elliptic_curve::hash2field::{self, ExpandMsgXmd};
+    use elliptic_curve::hash2curve::{self, ExpandMsgXmd};
     use hex_literal::hex;
     use sha2::Sha256;
 
@@ -336,7 +332,7 @@ fn hash_to_curve() {
     for test_vector in TEST_VECTORS {
         // in parts
         let mut u = [FieldElement::default(), FieldElement::default()];
-        hash2field::hash_to_field::<ExpandMsgXmd<Sha256>, FieldElement>(
+        hash2curve::hash_to_field::<ExpandMsgXmd<Sha256>, FieldElement>(
             &[test_vector.msg],
             DST,
             &mut u,
