@@ -44,7 +44,7 @@ impl Borrow<Scalar> for BlindedScalar {
 }
 
 impl Invert for BlindedScalar {
-    type Output = Scalar;
+    type Output = CtOption<Scalar>;
 
     fn invert(&self) -> CtOption<Scalar> {
         // prevent side channel analysis of scalar inversion by pre-and-post-multiplying
