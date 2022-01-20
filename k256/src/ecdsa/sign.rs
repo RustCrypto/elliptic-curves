@@ -82,7 +82,7 @@ where
     Self: DigestSigner<S::Digest, S>,
 {
     fn try_sign(&self, msg: &[u8]) -> Result<S, Error> {
-        self.try_sign_digest(Digest::chain_update(S::Digest::new(), msg))
+        self.try_sign_digest(S::Digest::new_with_prefix(msg))
     }
 }
 
@@ -93,7 +93,7 @@ where
     Self: RandomizedDigestSigner<S::Digest, S>,
 {
     fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> Result<S, Error> {
-        self.try_sign_digest_with_rng(rng, S::Digest::new().chain_update(msg))
+        self.try_sign_digest_with_rng(rng, S::Digest::new_with_prefix(msg))
     }
 }
 

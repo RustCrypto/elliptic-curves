@@ -74,7 +74,7 @@ where
     Self: DigestVerifier<S::Digest, S>,
 {
     fn verify(&self, msg: &[u8], signature: &S) -> Result<(), Error> {
-        self.verify_digest(S::Digest::new().chain_update(msg), signature)
+        self.verify_digest(S::Digest::new_with_prefix(msg), signature)
     }
 }
 

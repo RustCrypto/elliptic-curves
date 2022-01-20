@@ -110,7 +110,7 @@ impl Signature {
         msg: &[u8],
         signature: &super::Signature,
     ) -> Result<Self> {
-        Self::from_digest_trial_recovery(public_key, Keccak256::new().chain_update(msg), signature)
+        Self::from_digest_trial_recovery(public_key, Keccak256::new_with_prefix(msg), signature)
     }
 
     /// Given a public key, message digest, and signature, use trial recovery
@@ -151,7 +151,7 @@ impl Signature {
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
     pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyingKey> {
-        self.recover_verify_key_from_digest(Keccak256::new().chain_update(msg))
+        self.recover_verify_key_from_digest(Keccak256::new_with_prefix(msg))
     }
 
     /// Recover the public key used to create the given signature as a
@@ -365,7 +365,7 @@ mod tests {
     fn public_key_recovery() {
         for vector in VECTORS {
             let sig = Signature::try_from(&vector.sig[..]).unwrap();
-            let prehash = Sha256::new().chain_update(vector.msg);
+            let prehash = Sha256::new_with_prefix(vector.msg);
             let pk = sig.recover_verify_key_from_digest(prehash).unwrap();
             assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
         }
