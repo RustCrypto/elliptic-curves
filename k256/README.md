@@ -2,10 +2,11 @@
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
+[![Crates.io Downloads][downloads-image]][crate-link]
+[![Build Status][build-image]][build-link]
 ![Apache2/MIT licensed][license-image]
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
-[![Build Status][build-image]][build-link]
 
 [secp256k1] (a.k.a. K-256) elliptic curve library written in pure Rust with
 support for [ECDSA] signing/verification (including Ethereum-style signatures
@@ -94,12 +95,13 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/k256
 [docs-image]: https://docs.rs/k256/badge.svg
 [docs-link]: https://docs.rs/k256/
+[downloads-image]: https://img.shields.io/crates/d/k256.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow%3Ak256
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.57+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
-[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow%3Ak256
 
 [//]: # (general links)
 
