@@ -542,6 +542,29 @@ mod tests {
         assert_eq!(four.sqrt().unwrap().normalize(), two.normalize());
     }
 
+    #[test]
+    #[should_panic(expected = "assertion failed: self.normalized")]
+    fn unnormalized_is_odd() {
+        // This is a regression test for https://github.com/RustCrypto/elliptic-curves/issues/529
+        // where `is_odd()` in debug mode force-normalized its argument
+        // instead of checking that it is already normalized.
+        // As a result, in release (where normalization didn't happen) `is_odd()`
+        // could return an incorrect value.
+
+        let x = FieldElement::from_bytes_unchecked(&[
+            61, 128, 156, 189, 241, 12, 174, 4, 80, 52, 238, 78, 188, 251, 9, 188, 95, 115, 38, 6,
+            212, 168, 175, 174, 211, 232, 208, 14, 182, 45, 59, 122,
+        ]);
+        // Produces an unnormalized FieldElement with magnitude 1
+        // (we cannot create one directly).
+        let y = x.sqrt().unwrap();
+
+        // This is fine.
+        assert!(y.normalize().is_odd().unwrap_u8() == 0);
+
+        let _result = y.is_odd().unwrap_u8();
+    }
+
     prop_compose! {
         fn field_element()(bytes in any::<[u8; 32]>()) -> FieldElement {
             let mut res = bytes_to_biguint(&bytes);
