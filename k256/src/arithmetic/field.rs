@@ -543,7 +543,10 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "assertion failed: self.normalized")]
+    #[cfg_attr(
+        debug_assertions,
+        should_panic(expected = "assertion failed: self.normalized")
+    )]
     fn unnormalized_is_odd() {
         // This is a regression test for https://github.com/RustCrypto/elliptic-curves/issues/529
         // where `is_odd()` in debug mode force-normalized its argument
@@ -562,6 +565,7 @@ mod tests {
         // This is fine.
         assert!(y.normalize().is_odd().unwrap_u8() == 0);
 
+        // This panics since `y` is not normalized.
         let _result = y.is_odd().unwrap_u8();
     }
 
