@@ -224,7 +224,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
         }
 
         let signature = Signature::from_scalars(r, s)?;
-        let is_r_odd: bool = R.y.is_odd().into();
+        let is_r_odd: bool = R.y.normalize().is_odd().into();
         let is_s_high: bool = signature.s().is_high().into();
         let signature_low = signature.normalize_s().unwrap_or(signature);
         let recovery_id = ecdsa_core::RecoveryId::new(is_r_odd ^ is_s_high, false);
