@@ -89,7 +89,8 @@ impl FieldElementImpl {
     }
 
     pub fn is_odd(&self) -> Choice {
-        self.normalize().value.is_odd()
+        debug_assert!(self.normalized);
+        self.value.is_odd()
     }
 
     pub fn negate(&self, magnitude: u32) -> Self {
