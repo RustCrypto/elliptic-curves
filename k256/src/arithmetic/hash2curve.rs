@@ -46,7 +46,7 @@ impl FromOkm for FieldElement {
 
 impl Sgn0 for FieldElement {
     fn sgn0(&self) -> Choice {
-        self.is_odd()
+        self.normalize().is_odd()
     }
 }
 
