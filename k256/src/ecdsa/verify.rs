@@ -154,12 +154,6 @@ impl From<&VerifyingKey> for PublicKey {
     }
 }
 
-impl From<&AffinePoint> for VerifyingKey {
-    fn from(affine_point: &AffinePoint) -> VerifyingKey {
-        VerifyingKey::from_encoded_point(&affine_point.to_encoded_point(false)).unwrap()
-    }
-}
-
 impl From<ecdsa_core::VerifyingKey<Secp256k1>> for VerifyingKey {
     fn from(verifying_key: ecdsa_core::VerifyingKey<Secp256k1>) -> VerifyingKey {
         VerifyingKey {
@@ -180,11 +174,59 @@ impl ToEncodedPoint<Secp256k1> for VerifyingKey {
     }
 }
 
+impl TryFrom<AffinePoint> for VerifyingKey {
+    type Error = Error;
+
+    fn try_from(affine_point: AffinePoint) -> Result<VerifyingKey, Error> {
+        let inner = PublicKey::try_from(affine_point)
+            .map_err(|_| Error::new())?
+            .into();
+
+        Ok(VerifyingKey { inner })
+    }
+}
+
+impl TryFrom<&AffinePoint> for VerifyingKey {
+    type Error = Error;
+
+    fn try_from(affine_point: &AffinePoint) -> Result<VerifyingKey, Error> {
+        VerifyingKey::try_from(*affine_point)
+    }
+}
+
 impl TryFrom<&EncodedPoint> for VerifyingKey {
     type Error = Error;
 
     fn try_from(encoded_point: &EncodedPoint) -> Result<Self, Error> {
         Self::from_encoded_point(encoded_point)
+    }
+}
+
+impl From<VerifyingKey> for ProjectivePoint {
+    fn from(verifying_key: VerifyingKey) -> ProjectivePoint {
+        PublicKey::from(verifying_key.inner).into()
+    }
+}
+
+impl From<&VerifyingKey> for ProjectivePoint {
+    fn from(verifying_key: &VerifyingKey) -> ProjectivePoint {
+        PublicKey::from(verifying_key.inner).into()
+    }
+}
+
+impl TryFrom<ProjectivePoint> for VerifyingKey {
+    type Error = Error;
+
+    fn try_from(point: ProjectivePoint) -> Result<VerifyingKey, Error> {
+        AffinePoint::from(point).try_into()
+    }
+}
+
+impl TryFrom<&ProjectivePoint> for VerifyingKey {
+    type Error = Error;
+
+    fn try_from(point: &ProjectivePoint) -> Result<VerifyingKey, Error> {
+        AffinePoint::from(point).try_into()
     }
 }
 

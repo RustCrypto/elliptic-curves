@@ -3,7 +3,7 @@
 #![allow(clippy::op_ref)]
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
-use crate::{CompressedPoint, EncodedPoint, FieldBytes, Scalar, Secp256k1};
+use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
@@ -144,6 +144,34 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
+impl Mul<Scalar> for AffinePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, scalar: Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self) * scalar
+    }
+}
+
+impl Mul<&Scalar> for AffinePoint {
+    type Output = ProjectivePoint;
+
+    fn mul(self, scalar: &Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self) * scalar
+    }
+}
+
+impl Neg for AffinePoint {
+    type Output = AffinePoint;
+
+    fn neg(self) -> Self::Output {
+        AffinePoint {
+            x: self.x,
+            y: self.y.negate(1).normalize_weak(),
+            infinity: self.infinity,
+        }
+    }
+}
+
 impl DecompressPoint<Secp256k1> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
@@ -261,37 +289,42 @@ impl TryFrom<&EncodedPoint> for AffinePoint {
 }
 
 impl From<AffinePoint> for EncodedPoint {
-    /// Returns the SEC1 compressed encoding of this point.
     fn from(affine_point: AffinePoint) -> EncodedPoint {
+        EncodedPoint::from(&affine_point)
+    }
+}
+
+impl From<&AffinePoint> for EncodedPoint {
+    fn from(affine_point: &AffinePoint) -> EncodedPoint {
         affine_point.to_encoded_point(true)
     }
 }
 
-impl Mul<Scalar> for AffinePoint {
-    type Output = ProjectivePoint;
-
-    fn mul(self, scalar: Scalar) -> ProjectivePoint {
-        ProjectivePoint::from(self) * scalar
+impl From<PublicKey> for AffinePoint {
+    fn from(public_key: PublicKey) -> AffinePoint {
+        *public_key.as_affine()
     }
 }
 
-impl Mul<&Scalar> for AffinePoint {
-    type Output = ProjectivePoint;
-
-    fn mul(self, scalar: &Scalar) -> ProjectivePoint {
-        ProjectivePoint::from(self) * scalar
+impl From<&PublicKey> for AffinePoint {
+    fn from(public_key: &PublicKey) -> AffinePoint {
+        AffinePoint::from(*public_key)
     }
 }
 
-impl Neg for AffinePoint {
-    type Output = AffinePoint;
+impl TryFrom<AffinePoint> for PublicKey {
+    type Error = Error;
 
-    fn neg(self) -> Self::Output {
-        AffinePoint {
-            x: self.x,
-            y: self.y.negate(1).normalize_weak(),
-            infinity: self.infinity,
-        }
+    fn try_from(affine_point: AffinePoint) -> Result<PublicKey> {
+        PublicKey::from_affine(affine_point)
+    }
+}
+
+impl TryFrom<&AffinePoint> for PublicKey {
+    type Error = Error;
+
+    fn try_from(affine_point: &AffinePoint) -> Result<PublicKey> {
+        PublicKey::try_from(*affine_point)
     }
 }
 
