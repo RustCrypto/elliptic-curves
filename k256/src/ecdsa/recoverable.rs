@@ -22,16 +22,16 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
-//! let verify_key = signing_key.verifying_key();
+//! let verifying_key = signing_key.verifying_key();
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: the signature type must be annotated or otherwise inferrable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
 //! let signature: recoverable::Signature = signing_key.sign(message);
-//! let recovered_key = signature.recover_verify_key(message).expect("couldn't recover pubkey");
+//! let recovered_key = signature.recover_verifying_key(message).expect("couldn't recover pubkey");
 //!
-//! assert_eq!(&verify_key, &recovered_key);
+//! assert_eq!(&verifying_key, &recovered_key);
 //! # }
 //! ```
 
@@ -131,7 +131,7 @@ impl Signature {
         for recovery_id in 0..=1 {
             if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {
                 if let Ok(recovered_key) =
-                    recoverable_signature.recover_verify_key_from_digest(digest.clone())
+                    recoverable_signature.recover_verifying_key_from_digest(digest.clone())
                 {
                     if public_key == &recovered_key
                         && public_key.verify_digest(digest.clone(), &signature).is_ok()
@@ -150,19 +150,19 @@ impl Signature {
     #[cfg(all(feature = "ecdsa", feature = "keccak256"))]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
-    pub fn recover_verify_key(&self, msg: &[u8]) -> Result<VerifyingKey> {
-        self.recover_verify_key_from_digest(Keccak256::new_with_prefix(msg))
+    pub fn recover_verifying_key(&self, msg: &[u8]) -> Result<VerifyingKey> {
+        self.recover_verifying_key_from_digest(Keccak256::new_with_prefix(msg))
     }
 
     /// Recover the public key used to create the given signature as a
     /// [`VerifyingKey`] from the provided precomputed [`Digest`].
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-    pub fn recover_verify_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyingKey>
+    pub fn recover_verifying_key_from_digest<D>(&self, msg_digest: D) -> Result<VerifyingKey>
     where
         D: Digest<OutputSize = U32>,
     {
-        self.recover_verify_key_from_digest_bytes(&msg_digest.finalize())
+        self.recover_verifying_key_from_digest_bytes(&msg_digest.finalize())
     }
 
     /// Recover the public key used to create the given signature as a
@@ -170,7 +170,7 @@ impl Signature {
     #[cfg(feature = "ecdsa")]
     #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
     #[allow(non_snake_case, clippy::many_single_char_names)]
-    pub fn recover_verify_key_from_digest_bytes(
+    pub fn recover_verifying_key_from_digest_bytes(
         &self,
         digest_bytes: &FieldBytes,
     ) -> Result<VerifyingKey> {
@@ -366,7 +366,7 @@ mod tests {
         for vector in VECTORS {
             let sig = Signature::try_from(&vector.sig[..]).unwrap();
             let prehash = Sha256::new_with_prefix(vector.msg);
-            let pk = sig.recover_verify_key_from_digest(prehash).unwrap();
+            let pk = sig.recover_verifying_key_from_digest(prehash).unwrap();
             assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
         }
     }
