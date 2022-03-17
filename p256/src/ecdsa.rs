@@ -34,8 +34,8 @@
 //! // Verification
 //! use p256::ecdsa::{VerifyingKey, signature::Verifier};
 //!
-//! let verify_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
-//! assert!(verify_key.verify(message, &signature).is_ok());
+//! let verifying_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
+//! assert!(verifying_key.verify(message, &signature).is_ok());
 //! # }
 //! ```
 
