@@ -3,7 +3,7 @@
 #![allow(clippy::op_ref)]
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B};
-use crate::{CompressedPoint, EncodedPoint, NistP256};
+use crate::{CompressedPoint, EncodedPoint, NistP256, PublicKey};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -20,7 +20,7 @@ use elliptic_curve::{
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    PrimeCurveArithmetic, ProjectiveArithmetic,
+    Error, PrimeCurveArithmetic, ProjectiveArithmetic, Result,
 };
 
 impl ProjectiveArithmetic for NistP256 {
@@ -543,6 +543,34 @@ impl<'a> Neg for &'a ProjectivePoint {
 
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(self)
+    }
+}
+
+impl From<PublicKey> for ProjectivePoint {
+    fn from(public_key: PublicKey) -> ProjectivePoint {
+        AffinePoint::from(public_key).into()
+    }
+}
+
+impl From<&PublicKey> for ProjectivePoint {
+    fn from(public_key: &PublicKey) -> ProjectivePoint {
+        AffinePoint::from(public_key).into()
+    }
+}
+
+impl TryFrom<ProjectivePoint> for PublicKey {
+    type Error = Error;
+
+    fn try_from(point: ProjectivePoint) -> Result<PublicKey> {
+        AffinePoint::from(point).try_into()
+    }
+}
+
+impl TryFrom<&ProjectivePoint> for PublicKey {
+    type Error = Error;
+
+    fn try_from(point: &ProjectivePoint) -> Result<PublicKey> {
+        AffinePoint::from(point).try_into()
     }
 }
 

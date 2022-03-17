@@ -187,10 +187,10 @@ impl Signature {
         let r_inv = *r.invert();
         let u1 = -(r_inv * z);
         let u2 = r_inv * *s;
-        let pk = ProjectivePoint::lincomb(&ProjectivePoint::GENERATOR, &u1, &R, &u2).to_affine();
+        let pk = ProjectivePoint::lincomb(&ProjectivePoint::GENERATOR, &u1, &R, &u2);
 
         // TODO(tarcieri): ensure the signature verifies?
-        Ok(VerifyingKey::from(&pk))
+        VerifyingKey::try_from(pk)
     }
 
     /// Parse the `r` component of this signature to a [`NonZeroScalar`]
