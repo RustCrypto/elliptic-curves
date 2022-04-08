@@ -21,6 +21,9 @@ use elliptic_curve::{
     Error, PrimeCurveArithmetic, ProjectiveArithmetic, Result,
 };
 
+#[cfg(feature = "serde")]
+use elliptic_curve::serde::{de::Error as SerdeError, Deserialize, Serialize};
+
 #[rustfmt::skip]
 const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
@@ -556,6 +559,51 @@ impl TryFrom<&ProjectivePoint> for PublicKey {
 
     fn try_from(point: &ProjectivePoint) -> Result<PublicKey> {
         AffinePoint::from(point).try_into()
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl Serialize for ProjectivePoint {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: elliptic_curve::serde::Serializer,
+    {
+        let encoded_point = self.to_encoded_point(true);
+        serializer.serialize_bytes(encoded_point.as_bytes())
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de> Deserialize<'de> for ProjectivePoint {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: elliptic_curve::serde::de::Deserializer<'de>,
+    {
+        struct EncodedPointVisitor;
+        impl<'de> elliptic_curve::serde::de::Visitor<'de> for EncodedPointVisitor {
+            type Value = EncodedPoint;
+
+            fn expecting(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                formatter.write_str("SEC1-encoded secp256k1 (K-256) curve point")
+            }
+
+            fn visit_bytes<E>(self, v: &[u8]) -> core::result::Result<Self::Value, E>
+            where
+                E: elliptic_curve::serde::de::Error,
+            {
+                let encoded_point = EncodedPoint::from_bytes(v).map_err(E::custom)?;
+                Ok(encoded_point)
+            }
+        }
+
+        let encoded_point = deserializer.deserialize_bytes(EncodedPointVisitor)?;
+        let projective_point: Option<ProjectivePoint> =
+            ProjectivePoint::from_encoded_point(&encoded_point).into();
+        projective_point.ok_or_else(|| D::Error::custom(
+            "SEC1-encoded point is not on curve secp256k (K-256)",
+        ))
     }
 }
 
