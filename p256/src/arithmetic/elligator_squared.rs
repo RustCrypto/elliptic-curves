@@ -1,3 +1,6 @@
+//! An implementation of the [Elligator Squared](https://eprint.iacr.org/2014/043.pdf) algorithm
+//! for encoding elliptic curve points as uniformly distributed bitstrings.
+
 use elliptic_curve::group::prime::PrimeCurveAffine;
 use elliptic_curve::rand_core::RngCore;
 use elliptic_curve::{Field, Group};
