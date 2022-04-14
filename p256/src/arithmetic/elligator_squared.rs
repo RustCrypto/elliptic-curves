@@ -36,10 +36,8 @@ pub fn point_to_elligator_squared(
             continue;
         }
 
-        // Pick a random biquadratic root.
-        let mut j = [0u8; 1];
-        rng.fill_bytes(&mut j);
-        let j = (j[0] % 4) as usize; // d = 4
+        // Pick a random biquadratic root from [0,4).
+        let j = rng.next_u32() as usize % 4;
 
         // If the Jth biquadratic root exists for the delta point, return our random field element
         // and our preimage field element.
@@ -88,89 +86,23 @@ fn f(u: &FieldElement) -> AffinePoint {
 
 fn r(q: &ProjectivePoint, j: usize) -> Option<FieldElement> {
     let q = q.to_affine();
-    if q.y.sqrt().is_some().into() {
-        if j == 0 {
-            x0_r0(&q.x)
-        } else if j == 1 {
-            x0_r1(&q.x)
-        } else if j == 2 {
-            x0_r2(&q.x)
-        } else {
-            x0_r3(&q.x)
-        }
-    } else if j == 0 {
-        x1_r0(&q.x)
-    } else if j == 1 {
-        x1_r1(&q.x)
-    } else if j == 2 {
-        x1_r2(&q.x)
+    let (x, y) = (q.x, q.y);
+
+    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
+    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
+
+    let a = if j == 0 || j == 1 { a? } else { -a? };
+    let b: Option<FieldElement> = if y.sqrt().is_some().into() {
+        (TWO * omega).invert().into()
     } else {
-        x1_r3(&q.x)
+        TWO.invert().into()
+    };
+    let c: Option<FieldElement> = ((omega + a) * b?).sqrt().into();
+    if j == 0 || j == 2 {
+        Some(-c?)
+    } else {
+        c
     }
-}
-
-fn x0_r0(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = (TWO * omega).invert().into();
-    let c: Option<FieldElement> = ((omega + a?) * b?).sqrt().into();
-    c
-}
-
-fn x0_r1(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = (TWO * omega).invert().into();
-    let c: Option<FieldElement> = ((omega + a?) * b?).sqrt().into();
-    Some(-c?)
-}
-
-fn x0_r2(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = (TWO * omega).invert().into();
-    let c: Option<FieldElement> = ((omega - a?) * b?).sqrt().into();
-    c
-}
-
-fn x0_r3(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = (TWO * omega).invert().into();
-    let c: Option<FieldElement> = ((omega - a?) * b?).sqrt().into();
-    Some(-c?)
-}
-
-fn x1_r0(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = TWO.invert().into();
-    let c: Option<FieldElement> = ((omega + a?) * b?).sqrt().into();
-    c
-}
-
-fn x1_r1(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = TWO.invert().into();
-    let c: Option<FieldElement> = ((omega + a?) * b?).sqrt().into();
-    Some(-c?)
-}
-
-fn x1_r2(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = TWO.invert().into();
-    let c: Option<FieldElement> = ((omega - a?) * b?).sqrt().into();
-    c
-}
-
-fn x1_r3(x: &FieldElement) -> Option<FieldElement> {
-    let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
-    let b: Option<FieldElement> = TWO.invert().into();
-    let c: Option<FieldElement> = ((omega - a?) * b?).sqrt().into();
-    Some(-c?)
 }
 
 const TWO: FieldElement = FieldElement::add(&FieldElement::ONE, &FieldElement::ONE);
