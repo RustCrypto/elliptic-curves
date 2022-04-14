@@ -1,6 +1,8 @@
 //! Pure Rust implementation of group operations on secp256r1.
 
 pub(crate) mod affine;
+#[cfg(feature = "elligator_squared")]
+pub mod elligator_squared;
 mod field;
 #[cfg(feature = "hash2curve")]
 mod hash2curve;

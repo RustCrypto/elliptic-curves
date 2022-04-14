@@ -31,6 +31,9 @@ pub mod ecdh;
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa-core")))]
 pub mod ecdsa;
 
+#[cfg(feature = "elligator_squared")]
+pub use arithmetic::elligator_squared;
+
 #[cfg(any(feature = "test-vectors", test))]
 #[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
 pub mod test_vectors;
