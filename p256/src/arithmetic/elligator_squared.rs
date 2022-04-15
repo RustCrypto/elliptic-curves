@@ -3,6 +3,7 @@
 
 use elliptic_curve::group::prime::PrimeCurveAffine;
 use elliptic_curve::rand_core::RngCore;
+use elliptic_curve::subtle::CtOption;
 use elliptic_curve::{Field, Group};
 
 use crate::arithmetic::field::FieldElement;
@@ -41,7 +42,7 @@ pub fn point_to_elligator_squared(
 
         // If the Jth biquadratic root exists for the delta point, return our random field element
         // and our preimage field element.
-        if let Some(v) = r(&q, j) {
+        if let Some(v) = r(&q, j).into() {
             return (u, v);
         }
     }
@@ -84,25 +85,35 @@ fn f(u: &FieldElement) -> AffinePoint {
     AffinePoint { x, y, infinity: 0 }
 }
 
-fn r(q: &ProjectivePoint, j: usize) -> Option<FieldElement> {
+fn r(q: &ProjectivePoint, j: usize) -> CtOption<FieldElement> {
     let q = q.to_affine();
     let (x, y) = (q.x, q.y);
 
+    // Inverting `f` requires two branches, one for X_0 and one for X_1, each of which has four
+    // roots. omega is constant across all of them.
     let omega = ((CURVE_EQUATION_A * CURVE_EQUATION_B.invert().unwrap()) * x) + FieldElement::ONE;
-    let a: Option<FieldElement> = (omega.square() - (FOUR * omega)).sqrt().into();
 
-    let a = if j == 0 || j == 1 { a? } else { -a? };
-    let b: Option<FieldElement> = if y.sqrt().is_some().into() {
-        (TWO * omega).invert().into()
-    } else {
-        TWO.invert().into()
-    };
-    let c: Option<FieldElement> = ((omega + a) * b?).sqrt().into();
-    if j == 0 || j == 2 {
-        Some(-c?)
-    } else {
-        c
-    }
+    (omega.square() - (FOUR * omega)).sqrt().and_then(|a| {
+        // The first division in roots comes at \sqrt{\omega^2 - 4 \omega}. The first and second
+        // roots have positive values, the third and fourth roots have negative values.
+        let a = if j == 0 || j == 1 { a } else { -a };
+
+        // If g(x) is square, then, x=X_0(u); otherwise x=X_1(u).
+        (if y.sqrt().is_some().into() {
+            // If x=X_0(u), then we divide by 2 \omega.
+            (TWO * omega).invert()
+        } else {
+            // If x=X_1(u), then we divide by 2.
+            TWO.invert()
+        })
+        .and_then(|b| {
+            ((omega + a) * b)
+                .sqrt()
+                // The second division in roots comes here. The first and third roots have positive
+                // values, the second and fourth roots have negative values.
+                .map(|c| if j == 0 || j == 2 { c } else { -c })
+        })
+    })
 }
 
 const TWO: FieldElement = FieldElement::add(&FieldElement::ONE, &FieldElement::ONE);
