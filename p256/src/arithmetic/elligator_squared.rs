@@ -20,7 +20,8 @@ pub fn point_to_elligator_squared(
     p: &ProjectivePoint,
     mut rng: impl RngCore,
 ) -> (FieldElement, FieldElement) {
-    for _ in 0..1000 {
+    // Iterate through no more than one thousand candidates. On average, we try N(P) candidates.
+    for _ in 0..1_000 {
         // Generate a random field element \not\in {-1, 0, 1}.
         let u = FieldElement::random(&mut rng);
         if u == -FieldElement::ONE || u == FieldElement::ZERO || u == FieldElement::ONE {
@@ -47,7 +48,9 @@ pub fn point_to_elligator_squared(
         }
     }
 
-    unreachable!()
+    // Statistically, it's more likely the RNG is broken than we found one thousand candidates in a
+    // row with no valid preimage.
+    unreachable!("failed to find candidate, suspect RNG failure")
 }
 
 fn g(x: &FieldElement) -> FieldElement {
