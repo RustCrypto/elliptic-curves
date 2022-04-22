@@ -8,20 +8,21 @@ use elliptic_curve::{Field, Group};
 
 use crate::arithmetic::field::FieldElement;
 use crate::arithmetic::{CURVE_EQUATION_A, CURVE_EQUATION_B};
-use crate::{AffinePoint, FieldBytes, ProjectivePoint};
+use crate::{AffinePoint, ProjectivePoint};
 
 /// Decodes the given pair of field elements into the originally encoded point.
-pub fn elligator_squared_to_point(u: &FieldBytes, v: &FieldBytes) -> Option<ProjectivePoint> {
-    FieldElement::from_bytes(u)
-        .and_then(|u| FieldElement::from_bytes(v).map(|v| f(&u).to_curve() + f(&v).to_curve()))
+pub fn elligator_squared_to_point(b: &[u8; 64]) -> Option<ProjectivePoint> {
+    let u: [u8; 32] = b[..32].try_into().ok()?;
+    let v: [u8; 32] = b[32..].try_into().ok()?;
+    FieldElement::from_bytes(&u.into())
+        .and_then(|u| {
+            FieldElement::from_bytes(&v.into()).map(|v| f(&u).to_curve() + f(&v).to_curve())
+        })
         .into()
 }
 
 /// Encodes the given point as a pair of random, uniformly distributed field elements.
-pub fn point_to_elligator_squared(
-    p: &ProjectivePoint,
-    mut rng: impl RngCore,
-) -> (FieldBytes, FieldBytes) {
+pub fn point_to_elligator_squared(p: &ProjectivePoint, mut rng: impl RngCore) -> [u8; 64] {
     // Iterate through no more than one thousand candidates. On average, we try N(P) candidates.
     for _ in 0..1_000 {
         // Generate a random field element \not\in {-1, 0, 1}.
@@ -47,7 +48,10 @@ pub fn point_to_elligator_squared(
         // and our preimage field element.
         let v: Option<FieldElement> = r(&q, j).into();
         if let Some(v) = v {
-            return (u.to_bytes(), v.to_bytes());
+            let mut b = [0u8; 64];
+            b[..32].copy_from_slice(&u.to_bytes());
+            b[32..].copy_from_slice(&v.to_bytes());
+            return b;
         }
     }
 
@@ -153,8 +157,8 @@ mod tests {
         let mut rng = rand_core::OsRng::default();
         for _ in 0..100 {
             let p = ProjectivePoint::random(&mut rng);
-            let (u, v) = point_to_elligator_squared(&p, &mut rng);
-            let p2 = elligator_squared_to_point(&u, &v).expect("should have decoded");
+            let b = point_to_elligator_squared(&p, &mut rng);
+            let p2 = elligator_squared_to_point(&b).expect("should have decoded");
 
             assert_eq!(p, p2);
         }
