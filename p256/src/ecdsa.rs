@@ -110,7 +110,7 @@ mod tests {
         let d = Scalar::from_repr(GenericArray::clone_from_slice(vector.d)).unwrap();
         let k = Scalar::from_repr(GenericArray::clone_from_slice(vector.k)).unwrap();
         let k_blinded = BlindedScalar::new(k, &mut OsRng);
-        let z = Scalar::from_repr(GenericArray::clone_from_slice(vector.m)).unwrap();
+        let z = GenericArray::clone_from_slice(vector.m);
         let sig = d.try_sign_prehashed(k_blinded, z).unwrap().0;
 
         assert_eq!(vector.r, sig.r().to_bytes().as_slice());

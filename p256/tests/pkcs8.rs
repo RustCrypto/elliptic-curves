@@ -67,7 +67,7 @@ fn decode_pkcs8_public_key_from_pem() {
 fn encode_pkcs8_private_key_to_der() {
     let original_secret_key = p256::SecretKey::from_pkcs8_der(&PKCS8_PRIVATE_KEY_DER[..]).unwrap();
     let reencoded_secret_key = original_secret_key.to_pkcs8_der().unwrap();
-    assert_eq!(reencoded_secret_key.as_ref(), &PKCS8_PRIVATE_KEY_DER[..]);
+    assert_eq!(reencoded_secret_key.as_bytes(), &PKCS8_PRIVATE_KEY_DER[..]);
 }
 
 #[test]

@@ -18,7 +18,7 @@ impl AffineArithmetic for Secp256k1 {
 }
 
 #[cfg(feature = "serde")]
-use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// secp256k1 curve point expressed in affine coordinates.
 ///

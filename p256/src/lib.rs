@@ -116,8 +116,8 @@ impl elliptic_curve::JwkParameters for NistP256 {
 }
 
 #[cfg(feature = "pkcs8")]
-impl elliptic_curve::AlgorithmParameters for NistP256 {
-    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.2.840.10045.3.1.7");
+impl pkcs8::AssociatedOid for NistP256 {
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.3.1.7");
 }
 
 /// Compressed SEC1-encoded NIST P-256 curve point.

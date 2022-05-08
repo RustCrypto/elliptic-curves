@@ -26,7 +26,7 @@ use elliptic_curve::{
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -401,12 +401,6 @@ impl IsHigh for Scalar {
     }
 }
 
-impl From<Scalar> for U256 {
-    fn from(scalar: Scalar) -> U256 {
-        scalar.0
-    }
-}
-
 impl Shr<usize> for Scalar {
     type Output = Self;
 
@@ -621,6 +615,18 @@ impl From<Scalar> for FieldBytes {
 impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
+    }
+}
+
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> Self {
+        scalar.0
+    }
+}
+
+impl From<&Scalar> for U256 {
+    fn from(scalar: &Scalar) -> Self {
+        scalar.0
     }
 }
 

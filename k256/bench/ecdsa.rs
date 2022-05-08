@@ -7,7 +7,7 @@ use ecdsa_core::{
 };
 use k256::{
     elliptic_curve::{generic_array::arr, group::ff::PrimeField},
-    AffinePoint, Scalar,
+    AffinePoint, FieldBytes, Scalar,
 };
 
 fn test_scalar_d() -> Scalar {
@@ -28,13 +28,12 @@ fn test_scalar_k() -> Scalar {
     .unwrap()
 }
 
-fn test_scalar_z() -> Scalar {
-    Scalar::from_repr(arr![u8;
+fn test_scalar_z() -> FieldBytes {
+    arr![u8;
         0xe3, 0x35, 0x80, 0xeb, 0x6e, 0xd0, 0x22, 0xae, 0xd6, 0xaf, 0x20, 0xd9, 0x22, 0x37,
         0x63, 0x5e, 0x7c, 0x20, 0xc5, 0xf1, 0xbc, 0xd6, 0xae, 0xe8, 0x81, 0x82, 0xed, 0x71,
         0x80, 0xf6, 0xe2, 0x67
-    ])
-    .unwrap()
+    ]
 }
 
 fn bench_ecdsa(c: &mut Criterion) {

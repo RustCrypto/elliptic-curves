@@ -15,7 +15,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "serde")]
-use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{de, ser, Deserialize, Serialize};
 
 impl AffineArithmetic for NistP256 {
     type AffinePoint = AffinePoint;

@@ -2,7 +2,8 @@
 
 use super::{recoverable, Error, Signature};
 use crate::{
-    AffinePoint, CompressedPoint, EncodedPoint, ProjectivePoint, PublicKey, Scalar, Secp256k1,
+    AffinePoint, CompressedPoint, EncodedPoint, FieldBytes, ProjectivePoint, PublicKey, Scalar,
+    Secp256k1,
 };
 use ecdsa_core::{hazmat::VerifyPrimitive, signature};
 use elliptic_curve::{
@@ -26,7 +27,7 @@ use core::str::FromStr;
 
 #[cfg(all(feature = "pem", feature = "serde"))]
 #[cfg_attr(docsrs, doc(cfg(all(feature = "pem", feature = "serde"))))]
-use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 ///
@@ -98,9 +99,10 @@ where
 }
 
 impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(&self, z: Scalar, signature: &Signature) -> Result<(), Error> {
+    fn verify_prehashed(&self, z: FieldBytes, signature: &Signature) -> Result<(), Error> {
         let r = signature.r();
         let s = signature.s();
+        let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(z);
 
         // Ensure signature is "low S" normalized ala BIP 0062
         if s.is_high().into() {
