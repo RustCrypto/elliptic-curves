@@ -316,13 +316,10 @@ impl FieldElement5x52 {
         // for 4 <= x <= 8, px is a shorthand for sum(a[i]*b[x-i], i=(x-4)..4)
         // Note that [x 0 0 0 0 0] = [x*r].
 
-        let mut c: u128;
-        let mut d: u128;
-
-        d = a0 * b3 + a1 * b2 + a2 * b1 + a3 * b0;
+        let mut d = a0 * b3 + a1 * b2 + a2 * b1 + a3 * b0;
         debug_assert!(d >> 114 == 0);
         // [d 0 0 0] = [p3 0 0 0]
-        c = a4 * b4;
+        let mut c = a4 * b4;
         debug_assert!(c >> 112 == 0);
         // [c 0 0 0 0 d 0 0 0] = [p8 0 0 0 0 p3 0 0 0]
         d += (c & m) * r;

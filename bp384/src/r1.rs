@@ -29,8 +29,9 @@ impl elliptic_curve::PointCompression for BrainpoolP384r1 {
 }
 
 #[cfg(feature = "pkcs8")]
-impl elliptic_curve::AlgorithmParameters for BrainpoolP384r1 {
-    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.3.36.3.3.2.8.1.1.11");
+impl pkcs8::AssociatedOid for BrainpoolP384r1 {
+    const OID: pkcs8::ObjectIdentifier =
+        pkcs8::ObjectIdentifier::new_unwrap("1.3.36.3.3.2.8.1.1.11");
 }
 
 /// brainpoolP384r1 field element serialized as bytes.

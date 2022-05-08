@@ -7,7 +7,7 @@ use core::{
     fmt::{self, Debug},
 };
 use ecdsa_core::{
-    hazmat::{rfc6979_generate_k, SignPrimitive},
+    hazmat::SignPrimitive,
     signature::{
         digest::{
             block_buffer::Eager,
@@ -130,9 +130,8 @@ where
     Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
-        let z = <Scalar as Reduce<U256>>::from_be_digest_reduced(msg_digest);
-        let k = rfc6979_generate_k::<_, D>(&self.inner, &z, &[]);
-        let (signature, recid) = self.inner.try_sign_prehashed(**k, z)?;
+        let digest = msg_digest.finalize_fixed();
+        let (signature, recid) = self.inner.try_sign_prehashed_rfc6979::<D>(digest, &[])?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
@@ -179,12 +178,11 @@ where
         mut rng: impl CryptoRng + RngCore,
         msg_digest: D,
     ) -> Result<recoverable::Signature, Error> {
-        let mut added_entropy = FieldBytes::default();
-        rng.fill_bytes(&mut added_entropy);
+        let mut ad = FieldBytes::default();
+        rng.fill_bytes(&mut ad);
 
-        let z = <Scalar as Reduce<U256>>::from_be_digest_reduced(msg_digest);
-        let k = rfc6979_generate_k::<_, D>(&self.inner, &z, &added_entropy);
-        let (signature, recid) = self.inner.try_sign_prehashed(**k, z)?;
+        let digest = msg_digest.finalize_fixed();
+        let (signature, recid) = self.inner.try_sign_prehashed_rfc6979::<D>(digest, &ad)?;
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
@@ -195,11 +193,12 @@ impl SignPrimitive<Secp256k1> for Scalar {
     fn try_sign_prehashed<K>(
         &self,
         ephemeral_scalar: K,
-        z: Scalar,
+        z: FieldBytes,
     ) -> Result<(Signature, Option<ecdsa_core::RecoveryId>), Error>
     where
         K: Borrow<Scalar> + Invert<Output = CtOption<Scalar>>,
     {
+        let z = <Self as Reduce<U256>>::from_be_bytes_reduced(z);
         let k_inverse = ephemeral_scalar.invert();
         let k = ephemeral_scalar.borrow();
 

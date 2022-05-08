@@ -89,8 +89,8 @@ impl elliptic_curve::JwkParameters for Secp256k1 {
 }
 
 #[cfg(feature = "pkcs8")]
-impl elliptic_curve::AlgorithmParameters for Secp256k1 {
-    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new("1.3.132.0.10");
+impl pkcs8::AssociatedOid for Secp256k1 {
+    const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.3.132.0.10");
 }
 
 /// Compressed SEC1-encoded secp256k1 (K-256) curve point.

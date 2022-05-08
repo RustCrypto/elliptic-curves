@@ -25,7 +25,7 @@ use elliptic_curve::{
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use elliptic_curve::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// Array containing 4 x 64-bit unsigned integers.
 // TODO(tarcieri): replace this entirely with `U256`
@@ -578,6 +578,18 @@ impl From<u64> for Scalar {
     }
 }
 
+impl From<Scalar> for FieldBytes {
+    fn from(scalar: Scalar) -> Self {
+        scalar.to_bytes()
+    }
+}
+
+impl From<&Scalar> for FieldBytes {
+    fn from(scalar: &Scalar) -> Self {
+        scalar.to_bytes()
+    }
+}
+
 impl From<ScalarCore<NistP256>> for Scalar {
     fn from(scalar: ScalarCore<NistP256>) -> Scalar {
         Scalar(*scalar.as_uint())
@@ -602,9 +614,29 @@ impl From<&Scalar> for ScalarCore<NistP256> {
     }
 }
 
+impl From<&SecretKey> for Scalar {
+    fn from(secret_key: &SecretKey) -> Scalar {
+        *secret_key.to_nonzero_scalar()
+    }
+}
+
 impl From<Scalar> for U256 {
     fn from(scalar: Scalar) -> U256 {
         scalar.0
+    }
+}
+
+impl From<&Scalar> for U256 {
+    fn from(scalar: &Scalar) -> U256 {
+        scalar.0
+    }
+}
+
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl From<&Scalar> for ScalarBits {
+    fn from(scalar: &Scalar) -> ScalarBits {
+        scalar.0.to_uint_array().into()
     }
 }
 
@@ -758,32 +790,6 @@ impl ConditionallySelectable for Scalar {
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0.ct_eq(&other.0)
-    }
-}
-
-#[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
-impl From<&Scalar> for ScalarBits {
-    fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.to_uint_array().into()
-    }
-}
-
-impl From<Scalar> for FieldBytes {
-    fn from(scalar: Scalar) -> Self {
-        scalar.to_bytes()
-    }
-}
-
-impl From<&Scalar> for FieldBytes {
-    fn from(scalar: &Scalar) -> Self {
-        scalar.to_bytes()
-    }
-}
-
-impl From<&SecretKey> for Scalar {
-    fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.to_nonzero_scalar()
     }
 }
 

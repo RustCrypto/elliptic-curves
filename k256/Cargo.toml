@@ -19,19 +19,19 @@ rust-version = "1.57"
 
 [dependencies]
 cfg-if = "1.0"
-elliptic-curve = { version = "0.12.0-pre.1", default-features = false, features = ["hazmat", "sec1"] }
-sec1 = { version = "0.2", default-features = false }
+elliptic-curve = { version = "0.12.0-pre.3", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.14.0-pre.2", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.14.0-pre.4", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.3", optional = true }
+serdect = { version = "0.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 sha3 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
 blobby = "0.3"
 criterion = "0.3"
-ecdsa-core = { version = "0.14.0-pre.2", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.14.0-pre.5", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.3"
 num-bigint = "0.4"
 num-traits = "0.2"
@@ -51,7 +51,7 @@ jwk = ["elliptic-curve/jwk"]
 keccak256 = ["digest", "sha3"]
 pem = ["ecdsa-core/pem", "elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core/pkcs8", "elliptic-curve/pkcs8"]
-serde = ["ecdsa-core/serde", "elliptic-curve/serde", "sec1/serde"]
+serde = ["ecdsa-core/serde", "elliptic-curve/serde", "serdect"]
 sha256 = ["digest", "sha2"]
 std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
 test-vectors = ["hex-literal"]

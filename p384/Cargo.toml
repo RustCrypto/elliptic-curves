@@ -13,9 +13,9 @@ edition = "2021"
 rust-version = "1.57"
 
 [dependencies]
-ecdsa = { version = "0.14.0-pre.2", optional = true, default-features = false, features = ["der"] }
-elliptic-curve = { version = "0.12.0-pre.1", default-features = false, features = ["hazmat", "sec1"] }
-sec1 = { version = "0.2", default-features = false }
+ecdsa = { version = "0.14.0-pre.5", optional = true, default-features = false, features = ["der"] }
+elliptic-curve = { version = "0.12.0-pre.4", default-features = false, features = ["hazmat", "sec1"] }
+serdect = { version = "0.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
@@ -27,7 +27,7 @@ broken-arithmetic-do-not-use = ["elliptic-curve/arithmetic"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
-serde = ["ecdsa/serde", "elliptic-curve/serde", "sec1/serde"]
+serde = ["ecdsa/serde", "elliptic-curve/serde", "serdect"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 std = ["elliptic-curve/std"]
 voprf = ["elliptic-curve/voprf", "sha2"]
