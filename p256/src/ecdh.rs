@@ -33,7 +33,7 @@
 //! let bob_shared = bob_secret.diffie_hellman(&alice_public);
 //!
 //! // Both participants arrive on the same shared secret
-//! assert_eq!(alice_shared.as_bytes(), bob_shared.as_bytes());
+//! assert_eq!(alice_shared.raw_secret_bytes(), bob_shared.raw_secret_bytes());
 //! ```
 
 use crate::{AffinePoint, NistP256};
