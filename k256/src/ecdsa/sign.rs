@@ -240,8 +240,7 @@ impl ConstantTimeEq for SigningKey {
 
 impl Debug for SigningKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO(tarcieri): use `finish_non_exhaustive` when stable
-        f.debug_tuple("SigningKey").field(&"...").finish()
+        f.debug_struct("SigningKey").finish_non_exhaustive()
     }
 }
 
