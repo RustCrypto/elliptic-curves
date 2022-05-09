@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.0 (2022-05-09)
+### Changed
+- Bump `digest` to v0.10 ([#515])
+- Have `pkcs8` feature activate `ecdsa/pkcs8` ([#538])
+- Bump `elliptic-curve` to v0.12 ([#544])
+- Bump `ecdsa` to v0.14 ([#544])
+
+[#515]: https://github.com/RustCrypto/elliptic-curves/pull/515
+[#538]: https://github.com/RustCrypto/elliptic-curves/pull/538
+[#544]: https://github.com/RustCrypto/elliptic-curves/pull/544
+
 ## 0.10.1 (2022-01-17)
 ### Added
 - Impl `ff::Field` trait for `FieldElement` ([#498])
