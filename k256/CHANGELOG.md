@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.0 (2022-05-09)
+### Changed
+- Make `AffinePoint` to `VerifyingKey` conversion fallible ([#535])
+- Rename `recover_verify_key` => `recover_verifying_key` ([#537])
+- Rename `recover_verify_key_from_digest` => `recover_verifying_key_from_digest` ([#537])
+- Have `pkcs8` feature activate `ecdsa/pkcs8` ([#538])
+- Bump `elliptic-curve` to v0.12 ([#544])
+- Bump `ecdsa` to v0.14 ([#544])
+
+### Fixed
+- `hash2curve` crate feature ([#519])
+
+[#519]: https://github.com/RustCrypto/elliptic-curves/pull/519
+[#535]: https://github.com/RustCrypto/elliptic-curves/pull/535
+[#537]: https://github.com/RustCrypto/elliptic-curves/pull/537
+[#538]: https://github.com/RustCrypto/elliptic-curves/pull/538
+[#544]: https://github.com/RustCrypto/elliptic-curves/pull/544
+
 ## 0.10.4 (2022-03-15)
 ### Fixed
 - Normalize before calling `is_odd()` in `sng0()` ([#533])

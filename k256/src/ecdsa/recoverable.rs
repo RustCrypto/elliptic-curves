@@ -72,7 +72,7 @@ pub const SIZE: usize = 65;
 /// - `r`: 32-byte integer, big endian
 /// - `s`: 32-byte integer, big endian
 /// - `v`: 1-byte recovery [`Id`]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Signature {
     bytes: [u8; SIZE],
 }
@@ -225,16 +225,6 @@ impl AsRef<[u8]> for Signature {
 impl Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "RecoverableSignature {{ bytes: {:?}) }}", self.as_ref())
-    }
-}
-
-// TODO(tarcieri): derive `Eq` after const generics are available
-impl Eq for Signature {}
-
-// TODO(tarcieri): derive `PartialEq` after const generics are available
-impl PartialEq for Signature {
-    fn eq(&self, other: &Self) -> bool {
-        self.as_ref().eq(other.as_ref())
     }
 }
 
