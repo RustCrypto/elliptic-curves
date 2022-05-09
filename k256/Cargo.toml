@@ -19,10 +19,10 @@ rust-version = "1.57"
 
 [dependencies]
 cfg-if = "1.0"
-elliptic-curve = { version = "0.12.0-pre.3", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "0.12", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.14.0-pre.4", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.14", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.3", optional = true }
 serdect = { version = "0.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
@@ -31,7 +31,7 @@ sha3 = { version = "0.10", optional = true, default-features = false }
 [dev-dependencies]
 blobby = "0.3"
 criterion = "0.3"
-ecdsa-core = { version = "0.14.0-pre.5", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.14", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.3"
 num-bigint = "0.4"
 num-traits = "0.2"

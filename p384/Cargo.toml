@@ -13,8 +13,8 @@ edition = "2021"
 rust-version = "1.57"
 
 [dependencies]
-ecdsa = { version = "0.14.0-pre.5", optional = true, default-features = false, features = ["der"] }
-elliptic-curve = { version = "0.12.0-pre.4", default-features = false, features = ["hazmat", "sec1"] }
+ecdsa = { version = "0.14", optional = true, default-features = false, features = ["der"] }
+elliptic-curve = { version = "0.12", default-features = false, features = ["hazmat", "sec1"] }
 serdect = { version = "0.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
