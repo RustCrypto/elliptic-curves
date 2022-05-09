@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.11.0 (2022-05-09)
 ### Changed
+- Bump `digest` to v0.10 ([#515])
 - Make `AffinePoint` to `VerifyingKey` conversion fallible ([#535])
 - Rename `recover_verify_key` => `recover_verifying_key` ([#537])
 - Rename `recover_verify_key_from_digest` => `recover_verifying_key_from_digest` ([#537])
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - `hash2curve` crate feature ([#519])
 
+[#515]: https://github.com/RustCrypto/elliptic-curves/pull/515
 [#519]: https://github.com/RustCrypto/elliptic-curves/pull/519
 [#535]: https://github.com/RustCrypto/elliptic-curves/pull/535
 [#537]: https://github.com/RustCrypto/elliptic-curves/pull/537

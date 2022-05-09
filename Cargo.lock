@@ -604,7 +604,7 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 
 [[package]]
 name = "p256"
-version = "0.11.0-pre.0"
+version = "0.11.0"
 dependencies = [
  "blobby",
  "ecdsa",
