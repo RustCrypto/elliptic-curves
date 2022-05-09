@@ -618,7 +618,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.10.0-pre"
+version = "0.10.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
