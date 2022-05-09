@@ -8,7 +8,7 @@ purpose curve arithmetic
 """
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
-documentation = "https://docs.rs/elliptic-curve"
+documentation = "https://docs.rs/p256"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p256"
 readme = "README.md"
 categories = ["cryptography", "no-std"]

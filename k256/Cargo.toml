@@ -9,7 +9,7 @@ curve arithmetic useful for implementing arbitrary group-based protocols.
 """
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
-documentation = "https://docs.rs/elliptic-curve"
+documentation = "https://docs.rs/k256"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
 readme = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
