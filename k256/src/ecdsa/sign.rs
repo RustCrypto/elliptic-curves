@@ -27,6 +27,7 @@ use elliptic_curve::{
     zeroize::Zeroize,
     IsHigh,
 };
+use sha2::Sha256;
 
 #[cfg(any(feature = "keccak256", feature = "sha256"))]
 use ecdsa_core::signature::{self, PrehashSignature, RandomizedSigner};
@@ -131,7 +132,13 @@ where
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
         let digest = msg_digest.finalize_fixed();
-        let (signature, recid) = self.inner.try_sign_prehashed_rfc6979::<D>(digest, &[])?;
+
+        // Ethereum signatures use SHA-256 for RFC6979, even if the message
+        // has been hashed with Keccak256
+        let (signature, recid) = self
+            .inner
+            .try_sign_prehashed_rfc6979::<Sha256>(digest, &[])?;
+
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
@@ -182,7 +189,13 @@ where
         rng.fill_bytes(&mut ad);
 
         let digest = msg_digest.finalize_fixed();
-        let (signature, recid) = self.inner.try_sign_prehashed_rfc6979::<D>(digest, &ad)?;
+
+        // Ethereum signatures use SHA-256 for RFC6979, even if the message
+        // has been hashed with Keccak256
+        let (signature, recid) = self
+            .inner
+            .try_sign_prehashed_rfc6979::<Sha256>(digest, &ad)?;
+
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
     }
