@@ -11,6 +11,8 @@ use crate::{
 use elliptic_curve::{
     bigint::U256,
     ops::{LinearCombination, Reduce},
+    subtle::ConditionallySelectable,
+    // DecompactPoint,
 };
 use sha2::{Digest, Sha256};
 use signature::{Error, Result};
@@ -68,15 +70,42 @@ pub struct SigningKey {
 impl SigningKey {
     /// Parse signing key from big endian-encoded bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let secret_key = NonZeroScalar::try_from(bytes).map_err(|_| Error::new())?;
-        let public_key =
-            PublicKey::from_affine((ProjectivePoint::GENERATOR * *secret_key).to_affine())
+
+        let trial_secret_key = NonZeroScalar::try_from(bytes).map_err(|_| Error::new())?;
+        let trial_public_key =
+            PublicKey::from_affine((ProjectivePoint::GENERATOR * *trial_secret_key).to_affine())
                 .map_err(|_| Error::new())?;
+
+        let other_secret_key = -trial_secret_key;
+        // let other_public_key =
+        //     PublicKey::from_affine((ProjectivePoint::generator() * *other_secret_key).to_affine())
+        //         .map_err(|_| Error::new())?;
+
+        let even = trial_public_key.as_affine().y.normalize().is_even();
+
+        let secret_key = NonZeroScalar::conditional_select(
+            &other_secret_key,
+            &trial_secret_key,
+            even,
+        );
+
+        // let public_key = PublicKey::conditional_select(
+        //     &trial_public_key,
+        //     &other_public_key,
+        //     even,
+        // );
+
+        // redundant, but don't have conditional select on PublicKey
+        let verifying_key = VerifyingKey { inner:
+            PublicKey::from_affine((ProjectivePoint::GENERATOR * *secret_key).to_affine())
+                .map_err(|_| Error::new())?
+        };
 
         Ok(Self {
             secret_key,
-            verifying_key: VerifyingKey { inner: public_key },
+            verifying_key,
         })
+
     }
 
     /// Get the [`VerifyingKey`] that corresponds to this signing key.
@@ -91,37 +120,22 @@ impl SigningKey {
         msg_digest: &[u8; 32],
         aux_rand: &[u8; 32],
     ) -> Result<Signature> {
-        let d = if self.verifying_key.is_y_even() {
-            self.secret_key
-        } else {
-            -self.secret_key
-        };
 
         let t = xor(
             &self.secret_key.to_bytes(),
             &tagged_hash(AUX_TAG).chain(aux_rand).finalize(),
         );
 
+        // k0 in Python
         let rand = tagged_hash(NONCE_TAG)
             .chain(&t)
             .chain(&self.verifying_key.as_affine().x.to_bytes())
             .chain(msg_digest)
             .finalize();
 
-        let k_prime = <Scalar as Reduce<U256>>::from_be_bytes_reduced(rand);
+        let k = SigningKey::from_bytes(&rand)?;
 
-        if k_prime.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let R = (ProjectivePoint::GENERATOR * k_prime).to_affine();
-        let r = R.x.normalize().to_bytes();
-
-        let k = if R.y.normalize().is_even().into() {
-            k_prime
-        } else {
-            -k_prime
-        };
+        let r = k.verifying_key().to_bytes();
 
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
             tagged_hash(CHALLENGE_TAG)
@@ -133,12 +147,12 @@ impl SigningKey {
 
         let mut bytes = [0u8; 64];
         bytes[..32].copy_from_slice(&r);
-        bytes[32..].copy_from_slice(&(k + e * *d).to_bytes());
+        bytes[32..].copy_from_slice(&(*k.secret_key + e * *self.secret_key).to_bytes());
 
         let sig = Signature { bytes };
 
         #[cfg(debug_assertions)]
-        self.verifying_key.verify_raw_digest(msg_digest, &sig)?;
+        self.verifying_key.verify_raw_digest(msg_digest, &sig).unwrap();//?;
 
         Ok(sig)
     }
@@ -190,10 +204,19 @@ impl VerifyingKey {
         self.as_affine().x.to_bytes()
     }
 
-    /// Is the y-coordinate of this [`VerifyingKey`] even?
-    fn is_y_even(&self) -> bool {
-        self.as_affine().y.normalize().is_even().into()
-    }
+    // pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+    //     // let bytes: FieldBytes = bytes
+    //     //     .try_into()
+    //     //     .map_err(|_| Error::new())?;
+    //
+    //     let maybe_affine_point = AffinePoint::decompact(FieldBytes::from_slice(bytes));
+    //     let affine_point = match maybe_affine_point.is_some().into() {
+    //         true => maybe_affine_point.unwrap(),
+    //         false => return Err(Error::new()),
+    //     };
+    //
+    //     Ok(Self { inner: PublicKey::from_affine(affine_point).map_err(|_| Error::new())? })
+    // }
 }
 
 impl From<VerifyingKey> for AffinePoint {
@@ -291,16 +314,16 @@ mod tests {
         },
         // index 3
         // TODO(tarcieri): failing; test vector notes: "test fails if msg is reduced modulo p or n"
-        // SignVector {
-        //     secret_key: hex!("0B432B2677937381AEF05BB02A66ECD012773062CF3FA2549E44F58ED2401710"),
-        //     public_key: hex!("25D1DFF95105F5253C4022F628A996AD3A0D95FBF21D468A1B33F8C160D8F517"),
-        //     aux_rand: hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
-        //     message: hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
-        //     signature: hex!(
-        //         "7EB0509757E246F19449885651611CB965ECC1A187DD51B64FDA1EDC9637D5EC
-        //          97582B9CB13DB3933705B32BA982AF5AF25FD78881EBB32771FC5922EFC66EA3"
-        //     ),
-        // },
+        SignVector {
+            secret_key: hex!("0B432B2677937381AEF05BB02A66ECD012773062CF3FA2549E44F58ED2401710"),
+            public_key: hex!("25D1DFF95105F5253C4022F628A996AD3A0D95FBF21D468A1B33F8C160D8F517"),
+            aux_rand: hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+            message: hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"),
+            signature: hex!(
+                "7EB0509757E246F19449885651611CB965ECC1A187DD51B64FDA1EDC9637D5EC
+                 97582B9CB13DB3933705B32BA982AF5AF25FD78881EBB32771FC5922EFC66EA3"
+            ),
+        },
     ];
 
     #[test]
