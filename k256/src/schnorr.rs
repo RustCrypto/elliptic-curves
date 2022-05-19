@@ -8,6 +8,7 @@ use crate::{
     arithmetic::FieldElement, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey,
     Scalar,
 };
+use ecdsa_core::signature::{Error, Result};
 use elliptic_curve::{
     bigint::U256,
     ops::{LinearCombination, Reduce},
@@ -16,7 +17,6 @@ use elliptic_curve::{
     DecompactPoint,
 };
 use sha2::{Digest, Sha256};
-use signature::{Error, Result};
 
 const AUX_TAG: &[u8] = b"BIP0340/aux";
 const NONCE_TAG: &[u8] = b"BIP0340/nonce";
@@ -43,9 +43,9 @@ impl Signature {
             .map_err(|_| Error::new())?;
 
         let _: FieldElement = Option::from(FieldElement::from_bytes(FieldBytes::from_slice(&bytes[..32])))
-            .ok_or(Error::new())?;
+            .ok_or_else(Error::new)?;
         let _: NonZeroScalar = Option::from(NonZeroScalar::from_repr(*FieldBytes::from_slice(&bytes[32..])))
-            .ok_or(Error::new())?;
+            .ok_or_else(Error::new)?;
 
         Ok(Self { bytes })
     }
@@ -142,14 +142,13 @@ impl SigningKey {
 
         let t = xor(
             &self.secret_key.to_bytes(),
-            &tagged_hash(AUX_TAG).chain(aux_rand).finalize(),
+            &tagged_hash(AUX_TAG).chain_update(aux_rand).finalize(),
         );
 
-        // k0 in Python
         let rand = tagged_hash(NONCE_TAG)
-            .chain(&t)
-            .chain(&self.verifying_key.as_affine().x.to_bytes())
-            .chain(msg_digest)
+            .chain_update(&t)
+            .chain_update(&self.verifying_key.as_affine().x.to_bytes())
+            .chain_update(msg_digest)
             .finalize();
 
         let k = SigningKey::from_bytes(&rand)?;
@@ -158,20 +157,22 @@ impl SigningKey {
 
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
             tagged_hash(CHALLENGE_TAG)
-                .chain(&r)
-                .chain(&self.verifying_key.to_bytes())
-                .chain(msg_digest)
+                .chain_update(&r)
+                .chain_update(&self.verifying_key.to_bytes())
+                .chain_update(msg_digest)
                 .finalize(),
         );
 
+        let s = *k.secret_key + e * *self.secret_key;
+
         let mut bytes = [0u8; 64];
         bytes[..32].copy_from_slice(&r);
-        bytes[32..].copy_from_slice(&(*k.secret_key + e * *self.secret_key).to_bytes());
+        bytes[32..].copy_from_slice(&s.to_bytes());
 
         let sig = Signature { bytes };
 
         #[cfg(debug_assertions)]
-        self.verifying_key.verify_raw_digest(msg_digest, &sig).unwrap();//?;
+        self.verifying_key.verify_raw_digest(msg_digest, &sig)?;
 
         Ok(sig)
     }
@@ -196,9 +197,9 @@ impl VerifyingKey {
 
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
             tagged_hash(CHALLENGE_TAG)
-                .chain(&sig.bytes[..32])
-                .chain(self.to_bytes())
-                .chain(msg_digest)
+                .chain_update(&sig.bytes[..32])
+                .chain_update(self.to_bytes())
+                .chain_update(msg_digest)
                 .finalize(),
         );
 
@@ -231,7 +232,7 @@ impl VerifyingKey {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let maybe_affine_point = AffinePoint::decompact(FieldBytes::from_slice(bytes));
         let affine_point = Option::from(maybe_affine_point)
-            .ok_or(Error::new())?;
+            .ok_or_else(Error::new)?;
 
         Ok(Self { inner: PublicKey::from_affine(affine_point).map_err(|_| Error::new())? })
     }
@@ -502,14 +503,15 @@ mod tests {
     #[test]
     fn bip340_verify_vectors() {
         for vector in BIP340_VERIFY_VECTORS {
-            let maybe_pk = VerifyingKey::from_bytes(&vector.public_key);
-            let maybe_sig = Signature::from_bytes(&vector.signature);
-            let verification = match (maybe_pk, maybe_sig) {
+            let valid = match (
+                VerifyingKey::from_bytes(&vector.public_key),
+                Signature::from_bytes(&vector.signature),
+            ) {
                 (Ok(pk), Ok(sig)) => pk.verify_raw_digest(&vector.message, &sig).is_ok(),
                 _ => false,
             };
 
-            assert_eq!(vector.valid, verification, "incorrect validation for index {}", vector.index);
+            assert_eq!(vector.valid, valid, "incorrect validation for index {}", vector.index);
         }
     }
 
