@@ -11,6 +11,7 @@ use crate::{
 use elliptic_curve::{
     bigint::U256,
     ops::{LinearCombination, Reduce},
+    rand_core::{CryptoRng, RngCore},
     subtle::ConditionallySelectable,
     DecompactPoint,
 };
@@ -87,6 +88,12 @@ pub struct SigningKey {
 }
 
 impl SigningKey {
+    /// Generate a cryptographically random [`SigningKey`].
+    pub fn random(rng: impl CryptoRng + RngCore) -> Self {
+        let bytes = NonZeroScalar::random(rng).to_bytes();
+        Self::from_bytes(&bytes).unwrap()
+    }
+
     /// Parse signing key from big endian-encoded bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
 
@@ -113,6 +120,11 @@ impl SigningKey {
             verifying_key,
         })
 
+    }
+
+    /// Serialize as bytes.
+    pub fn to_bytes(&self) -> FieldBytes {
+        self.secret_key.to_bytes()
     }
 
     /// Get the [`VerifyingKey`] that corresponds to this signing key.
