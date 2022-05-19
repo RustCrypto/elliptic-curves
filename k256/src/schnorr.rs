@@ -91,30 +91,18 @@ impl SigningKey {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
 
         let trial_secret_key = NonZeroScalar::try_from(bytes).map_err(|_| Error::new())?;
-        let trial_public_key =
-            PublicKey::from_affine((ProjectivePoint::GENERATOR * *trial_secret_key).to_affine())
-                .map_err(|_| Error::new())?;
 
-        let other_secret_key = -trial_secret_key;
-        // let other_public_key =
-        //     PublicKey::from_affine((ProjectivePoint::generator() * *other_secret_key).to_affine())
-        //         .map_err(|_| Error::new())?;
-
-        let even = trial_public_key.as_affine().y.normalize().is_even();
+        let even = (ProjectivePoint::GENERATOR * *trial_secret_key)
+            .to_affine()
+            .y.normalize()
+            .is_even();
 
         let secret_key = NonZeroScalar::conditional_select(
-            &other_secret_key,
+            &-trial_secret_key,
             &trial_secret_key,
             even,
         );
 
-        // let public_key = PublicKey::conditional_select(
-        //     &trial_public_key,
-        //     &other_public_key,
-        //     even,
-        // );
-
-        // redundant, but don't have conditional select on PublicKey
         let verifying_key = VerifyingKey { inner:
             PublicKey::from_affine((ProjectivePoint::GENERATOR * *secret_key).to_affine())
                 .map_err(|_| Error::new())?
@@ -190,6 +178,10 @@ impl VerifyingKey {
     pub fn verify_raw_digest(&self, msg_digest: &[u8; 32], sig: &Signature) -> Result<()> {
         let (r, s) = sig.split();
 
+        if r == FieldElement::ZERO {
+            return Err(Error::new());
+        }
+
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
             tagged_hash(CHALLENGE_TAG)
                 .chain(&sig.bytes[..32])
@@ -226,10 +218,8 @@ impl VerifyingKey {
     /// Parse verifying key from big endian-encoded x-coordinate.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let maybe_affine_point = AffinePoint::decompact(FieldBytes::from_slice(bytes));
-        let affine_point = match maybe_affine_point.is_some().into() {
-            true => maybe_affine_point.unwrap(),
-            false => return Err(Error::new()),
-        };
+        let affine_point = Option::from(maybe_affine_point)
+            .ok_or(Error::new())?;
 
         Ok(Self { inner: PublicKey::from_affine(affine_point).map_err(|_| Error::new())? })
     }
@@ -429,17 +419,17 @@ mod tests {
                  961764B3AA9B2FFCB6EF947B6887A226E8D7C93E00C5ED0C1834FF0D0C2E6DA6"),
             valid: false,
         },
-        // // index 9
-        // // sG - eP is infinite. Test fails in single verification if has_even_y(inf) is defined as true and x(inf) as 0
-        // VerifyVector {
-        //     index: 9,
-        //     public_key: hex!("DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"),
-        //     message: hex!("243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89"),
-        //     signature: hex!(
-        //         "0000000000000000000000000000000000000000000000000000000000000000
-        //          123DDA8328AF9C23A94C1FEECFD123BA4FB73476F0D594DCB65C6425BD186051"),
-        //     valid: false,
-        // },
+        // index 9
+        // sG - eP is infinite. Test fails in single verification if has_even_y(inf) is defined as true and x(inf) as 0
+        VerifyVector {
+            index: 9,
+            public_key: hex!("DFF1D77F2A671C5F36183726DB2341BE58FEAE1DA2DECED843240F7B502BA659"),
+            message: hex!("243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89"),
+            signature: hex!(
+                "0000000000000000000000000000000000000000000000000000000000000000
+                 123DDA8328AF9C23A94C1FEECFD123BA4FB73476F0D594DCB65C6425BD186051"),
+            valid: false,
+        },
         // index 10
         // sG - eP is infinite. Test fails in single verification if has_even_y(inf) is defined as true and x(inf) as 1
         VerifyVector {
