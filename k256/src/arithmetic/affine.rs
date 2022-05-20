@@ -82,11 +82,7 @@ impl AffinePoint {
 impl AffinePoint {
     /// Create a new [`AffinePoint`] with the given coordinates.
     pub(crate) const fn new(x: FieldElement, y: FieldElement) -> Self {
-        Self {
-            x,
-            y,
-            infinity: 0,
-        }
+        Self { x, y, infinity: 0 }
     }
 }
 
@@ -208,7 +204,6 @@ impl DecompressPoint<Secp256k1> for AffinePoint {
 /// [BIP 340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
 impl DecompactPoint<Secp256k1> for AffinePoint {
     fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
-        // TODO(tarcieri): implement full `lift_x` algorithm as described in BIP 340
         Self::decompress(x_bytes, Choice::from(0))
     }
 }
@@ -250,10 +245,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::IDENTITY, 1.into()),
-            sec1::Coordinates::Compact { .. } => {
-                // TODO(tarcieri): add decompaction support
-                CtOption::new(Self::default(), 0.into())
-            }
+            sec1::Coordinates::Compact { x } => Self::decompact(x),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
