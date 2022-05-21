@@ -36,6 +36,8 @@
 //! assert_eq!(alice_shared.raw_secret_bytes(), bob_shared.raw_secret_bytes());
 //! ```
 
+pub use elliptic_curve::ecdh::diffie_hellman;
+
 use crate::{AffinePoint, NistP256};
 
 /// NIST P-256 Ephemeral Diffie-Hellman Secret.
