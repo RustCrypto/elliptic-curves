@@ -51,6 +51,7 @@ jwk = ["elliptic-curve/jwk"]
 keccak256 = ["digest", "sha3"]
 pem = ["ecdsa-core/pem", "elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core/pkcs8", "elliptic-curve/pkcs8"]
+schnorr = ["arithmetic", "sha256", "digest"]
 serde = ["ecdsa-core/serde", "elliptic-curve/serde", "serdect"]
 sha256 = ["digest", "sha2"]
 std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available

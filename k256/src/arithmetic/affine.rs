@@ -10,7 +10,7 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, DecompressPoint, Error, Result,
+    AffineArithmetic, AffineXCoordinate, DecompactPoint, DecompressPoint, Error, Result,
 };
 
 impl AffineArithmetic for Secp256k1 {
@@ -77,6 +77,13 @@ impl AffinePoint {
         ]),
         infinity: 0,
     };
+}
+
+impl AffinePoint {
+    /// Create a new [`AffinePoint`] with the given coordinates.
+    pub(crate) const fn new(x: FieldElement, y: FieldElement) -> Self {
+        Self { x, y, infinity: 0 }
+    }
 }
 
 impl PrimeCurveAffine for AffinePoint {
@@ -186,13 +193,18 @@ impl DecompressPoint<Secp256k1> for AffinePoint {
                     beta.is_odd().ct_eq(&y_is_odd),
                 );
 
-                Self {
-                    x,
-                    y: y.normalize(),
-                    infinity: 0,
-                }
+                Self::new(x, y.normalize())
             })
         })
+    }
+}
+
+/// Decompaction using Taproot conventions as described in [BIP 340].
+///
+/// [BIP 340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
+impl DecompactPoint<Secp256k1> for AffinePoint {
+    fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
+        Self::decompress(x_bytes, Choice::from(0))
     }
 }
 
@@ -233,10 +245,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::IDENTITY, 1.into()),
-            sec1::Coordinates::Compact { .. } => {
-                // TODO(tarcieri): add decompaction support
-                CtOption::new(Self::default(), 0.into())
-            }
+            sec1::Coordinates::Compact { x } => Self::decompact(x),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
@@ -249,7 +258,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
                         // Check that the point is on the curve
                         let lhs = (y * &y).negate(1);
                         let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        let point = AffinePoint { x, y, infinity: 0 };
+                        let point = Self::new(x, y);
                         CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
                     })
                 })
