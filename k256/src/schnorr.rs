@@ -1,6 +1,64 @@
 //! Taproot Schnorr signatures as defined in [BIP340].
 //!
+//! # About
+//!
+//! [Schnorr signatures] are a simple group-based digital signature scheme with
+//! a number of desirable properties relating to security and composability:
+//!
+//! - Provably secure: strongly unforgable under chosen message attack (SUF-CMA).
+//! - Non-malleable: signatures cannot be altered by an attacker and still verify.
+//! - Linear: multiple parties can collaborate to produce a valid signature
+//!   a.k.a. multisignatures.
+//!
+//! Originally described in the late 1980s by their eponymous creator Claus
+//! Schnorr, they were patent-encumbered and thus lingered in obscurity until
+//! the [relevant patents] expired in 2010.
+//!
+//! Since then, Schnorr signatures have seen something of a resurgence, with
+//! [EdDSA] and its concrete instantiation Ed25519 over the Curve25519 elliptic
+//! curve becoming the first Schnorr variant to see mainstream standardization.
+//!
+//! The Taproot upgrade to Bitcoin includes a variant of Schnorr which operates
+//! over the secp256k1 elliptic curve, and is specified in [BIP340].
+//! That is the variant which is implemented by this crate.
+//!
+//! Because Taproot Schnorr is intended for use in consensus-critical
+//! applications (e.g. Bitcoin), it is fully specified such that no two
+//! implementations should disagree on the validity of a signature.
+//!
+//! # Usage
+//!
+#![cfg_attr(feature = "std", doc = "```")]
+#![cfg_attr(not(feature = "std"), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! use k256::schnorr::{
+//!     signature::{Signer, Verifier},
+//!     SigningKey, VerifyingKey
+//! };
+//! use rand_core::OsRng; // requires 'getrandom' feature
+//!
+//! //
+//! // Signing
+//! //
+//! let signing_key = SigningKey::random(&mut OsRng); // serialize with `.to_bytes()`
+//! let verifying_key_bytes = signing_key.verifying_key().to_bytes(); // 32-bytes
+//!
+//! let message = b"Schnorr signatures prove knowledge of a secret in the random oracle model";
+//! let signature = signing_key.sign(message); // returns `k256::schnorr::Signature`
+//!
+//! //
+//! // Verification
+//! //
+//! let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes)?;
+//! verifying_key.verify(message, &signature)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! [Schnorr signatures]: https://en.wikipedia.org/wiki/Schnorr_signature
 //! [BIP340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
+//! [relevant patents]: https://patents.google.com/patent/US4995082
+//! [EdDSA]: https://en.wikipedia.org/wiki/EdDSA
 
 #![allow(non_snake_case, clippy::many_single_char_names)]
 
@@ -8,10 +66,11 @@ mod sign;
 mod verify;
 
 pub use self::{sign::SigningKey, verify::VerifyingKey};
+pub use ecdsa_core::signature::{self, Error};
 
-use crate::{arithmetic::FieldElement, FieldBytes, NonZeroScalar};
+use crate::{arithmetic::FieldElement, NonZeroScalar};
 use core::{cmp, fmt};
-use ecdsa_core::signature::{self, Error, Result};
+use ecdsa_core::signature::Result;
 use sha2::{Digest, Sha256};
 
 const AUX_TAG: &[u8] = b"BIP0340/aux";
@@ -23,7 +82,7 @@ const CHALLENGE_TAG: &[u8] = b"BIP0340/challenge";
 /// [BIP340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
 #[derive(Copy, Clone)]
 pub struct Signature {
-    bytes: [u8; 64],
+    bytes: [u8; Self::BYTE_SIZE],
 
     // for efficiency
     r: FieldElement,
@@ -31,8 +90,11 @@ pub struct Signature {
 }
 
 impl Signature {
+    /// Size of a Taproot Schnorr signature in bytes.
+    pub const BYTE_SIZE: usize = 64;
+
     /// Borrow the serialized signature as bytes.
-    pub fn as_bytes(&self) -> &[u8; 64] {
+    pub fn as_bytes(&self) -> &[u8; Self::BYTE_SIZE] {
         &self.bytes
     }
 
@@ -83,20 +145,18 @@ impl TryFrom<&[u8]> for Signature {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Signature> {
-        let bytes: [u8; 64] = bytes.try_into().map_err(|_| Error::new())?;
+        let bytes: [u8; Self::BYTE_SIZE] = bytes.try_into().map_err(|_| Error::new())?;
+        let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
 
-        let r: FieldElement = Option::from(FieldElement::from_bytes(FieldBytes::from_slice(
-            &bytes[..32],
-        )))
-        .ok_or_else(Error::new)?;
+        let r: FieldElement =
+            Option::from(FieldElement::from_bytes(r_bytes.into())).ok_or_else(Error::new)?;
 
         // one of the rules for valid signatures: !is_infinite(R);
-        // don't have a NonZeroFieldElement type.
-        if r == FieldElement::ZERO {
+        if r.is_zero().into() {
             return Err(Error::new());
         }
 
-        let s = NonZeroScalar::try_from(&bytes[32..]).map_err(|_| Error::new())?;
+        let s = NonZeroScalar::try_from(s_bytes).map_err(|_| Error::new())?;
 
         Ok(Self { bytes, r, s })
     }
