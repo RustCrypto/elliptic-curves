@@ -2,7 +2,6 @@
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
-[![Crates.io Downloads][downloads-image]][crate-link]
 [![Build Status][build-image]][build-link]
 ![Apache2/MIT licensed][license-image]
 ![Rust Version][rustc-image]
@@ -91,11 +90,10 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/k256.svg
+[crate-image]: https://buildstats.info/crate/k256
 [crate-link]: https://crates.io/crates/k256
 [docs-image]: https://docs.rs/k256/badge.svg
 [docs-link]: https://docs.rs/k256/
-[downloads-image]: https://img.shields.io/crates/d/k256.svg
 [build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow%3Ak256
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
