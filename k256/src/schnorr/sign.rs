@@ -66,11 +66,18 @@ impl SigningKey {
     }
 
     /// Get the [`VerifyingKey`] that corresponds to this signing key.
-    pub fn verifying_key(&self) -> VerifyingKey {
-        self.verifying_key
+    pub fn verifying_key(&self) -> &VerifyingKey {
+        &self.verifying_key
     }
 
     /// Compute Schnorr signature.
+    ///
+    /// # ⚠️ Warning
+    ///
+    /// This is a low-level interface intended only for unusual use cases
+    /// involving signing pre-hashed messages.
+    ///
+    /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
     pub fn try_sign_prehashed(
         &self,
         msg_digest: &[u8; 32],
@@ -104,9 +111,10 @@ impl SigningKey {
         let s = *secret_key + e * *self.secret_key;
         let s: NonZeroScalar = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;
 
-        let mut bytes = [0u8; 64];
-        bytes[..32].copy_from_slice(&r.to_bytes());
-        bytes[32..].copy_from_slice(&s.to_bytes());
+        let mut bytes = [0u8; Signature::BYTE_SIZE];
+        let (r_bytes, s_bytes) = bytes.split_at_mut(Signature::BYTE_SIZE / 2);
+        r_bytes.copy_from_slice(&r.to_bytes());
+        s_bytes.copy_from_slice(&s.to_bytes());
 
         let sig = Signature { bytes, r, s };
 

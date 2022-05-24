@@ -22,6 +22,13 @@ pub struct VerifyingKey {
 
 impl VerifyingKey {
     /// Verify Schnorr signature.
+    ///
+    /// # ⚠️ Warning
+    ///
+    /// This is a low-level interface intended only for unusual use cases
+    /// involving verifying pre-hashed messages.
+    ///
+    /// The preferred interface is the [`Verifier`] trait.
     pub fn verify_prehashed(&self, msg_digest: &[u8; 32], sig: &Signature) -> Result<()> {
         let (r, s) = sig.split();
 
