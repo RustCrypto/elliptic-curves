@@ -50,6 +50,10 @@ pub use arithmetic::FieldElement;
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
+#[cfg(feature = "sha2")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
+pub use sha2;
+
 use elliptic_curve::{consts::U33, generic_array::GenericArray};
 
 /// Order of the secp256k1 elliptic curve

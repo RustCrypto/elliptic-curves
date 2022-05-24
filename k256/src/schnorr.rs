@@ -4,20 +4,14 @@
 
 #![allow(non_snake_case, clippy::many_single_char_names)]
 
-use core::{cmp, fmt};
+mod sign;
+mod verify;
 
-use crate::{
-    arithmetic::FieldElement, AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey,
-    Scalar,
-};
-use ecdsa_core::signature::{Error, Result};
-use elliptic_curve::{
-    bigint::U256,
-    ops::{LinearCombination, Reduce},
-    rand_core::{CryptoRng, RngCore},
-    subtle::ConditionallySelectable,
-    DecompactPoint,
-};
+pub use self::{sign::SigningKey, verify::VerifyingKey};
+
+use crate::{arithmetic::FieldElement, FieldBytes, NonZeroScalar};
+use core::{cmp, fmt};
+use ecdsa_core::signature::{self, Error, Result};
 use sha2::{Digest, Sha256};
 
 const AUX_TAG: &[u8] = b"BIP0340/aux";
@@ -36,54 +30,7 @@ pub struct Signature {
     s: NonZeroScalar,
 }
 
-impl fmt::Debug for Signature {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.bytes.fmt(f)
-    }
-}
-
-impl PartialEq for Signature {
-    fn eq(&self, other: &Self) -> bool {
-        self.bytes == other.bytes
-    }
-}
-
-impl Eq for Signature {}
-
-impl PartialOrd for Signature {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-// useful e.g. for BTreeMaps
-impl Ord for Signature {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.bytes.cmp(&other.bytes)
-    }
-}
-
 impl Signature {
-    /// Parse signature from big endian-encoded bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let bytes: [u8; 64] = bytes.try_into().map_err(|_| Error::new())?;
-
-        let r: FieldElement = Option::from(FieldElement::from_bytes(FieldBytes::from_slice(
-            &bytes[..32],
-        )))
-        .ok_or_else(Error::new)?;
-
-        // one of the rules for valid signatures: !is_infinite(R);
-        // don't have a NonZeroFieldElement type.
-        if r == FieldElement::ZERO {
-            return Err(Error::new());
-        }
-
-        let s = NonZeroScalar::try_from(&bytes[32..]).map_err(|_| Error::new())?;
-
-        Ok(Self { bytes, r, s })
-    }
-
     /// Borrow the serialized signature as bytes.
     pub fn as_bytes(&self) -> &[u8; 64] {
         &self.bytes
@@ -111,179 +58,64 @@ impl AsRef<[u8]> for Signature {
     }
 }
 
-/// Taproot Schnorr signing key.
-#[derive(Clone)]
-pub struct SigningKey {
-    /// Secret key material
-    secret_key: NonZeroScalar,
+impl Eq for Signature {}
 
-    /// Verifying key
-    verifying_key: VerifyingKey,
-}
-
-impl SigningKey {
-    /// Generate a cryptographically random [`SigningKey`].
-    pub fn random(rng: impl CryptoRng + RngCore) -> Self {
-        let bytes = NonZeroScalar::random(rng).to_bytes();
-        Self::from_bytes(&bytes).unwrap()
-    }
-
-    /// Parse signing key from big endian-encoded bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let (secret_key, verifying_point) = Self::raw_from_bytes(bytes)?;
-
-        let verifying_key = VerifyingKey {
-            inner: PublicKey::from_affine(verifying_point).map_err(|_| Error::new())?,
-        };
-
-        Ok(Self {
-            secret_key,
-            verifying_key,
-        })
-    }
-
-    // a little type dance for use in SigningKey's `from_bytes` and `try_sign`.
-    fn raw_from_bytes(bytes: &[u8]) -> Result<(NonZeroScalar, AffinePoint)> {
-        let trial_secret_key = NonZeroScalar::try_from(bytes).map_err(|_| Error::new())?;
-
-        let even = (ProjectivePoint::GENERATOR * *trial_secret_key)
-            .to_affine()
-            .y
-            .normalize()
-            .is_even();
-
-        let secret_key =
-            NonZeroScalar::conditional_select(&-trial_secret_key, &trial_secret_key, even);
-
-        let verifying_point = (ProjectivePoint::GENERATOR * *secret_key).to_affine();
-
-        Ok((secret_key, verifying_point))
-    }
-
-    /// Serialize as bytes.
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.secret_key.to_bytes()
-    }
-
-    /// Get the [`VerifyingKey`] that corresponds to this signing key.
-    pub fn verifying_key(&self) -> VerifyingKey {
-        self.verifying_key
-    }
-
-    /// Compute Schnorr signature.
-    // TODO(tarcieri): high-level trait wrappers (e.g. `DigestSigner`)
-    pub fn try_sign_raw_digest(
-        &self,
-        msg_digest: &[u8; 32],
-        aux_rand: &[u8; 32],
-    ) -> Result<Signature> {
-        let t = xor(
-            &self.secret_key.to_bytes(),
-            &tagged_hash(AUX_TAG).chain_update(aux_rand).finalize(),
-        );
-
-        let rand = tagged_hash(NONCE_TAG)
-            .chain_update(&t)
-            .chain_update(&self.verifying_key.as_affine().x.to_bytes())
-            .chain_update(msg_digest)
-            .finalize();
-
-        // the ephemeral key "k"
-        let (secret_key, verifying_point) = SigningKey::raw_from_bytes(&rand)?;
-
-        let r = verifying_point.x.normalize();
-
-        let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
-            tagged_hash(CHALLENGE_TAG)
-                .chain_update(&r.to_bytes())
-                .chain_update(&self.verifying_key.to_bytes())
-                .chain_update(msg_digest)
-                .finalize(),
-        );
-
-        let s = *secret_key + e * *self.secret_key;
-        let s: NonZeroScalar = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;
-
-        let mut bytes = [0u8; 64];
-        bytes[..32].copy_from_slice(&r.to_bytes());
-        bytes[32..].copy_from_slice(&s.to_bytes());
-
-        let sig = Signature { bytes, r, s };
-
-        #[cfg(debug_assertions)]
-        self.verifying_key.verify_raw_digest(msg_digest, &sig)?;
-
-        Ok(sig)
+impl PartialEq for Signature {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes == other.bytes
     }
 }
 
-/// Taproot Schnorr verifying key.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct VerifyingKey {
-    /// Inner public key
-    inner: PublicKey,
+impl PartialOrd for Signature {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
-impl VerifyingKey {
-    /// Verify Schnorr signature.
-    // TODO(tarcieri): high-level trait wrappers (e.g. `DigestVerifier`)
-    pub fn verify_raw_digest(&self, msg_digest: &[u8; 32], sig: &Signature) -> Result<()> {
-        let (r, s) = sig.split();
+// useful e.g. for BTreeMaps
+impl Ord for Signature {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.bytes.cmp(&other.bytes)
+    }
+}
 
-        let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
-            tagged_hash(CHALLENGE_TAG)
-                .chain_update(&sig.bytes[..32])
-                .chain_update(self.to_bytes())
-                .chain_update(msg_digest)
-                .finalize(),
-        );
+impl TryFrom<&[u8]> for Signature {
+    type Error = Error;
 
-        let R = ProjectivePoint::lincomb(
-            &ProjectivePoint::GENERATOR,
-            &*s,
-            &self.inner.to_projective(),
-            &-e,
-        )
-        .to_affine();
+    fn try_from(bytes: &[u8]) -> Result<Signature> {
+        let bytes: [u8; 64] = bytes.try_into().map_err(|_| Error::new())?;
 
-        if R.y.normalize().is_odd().into() || R.x.normalize() != *r {
+        let r: FieldElement = Option::from(FieldElement::from_bytes(FieldBytes::from_slice(
+            &bytes[..32],
+        )))
+        .ok_or_else(Error::new)?;
+
+        // one of the rules for valid signatures: !is_infinite(R);
+        // don't have a NonZeroFieldElement type.
+        if r == FieldElement::ZERO {
             return Err(Error::new());
         }
 
-        Ok(())
-    }
+        let s = NonZeroScalar::try_from(&bytes[32..]).map_err(|_| Error::new())?;
 
-    /// Borrow the inner [`AffinePoint`] this type wraps.
-    pub fn as_affine(&self) -> &AffinePoint {
-        self.inner.as_affine()
-    }
-
-    /// Serialize as bytes.
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.as_affine().x.to_bytes()
-    }
-
-    /// Parse verifying key from big endian-encoded x-coordinate.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let maybe_affine_point = AffinePoint::decompact(FieldBytes::from_slice(bytes));
-        let affine_point = Option::from(maybe_affine_point).ok_or_else(Error::new)?;
-
-        Ok(Self {
-            inner: PublicKey::from_affine(affine_point).map_err(|_| Error::new())?,
-        })
+        Ok(Self { bytes, r, s })
     }
 }
 
-impl From<VerifyingKey> for AffinePoint {
-    fn from(vk: VerifyingKey) -> AffinePoint {
-        *vk.as_affine()
+impl fmt::Debug for Signature {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.bytes.fmt(f)
     }
 }
 
-impl From<&VerifyingKey> for AffinePoint {
-    fn from(vk: &VerifyingKey) -> AffinePoint {
-        *vk.as_affine()
+impl signature::Signature for Signature {
+    fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        bytes.try_into()
     }
+}
+
+impl signature::PrehashSignature for Signature {
+    type Digest = Sha256;
 }
 
 fn tagged_hash(tag: &[u8]) -> Sha256 {
@@ -294,22 +126,11 @@ fn tagged_hash(tag: &[u8]) -> Sha256 {
     digest
 }
 
-#[inline]
-fn xor(a: &FieldBytes, b: &FieldBytes) -> FieldBytes {
-    let mut res = FieldBytes::default();
-
-    for i in 0..32 {
-        res[i] = a[i] ^ b[i];
-    }
-
-    res
-}
-
 // Test vectors from:
 // https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv
 #[cfg(test)]
 mod tests {
-    use super::{Signature, SigningKey, VerifyingKey};
+    use super::{signature::Signature as _, Signature, SigningKey, VerifyingKey};
     use hex_literal::hex;
 
     /// Signing test vector
@@ -389,7 +210,7 @@ mod tests {
             assert_eq!(sk.verifying_key().to_bytes().as_slice(), &vector.public_key);
 
             let sig = sk
-                .try_sign_raw_digest(&vector.message, &vector.aux_rand)
+                .try_sign_prehashed(&vector.message, &vector.aux_rand)
                 .unwrap_or_else(|_| {
                     panic!(
                         "low-level Schnorr signing failure for index {}",
@@ -555,7 +376,7 @@ mod tests {
                 VerifyingKey::from_bytes(&vector.public_key),
                 Signature::from_bytes(&vector.signature),
             ) {
-                (Ok(pk), Ok(sig)) => pk.verify_raw_digest(&vector.message, &sig).is_ok(),
+                (Ok(pk), Ok(sig)) => pk.verify_prehashed(&vector.message, &sig).is_ok(),
                 _ => false,
             };
 
