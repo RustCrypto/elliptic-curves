@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.1 (2022-05-24)
+### Added
+- Taproot Schnorr as defined in BIP 340 ([#554], [#557], [#558])
+- Re-export low-level `diffie_hellman` function ([#556])
+
+### Changed
+- Use SHA-256 for computing RFC6979 for `recoverable::Signature` ([#552])
+
+[#552]: https://github.com/RustCrypto/elliptic-curves/pull/552
+[#554]: https://github.com/RustCrypto/elliptic-curves/pull/554
+[#556]: https://github.com/RustCrypto/elliptic-curves/pull/556
+[#557]: https://github.com/RustCrypto/elliptic-curves/pull/557
+[#558]: https://github.com/RustCrypto/elliptic-curves/pull/558
+
 ## 0.11.0 (2022-05-09)
 ### Changed
 - Bump `digest` to v0.10 ([#515])
