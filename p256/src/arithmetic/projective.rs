@@ -210,9 +210,9 @@ impl ProjectivePoint {
         loop {
             let slot = (k[31 - (pos >> 3) as usize] >> (pos & 7)) & 0xf;
             let mut t = ProjectivePoint::IDENTITY;
-            for i in 1..16 {
+            for (i, pci) in pc.iter().enumerate().skip(1) {
                 t.conditional_assign(
-                    &pc[i],
+                    pci,
                     Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
                 );
             }
