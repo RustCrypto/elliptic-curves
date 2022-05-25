@@ -209,11 +209,6 @@ impl Scalar {
         !self.is_odd()
     }
 
-    /// Borrow the inner limbs array.
-    pub(crate) const fn limbs(&self) -> &[Limb] {
-        self.0.limbs()
-    }
-
     /// Barrett Reduction
     ///
     /// The general algorithm is:
