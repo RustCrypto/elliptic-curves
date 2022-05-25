@@ -9,7 +9,6 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::Limb,
     group::{
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
@@ -194,16 +193,36 @@ impl ProjectivePoint {
 
     /// Returns `[k] self`.
     fn mul(&self, k: &Scalar) -> ProjectivePoint {
-        let mut ret = ProjectivePoint::IDENTITY;
-
-        for limb in k.limbs().iter().rev() {
-            for i in (0..Limb::BIT_SIZE).rev() {
-                ret = ret.double();
-                ret.conditional_assign(&(ret + self), Choice::from(((limb.0 >> i) & 1) as u8));
-            }
+        let mut pc = [ProjectivePoint::default(); 16];
+        pc[0] = ProjectivePoint::IDENTITY;
+        pc[1] = *self;
+        for i in 2..16 {
+            pc[i] = if i % 2 == 0 {
+                pc[i / 2].double()
+            } else {
+                pc[i - 1].add(self)
+            };
         }
-
-        ret
+        let mut q = ProjectivePoint::IDENTITY;
+        let k = k.to_bytes();
+        let mut pos = 256 - 4;
+        loop {
+            let slot = (k[31 - (pos >> 3) as usize] >> (pos & 7)) & 0xf;
+            let mut t = ProjectivePoint::IDENTITY;
+            for (i, pci) in pc.iter().enumerate().skip(1) {
+                t.conditional_assign(
+                    pci,
+                    Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
+                );
+            }
+            q = q.add(&t);
+            if pos == 0 {
+                break;
+            }
+            q = q.double().double().double().double();
+            pos -= 4;
+        }
+        q
     }
 }
 
