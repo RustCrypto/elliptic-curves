@@ -26,7 +26,7 @@
 //!
 //! let alice_shared = alice_secret.diffie_hellman(&bob_public);
 //!
-//! // Bob deocdes Alice's serialized public key and computes the same shared secret
+//! // Bob decodes Alice's serialized public key and computes the same shared secret
 //! let alice_public = PublicKey::from_sec1_bytes(alice_pk_bytes.as_ref())
 //!     .expect("alice's public key is invalid!"); // In real usage, don't panic, handle this!
 //!
