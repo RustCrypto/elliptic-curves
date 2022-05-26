@@ -1,62 +1,142 @@
 //! Scalar field elements for the NIST P-384 elliptic curve.
 
-// TODO(tarcieri): 32-bit backend
 #[cfg(not(target_pointer_width = "64"))]
 compile_error!("scalar arithmetic is only supported on 64-bit platforms");
 
-use crate::{FieldBytes, NistP384, ScalarCore, ORDER as MODULUS, U384};
+pub(crate) mod blinded;
+
+#[allow(
+    clippy::identity_op,
+    clippy::too_many_arguments,
+    clippy::unnecessary_cast
+)]
+mod p384_scalar;
+
+use self::p384_scalar::*;
+use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::Limb,
+    bigint::{Encoding, Limb},
     ff::{Field, PrimeField},
     generic_array::arr,
     ops::Reduce,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Curve as _, Error, IsHigh, Result, ScalarArithmetic,
+    Curve as _, Error, IsHigh, Result, ScalarArithmetic, ScalarCore,
 };
 
-/// -(m^{-1} mod m) mod m
-const INV: u64 = 7986114184663260229;
+#[cfg(feature = "bits")]
+use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
+
+type Fe = fiat_p384_scalar_montgomery_domain_field_element;
+type NonMontFe = fiat_p384_scalar_non_montgomery_domain_field_element;
+
+fn frac_modulus_2() -> Scalar {
+    Scalar::from_le_bytes(&NistP384::ORDER.shr_vartime(1).to_le_bytes()).unwrap()
+}
 
 impl ScalarArithmetic for NistP384 {
     type Scalar = Scalar;
 }
 
 /// Scalars are elements in the finite field modulo n.
-///
-/// # ⚠️ WARNING: experimental implementation!
-///
-/// The scalar arithmetic implementation provided by this type is experimental,
-/// poorly tested, and may produce incorrect results.
-///
-/// We do not recommend using it in any sort of production capacity at this time.
-///
-/// USE AT YOUR OWN RISK!
-///
-/// # Trait impls
-///
-/// Much of the important functionality of scalars is provided by traits from
-/// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
-/// `p384::elliptic_curve::ff`:
-///
-/// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
-///   represents elements of finite fields and provides:
-///   - [`Field::random`](https://docs.rs/ff/latest/ff/trait.Field.html#tymethod.random) -
-///     generate a random scalar
-///   - `double`, `square`, and `invert` operations
-///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
-///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
-/// - [`PrimeField`](https://docs.rs/ff/0.9.0/ff/trait.PrimeField.html) -
-///   represents elements of prime fields and provides:
-///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
-///   - `multiplicative_generator` and `root_of_unity` constants.
-///
-/// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-#[cfg_attr(docsrs, doc(cfg(feature = "broken-arithmetic-do-not-use")))]
-pub struct Scalar(ScalarCore);
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
+pub struct Scalar(Fe);
+
+impl Scalar {
+    /// Multiplicative identity.
+    pub const ONE: Self = Self([
+        1374695839762142861,
+        12098342389602539653,
+        4079331616924160544,
+        0,
+        0,
+        0,
+    ]);
+    /// Zero scalar.
+    pub const ZERO: Self = Self([0, 0, 0, 0, 0, 0]);
+
+    /// Create a scalar from a canonical, little-endian representation
+    pub fn from_le_bytes(bytes: &[u8; 48]) -> Result<Self> {
+        let order_le = NistP384::ORDER.to_le_bytes();
+        let mut c: u8 = 0;
+        let mut n: u8 = 1;
+        for (&s, &l) in bytes.iter().rev().zip(order_le.iter().rev()) {
+            c |= (((s as u16).wrapping_sub(l as u16) >> 8) as u8) & n;
+            n &= (((s ^ l) as u16).wrapping_sub(1) >> 8) as u8;
+        }
+        if c == 0 {
+            return Err(Error);
+        }
+
+        let mut non_mont = Default::default();
+        fiat_p384_scalar_from_bytes(&mut non_mont, bytes);
+        let mut mont = Default::default();
+        fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
+        Ok(Scalar(mont))
+    }
+
+    /// Create a scalar from a canonical, big-endian representation
+    pub fn from_be_bytes(bytes: &[u8; 48]) -> Result<Self> {
+        Scalar::from_le_bytes(&swap48(bytes))
+    }
+
+    /// Returns the little-endian encoding of this scalar.
+    pub fn to_le_bytes(&self) -> FieldBytes {
+        let non_mont = self.to_non_mont();
+        let mut out = [0u8; 48];
+        fiat_p384_scalar_to_bytes(&mut out, &non_mont.0);
+        FieldBytes::from(out)
+    }
+
+    /// Returns the little-endian encoding of this scalar.
+    pub fn to_be_bytes(&self) -> FieldBytes {
+        let mut out = [0u8; 48];
+        out.copy_from_slice(&self.to_le_bytes());
+        FieldBytes::from(swap48(&out))
+    }
+
+    /// Double
+    pub fn double(&self) -> Self {
+        let mut result = Default::default();
+        fiat_p384_scalar_add(&mut result, &self.0, &self.0);
+        Self(result)
+    }
+
+    /// Compute modular square.
+    #[must_use]
+    pub fn square(&self) -> Self {
+        let mut result = Default::default();
+        fiat_p384_scalar_square(&mut result, &self.0);
+        Self(result)
+    }
+
+    /// Invert
+    pub fn invert(&self) -> CtOption<Self> {
+        Field::invert(self)
+    }
+
+    /// Invert
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        self.invert()
+    }
+
+    fn sqn(&self, n: usize) -> Self {
+        let mut x = *self;
+        for _ in 0..n {
+            x = x.square();
+        }
+        x
+    }
+
+    fn to_non_mont(self) -> Self {
+        let mut out = Default::default();
+        fiat_p384_scalar_from_montgomery(&mut out, &self.0);
+        Scalar(out)
+    }
+}
 
 impl Field for Scalar {
     fn random(mut rng: impl RngCore) -> Self {
@@ -80,45 +160,153 @@ impl Field for Scalar {
     }
 
     fn is_zero(&self) -> Choice {
-        self.0.is_zero()
+        Self::ZERO.ct_eq(self)
     }
 
     #[must_use]
     fn square(&self) -> Self {
-        self.square()
+        Scalar::square(self)
     }
 
     #[must_use]
     fn double(&self) -> Self {
-        self.add(self)
+        Scalar::double(self)
     }
 
     fn invert(&self) -> CtOption<Self> {
-        todo!()
+        let limbs = &self.0;
+        type Fe = fiat_p384_scalar_montgomery_domain_field_element;
+        type Word = u64;
+        const LEN_PRIME: usize = 384;
+
+        const WORD_BITS: usize = 64;
+        const LIMBS_WORDS: usize = 6;
+        type XLimbs = [Word; LIMBS_WORDS + 1];
+
+        fn one() -> Fe {
+            let mut fe = Fe::default();
+            fiat_p384_scalar_set_one(&mut fe);
+            fe
+        }
+
+        const ITERATIONS: usize = (49 * LEN_PRIME + if LEN_PRIME < 46 { 80 } else { 57 }) / 17;
+        let mut d: Word = 1;
+        let mut f: XLimbs = Default::default();
+        fiat_p384_scalar_msat(&mut f);
+
+        let mut g: XLimbs = Default::default();
+        let mut g_: Fe = Default::default();
+        fiat_p384_scalar_from_montgomery(&mut g_, limbs);
+        g[..g_.len()].copy_from_slice(&g_);
+
+        let mut r = one();
+        let mut v: Fe = Default::default();
+
+        let mut precomp: Fe = Default::default();
+        fiat_p384_scalar_divstep_precomp(&mut precomp);
+
+        let mut out1: Word = Default::default();
+        let mut out2: XLimbs = Default::default();
+        let mut out3: XLimbs = Default::default();
+        let mut out4: Fe = Default::default();
+        let mut out5: Fe = Default::default();
+
+        let mut i: usize = 0;
+        while i < ITERATIONS - ITERATIONS % 2 {
+            fiat_p384_scalar_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            fiat_p384_scalar_divstep(
+                &mut d, &mut f, &mut g, &mut v, &mut r, out1, &out2, &out3, &out4, &out5,
+            );
+            i += 2;
+        }
+        if ITERATIONS % 2 != 0 {
+            fiat_p384_scalar_divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            v = out4;
+            f = out2;
+        }
+        let mut v_opp: Fe = Default::default();
+        fiat_p384_scalar_opp(&mut v_opp, &v);
+        let s = ((f[f.len() - 1] >> (WORD_BITS - 1)) & 1) as u8;
+        let mut v_: Fe = Default::default();
+        fiat_p384_scalar_selectznz(&mut v_, s, &v, &v_opp);
+        let mut fe: Fe = Default::default();
+        fiat_p384_scalar_mul(&mut fe, &v_, &precomp);
+        CtOption::new(fe.into(), 1.into())
     }
 
     fn sqrt(&self) -> CtOption<Self> {
-        todo!()
+        // p mod 4 = 3 -> compute sqrt(x) using x^((p+1)/4) =
+        // x^9850501549098619803069760025035903451269934817616361666986726319906914849778315892349739077038073728388608413485661
+        let t1 = *self;
+        let t10 = t1.square();
+        let t11 = *self * t10;
+        let t101 = t10 * t11;
+        let t111 = t10 * t101;
+        let t1001 = t10 * t111;
+        let t1011 = t10 * t1001;
+        let t1101 = t10 * t1011;
+        let t1111 = t10 * t1101;
+        let t11110 = t1111.square();
+        let t11111 = t1 * t11110;
+        let t1111100 = t11111.sqn(2);
+        let t11111000 = t1111100.square();
+        let i14 = t11111000.square();
+        let i20 = i14.sqn(5) * i14;
+        let i31 = i20.sqn(10) * i20;
+        let i58 = (i31.sqn(4) * t11111000).sqn(21) * i31;
+        let i110 = (i58.sqn(3) * t1111100).sqn(47) * i58;
+        let x194 = i110.sqn(95) * i110 * t1111;
+        let i225 = ((x194.sqn(6) * t111).sqn(3) * t11).sqn(7);
+        let i235 = ((t1101 * i225).sqn(6) * t1101).square() * t1;
+        let i258 = ((i235.sqn(11) * t11111).sqn(2) * t1).sqn(8);
+        let i269 = ((t1101 * i258).sqn(2) * t11).sqn(6) * t1011;
+        let i286 = ((i269.sqn(4) * t111).sqn(6) * t11111).sqn(5);
+        let i308 = ((t1011 * i286).sqn(10) * t1101).sqn(9) * t1101;
+        let i323 = ((i308.sqn(4) * t1011).sqn(6) * t1001).sqn(3);
+        let i340 = ((t1 * i323).sqn(7) * t1011).sqn(7) * t101;
+        let i357 = ((i340.sqn(5) * t111).sqn(5) * t1111).sqn(5);
+        let i369 = ((t1011 * i357).sqn(4) * t1011).sqn(5) * t111;
+        let i387 = ((i369.sqn(3) * t11).sqn(7) * t11).sqn(6);
+        let i397 = ((t1011 * i387).sqn(4) * t101).sqn(3) * t11;
+        let i413 = ((i397.sqn(4) * t11).sqn(4) * t11).sqn(6);
+        let i427 = ((t101 * i413).sqn(5) * t101).sqn(6) * t1011;
+        let x = i427.sqn(3) * t101;
+        if x.square() == t1 {
+            CtOption::new(x, 1.into())
+        } else {
+            CtOption::new(x, 0.into())
+        }
     }
 }
 
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
-    const NUM_BITS: u32 = 384;
     const CAPACITY: u32 = 383;
+    const NUM_BITS: u32 = 384;
     const S: u32 = 1;
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        ScalarCore::from_be_bytes(bytes).map(Self)
+        let mut non_mont = Default::default();
+        fiat_p384_scalar_from_bytes(&mut non_mont, &swap48(bytes.as_ref()));
+        let mut mont = Default::default();
+        fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
+        let out = Scalar(mont);
+        CtOption::new(out, 1.into())
     }
 
     fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
+        self.to_be_bytes()
     }
 
     fn is_odd(&self) -> Choice {
-        self.0.is_odd()
+        let mut non_mont = Default::default();
+        fiat_p384_scalar_from_montgomery(&mut non_mont, &self.0);
+        Choice::from((self.0[self.0.len() - 1] & 1) as u8)
     }
 
     fn multiplicative_generator() -> Self {
@@ -136,229 +324,29 @@ impl PrimeField for Scalar {
     }
 }
 
-impl Scalar {
-    /// Zero scalar.
-    pub const ZERO: Self = Self(ScalarCore::ZERO);
-
-    /// Multiplicative identity.
-    pub const ONE: Self = Self(ScalarCore::ONE);
-
-    /// Returns the SEC1 encoding of this scalar.
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.0.to_be_bytes()
+fn swap48(x: &[u8; 48]) -> [u8; 48] {
+    let mut swapped = [0u8; 48];
+    for (v, r) in x.iter().rev().zip(swapped.iter_mut()) {
+        *r = *v;
     }
+    swapped
+}
 
-    /// Multiply a scalar by another scalar.
-    #[cfg(target_pointer_width = "64")]
-    #[inline]
-    pub fn mul(&self, other: &Scalar) -> Self {
-        // TODO(tarcieri): replace with a.mul_wide(&b)
-        let a = self.0.as_limbs();
-        let b = other.0.as_limbs();
-
-        let carry = Limb::ZERO;
-        let (r0, carry) = Limb::ZERO.mac(a[0], b[0], carry);
-        let (r1, carry) = Limb::ZERO.mac(a[0], b[1], carry);
-        let (r2, carry) = Limb::ZERO.mac(a[0], b[2], carry);
-        let (r3, carry) = Limb::ZERO.mac(a[0], b[3], carry);
-        let (r4, carry) = Limb::ZERO.mac(a[0], b[4], carry);
-        let (r5, carry) = Limb::ZERO.mac(a[0], b[5], carry);
-        let r6 = carry;
-
-        let carry = Limb::ZERO;
-        let (r1, carry) = r1.mac(a[1], b[0], carry);
-        let (r2, carry) = r2.mac(a[1], b[1], carry);
-        let (r3, carry) = r3.mac(a[1], b[2], carry);
-        let (r4, carry) = r4.mac(a[1], b[3], carry);
-        let (r5, carry) = r5.mac(a[1], b[4], carry);
-        let (r6, carry) = r6.mac(a[1], b[5], carry);
-        let r7 = carry;
-
-        let carry = Limb::ZERO;
-        let (r2, carry) = r2.mac(a[2], b[0], carry);
-        let (r3, carry) = r3.mac(a[2], b[1], carry);
-        let (r4, carry) = r4.mac(a[2], b[2], carry);
-        let (r5, carry) = r5.mac(a[2], b[3], carry);
-        let (r6, carry) = r6.mac(a[2], b[4], carry);
-        let (r7, carry) = r7.mac(a[2], b[5], carry);
-        let r8 = carry;
-
-        let carry = Limb::ZERO;
-        let (r3, carry) = r3.mac(a[3], b[0], carry);
-        let (r4, carry) = r4.mac(a[3], b[1], carry);
-        let (r5, carry) = r5.mac(a[3], b[2], carry);
-        let (r6, carry) = r6.mac(a[3], b[3], carry);
-        let (r7, carry) = r7.mac(a[3], b[4], carry);
-        let (r8, carry) = r8.mac(a[3], b[5], carry);
-        let r9 = carry;
-
-        let carry = Limb::ZERO;
-        let (r4, carry) = r4.mac(a[4], b[0], carry);
-        let (r5, carry) = r5.mac(a[4], b[1], carry);
-        let (r6, carry) = r6.mac(a[4], b[2], carry);
-        let (r7, carry) = r7.mac(a[4], b[3], carry);
-        let (r8, carry) = r8.mac(a[4], b[4], carry);
-        let (r9, carry) = r9.mac(a[4], b[5], carry);
-        let r10 = carry;
-
-        let carry = Limb::ZERO;
-        let (r5, carry) = r5.mac(a[5], b[0], carry);
-        let (r6, carry) = r6.mac(a[5], b[1], carry);
-        let (r7, carry) = r7.mac(a[5], b[2], carry);
-        let (r8, carry) = r8.mac(a[5], b[3], carry);
-        let (r9, carry) = r9.mac(a[5], b[4], carry);
-        let (r10, carry) = r10.mac(a[5], b[5], carry);
-        let r11 = carry;
-
-        Self::montgomery_reduce(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11)
-    }
-
-    /// Compute modular square.
-    #[must_use]
-    pub fn square(&self) -> Self {
-        // NOTE: generated by `ff_derive`
-        let limbs = self.0.as_limbs();
-
-        let carry = Limb::ZERO;
-        let (r1, carry) = Limb::ZERO.mac(limbs[0], limbs[1], carry);
-        let (r2, carry) = Limb::ZERO.mac(limbs[0], limbs[2], carry);
-        let (r3, carry) = Limb::ZERO.mac(limbs[0], limbs[3], carry);
-        let (r4, carry) = Limb::ZERO.mac(limbs[0], limbs[4], carry);
-        let (r5, carry) = Limb::ZERO.mac(limbs[0], limbs[5], carry);
-        let r6 = carry;
-
-        let carry = Limb::ZERO;
-        let (r3, carry) = r3.mac(limbs[1], limbs[2], carry);
-        let (r4, carry) = r4.mac(limbs[1], limbs[3], carry);
-        let (r5, carry) = r5.mac(limbs[1], limbs[4], carry);
-        let (r6, carry) = r6.mac(limbs[1], limbs[5], carry);
-        let r7 = carry;
-
-        let carry = Limb::ZERO;
-        let (r5, carry) = r5.mac(limbs[2], limbs[3], carry);
-        let (r6, carry) = r6.mac(limbs[2], limbs[4], carry);
-        let (r7, carry) = r7.mac(limbs[2], limbs[5], carry);
-        let r8 = carry;
-
-        let carry = Limb::ZERO;
-        let (r7, carry) = r7.mac(limbs[3], limbs[4], carry);
-        let (r8, carry) = r8.mac(limbs[3], limbs[5], carry);
-        let r9 = carry;
-
-        let carry = Limb::ZERO;
-        let (r9, carry) = r9.mac(limbs[4], limbs[5], carry);
-        let r10 = carry;
-        let r11 = Limb(r10.0 >> 63);
-        let r10 = Limb((r10.0 << 1) | (r9.0 >> 63));
-        let r9 = Limb((r9.0 << 1) | (r8.0 >> 63));
-        let r8 = Limb((r8.0 << 1) | (r7.0 >> 63));
-        let r7 = Limb((r7.0 << 1) | (r6.0 >> 63));
-        let r6 = Limb((r6.0 << 1) | (r5.0 >> 63));
-        let r5 = Limb((r5.0 << 1) | (r4.0 >> 63));
-        let r4 = Limb((r4.0 << 1) | (r3.0 >> 63));
-        let r3 = Limb((r3.0 << 1) | (r2.0 >> 63));
-        let r2 = Limb((r2.0 << 1) | (r1.0 >> 63));
-        let r1 = Limb(r1.0 << 1);
-
-        let carry = Limb::ZERO;
-        let (r0, carry) = Limb::ZERO.mac(limbs[0], limbs[0], carry);
-        let (r1, carry) = r1.adc(Limb::ZERO, carry);
-        let (r2, carry) = r2.mac(limbs[1], limbs[1], carry);
-        let (r3, carry) = r3.adc(Limb::ZERO, carry);
-        let (r4, carry) = r4.mac(limbs[2], limbs[2], carry);
-        let (r5, carry) = r5.adc(Limb::ZERO, carry);
-        let (r6, carry) = r6.mac(limbs[3], limbs[3], carry);
-        let (r7, carry) = r7.adc(Limb::ZERO, carry);
-        let (r8, carry) = r8.mac(limbs[4], limbs[4], carry);
-        let (r9, carry) = r9.adc(Limb::ZERO, carry);
-        let (r10, carry) = r10.mac(limbs[5], limbs[5], carry);
-        let (r11, _) = r11.adc(Limb::ZERO, carry);
-
-        Self::montgomery_reduce(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11)
-    }
-
-    /// Montgomery reduction.
-    #[cfg(target_pointer_width = "64")]
-    #[allow(clippy::too_many_arguments)]
-    #[inline(always)]
-    fn montgomery_reduce(
-        r0: Limb,
-        r1: Limb,
-        r2: Limb,
-        r3: Limb,
-        r4: Limb,
-        r5: Limb,
-        r6: Limb,
-        r7: Limb,
-        r8: Limb,
-        r9: Limb,
-        r10: Limb,
-        r11: Limb,
-    ) -> Self {
-        // NOTE: generated by `ff_derive`
-        let modulus = MODULUS.limbs();
-
-        let k = r0.wrapping_mul(Limb(INV));
-        let (_, carry) = r0.mac(k, modulus[0], Limb::ZERO);
-        let (r1, carry) = r1.mac(k, modulus[1], carry);
-        let (r2, carry) = r2.mac(k, modulus[2], carry);
-        let (r3, carry) = r3.mac(k, modulus[3], carry);
-        let (r4, carry) = r4.mac(k, modulus[4], carry);
-        let (r5, carry) = r5.mac(k, modulus[5], carry);
-        let (r6, carry2) = r6.adc(Limb::ZERO, carry);
-
-        let k = r1.wrapping_mul(Limb(INV));
-        let (_, carry) = r1.mac(k, modulus[0], Limb::ZERO);
-        let (r2, carry) = r2.mac(k, modulus[1], carry);
-        let (r3, carry) = r3.mac(k, modulus[2], carry);
-        let (r4, carry) = r4.mac(k, modulus[3], carry);
-        let (r5, carry) = r5.mac(k, modulus[4], carry);
-        let (r6, carry) = r6.mac(k, modulus[5], carry);
-        let (r7, carry2) = r7.adc(carry2, carry);
-
-        let k = r2.wrapping_mul(Limb(INV));
-        let (_, carry) = r2.mac(k, modulus[0], Limb::ZERO);
-        let (r3, carry) = r3.mac(k, modulus[1], carry);
-        let (r4, carry) = r4.mac(k, modulus[2], carry);
-        let (r5, carry) = r5.mac(k, modulus[3], carry);
-        let (r6, carry) = r6.mac(k, modulus[4], carry);
-        let (r7, carry) = r7.mac(k, modulus[5], carry);
-        let (r8, carry2) = r8.adc(carry2, carry);
-
-        let k = r3.wrapping_mul(Limb(INV));
-        let (_, carry) = r3.mac(k, modulus[0], Limb::ZERO);
-        let (r4, carry) = r4.mac(k, modulus[1], carry);
-        let (r5, carry) = r5.mac(k, modulus[2], carry);
-        let (r6, carry) = r6.mac(k, modulus[3], carry);
-        let (r7, carry) = r7.mac(k, modulus[4], carry);
-        let (r8, carry) = r8.mac(k, modulus[5], carry);
-        let (r9, carry2) = r9.adc(carry2, carry);
-
-        let k = r4.wrapping_mul(Limb(INV));
-        let (_, carry) = r4.mac(k, modulus[0], Limb::ZERO);
-        let (r5, carry) = r5.mac(k, modulus[1], carry);
-        let (r6, carry) = r6.mac(k, modulus[2], carry);
-        let (r7, carry) = r7.mac(k, modulus[3], carry);
-        let (r8, carry) = r8.mac(k, modulus[4], carry);
-        let (r9, carry) = r9.mac(k, modulus[5], carry);
-        let (r10, carry2) = r10.adc(carry2, carry);
-
-        let k = r5.wrapping_mul(Limb(INV));
-        let (_, carry) = r5.mac(k, modulus[0], Limb::ZERO);
-        let (r6, carry) = r6.mac(k, modulus[1], carry);
-        let (r7, carry) = r7.mac(k, modulus[2], carry);
-        let (r8, carry) = r8.mac(k, modulus[3], carry);
-        let (r9, carry) = r9.mac(k, modulus[4], carry);
-        let (r10, carry) = r10.mac(k, modulus[5], carry);
-        let (r11, _) = r11.adc(carry2, carry);
-
-        Self::from_uint_reduced(U384::new([r6, r7, r8, r9, r10, r11]))
+impl From<ScalarCore<NistP384>> for Scalar {
+    fn from(x: ScalarCore<NistP384>) -> Self {
+        let mut bytes = [0u8; 48];
+        bytes.copy_from_slice(x.to_le_bytes().as_slice());
+        Scalar::from_le_bytes(&bytes).expect("non-canonical encoding")
     }
 }
 
 impl From<u64> for Scalar {
     fn from(n: u64) -> Scalar {
-        Self(n.into())
+        let mut limbs = NonMontFe::default();
+        limbs[limbs.len() - 1] = n;
+        let mut fe = Fe::default();
+        fiat_p384_scalar_to_montgomery(&mut fe, &limbs);
+        Scalar(fe)
     }
 }
 
@@ -366,18 +354,22 @@ impl TryFrom<U384> for Scalar {
     type Error = Error;
 
     fn try_from(w: U384) -> Result<Self> {
-        Option::from(ScalarCore::new(w)).map(Self).ok_or(Error)
+        let bytes = w.to_le_bytes();
+        let mut limbs = NonMontFe::default();
+        fiat_p384_scalar_from_bytes(&mut limbs, &bytes);
+        Ok(Scalar(limbs))
     }
 }
 
 impl From<Scalar> for U384 {
     fn from(scalar: Scalar) -> U384 {
-        *scalar.0.as_uint()
+        let bytes = scalar.to_le_bytes();
+        U384::from_le_bytes(bytes.into())
     }
 }
 
-impl From<ScalarCore> for Scalar {
-    fn from(scalar: ScalarCore) -> Scalar {
+impl From<Fe> for Scalar {
+    fn from(scalar: Fe) -> Scalar {
         Self(scalar)
     }
 }
@@ -394,23 +386,47 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-impl ConditionallySelectable for Scalar {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(ScalarCore::conditional_select(&a.0, &b.0, choice))
+impl From<&Scalar> for U384 {
+    fn from(scalar: &Scalar) -> U384 {
+        U384::from_le_bytes(scalar.to_le_bytes().into())
     }
 }
 
-impl ConstantTimeEq for Scalar {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+impl ConditionallySelectable for Scalar {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        let mut out = Default::default();
+        fiat_p384_scalar_selectznz(&mut out, choice.unwrap_u8(), &a.0, &b.0);
+        Self(out)
     }
 }
 
 impl DefaultIsZeroes for Scalar {}
 
+impl ConstantTimeEq for Scalar {
+    fn ct_eq(&self, rhs: &Self) -> Choice {
+        self.0
+            .iter()
+            .zip(rhs.0.iter())
+            .fold(Choice::from(1), |choice, (a, b)| choice & a.ct_eq(b))
+    }
+}
+
+impl Scalar {
+    fn ct_gt(&self, other: &Self) -> Choice {
+        // not CT
+        let mut out = Choice::from(0);
+        for (x, y) in self.0.iter().zip(other.0.iter()) {
+            if x > y {
+                out = Choice::from(1);
+            }
+        }
+        out
+    }
+}
+
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        self.0.is_high()
+        self.ct_gt(&frac_modulus_2())
     }
 }
 
@@ -418,7 +434,9 @@ impl Add<Scalar> for Scalar {
     type Output = Scalar;
 
     fn add(self, other: Scalar) -> Scalar {
-        self.add(&other)
+        let mut result = Default::default();
+        fiat_p384_scalar_add(&mut result, &self.0, &other.0);
+        Self(result)
     }
 }
 
@@ -426,7 +444,9 @@ impl Add<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn add(self, other: &Scalar) -> Scalar {
-        Self(self.0.add(&other.0))
+        let mut result = Default::default();
+        fiat_p384_scalar_add(&mut result, &self.0, &other.0);
+        Self(result)
     }
 }
 
@@ -446,7 +466,9 @@ impl Sub<Scalar> for Scalar {
     type Output = Scalar;
 
     fn sub(self, other: Scalar) -> Scalar {
-        self.sub(&other)
+        let mut result = Default::default();
+        fiat_p384_scalar_sub(&mut result, &self.0, &other.0);
+        Self(result)
     }
 }
 
@@ -454,7 +476,9 @@ impl Sub<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn sub(self, other: &Scalar) -> Scalar {
-        Self(self.0.sub(&other.0))
+        let mut result = Default::default();
+        fiat_p384_scalar_sub(&mut result, &self.0, &other.0);
+        Self(result)
     }
 }
 
@@ -474,7 +498,9 @@ impl Neg for Scalar {
     type Output = Scalar;
 
     fn neg(self) -> Scalar {
-        Self(self.0.neg())
+        let mut result = Default::default();
+        fiat_p384_scalar_opp(&mut result, &self.0);
+        Self(result)
     }
 }
 
@@ -483,23 +509,23 @@ impl Mul<&Scalar> for Scalar {
 
     #[inline]
     fn mul(self, other: &Scalar) -> Self {
-        Self::mul(&self, other)
+        let mut result = Default::default();
+        fiat_p384_scalar_mul(&mut result, &self.0, &other.0);
+        Self(result)
     }
 }
 
 impl Mul for Scalar {
     type Output = Scalar;
 
-    #[allow(clippy::op_ref)]
-    #[inline]
     fn mul(self, other: Scalar) -> Self {
-        self * &other
+        let mut result = Default::default();
+        fiat_p384_scalar_mul(&mut result, &self.0, &other.0);
+        Self(result)
     }
 }
 
 impl MulAssign<&Scalar> for Scalar {
-    #[cfg(target_pointer_width = "64")]
-    #[inline]
     fn mul_assign(&mut self, other: &Scalar) {
         *self = *self * other;
     }
@@ -508,7 +534,7 @@ impl MulAssign<&Scalar> for Scalar {
 impl MulAssign for Scalar {
     #[inline]
     fn mul_assign(&mut self, other: Scalar) {
-        self.mul_assign(&other);
+        *self = *self * other;
     }
 }
 
@@ -517,65 +543,103 @@ impl Reduce<U384> for Scalar {
         let (r, underflow) = w.sbb(&NistP384::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
         let reduced = U384::conditional_select(&w, &r, !underflow);
-        Self(ScalarCore::new(reduced).unwrap())
+        Scalar::from(ScalarCore::new(reduced).unwrap())
+    }
+}
+
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl PrimeFieldBits for Scalar {
+    #[cfg(target_pointer_width = "32")]
+    type ReprBits = [u32; 12];
+    #[cfg(target_pointer_width = "64")]
+    type ReprBits = [u64; 6];
+
+    fn to_le_bits(&self) -> ScalarBits {
+        self.0.into()
+    }
+
+    fn char_le_bits() -> ScalarBits {
+        NistP384::ORDER.to_uint_array().into()
+    }
+}
+
+impl From<&ScalarCore<NistP384>> for Scalar {
+    fn from(scalar: &ScalarCore<NistP384>) -> Scalar {
+        let mut bytes = [0u8; 48];
+        bytes.copy_from_slice(scalar.to_le_bytes().as_slice());
+        Scalar::from_le_bytes(&bytes).expect("non-canonical encoding")
+    }
+}
+
+impl From<Scalar> for ScalarCore<NistP384> {
+    fn from(scalar: Scalar) -> ScalarCore<NistP384> {
+        ScalarCore::new(U384::from_le_bytes(scalar.to_le_bytes().into())).unwrap()
+    }
+}
+
+impl From<&Scalar> for ScalarCore<NistP384> {
+    fn from(scalar: &Scalar) -> ScalarCore<NistP384> {
+        ScalarCore::new(U384::from_le_bytes(scalar.to_le_bytes().into())).unwrap()
+    }
+}
+
+impl From<&SecretKey> for Scalar {
+    fn from(secret_key: &SecretKey) -> Scalar {
+        *secret_key.to_nonzero_scalar()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use elliptic_curve::ff::{Field, PrimeField};
+
     use super::Scalar;
     use crate::FieldBytes;
-    use elliptic_curve::ff::{Field, PrimeField};
 
     #[test]
     fn from_to_bytes_roundtrip() {
         let k: u64 = 42;
         let mut bytes = FieldBytes::default();
-        bytes[40..].copy_from_slice(k.to_be_bytes().as_ref());
+        bytes[40..].copy_from_slice(k.to_le_bytes().as_ref());
 
         let scalar = Scalar::from_repr(bytes).unwrap();
-        assert_eq!(bytes, scalar.to_bytes());
+        assert_eq!(bytes, scalar.to_be_bytes());
     }
 
     /// Basic tests that multiplication works.
     #[test]
-    #[ignore]
     fn multiply() {
         let one = Scalar::one();
-        let two = one + &one;
-        let three = two + &one;
-        let six = three + &three;
-        assert_eq!(six, two * &three);
+        let two = one + one;
+        let three = two + one;
+        let six = three + three;
+        assert_eq!(six, two * three);
 
         let minus_two = -two;
         let minus_three = -three;
         assert_eq!(two, -minus_two);
 
-        assert_eq!(minus_three * &minus_two, minus_two * &minus_three);
-        assert_eq!(six, minus_two * &minus_three);
+        assert_eq!(minus_three * minus_two, minus_two * minus_three);
+        assert_eq!(six, minus_two * minus_three);
     }
 
     /// Basic tests that scalar inversion works.
     #[test]
-    #[ignore]
     fn invert() {
         let one = Scalar::one();
-        let three = one + &one + &one;
+        let three = one + one + one;
         let inv_three = three.invert().unwrap();
-        // println!("1/3 = {:x?}", &inv_three);
-        assert_eq!(three * &inv_three, one);
+        assert_eq!(three * inv_three, one);
 
         let minus_three = -three;
-        // println!("-3 = {:x?}", &minus_three);
         let inv_minus_three = minus_three.invert().unwrap();
         assert_eq!(inv_minus_three, -inv_three);
-        // println!("-1/3 = {:x?}", &inv_minus_three);
-        assert_eq!(three * &inv_minus_three, -one);
+        assert_eq!(three * inv_minus_three, -one);
     }
 
     /// Basic tests that sqrt works.
     #[test]
-    #[ignore]
     fn sqrt() {
         for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
             let scalar = Scalar::from(n);
