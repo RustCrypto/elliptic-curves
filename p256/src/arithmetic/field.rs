@@ -406,6 +406,15 @@ impl FieldElement {
         self.mul(self)
     }
 
+    /// Returns self^(2^n) mod p
+    fn sqn(&self, n: usize) -> Self {
+        let mut x = *self;
+        for _ in 0..n {
+            x = x.square();
+        }
+        x
+    }
+
     /// Returns `self^by`, where `by` is a little-endian integer exponent.
     ///
     /// **This operation is variable time with respect to the exponent.** If the exponent
@@ -434,12 +443,17 @@ impl FieldElement {
         //    a^(p-2) * a ≡ 1 mod p
         //
         // Thus inversion can be implemented with a single exponentiation.
-        let inverse = self.pow_vartime(&[
-            0xffff_ffff_ffff_fffd,
-            0x0000_0000_ffff_ffff,
-            0x0000_0000_0000_0000,
-            0xffff_ffff_0000_0001,
-        ]);
+
+        let t111 = self.mul(&self.mul(&self.square()).square());
+        let t111111 = t111.mul(t111.sqn(3));
+        let x15 = t111111.sqn(6).mul(t111111).sqn(3).mul(t111);
+        let x16 = x15.square().mul(self);
+        let i53 = x16.sqn(16).mul(x16).sqn(15);
+        let x47 = x15.mul(i53);
+        let inverse = x47
+            .mul(i53.sqn(17).mul(self).sqn(143).mul(x47).sqn(47))
+            .sqn(2)
+            .mul(self);
 
         CtOption::new(inverse, !self.is_zero())
     }
@@ -454,12 +468,18 @@ impl FieldElement {
         //
         // Thus sqrt can be implemented with a single exponentiation.
 
-        let sqrt = self.pow_vartime(&[
-            0x0000_0000_0000_0000,
-            0x0000_0000_4000_0000,
-            0x4000_0000_0000_0000,
-            0x3fff_ffff_c000_0000,
-        ]);
+        let t11 = self.mul(&self.square());
+        let t1111 = t11.mul(&t11.sqn(2));
+        let t11111111 = t1111.mul(t1111.sqn(4));
+        let x16 = t11111111.sqn(8).mul(t11111111);
+        let sqrt = x16
+            .sqn(16)
+            .mul(x16)
+            .sqn(32)
+            .mul(self)
+            .sqn(96)
+            .mul(self)
+            .sqn(94);
 
         CtOption::new(
             sqrt,
