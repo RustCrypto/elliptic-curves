@@ -351,7 +351,7 @@ impl From<ScalarCore<NistP384>> for Scalar {
 impl From<u64> for Scalar {
     fn from(n: u64) -> Scalar {
         let mut limbs = NonMontFe::default();
-        limbs[limbs.len() - 1] = n;
+        limbs[0] = n;
         let mut fe = Fe::default();
         fiat_p384_scalar_to_montgomery(&mut fe, &limbs);
         Scalar(fe)
