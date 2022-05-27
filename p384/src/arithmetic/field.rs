@@ -316,7 +316,7 @@ impl FieldElement {
     /// Inversion.
     #[cfg(target_pointer_width = "32")]
     pub fn invert(&self) -> CtOption<Self> {
-        todo!()
+        todo!("field inversions not yet implemented for 32-bit targets")
     }
 
     /// Inversion.

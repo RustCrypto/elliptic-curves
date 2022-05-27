@@ -206,7 +206,7 @@ impl Field for Scalar {
 
     #[cfg(target_pointer_width = "32")]
     fn invert(&self) -> CtOption<Self> {
-        todo!()
+        todo!("scalar inversions not yet implemented for 32-bit targets")
     }
 
     #[cfg(target_pointer_width = "64")]
