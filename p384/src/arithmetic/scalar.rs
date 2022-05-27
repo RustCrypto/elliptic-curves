@@ -1,18 +1,19 @@
-//! Scalar field elements for the NIST P-384 elliptic curve.
-
-#[cfg(not(target_pointer_width = "64"))]
-compile_error!("scalar arithmetic is only supported on 64-bit platforms");
+//! secp384r1 scalar field elements.
 
 pub(crate) mod blinded;
 
+#[cfg_attr(target_pointer_width = "32", path = "scalar/p384_scalar_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/p384_scalar_64.rs")]
 #[allow(
     clippy::identity_op,
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
-mod p384_scalar;
+#[allow(dead_code)]
+#[rustfmt::skip]
+mod scalar_impl;
 
-use self::p384_scalar::*;
+use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
@@ -26,6 +27,9 @@ use elliptic_curve::{
     Curve as _, Error, IsHigh, Result, ScalarArithmetic, ScalarCore,
 };
 
+#[cfg(target_pointer_width = "64")]
+use super::LIMBS;
+
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
@@ -33,7 +37,7 @@ type Fe = fiat_p384_scalar_montgomery_domain_field_element;
 type NonMontFe = fiat_p384_scalar_non_montgomery_domain_field_element;
 
 fn frac_modulus_2() -> Scalar {
-    Scalar::from_le_bytes(NistP384::ORDER.shr_vartime(1).to_le_bytes().into()).unwrap()
+    Scalar::from_be_bytes(NistP384::ORDER.shr_vartime(1).to_be_bytes().into()).unwrap()
 }
 
 impl ScalarArithmetic for NistP384 {
@@ -46,17 +50,29 @@ impl ScalarArithmetic for NistP384 {
 pub struct Scalar(Fe);
 
 impl Scalar {
-    /// Multiplicative identity.
-    pub const ONE: Self = Self([
-        1374695839762142861,
-        12098342389602539653,
-        4079331616924160544,
-        0,
-        0,
-        0,
-    ]);
     /// Zero scalar.
+    #[cfg(target_pointer_width = "32")]
+    pub const ZERO: Self = Self([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// Zero scalar.
+    #[cfg(target_pointer_width = "64")]
     pub const ZERO: Self = Self([0, 0, 0, 0, 0, 0]);
+
+    /// Multiplicative identity.
+    #[cfg(target_pointer_width = "32")]
+    pub const ONE: Self = Self([
+        0x333ad68d, 0x1313e695, 0xb74f5885, 0xa7e5f24d, 0x0bc8d220, 0xbc8d220, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+    ]);
+    /// Multiplicative identity.
+    #[cfg(target_pointer_width = "64")]
+    pub const ONE: Self = Self([
+        0x1313e695_333ad68d,
+        0xa7e5f24d_b74f5885,
+        0x389cb27e_0bc8d220,
+        0x00000000_00000000,
+        0x00000000_00000000,
+        0x00000000_00000000,
+    ]);
 
     /// Create a scalar from a canonical, big-endian representation
     pub fn from_be_bytes(bytes: FieldBytes) -> CtOption<Self> {
@@ -188,15 +204,19 @@ impl Field for Scalar {
         Scalar::double(self)
     }
 
+    #[cfg(target_pointer_width = "32")]
+    fn invert(&self) -> CtOption<Self> {
+        todo!()
+    }
+
+    #[cfg(target_pointer_width = "64")]
     fn invert(&self) -> CtOption<Self> {
         let limbs = &self.0;
         type Fe = fiat_p384_scalar_montgomery_domain_field_element;
         type Word = u64;
         const LEN_PRIME: usize = 384;
-
         const WORD_BITS: usize = 64;
-        const LIMBS_WORDS: usize = 6;
-        type XLimbs = [Word; LIMBS_WORDS + 1];
+        type XLimbs = [Word; LIMBS + 1];
 
         fn one() -> Fe {
             let mut fe = Fe::default();
@@ -351,7 +371,18 @@ impl From<ScalarCore<NistP384>> for Scalar {
 impl From<u64> for Scalar {
     fn from(n: u64) -> Scalar {
         let mut limbs = NonMontFe::default();
-        limbs[0] = n;
+
+        #[cfg(target_pointer_width = "32")]
+        {
+            limbs[0] = (n & 0xffff_ffff) as u32;
+            limbs[1] = (n >> 32) as u32;
+        }
+
+        #[cfg(target_pointer_width = "64")]
+        {
+            limbs[0] = n;
+        }
+
         let mut fe = Fe::default();
         fiat_p384_scalar_to_montgomery(&mut fe, &limbs);
         Scalar(fe)

@@ -16,23 +16,50 @@ use field::{FieldElement, MODULUS};
 use projective::ProjectivePoint;
 use scalar::Scalar;
 
+/// Number of limbs used to represent a field element.
+#[cfg(target_pointer_width = "32")]
+const LIMBS: usize = 12;
+/// Number of limbs used to represent a field element.
+#[cfg(target_pointer_width = "64")]
+const LIMBS: usize = 6;
+
 /// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
 /// NOTE: field element has been translated into the Montgomery domain.
+#[cfg(target_pointer_width = "32")]
 const CURVE_EQUATION_A: FieldElement = FieldElement([
-    17179869180,
-    18446744056529682432,
-    18446744073709551611,
-    18446744073709551615,
-    18446744073709551615,
-    18446744073709551615,
+    0xfffffffc, 0x00000003, 0x00000000, 0xfffffffc, 0xfffffffb, 0xffffffff, 0xffffffff, 0xffffffff,
+    0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+]);
+
+/// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
+/// NOTE: field element has been translated into the Montgomery domain.
+#[cfg(target_pointer_width = "64")]
+const CURVE_EQUATION_A: FieldElement = FieldElement([
+    0x00000003_fffffffc,
+    0xfffffffc_00000000,
+    0xffffffff_fffffffb,
+    0xffffffff_ffffffff,
+    0xffffffff_ffffffff,
+    0xffffffff_ffffffff,
 ]);
 
 /// b = b3312fa7 e23ee7e4 988e056b e3f82d19 181d9c6e fe814112
 ///     0314088f 5013875a c656398d 8a2ed19d 2a85c8ed d3ec2aef
 ///
 /// NOTE: field element has been translated into the Montgomery domain.
+#[cfg(target_pointer_width = "32")]
 const CURVE_EQUATION_B: FieldElement = FieldElement([
-    0x81188719_d412dcc,
+    0x9d412dcc, 0x08118871, 0x7a4c32ec, 0xf729add8, 0x1920022e, 0x77f2209b, 0x94938ae2, 0xe3374bee,
+    0x1f022094, 0xb62b21f4, 0x604fbff9, 0xcd08114b,
+]);
+
+/// b = b3312fa7 e23ee7e4 988e056b e3f82d19 181d9c6e fe814112
+///     0314088f 5013875a c656398d 8a2ed19d 2a85c8ed d3ec2aef
+///
+/// NOTE: field element has been translated into the Montgomery domain.
+#[cfg(target_pointer_width = "64")]
+const CURVE_EQUATION_B: FieldElement = FieldElement([
+    0x08118871_9d412dcc,
     0xf729add8_7a4c32ec,
     0x77f2209b_1920022e,
     0xe3374bee_94938ae2,

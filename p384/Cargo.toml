@@ -35,7 +35,7 @@ harness = false
 
 [features]
 default = ["arithmetic", "ecdh", "ecdsa", "pem", "std"]
-arithmetic = ["elliptic-curve/arithmetic"]
+arithmetic = ["elliptic-curve/arithmetic", "elliptic-curve/digest"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]

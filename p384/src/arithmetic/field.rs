@@ -26,35 +26,41 @@
 #[rustfmt::skip]
 mod field_impl;
 
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as FieldElementImpl;
 
+use self::field_impl::*;
+use super::LIMBS;
+use crate::FieldBytes;
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
 
-pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as FieldElementImpl;
-use self::field_impl::*;
-use crate::FieldBytes;
-
 /// Type used to represent a limb.
-// TODO(tarcieri): hardcoded for 64-bit; add 32-bit support
+#[cfg(target_pointer_width = "32")]
+type Limb = u32;
+/// Type used to represent a limb.
+#[cfg(target_pointer_width = "64")]
 type Limb = u64;
-
-/// Number of limbs used to represent a field element.
-// TODO(tarcieri): hardcoded for 64-bit; add 32-bit support
-const LIMBS: usize = 6;
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-// TODO(tarcieri): convert to Montgomery form?
+#[cfg(target_pointer_width = "32")]
 pub(crate) const MODULUS: FieldElement = FieldElement([
-    0x00000000ffffffff,
-    0xffffffff00000000,
-    0xfffffffffffffffe,
-    0xffffffffffffffff,
-    0xffffffffffffffff,
-    0xffffffffffffffff,
+    0xffffffff, 0x00000000, 0x00000000, 0xffffffff, 0xfffffffe, 0xffffffff, 0xffffffff, 0xffffffff,
+    0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+]);
+/// Constant representing the modulus
+/// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
+#[cfg(target_pointer_width = "64")]
+pub(crate) const MODULUS: FieldElement = FieldElement([
+    0x00000000_ffffffff,
+    0xffffffff_00000000,
+    0xffffffff_fffffffe,
+    0xffffffff_ffffffff,
+    0xffffffff_ffffffff,
+    0xffffffff_ffffffff,
 ]);
 
 /// An element in the finite field used for curve coordinates.
@@ -70,6 +76,7 @@ impl FieldElement {
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "64")]
     pub const ONE: Self = Self([0xffffffff00000001, 0xffffffff, 0x1, 0x0, 0x0, 0x0]);
+
     /// Zero element.
     pub const ZERO: Self = Self([0; LIMBS]);
 
@@ -79,8 +86,51 @@ impl FieldElement {
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
-    /// Returns None if the byte array does not contain a big-endian integer in
-    /// the range [0, p).
+    /// Returns `None` if the byte array does not contain a big-endian integer in
+    /// the range `[0, p)`.
+    #[cfg(target_pointer_width = "32")]
+    pub fn from_sec1(bytes: &FieldBytes) -> CtOption<Self> {
+        let mut w = [Limb::default(); LIMBS];
+
+        // Interpret the bytes as a big-endian integer w.
+        w[11] = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
+        w[10] = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+        w[9] = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+        w[8] = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
+        w[7] = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
+        w[6] = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
+        w[5] = u32::from_be_bytes(bytes[24..28].try_into().unwrap());
+        w[4] = u32::from_be_bytes(bytes[28..32].try_into().unwrap());
+        w[3] = u32::from_be_bytes(bytes[32..36].try_into().unwrap());
+        w[2] = u32::from_be_bytes(bytes[36..40].try_into().unwrap());
+        w[1] = u32::from_be_bytes(bytes[40..44].try_into().unwrap());
+        w[0] = u32::from_be_bytes(bytes[44..48].try_into().unwrap());
+
+        // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
+        // value of 2^64 - 1.
+        let (_, borrow) = sbb(w[0], MODULUS.0[0], 0);
+        let (_, borrow) = sbb(w[1], MODULUS.0[1], borrow);
+        let (_, borrow) = sbb(w[2], MODULUS.0[2], borrow);
+        let (_, borrow) = sbb(w[3], MODULUS.0[3], borrow);
+        let (_, borrow) = sbb(w[4], MODULUS.0[4], borrow);
+        let (_, borrow) = sbb(w[5], MODULUS.0[5], borrow);
+        let (_, borrow) = sbb(w[0], MODULUS.0[6], borrow);
+        let (_, borrow) = sbb(w[1], MODULUS.0[7], borrow);
+        let (_, borrow) = sbb(w[2], MODULUS.0[8], borrow);
+        let (_, borrow) = sbb(w[3], MODULUS.0[9], borrow);
+        let (_, borrow) = sbb(w[4], MODULUS.0[10], borrow);
+        let (_, borrow) = sbb(w[5], MODULUS.0[11], borrow);
+        let is_some = (borrow as u8) & 1;
+
+        // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
+        CtOption::new(FieldElement(w).to_montgomery(), Choice::from(is_some))
+    }
+
+    /// Attempts to parse the given byte array as an SEC1-encoded field element.
+    ///
+    /// Returns `None` if the byte array does not contain a big-endian integer in
+    /// the range `[0, p)`.
+    #[cfg(target_pointer_width = "64")]
     pub fn from_sec1(bytes: &FieldBytes) -> CtOption<Self> {
         let mut w = [Limb::default(); LIMBS];
 
@@ -107,6 +157,29 @@ impl FieldElement {
     }
 
     /// Returns the SEC1 encoding of this field element.
+    #[cfg(target_pointer_width = "32")]
+    pub fn to_sec1(self) -> FieldBytes {
+        // Convert from Montgomery form to canonical form
+        let tmp = self.to_canonical();
+
+        let mut ret = FieldBytes::default();
+        ret[0..4].copy_from_slice(&tmp.0[11].to_be_bytes());
+        ret[4..8].copy_from_slice(&tmp.0[10].to_be_bytes());
+        ret[8..12].copy_from_slice(&tmp.0[9].to_be_bytes());
+        ret[12..16].copy_from_slice(&tmp.0[8].to_be_bytes());
+        ret[16..20].copy_from_slice(&tmp.0[7].to_be_bytes());
+        ret[20..24].copy_from_slice(&tmp.0[6].to_be_bytes());
+        ret[24..28].copy_from_slice(&tmp.0[5].to_be_bytes());
+        ret[28..32].copy_from_slice(&tmp.0[4].to_be_bytes());
+        ret[32..36].copy_from_slice(&tmp.0[3].to_be_bytes());
+        ret[36..40].copy_from_slice(&tmp.0[2].to_be_bytes());
+        ret[40..44].copy_from_slice(&tmp.0[1].to_be_bytes());
+        ret[44..48].copy_from_slice(&tmp.0[0].to_be_bytes());
+        ret
+    }
+
+    /// Returns the SEC1 encoding of this field element.
+    #[cfg(target_pointer_width = "64")]
     pub fn to_sec1(self) -> FieldBytes {
         // Convert from Montgomery form to canonical form
         let tmp = self.to_canonical();
@@ -240,7 +313,14 @@ impl FieldElement {
         out
     }
 
-    /// Inversion
+    /// Inversion.
+    #[cfg(target_pointer_width = "32")]
+    pub fn invert(&self) -> CtOption<Self> {
+        todo!()
+    }
+
+    /// Inversion.
+    #[cfg(target_pointer_width = "64")]
     pub fn invert(&self) -> CtOption<Self> {
         let limbs = &self.0;
         type Fe = fiat_p384_montgomery_domain_field_element;
@@ -376,6 +456,14 @@ impl From<U384> for FieldElement {
     }
 }
 
+#[cfg(target_pointer_width = "32")]
+impl From<[u32; 12]> for FieldElement {
+    fn from(w: [u32; 12]) -> Self {
+        FieldElement::from_limbs(w)
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
 impl From<[u64; 6]> for FieldElement {
     fn from(w: [u64; 6]) -> Self {
         FieldElement::from_limbs(w)
@@ -471,6 +559,15 @@ impl Neg for FieldElement {
 }
 
 /// Computes `a - (b + borrow)`, returning the result and the new borrow.
+#[cfg(target_pointer_width = "32")]
+#[inline(always)]
+pub const fn sbb(a: u32, b: u32, borrow: u32) -> (u32, u32) {
+    let ret = (a as u64).wrapping_sub((b as u64) + ((borrow >> 31) as u64));
+    (ret as u32, (ret >> 32) as u32)
+}
+
+/// Computes `a - (b + borrow)`, returning the result and the new borrow.
+#[cfg(target_pointer_width = "64")]
 #[inline(always)]
 pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
     let ret = (a as u128).wrapping_sub((b as u128) + ((borrow >> 63) as u128));
