@@ -98,6 +98,14 @@ impl Scalar {
         FieldBytes::from(swap48(&out))
     }
 
+    #[cfg(test)]
+    /// Returns the SEC1 encoding of this scalar.
+    ///
+    /// Required for running test vectors.
+    pub fn to_bytes(&self) -> FieldBytes {
+        self.to_be_bytes()
+    }
+
     /// Double
     pub fn double(&self) -> Self {
         let mut result = Default::default();

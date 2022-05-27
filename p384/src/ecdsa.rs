@@ -74,20 +74,32 @@ impl SignPrimitive<NistP384> for Scalar {}
 #[cfg(feature = "ecdsa")]
 impl VerifyPrimitive<NistP384> for AffinePoint {}
 
-#[cfg(feature = "ecdsa")]
-#[test]
-fn signing_secret_key_equivalent() {
-    use crate::SecretKey;
+#[cfg(all(test, feature = "ecdsa"))]
+mod tests {
+    use crate::{ecdsa::SigningKey, SecretKey};
 
-    let raw_sk: [u8; 48] = [
-        32, 52, 118, 9, 96, 116, 119, 172, 168, 251, 251, 197, 230, 33, 132, 85, 243, 25, 150, 105,
-        121, 46, 248, 180, 102, 250, 168, 123, 220, 103, 121, 129, 68, 200, 72, 221, 3, 102, 30,
-        237, 90, 198, 36, 97, 52, 12, 234, 150,
-    ];
+    #[test]
+    fn signing_secret_key_equivalent() {
+        let raw_sk: [u8; 48] = [
+            32, 52, 118, 9, 96, 116, 119, 172, 168, 251, 251, 197, 230, 33, 132, 85, 243, 25, 150,
+            105, 121, 46, 248, 180, 102, 250, 168, 123, 220, 103, 121, 129, 68, 200, 72, 221, 3,
+            102, 30, 237, 90, 198, 36, 97, 52, 12, 234, 150,
+        ];
 
-    let sigk = SigningKey::from_bytes(raw_sk.as_slice()).unwrap();
-    let seck = SecretKey::from_be_bytes(raw_sk.as_slice()).unwrap();
+        let sigk = SigningKey::from_bytes(raw_sk.as_slice()).unwrap();
+        let seck = SecretKey::from_be_bytes(raw_sk.as_slice()).unwrap();
 
-    assert_eq!(sigk.to_bytes().as_slice(), &raw_sk);
-    assert_eq!(sigk.to_bytes(), seck.to_be_bytes());
+        assert_eq!(sigk.to_bytes().as_slice(), &raw_sk);
+        assert_eq!(sigk.to_bytes(), seck.to_be_bytes());
+    }
+
+    mod sign {
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP384};
+        ecdsa_core::new_signing_test!(NistP384, ECDSA_TEST_VECTORS);
+    }
+
+    mod verify {
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP384};
+        ecdsa_core::new_verification_test!(NistP384, ECDSA_TEST_VECTORS);
+    }
 }
