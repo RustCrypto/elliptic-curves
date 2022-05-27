@@ -17,7 +17,6 @@ env:
   RUSTFLAGS: "-Dwarnings"
 
 jobs:
-  # TODO(tarcieri): test arithmetic on 32-bit platforms
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -37,8 +36,7 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
-      # TODO(tarcieri): currently 64-bit only
-      # - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
@@ -48,6 +46,7 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features voprf
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core,jwk,pem,pkcs8,serde,sha384,voprf
 
+  # TODO(tarcieri): test arithmetic on 32-bit platforms
   test:
     runs-on: ubuntu-latest
     strategy:
