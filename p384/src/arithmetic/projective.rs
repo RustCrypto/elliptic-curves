@@ -594,3 +594,120 @@ impl TryFrom<&ProjectivePoint> for PublicKey {
         AffinePoint::from(point).try_into()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{AffinePoint, ProjectivePoint};
+    use crate::test_vectors::ADD_TEST_VECTORS;
+    use elliptic_curve::group::prime::PrimeCurveAffine;
+
+    #[test]
+    fn affine_to_projective() {
+        let basepoint_affine = AffinePoint::GENERATOR;
+        let basepoint_projective = ProjectivePoint::GENERATOR;
+
+        assert_eq!(
+            ProjectivePoint::from(basepoint_affine),
+            basepoint_projective,
+        );
+        assert_eq!(basepoint_projective.to_affine(), basepoint_affine);
+        assert!(!bool::from(basepoint_projective.to_affine().is_identity()));
+
+        // TODO(tarcieri): BROKEN!
+        // assert!(bool::from(
+        //     ProjectivePoint::IDENTITY.to_affine().is_identity()
+        // ));
+    }
+
+    #[test]
+    fn projective_identity_addition() {
+        let identity = ProjectivePoint::IDENTITY;
+        let generator = ProjectivePoint::GENERATOR;
+
+        assert_eq!(identity + &generator, generator);
+        assert_eq!(generator + &identity, generator);
+    }
+
+    #[test]
+    fn test_vector_repeated_add() {
+        let generator = ProjectivePoint::GENERATOR;
+        let mut p = generator;
+
+        for i in 0..ADD_TEST_VECTORS.len() {
+            let affine = p.to_affine();
+
+            let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
+            assert_eq!(affine.x.to_sec1(), expected_x.into());
+            assert_eq!(affine.y.to_sec1(), expected_y.into());
+
+            p += &generator;
+        }
+    }
+
+    #[test]
+    fn test_vector_repeated_add_mixed() {
+        let generator = AffinePoint::GENERATOR;
+        let mut p = ProjectivePoint::GENERATOR;
+
+        for i in 0..ADD_TEST_VECTORS.len() {
+            let affine = p.to_affine();
+
+            let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
+            assert_eq!(affine.x.to_sec1(), expected_x.into());
+            assert_eq!(affine.y.to_sec1(), expected_y.into());
+
+            p += &generator;
+        }
+    }
+
+    #[test]
+    fn test_vector_add_mixed_identity() {
+        let generator = ProjectivePoint::GENERATOR;
+        let p0 = generator + ProjectivePoint::IDENTITY;
+        let p1 = generator + AffinePoint::IDENTITY;
+        assert_eq!(p0, p1);
+    }
+
+    #[test]
+    fn test_vector_double_generator() {
+        let generator = ProjectivePoint::GENERATOR;
+        let mut p = generator;
+
+        for i in 0..2 {
+            let affine = p.to_affine();
+
+            let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
+            assert_eq!(affine.x.to_sec1(), expected_x.into());
+            assert_eq!(affine.y.to_sec1(), expected_y.into());
+
+            p = p.double();
+        }
+    }
+
+    #[test]
+    fn projective_add_vs_double() {
+        let generator = ProjectivePoint::GENERATOR;
+        assert_eq!(generator + &generator, generator.double());
+    }
+
+    #[test]
+    fn projective_add_and_sub() {
+        let basepoint_affine = AffinePoint::GENERATOR;
+        let basepoint_projective = ProjectivePoint::GENERATOR;
+
+        assert_eq!(
+            (basepoint_projective + &basepoint_projective) - &basepoint_projective,
+            basepoint_projective
+        );
+        assert_eq!(
+            (basepoint_projective + &basepoint_affine) - &basepoint_affine,
+            basepoint_projective
+        );
+    }
+
+    #[test]
+    fn projective_double_and_sub() {
+        let generator = ProjectivePoint::GENERATOR;
+        assert_eq!(generator.double() - &generator, generator);
+    }
+}
