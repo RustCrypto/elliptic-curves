@@ -235,7 +235,7 @@ impl Field for Scalar {
         fiat_p384_scalar_selectznz(&mut v_, s, &v, &v_opp);
         let mut fe: Fe = Default::default();
         fiat_p384_scalar_mul(&mut fe, &v_, &precomp);
-        CtOption::new(fe.into(), 1.into())
+        CtOption::new(fe.into(), !self.is_zero())
     }
 
     fn sqrt(&self) -> CtOption<Self> {

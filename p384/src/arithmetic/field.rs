@@ -303,7 +303,7 @@ impl FieldElement {
         fiat_p384_selectznz(&mut v_, s, &v, &v_opp);
         let mut fe: Fe = Default::default();
         fiat_p384_mul(&mut fe, &v_, &precomp);
-        CtOption::new(FieldElement::from(fe), 1.into())
+        CtOption::new(FieldElement::from(fe), !self.is_zero())
     }
 }
 

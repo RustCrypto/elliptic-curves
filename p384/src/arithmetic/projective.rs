@@ -612,11 +612,9 @@ mod tests {
         );
         assert_eq!(basepoint_projective.to_affine(), basepoint_affine);
         assert!(!bool::from(basepoint_projective.to_affine().is_identity()));
-
-        // TODO(tarcieri): BROKEN!
-        // assert!(bool::from(
-        //     ProjectivePoint::IDENTITY.to_affine().is_identity()
-        // ));
+        assert!(bool::from(
+            ProjectivePoint::IDENTITY.to_affine().is_identity()
+        ));
     }
 
     #[test]
