@@ -724,8 +724,6 @@ mod tests {
                     .map(|(k, x, y)| (Scalar::from_repr(k.into()).unwrap(), (x, y))),
             )
         {
-            // dbg!(&k);
-
             let res = (generator * &k).to_affine();
             assert_eq!(res.x.to_sec1(), coords.0.into());
             assert_eq!(res.y.to_sec1(), coords.1.into());
