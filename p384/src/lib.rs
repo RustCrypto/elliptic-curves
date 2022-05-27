@@ -30,16 +30,23 @@ pub mod ecdh;
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa-core")))]
 pub mod ecdsa;
 
+#[cfg(any(feature = "test-vectors", test))]
+#[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
+pub mod test_vectors;
+
+pub use elliptic_curve::{self, bigint::U384};
+
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{
     affine::AffinePoint,
     projective::ProjectivePoint,
     scalar::{blinded::BlindedScalar, Scalar},
 };
+
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
-pub use elliptic_curve::{self, bigint::U384};
+
 use elliptic_curve::{consts::U49, generic_array::GenericArray};
 
 /// NIST P-384 elliptic curve.
