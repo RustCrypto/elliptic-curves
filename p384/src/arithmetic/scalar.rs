@@ -21,7 +21,7 @@ use elliptic_curve::{
     generic_array::arr,
     ops::Reduce,
     rand_core::RngCore,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
     Curve as _, Error, IsHigh, Result, ScalarArithmetic, ScalarCore,
 };
@@ -33,7 +33,7 @@ type Fe = fiat_p384_scalar_montgomery_domain_field_element;
 type NonMontFe = fiat_p384_scalar_non_montgomery_domain_field_element;
 
 fn frac_modulus_2() -> Scalar {
-    Scalar::from_le_bytes(&NistP384::ORDER.shr_vartime(1).to_le_bytes()).unwrap()
+    Scalar::from_le_bytes(NistP384::ORDER.shr_vartime(1).to_le_bytes().into()).unwrap()
 }
 
 impl ScalarArithmetic for NistP384 {
@@ -58,29 +58,43 @@ impl Scalar {
     /// Zero scalar.
     pub const ZERO: Self = Self([0, 0, 0, 0, 0, 0]);
 
-    /// Create a scalar from a canonical, little-endian representation
-    pub fn from_le_bytes(bytes: &[u8; 48]) -> Result<Self> {
-        let order_le = NistP384::ORDER.to_le_bytes();
-        let mut c: u8 = 0;
-        let mut n: u8 = 1;
-        for (&s, &l) in bytes.iter().rev().zip(order_le.iter().rev()) {
-            c |= (((s as u16).wrapping_sub(l as u16) >> 8) as u8) & n;
-            n &= (((s ^ l) as u16).wrapping_sub(1) >> 8) as u8;
-        }
-        if c == 0 {
-            return Err(Error);
-        }
-
+    /// Create a scalar from a canonical, big-endian representation
+    pub fn from_be_bytes(bytes: FieldBytes) -> CtOption<Self> {
         let mut non_mont = Default::default();
-        fiat_p384_scalar_from_bytes(&mut non_mont, bytes);
+        fiat_p384_scalar_from_bytes(&mut non_mont, &swap48(bytes.as_ref()));
         let mut mont = Default::default();
         fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
-        Ok(Scalar(mont))
+        let out = Scalar(mont);
+        let overflow = U384::from_be_bytes(bytes.into()).ct_lt(&NistP384::ORDER);
+        CtOption::new(out, overflow)
     }
 
-    /// Create a scalar from a canonical, big-endian representation
-    pub fn from_be_bytes(bytes: &[u8; 48]) -> Result<Self> {
-        Scalar::from_le_bytes(&swap48(bytes))
+    /// Decode scalar from a big endian byte slice.
+    pub fn from_be_slice(slice: &[u8]) -> Result<Self> {
+        <[u8; 48]>::try_from(slice)
+            .ok()
+            .and_then(|array| Self::from_be_bytes(array.into()).into())
+            .ok_or(Error)
+    }
+
+    /// Create a scalar from a canonical, little-endian representation
+    pub fn from_le_bytes(bytes: FieldBytes) -> CtOption<Self> {
+        Self::from_be_bytes(swap48(&bytes.into()).into())
+    }
+
+    /// Decode scalar from a little endian byte slice.
+    pub fn from_le_slice(slice: &[u8]) -> Result<Self> {
+        <[u8; 48]>::try_from(slice)
+            .ok()
+            .and_then(|array| Self::from_le_bytes(array.into()).into())
+            .ok_or(Error)
+    }
+
+    /// Returns the little-endian encoding of this scalar.
+    pub fn to_be_bytes(&self) -> FieldBytes {
+        let mut out = [0u8; 48];
+        out.copy_from_slice(&self.to_le_bytes());
+        FieldBytes::from(swap48(&out))
     }
 
     /// Returns the little-endian encoding of this scalar.
@@ -89,13 +103,6 @@ impl Scalar {
         let mut out = [0u8; 48];
         fiat_p384_scalar_to_bytes(&mut out, &non_mont.0);
         FieldBytes::from(out)
-    }
-
-    /// Returns the little-endian encoding of this scalar.
-    pub fn to_be_bytes(&self) -> FieldBytes {
-        let mut out = [0u8; 48];
-        out.copy_from_slice(&self.to_le_bytes());
-        FieldBytes::from(swap48(&out))
     }
 
     #[cfg(test)]
@@ -299,12 +306,7 @@ impl PrimeField for Scalar {
     const S: u32 = 1;
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        let mut non_mont = Default::default();
-        fiat_p384_scalar_from_bytes(&mut non_mont, &swap48(bytes.as_ref()));
-        let mut mont = Default::default();
-        fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
-        let out = Scalar(mont);
-        CtOption::new(out, 1.into())
+        Self::from_be_bytes(bytes)
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -342,9 +344,7 @@ fn swap48(x: &[u8; 48]) -> [u8; 48] {
 
 impl From<ScalarCore<NistP384>> for Scalar {
     fn from(x: ScalarCore<NistP384>) -> Self {
-        let mut bytes = [0u8; 48];
-        bytes.copy_from_slice(x.to_le_bytes().as_slice());
-        Scalar::from_le_bytes(&bytes).expect("non-canonical encoding")
+        Scalar::from_be_bytes(x.to_be_bytes()).unwrap()
     }
 }
 
@@ -574,9 +574,7 @@ impl PrimeFieldBits for Scalar {
 
 impl From<&ScalarCore<NistP384>> for Scalar {
     fn from(scalar: &ScalarCore<NistP384>) -> Scalar {
-        let mut bytes = [0u8; 48];
-        bytes.copy_from_slice(scalar.to_le_bytes().as_slice());
-        Scalar::from_le_bytes(&bytes).expect("non-canonical encoding")
+        Scalar::from_be_bytes(scalar.to_be_bytes()).unwrap()
     }
 }
 
