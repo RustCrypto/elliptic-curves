@@ -597,9 +597,9 @@ impl TryFrom<&ProjectivePoint> for PublicKey {
 
 #[cfg(test)]
 mod tests {
-    use super::{AffinePoint, ProjectivePoint};
-    use crate::test_vectors::group::ADD_TEST_VECTORS;
-    use elliptic_curve::group::prime::PrimeCurveAffine;
+    use super::{AffinePoint, ProjectivePoint, Scalar};
+    use crate::test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS};
+    use elliptic_curve::{group::prime::PrimeCurveAffine, PrimeField};
 
     #[test]
     fn affine_to_projective() {
@@ -707,5 +707,28 @@ mod tests {
     fn projective_double_and_sub() {
         let generator = ProjectivePoint::GENERATOR;
         assert_eq!(generator.double() - &generator, generator);
+    }
+
+    #[test]
+    fn test_vector_scalar_mult() {
+        let generator = ProjectivePoint::GENERATOR;
+
+        for (k, coords) in ADD_TEST_VECTORS
+            .iter()
+            .enumerate()
+            .map(|(k, coords)| (Scalar::from(k as u64 + 1), *coords))
+            .chain(
+                MUL_TEST_VECTORS
+                    .iter()
+                    .cloned()
+                    .map(|(k, x, y)| (Scalar::from_repr(k.into()).unwrap(), (x, y))),
+            )
+        {
+            // dbg!(&k);
+
+            let res = (generator * &k).to_affine();
+            assert_eq!(res.x.to_sec1(), coords.0.into());
+            assert_eq!(res.y.to_sec1(), coords.1.into());
+        }
     }
 }
