@@ -598,7 +598,7 @@ impl TryFrom<&ProjectivePoint> for PublicKey {
 #[cfg(test)]
 mod tests {
     use super::{AffinePoint, ProjectivePoint};
-    use crate::test_vectors::ADD_TEST_VECTORS;
+    use crate::test_vectors::group::ADD_TEST_VECTORS;
     use elliptic_curve::group::prime::PrimeCurveAffine;
 
     #[test]
