@@ -18,7 +18,7 @@ use super::LIMBS;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{Encoding, Limb},
+    bigint::{Encoding, Limb, LimbUInt as Word},
     ff::{Field, PrimeField},
     generic_array::arr,
     ops::Reduce,
@@ -200,49 +200,33 @@ impl Field for Scalar {
         Scalar::double(self)
     }
 
-    #[cfg(target_pointer_width = "32")]
     fn invert(&self) -> CtOption<Self> {
-        todo!("scalar inversions not yet implemented for 32-bit targets")
-    }
-
-    #[cfg(target_pointer_width = "64")]
-    fn invert(&self) -> CtOption<Self> {
-        let limbs = &self.0;
-        type Fe = fiat_p384_scalar_montgomery_domain_field_element;
-        type Word = u64;
-        const LEN_PRIME: usize = 384;
-        const WORD_BITS: usize = 64;
+        /// (49 * 384 + 57) / 17
+        const ITERATIONS: usize = 1110;
         type XLimbs = [Word; LIMBS + 1];
 
-        fn one() -> Fe {
-            let mut fe = Fe::default();
-            fiat_p384_scalar_set_one(&mut fe);
-            fe
-        }
-
-        const ITERATIONS: usize = (49 * LEN_PRIME + if LEN_PRIME < 46 { 80 } else { 57 }) / 17;
         let mut d: Word = 1;
-        let mut f: XLimbs = Default::default();
+        let mut f = XLimbs::default();
         fiat_p384_scalar_msat(&mut f);
 
-        let mut g: XLimbs = Default::default();
-        let mut g_: Fe = Default::default();
-        fiat_p384_scalar_from_montgomery(&mut g_, limbs);
-        g[..g_.len()].copy_from_slice(&g_);
+        let mut g = XLimbs::default();
+        fiat_p384_scalar_from_montgomery((&mut g[..LIMBS]).try_into().unwrap(), &self.0);
 
-        let mut r = one();
-        let mut v: Fe = Default::default();
+        let mut r = Fe::default();
+        fiat_p384_scalar_set_one(&mut r);
 
-        let mut precomp: Fe = Default::default();
+        let mut v = Fe::default();
+        let mut precomp = Fe::default();
         fiat_p384_scalar_divstep_precomp(&mut precomp);
 
-        let mut out1: Word = Default::default();
-        let mut out2: XLimbs = Default::default();
-        let mut out3: XLimbs = Default::default();
-        let mut out4: Fe = Default::default();
-        let mut out5: Fe = Default::default();
+        let mut out1 = Word::default();
+        let mut out2 = XLimbs::default();
+        let mut out3 = XLimbs::default();
+        let mut out4 = Fe::default();
+        let mut out5 = Fe::default();
 
         let mut i: usize = 0;
+
         while i < ITERATIONS - ITERATIONS % 2 {
             fiat_p384_scalar_divstep(
                 &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
@@ -252,6 +236,7 @@ impl Field for Scalar {
             );
             i += 2;
         }
+
         if ITERATIONS % 2 != 0 {
             fiat_p384_scalar_divstep(
                 &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
@@ -259,12 +244,15 @@ impl Field for Scalar {
             v = out4;
             f = out2;
         }
-        let mut v_opp: Fe = Default::default();
+
+        let mut v_opp = Fe::default();
         fiat_p384_scalar_opp(&mut v_opp, &v);
-        let s = ((f[f.len() - 1] >> (WORD_BITS - 1)) & 1) as u8;
-        let mut v_: Fe = Default::default();
+
+        let s = ((f[f.len() - 1] >> (Limb::BIT_SIZE - 1)) & 1) as u8;
+        let mut v_ = Fe::default();
         fiat_p384_scalar_selectznz(&mut v_, s, &v, &v_opp);
-        let mut fe: Fe = Default::default();
+
+        let mut fe = Fe::default();
         fiat_p384_scalar_mul(&mut fe, &v_, &precomp);
         CtOption::new(fe.into(), !self.is_zero())
     }

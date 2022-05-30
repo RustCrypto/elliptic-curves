@@ -12,16 +12,13 @@ pub(crate) mod projective;
 pub(crate) mod scalar;
 
 use affine::AffinePoint;
+use elliptic_curve::bigint::nlimbs;
 use field::{FieldElement, MODULUS};
 use projective::ProjectivePoint;
 use scalar::Scalar;
 
 /// Number of limbs used to represent a field element.
-#[cfg(target_pointer_width = "32")]
-const LIMBS: usize = 12;
-/// Number of limbs used to represent a field element.
-#[cfg(target_pointer_width = "64")]
-const LIMBS: usize = 6;
+const LIMBS: usize = nlimbs!(384);
 
 /// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
 /// NOTE: field element has been translated into the Montgomery domain.
