@@ -14,6 +14,7 @@ pub(crate) mod blinded;
 mod scalar_impl;
 
 use self::scalar_impl::*;
+use super::LIMBS;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
@@ -26,9 +27,6 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
     Curve as _, Error, IsHigh, Result, ScalarArithmetic, ScalarCore,
 };
-
-#[cfg(target_pointer_width = "64")]
-use super::LIMBS;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -51,18 +49,15 @@ pub struct Scalar(Fe);
 
 impl Scalar {
     /// Zero scalar.
-    #[cfg(target_pointer_width = "32")]
-    pub const ZERO: Self = Self([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    /// Zero scalar.
-    #[cfg(target_pointer_width = "64")]
-    pub const ZERO: Self = Self([0, 0, 0, 0, 0, 0]);
+    pub const ZERO: Self = Self([0; LIMBS]);
 
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "32")]
     pub const ONE: Self = Self([
-        0x333ad68d, 0x1313e695, 0xb74f5885, 0xa7e5f24d, 0x0bc8d220, 0xbc8d220, 0x00000000,
+        0x333ad68d, 0x1313e695, 0xb74f5885, 0xa7e5f24d, 0x0bc8d220, 0x389cb27e, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
     ]);
+
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "64")]
     pub const ONE: Self = Self([
@@ -75,14 +70,9 @@ impl Scalar {
     ]);
 
     /// Create a scalar from a canonical, big-endian representation
-    pub fn from_be_bytes(bytes: FieldBytes) -> CtOption<Self> {
-        let mut non_mont = Default::default();
-        fiat_p384_scalar_from_bytes(&mut non_mont, &swap48(bytes.as_ref()));
-        let mut mont = Default::default();
-        fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
-        let out = Scalar(mont);
-        let overflow = U384::from_be_bytes(bytes.into()).ct_lt(&NistP384::ORDER);
-        CtOption::new(out, overflow)
+    pub fn from_be_bytes(mut bytes: FieldBytes) -> CtOption<Self> {
+        bytes.reverse();
+        Self::from_le_bytes(bytes)
     }
 
     /// Decode scalar from a big endian byte slice.
@@ -95,7 +85,13 @@ impl Scalar {
 
     /// Create a scalar from a canonical, little-endian representation
     pub fn from_le_bytes(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_be_bytes(swap48(&bytes.into()).into())
+        let mut non_mont = Default::default();
+        fiat_p384_scalar_from_bytes(&mut non_mont, bytes.as_ref());
+        let mut mont = Default::default();
+        fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
+        let out = Scalar(mont);
+        let overflow = U384::from_be_bytes(bytes.into()).ct_lt(&NistP384::ORDER);
+        CtOption::new(out, overflow)
     }
 
     /// Decode scalar from a little endian byte slice.
@@ -108,9 +104,9 @@ impl Scalar {
 
     /// Returns the little-endian encoding of this scalar.
     pub fn to_be_bytes(&self) -> FieldBytes {
-        let mut out = [0u8; 48];
-        out.copy_from_slice(&self.to_le_bytes());
-        FieldBytes::from(swap48(&out))
+        let mut bytes = self.to_le_bytes();
+        bytes.reverse();
+        bytes
     }
 
     /// Returns the little-endian encoding of this scalar.
@@ -352,14 +348,6 @@ impl PrimeField for Scalar {
         ])
         .unwrap()
     }
-}
-
-fn swap48(x: &[u8; 48]) -> [u8; 48] {
-    let mut swapped = [0u8; 48];
-    for (v, r) in x.iter().rev().zip(swapped.iter_mut()) {
-        *r = *v;
-    }
-    swapped
 }
 
 impl From<ScalarCore<NistP384>> for Scalar {
@@ -631,8 +619,19 @@ impl From<&SecretKey> for Scalar {
 mod tests {
     use elliptic_curve::ff::{Field, PrimeField};
 
-    use super::Scalar;
+    use super::{fiat_p384_scalar_to_montgomery, Fe, Scalar};
     use crate::FieldBytes;
+
+    /// Test that the precomputed `Scalar::ONE` constant is correct.
+    #[test]
+    fn one() {
+        let mut one = Fe::default();
+        one[0] = 1;
+
+        let mut one_mont = Fe::default();
+        fiat_p384_scalar_to_montgomery(&mut one_mont, &one);
+        assert_eq!(Scalar(one_mont), Scalar::ONE);
+    }
 
     #[test]
     fn from_to_bytes_roundtrip() {

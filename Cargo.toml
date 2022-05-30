@@ -7,3 +7,6 @@ members = [
     "p256",
     "p384",
 ]
+
+[profile.dev]
+opt-level = 2
