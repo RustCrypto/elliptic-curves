@@ -51,6 +51,7 @@ pub(crate) const MODULUS: FieldElement = FieldElement([
     0xffffffff, 0x00000000, 0x00000000, 0xffffffff, 0xfffffffe, 0xffffffff, 0xffffffff, 0xffffffff,
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 ]);
+
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
 #[cfg(target_pointer_width = "64")]
@@ -68,17 +69,18 @@ pub(crate) const MODULUS: FieldElement = FieldElement([
 pub struct FieldElement(pub(super) FieldElementImpl);
 
 impl FieldElement {
+    /// Zero element.
+    pub const ZERO: Self = Self([0; LIMBS]);
+
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "32")]
     pub const ONE: Self = Self([
         0x1, 0xffffffff, 0xffffffff, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
     ]);
+
     /// Multiplicative identity.
     #[cfg(target_pointer_width = "64")]
     pub const ONE: Self = Self([0xffffffff00000001, 0xffffffff, 0x1, 0x0, 0x0, 0x0]);
-
-    /// Zero element.
-    pub const ZERO: Self = Self([0; LIMBS]);
 
     pub fn from_limbs(limbs: [Limb; LIMBS]) -> Self {
         FieldElement(limbs)
@@ -114,12 +116,12 @@ impl FieldElement {
         let (_, borrow) = sbb(w[3], MODULUS.0[3], borrow);
         let (_, borrow) = sbb(w[4], MODULUS.0[4], borrow);
         let (_, borrow) = sbb(w[5], MODULUS.0[5], borrow);
-        let (_, borrow) = sbb(w[0], MODULUS.0[6], borrow);
-        let (_, borrow) = sbb(w[1], MODULUS.0[7], borrow);
-        let (_, borrow) = sbb(w[2], MODULUS.0[8], borrow);
-        let (_, borrow) = sbb(w[3], MODULUS.0[9], borrow);
-        let (_, borrow) = sbb(w[4], MODULUS.0[10], borrow);
-        let (_, borrow) = sbb(w[5], MODULUS.0[11], borrow);
+        let (_, borrow) = sbb(w[6], MODULUS.0[6], borrow);
+        let (_, borrow) = sbb(w[7], MODULUS.0[7], borrow);
+        let (_, borrow) = sbb(w[8], MODULUS.0[8], borrow);
+        let (_, borrow) = sbb(w[9], MODULUS.0[9], borrow);
+        let (_, borrow) = sbb(w[10], MODULUS.0[10], borrow);
+        let (_, borrow) = sbb(w[11], MODULUS.0[11], borrow);
         let is_some = (borrow as u8) & 1;
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
@@ -574,26 +576,42 @@ pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
     (ret as u64, (ret >> 64) as u64)
 }
 
-/// Basic tests that field inversion works.
-#[test]
-fn invert() {
-    let one = FieldElement::ONE;
-    assert_eq!(one.invert().unwrap(), one);
+#[cfg(test)]
+mod tests {
+    use super::{fiat_p384_to_montgomery, FieldElement, FieldElementImpl};
 
-    let three = one + &one + &one;
-    let inv_three = three.invert().unwrap();
-    assert_eq!(three * &inv_three, one);
+    /// Test that the precomputed `FieldElement::ONE` constant is correct.
+    #[test]
+    fn one() {
+        let mut one = FieldElementImpl::default();
+        one[0] = 1;
 
-    let minus_three = -three;
-    let inv_minus_three = minus_three.invert().unwrap();
-    assert_eq!(inv_minus_three, -inv_three);
-    assert_eq!(three * &inv_minus_three, -one);
-}
+        let mut one_mont = FieldElementImpl::default();
+        fiat_p384_to_montgomery(&mut one_mont, &one);
+        assert_eq!(FieldElement(one_mont), FieldElement::ONE);
+    }
 
-#[test]
-fn sqrt() {
-    let one = FieldElement::ONE;
-    let two = one + &one;
-    let four = two.square();
-    assert_eq!(four.sqrt().unwrap(), two);
+    /// Basic tests that field inversion works.
+    #[test]
+    fn invert() {
+        let one = FieldElement::ONE;
+        assert_eq!(one.invert().unwrap(), one);
+
+        let three = one + &one + &one;
+        let inv_three = three.invert().unwrap();
+        assert_eq!(three * &inv_three, one);
+
+        let minus_three = -three;
+        let inv_minus_three = minus_three.invert().unwrap();
+        assert_eq!(inv_minus_three, -inv_three);
+        assert_eq!(three * &inv_minus_three, -one);
+    }
+
+    #[test]
+    fn sqrt() {
+        let one = FieldElement::ONE;
+        let two = one + &one;
+        let four = two.square();
+        assert_eq!(four.sqrt().unwrap(), two);
+    }
 }

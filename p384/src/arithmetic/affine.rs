@@ -71,7 +71,7 @@ impl AffinePoint {
         ]),
         y: FieldElement([
             0x4b03a4fe, 0x23043dad, 0x7bb4a9ac, 0xa1bfa8bf, 0x2e83b050, 0x8bade756, 0x68f4ffd9,
-            0xc6c35219, 0x3969a840, 0x3969a840, 0x5a15c5e9, 0x2b78abc2,
+            0xc6c35219, 0x3969a840, 0xdd800226, 0x5a15c5e9, 0x2b78abc2,
         ]),
         infinity: 0,
     };
