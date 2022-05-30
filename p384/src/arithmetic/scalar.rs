@@ -90,8 +90,8 @@ impl Scalar {
         let mut mont = Default::default();
         fiat_p384_scalar_to_montgomery(&mut mont, &non_mont);
         let out = Scalar(mont);
-        let overflow = U384::from_be_bytes(bytes.into()).ct_lt(&NistP384::ORDER);
-        CtOption::new(out, overflow)
+        let is_some = U384::from_le_bytes(bytes.into()).ct_lt(&NistP384::ORDER);
+        CtOption::new(out, is_some)
     }
 
     /// Decode scalar from a little endian byte slice.

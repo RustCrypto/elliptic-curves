@@ -11,14 +11,11 @@ pub(crate) mod field;
 pub(crate) mod projective;
 pub(crate) mod scalar;
 
-use affine::AffinePoint;
-use elliptic_curve::bigint::nlimbs;
-use field::{FieldElement, MODULUS};
-use projective::ProjectivePoint;
-use scalar::Scalar;
+use self::{affine::AffinePoint, field::FieldElement, projective::ProjectivePoint, scalar::Scalar};
+use elliptic_curve::bigint;
 
 /// Number of limbs used to represent a field element.
-const LIMBS: usize = nlimbs!(384);
+const LIMBS: usize = bigint::nlimbs!(384);
 
 /// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
 /// NOTE: field element has been translated into the Montgomery domain.
