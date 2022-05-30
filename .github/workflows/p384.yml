@@ -46,22 +46,70 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features voprf
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core,jwk,pem,pkcs8,serde,sha384,voprf
 
-  # TODO(tarcieri): test arithmetic on 32-bit platforms
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust:
-          - 1.57.0 # MSRV
-          - stable
+        include:
+          # 32-bit Linux
+          - target: i686-unknown-linux-gnu
+            rust: 1.57.0 # MSRV
+            deps: sudo apt update && sudo apt install gcc-multilib
+          - target: i686-unknown-linux-gnu
+            rust: stable
+            deps: sudo apt update && sudo apt install gcc-multilib
+
+          # 64-bit Linux
+          - target: x86_64-unknown-linux-gnu
+            rust: 1.57.0 # MSRV
+          - target: x86_64-unknown-linux-gnu
+            rust: stable
+
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-        profile: minimal
-    - run: cargo check --all-features
-    - run: cargo test --no-default-features
-    - run: cargo test
-    - run: cargo test --all-features
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - run: ${{ matrix.deps }}
+      - run: cargo check --target ${{ matrix.target }} --all-features
+      - run: cargo test --release --target ${{ matrix.target }} --no-default-features
+      - run: cargo test --release --target ${{ matrix.target }}
+      - run: cargo test --release --target ${{ matrix.target }} --all-features
+
+  cross:
+    strategy:
+      matrix:
+        include:
+          # ARM32
+          - target: armv7-unknown-linux-gnueabihf
+            rust: 1.57.0 # MSRV
+          - target: armv7-unknown-linux-gnueabihf
+            rust: stable
+
+          # ARM64
+          - target: aarch64-unknown-linux-gnu
+            rust: 1.57.0 # MSRV
+          - target: aarch64-unknown-linux-gnu
+            rust: stable
+
+          # PPC32
+          - target: powerpc-unknown-linux-gnu
+            rust: 1.57.0 # MSRV
+          - target: powerpc-unknown-linux-gnu
+            rust: stable
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: ${{ matrix.deps }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          override: true
+      - run: cargo install cross
+      - run: cross test --release --target ${{ matrix.target }} --all-features

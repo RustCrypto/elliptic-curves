@@ -26,23 +26,17 @@
 #[rustfmt::skip]
 mod field_impl;
 
-pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as FieldElementImpl;
+pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as Fe;
 
 use self::field_impl::*;
 use super::LIMBS;
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    bigint::{Limb, LimbUInt as Word},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
-
-/// Type used to represent a limb.
-#[cfg(target_pointer_width = "32")]
-type Limb = u32;
-/// Type used to represent a limb.
-#[cfg(target_pointer_width = "64")]
-type Limb = u64;
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
@@ -66,7 +60,7 @@ pub(crate) const MODULUS: FieldElement = FieldElement([
 
 /// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(super) FieldElementImpl);
+pub struct FieldElement(pub(super) Fe);
 
 impl FieldElement {
     /// Zero element.
@@ -82,7 +76,7 @@ impl FieldElement {
     #[cfg(target_pointer_width = "64")]
     pub const ONE: Self = Self([0xffffffff00000001, 0xffffffff, 0x1, 0x0, 0x0, 0x0]);
 
-    pub fn from_limbs(limbs: [Limb; LIMBS]) -> Self {
+    pub fn from_limbs(limbs: [Word; LIMBS]) -> Self {
         FieldElement(limbs)
     }
 
@@ -92,7 +86,7 @@ impl FieldElement {
     /// the range `[0, p)`.
     #[cfg(target_pointer_width = "32")]
     pub fn from_sec1(bytes: &FieldBytes) -> CtOption<Self> {
-        let mut w = [Limb::default(); LIMBS];
+        let mut w = [Word::default(); LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
         w[11] = u32::from_be_bytes(bytes[0..4].try_into().unwrap());
@@ -134,7 +128,7 @@ impl FieldElement {
     /// the range `[0, p)`.
     #[cfg(target_pointer_width = "64")]
     pub fn from_sec1(bytes: &FieldBytes) -> CtOption<Self> {
-        let mut w = [Limb::default(); LIMBS];
+        let mut w = [Word::default(); LIMBS];
 
         // Interpret the bytes as a big-endian integer w.
         w[5] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
@@ -316,52 +310,33 @@ impl FieldElement {
     }
 
     /// Inversion.
-    #[cfg(target_pointer_width = "32")]
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("field inversions not yet implemented for 32-bit targets")
-    }
+        /// (49 * 384 + 57) / 17
+        const ITERATIONS: usize = 1110;
+        type XLimbs = [Word; LIMBS + 1];
 
-    /// Inversion.
-    #[cfg(target_pointer_width = "64")]
-    pub fn invert(&self) -> CtOption<Self> {
-        let limbs = &self.0;
-        type Fe = fiat_p384_montgomery_domain_field_element;
-        type Word = u64;
-        const LEN_PRIME: usize = 384;
-
-        const WORD_BITS: usize = 64;
-        const LIMBS_WORDS: usize = 6;
-        type XLimbs = [Word; LIMBS_WORDS + 1];
-
-        fn one() -> Fe {
-            let mut fe = Fe::default();
-            fiat_p384_set_one(&mut fe);
-            fe
-        }
-
-        const ITERATIONS: usize = (49 * LEN_PRIME + if LEN_PRIME < 46 { 80 } else { 57 }) / 17;
         let mut d: Word = 1;
-        let mut f: XLimbs = Default::default();
+        let mut f = XLimbs::default();
         fiat_p384_msat(&mut f);
 
-        let mut g: XLimbs = Default::default();
-        let mut g_: Fe = Default::default();
-        fiat_p384_from_montgomery(&mut g_, limbs);
-        g[..g_.len()].copy_from_slice(&g_);
+        let mut g = XLimbs::default();
+        fiat_p384_from_montgomery((&mut g[..LIMBS]).try_into().unwrap(), &self.0);
 
-        let mut r = one();
-        let mut v: Fe = Default::default();
+        let mut r = Fe::default();
+        fiat_p384_set_one(&mut r);
 
-        let mut precomp: Fe = Default::default();
+        let mut v = Fe::default();
+        let mut precomp = Fe::default();
         fiat_p384_divstep_precomp(&mut precomp);
 
-        let mut out1: Word = Default::default();
-        let mut out2: XLimbs = Default::default();
-        let mut out3: XLimbs = Default::default();
-        let mut out4: Fe = Default::default();
-        let mut out5: Fe = Default::default();
+        let mut out1 = Word::default();
+        let mut out2 = XLimbs::default();
+        let mut out3 = XLimbs::default();
+        let mut out4 = Fe::default();
+        let mut out5 = Fe::default();
 
         let mut i: usize = 0;
+
         while i < ITERATIONS - ITERATIONS % 2 {
             fiat_p384_divstep(
                 &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
@@ -371,6 +346,7 @@ impl FieldElement {
             );
             i += 2;
         }
+
         if ITERATIONS % 2 != 0 {
             fiat_p384_divstep(
                 &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
@@ -378,12 +354,15 @@ impl FieldElement {
             v = out4;
             f = out2;
         }
-        let mut v_opp: Fe = Default::default();
+
+        let mut v_opp = Fe::default();
         fiat_p384_opp(&mut v_opp, &v);
-        let s = ((f[f.len() - 1] >> (WORD_BITS - 1)) & 1) as u8;
-        let mut v_: Fe = Default::default();
+
+        let s = ((f[f.len() - 1] >> (Limb::BIT_SIZE - 1)) & 1) as u8;
+        let mut v_ = Fe::default();
         fiat_p384_selectznz(&mut v_, s, &v, &v_opp);
-        let mut fe: Fe = Default::default();
+
+        let mut fe = Fe::default();
         fiat_p384_mul(&mut fe, &v_, &precomp);
         CtOption::new(FieldElement::from(fe), !self.is_zero())
     }
@@ -578,15 +557,15 @@ pub const fn sbb(a: u64, b: u64, borrow: u64) -> (u64, u64) {
 
 #[cfg(test)]
 mod tests {
-    use super::{fiat_p384_to_montgomery, FieldElement, FieldElementImpl};
+    use super::{fiat_p384_to_montgomery, Fe, FieldElement};
 
     /// Test that the precomputed `FieldElement::ONE` constant is correct.
     #[test]
     fn one() {
-        let mut one = FieldElementImpl::default();
+        let mut one = Fe::default();
         one[0] = 1;
 
-        let mut one_mont = FieldElementImpl::default();
+        let mut one_mont = Fe::default();
         fiat_p384_to_montgomery(&mut one_mont, &one);
         assert_eq!(FieldElement(one_mont), FieldElement::ONE);
     }
