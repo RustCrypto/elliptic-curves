@@ -22,13 +22,11 @@
 
 #[cfg_attr(target_pointer_width = "32", path = "field/p384_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "field/p384_64.rs")]
-#[allow(dead_code)]
+#[allow(dead_code, rustdoc::broken_intra_doc_links)]
 #[rustfmt::skip]
 mod field_impl;
 
-pub(super) use self::field_impl::fiat_p384_montgomery_domain_field_element as Fe;
-
-use self::field_impl::*;
+use self::field_impl::{fiat_p384_montgomery_domain_field_element as Fe, *};
 use super::LIMBS;
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};

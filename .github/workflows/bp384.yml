@@ -3,6 +3,7 @@ name: bp384
 on:
   pull_request:
     paths:
+      - ".github/workflows/bp384.yml"
       - "bp384/**"
       - "Cargo.*"
   push:
@@ -15,6 +16,7 @@ defaults:
 env:
   CARGO_INCREMENTAL: 0
   RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
   build:
@@ -61,3 +63,15 @@ jobs:
     - run: cargo test --no-default-features
     - run: cargo test
     - run: cargo test --all-features
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: RustCrypto/actions/cargo-cache@master
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+      - run: cargo doc --all-features

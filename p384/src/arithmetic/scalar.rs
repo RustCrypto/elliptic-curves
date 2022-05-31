@@ -9,11 +9,11 @@
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
-#[allow(dead_code)]
+#[allow(dead_code, rustdoc::broken_intra_doc_links)]
 #[rustfmt::skip]
 mod scalar_impl;
 
-use self::scalar_impl::*;
+use self::scalar_impl::{fiat_p384_scalar_montgomery_domain_field_element as Fe, *};
 use super::LIMBS;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
@@ -33,8 +33,6 @@ use elliptic_curve::{
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
-
-type Fe = fiat_p384_scalar_montgomery_domain_field_element;
 
 impl ScalarArithmetic for NistP384 {
     type Scalar = Scalar;
