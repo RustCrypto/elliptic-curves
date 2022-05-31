@@ -37,11 +37,7 @@ pub mod test_vectors;
 pub use elliptic_curve::{self, bigint::U384};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{
-    affine::AffinePoint,
-    projective::ProjectivePoint,
-    scalar::{blinded::BlindedScalar, Scalar},
-};
+pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
