@@ -33,7 +33,7 @@ use super::LIMBS;
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Integer, Limb, LimbUInt as Word, U384},
+    bigint::{ArrayEncoding, Encoding, Integer, Limb, LimbUInt as Word, U384},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
@@ -107,7 +107,7 @@ impl FieldElement {
     /// Returns `self - rhs` as well as a carry
     pub fn informed_subtract(&self, rhs: &Self) -> (Self, u8) {
         let mut out = Fe::default();
-        fiat_p384_sub(&mut out, &self.0.into(), &rhs.0.into());
+        fiat_p384_sub(&mut out, self.as_ref(), rhs.as_ref());
         let carry: bool = rhs.ct_gt(self).into();
         (Self(out.into()), carry as _)
     }
@@ -135,9 +135,9 @@ impl FieldElement {
     /// Returns self * self.
     #[inline]
     pub fn square(&self) -> Self {
-        let mut out = Fe::default();
-        fiat_p384_square(&mut out, &self.0.into());
-        Self(out.into())
+        let mut out = U384::default();
+        fiat_p384_square(out.as_mut(), self.as_ref());
+        Self(out)
     }
 
     /// Returns self^(2^n) mod p
@@ -156,45 +156,44 @@ impl FieldElement {
         // x^9850501549098619803069760025035903451269934817616361666987073351061430442874217582261816522064734500465401743278080
         let t1 = *self;
         let t10 = t1.square();
-        let t11 = t1 * &t10;
+        let t11 = t1 * t10;
         let t110 = t11.square();
-        let t111 = t1 * &t110;
+        let t111 = t1 * t110;
         let t111000 = t111.sqn(3);
-        let t111111 = t111 * &t111000;
+        let t111111 = t111 * t111000;
         let t1111110 = t111111.square();
-        let t1111111 = t1 * &t1111110;
-        let x12 = t1111110.sqn(5) * &t111111;
-        let x24 = x12.sqn(12) * &x12;
-        let x31 = x24.sqn(7) * &t1111111;
-        let x32 = x31.square() * &t1;
-        let x63 = x32.sqn(31) * &x31;
-        let x126 = x63.sqn(63) * &x63;
-        let x252 = x126.sqn(126) * &x126;
-        let x255 = x252.sqn(3) * &t111;
-        let x = ((x255.sqn(33) * &x32).sqn(64) * &t1).sqn(30);
+        let t1111111 = t1 * t1111110;
+        let x12 = t1111110.sqn(5) * t111111;
+        let x24 = x12.sqn(12) * x12;
+        let x31 = x24.sqn(7) * t1111111;
+        let x32 = x31.square() * t1;
+        let x63 = x32.sqn(31) * x31;
+        let x126 = x63.sqn(63) * x63;
+        let x252 = x126.sqn(126) * x126;
+        let x255 = x252.sqn(3) * t111;
+        let x = ((x255.sqn(33) * x32).sqn(64) * t1).sqn(30);
         CtOption::new(x, x.square().ct_eq(&t1))
     }
 
     /// Translate a field element out of the Montgomery domain.
     #[inline]
     pub fn to_canonical(self) -> Self {
-        let mut out = Fe::default();
-        fiat_p384_from_montgomery(&mut out, &self.0.into());
-        Self(out.into())
+        let mut out = U384::default();
+        fiat_p384_from_montgomery(out.as_mut(), self.as_ref());
+        Self(out)
     }
 
     /// Translate a field element into the Montgomery domain.
     #[inline]
     pub(crate) fn to_montgomery(self) -> Self {
-        let mut out = Fe::default();
-        fiat_p384_to_montgomery(&mut out, &self.0.into());
-        Self(out.into())
+        let mut out = U384::default();
+        fiat_p384_to_montgomery(out.as_mut(), self.as_ref());
+        Self(out)
     }
 
     /// Inversion.
     pub fn invert(&self) -> CtOption<Self> {
-        /// (49 * 384 + 57) / 17
-        const ITERATIONS: usize = 1110;
+        const ITERATIONS: usize = (49 * U384::BIT_SIZE + 57) / 17;
         type XLimbs = [Word; LIMBS + 1];
 
         let mut d: Word = 1;
@@ -202,7 +201,7 @@ impl FieldElement {
         fiat_p384_msat(&mut f);
 
         let mut g = XLimbs::default();
-        fiat_p384_from_montgomery((&mut g[..LIMBS]).try_into().unwrap(), &self.0.into());
+        fiat_p384_from_montgomery((&mut g[..LIMBS]).try_into().unwrap(), self.as_ref());
 
         let mut r = Fe::default();
         fiat_p384_set_one(&mut r);
@@ -250,15 +249,9 @@ impl FieldElement {
     }
 }
 
-impl PartialEq for FieldElement {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.0.ct_eq(&(rhs.0)).into()
-    }
-}
-
-impl Default for FieldElement {
-    fn default() -> Self {
-        Self::ZERO
+impl AsRef<Fe> for FieldElement {
+    fn as_ref(&self) -> &Fe {
+        self.0.as_ref()
     }
 }
 
@@ -286,83 +279,79 @@ impl ConstantTimeGreater for FieldElement {
     }
 }
 
+impl Default for FieldElement {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
 impl DefaultIsZeroes for FieldElement {}
 
-impl Add<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn add(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = Fe::default();
-        fiat_p384_add(&mut out, &self.0.into(), &rhs.0.into());
-        FieldElement(out.into())
+impl PartialEq for FieldElement {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.0.ct_eq(&(rhs.0)).into()
     }
 }
 
-impl Add<&FieldElement> for FieldElement {
-    type Output = FieldElement;
+macro_rules! impl_field_op {
+    ($name:tt, $inner:ty, $op:tt, $op_fn:ident, $func:ident) => {
+        impl $op for $name {
+            type Output = $name;
 
-    fn add(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = Fe::default();
-        fiat_p384_add(&mut out, &self.0.into(), &rhs.0.into());
-        FieldElement(out.into())
-    }
+            #[inline]
+            fn $op_fn(self, rhs: $name) -> $name {
+                let mut out = <$inner>::default();
+                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
+                $name(out)
+            }
+        }
+
+        impl $op<&$name> for $name {
+            type Output = $name;
+
+            #[inline]
+            fn $op_fn(self, rhs: &$name) -> $name {
+                let mut out = <$inner>::default();
+                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
+                $name(out)
+            }
+        }
+
+        impl $op<&$name> for &$name {
+            type Output = $name;
+
+            #[inline]
+            fn $op_fn(self, rhs: &$name) -> $name {
+                let mut out = <$inner>::default();
+                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
+                $name(out)
+            }
+        }
+    };
 }
+
+impl_field_op!(FieldElement, U384, Add, add, fiat_p384_add);
+impl_field_op!(FieldElement, U384, Sub, sub, fiat_p384_sub);
+impl_field_op!(FieldElement, U384, Mul, mul, fiat_p384_mul);
 
 impl AddAssign for FieldElement {
+    #[inline]
     fn add_assign(&mut self, rhs: FieldElement) {
-        *self = *self + &rhs;
-    }
-}
-
-impl Sub<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = Fe::default();
-        fiat_p384_sub(&mut out, &self.0.into(), &rhs.0.into());
-        FieldElement(out.into())
-    }
-}
-
-impl Sub<&FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = Fe::default();
-        fiat_p384_sub(&mut out, &self.0.into(), &rhs.0.into());
-        FieldElement(out.into())
+        *self = *self + rhs;
     }
 }
 
 impl SubAssign for FieldElement {
+    #[inline]
     fn sub_assign(&mut self, rhs: FieldElement) {
-        *self = *self + &rhs;
-    }
-}
-
-impl Mul<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn mul(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = Fe::default();
-        fiat_p384_mul(&mut out, &self.0.into(), &rhs.0.into());
-        FieldElement(out.into())
-    }
-}
-
-impl Mul<&FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn mul(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = Fe::default();
-        fiat_p384_mul(&mut out, &self.0.into(), &rhs.0.into());
-        Self(out.into())
+        *self = *self - rhs;
     }
 }
 
 impl MulAssign for FieldElement {
+    #[inline]
     fn mul_assign(&mut self, rhs: FieldElement) {
-        *self = *self * &rhs;
+        *self = *self * rhs;
     }
 }
 
@@ -370,9 +359,9 @@ impl Neg for FieldElement {
     type Output = Self;
 
     fn neg(self) -> Self {
-        let mut out = Fe::default();
-        fiat_p384_opp(&mut out, &self.0.into());
-        Self(out.into())
+        let mut out = U384::default();
+        fiat_p384_opp(out.as_mut(), self.as_ref());
+        Self(out)
     }
 }
 
