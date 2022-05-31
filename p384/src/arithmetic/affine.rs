@@ -12,7 +12,7 @@ use elliptic_curve::{
     sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, Curve, DecompactPoint, DecompressPoint, Error, Result,
+    AffineArithmetic, AffineXCoordinate, Curve, DecompressPoint, Error, Result,
 };
 
 #[cfg(feature = "serde")]
@@ -215,27 +215,6 @@ impl GroupEncoding for AffinePoint {
     }
 }
 
-impl DecompactPoint<NistP384> for AffinePoint {
-    fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
-        FieldElement::from_sec1(*x_bytes).and_then(|x| {
-            let montgomery_y = (x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B).sqrt();
-            montgomery_y.map(|montgomery_y| {
-                // Convert to canonical form for comparisons
-                let y = montgomery_y.to_canonical();
-                let p_y = FieldElement(MODULUS) - &y;
-                // let (_, borrow) = p_y.informed_subtract(&y);
-                let borrow = 0;
-                let recovered_y = if borrow == 0 { y } else { p_y };
-                AffinePoint {
-                    x,
-                    y: recovered_y.to_montgomery(),
-                    infinity: 0,
-                }
-            })
-        })
-    }
-}
-
 impl FromEncodedPoint<NistP384> for AffinePoint {
     /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded
     /// [`AffinePoint`].
@@ -246,7 +225,8 @@ impl FromEncodedPoint<NistP384> for AffinePoint {
     fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::identity(), 1.into()),
-            sec1::Coordinates::Compact { x } => AffinePoint::decompact(x),
+            // TODO(tarcieri): point decompaction support
+            sec1::Coordinates::Compact { .. } => CtOption::new(AffinePoint::IDENTITY, 0.into()),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
@@ -282,7 +262,7 @@ impl ToCompactEncodedPoint<NistP384> for AffinePoint {
     /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
     fn to_compact_encoded_point(&self) -> CtOption<EncodedPoint> {
         // Convert to canonical form for comparisons
-        let y = self.y.to_canonical();
+        let y = FieldElement(self.y.to_canonical());
         let (p_y, borrow) = FieldElement(MODULUS).informed_subtract(&y);
         assert_eq!(borrow, 0);
         let (_, borrow) = p_y.informed_subtract(&y);

@@ -71,14 +71,25 @@ impl FieldElement {
     /// the range `[0, p)`.
     pub fn from_uint(w: U384) -> CtOption<Self> {
         let is_some = w.ct_lt(&MODULUS);
+        CtOption::new(Self::from_uint_unchecked(w), is_some)
+    }
 
+    /// Convert the given [`U384`] in canonical form into a [`FieldElement`]
+    /// which internally uses Montgomery form.
+    ///
+    /// Does not perform a check that the scalar does not overflow `MODULUS`.
+    ///
+    /// Used incorrectly this can lead to invalid results!
+    fn from_uint_unchecked(w: U384) -> Self {
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        CtOption::new(FieldElement(w).to_montgomery(), is_some)
+        let mut mont = U384::default();
+        fiat_p384_to_montgomery(mont.as_mut(), w.as_ref());
+        Self(mont)
     }
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_sec1(self) -> FieldBytes {
-        self.to_canonical().0.to_be_byte_array()
+        self.to_canonical().to_be_byte_array()
     }
 
     /// Determine if this `FieldElement` is zero.
@@ -97,7 +108,7 @@ impl FieldElement {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        self.to_canonical().0.is_odd()
+        self.to_canonical().is_odd()
     }
 
     /// Returns `self + rhs`.
@@ -185,18 +196,10 @@ impl FieldElement {
 
     /// Translate a field element out of the Montgomery domain.
     #[inline]
-    pub fn to_canonical(self) -> Self {
-        let mut out = U384::default();
-        fiat_p384_from_montgomery(out.as_mut(), self.as_ref());
-        Self(out)
-    }
-
-    /// Translate a field element into the Montgomery domain.
-    #[inline]
-    pub(crate) fn to_montgomery(self) -> Self {
-        let mut out = U384::default();
-        fiat_p384_to_montgomery(out.as_mut(), self.as_ref());
-        Self(out)
+    pub fn to_canonical(self) -> U384 {
+        let mut ret = U384::default();
+        fiat_p384_from_montgomery(ret.as_mut(), self.as_ref());
+        ret
     }
 
     /// Inversion.
