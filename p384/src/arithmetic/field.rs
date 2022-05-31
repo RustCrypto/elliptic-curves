@@ -33,7 +33,7 @@ use super::LIMBS;
 use crate::FieldBytes;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Limb, LimbUInt as Word, U384},
+    bigint::{ArrayEncoding, Integer, Limb, LimbUInt as Word, U384},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
@@ -43,94 +43,34 @@ use elliptic_curve::{
 
 /// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(super) Fe);
+pub struct FieldElement(pub(super) U384);
 
 impl FieldElement {
     /// Zero element.
-    pub const ZERO: Self = Self([0; LIMBS]);
+    pub const ZERO: Self = Self(U384::ZERO);
 
     /// Multiplicative identity.
-    #[cfg(target_pointer_width = "32")]
-    pub const ONE: Self = Self([
-        0x1, 0xffffffff, 0xffffffff, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-    ]);
-
-    /// Multiplicative identity.
-    #[cfg(target_pointer_width = "64")]
-    pub const ONE: Self = Self([0xffffffff00000001, 0xffffffff, 0x1, 0x0, 0x0, 0x0]);
+    pub const ONE: Self = Self(U384::from_be_hex("000000000000000000000000000000000000000000000000000000000000000100000000ffffffffffffffff00000001"));
 
     /// Constant representing the modulus
     /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-    #[cfg(target_pointer_width = "32")]
-    pub(crate) const MODULUS: Self = Self([
-        0xffffffff, 0x00000000, 0x00000000, 0xffffffff, 0xfffffffe, 0xffffffff, 0xffffffff,
-        0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
-    ]);
-
-    /// Constant representing the modulus
-    /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) const MODULUS: Self = Self([
-        0x00000000_ffffffff,
-        0xffffffff_00000000,
-        0xffffffff_fffffffe,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-    ]);
-
-    pub fn from_limbs(limbs: [Word; LIMBS]) -> Self {
-        FieldElement(limbs)
-    }
+    pub(crate) const MODULUS: Self = Self(U384::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff"));
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns `None` if the byte array does not contain a big-endian integer in
     /// the range `[0, p)`.
-    pub fn from_sec1(bytes: &FieldBytes) -> CtOption<Self> {
-        let w = U384::from_be_byte_array(*bytes);
-        let is_some = w.ct_lt(&U384::from(Self::MODULUS.0));
+    pub fn from_sec1(bytes: FieldBytes) -> CtOption<Self> {
+        let w = U384::from_be_byte_array(bytes);
+        let is_some = w.ct_lt(&Self::MODULUS.0);
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        CtOption::new(FieldElement(w.into()).to_montgomery(), is_some)
+        CtOption::new(FieldElement(w).to_montgomery(), is_some)
     }
 
     /// Returns the SEC1 encoding of this field element.
-    #[cfg(target_pointer_width = "32")]
     pub fn to_sec1(self) -> FieldBytes {
-        // Convert from Montgomery form to canonical form
-        let tmp = self.to_canonical();
-
-        let mut ret = FieldBytes::default();
-        ret[0..4].copy_from_slice(&tmp.0[11].to_be_bytes());
-        ret[4..8].copy_from_slice(&tmp.0[10].to_be_bytes());
-        ret[8..12].copy_from_slice(&tmp.0[9].to_be_bytes());
-        ret[12..16].copy_from_slice(&tmp.0[8].to_be_bytes());
-        ret[16..20].copy_from_slice(&tmp.0[7].to_be_bytes());
-        ret[20..24].copy_from_slice(&tmp.0[6].to_be_bytes());
-        ret[24..28].copy_from_slice(&tmp.0[5].to_be_bytes());
-        ret[28..32].copy_from_slice(&tmp.0[4].to_be_bytes());
-        ret[32..36].copy_from_slice(&tmp.0[3].to_be_bytes());
-        ret[36..40].copy_from_slice(&tmp.0[2].to_be_bytes());
-        ret[40..44].copy_from_slice(&tmp.0[1].to_be_bytes());
-        ret[44..48].copy_from_slice(&tmp.0[0].to_be_bytes());
-        ret
-    }
-
-    /// Returns the SEC1 encoding of this field element.
-    #[cfg(target_pointer_width = "64")]
-    pub fn to_sec1(self) -> FieldBytes {
-        // Convert from Montgomery form to canonical form
-        let tmp = self.to_canonical();
-
-        let mut ret = FieldBytes::default();
-        ret[0..8].copy_from_slice(&tmp.0[5].to_be_bytes());
-        ret[8..16].copy_from_slice(&tmp.0[4].to_be_bytes());
-        ret[16..24].copy_from_slice(&tmp.0[3].to_be_bytes());
-        ret[24..32].copy_from_slice(&tmp.0[2].to_be_bytes());
-        ret[32..40].copy_from_slice(&tmp.0[1].to_be_bytes());
-        ret[40..48].copy_from_slice(&tmp.0[0].to_be_bytes());
-        ret
+        self.to_canonical().0.to_be_byte_array()
     }
 
     /// Determine if this `FieldElement` is zero.
@@ -149,31 +89,30 @@ impl FieldElement {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        let bytes = self.to_sec1();
-        (bytes[47] & 1).into()
+        self.to_canonical().0.is_odd()
     }
 
-    /// Returns self + rhs.
+    /// Returns `self + rhs`.
     #[inline]
     pub fn add(&self, rhs: &Self) -> Self {
         self + rhs
     }
 
-    /// Returns self - rhs.
+    /// Returns `self - rhs`.
     #[inline]
     pub fn sub(&self, rhs: &Self) -> Self {
         self - rhs
     }
 
-    /// Returns self - rhs as well as a carry
+    /// Returns `self - rhs` as well as a carry
     pub fn informed_subtract(&self, rhs: &Self) -> (Self, u8) {
-        let mut out = Self::ZERO;
-        fiat_p384_sub(&mut out.0, &self.0, &rhs.0);
+        let mut out = Fe::default();
+        fiat_p384_sub(&mut out, &self.0.into(), &rhs.0.into());
         let carry: bool = rhs.ct_gt(self).into();
-        (out, carry as _)
+        (Self(out.into()), carry as _)
     }
 
-    /// Returns self * rhs mod p.
+    /// Returns `self * rhs mod p`.
     #[inline]
     pub fn mul(&self, rhs: &Self) -> Self {
         self * rhs
@@ -196,9 +135,9 @@ impl FieldElement {
     /// Returns self * self.
     #[inline]
     pub fn square(&self) -> Self {
-        let mut out = Self::ZERO;
-        fiat_p384_square(&mut out.0, &self.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_square(&mut out, &self.0.into());
+        Self(out.into())
     }
 
     /// Returns self^(2^n) mod p
@@ -239,17 +178,17 @@ impl FieldElement {
     /// Translate a field element out of the Montgomery domain.
     #[inline]
     pub fn to_canonical(self) -> Self {
-        let mut out = Self::ZERO;
-        fiat_p384_from_montgomery(&mut out.0, &self.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_from_montgomery(&mut out, &self.0.into());
+        Self(out.into())
     }
 
     /// Translate a field element into the Montgomery domain.
     #[inline]
     pub(crate) fn to_montgomery(self) -> Self {
-        let mut out = Self::ZERO;
-        fiat_p384_to_montgomery(&mut out.0, &self.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_to_montgomery(&mut out, &self.0.into());
+        Self(out.into())
     }
 
     /// Inversion.
@@ -263,7 +202,7 @@ impl FieldElement {
         fiat_p384_msat(&mut f);
 
         let mut g = XLimbs::default();
-        fiat_p384_from_montgomery((&mut g[..LIMBS]).try_into().unwrap(), &self.0);
+        fiat_p384_from_montgomery((&mut g[..LIMBS]).try_into().unwrap(), &self.0.into());
 
         let mut r = Fe::default();
         fiat_p384_set_one(&mut r);
@@ -307,7 +246,7 @@ impl FieldElement {
 
         let mut fe = Fe::default();
         fiat_p384_mul(&mut fe, &v_, &precomp);
-        CtOption::new(Self(fe), !self.is_zero())
+        CtOption::new(Self(fe.into()), !self.is_zero())
     }
 }
 
@@ -325,35 +264,25 @@ impl Default for FieldElement {
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut out = Self::ZERO;
-
-        for i in 0..out.0.len() {
-            out.0[i] = ConditionallySelectable::conditional_select(&a.0[i], &b.0[i], choice);
-        }
-
-        out
+        Self(U384::conditional_select(&a.0, &b.0, choice))
     }
 }
 
 impl ConstantTimeEq for FieldElement {
-    fn ct_eq(&self, rhs: &Self) -> Choice {
-        self.0
-            .iter()
-            .zip(rhs.0.iter())
-            .fold(Choice::from(1), |choice, (a, b)| choice & a.ct_eq(b))
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&other.0)
+    }
+}
+
+impl ConstantTimeLess for FieldElement {
+    fn ct_lt(&self, other: &Self) -> Choice {
+        self.0.ct_lt(&other.0)
     }
 }
 
 impl ConstantTimeGreater for FieldElement {
     fn ct_gt(&self, other: &Self) -> Choice {
-        // not CT
-        let mut out = Choice::from(0);
-        for (x, y) in self.0.iter().zip(other.0.iter()) {
-            if x > y {
-                out = Choice::from(1);
-            }
-        }
-        out
+        self.0.ct_gt(&other.0)
     }
 }
 
@@ -363,9 +292,9 @@ impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn add(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_add(&mut out.0, &self.0, &rhs.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_add(&mut out, &self.0.into(), &rhs.0.into());
+        FieldElement(out.into())
     }
 }
 
@@ -373,9 +302,9 @@ impl Add<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_add(&mut out.0, &self.0, &rhs.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_add(&mut out, &self.0.into(), &rhs.0.into());
+        FieldElement(out.into())
     }
 }
 
@@ -389,9 +318,9 @@ impl Sub<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn sub(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_sub(&mut out.0, &self.0, &rhs.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_sub(&mut out, &self.0.into(), &rhs.0.into());
+        FieldElement(out.into())
     }
 }
 
@@ -399,9 +328,9 @@ impl Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_sub(&mut out.0, &self.0, &rhs.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_sub(&mut out, &self.0.into(), &rhs.0.into());
+        FieldElement(out.into())
     }
 }
 
@@ -415,9 +344,9 @@ impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_mul(&mut out.0, &self.0, &rhs.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_mul(&mut out, &self.0.into(), &rhs.0.into());
+        FieldElement(out.into())
     }
 }
 
@@ -425,9 +354,9 @@ impl Mul<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_mul(&mut out.0, &self.0, &rhs.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_mul(&mut out, &self.0.into(), &rhs.0.into());
+        Self(out.into())
     }
 }
 
@@ -441,9 +370,9 @@ impl Neg for FieldElement {
     type Output = Self;
 
     fn neg(self) -> Self {
-        let mut out = FieldElement::ZERO;
-        fiat_p384_opp(&mut out.0, &self.0);
-        out
+        let mut out = Fe::default();
+        fiat_p384_opp(&mut out, &self.0.into());
+        Self(out.into())
     }
 }
 
@@ -459,7 +388,7 @@ mod tests {
 
         let mut one_mont = Fe::default();
         fiat_p384_to_montgomery(&mut one_mont, &one);
-        assert_eq!(FieldElement(one_mont), FieldElement::ONE);
+        assert_eq!(FieldElement(one_mont.into()), FieldElement::ONE);
     }
 
     /// Basic tests that field inversion works.

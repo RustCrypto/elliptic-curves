@@ -1,5 +1,7 @@
 //! secp384r1 scalar field elements.
 
+#![allow(clippy::unusual_byte_groupings)]
+
 pub(crate) mod blinded;
 
 #[cfg_attr(target_pointer_width = "32", path = "scalar/p384_scalar_32.rs")]

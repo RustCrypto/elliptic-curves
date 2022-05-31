@@ -5,7 +5,7 @@
 use core::ops::{Mul, Neg};
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
-use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384, PublicKey, Scalar};
+use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384, PublicKey, Scalar, U384};
 use elliptic_curve::{
     bigint::Encoding,
     group::{prime::PrimeCurveAffine, GroupEncoding},
@@ -63,47 +63,12 @@ impl AffinePoint {
     /// Gᵧ = 3617de4a 96262c6f 5d9e98bf 9292dc29 f8f41dbd 289a147c
     ///      e9da3113 b5f0b8c0 0a60b1ce 1d7e819d 7a431d7c 90ea0e5f
     /// ```
-    #[cfg(target_pointer_width = "32")]
-    pub const GENERATOR: Self = Self {
-        x: FieldElement([
-            0x49c0b528, 0x3dd07566, 0xa0d6ce38, 0x20e378e2, 0x541b4d6e, 0x879c3afc, 0x59a30eff,
-            0x64548684, 0x614ede2b, 0x812ff723, 0x299e1513, 0x4d3aadc2,
-        ]),
-        y: FieldElement([
-            0x4b03a4fe, 0x23043dad, 0x7bb4a9ac, 0xa1bfa8bf, 0x2e83b050, 0x8bade756, 0x68f4ffd9,
-            0xc6c35219, 0x3969a840, 0xdd800226, 0x5a15c5e9, 0x2b78abc2,
-        ]),
-        infinity: 0,
-    };
-
-    /// Base point of P-384.
     ///
-    /// Defined in FIPS 186-4 § D.1.2.4:
-    ///
-    /// ```text
-    /// Gₓ = aa87ca22 be8b0537 8eb1c71e f320ad74 6e1d3b62 8ba79b98
-    ///      59f741e0 82542a38 5502f25d bf55296c 3a545e38 72760ab7
-    /// Gᵧ = 3617de4a 96262c6f 5d9e98bf 9292dc29 f8f41dbd 289a147c
-    ///      e9da3113 b5f0b8c0 0a60b1ce 1d7e819d 7a431d7c 90ea0e5f
-    /// ```
-    #[cfg(target_pointer_width = "64")]
+    /// NOTE: coordinate field elements have been translated into the Montgomery
+    /// domain.
     pub const GENERATOR: Self = Self {
-        x: FieldElement([
-            0x3dd07566_49c0b528,
-            0x20e378e2_a0d6ce38,
-            0x879c3afc_541b4d6e,
-            0x64548684_59a30eff,
-            0x812ff723_614ede2b,
-            0x4d3aadc2_299e1513,
-        ]),
-        y: FieldElement([
-            0x23043dad_4b03a4fe,
-            0xa1bfa8bf_7bb4a9ac,
-            0x8bade756_2e83b050,
-            0xc6c35219_68f4ffd9,
-            0xdd800226_3969a840,
-            0x2b78abc2_5a15c5e9,
-        ]),
+        x: FieldElement(U384::from_be_hex("4d3aadc2299e1513812ff723614ede2b6454868459a30eff879c3afc541b4d6e20e378e2a0d6ce383dd0756649c0b528")),
+        y: FieldElement(U384::from_be_hex("2b78abc25a15c5e9dd8002263969a840c6c3521968f4ffd98bade7562e83b050a1bfa8bf7bb4a9ac23043dad4b03a4fe")),
         infinity: 0,
     };
 
@@ -204,7 +169,7 @@ impl Neg for AffinePoint {
 
 impl DecompressPoint<NistP384> for AffinePoint {
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
-        FieldElement::from_sec1(x_bytes).and_then(|x| {
+        FieldElement::from_sec1(*x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
             let beta = alpha.sqrt();
 
@@ -252,7 +217,7 @@ impl GroupEncoding for AffinePoint {
 
 impl DecompactPoint<NistP384> for AffinePoint {
     fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
-        FieldElement::from_sec1(x_bytes).and_then(|x| {
+        FieldElement::from_sec1(*x_bytes).and_then(|x| {
             let montgomery_y = (x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B).sqrt();
             montgomery_y.map(|montgomery_y| {
                 // Convert to canonical form for comparisons
@@ -286,8 +251,8 @@ impl FromEncodedPoint<NistP384> for AffinePoint {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
             sec1::Coordinates::Uncompressed { x, y } => {
-                let x = FieldElement::from_sec1(x);
-                let y = FieldElement::from_sec1(y);
+                let x = FieldElement::from_sec1(*x);
+                let y = FieldElement::from_sec1(*y);
 
                 x.and_then(|x| {
                     y.and_then(|y| {
@@ -465,8 +430,10 @@ mod tests {
     #[test]
     fn compressed_to_uncompressed() {
         let encoded = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
-        let res = AffinePoint::from_encoded_point(&encoded).unwrap();
-        let res = res.to_encoded_point(false);
+
+        let res = AffinePoint::from_encoded_point(&encoded)
+            .unwrap()
+            .to_encoded_point(false);
 
         assert_eq!(res.as_bytes(), UNCOMPRESSED_BASEPOINT);
     }
