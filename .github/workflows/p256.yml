@@ -3,6 +3,7 @@ name: p256
 on:
   pull_request:
     paths:
+      - ".github/workflows/p256.yml"
       - "p256/**"
       - "Cargo.*"
   push:
@@ -15,6 +16,7 @@ defaults:
 env:
   CARGO_INCREMENTAL: 0
   RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
 
 jobs:
   build:
@@ -117,3 +119,15 @@ jobs:
           override: true
       - run: cargo install cross
       - run: cross test --release --target ${{ matrix.target }} --all-features
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: RustCrypto/actions/cargo-cache@master
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+      - run: cargo doc --all-features
