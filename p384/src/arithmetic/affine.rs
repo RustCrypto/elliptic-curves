@@ -4,7 +4,7 @@
 
 use core::ops::{Mul, Neg};
 
-use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B};
+use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384, PublicKey, Scalar, U384};
 use elliptic_curve::{
     bigint::Encoding,
@@ -175,7 +175,7 @@ impl DecompressPoint<NistP384> for AffinePoint {
 
             beta.map(|beta| {
                 let y = FieldElement::conditional_select(
-                    &(FieldElement::MODULUS - &beta),
+                    &(FieldElement(MODULUS) - &beta),
                     &beta,
                     beta.is_odd().ct_eq(&y_is_odd),
                 );
@@ -222,7 +222,7 @@ impl DecompactPoint<NistP384> for AffinePoint {
             montgomery_y.map(|montgomery_y| {
                 // Convert to canonical form for comparisons
                 let y = montgomery_y.to_canonical();
-                let p_y = FieldElement::MODULUS - &y;
+                let p_y = FieldElement(MODULUS) - &y;
                 // let (_, borrow) = p_y.informed_subtract(&y);
                 let borrow = 0;
                 let recovered_y = if borrow == 0 { y } else { p_y };
@@ -283,7 +283,7 @@ impl ToCompactEncodedPoint<NistP384> for AffinePoint {
     fn to_compact_encoded_point(&self) -> CtOption<EncodedPoint> {
         // Convert to canonical form for comparisons
         let y = self.y.to_canonical();
-        let (p_y, borrow) = FieldElement::MODULUS.informed_subtract(&y);
+        let (p_y, borrow) = FieldElement(MODULUS).informed_subtract(&y);
         assert_eq!(borrow, 0);
         let (_, borrow) = p_y.informed_subtract(&y);
 

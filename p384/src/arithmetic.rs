@@ -5,12 +5,20 @@
 //!
 //! See section D.1.2.4: Curve P-384.
 
+#[macro_use]
+mod macros;
+
 pub(crate) mod affine;
 pub(crate) mod field;
 pub(crate) mod projective;
 pub(crate) mod scalar;
 
-use self::{affine::AffinePoint, field::FieldElement, projective::ProjectivePoint, scalar::Scalar};
+use self::{
+    affine::AffinePoint,
+    field::{FieldElement, MODULUS},
+    projective::ProjectivePoint,
+    scalar::Scalar,
+};
 use crate::U384;
 use elliptic_curve::bigint;
 
