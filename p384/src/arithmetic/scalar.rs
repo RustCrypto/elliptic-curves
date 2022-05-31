@@ -20,7 +20,7 @@ use super::LIMBS;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Encoding, Limb, LimbUInt as Word},
+    bigint::{ArrayEncoding, Encoding, Integer, Limb, LimbUInt as Word},
     ff::{Field, PrimeField},
     generic_array::arr,
     ops::Reduce,
@@ -37,11 +37,6 @@ use elliptic_curve::{
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 type Fe = fiat_p384_scalar_montgomery_domain_field_element;
-type NonMontFe = fiat_p384_scalar_non_montgomery_domain_field_element;
-
-fn frac_modulus_2() -> Scalar {
-    Scalar::from_be_bytes(NistP384::ORDER.shr_vartime(1).to_be_bytes().into()).unwrap()
-}
 
 impl ScalarArithmetic for NistP384 {
     type Scalar = Scalar;
@@ -88,19 +83,28 @@ impl Scalar {
     /// Decode scalar from a [`U384`].
     pub fn from_uint(w: U384) -> CtOption<Self> {
         let is_some = w.ct_lt(&NistP384::ORDER);
+        CtOption::new(Self::from_uint_unchecked(w), is_some)
+    }
+
+    /// Decode scalar from a [`U384`].
+    ///
+    /// Does not perform a check that the scalar does not overflow the order.
+    ///
+    /// Used incorrectly this can lead to invalid results!
+    pub(crate) fn from_uint_unchecked(w: U384) -> Self {
         let mut mont = U384::default();
         fiat_p384_scalar_to_montgomery(mont.as_mut(), w.as_ref());
-        CtOption::new(Scalar(mont), is_some)
+        Self(mont)
     }
 
     /// Returns the little-endian encoding of this scalar.
     pub fn to_be_bytes(&self) -> FieldBytes {
-        self.to_non_mont().0.to_be_byte_array()
+        self.to_non_mont().to_be_byte_array()
     }
 
     /// Returns the little-endian encoding of this scalar.
     pub fn to_le_bytes(&self) -> FieldBytes {
-        self.to_non_mont().0.to_le_byte_array()
+        self.to_non_mont().to_le_byte_array()
     }
 
     /// Returns the SEC1 encoding of this scalar.
@@ -113,20 +117,20 @@ impl Scalar {
 
     /// Double
     pub fn double(&self) -> Self {
-        let mut result = Default::default();
-        fiat_p384_scalar_add(&mut result, self.as_ref(), self.as_ref());
-        Self(result.into())
+        let mut ret = U384::default();
+        fiat_p384_scalar_add(ret.as_mut(), self.as_ref(), self.as_ref());
+        Self(ret)
     }
 
     /// Compute modular square.
     #[must_use]
     pub fn square(&self) -> Self {
-        let mut result = Default::default();
-        fiat_p384_scalar_square(&mut result, self.as_ref());
-        Self(result.into())
+        let mut ret = U384::default();
+        fiat_p384_scalar_square(ret.as_mut(), self.as_ref());
+        Self(ret)
     }
 
-    /// Invert
+    /// Compute scalar inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         const ITERATIONS: usize = (49 * U384::BIT_SIZE + 57) / 17;
         type XLimbs = [Word; LIMBS + 1];
@@ -183,9 +187,49 @@ impl Scalar {
         CtOption::new(Self(ret), !self.is_zero())
     }
 
-    /// Invert
-    pub fn invert_vartime(&self) -> CtOption<Self> {
-        self.invert()
+    /// Compute modular square root.
+    pub fn sqrt(&self) -> CtOption<Self> {
+        // p mod 4 = 3 -> compute sqrt(x) using x^((p+1)/4) =
+        // x^9850501549098619803069760025035903451269934817616361666986726319906914849778315892349739077038073728388608413485661
+        let t1 = *self;
+        let t10 = t1.square();
+        let t11 = *self * t10;
+        let t101 = t10 * t11;
+        let t111 = t10 * t101;
+        let t1001 = t10 * t111;
+        let t1011 = t10 * t1001;
+        let t1101 = t10 * t1011;
+        let t1111 = t10 * t1101;
+        let t11110 = t1111.square();
+        let t11111 = t1 * t11110;
+        let t1111100 = t11111.sqn(2);
+        let t11111000 = t1111100.square();
+        let i14 = t11111000.square();
+        let i20 = i14.sqn(5) * i14;
+        let i31 = i20.sqn(10) * i20;
+        let i58 = (i31.sqn(4) * t11111000).sqn(21) * i31;
+        let i110 = (i58.sqn(3) * t1111100).sqn(47) * i58;
+        let x194 = i110.sqn(95) * i110 * t1111;
+        let i225 = ((x194.sqn(6) * t111).sqn(3) * t11).sqn(7);
+        let i235 = ((t1101 * i225).sqn(6) * t1101).square() * t1;
+        let i258 = ((i235.sqn(11) * t11111).sqn(2) * t1).sqn(8);
+        let i269 = ((t1101 * i258).sqn(2) * t11).sqn(6) * t1011;
+        let i286 = ((i269.sqn(4) * t111).sqn(6) * t11111).sqn(5);
+        let i308 = ((t1011 * i286).sqn(10) * t1101).sqn(9) * t1101;
+        let i323 = ((i308.sqn(4) * t1011).sqn(6) * t1001).sqn(3);
+        let i340 = ((t1 * i323).sqn(7) * t1011).sqn(7) * t101;
+        let i357 = ((i340.sqn(5) * t111).sqn(5) * t1111).sqn(5);
+        let i369 = ((t1011 * i357).sqn(4) * t1011).sqn(5) * t111;
+        let i387 = ((i369.sqn(3) * t11).sqn(7) * t11).sqn(6);
+        let i397 = ((t1011 * i387).sqn(4) * t101).sqn(3) * t11;
+        let i413 = ((i397.sqn(4) * t11).sqn(4) * t11).sqn(6);
+        let i427 = ((t101 * i413).sqn(5) * t101).sqn(6) * t1011;
+        let x = i427.sqn(3) * t101;
+        if x.square() == t1 {
+            CtOption::new(x, 1.into())
+        } else {
+            CtOption::new(x, 0.into())
+        }
     }
 
     fn sqn(&self, n: usize) -> Self {
@@ -196,10 +240,10 @@ impl Scalar {
         x
     }
 
-    fn to_non_mont(self) -> Self {
-        let mut out = Default::default();
-        fiat_p384_scalar_from_montgomery(&mut out, self.as_ref());
-        Scalar(out.into())
+    fn to_non_mont(self) -> U384 {
+        let mut ret = U384::default();
+        fiat_p384_scalar_from_montgomery(ret.as_mut(), self.as_ref());
+        ret
     }
 }
 
@@ -209,9 +253,15 @@ impl AsRef<Fe> for Scalar {
     }
 }
 
+impl ConditionallySelectable for Scalar {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self(U384::conditional_select(&a.0, &b.0, choice))
+    }
+}
+
 impl ConstantTimeEq for Scalar {
-    fn ct_eq(&self, rhs: &Self) -> Choice {
-        self.0.ct_eq(&rhs.0)
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0.ct_eq(&other.0)
     }
 }
 
@@ -329,10 +379,7 @@ impl PrimeField for Scalar {
     }
 
     fn is_odd(&self) -> Choice {
-        let mut non_mont = Default::default();
-        fiat_p384_scalar_from_montgomery(&mut non_mont, self.as_ref());
-        let limbs = self.as_ref();
-        Choice::from((limbs[limbs.len() - 1] & 1) as u8)
+        self.to_non_mont().is_odd()
     }
 
     fn multiplicative_generator() -> Self {
@@ -350,80 +397,24 @@ impl PrimeField for Scalar {
     }
 }
 
-impl From<ScalarCore<NistP384>> for Scalar {
-    fn from(x: ScalarCore<NistP384>) -> Self {
-        Scalar::from_be_bytes(x.to_be_bytes()).unwrap()
-    }
-}
-
-impl From<u64> for Scalar {
-    fn from(n: u64) -> Scalar {
-        let mut limbs = NonMontFe::default();
-
-        #[cfg(target_pointer_width = "32")]
-        {
-            limbs[0] = (n & 0xffff_ffff) as u32;
-            limbs[1] = (n >> 32) as u32;
-        }
-
-        #[cfg(target_pointer_width = "64")]
-        {
-            limbs[0] = n;
-        }
-
-        let mut fe = Fe::default();
-        fiat_p384_scalar_to_montgomery(&mut fe, &limbs);
-        Scalar(fe.into())
-    }
-}
-
-impl TryFrom<U384> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: U384) -> Result<Self> {
-        let bytes = w.to_le_bytes();
-        let mut limbs = NonMontFe::default();
-        fiat_p384_scalar_from_bytes(&mut limbs, &bytes);
-        Ok(Scalar(limbs.into()))
-    }
-}
-
-impl From<Scalar> for U384 {
-    fn from(scalar: Scalar) -> U384 {
-        let bytes = scalar.to_le_bytes();
-        U384::from_le_bytes(bytes.into())
-    }
-}
-
-impl From<Scalar> for FieldBytes {
-    fn from(scalar: Scalar) -> Self {
-        Self::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for FieldBytes {
-    fn from(scalar: &Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<&Scalar> for U384 {
-    fn from(scalar: &Scalar) -> U384 {
-        U384::from_le_bytes(scalar.to_le_bytes().into())
-    }
-}
-
-impl ConditionallySelectable for Scalar {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut out = Default::default();
-        fiat_p384_scalar_selectznz(&mut out, choice.unwrap_u8(), a.as_ref(), b.as_ref());
-        Self(out.into())
-    }
-}
-
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        self.ct_gt(&frac_modulus_2())
+        const MODULUS_SHR1: U384 = NistP384::ORDER.shr_vartime(1);
+        self.to_non_mont().ct_gt(&MODULUS_SHR1)
+    }
+}
+
+#[cfg(feature = "bits")]
+#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
+impl PrimeFieldBits for Scalar {
+    type ReprBits = Fe;
+
+    fn to_le_bits(&self) -> ScalarBits {
+        Fe::from(self.to_non_mont()).into()
+    }
+
+    fn char_le_bits() -> ScalarBits {
+        NistP384::ORDER.to_uint_array().into()
     }
 }
 
@@ -478,9 +469,9 @@ impl Neg for Scalar {
 
     #[inline]
     fn neg(self) -> Scalar {
-        let mut result = Default::default();
-        fiat_p384_scalar_opp(&mut result, self.as_ref());
-        Self(result.into())
+        let mut ret = U384::default();
+        fiat_p384_scalar_opp(ret.as_mut(), self.as_ref());
+        Self(ret)
     }
 }
 
@@ -488,49 +479,75 @@ impl Reduce<U384> for Scalar {
     fn from_uint_reduced(w: U384) -> Self {
         let (r, underflow) = w.sbb(&NistP384::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
-        let reduced = U384::conditional_select(&w, &r, !underflow);
-        Scalar::from(ScalarCore::new(reduced).unwrap())
+        Self::from_uint_unchecked(U384::conditional_select(&w, &r, !underflow))
     }
 }
 
-#[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
-impl PrimeFieldBits for Scalar {
-    #[cfg(target_pointer_width = "32")]
-    type ReprBits = [u32; 12];
-    #[cfg(target_pointer_width = "64")]
-    type ReprBits = [u64; 6];
-
-    fn to_le_bits(&self) -> ScalarBits {
-        (*self.as_ref()).into()
+impl From<u64> for Scalar {
+    fn from(n: u64) -> Scalar {
+        Self::from_uint_unchecked(U384::from(n))
     }
+}
 
-    fn char_le_bits() -> ScalarBits {
-        NistP384::ORDER.to_uint_array().into()
+impl From<ScalarCore<NistP384>> for Scalar {
+    fn from(w: ScalarCore<NistP384>) -> Self {
+        Scalar::from(&w)
     }
 }
 
 impl From<&ScalarCore<NistP384>> for Scalar {
-    fn from(scalar: &ScalarCore<NistP384>) -> Scalar {
-        Scalar::from_be_bytes(scalar.to_be_bytes()).unwrap()
+    fn from(w: &ScalarCore<NistP384>) -> Scalar {
+        Scalar::from_uint_unchecked(*w.as_uint())
     }
 }
 
 impl From<Scalar> for ScalarCore<NistP384> {
     fn from(scalar: Scalar) -> ScalarCore<NistP384> {
-        ScalarCore::new(U384::from_le_bytes(scalar.to_le_bytes().into())).unwrap()
+        ScalarCore::from(&scalar)
     }
 }
 
 impl From<&Scalar> for ScalarCore<NistP384> {
     fn from(scalar: &Scalar) -> ScalarCore<NistP384> {
-        ScalarCore::new(U384::from_le_bytes(scalar.to_le_bytes().into())).unwrap()
+        ScalarCore::new(scalar.into()).unwrap()
+    }
+}
+
+impl From<Scalar> for FieldBytes {
+    fn from(scalar: Scalar) -> Self {
+        scalar.to_repr()
+    }
+}
+
+impl From<&Scalar> for FieldBytes {
+    fn from(scalar: &Scalar) -> Self {
+        scalar.to_repr()
+    }
+}
+
+impl From<Scalar> for U384 {
+    fn from(scalar: Scalar) -> U384 {
+        U384::from(&scalar)
+    }
+}
+
+impl From<&Scalar> for U384 {
+    fn from(scalar: &Scalar) -> U384 {
+        scalar.to_non_mont()
     }
 }
 
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
         *secret_key.to_nonzero_scalar()
+    }
+}
+
+impl TryFrom<U384> for Scalar {
+    type Error = Error;
+
+    fn try_from(w: U384) -> Result<Self> {
+        Option::from(Self::from_uint(w)).ok_or(Error)
     }
 }
 
