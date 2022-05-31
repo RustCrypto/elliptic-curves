@@ -2,8 +2,6 @@
 
 #![allow(clippy::unusual_byte_groupings)]
 
-pub(crate) mod blinded;
-
 #[cfg_attr(target_pointer_width = "32", path = "scalar/p384_scalar_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "scalar/p384_scalar_64.rs")]
 #[allow(
