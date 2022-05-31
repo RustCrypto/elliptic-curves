@@ -41,6 +41,10 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 
+/// Constant representing the modulus
+/// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
+pub(crate) const MODULUS: U384 = U384::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff");
+
 /// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U384);
@@ -52,17 +56,21 @@ impl FieldElement {
     /// Multiplicative identity.
     pub const ONE: Self = Self(U384::from_be_hex("000000000000000000000000000000000000000000000000000000000000000100000000ffffffffffffffff00000001"));
 
-    /// Constant representing the modulus
-    /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-    pub(crate) const MODULUS: Self = Self(U384::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff"));
-
-    /// Attempts to parse the given byte array as an SEC1-encoded field element.
+    /// Parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns `None` if the byte array does not contain a big-endian integer in
     /// the range `[0, p)`.
     pub fn from_sec1(bytes: FieldBytes) -> CtOption<Self> {
-        let w = U384::from_be_byte_array(bytes);
-        let is_some = w.ct_lt(&Self::MODULUS.0);
+        Self::from_uint(U384::from_be_byte_array(bytes))
+    }
+
+    /// Convert the given [`U384`] in canonical form into a [`FieldElement`]
+    /// which internally uses Montgomery form.
+    ///
+    /// Returns `None` if the [`U384`] does not contain a big-endian integer in
+    /// the range `[0, p)`.
+    pub fn from_uint(w: U384) -> CtOption<Self> {
+        let is_some = w.ct_lt(&MODULUS);
 
         // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
         CtOption::new(FieldElement(w).to_montgomery(), is_some)
@@ -291,43 +299,6 @@ impl PartialEq for FieldElement {
     fn eq(&self, rhs: &Self) -> bool {
         self.0.ct_eq(&(rhs.0)).into()
     }
-}
-
-macro_rules! impl_field_op {
-    ($name:tt, $inner:ty, $op:tt, $op_fn:ident, $func:ident) => {
-        impl $op for $name {
-            type Output = $name;
-
-            #[inline]
-            fn $op_fn(self, rhs: $name) -> $name {
-                let mut out = <$inner>::default();
-                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
-                $name(out)
-            }
-        }
-
-        impl $op<&$name> for $name {
-            type Output = $name;
-
-            #[inline]
-            fn $op_fn(self, rhs: &$name) -> $name {
-                let mut out = <$inner>::default();
-                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
-                $name(out)
-            }
-        }
-
-        impl $op<&$name> for &$name {
-            type Output = $name;
-
-            #[inline]
-            fn $op_fn(self, rhs: &$name) -> $name {
-                let mut out = <$inner>::default();
-                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
-                $name(out)
-            }
-        }
-    };
 }
 
 impl_field_op!(FieldElement, U384, Add, add, fiat_p384_add);
