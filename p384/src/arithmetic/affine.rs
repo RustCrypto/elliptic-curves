@@ -7,12 +7,11 @@ use core::ops::{Mul, Neg};
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384, PublicKey, Scalar, U384};
 use elliptic_curve::{
-    bigint::Encoding,
     group::{prime::PrimeCurveAffine, GroupEncoding},
-    sec1::{self, FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
+    sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineArithmetic, AffineXCoordinate, Curve, DecompressPoint, Error, Result,
+    AffineArithmetic, AffineXCoordinate, DecompressPoint, Error, Result,
 };
 
 #[cfg(feature = "serde")]
@@ -254,27 +253,6 @@ impl ToEncodedPoint<NistP384> for AffinePoint {
             &EncodedPoint::from_affine_coordinates(&self.x.to_sec1(), &self.y.to_sec1(), compress),
             &EncodedPoint::identity(),
             self.is_identity(),
-        )
-    }
-}
-
-impl ToCompactEncodedPoint<NistP384> for AffinePoint {
-    /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
-    fn to_compact_encoded_point(&self) -> CtOption<EncodedPoint> {
-        // Convert to canonical form for comparisons
-        let y = FieldElement(self.y.to_canonical());
-        let (p_y, borrow) = FieldElement(MODULUS).informed_subtract(&y);
-        assert_eq!(borrow, 0);
-        let (_, borrow) = p_y.informed_subtract(&y);
-
-        // Reuse the CompressedPoint type since it's the same size as a compact point
-        let mut bytes = CompressedPoint::default();
-        bytes[0] = sec1::Tag::Compact.into();
-        let x = self.x.to_sec1();
-        bytes[1..(<NistP384 as Curve>::UInt::BYTE_SIZE + 1)].copy_from_slice(x.as_slice());
-        CtOption::new(
-            EncodedPoint::from_bytes(bytes).expect("compact key"),
-            borrow.ct_eq(&0),
         )
     }
 }

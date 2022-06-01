@@ -20,10 +20,6 @@ use self::{
     scalar::Scalar,
 };
 use crate::U384;
-use elliptic_curve::bigint;
-
-/// Number of limbs used to represent a field element.
-const LIMBS: usize = bigint::nlimbs!(384);
 
 /// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
 ///
