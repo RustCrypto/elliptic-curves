@@ -63,17 +63,14 @@ rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
 name = "ecdsa"
-path = "bench/ecdsa.rs"
 harness = false
 required-features = ["ecdsa", "sha256"]
 
 [[bench]]
 name = "field"
-path = "bench/field.rs"
 harness = false
 required-features = ["expose-field"]
 
 [[bench]]
 name = "scalar"
-path = "bench/scalar.rs"
 harness = false
