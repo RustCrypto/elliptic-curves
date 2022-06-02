@@ -9,8 +9,6 @@
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
-#[allow(dead_code, rustdoc::broken_intra_doc_links)]
-#[rustfmt::skip]
 mod scalar_impl;
 
 use self::scalar_impl::*;
@@ -258,8 +256,7 @@ mod tests {
     /// Test that the precomputed `Scalar::ONE` constant is correct.
     #[test]
     fn one() {
-        let mut one_mont = Default::default();
-        fiat_p384_scalar_to_montgomery(&mut one_mont, U384::ONE.as_ref());
+        let one_mont = fiat_p384_scalar_to_montgomery(U384::ONE.as_ref());
         assert_eq!(Scalar(one_mont.into()), Scalar::ONE);
     }
 

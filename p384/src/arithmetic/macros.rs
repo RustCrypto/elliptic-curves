@@ -130,9 +130,7 @@ macro_rules! impl_sec1_field_element {
             ///
             /// Used incorrectly this can lead to invalid results!
             fn from_uint_unchecked(w: $uint) -> Self {
-                let mut mont = <$uint>::default();
-                $to_mont(mont.as_mut(), w.as_ref());
-                Self(mont)
+                Self($to_mont(w.as_ref()).into())
             }
 
             /// Returns the big-endian encoding of this [`
@@ -156,9 +154,7 @@ macro_rules! impl_sec1_field_element {
             /// `] in canonical form.
             #[inline]
             pub fn to_canonical(self) -> $uint {
-                let mut ret = <$uint>::default();
-                $from_mont(ret.as_mut(), self.as_ref());
-                ret
+                $from_mont(self.as_ref()).into()
             }
 
             /// Determine if this [`
@@ -203,46 +199,35 @@ macro_rules! impl_sec1_field_element {
                 type XLimbs = [Word; LIMBS + 1];
 
                 let mut d: Word = 1;
-                let mut f = XLimbs::default();
-                $msat(&mut f);
+                let mut f = $msat();
 
                 let mut g = XLimbs::default();
-                $from_mont((&mut g[..LIMBS]).try_into().unwrap(), self.as_ref());
+                g[..LIMBS].copy_from_slice(&$from_mont(self.as_ref()));
 
                 let mut r = <$arr>::from(Self::ONE.0);
                 let mut v = <$arr>::default();
-                let mut precomp = <$arr>::default();
-                $divstep_precomp(&mut precomp);
-
-                let mut out1 = Word::default();
-                let mut out2 = XLimbs::default();
-                let mut out3 = XLimbs::default();
-                let mut out4 = <$arr>::default();
-                let mut out5 = <$arr>::default();
+                let precomp = $divstep_precomp();
 
                 let mut i: usize = 0;
 
                 while i < ITERATIONS - ITERATIONS % 2 {
-                    $divstep(
-                        &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
-                    );
-                    $divstep(
-                        &mut d, &mut f, &mut g, &mut v, &mut r, out1, &out2, &out3, &out4, &out5,
-                    );
+                    let (out1, out2, out3, out4, out5) = $divstep(d, &f, &g, &v, &r);
+                    let (out1, out2, out3, out4, out5) = $divstep(out1, &out2, &out3, &out4, &out5);
+                    d = out1;
+                    f = out2;
+                    g = out3;
+                    v = out4;
+                    r = out5;
                     i += 2;
                 }
 
                 if ITERATIONS % 2 != 0 {
-                    $divstep(
-                        &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
-                    );
+                    let (_out1, out2, _out3, out4, _out5) = $divstep(d, &f, &g, &v, &r);
                     v = out4;
                     f = out2;
                 }
 
-                let mut v_opp = <$uint>::default();
-                $neg(v_opp.as_mut(), &v);
-
+                let v_opp = <$uint>::from($neg(&v));
                 let v = <$uint>::from(v);
 
                 let s = ::elliptic_curve::subtle::Choice::from(
@@ -250,18 +235,14 @@ macro_rules! impl_sec1_field_element {
                 );
 
                 let v = <$uint>::conditional_select(&v, &v_opp, s);
-
-                let mut ret = <$uint>::default();
-                $mul(ret.as_mut(), v.as_ref(), &precomp);
-                ::elliptic_curve::subtle::CtOption::new(Self(ret), !self.is_zero())
+                let ret = $mul(v.as_ref(), &precomp);
+                ::elliptic_curve::subtle::CtOption::new(Self(ret.into()), !self.is_zero())
             }
 
             /// Compute modular square.
             #[must_use]
             pub fn square(&self) -> Self {
-                let mut ret = <$uint>::default();
-                $square(ret.as_mut(), self.as_ref());
-                Self(ret)
+                Self($square(self.as_ref()).into())
             }
         }
 
@@ -406,9 +387,7 @@ macro_rules! impl_sec1_field_element {
 
             #[inline]
             fn neg(self) -> $fe {
-                let mut ret = <$uint>::default();
-                $neg(ret.as_mut(), self.as_ref());
-                Self(ret)
+                Self($neg(self.as_ref()).into())
             }
         }
     };
@@ -423,9 +402,7 @@ macro_rules! impl_field_op {
 
             #[inline]
             fn $op_fn(self, rhs: $fe) -> $fe {
-                let mut out = <$uint>::default();
-                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
-                $fe(out)
+                $fe($func(self.as_ref(), rhs.as_ref()).into())
             }
         }
 
@@ -434,9 +411,7 @@ macro_rules! impl_field_op {
 
             #[inline]
             fn $op_fn(self, rhs: &$fe) -> $fe {
-                let mut out = <$uint>::default();
-                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
-                $fe(out)
+                $fe($func(self.as_ref(), rhs.as_ref()).into())
             }
         }
 
@@ -445,9 +420,7 @@ macro_rules! impl_field_op {
 
             #[inline]
             fn $op_fn(self, rhs: &$fe) -> $fe {
-                let mut out = <$uint>::default();
-                $func(out.as_mut(), self.as_ref(), rhs.as_ref());
-                $fe(out)
+                $fe($func(self.as_ref(), rhs.as_ref()).into())
             }
         }
     };

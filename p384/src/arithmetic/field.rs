@@ -22,8 +22,6 @@
 
 #[cfg_attr(target_pointer_width = "32", path = "field/p384_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "field/p384_64.rs")]
-#[allow(dead_code, rustdoc::broken_intra_doc_links)]
-#[rustfmt::skip]
 mod field_impl;
 
 use self::field_impl::*;
@@ -118,8 +116,7 @@ mod tests {
     /// Test that the precomputed `FieldElement::ONE` constant is correct.
     #[test]
     fn one() {
-        let mut one_mont = Default::default();
-        fiat_p384_to_montgomery(&mut one_mont, U384::ONE.as_ref());
+        let one_mont = fiat_p384_to_montgomery(U384::ONE.as_ref());
         assert_eq!(FieldElement(one_mont.into()), FieldElement::ONE);
     }
 
