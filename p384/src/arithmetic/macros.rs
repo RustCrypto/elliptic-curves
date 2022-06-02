@@ -129,8 +129,8 @@ macro_rules! impl_sec1_field_element {
             /// Does not perform a check that the field element does not overflow the order.
             ///
             /// Used incorrectly this can lead to invalid results!
-            fn from_uint_unchecked(w: $uint) -> Self {
-                Self($to_mont(w.as_ref()).into())
+            const fn from_uint_unchecked(w: $uint) -> Self {
+                Self(<$uint>::from_uint_array($to_mont(w.as_uint_array())))
             }
 
             /// Returns the big-endian encoding of this [`
@@ -153,8 +153,8 @@ macro_rules! impl_sec1_field_element {
             #[doc = stringify!($uint)]
             /// `] in canonical form.
             #[inline]
-            pub fn to_canonical(self) -> $uint {
-                $from_mont(self.as_ref()).into()
+            pub const fn to_canonical(self) -> $uint {
+                <$uint>::from_uint_array($from_mont(self.0.as_uint_array()))
             }
 
             /// Determine if this [`
@@ -179,10 +179,39 @@ macro_rules! impl_sec1_field_element {
                 self.ct_eq(&Self::ZERO)
             }
 
+            /// Add elements.
+            pub const fn add(&self, rhs: &Self) -> Self {
+                Self(<$uint>::from_uint_array($add(
+                    self.0.as_uint_array(),
+                    rhs.0.as_uint_array(),
+                )))
+            }
+
             /// Double element (add it to itself).
             #[must_use]
-            pub fn double(&self) -> Self {
-                self + self
+            pub const fn double(&self) -> Self {
+                self.add(self)
+            }
+
+            /// Subtract elements.
+            pub const fn sub(&self, rhs: &Self) -> Self {
+                Self(<$uint>::from_uint_array($sub(
+                    self.0.as_uint_array(),
+                    rhs.0.as_uint_array(),
+                )))
+            }
+
+            /// Multiply elements.
+            pub const fn mul(&self, rhs: &Self) -> Self {
+                Self(<$uint>::from_uint_array($mul(
+                    self.0.as_uint_array(),
+                    rhs.0.as_uint_array(),
+                )))
+            }
+
+            /// Negate element.
+            pub const fn neg(&self) -> Self {
+                Self(<$uint>::from_uint_array($neg(self.0.as_uint_array())))
             }
 
             /// Compute [`
@@ -241,8 +270,8 @@ macro_rules! impl_sec1_field_element {
 
             /// Compute modular square.
             #[must_use]
-            pub fn square(&self) -> Self {
-                Self($square(self.as_ref()).into())
+            pub const fn square(&self) -> Self {
+                Self(<$uint>::from_uint_array($square(self.0.as_uint_array())))
             }
         }
 
