@@ -39,6 +39,9 @@ pub use elliptic_curve::{self, bigint::U384};
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 
+#[cfg(feature = "expose-field")]
+pub use arithmetic::field::FieldElement;
+
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;

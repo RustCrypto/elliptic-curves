@@ -58,7 +58,7 @@ std = ["ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `
 test-vectors = ["hex-literal"]
 
 [package.metadata.docs.rs]
-features = ["ecdh", "ecdsa", "schnorr", "sha256", "keccak256"]
+features = ["ecdh", "ecdsa", "keccak256", "schnorr"]
 rustdoc-args = ["--cfg", "docsrs"]
 
 [[bench]]
