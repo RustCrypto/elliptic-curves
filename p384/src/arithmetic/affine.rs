@@ -5,7 +5,7 @@
 use core::ops::{Mul, Neg};
 
 use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_A, CURVE_EQUATION_B, MODULUS};
-use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384, PublicKey, Scalar, U384};
+use crate::{CompressedPoint, EncodedPoint, FieldBytes, NistP384, PublicKey, Scalar};
 use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
@@ -66,8 +66,8 @@ impl AffinePoint {
     /// NOTE: coordinate field elements have been translated into the Montgomery
     /// domain.
     pub const GENERATOR: Self = Self {
-        x: FieldElement(U384::from_be_hex("4d3aadc2299e1513812ff723614ede2b6454868459a30eff879c3afc541b4d6e20e378e2a0d6ce383dd0756649c0b528")),
-        y: FieldElement(U384::from_be_hex("2b78abc25a15c5e9dd8002263969a840c6c3521968f4ffd98bade7562e83b050a1bfa8bf7bb4a9ac23043dad4b03a4fe")),
+        x: FieldElement::from_be_hex("aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7"),
+        y: FieldElement::from_be_hex("3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f"),
         infinity: 0,
     };
 

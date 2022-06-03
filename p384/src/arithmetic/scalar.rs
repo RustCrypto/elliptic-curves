@@ -17,7 +17,6 @@ use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
 use elliptic_curve::{
     bigint::{ArrayEncoding, Encoding, Integer, Limb},
     ff::PrimeField,
-    generic_array::arr,
     ops::Reduce,
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -38,10 +37,11 @@ impl ScalarArithmetic for NistP384 {
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U384);
 
-impl_sec1_field_element!(
+impl_field_element!(
     Scalar,
-    U384,
     FieldBytes,
+    U384,
+    NistP384::ORDER,
     fiat_p384_scalar_montgomery_domain_field_element,
     fiat_p384_scalar_from_montgomery,
     fiat_p384_scalar_to_montgomery,
@@ -53,11 +53,12 @@ impl_sec1_field_element!(
     fiat_p384_scalar_divstep_precomp,
     fiat_p384_scalar_divstep,
     fiat_p384_scalar_msat,
-    NistP384::ORDER,
-    "000000000000000000000000000000000000000000000000389cb27e0bc8d220a7e5f24db74f58851313e695333ad68d"
 );
 
 impl Scalar {
+    /// `2^s` root of unity.
+    pub const ROOT_OF_UNITY: Self = Self::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
+
     /// Compute modular square root.
     pub fn sqrt(&self) -> CtOption<Self> {
         // p mod 4 = 3 -> compute sqrt(x) using x^((p+1)/4) =
@@ -139,7 +140,7 @@ impl PrimeField for Scalar {
     }
 
     fn is_odd(&self) -> Choice {
-        self.to_canonical().is_odd()
+        self.is_odd()
     }
 
     fn multiplicative_generator() -> Self {
@@ -147,13 +148,7 @@ impl PrimeField for Scalar {
     }
 
     fn root_of_unity() -> Self {
-        Scalar::from_repr(arr![u8;
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xc7, 0x63, 0x4d, 0x81, 0xf4, 0x37, 0x2d, 0xdf, 0x58, 0x1a, 0x0d, 0xb2,
-            0x48, 0xb0, 0xa7, 0x7a, 0xec, 0xec, 0x19, 0x6a, 0xcc, 0xc5, 0x29, 0x72
-        ])
-        .unwrap()
+        Self::ROOT_OF_UNITY
     }
 }
 
@@ -249,16 +244,9 @@ impl TryFrom<U384> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::{fiat_p384_scalar_to_montgomery, Scalar, U384};
+    use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::{Field, PrimeField};
-
-    /// Test that the precomputed `Scalar::ONE` constant is correct.
-    #[test]
-    fn one() {
-        let one_mont = fiat_p384_scalar_to_montgomery(U384::ONE.as_ref());
-        assert_eq!(Scalar(one_mont.into()), Scalar::ONE);
-    }
 
     #[test]
     fn from_to_bytes_roundtrip() {

@@ -45,11 +45,12 @@
 /// - `Mul`
 /// - `MulAssign`
 /// - `Neg`
-macro_rules! impl_sec1_field_element {
+macro_rules! impl_field_element {
     (
         $fe:tt,
-        $uint:ty,
         $bytes:ty,
+        $uint:ty,
+        $modulus:expr,
         $arr:ty,
         $from_mont:ident,
         $to_mont:ident,
@@ -61,15 +62,13 @@ macro_rules! impl_sec1_field_element {
         $divstep_precomp:ident,
         $divstep:ident,
         $msat:ident,
-        $mod:expr,
-        $one:expr
     ) => {
         impl $fe {
             /// Zero element.
             pub const ZERO: Self = Self(<$uint>::ZERO);
 
             /// Multiplicative identity.
-            pub const ONE: Self = Self(<$uint>::from_be_hex($one));
+            pub const ONE: Self = Self::from_uint_unchecked(<$uint>::ONE);
 
             /// Create a [`
             #[doc = stringify!($fe)]
@@ -116,8 +115,32 @@ macro_rules! impl_sec1_field_element {
             /// w * R^2 * R^-1 mod p = wR mod p
             /// ```
             pub fn from_uint(uint: $uint) -> ::elliptic_curve::subtle::CtOption<Self> {
-                let is_some = uint.ct_lt(&$mod);
+                let is_some = uint.ct_lt(&$modulus);
                 ::elliptic_curve::subtle::CtOption::new(Self::from_uint_unchecked(uint), is_some)
+            }
+
+            /// Parse a [`
+            #[doc = stringify!($fe)]
+            /// `] from big endian hex-encoded bytes.
+            ///
+            /// Does *not* perform a check that the field element does not overflow the order.
+            ///
+            /// This method is primarily intended for defining internal constants.
+            #[allow(dead_code)]
+            pub(crate) const fn from_be_hex(hex: &str) -> Self {
+                Self::from_uint_unchecked(<$uint>::from_be_hex(hex))
+            }
+
+            /// Parse a [`
+            #[doc = stringify!($fe)]
+            /// `] from little endian hex-encoded bytes.
+            ///
+            /// Does *not* perform a check that the field element does not overflow the order.
+            ///
+            /// This method is primarily intended for defining internal constants.
+            #[allow(dead_code)]
+            pub(crate) const fn from_le_hex(hex: &str) -> Self {
+                Self::from_uint_unchecked(<$uint>::from_le_hex(hex))
             }
 
             /// Decode [`
@@ -126,7 +149,7 @@ macro_rules! impl_sec1_field_element {
             #[doc = stringify!($uint)]
             /// `] converting it into Montgomery form.
             ///
-            /// Does not perform a check that the field element does not overflow the order.
+            /// Does *not* perform a check that the field element does not overflow the order.
             ///
             /// Used incorrectly this can lead to invalid results!
             const fn from_uint_unchecked(w: $uint) -> Self {
@@ -225,18 +248,13 @@ macro_rules! impl_sec1_field_element {
 
                 const LIMBS: usize = ::elliptic_curve::bigint::nlimbs!(<$uint>::BIT_SIZE);
                 const ITERATIONS: usize = (49 * <$uint>::BIT_SIZE + 57) / 17;
-                type XLimbs = [Word; LIMBS + 1];
 
-                let mut d: Word = 1;
+                let mut d = 1;
                 let mut f = $msat();
-
-                let mut g = XLimbs::default();
+                let mut g: [Word; LIMBS + 1] = Default::default();
                 g[..LIMBS].copy_from_slice(&$from_mont(self.as_ref()));
-
                 let mut r = <$arr>::from(Self::ONE.0);
                 let mut v = <$arr>::default();
-                let precomp = $divstep_precomp();
-
                 let mut i: usize = 0;
 
                 while i < ITERATIONS - ITERATIONS % 2 {
@@ -264,7 +282,7 @@ macro_rules! impl_sec1_field_element {
                 );
 
                 let v = <$uint>::conditional_select(&v, &v_opp, s);
-                let ret = $mul(v.as_ref(), &precomp);
+                let ret = $mul(v.as_ref(), &$divstep_precomp());
                 ::elliptic_curve::subtle::CtOption::new(Self(ret.into()), !self.is_zero())
             }
 

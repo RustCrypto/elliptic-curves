@@ -40,10 +40,11 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex("ffffffffffffffffffffffffffff
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U384);
 
-impl_sec1_field_element!(
+impl_field_element!(
     FieldElement,
-    U384,
     FieldBytes,
+    U384,
+    MODULUS,
     fiat_p384_montgomery_domain_field_element,
     fiat_p384_from_montgomery,
     fiat_p384_to_montgomery,
@@ -55,8 +56,6 @@ impl_sec1_field_element!(
     fiat_p384_divstep_precomp,
     fiat_p384_divstep,
     fiat_p384_msat,
-    MODULUS,
-    "000000000000000000000000000000000000000000000000000000000000000100000000ffffffffffffffff00000001"
 );
 
 impl FieldElement {
@@ -111,14 +110,7 @@ impl FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::{fiat_p384_to_montgomery, FieldElement, U384};
-
-    /// Test that the precomputed `FieldElement::ONE` constant is correct.
-    #[test]
-    fn one() {
-        let one_mont = fiat_p384_to_montgomery(U384::ONE.as_ref());
-        assert_eq!(FieldElement(one_mont.into()), FieldElement::ONE);
-    }
+    use super::FieldElement;
 
     /// Basic tests that field inversion works.
     #[test]
