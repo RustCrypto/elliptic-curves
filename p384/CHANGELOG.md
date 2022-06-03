@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.0 (2022-06-03)
+### Added
+- Arithmetic implementation ([#565], [#573])
+  - Addition formulas from Renes-Costello-Batina 2015, adapted from
+    @str4d's implementation in the `p256` crate
+  - `FieldElement::{invert, sqrt}` implementations
+  - `Scalar::{invert, sqrt}` implementations
+  - Scalar field implementation generated using `fiat-crypto`
+  - Scalar multiplication using 4-bit window ala [#563]
+  - ECDH support using generic implementation from `elliptic-curve`
+  - ECDSA support using generic implementation from the `ecdsa` crate
+- Wycheproof test vectors ([#574])
+- `const fn` field arithmetic ([#589], [#590])
+
+[#563]: https://github.com/RustCrypto/elliptic-curves/pull/563
+[#565]: https://github.com/RustCrypto/elliptic-curves/pull/565
+[#573]: https://github.com/RustCrypto/elliptic-curves/pull/573
+[#574]: https://github.com/RustCrypto/elliptic-curves/pull/574
+[#589]: https://github.com/RustCrypto/elliptic-curves/pull/589
+[#590]: https://github.com/RustCrypto/elliptic-curves/pull/590
+
 ## 0.10.0 (2022-05-09)
 ### Changed
 - Bump `digest` to v0.10 ([#515])
