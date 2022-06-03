@@ -102,6 +102,14 @@ mod tests {
                      f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8"
             )[..]
         );
+        let signature = signer.sign(b"test");
+        assert_eq!(
+            signature.as_ref(),
+            &hex!(
+                "f1abb023518351cd71d881567b1ea663ed3efcf6c5132b354f28d3b0b7d38367
+                019f4113742a2b14bd25926b49c649155f267e60d3814b4c0cc84250e46f0083"
+            )[..]
+        );
     }
 
     #[test]
