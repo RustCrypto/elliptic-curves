@@ -36,7 +36,7 @@ use elliptic_curve::{
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
 pub(crate) const MODULUS: U384 = U384::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff");
 
-/// An element in the finite field used for curve coordinates.
+/// Element of the secp384r1 base field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U384);
 
