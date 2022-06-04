@@ -2,15 +2,35 @@
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
+[![Build Status][build-image]][build-link]
 ![Apache2/MIT licensed][license-image]
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
-[![Build Status][build-image]][build-link]
 
-NIST P-384 elliptic curve (a.k.a. secp384r1) types implemented in terms of
-traits from the [`elliptic-curve`] crate.
+Pure Rust implementation of the NIST P-384 (a.k.a. secp384r1) elliptic curve
+with support for ECDH, ECDSA signing/verification, and general purpose curve
+arithmetic support implemented in terms of traits from the [`elliptic-curve`]
+crate.
 
 [Documentation][docs-link]
+
+## ⚠️ Security Warning
+
+The elliptic curve arithmetic contained in this crate has never been
+independently audited!
+
+This crate has been designed with the goal of ensuring that secret-dependent
+operations are performed in constant time (using the `subtle` crate and
+constant-time formulas). However, it has not been thoroughly assessed to ensure
+that generated assembly is constant time on common CPU architectures.
+
+USE AT YOUR OWN RISK!
+
+## Supported Algorithms
+
+- [Elliptic Curve Diffie-Hellman (ECDH)][ECDH]: gated under the `ecdh` feature.
+- [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
+  `ecdsa` feature.
 
 ## About P-384
 
@@ -56,13 +76,15 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/p384
 [docs-image]: https://docs.rs/p384/badge.svg
 [docs-link]: https://docs.rs/p384/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p384.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p384.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.57+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
-[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow%3Ap384
 
 [//]: # (general links)
 
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
+[ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
+[ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
