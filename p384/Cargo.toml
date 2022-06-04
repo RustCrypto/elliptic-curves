@@ -1,7 +1,11 @@
 [package]
 name = "p384"
 version = "0.11.0"
-description = "NIST P-384 (secp384r1) elliptic curve"
+description = """
+Pure Rust implementation of the NIST P-384 (a.k.a. secp384r1) elliptic curve
+with support for ECDH, ECDSA signing/verification, and general purpose curve
+arithmetic support.
+"""
 authors = ["RustCrypto Developers", "Frank Denis <github@pureftpd.org>"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/p384"
