@@ -49,78 +49,6 @@ const R2: FieldElement = FieldElement([
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(crate) [u64; LIMBS]);
 
-impl Field for FieldElement {
-    fn random(mut rng: impl RngCore) -> Self {
-        // We reduce a random 512-bit value into a 256-bit field, which results in a
-        // negligible bias from the uniform distribution.
-        let mut buf = [0; 64];
-        rng.fill_bytes(&mut buf);
-        FieldElement::from_bytes_wide(buf)
-    }
-
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    fn one() -> Self {
-        Self::ONE
-    }
-
-    #[must_use]
-    fn square(&self) -> Self {
-        self.square()
-    }
-
-    #[must_use]
-    fn double(&self) -> Self {
-        self.double()
-    }
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
-    }
-
-    fn sqrt(&self) -> CtOption<Self> {
-        self.sqrt()
-    }
-}
-
-impl ConditionallySelectable for FieldElement {
-    fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
-        FieldElement([
-            u64::conditional_select(&a.0[0], &b.0[0], choice),
-            u64::conditional_select(&a.0[1], &b.0[1], choice),
-            u64::conditional_select(&a.0[2], &b.0[2], choice),
-            u64::conditional_select(&a.0[3], &b.0[3], choice),
-        ])
-    }
-}
-
-impl ConstantTimeEq for FieldElement {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0[0].ct_eq(&other.0[0])
-            & self.0[1].ct_eq(&other.0[1])
-            & self.0[2].ct_eq(&other.0[2])
-            & self.0[3].ct_eq(&other.0[3])
-    }
-}
-
-impl Default for FieldElement {
-    fn default() -> Self {
-        FieldElement::zero()
-    }
-}
-
-impl DefaultIsZeroes for FieldElement {}
-
-impl Eq for FieldElement {}
-
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
 impl FieldElement {
     /// Zero element.
     pub const ZERO: Self = FieldElement([0, 0, 0, 0]);
@@ -485,6 +413,78 @@ impl FieldElement {
             sqrt,
             (&sqrt * &sqrt).ct_eq(self), // Only return Some if it's the square root.
         )
+    }
+}
+
+impl Field for FieldElement {
+    fn random(mut rng: impl RngCore) -> Self {
+        // We reduce a random 512-bit value into a 256-bit field, which results in a
+        // negligible bias from the uniform distribution.
+        let mut buf = [0; 64];
+        rng.fill_bytes(&mut buf);
+        FieldElement::from_bytes_wide(buf)
+    }
+
+    fn zero() -> Self {
+        Self::ZERO
+    }
+
+    fn one() -> Self {
+        Self::ONE
+    }
+
+    #[must_use]
+    fn square(&self) -> Self {
+        self.square()
+    }
+
+    #[must_use]
+    fn double(&self) -> Self {
+        self.double()
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
+
+    fn sqrt(&self) -> CtOption<Self> {
+        self.sqrt()
+    }
+}
+
+impl ConditionallySelectable for FieldElement {
+    fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
+        FieldElement([
+            u64::conditional_select(&a.0[0], &b.0[0], choice),
+            u64::conditional_select(&a.0[1], &b.0[1], choice),
+            u64::conditional_select(&a.0[2], &b.0[2], choice),
+            u64::conditional_select(&a.0[3], &b.0[3], choice),
+        ])
+    }
+}
+
+impl ConstantTimeEq for FieldElement {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.0[0].ct_eq(&other.0[0])
+            & self.0[1].ct_eq(&other.0[1])
+            & self.0[2].ct_eq(&other.0[2])
+            & self.0[3].ct_eq(&other.0[3])
+    }
+}
+
+impl Default for FieldElement {
+    fn default() -> Self {
+        FieldElement::zero()
+    }
+}
+
+impl DefaultIsZeroes for FieldElement {}
+
+impl Eq for FieldElement {}
+
+impl PartialEq for FieldElement {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
