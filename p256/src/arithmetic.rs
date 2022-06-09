@@ -1,7 +1,7 @@
 //! Pure Rust implementation of group operations on secp256r1.
 
 pub(crate) mod affine;
-mod field;
+pub(crate) mod field;
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
 pub(crate) mod projective;
