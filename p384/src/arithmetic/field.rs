@@ -28,7 +28,7 @@ use self::field_impl::*;
 use crate::FieldBytes;
 use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Encoding, Integer, U384},
+    bigint::{self, ArrayEncoding, Encoding, Integer, Limb, U384},
     subtle::{Choice, ConstantTimeEq, ConstantTimeLess, CtOption},
 };
 
@@ -52,10 +52,7 @@ impl_field_element!(
     fiat_p384_sub,
     fiat_p384_mul,
     fiat_p384_opp,
-    fiat_p384_square,
-    fiat_p384_divstep_precomp,
-    fiat_p384_divstep,
-    fiat_p384_msat,
+    fiat_p384_square
 );
 
 impl FieldElement {
@@ -70,6 +67,23 @@ impl FieldElement {
     /// Returns the SEC1 encoding of this field element.
     pub fn to_sec1(self) -> FieldBytes {
         self.to_be_bytes()
+    }
+
+    /// Compute [`FieldElement`] inversion: `1 / self`.
+    pub fn invert(&self) -> CtOption<Self> {
+        let ret = impl_field_invert!(
+            self.to_canonical().to_uint_array(),
+            Self::ONE.0.to_uint_array(),
+            Limb::BIT_SIZE,
+            bigint::nlimbs!(U384::BIT_SIZE),
+            fiat_p384_mul,
+            fiat_p384_opp,
+            fiat_p384_divstep_precomp,
+            fiat_p384_divstep,
+            fiat_p384_msat,
+            fiat_p384_selectznz,
+        );
+        CtOption::new(Self(ret.into()), !self.is_zero())
     }
 
     /// Returns the square root of self mod p, or `None` if no square root

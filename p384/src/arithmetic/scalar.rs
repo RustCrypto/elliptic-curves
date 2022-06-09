@@ -15,7 +15,7 @@ use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Encoding, Integer, Limb},
+    bigint::{self, ArrayEncoding, Encoding, Integer, Limb},
     ff::PrimeField,
     ops::Reduce,
     subtle::{
@@ -49,15 +49,29 @@ impl_field_element!(
     fiat_p384_scalar_sub,
     fiat_p384_scalar_mul,
     fiat_p384_scalar_opp,
-    fiat_p384_scalar_square,
-    fiat_p384_scalar_divstep_precomp,
-    fiat_p384_scalar_divstep,
-    fiat_p384_scalar_msat,
+    fiat_p384_scalar_square
 );
 
 impl Scalar {
     /// `2^s` root of unity.
     pub const ROOT_OF_UNITY: Self = Self::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
+
+    /// Compute [`Scalar`] inversion: `1 / self`.
+    pub fn invert(&self) -> CtOption<Self> {
+        let ret = impl_field_invert!(
+            self.to_canonical().to_uint_array(),
+            Self::ONE.0.to_uint_array(),
+            Limb::BIT_SIZE,
+            bigint::nlimbs!(U384::BIT_SIZE),
+            fiat_p384_scalar_mul,
+            fiat_p384_scalar_opp,
+            fiat_p384_scalar_divstep_precomp,
+            fiat_p384_scalar_divstep,
+            fiat_p384_scalar_msat,
+            fiat_p384_scalar_selectznz,
+        );
+        CtOption::new(Self(ret.into()), !self.is_zero())
+    }
 
     /// Compute modular square root.
     pub fn sqrt(&self) -> CtOption<Self> {
