@@ -608,6 +608,7 @@ name = "p256"
 version = "0.11.0"
 dependencies = [
  "blobby",
+ "criterion",
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
