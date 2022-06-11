@@ -251,36 +251,62 @@ fn hash_to_curve() {
 #[test]
 fn hash_to_scalar_voprf() {
     use elliptic_curve::hash2curve::ExpandMsgXmd;
+    use elliptic_curve::Field;
     use hex_literal::hex;
     use sha2::Sha256;
 
     struct TestVector {
         dst: &'static [u8],
+        key_info: &'static [u8],
         seed: &'static [u8],
         sk_sm: &'static [u8],
     }
 
     const TEST_VECTORS: &[TestVector] = &[
         TestVector {
-            dst: b"HashToScalar-VOPRF08-\x00\x00\x03",
+            dst: b"DeriveKeyPairVOPRF09-\x00\x00\x03",
+            key_info: b"test key",
             seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-            sk_sm: &hex!("c15d9e9ab36d495d9d62954db6aafe06d3edabf41600d58f9be0737af2719e97"),
+            sk_sm: &hex!("88a91851d93ab3e4f2636babc60d6ce9d1aee2b86dece13fa8590d955a08d987"),
         },
         TestVector {
-            dst: b"HashToScalar-VOPRF08-\x01\x00\x03",
+            dst: b"DeriveKeyPairVOPRF09-\x01\x00\x03",
+            key_info: b"test key",
             seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-            sk_sm: &hex!("7f62054fcd598b5e023c08ef0f04e05e26867438d5e355e846c9d8788d5c7a12"),
+            sk_sm: &hex!("c8a626b52be02b06e9cdb1a05490392938642a30b1451b0cd1be1d3612b336b5"),
+        },
+        TestVector {
+            dst: b"DeriveKeyPairVOPRF09-\x02\x00\x03",
+            key_info: b"test key",
+            seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+            sk_sm: &hex!("b75567bfc40aaaf7735c35c6ad5d55a725c9d42ac66df2e1dbd2027bde289264"),
         },
     ];
 
-    for test_vector in TEST_VECTORS {
-        assert_eq!(
-            NistP256::hash_to_scalar::<ExpandMsgXmd<Sha256>>(&[test_vector.seed], test_vector.dst,)
-                .unwrap()
-                .to_bytes()
-                .as_slice(),
-            test_vector.sk_sm
-        );
+    'outer: for test_vector in TEST_VECTORS {
+        let key_info_len = u16::try_from(test_vector.key_info.len())
+            .unwrap()
+            .to_be_bytes();
+
+        for counter in 0_u8..=u8::MAX {
+            let scalar = NistP256::hash_to_scalar::<ExpandMsgXmd<Sha256>>(
+                &[
+                    test_vector.seed,
+                    &key_info_len,
+                    test_vector.key_info,
+                    &counter.to_be_bytes(),
+                ],
+                test_vector.dst,
+            )
+            .unwrap();
+
+            if !bool::from(scalar.is_zero()) {
+                assert_eq!(scalar.to_bytes().as_slice(), test_vector.sk_sm);
+                continue 'outer;
+            }
+        }
+
+        panic!("deriving key failed");
     }
 }
 
