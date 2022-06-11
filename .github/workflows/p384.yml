@@ -41,13 +41,14 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features hash2curve
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha384
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features voprf
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core,jwk,pem,pkcs8,serde,sha384,voprf
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core,hash2curve,jwk,pem,pkcs8,serde,sha384,voprf
 
   test:
     runs-on: ubuntu-latest

@@ -9,6 +9,8 @@
 mod macros;
 
 pub(crate) mod field;
+#[cfg(feature = "hash2curve")]
+mod hash2curve;
 pub(crate) mod scalar;
 
 use self::{field::FieldElement, scalar::Scalar};
