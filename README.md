@@ -19,6 +19,7 @@ and can be easily used for bare-metal or WebAssembly programming.
 | [`k256`]  | [secp256k1]        | ✅            | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256) | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push) |
 | [`p256`]  | [NIST P-256]       | ✅            | [![crates.io](https://img.shields.io/crates/v/p256.svg)](https://crates.io/crates/p256) | [![Documentation](https://docs.rs/p256/badge.svg)](https://docs.rs/p256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p256/badge.svg?branch=master&event=push) |
 | [`p384`]  | [NIST P-384]       | ✅            | [![crates.io](https://img.shields.io/crates/v/p384.svg)](https://crates.io/crates/p384) | [![Documentation](https://docs.rs/p384/badge.svg)](https://docs.rs/p384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push) |
+| [`p521`]  | [NIST P-521]       | 🚧            | [![crates.io](https://img.shields.io/crates/v/p521.svg)](https://crates.io/crates/p521) | [![Documentation](https://docs.rs/p521/badge.svg)](https://docs.rs/p521) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p521/badge.svg?branch=master&event=push) |
 
 NOTE: Some crates contain field/point arithmetic implementations gated under the
 `arithmetic` cargo feature as noted above.
@@ -63,13 +64,15 @@ dual licensed as above, without any additional terms or conditions.
 [`k256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/k256
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
 [`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
+[`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p521
 
 [//]: # (curves)
 
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
 [NIST P-256]: http://oid-info.com/get/1.2.840.10045.3.1.7
 [NIST P-384]: http://oid-info.com/get/1.3.132.0.34
+[NIST P-521]: http://oid-info.com/get/1.3.132.0.35
 
-[//]: # (general links)
+[//]: # (links)
 
 [other-curves]: https://github.com/RustCrypto/elliptic-curves/issues/114
