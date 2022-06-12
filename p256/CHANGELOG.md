@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.1 (2022-06-12)
+### Added
+- Re-export low-level `diffie_hellman` function ([#556])
+- Additional RFC6979 test vectors ([#591])
+
+### Changed
+- Use a 4-bit window for scalar multiplication ([#563])
+- `invert()`, `sqrt()`: replace exponentiations with addition chains ([#564])
+- Use generic prime order formulas ([#602])
+
+[#556]: https://github.com/RustCrypto/elliptic-curves/pull/556
+[#563]: https://github.com/RustCrypto/elliptic-curves/pull/563
+[#564]: https://github.com/RustCrypto/elliptic-curves/pull/564
+[#591]: https://github.com/RustCrypto/elliptic-curves/pull/591
+[#602]: https://github.com/RustCrypto/elliptic-curves/pull/602
+
 ## 0.11.0 (2022-05-09)
 ### Changed
 - Bump `digest` to v0.10 ([#515])
