@@ -93,31 +93,28 @@ impl ProjectivePoint {
 
     /// Returns `self + other`.
     fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
-        let (x, y, z) = weierstrass::add(
+        weierstrass::add(
             (self.x, self.y, self.z),
             (other.x, other.y, other.z),
             CURVE_EQUATION_B,
-        );
-        Self { x, y, z }
+        )
+        .into()
     }
 
     /// Returns `self + other`.
     fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
-        let (x, y, z) = weierstrass::add_mixed(
+        let ret = Self::from(weierstrass::add_mixed(
             (self.x, self.y, self.z),
             (other.x, other.y),
             CURVE_EQUATION_B,
-        );
+        ));
 
-        let mut ret = ProjectivePoint { x, y, z };
-        ret.conditional_assign(self, other.is_identity());
-        ret
+        Self::conditional_select(&ret, self, other.is_identity())
     }
 
     /// Doubles this point.
     pub fn double(&self) -> ProjectivePoint {
-        let (x, y, z) = weierstrass::double((self.x, self.y, self.z), CURVE_EQUATION_B);
-        Self { x, y, z }
+        weierstrass::double((self.x, self.y, self.z), CURVE_EQUATION_B).into()
     }
 
     /// Returns `self - other`.
@@ -249,6 +246,13 @@ impl From<ProjectivePoint> for AffinePoint {
 impl From<&ProjectivePoint> for AffinePoint {
     fn from(p: &ProjectivePoint) -> AffinePoint {
         p.to_affine()
+    }
+}
+
+impl From<weierstrass::ProjectivePoint<FieldElement>> for ProjectivePoint {
+    #[inline]
+    fn from((x, y, z): weierstrass::ProjectivePoint<FieldElement>) -> ProjectivePoint {
+        Self { x, y, z }
     }
 }
 
