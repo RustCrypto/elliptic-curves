@@ -25,11 +25,47 @@ use elliptic_curve::{
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
+#[cfg(feature = "serde")]
+use serdect::serde::{de, ser, Deserialize, Serialize};
+
+#[cfg(doc)]
+use core::ops::{Add, Mul, Sub};
+
 impl ScalarArithmetic for NistP384 {
     type Scalar = Scalar;
 }
 
-/// Scalars are elements in the finite field modulo n.
+/// Scalars are elements in the finite field modulo `n`.
+///
+/// # Trait impls
+///
+/// Much of the important functionality of scalars is provided by traits from
+/// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
+/// `p384::elliptic_curve::ff`:
+///
+/// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
+///   represents elements of finite fields and provides:
+///   - [`Field::random`](https://docs.rs/ff/latest/ff/trait.Field.html#tymethod.random) -
+///     generate a random scalar
+///   - `double`, `square`, and `invert` operations
+///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
+///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
+/// - [`PrimeField`](https://docs.rs/ff/latest/ff/trait.PrimeField.html) -
+///   represents elements of prime fields and provides:
+///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
+///   - `multiplicative_generator` and `root_of_unity` constants.
+/// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
+///   operations over field elements represented as bits (requires `bits` feature)
+///
+/// Please see the documentation for the relevant traits for more information.
+///
+/// # `serde` support
+///
+/// When the `serde` feature of this crate is enabled, the `Serialize` and
+/// `Deserialize` traits are impl'd for this type.
+///
+/// The serialization is a fixed-width big endian encoding. When used with
+/// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U384);
@@ -250,6 +286,28 @@ impl TryFrom<U384> for Scalar {
 
     fn try_from(w: U384) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl Serialize for Scalar {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        ScalarCore::from(self).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de> Deserialize<'de> for Scalar {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        Ok(ScalarCore::deserialize(deserializer)?.into())
     }
 }
 

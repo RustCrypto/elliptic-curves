@@ -67,7 +67,7 @@ impl ScalarArithmetic for NistP256 {
 ///   - `double`, `square`, and `invert` operations
 ///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
 ///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
-/// - [`PrimeField`](https://docs.rs/ff/0.9.0/ff/trait.PrimeField.html) -
+/// - [`PrimeField`](https://docs.rs/ff/latest/ff/trait.PrimeField.html) -
 ///   represents elements of prime fields and provides:
 ///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
 ///   - `multiplicative_generator` and `root_of_unity` constants.
