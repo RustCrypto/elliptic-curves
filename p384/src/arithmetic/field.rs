@@ -28,8 +28,8 @@ use self::field_impl::*;
 use crate::FieldBytes;
 use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
 use elliptic_curve::{
-    bigint::{self, ArrayEncoding, Encoding, Integer, Limb, U384},
-    subtle::{Choice, ConstantTimeEq, ConstantTimeLess, CtOption},
+    bigint::{self, Encoding, Limb, U384},
+    subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus
@@ -40,7 +40,7 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex("ffffffffffffffffffffffffffff
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U384);
 
-impl_field_element!(
+elliptic_curve::impl_field_element!(
     FieldElement,
     FieldBytes,
     U384,
