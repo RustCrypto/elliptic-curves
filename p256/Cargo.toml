@@ -1,6 +1,6 @@
 [package]
 name = "p256"
-version = "0.11.0"
+version = "0.11.1"
 description = """
 Pure Rust implementation of the NIST P-256 (a.k.a. secp256r1, prime256v1)
 elliptic curve with support for ECDH, ECDSA signing/verification, and general
