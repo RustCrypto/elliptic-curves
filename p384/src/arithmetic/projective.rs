@@ -33,7 +33,7 @@ impl PrimeCurveArithmetic for NistP384 {
     type CurveGroup = ProjectivePoint;
 }
 
-/// A point on the secP384r1 curve in projective coordinates.
+/// A point on the secp384r1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct ProjectivePoint {
