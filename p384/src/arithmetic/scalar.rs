@@ -15,13 +15,10 @@ use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, SecretKey, U384};
 use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
 use elliptic_curve::{
-    bigint::{self, ArrayEncoding, Encoding, Integer, Limb},
+    bigint::{self, Encoding, Limb},
     ff::PrimeField,
     ops::Reduce,
-    subtle::{
-        Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
-        CtOption,
-    },
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     Curve as _, Error, IsHigh, Result, ScalarArithmetic, ScalarCore,
 };
 
@@ -37,7 +34,7 @@ impl ScalarArithmetic for NistP384 {
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U384);
 
-impl_field_element!(
+elliptic_curve::impl_field_element!(
     Scalar,
     FieldBytes,
     U384,
