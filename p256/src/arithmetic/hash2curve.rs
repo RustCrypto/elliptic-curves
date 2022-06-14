@@ -248,6 +248,7 @@ fn hash_to_curve() {
     }
 }
 
+/// Taken from <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-09.html#name-oprfp-256-sha-256-2>.
 #[test]
 fn hash_to_scalar_voprf() {
     use elliptic_curve::hash2curve::ExpandMsgXmd;
