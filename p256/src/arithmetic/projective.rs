@@ -68,7 +68,7 @@ impl ProjectivePoint {
         Self::GENERATOR
     }
 
-    /// Returns the affine representation of this point, or `None` if it is the identity.
+    /// Returns the affine representation of this point.
     pub fn to_affine(&self) -> AffinePoint {
         self.z
             .invert()
