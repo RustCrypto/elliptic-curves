@@ -10,10 +10,7 @@ use ecdsa_core::{
     hazmat::SignPrimitive,
     signature::{
         digest::{
-            block_buffer::Eager,
-            core_api::{BlockSizeUser, BufferKindUser, CoreProxy, FixedOutputCore},
-            generic_array::typenum::{self, IsLess, Le, NonZero},
-            Digest, FixedOutput, HashMarker, OutputSizeUser,
+            Digest, FixedOutput,
         },
         DigestSigner, RandomizedDigestSigner,
     },
@@ -100,16 +97,7 @@ where
 
 impl<D> DigestSigner<D, Signature> for SigningKey
 where
-    D: CoreProxy + Digest + FixedOutput<OutputSize = U32>,
-    D::Core: BlockSizeUser
-        + BufferKindUser<BufferKind = Eager>
-        + Clone
-        + Default
-        + FixedOutputCore
-        + HashMarker
-        + OutputSizeUser<OutputSize = D::OutputSize>,
-    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
-    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
+    D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
         let sig: recoverable::Signature = self.try_sign_digest(digest)?;
@@ -119,16 +107,7 @@ where
 
 impl<D> DigestSigner<D, recoverable::Signature> for SigningKey
 where
-    D: CoreProxy + Digest + FixedOutput<OutputSize = U32>,
-    D::Core: BlockSizeUser
-        + BufferKindUser<BufferKind = Eager>
-        + Clone
-        + Default
-        + FixedOutputCore
-        + HashMarker
-        + OutputSizeUser<OutputSize = D::OutputSize>,
-    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
-    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
+    D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
         let digest = msg_digest.finalize_fixed();
@@ -146,16 +125,7 @@ where
 
 impl<D> RandomizedDigestSigner<D, Signature> for SigningKey
 where
-    D: CoreProxy + Digest + FixedOutput<OutputSize = U32>,
-    D::Core: BlockSizeUser
-        + BufferKindUser<BufferKind = Eager>
-        + Clone
-        + Default
-        + FixedOutputCore
-        + HashMarker
-        + OutputSizeUser<OutputSize = D::OutputSize>,
-    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
-    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
+    D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest_with_rng(
         &self,
@@ -169,16 +139,7 @@ where
 
 impl<D> RandomizedDigestSigner<D, recoverable::Signature> for SigningKey
 where
-    D: CoreProxy + Digest + FixedOutput<OutputSize = U32>,
-    D::Core: BlockSizeUser
-        + BufferKindUser<BufferKind = Eager>
-        + Clone
-        + Default
-        + FixedOutputCore
-        + HashMarker
-        + OutputSizeUser<OutputSize = D::OutputSize>,
-    <D::Core as BlockSizeUser>::BlockSize: IsLess<typenum::U256>,
-    Le<<D::Core as BlockSizeUser>::BlockSize, typenum::U256>: NonZero,
+    D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest_with_rng(
         &self,
