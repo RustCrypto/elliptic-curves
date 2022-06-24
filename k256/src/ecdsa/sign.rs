@@ -9,9 +9,7 @@ use core::{
 use ecdsa_core::{
     hazmat::SignPrimitive,
     signature::{
-        digest::{
-            Digest, FixedOutput,
-        },
+        digest::{Digest, FixedOutput},
         DigestSigner, RandomizedDigestSigner,
     },
 };
