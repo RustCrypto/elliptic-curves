@@ -87,19 +87,19 @@ jobs:
         include:
           # ARM32
           - target: armv7-unknown-linux-gnueabihf
-            rust: 1.57.0 # MSRV
+            rust: 1.58.1 # MSRV (cross)
           - target: armv7-unknown-linux-gnueabihf
             rust: stable
 
           # ARM64
           - target: aarch64-unknown-linux-gnu
-            rust: 1.57.0 # MSRV
+            rust: 1.58.1 # MSRV (cross)
           - target: aarch64-unknown-linux-gnu
             rust: stable
 
           # PPC32
           - target: powerpc-unknown-linux-gnu
-            rust: 1.57.0 # MSRV
+            rust: 1.58.1 # MSRV (cross)
           - target: powerpc-unknown-linux-gnu
             rust: stable
 
