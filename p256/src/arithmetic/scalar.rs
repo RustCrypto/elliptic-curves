@@ -370,7 +370,7 @@ impl Scalar {
     // TODO(tarcieri): implement all algorithms in terms of `U256`?
     #[cfg(target_pointer_width = "32")]
     const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
-        Self(U256::from_uint_array([
+        Self(U256::from_words([
             (limbs[0] & 0xFFFFFFFF) as u32,
             (limbs[0] >> 32) as u32,
             (limbs[1] & 0xFFFFFFFF) as u32,
@@ -388,7 +388,7 @@ impl Scalar {
     // TODO(tarcieri): implement all algorithms in terms of `U256`?
     #[cfg(target_pointer_width = "64")]
     const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
-        Self(U256::from_uint_array(limbs))
+        Self(U256::from_words(limbs))
     }
 
     /// Shift right by one bit
@@ -535,7 +535,7 @@ impl PrimeFieldBits for Scalar {
     }
 
     fn char_le_bits() -> ScalarBits {
-        NistP256::ORDER.to_uint_array().into()
+        NistP256::ORDER.to_words().into()
     }
 }
 
@@ -631,7 +631,7 @@ impl From<&Scalar> for U256 {
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.to_uint_array().into()
+        scalar.0.to_words().into()
     }
 }
 
@@ -814,7 +814,7 @@ impl<'de> Deserialize<'de> for Scalar {
 // TODO(tarcieri): implement all algorithms in terms of `U256`?
 #[cfg(target_pointer_width = "32")]
 pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
-    let limbs = u256.to_uint_array();
+    let limbs = u256.to_words();
 
     [
         (limbs[0] as u64) | ((limbs[1] as u64) << 32),
@@ -828,7 +828,7 @@ pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
 // TODO(tarcieri): implement all algorithms in terms of `U256`?
 #[cfg(target_pointer_width = "64")]
 pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
-    u256.to_uint_array()
+    u256.to_words()
 }
 
 #[cfg(test)]

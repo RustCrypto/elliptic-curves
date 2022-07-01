@@ -72,8 +72,8 @@ impl FieldElement {
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         let ret = impl_field_invert!(
-            self.to_canonical().to_uint_array(),
-            Self::ONE.0.to_uint_array(),
+            self.to_canonical().to_words(),
+            Self::ONE.0.to_words(),
             Limb::BIT_SIZE,
             bigint::nlimbs!(U384::BIT_SIZE),
             fiat_p384_mul,
