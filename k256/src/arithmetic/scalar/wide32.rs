@@ -30,8 +30,8 @@ impl WideScalar {
     /// Multiplies two scalars without modulo reduction, producing up to a 512-bit scalar.
     #[inline(always)] // only used in Scalar::mul(), so won't cause binary bloat
     pub fn mul_wide(a: &Scalar, b: &Scalar) -> Self {
-        let a = a.0.to_uint_array();
-        let b = b.0.to_uint_array();
+        let a = a.0.to_words();
+        let b = b.0.to_words();
 
         // 96 bit accumulator.
         let c0 = 0;
@@ -121,7 +121,7 @@ impl WideScalar {
         debug_assert!(c1 == 0);
         let l15 = c0;
 
-        Self(U512::from_uint_array([
+        Self(U512::from_words([
             l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15,
         ]))
     }
@@ -140,7 +140,7 @@ impl WideScalar {
             }
         }
 
-        let l = Self::mul_wide(a, b).0.to_uint_array();
+        let l = Self::mul_wide(a, b).0.to_words();
         let shiftlimbs = shift >> 5;
         let shiftlow = shift & 0x1F;
         let shifthigh = 32 - shiftlow;
@@ -223,7 +223,7 @@ impl WideScalar {
 
         let r7 = ifelse(shift < 288, l[7 + shiftlimbs] >> shiftlow, 0);
 
-        let res = Scalar(U256::from_uint_array([r0, r1, r2, r3, r4, r5, r6, r7]));
+        let res = Scalar(U256::from_words([r0, r1, r2, r3, r4, r5, r6, r7]));
 
         // Check the highmost discarded bit and round up if it is set.
         let c = (l[(shift - 1) >> 5] >> ((shift - 1) & 0x1f)) & 1;
@@ -242,7 +242,7 @@ impl WideScalar {
             ORDER
         };
 
-        let w = self.0.to_uint_array();
+        let w = self.0.to_words();
         let n0 = w[8];
         let n1 = w[9];
         let n2 = w[10];

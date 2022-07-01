@@ -9,7 +9,7 @@ pub(crate) use self::wide::WideScalar;
 use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
-    bigint::{nlimbs, prelude::*, Limb, LimbUInt, U256, U512},
+    bigint::{self, prelude::*, Limb, Word, U256, U512},
     generic_array::arr,
     group::ff::{Field, PrimeField},
     ops::{Reduce, ReduceNonZero},
@@ -37,7 +37,7 @@ impl ScalarArithmetic for Secp256k1 {
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-const MODULUS: [LimbUInt; nlimbs!(256)] = ORDER.to_uint_array();
+const MODULUS: [Word; bigint::nlimbs!(256)] = ORDER.to_words();
 
 /// Constant representing the modulus / 2
 const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
@@ -353,7 +353,7 @@ impl PrimeFieldBits for Scalar {
     }
 
     fn char_le_bits() -> ScalarBits {
-        ORDER.to_uint_array().into()
+        ORDER.to_words().into()
     }
 }
 
@@ -602,7 +602,7 @@ impl ReduceNonZero<U512> for Scalar {
 #[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.to_uint_array().into()
+        scalar.0.to_words().into()
     }
 }
 

@@ -92,8 +92,8 @@ impl Scalar {
     /// Compute [`Scalar`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         let ret = impl_field_invert!(
-            self.to_canonical().to_uint_array(),
-            Self::ONE.0.to_uint_array(),
+            self.to_canonical().to_words(),
+            Self::ONE.0.to_words(),
             Limb::BIT_SIZE,
             bigint::nlimbs!(U384::BIT_SIZE),
             fiat_p384_scalar_mul,
@@ -205,11 +205,11 @@ impl PrimeFieldBits for Scalar {
     type ReprBits = fiat_p384_scalar_montgomery_domain_field_element;
 
     fn to_le_bits(&self) -> ScalarBits {
-        self.to_canonical().to_uint_array().into()
+        self.to_canonical().to_words().into()
     }
 
     fn char_le_bits() -> ScalarBits {
-        NistP384::ORDER.to_uint_array().into()
+        NistP384::ORDER.to_words().into()
     }
 }
 
