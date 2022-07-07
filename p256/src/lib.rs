@@ -47,6 +47,9 @@ pub use arithmetic::{
 pub use arithmetic::field::FieldElement;
 
 #[cfg(feature = "expose-field")]
+pub use arithmetic::affine::AffineCoordinates;
+
+#[cfg(feature = "expose-field")]
 pub use arithmetic::{CURVE_EQUATION_A, CURVE_EQUATION_B};
 
 #[cfg(feature = "pkcs8")]

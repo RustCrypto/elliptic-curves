@@ -84,20 +84,32 @@ impl AffinePoint {
         .to_montgomery(),
         infinity: 0,
     };
+}
 
-    #[cfg(feature = "expose-field")]
-    /// Construct a point directly from affine coordinates.
-    pub fn from_coordinates_unchecked(x: &FieldElement, y: &FieldElement) -> AffinePoint {
-        AffinePoint {
+/// Converts affine coordinates to points and back.
+pub trait AffineCoordinates: Sized {
+    /// Construct a point directly from affine coordinates, checking that it is a point on the
+    /// curve.
+    fn from_coordinates(x: &FieldElement, y: &FieldElement) -> CtOption<Self>;
+
+    /// Decompose a point into X and Y coordinates.
+    fn to_coordinates(&self) -> (FieldElement, FieldElement);
+}
+
+impl AffineCoordinates for AffinePoint {
+    fn from_coordinates(x: &FieldElement, y: &FieldElement) -> CtOption<AffinePoint> {
+        // Check that the point is on the curve
+        let lhs = y * y;
+        let rhs = (x * x * x) + &(CURVE_EQUATION_A * x) + &CURVE_EQUATION_B;
+        let point = AffinePoint {
             x: *x,
             y: *y,
             infinity: 0,
-        }
+        };
+        CtOption::new(point, lhs.ct_eq(&rhs))
     }
 
-    #[cfg(feature = "expose-field")]
-    /// Decompose a point into X and Y coordinates.
-    pub fn to_coordinates(&self) -> (FieldElement, FieldElement) {
+    fn to_coordinates(&self) -> (FieldElement, FieldElement) {
         (self.x, self.y)
     }
 }
@@ -274,15 +286,7 @@ impl FromEncodedPoint<NistP256> for AffinePoint {
                 let x = FieldElement::from_bytes(x);
                 let y = FieldElement::from_bytes(y);
 
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = y * &y;
-                        let rhs = x * &x * &x + &(CURVE_EQUATION_A * &x) + &CURVE_EQUATION_B;
-                        let point = AffinePoint { x, y, infinity: 0 };
-                        CtOption::new(point, lhs.ct_eq(&rhs))
-                    })
-                })
+                x.and_then(|x| y.and_then(|y| AffinePoint::from_coordinates(&x, &y)))
             }
         }
     }
