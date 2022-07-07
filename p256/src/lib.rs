@@ -46,6 +46,9 @@ pub use arithmetic::{
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
 
+#[cfg(feature = "expose-field")]
+pub use arithmetic::{CURVE_EQUATION_A, CURVE_EQUATION_B};
+
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;

@@ -14,13 +14,13 @@ use projective::ProjectivePoint;
 use scalar::Scalar;
 
 /// a = -3
-const CURVE_EQUATION_A: FieldElement = FieldElement::ZERO
+pub const CURVE_EQUATION_A: FieldElement = FieldElement::ZERO
     .subtract(&FieldElement::ONE)
     .subtract(&FieldElement::ONE)
     .subtract(&FieldElement::ONE);
 
 /// b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
-const CURVE_EQUATION_B: FieldElement = FieldElement([
+pub const CURVE_EQUATION_B: FieldElement = FieldElement([
     0xd89c_df62_29c4_bddf,
     0xacf0_05cd_7884_3090,
     0xe5a2_20ab_f721_2ed6,
