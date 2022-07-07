@@ -84,6 +84,22 @@ impl AffinePoint {
         .to_montgomery(),
         infinity: 0,
     };
+
+    #[cfg(feature = "expose-field")]
+    /// Construct a point directly from affine coordinates.
+    pub fn from_coordinates_unchecked(x: &FieldElement, y: &FieldElement) -> AffinePoint {
+        AffinePoint {
+            x: *x,
+            y: *y,
+            infinity: 0,
+        }
+    }
+
+    #[cfg(feature = "expose-field")]
+    /// Decompose a point into X and Y coordinates.
+    pub fn to_coordinates(&self) -> (FieldElement, FieldElement) {
+        (self.x, self.y)
+    }
 }
 
 impl PrimeCurveAffine for AffinePoint {
