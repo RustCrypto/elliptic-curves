@@ -316,23 +316,26 @@ impl From<Id> for ecdsa_core::RecoveryId {
     }
 }
 
-#[cfg(all(test, feature = "ecdsa", feature = "sha256"))]
+#[cfg(all(test, feature = "ecdsa", feature = "keccak256", feature = "sha256"))]
 mod tests {
     use super::Signature;
-    use crate::EncodedPoint;
+    use crate::{
+        ecdsa::{signature::Signer, SigningKey},
+        EncodedPoint,
+    };
     use hex_literal::hex;
     use sha2::{Digest, Sha256};
 
     /// Signature recovery test vectors
-    struct TestVector {
+    struct RecoveryTestVector {
         pk: [u8; 33],
         sig: [u8; 65],
         msg: &'static [u8],
     }
 
-    const VECTORS: &[TestVector] = &[
+    const RECOVERY_TEST_VECTORS: &[RecoveryTestVector] = &[
         // Recovery ID 0
-        TestVector {
+        RecoveryTestVector {
             pk: hex!("021a7a569e91dbf60581509c7fc946d1003b60c7dee85299538db6353538d59574"),
             sig: hex!(
                 "ce53abb3721bafc561408ce8ff99c909f7f0b18a2f788649d6470162ab1aa03239
@@ -341,7 +344,7 @@ mod tests {
             msg: b"example message",
         },
         // Recovery ID 1
-        TestVector {
+        RecoveryTestVector {
             pk: hex!("036d6caac248af96f6afa7f904f550253a0f3ef3f5aa2fe6838a95b216691468e2"),
             sig: hex!(
                 "46c05b6368a44b8810d79859441d819b8e7cdc8bfd371e35c53196f4bcacdb5135
@@ -353,11 +356,32 @@ mod tests {
 
     #[test]
     fn public_key_recovery() {
-        for vector in VECTORS {
+        for vector in RECOVERY_TEST_VECTORS {
             let sig = Signature::try_from(&vector.sig[..]).unwrap();
             let prehash = Sha256::new_with_prefix(vector.msg);
             let pk = sig.recover_verifying_key_from_digest(prehash).unwrap();
             assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
         }
+    }
+
+    /// Ensures RFC6979 is implemented in the same way as other Ethereum
+    /// libraries, using HMAC-DRBG-SHA-256 for RFC6979, and Keccak256 for
+    /// hashing the message.
+    ///
+    /// Test vectors adapted from:
+    /// <https://github.com/gakonst/ethers-rs/blob/ba00f549/ethers-signers/src/wallet/private_key.rs#L197>
+    #[test]
+    fn signing_rfc6979() {
+        let signing_key = SigningKey::from_bytes(&hex!(
+            "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
+        ))
+        .unwrap();
+
+        let msg = hex!(
+            "e9808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca0080018080"
+        );
+
+        let sig: Signature = signing_key.sign(&msg);
+        assert_eq!(sig.as_ref(), &hex!("c9cf86333bcb065d140032ecaab5d9281bde80f21b9687b3e94161de42d51895727a108a0b8d101465414033c3f705a9c7b826e596766046ee1183dbc8aeaa6800"));
     }
 }
