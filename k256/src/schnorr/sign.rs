@@ -11,6 +11,7 @@ use elliptic_curve::{
     ops::Reduce,
     rand_core::{CryptoRng, RngCore},
     subtle::ConditionallySelectable,
+    zeroize::{Zeroize, ZeroizeOnDrop},
 };
 use sha2::{Digest, Sha256};
 
@@ -160,3 +161,11 @@ impl Signer<Signature> for SigningKey {
         self.try_sign_digest(Sha256::new_with_prefix(msg))
     }
 }
+
+impl Drop for SigningKey {
+    fn drop(&mut self) {
+        self.secret_key.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for SigningKey {}
