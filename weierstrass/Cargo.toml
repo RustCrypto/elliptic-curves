@@ -1,0 +1,24 @@
+[package]
+name = "weierstrass"
+version = "0.0.0"
+description = """
+Pure Rust implementation of complete addition formulas for prime order elliptic
+curves (Renes-Costello-Batina 2015). Generic over field elements and curve
+equation coefficients
+"""
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/weierstrass"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/weierstrass"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc"]
+edition = "2021"
+rust-version = "1.57"
+
+[dependencies]
+elliptic-curve = { version = "0.12.3", default-features = false, features = ["arithmetic", "sec1"] }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

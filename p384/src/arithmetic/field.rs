@@ -29,6 +29,7 @@ use crate::FieldBytes;
 use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
 use elliptic_curve::{
     bigint::{self, Encoding, Limb, U384},
+    ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
@@ -119,6 +120,40 @@ impl FieldElement {
             x = x.square();
         }
         x
+    }
+}
+
+impl From<u64> for FieldElement {
+    fn from(n: u64) -> FieldElement {
+        Self::from_uint(U384::from(n)).unwrap()
+    }
+}
+
+impl PrimeField for FieldElement {
+    type Repr = FieldBytes;
+
+    const NUM_BITS: u32 = 384;
+    const CAPACITY: u32 = 0; // TODO(tarcieri): bogus! needs real value
+    const S: u32 = 0; // TODO(tarcieri): bogus! needs real value
+
+    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
+        Self::from_be_bytes(bytes)
+    }
+
+    fn to_repr(&self) -> FieldBytes {
+        self.to_be_bytes()
+    }
+
+    fn is_odd(&self) -> Choice {
+        self.is_odd()
+    }
+
+    fn multiplicative_generator() -> Self {
+        todo!()
+    }
+
+    fn root_of_unity() -> Self {
+        todo!()
     }
 }
 
