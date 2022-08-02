@@ -19,7 +19,7 @@ use elliptic_curve::{
     ops::{Invert, Reduce},
     rand_core::{CryptoRng, RngCore},
     subtle::{Choice, ConstantTimeEq, CtOption},
-    zeroize::Zeroize,
+    zeroize::{Zeroize, ZeroizeOnDrop},
     IsHigh,
 };
 use sha2::Sha256;
@@ -283,6 +283,8 @@ impl Drop for SigningKey {
         self.inner.zeroize();
     }
 }
+
+impl ZeroizeOnDrop for SigningKey {}
 
 #[cfg(feature = "pkcs8")]
 #[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
