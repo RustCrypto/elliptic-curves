@@ -18,7 +18,7 @@ use elliptic_curve::{
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, IsHigh, ScalarArithmetic, ScalarCore,
+    Curve, IsHigh, ScalarCore,
 };
 
 #[cfg(feature = "bits")]
@@ -47,10 +47,6 @@ pub const MU: [u64; 5] = [
     0x0000_0000_ffff_ffff,
     0x0000_0000_0000_0001,
 ];
-
-impl ScalarArithmetic for NistP256 {
-    type Scalar = Scalar;
-}
 
 /// Scalars are elements in the finite field modulo n.
 ///

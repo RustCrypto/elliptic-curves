@@ -611,7 +611,7 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 
 [[package]]
 name = "p256"
-version = "0.11.1"
+version = "0.12.0-pre"
 dependencies = [
  "blobby",
  "criterion",
@@ -622,11 +622,12 @@ dependencies = [
  "rand_core",
  "serdect",
  "sha2",
+ "weierstrass",
 ]
 
 [[package]]
 name = "p384"
-version = "0.11.2"
+version = "0.12.0-pre"
 dependencies = [
  "blobby",
  "criterion",
@@ -637,6 +638,7 @@ dependencies = [
  "rand_core",
  "serdect",
  "sha2",
+ "weierstrass",
 ]
 
 [[package]]
@@ -1188,6 +1190,14 @@ checksum = "7b17e741662c70c8bd24ac5c5b18de314a2c26c32bf8346ee1e6f53de919c283"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "weierstrass"
+version = "0.0.0"
+dependencies = [
+ "elliptic-curve",
+ "serdect",
 ]
 
 [[package]]

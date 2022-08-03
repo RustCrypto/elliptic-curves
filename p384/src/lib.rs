@@ -37,7 +37,7 @@ pub mod test_vectors;
 pub use elliptic_curve::{self, bigint::U384};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;

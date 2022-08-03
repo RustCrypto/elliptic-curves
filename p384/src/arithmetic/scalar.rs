@@ -19,7 +19,7 @@ use elliptic_curve::{
     ff::PrimeField,
     ops::Reduce,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
-    Curve as _, Error, IsHigh, Result, ScalarArithmetic, ScalarCore,
+    Curve as _, Error, IsHigh, Result, ScalarCore,
 };
 
 #[cfg(feature = "bits")]
@@ -30,10 +30,6 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
-
-impl ScalarArithmetic for NistP384 {
-    type Scalar = Scalar;
-}
 
 /// Scalars are elements in the finite field modulo `n`.
 ///

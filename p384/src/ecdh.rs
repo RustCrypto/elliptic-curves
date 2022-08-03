@@ -38,16 +38,10 @@
 
 pub use elliptic_curve::ecdh::diffie_hellman;
 
-use crate::{AffinePoint, NistP384};
+use crate::NistP384;
 
 /// NIST P-384 Ephemeral Diffie-Hellman Secret.
 pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<NistP384>;
 
 /// Shared secret value computed via ECDH key agreement.
 pub type SharedSecret = elliptic_curve::ecdh::SharedSecret<NistP384>;
-
-impl From<&AffinePoint> for SharedSecret {
-    fn from(affine: &AffinePoint) -> SharedSecret {
-        affine.x.to_sec1().into()
-    }
-}

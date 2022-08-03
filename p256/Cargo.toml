@@ -1,6 +1,6 @@
 [package]
 name = "p256"
-version = "0.11.1"
+version = "0.12.0-pre"
 description = """
 Pure Rust implementation of the NIST P-256 (a.k.a. secp256r1, prime256v1)
 elliptic curve with support for ECDH, ECDSA signing/verification, and general
@@ -17,7 +17,8 @@ edition = "2021"
 rust-version = "1.57"
 
 [dependencies]
-elliptic-curve = { version = "0.12.3", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "0.12", default-features = false, features = ["hazmat", "sec1"] }
+weierstrass = { version = "0", path = "../weierstrass" }
 
 # optional dependencies
 ecdsa-core = { version = "0.14", package = "ecdsa", optional = true, default-features = false, features = ["der"] }

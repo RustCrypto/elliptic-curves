@@ -8,7 +8,7 @@ use crate::{
 };
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
-    ff::Field,
+    ff::{Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -156,7 +156,7 @@ impl FieldElement {
     }
 
     /// Returns self - rhs mod p
-    pub const fn subtract(&self, rhs: &Self) -> Self {
+    pub const fn sub(&self, rhs: &Self) -> Self {
         let (result, _) = Self::sub_inner(
             self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
             0,
@@ -164,13 +164,6 @@ impl FieldElement {
         result
     }
 
-    /// Returns self - rhs mod p
-    pub(crate) const fn informed_subtract(&self, rhs: &Self) -> (Self, u64) {
-        Self::sub_inner(
-            self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
-            0,
-        )
-    }
     #[inline]
     #[allow(clippy::too_many_arguments)]
     const fn sub_inner(
@@ -452,6 +445,42 @@ impl Field for FieldElement {
     }
 }
 
+impl PrimeField for FieldElement {
+    type Repr = FieldBytes;
+
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 255;
+    const S: u32 = 1;
+
+    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
+        Self::from_bytes(&bytes)
+    }
+
+    fn to_repr(&self) -> FieldBytes {
+        self.to_bytes()
+    }
+
+    fn is_odd(&self) -> Choice {
+        self.is_odd()
+    }
+
+    fn multiplicative_generator() -> Self {
+        6.into()
+    }
+
+    fn root_of_unity() -> Self {
+        Self::from_repr(
+            [
+                0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xfe,
+            ]
+            .into(),
+        )
+        .unwrap()
+    }
+}
+
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
         FieldElement([
@@ -481,6 +510,14 @@ impl Default for FieldElement {
 impl DefaultIsZeroes for FieldElement {}
 
 impl Eq for FieldElement {}
+
+impl From<u64> for FieldElement {
+    fn from(n: u64) -> FieldElement {
+        let mut fe = FieldElement::default();
+        fe.0[0] = n;
+        fe.to_montgomery()
+    }
+}
 
 impl PartialEq for FieldElement {
     fn eq(&self, other: &Self) -> bool {
@@ -528,7 +565,7 @@ impl Sub<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: FieldElement) -> FieldElement {
-        FieldElement::subtract(&self, &other)
+        FieldElement::sub(&self, &other)
     }
 }
 
@@ -536,7 +573,7 @@ impl Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::subtract(&self, other)
+        FieldElement::sub(&self, other)
     }
 }
 
@@ -544,19 +581,19 @@ impl Sub<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::subtract(self, other)
+        FieldElement::sub(self, other)
     }
 }
 
 impl SubAssign<FieldElement> for FieldElement {
     fn sub_assign(&mut self, other: FieldElement) {
-        *self = FieldElement::subtract(self, &other);
+        *self = FieldElement::sub(self, &other);
     }
 }
 
 impl SubAssign<&FieldElement> for FieldElement {
     fn sub_assign(&mut self, other: &FieldElement) {
-        *self = FieldElement::subtract(self, other);
+        *self = FieldElement::sub(self, other);
     }
 }
 
@@ -746,7 +783,7 @@ mod tests {
         ) {
             let a = FieldElement([a0, a1, a2, 0]);
             let b = FieldElement([b0, b1, b2, 0]);
-            assert_eq!(a.add(&b).subtract(&a), b);
+            assert_eq!(a.add(&b).sub(&a), b);
         }
     }
 }
