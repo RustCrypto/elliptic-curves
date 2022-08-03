@@ -8,16 +8,18 @@ use core::{
     ops::{Mul, Neg},
 };
 use elliptic_curve::{
+    bigint::ArrayEncoding,
     ff::{Field, PrimeField},
     generic_array::ArrayLength,
     group::{prime::PrimeCurveAffine, GroupEncoding},
     sec1::{
-        self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
-        UncompressedPointSize,
+        self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
+        ToEncodedPoint, UncompressedPointSize,
     },
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineXCoordinate, DecompressPoint, Error, FieldBytes, FieldSize, PublicKey, Result, Scalar,
+    AffineXCoordinate, DecompactPoint, DecompressPoint, Error, FieldBytes, FieldSize, PublicKey,
+    Result, Scalar,
 };
 
 #[cfg(feature = "serde")]
@@ -39,7 +41,10 @@ pub struct AffinePoint<C: WeierstrassCurve> {
     pub(crate) infinity: u8,
 }
 
-impl<C: WeierstrassCurve> AffinePoint<C> {
+impl<C> AffinePoint<C>
+where
+    C: WeierstrassCurve,
+{
     /// Additive identity of the group a.k.a. the point at infinity.
     pub const IDENTITY: Self = Self {
         x: C::ZERO,
@@ -57,6 +62,19 @@ impl<C: WeierstrassCurve> AffinePoint<C> {
     /// Is this point the point at infinity?
     pub fn is_identity(&self) -> Choice {
         Choice::from(self.infinity)
+    }
+
+    /// Conditionally negate [`AffinePoint`] for use with point compaction.
+    fn to_compact(self) -> Self {
+        let neg_self = -self;
+        let choice = C::UInt::from_be_byte_array(self.y.to_repr())
+            .ct_gt(&C::UInt::from_be_byte_array(neg_self.y.to_repr()));
+
+        Self {
+            x: self.x,
+            y: C::FieldElement::conditional_select(&self.y, &neg_self.y, choice),
+            infinity: self.infinity,
+        }
     }
 }
 
@@ -125,7 +143,17 @@ where
     }
 }
 
-impl<C: WeierstrassCurve> Eq for AffinePoint<C> {}
+impl<C> DecompactPoint<C> for AffinePoint<C>
+where
+    C: WeierstrassCurve,
+    FieldBytes<C>: Copy,
+{
+    fn decompact(x_bytes: &FieldBytes<C>) -> CtOption<Self> {
+        Self::decompress(x_bytes, Choice::from(0)).map(|point| point.to_compact())
+    }
+}
+
+impl<C> Eq for AffinePoint<C> where C: WeierstrassCurve {}
 
 impl<C> FromEncodedPoint<C> for AffinePoint<C>
 where
@@ -143,23 +171,14 @@ where
     fn from_encoded_point(encoded_point: &EncodedPoint<C>) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::IDENTITY, 1.into()),
-            // TODO(tarcieri): point decompaction support
-            sec1::Coordinates::Compact { .. } => CtOption::new(Self::IDENTITY, 0.into()),
+            sec1::Coordinates::Compact { x } => Self::decompact(x),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 Self::decompress(x, Choice::from(y_is_odd as u8))
             }
             sec1::Coordinates::Uncompressed { x, y } => {
-                let x = C::FieldElement::from_repr(*x);
-                let y = C::FieldElement::from_repr(*y);
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = y * &y;
-                        let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
-                        let point = AffinePoint { x, y, infinity: 0 };
-                        CtOption::new(point, lhs.ct_eq(&rhs))
-                    })
+                C::FieldElement::from_repr(*y).and_then(|y| {
+                    Self::decompress(x, y.is_odd())
+                        .and_then(|point| CtOption::new(point, point.y.ct_eq(&y)))
                 })
             }
         }
@@ -287,6 +306,27 @@ where
     }
 }
 
+impl<C> ToCompactEncodedPoint<C> for AffinePoint<C>
+where
+    C: WeierstrassCurve,
+    FieldSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+{
+    /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
+    fn to_compact_encoded_point(&self) -> CtOption<EncodedPoint<C>> {
+        let point = self.to_compact();
+
+        let mut bytes = CompressedPoint::<C>::default();
+        bytes[0] = sec1::Tag::Compact.into();
+        bytes[1..].copy_from_slice(&point.x.to_repr());
+
+        let encoded = EncodedPoint::<C>::from_bytes(bytes);
+        let is_some = Choice::from(encoded.is_ok() as u8);
+        CtOption::new(encoded.unwrap_or_default(), is_some)
+    }
+}
+
 impl<C> ToEncodedPoint<C> for AffinePoint<C>
 where
     C: WeierstrassCurve,
@@ -385,6 +425,17 @@ where
             y: -self.y,
             infinity: self.infinity,
         }
+    }
+}
+
+impl<C> Neg for &AffinePoint<C>
+where
+    C: WeierstrassCurve,
+{
+    type Output = AffinePoint<C>;
+
+    fn neg(self) -> AffinePoint<C> {
+        -(*self)
     }
 }
 

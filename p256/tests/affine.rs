@@ -6,7 +6,7 @@
 
 use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
-    sec1::{FromEncodedPoint, ToEncodedPoint},
+    sec1::{FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
 };
 use hex_literal::hex;
 use p256::{AffinePoint, EncodedPoint};
@@ -19,15 +19,15 @@ const UNCOMPRESSED_BASEPOINT: &[u8] = &hex!(
 const COMPRESSED_BASEPOINT: &[u8] =
     &hex!("03 6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296");
 
-// // Tag compact with 05 as the first byte, to trigger tag based compaction
-// const COMPACT_BASEPOINT: &[u8] =
-//     &hex!("05 8e38fc4ffe677662dde8e1a63fbcd45959d2a4c3004d27e98c4fedf2d0c14c01");
-//
-// // Tag uncompact basepoint with 04 as the first byte as it is uncompressed
-// const UNCOMPACT_BASEPOINT: &[u8] = &hex!(
-//     "04 8e38fc4ffe677662dde8e1a63fbcd45959d2a4c3004d27e98c4fedf2d0c14c0
-//         13ca9d8667de0c07aa71d98b3c8065d2e97ab7bb9cb8776bcc0577a7ac58acd4e"
-// );
+// Tag compact with 05 as the first byte, to trigger tag based compaction
+const COMPACT_BASEPOINT: &[u8] =
+    &hex!("05 8e38fc4ffe677662dde8e1a63fbcd45959d2a4c3004d27e98c4fedf2d0c14c01");
+
+// Tag uncompact basepoint with 04 as the first byte as it is uncompressed
+const UNCOMPACT_BASEPOINT: &[u8] = &hex!(
+    "04 8e38fc4ffe677662dde8e1a63fbcd45959d2a4c3004d27e98c4fedf2d0c14c0
+        13ca9d8667de0c07aa71d98b3c8065d2e97ab7bb9cb8776bcc0577a7ac58acd4e"
+);
 
 #[test]
 fn uncompressed_round_trip() {
@@ -77,37 +77,36 @@ fn affine_negation() {
     assert_eq!(-(-basepoint), basepoint);
 }
 
-// TODO(tarcieri): fix point compaction
-// #[test]
-// fn compact_round_trip() {
-//     let pubkey = EncodedPoint::from_bytes(COMPACT_BASEPOINT).unwrap();
-//     assert!(pubkey.is_compact());
-//
-//     let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
-//     let res = point.to_compact_encoded_point().unwrap();
-//     assert_eq!(res, pubkey)
-// }
+#[test]
+fn compact_round_trip() {
+    let pubkey = EncodedPoint::from_bytes(COMPACT_BASEPOINT).unwrap();
+    assert!(pubkey.is_compact());
 
-// #[test]
-// fn uncompact_to_compact() {
-//     let pubkey = EncodedPoint::from_bytes(UNCOMPACT_BASEPOINT).unwrap();
-//     assert_eq!(false, pubkey.is_compact());
-//
-//     let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
-//     let res = point.to_compact_encoded_point().unwrap();
-//     assert_eq!(res.as_bytes(), COMPACT_BASEPOINT)
-// }
+    let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
+    let res = point.to_compact_encoded_point().unwrap();
+    assert_eq!(res, pubkey)
+}
 
-// #[test]
-// fn compact_to_uncompact() {
-//     let pubkey = EncodedPoint::from_bytes(COMPACT_BASEPOINT).unwrap();
-//     assert!(pubkey.is_compact());
-//
-//     let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
-//     // Do not do compact encoding as we want to keep uncompressed point
-//     let res = point.to_encoded_point(false);
-//     assert_eq!(res.as_bytes(), UNCOMPACT_BASEPOINT);
-// }
+#[test]
+fn uncompact_to_compact() {
+    let pubkey = EncodedPoint::from_bytes(UNCOMPACT_BASEPOINT).unwrap();
+    assert_eq!(false, pubkey.is_compact());
+
+    let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
+    let res = point.to_compact_encoded_point().unwrap();
+    assert_eq!(res.as_bytes(), COMPACT_BASEPOINT)
+}
+
+#[test]
+fn compact_to_uncompact() {
+    let pubkey = EncodedPoint::from_bytes(COMPACT_BASEPOINT).unwrap();
+    assert!(pubkey.is_compact());
+
+    let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
+    // Do not do compact encoding as we want to keep uncompressed point
+    let res = point.to_encoded_point(false);
+    assert_eq!(res.as_bytes(), UNCOMPACT_BASEPOINT);
+}
 
 #[test]
 fn identity_encoding() {
