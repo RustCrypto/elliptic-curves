@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.2 (2022-08-03)
+### Added
+- Re-export low-level `diffie_hellman` function ([#627])
+
+[#627]: https://github.com/RustCrypto/elliptic-curves/pull/627
+
 ## 0.11.1 (2022-06-12)
 ### Added
 - RFC6979 test vectors ([#591])
