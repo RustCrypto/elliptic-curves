@@ -133,8 +133,8 @@ impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
     const NUM_BITS: u32 = 384;
-    const CAPACITY: u32 = 0; // TODO(tarcieri): bogus! needs real value
-    const S: u32 = 0; // TODO(tarcieri): bogus! needs real value
+    const CAPACITY: u32 = 383;
+    const S: u32 = 1;
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         Self::from_be_bytes(bytes)
@@ -149,11 +149,20 @@ impl PrimeField for FieldElement {
     }
 
     fn multiplicative_generator() -> Self {
-        todo!()
+        19.into()
     }
 
     fn root_of_unity() -> Self {
-        todo!()
+        Self::from_repr(
+            [
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0xff, 0xff, 0xff, 0xfe,
+            ]
+            .into(),
+        )
+        .unwrap()
     }
 }
 
