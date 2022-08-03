@@ -1197,6 +1197,7 @@ name = "weierstrass"
 version = "0.0.0"
 dependencies = [
  "elliptic-curve",
+ "serdect",
 ]
 
 [[package]]

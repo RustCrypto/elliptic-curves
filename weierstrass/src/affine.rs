@@ -20,6 +20,9 @@ use elliptic_curve::{
     AffineXCoordinate, DecompressPoint, Error, FieldBytes, FieldSize, PublicKey, Result, Scalar,
 };
 
+#[cfg(feature = "serde")]
+use serdect::serde::{de, ser, Deserialize, Serialize};
+
 /// Point on a Weierstrass curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct AffinePoint<C: WeierstrassCurve> {
@@ -382,5 +385,45 @@ where
             y: -self.y,
             infinity: self.infinity,
         }
+    }
+}
+
+//
+// serde support
+//
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<C> Serialize for AffinePoint<C>
+where
+    C: WeierstrassCurve,
+    FieldSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+{
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        self.to_encoded_point(true).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de, C> Deserialize<'de> for AffinePoint<C>
+where
+    C: WeierstrassCurve,
+    FieldBytes<C>: Copy,
+    FieldSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+{
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        EncodedPoint::<C>::deserialize(deserializer)?
+            .try_into()
+            .map_err(de::Error::custom)
     }
 }

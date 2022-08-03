@@ -177,8 +177,7 @@ where
 
     /// Returns `[k] self`.
     fn mul(&self, k: &Scalar<C>) -> Self {
-        let k: C::UInt = (*k).into();
-        let k = k.to_le_byte_array();
+        let k = Into::<C::UInt>::into(*k).to_le_byte_array();
 
         let mut pc = [Self::default(); 16];
         pc[0] = Self::IDENTITY;

@@ -19,6 +19,13 @@ rust-version = "1.57"
 [dependencies]
 elliptic-curve = { version = "0.12.3", default-features = false, features = ["arithmetic", "sec1"] }
 
+# optional dependencies
+serdect = { version = "0.1", optional = true, default-features = false }
+
+[features]
+std = ["elliptic-curve/std"]
+serde = ["elliptic-curve/serde", "serdect"]
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
