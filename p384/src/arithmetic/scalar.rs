@@ -66,7 +66,7 @@ use core::ops::{Add, Mul, Sub};
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U384);
 
-elliptic_curve::impl_field_element!(
+weierstrass::impl_field_element!(
     Scalar,
     FieldBytes,
     U384,

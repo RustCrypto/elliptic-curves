@@ -9,6 +9,7 @@
 #![doc = include_str!("../README.md")]
 
 mod affine;
+mod field;
 mod projective;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};

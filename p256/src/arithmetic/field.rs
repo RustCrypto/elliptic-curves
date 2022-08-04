@@ -31,7 +31,7 @@ const R_2: U256 =
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(crate) U256);
 
-elliptic_curve::impl_field_element!(
+weierstrass::impl_field_element!(
     FieldElement,
     FieldBytes,
     U256,

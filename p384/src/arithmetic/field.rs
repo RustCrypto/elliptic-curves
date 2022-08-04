@@ -41,7 +41,7 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex("ffffffffffffffffffffffffffff
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U384);
 
-elliptic_curve::impl_field_element!(
+weierstrass::impl_field_element!(
     FieldElement,
     FieldBytes,
     U384,
