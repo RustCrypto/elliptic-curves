@@ -31,8 +31,9 @@ impl WeierstrassCurve for NistP256 {
         .sub(&FieldElement::ONE)
         .sub(&FieldElement::ONE);
 
-    const EQUATION_B: FieldElement =
-        FieldElement::from_hex("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
+    const EQUATION_B: FieldElement = FieldElement::from_be_hex(
+        "5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b",
+    );
 
     /// Base point of P-256.
     ///
@@ -43,8 +44,12 @@ impl WeierstrassCurve for NistP256 {
     /// Gᵧ = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
     /// ```
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
-        FieldElement::from_hex("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
+        FieldElement::from_be_hex(
+            "6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+        ),
+        FieldElement::from_be_hex(
+            "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
+        ),
     );
 }
 
