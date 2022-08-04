@@ -2,109 +2,89 @@
 
 #![allow(clippy::assign_op_pattern, clippy::op_ref)]
 
+use super::{u256_to_u64x4, u64x4_to_u256};
 use crate::{
     arithmetic::util::{adc, mac, sbb},
     FieldBytes,
 };
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
+    bigint::{ArrayEncoding, U256},
     ff::{Field, PrimeField},
     rand_core::RngCore,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
 
-/// The number of 64-bit limbs used to represent a [`FieldElement`].
-const LIMBS: usize = 4;
-
 /// Constant representing the modulus
 /// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
-pub const MODULUS: FieldElement = FieldElement([
-    0xffff_ffff_ffff_ffff,
-    0x0000_0000_ffff_ffff,
-    0x0000_0000_0000_0000,
-    0xffff_ffff_0000_0001,
-]);
+pub const MODULUS: FieldElement = FieldElement(U256::from_be_hex(
+    "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+));
 
 /// R = 2^256 mod p
-const R: FieldElement = FieldElement([
-    0x0000_0000_0000_0001,
-    0xffff_ffff_0000_0000,
-    0xffff_ffff_ffff_ffff,
-    0x0000_0000_ffff_fffe,
-]);
+const R: FieldElement = FieldElement(U256::from_be_hex(
+    "00000000fffffffeffffffffffffffffffffffff000000000000000000000001",
+));
 
 /// R^2 = 2^512 mod p
-const R2: FieldElement = FieldElement([
-    0x0000_0000_0000_0003,
-    0xffff_fffb_ffff_ffff,
-    0xffff_ffff_ffff_fffe,
-    0x0000_0004_ffff_fffd,
-]);
+const R2: FieldElement = FieldElement(U256::from_be_hex(
+    "00000004fffffffdfffffffffffffffefffffffbffffffff0000000000000003",
+));
 
 /// An element in the finite field modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1.
 ///
 /// The internal representation is in little-endian order. Elements are always in
 /// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(crate) [u64; LIMBS]);
+pub struct FieldElement(pub(crate) U256);
 
 impl FieldElement {
     /// Zero element.
-    pub const ZERO: Self = FieldElement([0, 0, 0, 0]);
+    pub const ZERO: Self = FieldElement(U256::ZERO);
 
     /// Multiplicative identity.
     pub const ONE: Self = R;
-
-    fn from_bytes_wide(bytes: [u8; 64]) -> Self {
-        FieldElement::montgomery_reduce(
-            u64::from_be_bytes(bytes[0..8].try_into().unwrap()),
-            u64::from_be_bytes(bytes[8..16].try_into().unwrap()),
-            u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
-            u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
-            u64::from_be_bytes(bytes[32..40].try_into().unwrap()),
-            u64::from_be_bytes(bytes[40..48].try_into().unwrap()),
-            u64::from_be_bytes(bytes[48..56].try_into().unwrap()),
-            u64::from_be_bytes(bytes[56..64].try_into().unwrap()),
-        )
-    }
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        let mut w = [0u64; LIMBS];
-
-        // Interpret the bytes as a big-endian integer w.
-        w[3] = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
-        w[2] = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
-        w[1] = u64::from_be_bytes(bytes[16..24].try_into().unwrap());
-        w[0] = u64::from_be_bytes(bytes[24..32].try_into().unwrap());
-
-        // If w is in the range [0, p) then w - p will overflow, resulting in a borrow
-        // value of 2^64 - 1.
-        let (_, borrow) = sbb(w[0], MODULUS.0[0], 0);
-        let (_, borrow) = sbb(w[1], MODULUS.0[1], borrow);
-        let (_, borrow) = sbb(w[2], MODULUS.0[2], borrow);
-        let (_, borrow) = sbb(w[3], MODULUS.0[3], borrow);
-        let is_some = (borrow as u8) & 1;
-
-        // Convert w to Montgomery form: w * R^2 * R^-1 mod p = wR mod p
-        CtOption::new(FieldElement(w).to_montgomery(), Choice::from(is_some))
+    pub fn from_sec1(bytes: FieldBytes) -> CtOption<Self> {
+        Self::from_uint(U256::from_be_byte_array(bytes))
     }
 
     /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(self) -> FieldBytes {
-        // Convert from Montgomery form to canonical form
-        let tmp = self.to_canonical();
+    pub fn to_sec1(self) -> FieldBytes {
+        self.to_canonical().0.to_be_byte_array()
+    }
 
-        let mut ret = FieldBytes::default();
-        ret[0..8].copy_from_slice(&tmp.0[3].to_be_bytes());
-        ret[8..16].copy_from_slice(&tmp.0[2].to_be_bytes());
-        ret[16..24].copy_from_slice(&tmp.0[1].to_be_bytes());
-        ret[24..32].copy_from_slice(&tmp.0[0].to_be_bytes());
-        ret
+    /// Decode [`FieldElement`] from [`U256`], converting it into Montgomery form:
+    ///
+    /// ```text
+    /// w * R^2 * R^-1 mod p = wR mod p
+    /// ```
+    pub fn from_uint(uint: U256) -> CtOption<Self> {
+        let is_some = uint.ct_lt(&MODULUS.0);
+        CtOption::new(Self::from_uint_unchecked(uint), is_some)
+    }
+
+    /// Parse a [`FieldElement`] from big endian hex-encoded bytes.
+    ///
+    /// Does *not* perform a check that the field element does not overflow the order.
+    ///
+    /// This method is primarily intended for defining internal constants.
+    pub(crate) const fn from_hex(hex: &str) -> Self {
+        Self::from_uint_unchecked(U256::from_be_hex(hex))
+    }
+
+    /// Decode [`FieldElement`] from [`U256`] converting it into Montgomery form.
+    ///
+    /// Does *not* perform a check that the field element does not overflow the order.
+    ///
+    /// Used incorrectly this can lead to invalid results!
+    pub(crate) const fn from_uint_unchecked(w: U256) -> Self {
+        Self(w).to_montgomery()
     }
 
     /// Determine if this `FieldElement` is zero.
@@ -122,30 +102,25 @@ impl FieldElement {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        let bytes = self.to_bytes();
+        let bytes = self.to_sec1();
         (bytes[31] & 1).into()
     }
 
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
+        let a = u256_to_u64x4(self.0);
+        let b = u256_to_u64x4(rhs.0);
+
         // Bit 256 of p is set, so addition can result in five words.
-        let (w0, carry) = adc(self.0[0], rhs.0[0], 0);
-        let (w1, carry) = adc(self.0[1], rhs.0[1], carry);
-        let (w2, carry) = adc(self.0[2], rhs.0[2], carry);
-        let (w3, w4) = adc(self.0[3], rhs.0[3], carry);
+        let (w0, carry) = adc(a[0], b[0], 0);
+        let (w1, carry) = adc(a[1], b[1], carry);
+        let (w2, carry) = adc(a[2], b[2], carry);
+        let (w3, w4) = adc(a[3], b[3], carry);
 
         // Attempt to subtract the modulus, to ensure the result is in the field.
+        let modulus = u256_to_u64x4(MODULUS.0);
         let (result, _) = Self::sub_inner(
-            w0,
-            w1,
-            w2,
-            w3,
-            w4,
-            MODULUS.0[0],
-            MODULUS.0[1],
-            MODULUS.0[2],
-            MODULUS.0[3],
-            0,
+            w0, w1, w2, w3, w4, modulus[0], modulus[1], modulus[2], modulus[3], 0,
         );
         result
     }
@@ -157,11 +132,22 @@ impl FieldElement {
 
     /// Returns self - rhs mod p
     pub const fn sub(&self, rhs: &Self) -> Self {
-        let (result, _) = Self::sub_inner(
-            self.0[0], self.0[1], self.0[2], self.0[3], 0, rhs.0[0], rhs.0[1], rhs.0[2], rhs.0[3],
-            0,
-        );
-        result
+        let a = u256_to_u64x4(self.0);
+        let b = u256_to_u64x4(rhs.0);
+        Self::sub_inner(a[0], a[1], a[2], a[3], 0, b[0], b[1], b[2], b[3], 0).0
+    }
+
+    fn from_bytes_wide(bytes: [u8; 64]) -> Self {
+        FieldElement::montgomery_reduce(
+            u64::from_be_bytes(bytes[0..8].try_into().unwrap()),
+            u64::from_be_bytes(bytes[8..16].try_into().unwrap()),
+            u64::from_be_bytes(bytes[16..24].try_into().unwrap()),
+            u64::from_be_bytes(bytes[24..32].try_into().unwrap()),
+            u64::from_be_bytes(bytes[32..40].try_into().unwrap()),
+            u64::from_be_bytes(bytes[40..48].try_into().unwrap()),
+            u64::from_be_bytes(bytes[48..56].try_into().unwrap()),
+            u64::from_be_bytes(bytes[56..64].try_into().unwrap()),
+        )
     }
 
     #[inline]
@@ -187,12 +173,13 @@ impl FieldElement {
         // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
         // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
         // modulus.
-        let (w0, carry) = adc(w0, MODULUS.0[0] & borrow, 0);
-        let (w1, carry) = adc(w1, MODULUS.0[1] & borrow, carry);
-        let (w2, carry) = adc(w2, MODULUS.0[2] & borrow, carry);
-        let (w3, _) = adc(w3, MODULUS.0[3] & borrow, carry);
+        let modulus = u256_to_u64x4(MODULUS.0);
+        let (w0, carry) = adc(w0, modulus[0] & borrow, 0);
+        let (w1, carry) = adc(w1, modulus[1] & borrow, carry);
+        let (w2, carry) = adc(w2, modulus[2] & borrow, carry);
+        let (w3, _) = adc(w3, modulus[3] & borrow, carry);
 
-        (FieldElement([w0, w1, w2, w3]), borrow)
+        (Self(u64x4_to_u256([w0, w1, w2, w3])), borrow)
     }
 
     /// Montgomery Reduction
@@ -246,38 +233,31 @@ impl FieldElement {
         r6: u64,
         r7: u64,
     ) -> Self {
-        let (r1, carry) = mac(r1, r0, MODULUS.0[1], r0);
+        let modulus = u256_to_u64x4(MODULUS.0);
+
+        let (r1, carry) = mac(r1, r0, modulus[1], r0);
         let (r2, carry) = adc(r2, 0, carry);
-        let (r3, carry) = mac(r3, r0, MODULUS.0[3], carry);
+        let (r3, carry) = mac(r3, r0, modulus[3], carry);
         let (r4, carry2) = adc(r4, 0, carry);
 
-        let (r2, carry) = mac(r2, r1, MODULUS.0[1], r1);
+        let (r2, carry) = mac(r2, r1, modulus[1], r1);
         let (r3, carry) = adc(r3, 0, carry);
-        let (r4, carry) = mac(r4, r1, MODULUS.0[3], carry);
+        let (r4, carry) = mac(r4, r1, modulus[3], carry);
         let (r5, carry2) = adc(r5, carry2, carry);
 
-        let (r3, carry) = mac(r3, r2, MODULUS.0[1], r2);
+        let (r3, carry) = mac(r3, r2, modulus[1], r2);
         let (r4, carry) = adc(r4, 0, carry);
-        let (r5, carry) = mac(r5, r2, MODULUS.0[3], carry);
+        let (r5, carry) = mac(r5, r2, modulus[3], carry);
         let (r6, carry2) = adc(r6, carry2, carry);
 
-        let (r4, carry) = mac(r4, r3, MODULUS.0[1], r3);
+        let (r4, carry) = mac(r4, r3, modulus[1], r3);
         let (r5, carry) = adc(r5, 0, carry);
-        let (r6, carry) = mac(r6, r3, MODULUS.0[3], carry);
+        let (r6, carry) = mac(r6, r3, modulus[3], carry);
         let (r7, r8) = adc(r7, carry2, carry);
 
         // Result may be within MODULUS of the correct value
         let (result, _) = Self::sub_inner(
-            r4,
-            r5,
-            r6,
-            r7,
-            r8,
-            MODULUS.0[0],
-            MODULUS.0[1],
-            MODULUS.0[2],
-            MODULUS.0[3],
-            0,
+            r4, r5, r6, r7, r8, modulus[0], modulus[1], modulus[2], modulus[3], 0,
         );
         result
     }
@@ -285,7 +265,8 @@ impl FieldElement {
     /// Translate a field element out of the Montgomery domain.
     #[inline]
     pub(crate) const fn to_canonical(self) -> Self {
-        FieldElement::montgomery_reduce(self.0[0], self.0[1], self.0[2], self.0[3], 0, 0, 0, 0)
+        let w = u256_to_u64x4(self.0);
+        FieldElement::montgomery_reduce(w[0], w[1], w[2], w[3], 0, 0, 0, 0)
     }
 
     /// Translate a field element into the Montgomery domain.
@@ -297,26 +278,28 @@ impl FieldElement {
     /// Returns self * rhs mod p
     pub const fn mul(&self, rhs: &Self) -> Self {
         // Schoolbook multiplication.
+        let a = u256_to_u64x4(self.0);
+        let b = u256_to_u64x4(rhs.0);
 
-        let (w0, carry) = mac(0, self.0[0], rhs.0[0], 0);
-        let (w1, carry) = mac(0, self.0[0], rhs.0[1], carry);
-        let (w2, carry) = mac(0, self.0[0], rhs.0[2], carry);
-        let (w3, w4) = mac(0, self.0[0], rhs.0[3], carry);
+        let (w0, carry) = mac(0, a[0], b[0], 0);
+        let (w1, carry) = mac(0, a[0], b[1], carry);
+        let (w2, carry) = mac(0, a[0], b[2], carry);
+        let (w3, w4) = mac(0, a[0], b[3], carry);
 
-        let (w1, carry) = mac(w1, self.0[1], rhs.0[0], 0);
-        let (w2, carry) = mac(w2, self.0[1], rhs.0[1], carry);
-        let (w3, carry) = mac(w3, self.0[1], rhs.0[2], carry);
-        let (w4, w5) = mac(w4, self.0[1], rhs.0[3], carry);
+        let (w1, carry) = mac(w1, a[1], b[0], 0);
+        let (w2, carry) = mac(w2, a[1], b[1], carry);
+        let (w3, carry) = mac(w3, a[1], b[2], carry);
+        let (w4, w5) = mac(w4, a[1], b[3], carry);
 
-        let (w2, carry) = mac(w2, self.0[2], rhs.0[0], 0);
-        let (w3, carry) = mac(w3, self.0[2], rhs.0[1], carry);
-        let (w4, carry) = mac(w4, self.0[2], rhs.0[2], carry);
-        let (w5, w6) = mac(w5, self.0[2], rhs.0[3], carry);
+        let (w2, carry) = mac(w2, a[2], b[0], 0);
+        let (w3, carry) = mac(w3, a[2], b[1], carry);
+        let (w4, carry) = mac(w4, a[2], b[2], carry);
+        let (w5, w6) = mac(w5, a[2], b[3], carry);
 
-        let (w3, carry) = mac(w3, self.0[3], rhs.0[0], 0);
-        let (w4, carry) = mac(w4, self.0[3], rhs.0[1], carry);
-        let (w5, carry) = mac(w5, self.0[3], rhs.0[2], carry);
-        let (w6, w7) = mac(w6, self.0[3], rhs.0[3], carry);
+        let (w3, carry) = mac(w3, a[3], b[0], 0);
+        let (w4, carry) = mac(w4, a[3], b[1], carry);
+        let (w5, carry) = mac(w5, a[3], b[2], carry);
+        let (w6, w7) = mac(w6, a[3], b[3], carry);
 
         FieldElement::montgomery_reduce(w0, w1, w2, w3, w4, w5, w6, w7)
     }
@@ -453,11 +436,11 @@ impl PrimeField for FieldElement {
     const S: u32 = 1;
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
+        Self::from_sec1(bytes)
     }
 
     fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
+        self.to_sec1()
     }
 
     fn is_odd(&self) -> Choice {
@@ -482,22 +465,14 @@ impl PrimeField for FieldElement {
 }
 
 impl ConditionallySelectable for FieldElement {
-    fn conditional_select(a: &FieldElement, b: &FieldElement, choice: Choice) -> FieldElement {
-        FieldElement([
-            u64::conditional_select(&a.0[0], &b.0[0], choice),
-            u64::conditional_select(&a.0[1], &b.0[1], choice),
-            u64::conditional_select(&a.0[2], &b.0[2], choice),
-            u64::conditional_select(&a.0[3], &b.0[3], choice),
-        ])
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self(U256::conditional_select(&a.0, &b.0, choice))
     }
 }
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0[0].ct_eq(&other.0[0])
-            & self.0[1].ct_eq(&other.0[1])
-            & self.0[2].ct_eq(&other.0[2])
-            & self.0[3].ct_eq(&other.0[3])
+        self.0.ct_eq(&other.0)
     }
 }
 
@@ -513,9 +488,7 @@ impl Eq for FieldElement {}
 
 impl From<u64> for FieldElement {
     fn from(n: u64) -> FieldElement {
-        let mut fe = FieldElement::default();
-        fe.0[0] = n;
-        fe.to_montgomery()
+        Self::from_uint_unchecked(U256::from(n))
     }
 }
 
@@ -651,7 +624,7 @@ impl Neg for &FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::FieldElement;
+    use super::{u64x4_to_u256, FieldElement};
     use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
     use elliptic_curve::ff::Field;
     use proptest::{num::u64::ANY, prelude::*};
@@ -673,12 +646,12 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes(&FieldBytes::default()).unwrap(),
+            FieldElement::from_sec1(FieldBytes::default()).unwrap(),
             FieldElement::zero()
         );
         assert_eq!(
-            FieldElement::from_bytes(
-                &[
+            FieldElement::from_sec1(
+                [
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 1
                 ]
@@ -688,15 +661,15 @@ mod tests {
             FieldElement::one()
         );
         assert!(bool::from(
-            FieldElement::from_bytes(&[0xff; 32].into()).is_none()
+            FieldElement::from_sec1([0xff; 32].into()).is_none()
         ));
     }
 
     #[test]
     fn to_bytes() {
-        assert_eq!(FieldElement::zero().to_bytes(), FieldBytes::default());
+        assert_eq!(FieldElement::zero().to_sec1(), FieldBytes::default());
         assert_eq!(
-            FieldElement::one().to_bytes(),
+            FieldElement::one().to_sec1(),
             [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
@@ -709,7 +682,7 @@ mod tests {
     fn repeated_add() {
         let mut r = FieldElement::one();
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_sec1(), DBL_TEST_VECTORS[i].into());
             r = r + &r;
         }
     }
@@ -718,7 +691,7 @@ mod tests {
     fn repeated_double() {
         let mut r = FieldElement::one();
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_sec1(), DBL_TEST_VECTORS[i].into());
             r = r.double();
         }
     }
@@ -728,7 +701,7 @@ mod tests {
         let mut r = FieldElement::one();
         let two = r + &r;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_sec1(), DBL_TEST_VECTORS[i].into());
             r = r * &two;
         }
     }
@@ -781,8 +754,8 @@ mod tests {
             b1 in ANY,
             b2 in ANY,
         ) {
-            let a = FieldElement([a0, a1, a2, 0]);
-            let b = FieldElement([b0, b1, b2, 0]);
+            let a = FieldElement(u64x4_to_u256([a0, a1, a2, 0]));
+            let b = FieldElement(u64x4_to_u256([b0, b1, b2, 0]));
             assert_eq!(a.add(&b).sub(&a), b);
         }
     }

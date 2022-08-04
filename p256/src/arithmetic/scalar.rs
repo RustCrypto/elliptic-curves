@@ -2,6 +2,7 @@
 
 pub mod blinded;
 
+use super::{u256_to_u64x4, u64x4_to_u256, U64x4};
 use crate::{
     arithmetic::util::{adc, mac, sbb},
     FieldBytes, NistP256, SecretKey,
@@ -26,10 +27,6 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
-
-/// Array containing 4 x 64-bit unsigned integers.
-// TODO(tarcieri): replace this entirely with `U256`
-type U64x4 = [u64; 4];
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
@@ -364,27 +361,8 @@ impl Scalar {
     ///
     /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
     // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "32")]
     const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
-        Self(U256::from_words([
-            (limbs[0] & 0xFFFFFFFF) as u32,
-            (limbs[0] >> 32) as u32,
-            (limbs[1] & 0xFFFFFFFF) as u32,
-            (limbs[1] >> 32) as u32,
-            (limbs[2] & 0xFFFFFFFF) as u32,
-            (limbs[2] >> 32) as u32,
-            (limbs[3] & 0xFFFFFFFF) as u32,
-            (limbs[3] >> 32) as u32,
-        ]))
-    }
-
-    /// Perform unchecked conversion from a U64x4 to a Scalar.
-    ///
-    /// Note: this does *NOT* ensure that the provided value is less than `MODULUS`.
-    // TODO(tarcieri): implement all algorithms in terms of `U256`?
-    #[cfg(target_pointer_width = "64")]
-    const fn from_u64x4_unchecked(limbs: U64x4) -> Self {
-        Self(U256::from_words(limbs))
+        Self(u64x4_to_u256(limbs))
     }
 
     /// Shift right by one bit
@@ -804,27 +782,6 @@ impl<'de> Deserialize<'de> for Scalar {
     {
         Ok(ScalarCore::deserialize(deserializer)?.into())
     }
-}
-
-/// Convert to a [`U64x4`] array.
-// TODO(tarcieri): implement all algorithms in terms of `U256`?
-#[cfg(target_pointer_width = "32")]
-pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
-    let limbs = u256.to_words();
-
-    [
-        (limbs[0] as u64) | ((limbs[1] as u64) << 32),
-        (limbs[2] as u64) | ((limbs[3] as u64) << 32),
-        (limbs[4] as u64) | ((limbs[5] as u64) << 32),
-        (limbs[6] as u64) | ((limbs[7] as u64) << 32),
-    ]
-}
-
-/// Convert to a [`U64x4`] array.
-// TODO(tarcieri): implement all algorithms in terms of `U256`?
-#[cfg(target_pointer_width = "64")]
-pub(crate) const fn u256_to_u64x4(u256: U256) -> U64x4 {
-    u256.to_words()
 }
 
 #[cfg(test)]
