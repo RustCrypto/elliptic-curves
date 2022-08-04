@@ -9,7 +9,7 @@ pub(crate) mod util;
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP256;
 use elliptic_curve::{
-    AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
+    bigint::U256, AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
 };
 use weierstrass::WeierstrassCurve;
 
@@ -31,13 +31,8 @@ impl WeierstrassCurve for NistP256 {
         .sub(&FieldElement::ONE)
         .sub(&FieldElement::ONE);
 
-    /// b = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B
-    const EQUATION_B: FieldElement = FieldElement([
-        0xd89c_df62_29c4_bddf,
-        0xacf0_05cd_7884_3090,
-        0xe5a2_20ab_f721_2ed6,
-        0xdc30_061d_0487_4834,
-    ]);
+    const EQUATION_B: FieldElement =
+        FieldElement::from_hex("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
 
     /// Base point of P-256.
     ///
@@ -48,20 +43,8 @@ impl WeierstrassCurve for NistP256 {
     /// Gᵧ = 4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5
     /// ```
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement([
-            0xf4a1_3945_d898_c296,
-            0x7703_7d81_2deb_33a0,
-            0xf8bc_e6e5_63a4_40f2,
-            0x6b17_d1f2_e12c_4247,
-        ])
-        .to_montgomery(),
-        FieldElement([
-            0xcbb6_4068_37bf_51f5,
-            0x2bce_3357_6b31_5ece,
-            0x8ee7_eb4a_7c0f_9e16,
-            0x4fe3_42e2_fe1a_7f9b,
-        ])
-        .to_montgomery(),
+        FieldElement::from_hex("6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
+        FieldElement::from_hex("4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
     );
 }
 
@@ -79,4 +62,51 @@ impl PrimeCurveArithmetic for NistP256 {
 
 impl ScalarArithmetic for NistP256 {
     type Scalar = Scalar;
+}
+
+/// Array containing 4 x 64-bit unsigned integers.
+// TODO(tarcieri): replace this entirely with `U256`
+type U64x4 = [u64; 4];
+
+/// Convert to a [`U64x4`] array.
+// TODO(tarcieri): implement all algorithms in terms of `U256`?
+#[cfg(target_pointer_width = "32")]
+const fn u256_to_u64x4(u256: U256) -> U64x4 {
+    let limbs = u256.to_words();
+
+    [
+        (limbs[0] as u64) | ((limbs[1] as u64) << 32),
+        (limbs[2] as u64) | ((limbs[3] as u64) << 32),
+        (limbs[4] as u64) | ((limbs[5] as u64) << 32),
+        (limbs[6] as u64) | ((limbs[7] as u64) << 32),
+    ]
+}
+
+/// Convert to a [`U64x4`] array.
+// TODO(tarcieri): implement all algorithms in terms of `U256`?
+#[cfg(target_pointer_width = "64")]
+const fn u256_to_u64x4(u256: U256) -> U64x4 {
+    u256.to_words()
+}
+
+/// Convert from a [`U64x4`] array.
+#[cfg(target_pointer_width = "32")]
+pub(crate) const fn u64x4_to_u256(limbs: U64x4) -> U256 {
+    U256::from_words([
+        (limbs[0] & 0xFFFFFFFF) as u32,
+        (limbs[0] >> 32) as u32,
+        (limbs[1] & 0xFFFFFFFF) as u32,
+        (limbs[1] >> 32) as u32,
+        (limbs[2] & 0xFFFFFFFF) as u32,
+        (limbs[2] >> 32) as u32,
+        (limbs[3] & 0xFFFFFFFF) as u32,
+        (limbs[3] >> 32) as u32,
+    ])
+}
+
+/// Convert from a [`U64x4`] array.
+// TODO(tarcieri): implement all algorithms in terms of `U256`?
+#[cfg(target_pointer_width = "64")]
+pub(crate) const fn u64x4_to_u256(limbs: U64x4) -> U256 {
+    U256::from_words(limbs)
 }

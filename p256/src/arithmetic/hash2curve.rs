@@ -1,3 +1,5 @@
+use super::FieldElement;
+use crate::{arithmetic::u64x4_to_u256, AffinePoint, NistP256, ProjectivePoint, Scalar};
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     consts::U48,
@@ -7,10 +9,6 @@ use elliptic_curve::{
     DecompressPoint,
 };
 
-use crate::{AffinePoint, NistP256, ProjectivePoint, Scalar};
-
-use super::FieldElement;
-
 impl GroupDigest for NistP256 {
     type FieldElement = FieldElement;
 }
@@ -19,26 +17,24 @@ impl FromOkm for FieldElement {
     type Length = U48;
 
     fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
-        const F_2_192: FieldElement = FieldElement([
-            0xffff_fffe_ffff_ffffu64,
-            0xffff_ffff_ffff_fffeu64,
-            0x0000_0002_0000_0000u64,
-            0x0000_0000_0000_0003u64,
-        ]);
-        let d0 = FieldElement([
+        const F_2_192: FieldElement = FieldElement(U256::from_be_hex(
+            "00000000000000030000000200000000fffffffffffffffefffffffeffffffff",
+        ));
+
+        let d0 = FieldElement::from_uint_unchecked(u64x4_to_u256([
             u64::from_be_bytes(data[16..24].try_into().unwrap()),
             u64::from_be_bytes(data[8..16].try_into().unwrap()),
             u64::from_be_bytes(data[0..8].try_into().unwrap()),
             0,
-        ])
-        .to_montgomery();
-        let d1 = FieldElement([
+        ]));
+
+        let d1 = FieldElement::from_uint_unchecked(u64x4_to_u256([
             u64::from_be_bytes(data[40..48].try_into().unwrap()),
             u64::from_be_bytes(data[32..40].try_into().unwrap()),
             u64::from_be_bytes(data[24..32].try_into().unwrap()),
             0,
-        ])
-        .to_montgomery();
+        ]));
+
         d0 * F_2_192 + d1
     }
 }
@@ -57,30 +53,18 @@ impl OsswuMap for FieldElement {
             0x4000_0000_0000_0000,
             0x3fff_ffff_c000_0000,
         ],
-        c2: FieldElement([
-            0x53e4_3951_f64f_dbe7,
-            0xb280_6c63_966a_1a66,
-            0x1ac5_d59c_3298_bf50,
-            0xa332_3851_ba99_7e27,
-        ]),
-        map_a: FieldElement([
-            0xffff_ffff_ffff_fffc,
-            0x0000_0003_ffff_ffff,
-            0x0000_0000_0000_0000,
-            0xffff_fffc_0000_0004,
-        ]),
-        map_b: FieldElement([
-            0xd89c_df62_29c4_bddf,
-            0xacf0_05cd_7884_3090,
-            0xe5a2_20ab_f721_2ed6,
-            0xdc30_061d_0487_4834,
-        ]),
-        z: FieldElement([
-            0xffff_ffff_ffff_fff5,
-            0x0000_000a_ffff_ffff,
-            0x0000_0000_0000_0000,
-            0xffff_fff5_0000_000b,
-        ]),
+        c2: FieldElement(U256::from_be_hex(
+            "a3323851ba997e271ac5d59c3298bf50b2806c63966a1a6653e43951f64fdbe7",
+        )),
+        map_a: FieldElement(U256::from_be_hex(
+            "fffffffc00000004000000000000000000000003fffffffffffffffffffffffc",
+        )),
+        map_b: FieldElement(U256::from_be_hex(
+            "dc30061d04874834e5a220abf7212ed6acf005cd78843090d89cdf6229c4bddf",
+        )),
+        z: FieldElement(U256::from_be_hex(
+            "fffffff50000000b00000000000000000000000afffffffffffffffffffffff5",
+        )),
     };
 }
 
@@ -91,7 +75,7 @@ impl MapToCurve for FieldElement {
         let (qx, qy) = self.osswu();
 
         // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
-        AffinePoint::decompress(&qx.to_bytes(), qy.is_odd())
+        AffinePoint::decompress(&qx.to_sec1(), qy.is_odd())
             .unwrap()
             .into()
     }
@@ -233,8 +217,8 @@ mod tests {
                 };
             }
 
-            assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
-            assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
+            assert_eq!(u[0].to_sec1().as_slice(), test_vector.u_0);
+            assert_eq!(u[1].to_sec1().as_slice(), test_vector.u_1);
 
             let q0 = u[0].map_to_curve();
             assert_point_eq!(q0, test_vector.q0_x, test_vector.q0_y);
