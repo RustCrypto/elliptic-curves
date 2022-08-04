@@ -1,31 +1,25 @@
-//! 32-bit secp256r1 base field implementation
-
-// TODO(tarcieri): adapt 64-bit arithmetic to proper 32-bit arithmetic
+//! 64-bit secp256r1 base field implementation
 
 use super::{MODULUS, R_2};
 use crate::arithmetic::util::{adc, mac, sbb};
 
 /// Raw field element.
-pub type Fe = [u32; 8];
+pub type Fe = [u64; 4];
 
 /// Translate a field element out of the Montgomery domain.
 #[inline]
-pub const fn p256_from_montgomery(w: &Fe) -> Fe {
-    let w = fe32_to_fe64(w);
+pub const fn fe_from_montgomery(w: &Fe) -> Fe {
     montgomery_reduce(&[w[0], w[1], w[2], w[3], 0, 0, 0, 0])
 }
 
 /// Translate a field element into the Montgomery domain.
 #[inline]
-pub const fn p256_to_montgomery(w: &Fe) -> Fe {
-    p256_mul(w, R_2.as_words())
+pub const fn fe_to_montgomery(w: &Fe) -> Fe {
+    fe_mul(w, R_2.as_words())
 }
 
-/// Returns `self + rhs mod p`.
-pub const fn p256_add(a: &Fe, b: &Fe) -> Fe {
-    let a = fe32_to_fe64(a);
-    let b = fe32_to_fe64(b);
-
+/// Returns `a + b mod p`.
+pub const fn fe_add(a: &Fe, b: &Fe) -> Fe {
     // Bit 256 of p is set, so addition can result in five words.
     let (w0, carry) = adc(a[0], b[0], 0);
     let (w1, carry) = adc(a[1], b[1], carry);
@@ -33,7 +27,7 @@ pub const fn p256_add(a: &Fe, b: &Fe) -> Fe {
     let (w3, w4) = adc(a[3], b[3], carry);
 
     // Attempt to subtract the modulus, to ensure the result is in the field.
-    let modulus = fe32_to_fe64(MODULUS.as_words());
+    let modulus = MODULUS.as_words();
     sub_inner(
         &[w0, w1, w2, w3, w4],
         &[modulus[0], modulus[1], modulus[2], modulus[3], 0],
@@ -41,17 +35,12 @@ pub const fn p256_add(a: &Fe, b: &Fe) -> Fe {
 }
 
 /// Returns `a - b mod p`.
-pub const fn p256_sub(a: &Fe, b: &Fe) -> Fe {
-    let a = fe32_to_fe64(a);
-    let b = fe32_to_fe64(b);
+pub const fn fe_sub(a: &Fe, b: &Fe) -> Fe {
     sub_inner(&[a[0], a[1], a[2], a[3], 0], &[b[0], b[1], b[2], b[3], 0])
 }
 
 /// Returns `a * b mod p`.
-pub const fn p256_mul(a: &Fe, b: &Fe) -> Fe {
-    let a = fe32_to_fe64(a);
-    let b = fe32_to_fe64(b);
-
+pub const fn fe_mul(a: &Fe, b: &Fe) -> Fe {
     let (w0, carry) = mac(0, a[0], b[0], 0);
     let (w1, carry) = mac(0, a[0], b[1], carry);
     let (w2, carry) = mac(0, a[0], b[2], carry);
@@ -76,13 +65,13 @@ pub const fn p256_mul(a: &Fe, b: &Fe) -> Fe {
 }
 
 /// Returns `-w mod p`.
-pub const fn p256_neg(w: &Fe) -> Fe {
-    p256_sub(&[0; 8], w)
+pub const fn fe_neg(w: &Fe) -> Fe {
+    fe_sub(&[0, 0, 0, 0], w)
 }
 
 /// Returns `w * w mod p`.
-pub const fn p256_square(w: &Fe) -> Fe {
-    p256_mul(w, w)
+pub const fn fe_square(w: &Fe) -> Fe {
+    fe_mul(w, w)
 }
 
 /// Montgomery Reduction
@@ -135,7 +124,7 @@ const fn montgomery_reduce(r: &[u64; 8]) -> Fe {
     let r5 = r[5];
     let r6 = r[6];
     let r7 = r[7];
-    let modulus = fe32_to_fe64(MODULUS.as_words());
+    let modulus = MODULUS.as_words();
 
     let (r1, carry) = mac(r1, r0, modulus[1], r0);
     let (r2, carry) = adc(r2, 0, carry);
@@ -176,31 +165,11 @@ const fn sub_inner(l: &[u64; 5], r: &[u64; 5]) -> Fe {
     // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
     // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
     // modulus.
-    let modulus = fe32_to_fe64(MODULUS.as_words());
+    let modulus = MODULUS.as_words();
     let (w0, carry) = adc(w0, modulus[0] & borrow, 0);
     let (w1, carry) = adc(w1, modulus[1] & borrow, carry);
     let (w2, carry) = adc(w2, modulus[2] & borrow, carry);
     let (w3, _) = adc(w3, modulus[3] & borrow, carry);
 
-    [
-        (w0 & 0xFFFFFFFF) as u32,
-        (w0 >> 32) as u32,
-        (w1 & 0xFFFFFFFF) as u32,
-        (w1 >> 32) as u32,
-        (w2 & 0xFFFFFFFF) as u32,
-        (w2 >> 32) as u32,
-        (w3 & 0xFFFFFFFF) as u32,
-        (w3 >> 32) as u32,
-    ]
-}
-
-// TODO(tarcieri): replace this with proper 32-bit arithmetic
-#[inline]
-const fn fe32_to_fe64(fe32: &Fe) -> [u64; 4] {
-    [
-        (fe32[0] as u64) | ((fe32[1] as u64) << 32),
-        (fe32[2] as u64) | ((fe32[3] as u64) << 32),
-        (fe32[4] as u64) | ((fe32[5] as u64) << 32),
-        (fe32[6] as u64) | ((fe32[7] as u64) << 32),
-    ]
+    [w0, w1, w2, w3]
 }
