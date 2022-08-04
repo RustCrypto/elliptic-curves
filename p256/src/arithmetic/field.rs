@@ -2,8 +2,8 @@
 
 #![allow(clippy::assign_op_pattern, clippy::op_ref)]
 
-#[cfg_attr(target_pointer_width = "32", path = "field/p256_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/p256_64.rs")]
+#[cfg_attr(target_pointer_width = "32", path = "field/field32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "field/field64.rs")]
 mod field_impl;
 
 use self::field_impl::*;
@@ -37,13 +37,13 @@ elliptic_curve::impl_field_element!(
     U256,
     MODULUS,
     Fe,
-    p256_from_montgomery,
-    p256_to_montgomery,
-    p256_add,
-    p256_sub,
-    p256_mul,
-    p256_neg,
-    p256_square
+    fe_from_montgomery,
+    fe_to_montgomery,
+    fe_add,
+    fe_sub,
+    fe_mul,
+    fe_neg,
+    fe_square
 );
 
 impl FieldElement {
@@ -186,13 +186,10 @@ impl PrimeField for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        arithmetic::{u64x4_to_u256, FieldElement},
-        test_vectors::field::DBL_TEST_VECTORS,
-        FieldBytes,
-    };
-    use elliptic_curve::ff::Field;
-    use proptest::{num::u64::ANY, prelude::*};
+    use super::FieldElement;
+    use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
+    use elliptic_curve::{bigint::U256, ff::Field};
+    use proptest::{num, prelude::*};
 
     #[test]
     fn zero_is_additive_identity() {
@@ -310,17 +307,43 @@ mod tests {
     proptest! {
         /// This checks behaviour well within the field ranges, because it doesn't set the
         /// highest limb.
+        #[cfg(target_pointer_width = "32")]
         #[test]
         fn add_then_sub(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
+            a0 in num::u32::ANY,
+            a1 in num::u32::ANY,
+            a2 in num::u32::ANY,
+            a3 in num::u32::ANY,
+            a4 in num::u32::ANY,
+            a5 in num::u32::ANY,
+            a6 in num::u32::ANY,
+            b0 in num::u32::ANY,
+            b1 in num::u32::ANY,
+            b2 in num::u32::ANY,
+            b3 in num::u32::ANY,
+            b4 in num::u32::ANY,
+            b5 in num::u32::ANY,
+            b6 in num::u32::ANY,
         ) {
-            let a = FieldElement(u64x4_to_u256([a0, a1, a2, 0]));
-            let b = FieldElement(u64x4_to_u256([b0, b1, b2, 0]));
+            let a = FieldElement(U256::from_words([a0, a1, a2, a3, a4, a5, a6, 0]));
+            let b = FieldElement(U256::from_words([b0, b1, b2, b3, b4, b5, b6, 0]));
+            assert_eq!(a.add(&b).sub(&a), b);
+        }
+
+        /// This checks behaviour well within the field ranges, because it doesn't set the
+        /// highest limb.
+        #[cfg(target_pointer_width = "64")]
+        #[test]
+        fn add_then_sub(
+            a0 in num::u64::ANY,
+            a1 in num::u64::ANY,
+            a2 in num::u64::ANY,
+            b0 in num::u64::ANY,
+            b1 in num::u64::ANY,
+            b2 in num::u64::ANY,
+        ) {
+            let a = FieldElement(U256::from_words([a0, a1, a2, 0]));
+            let b = FieldElement(U256::from_words([b0, b1, b2, 0]));
             assert_eq!(a.add(&b).sub(&a), b);
         }
     }

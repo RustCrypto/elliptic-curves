@@ -1,5 +1,5 @@
 use super::FieldElement;
-use crate::{arithmetic::u64x4_to_u256, AffinePoint, NistP256, ProjectivePoint, Scalar};
+use crate::{AffinePoint, FieldBytes, NistP256, ProjectivePoint, Scalar};
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     consts::U48,
@@ -21,19 +21,13 @@ impl FromOkm for FieldElement {
             "00000000000000030000000200000000fffffffffffffffefffffffeffffffff",
         ));
 
-        let d0 = FieldElement::from_uint_unchecked(u64x4_to_u256([
-            u64::from_be_bytes(data[16..24].try_into().unwrap()),
-            u64::from_be_bytes(data[8..16].try_into().unwrap()),
-            u64::from_be_bytes(data[0..8].try_into().unwrap()),
-            0,
-        ]));
+        let mut d0_bytes = FieldBytes::default();
+        d0_bytes[8..].copy_from_slice(&data[..24]);
+        let d0 = FieldElement::from_uint_unchecked(U256::from_be_byte_array(d0_bytes));
 
-        let d1 = FieldElement::from_uint_unchecked(u64x4_to_u256([
-            u64::from_be_bytes(data[40..48].try_into().unwrap()),
-            u64::from_be_bytes(data[32..40].try_into().unwrap()),
-            u64::from_be_bytes(data[24..32].try_into().unwrap()),
-            0,
-        ]));
+        let mut d1_bytes = FieldBytes::default();
+        d1_bytes[8..].copy_from_slice(&data[24..]);
+        let d1 = FieldElement::from_uint_unchecked(U256::from_be_byte_array(d1_bytes));
 
         d0 * F_2_192 + d1
     }
