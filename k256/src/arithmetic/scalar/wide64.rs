@@ -91,7 +91,7 @@ impl WideScalar {
             shift < 448,
             (l[1 + shiftlimbs] >> shiftlow)
                 | ifelse(
-                    shift < 448 && shiftlow != 0,
+                    shift < 384 && shiftlow != 0,
                     l[2 + shiftlimbs] << shifthigh,
                     0,
                 ),
