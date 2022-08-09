@@ -64,52 +64,52 @@ impl WideScalar {
     pub(crate) fn mul_shift_vartime(a: &Scalar, b: &Scalar, shift: usize) -> Scalar {
         debug_assert!(shift >= 256);
 
-        fn ifelse(c: bool, x: u64, y: u64) -> u64 {
-            if c {
-                x
-            } else {
-                y
-            }
-        }
-
         let l = Self::mul_wide(a, b).0.to_words();
         let shiftlimbs = shift >> 6;
         let shiftlow = shift & 0x3F;
         let shifthigh = 64 - shiftlow;
-        let r0 = ifelse(
-            shift < 512,
-            (l[shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 448 && shiftlow != 0,
-                    l[1 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
 
-        let r1 = ifelse(
-            shift < 448,
-            (l[1 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 384 && shiftlow != 0,
-                    l[2 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
+        let r0 = if shift < 512 {
+            let lo = l[shiftlimbs] >> shiftlow;
+            let hi = if shift < 448 && shiftlow != 0 {
+                l[1 + shiftlimbs] << shifthigh
+            } else {
+                0
+            };
+            hi | lo
+        } else {
+            0
+        };
 
-        let r2 = ifelse(
-            shift < 384,
-            (l[2 + shiftlimbs] >> shiftlow)
-                | ifelse(
-                    shift < 320 && shiftlow != 0,
-                    l[3 + shiftlimbs] << shifthigh,
-                    0,
-                ),
-            0,
-        );
+        let r1 = if shift < 448 {
+            let lo = l[1 + shiftlimbs] >> shiftlow;
+            let hi = if shift < 384 && shiftlow != 0 {
+                l[2 + shiftlimbs] << shifthigh
+            } else {
+                0
+            };
+            hi | lo
+        } else {
+            0
+        };
 
-        let r3 = ifelse(shift < 320, l[3 + shiftlimbs] >> shiftlow, 0);
+        let r2 = if shift < 384 {
+            let lo = l[2 + shiftlimbs] >> shiftlow;
+            let hi = if shift < 320 && shiftlow != 0 {
+                l[3 + shiftlimbs] << shifthigh
+            } else {
+                0
+            };
+            hi | lo
+        } else {
+            0
+        };
+
+        let r3 = if shift < 320 {
+            l[3 + shiftlimbs] >> shiftlow
+        } else {
+            0
+        };
 
         let res = Scalar(U256::from_words([r0, r1, r2, r3]));
 
