@@ -28,42 +28,11 @@
 //! Cryptography on Sensor Networks Using the MSP430X Microcontroller" (Gouvea, Oliveira, Lopez),
 //! Section 4.3 (here we use a somewhat higher-precision estimate):
 //! d = a1*b2 - b1*a2
-//! g1 = round((2^272)*b2/d)
-//! g2 = round((2^272)*b1/d)
+//! g1 = round((2^384)*b2/d)
+//! g2 = round((2^384)*(-b1)/d)
 //!
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
-//!
-//! @fjarri:
-//!
-//! To be precise, the method used here is based on "An Alternate Decomposition of an Integer for
-//! Faster Point Multiplication on Certain Elliptic Curves" by Young-Ho Park, Sangtae Jeong,
-//! Chang Han Kim, and Jongin Lim:
-//! <https://link.springer.com/chapter/10.1007%2F3-540-45664-3_23>
-//!
-//! The precision used for `g1` and `g2` is not enough to ensure correct approximation at all times.
-//! For example, `2^272 * b1 / n` used to calculate `g2` is rounded down.
-//! This means that the approximation `z' = k * g2 / 2^272` always slightly underestimates
-//! the real value `z = b1 * k / n`. Therefore, when the fractional part of `z` is just slightly
-//! above 0.5, it will be rounded up, but `z'` will have the fractional part slightly below 0.5 and
-//! will be rounded down.
-//!
-//! The difference `z - z' = k * delta / 2^272`, where `delta = b1 * 2^272 mod n`.
-//! The closest `z` can get to the fractional part equal to .5 is `1 / (2n)` (since `n` is odd).
-//! Therefore, to guarantee that `z'` will always be rounded to the same value, one must have
-//! `delta / 2^m < 1 / (2n * (n - 1))`, where `m` is the power of 2 used for the approximation.
-//! This means that one should use at least `m = 512` (since `0 < delta < 1`).
-//! Indeed, tests show that with only `m = 272` the approximation produces off-by-1 errors
-//! occasionally.
-//!
-//! Now since `r1` is calculated as `k - r2 * lambda mod n`, the contract
-//! `r1 + r2 * lambda = k mod n` is always satisfied. The method guarantees both `r1` and `r2` to be
-//! less than `sqrt(n)` (so, fit in 128 bits) if the rounding is applied correctly - but in our case
-//! the off-by-1 errors will produce different `r1` and `r2` which are not necessarily bounded by
-//! `sqrt(n)`.
-//!
-//! In experiments, I was not able to detect any case where they would go outside the 128 bit bound,
-//! but I cannot be sure that it cannot happen.
 
 use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
@@ -132,20 +101,125 @@ const MINUS_B2: Scalar = Scalar::from_bytes_unchecked(&[
 ]);
 
 const G1: Scalar = Scalar::from_bytes_unchecked(&[
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, 0x86,
-    0xd2, 0x21, 0xa7, 0xd4, 0x6b, 0xcd, 0xe8, 0x6c, 0x90, 0xe4, 0x92, 0x84, 0xeb, 0x15, 0x3d, 0xab,
+    0x30, 0x86, 0xd2, 0x21, 0xa7, 0xd4, 0x6b, 0xcd, 0xe8, 0x6c, 0x90, 0xe4, 0x92, 0x84, 0xeb, 0x15,
+    0x3d, 0xaa, 0x8a, 0x14, 0x71, 0xe8, 0xca, 0x7f, 0xe8, 0x93, 0x20, 0x9a, 0x45, 0xdb, 0xb0, 0x31,
 ]);
 
 const G2: Scalar = Scalar::from_bytes_unchecked(&[
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe4, 0x43,
-    0x7e, 0xd6, 0x01, 0x0e, 0x88, 0x28, 0x6f, 0x54, 0x7f, 0xa9, 0x0a, 0xbf, 0xe4, 0xc4, 0x22, 0x12,
+    0xe4, 0x43, 0x7e, 0xd6, 0x01, 0x0e, 0x88, 0x28, 0x6f, 0x54, 0x7f, 0xa9, 0x0a, 0xbf, 0xe4, 0xc4,
+    0x22, 0x12, 0x08, 0xac, 0x9d, 0xf5, 0x06, 0xc6, 0x15, 0x71, 0xb4, 0xae, 0x8a, 0xc4, 0x7f, 0x71,
 ]);
+
+/*
+ * Proof for decompose_scalar's bounds.
+ *
+ * Let
+ *  - epsilon1 = 2^256 * |g1/2^384 - b2/d|
+ *  - epsilon2 = 2^256 * |g2/2^384 - (-b1)/d|
+ *  - c1 = round(k*g1/2^384)
+ *  - c2 = round(k*g2/2^384)
+ *
+ * Lemma 1: |c1 - k*b2/d| < 2^-1 + epsilon1
+ *
+ *    |c1 - k*b2/d|
+ *  =
+ *    |c1 - k*g1/2^384 + k*g1/2^384 - k*b2/d|
+ * <=   {triangle inequality}
+ *    |c1 - k*g1/2^384| + |k*g1/2^384 - k*b2/d|
+ *  =
+ *    |c1 - k*g1/2^384| + k*|g1/2^384 - b2/d|
+ * <    {rounding in c1 and 0 <= k < 2^256}
+ *    2^-1 + 2^256 * |g1/2^384 - b2/d|
+ *  =   {definition of epsilon1}
+ *    2^-1 + epsilon1
+ *
+ * Lemma 2: |c2 - k*(-b1)/d| < 2^-1 + epsilon2
+ *
+ *    |c2 - k*(-b1)/d|
+ *  =
+ *    |c2 - k*g2/2^384 + k*g2/2^384 - k*(-b1)/d|
+ * <=   {triangle inequality}
+ *    |c2 - k*g2/2^384| + |k*g2/2^384 - k*(-b1)/d|
+ *  =
+ *    |c2 - k*g2/2^384| + k*|g2/2^384 - (-b1)/d|
+ * <    {rounding in c2 and 0 <= k < 2^256}
+ *    2^-1 + 2^256 * |g2/2^384 - (-b1)/d|
+ *  =   {definition of epsilon2}
+ *    2^-1 + epsilon2
+ *
+ * Let
+ *  - k1 = k - c1*a1 - c2*a2
+ *  - k2 = - c1*b1 - c2*b2
+ *
+ * Lemma 3: |k1| < (a1 + a2 + 1)/2 < 2^128
+ *
+ *    |k1|
+ *  =   {definition of k1}
+ *    |k - c1*a1 - c2*a2|
+ *  =   {(a1*b2 - b1*a2)/n = 1}
+ *    |k*(a1*b2 - b1*a2)/n - c1*a1 - c2*a2|
+ *  =
+ *    |a1*(k*b2/n - c1) + a2*(k*(-b1)/n - c2)|
+ * <=   {triangle inequality}
+ *    a1*|k*b2/n - c1| + a2*|k*(-b1)/n - c2|
+ * <    {Lemma 1 and Lemma 2}
+ *    a1*(2^-1 + epslion1) + a2*(2^-1 + epsilon2)
+ * <    {rounding up to an integer}
+ *    (a1 + a2 + 1)/2
+ * <    {rounding up to a power of 2}
+ *    2^128
+ *
+ * Lemma 4: |k2| < (-b1 + b2)/2 + 1 < 2^128
+ *
+ *    |k2|
+ *  =   {definition of k2}
+ *    |- c1*a1 - c2*a2|
+ *  =   {(b1*b2 - b1*b2)/n = 0}
+ *    |k*(b1*b2 - b1*b2)/n - c1*b1 - c2*b2|
+ *  =
+ *    |b1*(k*b2/n - c1) + b2*(k*(-b1)/n - c2)|
+ * <=   {triangle inequality}
+ *    (-b1)*|k*b2/n - c1| + b2*|k*(-b1)/n - c2|
+ * <    {Lemma 1 and Lemma 2}
+ *    (-b1)*(2^-1 + epslion1) + b2*(2^-1 + epsilon2)
+ * <    {rounding up to an integer}
+ *    (-b1 + b2)/2 + 1
+ * <    {rounding up to a power of 2}
+ *    2^128
+ *
+ * Let
+ *  - r2 = k2 mod n
+ *  - r1 = k - r2*lambda mod n.
+ *
+ * Notice that r1 is defined such that r1 + r2 * lambda == k (mod n).
+ *
+ * Lemma 5: r1 == k1 mod n.
+ *
+ *    r1
+ * ==   {definition of r1 and r2}
+ *    k - k2*lambda
+ * ==   {definition of k2}
+ *    k - (- c1*b1 - c2*b2)*lambda
+ * ==
+ *    k + c1*b1*lambda + c2*b2*lambda
+ * ==  {a1 + b1*lambda == 0 mod n and a2 + b2*lambda == 0 mod n}
+ *    k - c1*a1 - c2*a2
+ * ==  {definition of k1}
+ *    k1
+ *
+ * From Lemma 3, Lemma 4, Lemma 5 and the definition of r2, we can conclude that
+ *
+ *  - either r1 < 2^128 or -r1 mod n < 2^128
+ *  - either r2 < 2^128 or -r2 mod n < 2^128.
+ *
+ * Q.E.D.
+ */
 
 /// Find r1 and r2 given k, such that r1 + r2 * lambda == k mod n.
 fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
     // these _vartime calls are constant time since the shift amount is constant
-    let c1 = WideScalar::mul_shift_vartime(k, &G1, 272) * MINUS_B1;
-    let c2 = WideScalar::mul_shift_vartime(k, &G2, 272) * MINUS_B2;
+    let c1 = WideScalar::mul_shift_vartime(k, &G1, 384) * MINUS_B1;
+    let c2 = WideScalar::mul_shift_vartime(k, &G2, 384) * MINUS_B2;
     let r2 = c1 + c2;
     let r1 = k + r2 * MINUS_LAMBDA;
 
