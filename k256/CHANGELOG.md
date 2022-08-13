@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.11.4 (2022-08-13)
+### Added
+- Impl `ZeroizeOnDrop` for `ecdsa::SigningKey` and `schnorr::SigningKey` ([#630])
+
+### Changed
+- Get rid of eager computation in `mul_shift_vartime()` ([#638])
+- Bump the precision of precomputed division for the scalar decomposition ([#639])
+
+[#630]: https://github.com/RustCrypto/elliptic-curves/pull/630
+[#638]: https://github.com/RustCrypto/elliptic-curves/pull/638
+[#639]: https://github.com/RustCrypto/elliptic-curves/pull/639
+
 ## 0.11.3 (2022-07-02)
 ### Changed
 - Relax `DigestSigner` trait bounds ([#613])
