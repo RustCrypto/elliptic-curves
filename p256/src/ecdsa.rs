@@ -29,7 +29,7 @@
 //! // Signing
 //! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
-//! let signature = signing_key.sign(message);
+//! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
 //! use p256::ecdsa::{VerifyingKey, signature::Verifier};
@@ -39,15 +39,22 @@
 //! # }
 //! ```
 
-pub use ecdsa_core::signature::{self, Error};
-
-use super::NistP256;
+pub mod recoverable;
 
 #[cfg(feature = "ecdsa")]
-use {
-    crate::{AffinePoint, Scalar},
-    ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-};
+mod sign;
+#[cfg(feature = "ecdsa")]
+mod verify;
+
+pub use ecdsa_core::signature::{self, Error};
+
+#[cfg(feature = "digest")]
+pub use ecdsa_core::signature::digest;
+
+#[cfg(feature = "ecdsa")]
+pub use self::{sign::SigningKey, verify::VerifyingKey};
+
+use super::NistP256;
 
 /// ECDSA/P-256 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP256>;
@@ -55,32 +62,16 @@ pub type Signature = ecdsa_core::Signature<NistP256>;
 /// ECDSA/P-256 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa_core::der::Signature<NistP256>;
 
-/// ECDSA/P-256 signing key
-#[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type SigningKey = ecdsa_core::SigningKey<NistP256>;
-
-/// ECDSA/P-256 verification key (i.e. public key)
-#[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
-pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
-
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
     type Digest = sha2::Sha256;
 }
 
-#[cfg(feature = "ecdsa")]
-impl SignPrimitive<NistP256> for Scalar {}
-
-#[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<NistP256> for AffinePoint {}
-
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        ecdsa::{signature::Signer, SigningKey},
+        ecdsa::{recoverable, sign::SigningKey, signature::Signer, Signature},
         test_vectors::ecdsa::ECDSA_TEST_VECTORS,
         BlindedScalar, Scalar,
     };
@@ -94,7 +85,7 @@ mod tests {
     fn rfc6979() {
         let x = &hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
         let signer = SigningKey::from_bytes(x).unwrap();
-        let signature = signer.sign(b"sample");
+        let signature: Signature = signer.sign(b"sample");
         assert_eq!(
             signature.as_ref(),
             &hex!(
@@ -102,12 +93,12 @@ mod tests {
                      f7cb1c942d657c41d436c7a1b6e29f65f3e900dbb9aff4064dc4ab2f843acda8"
             )[..]
         );
-        let signature = signer.sign(b"test");
+        let signature: recoverable::Signature = signer.sign(b"test");
         assert_eq!(
             signature.as_ref(),
             &hex!(
                 "f1abb023518351cd71d881567b1ea663ed3efcf6c5132b354f28d3b0b7d38367
-                019f4113742a2b14bd25926b49c649155f267e60d3814b4c0cc84250e46f0083"
+                019f4113742a2b14bd25926b49c649155f267e60d3814b4c0cc84250e46f008300"
             )[..]
         );
     }

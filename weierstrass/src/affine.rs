@@ -64,6 +64,11 @@ where
         Choice::from(self.infinity)
     }
 
+    /// Indicates the parity of coordinate Y.
+    pub fn is_y_odd(self) -> bool {
+        self.y.is_odd().into()
+    }
+
     /// Conditionally negate [`AffinePoint`] for use with point compaction.
     fn to_compact(self) -> Self {
         let neg_self = -self;
