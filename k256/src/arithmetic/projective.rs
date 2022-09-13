@@ -224,6 +224,24 @@ impl ProjectivePoint {
             z: self.z,
         }
     }
+
+    /// Check whether `self` is equal to an affine point.
+    ///
+    /// This is a lot faster than first converting `self` to an `AffinePoint` and then doing the
+    /// comparision. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
+    pub fn eq_affine(&self, other: &AffinePoint) -> Choice {
+        // For understanding of this algorithm see Projective equality comment. It's the same except
+        // that we know z = 1 for rhs and we have to check identity as a separate case.
+        let both_identity = self.is_identity() & other.is_identity();
+        let rhs_identity = other.is_identity();
+        let rhs_x = &other.x * &self.z;
+        let x_eq = rhs_x.negate(1).add(&self.x).normalizes_to_zero();
+
+        let rhs_y = &other.y * &self.z;
+        let y_eq = rhs_y.negate(1).add(&self.y).normalizes_to_zero();
+
+        both_identity | (!rhs_identity & x_eq & y_eq)
+    }
 }
 
 impl From<AffinePoint> for ProjectivePoint {
@@ -307,6 +325,18 @@ impl ConstantTimeEq for ProjectivePoint {
 impl PartialEq for ProjectivePoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl PartialEq<AffinePoint> for ProjectivePoint {
+    fn eq(&self, other: &AffinePoint) -> bool {
+        self.eq_affine(other).into()
+    }
+}
+
+impl PartialEq<ProjectivePoint> for AffinePoint {
+    fn eq(&self, other: &ProjectivePoint) -> bool {
+        other.eq_affine(self).into()
     }
 }
 
@@ -737,10 +767,23 @@ mod tests {
 
     #[test]
     fn projective_equality() {
+        use core::ops::Neg;
         assert_ne!(ProjectivePoint::GENERATOR, ProjectivePoint::IDENTITY);
         assert_ne!(ProjectivePoint::IDENTITY, ProjectivePoint::GENERATOR);
         assert_eq!(ProjectivePoint::IDENTITY, ProjectivePoint::IDENTITY);
         assert_eq!(ProjectivePoint::IDENTITY.neg(), ProjectivePoint::IDENTITY);
         assert_eq!(ProjectivePoint::GENERATOR, ProjectivePoint::GENERATOR);
+        assert_ne!(ProjectivePoint::GENERATOR, ProjectivePoint::GENERATOR.neg());
+
+        assert_ne!(ProjectivePoint::GENERATOR, AffinePoint::IDENTITY);
+        assert_ne!(ProjectivePoint::IDENTITY, AffinePoint::GENERATOR);
+        assert_eq!(ProjectivePoint::IDENTITY, AffinePoint::IDENTITY);
+        assert_eq!(ProjectivePoint::IDENTITY.neg(), AffinePoint::IDENTITY);
+        assert_eq!(ProjectivePoint::GENERATOR, AffinePoint::GENERATOR);
+        assert_ne!(ProjectivePoint::GENERATOR.neg(), AffinePoint::GENERATOR);
+        assert_eq!(
+            ProjectivePoint::GENERATOR.neg(),
+            AffinePoint::GENERATOR.neg()
+        );
     }
 }
