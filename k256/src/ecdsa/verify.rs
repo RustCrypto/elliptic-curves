@@ -5,7 +5,15 @@ use crate::{
     AffinePoint, CompressedPoint, EncodedPoint, FieldBytes, ProjectivePoint, PublicKey, Scalar,
     Secp256k1,
 };
-use ecdsa_core::{hazmat::VerifyPrimitive, signature};
+use ecdsa_core::{
+    hazmat::VerifyPrimitive,
+    signature::{
+        self,
+        digest::{Digest, FixedOutput},
+        hazmat::PrehashVerifier,
+        DigestVerifier,
+    },
+};
 use elliptic_curve::{
     bigint::U256,
     consts::U32,
@@ -13,8 +21,6 @@ use elliptic_curve::{
     sec1::ToEncodedPoint,
     IsHigh,
 };
-use signature::digest::{Digest, FixedOutput};
-use signature::DigestVerifier;
 
 #[cfg(feature = "sha256")]
 use signature::PrehashSignature;
@@ -74,7 +80,7 @@ where
     S: PrehashSignature,
     Self: DigestVerifier<S::Digest, S>,
 {
-    fn verify(&self, msg: &[u8], signature: &S) -> Result<(), Error> {
+    fn verify(&self, msg: &[u8], signature: &S) -> signature::Result<()> {
         self.verify_digest(S::Digest::new_with_prefix(msg), signature)
     }
 }
@@ -83,7 +89,7 @@ impl<D> DigestVerifier<D, Signature> for VerifyingKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
-    fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
+    fn verify_digest(&self, digest: D, signature: &Signature) -> signature::Result<()> {
         self.inner.verify_digest(digest, signature)
     }
 }
@@ -92,14 +98,35 @@ impl<D> DigestVerifier<D, recoverable::Signature> for VerifyingKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
-    fn verify_digest(&self, digest: D, signature: &recoverable::Signature) -> Result<(), Error> {
+    fn verify_digest(
+        &self,
+        digest: D,
+        signature: &recoverable::Signature,
+    ) -> signature::Result<()> {
         self.inner
             .verify_digest(digest, &Signature::from(*signature))
     }
 }
 
+impl PrehashVerifier<Signature> for VerifyingKey {
+    fn verify_prehash(&self, prehash: &[u8], signature: &Signature) -> signature::Result<()> {
+        self.inner.verify_prehash(prehash, signature)
+    }
+}
+
+impl PrehashVerifier<recoverable::Signature> for VerifyingKey {
+    fn verify_prehash(
+        &self,
+        prehash: &[u8],
+        signature: &recoverable::Signature,
+    ) -> signature::Result<()> {
+        self.inner
+            .verify_prehash(prehash, &Signature::from(*signature))
+    }
+}
+
 impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(&self, z: FieldBytes, signature: &Signature) -> Result<(), Error> {
+    fn verify_prehashed(&self, z: FieldBytes, signature: &Signature) -> signature::Result<()> {
         let r = signature.r();
         let s = signature.s();
         let z = <Scalar as Reduce<U256>>::from_be_bytes_reduced(z);

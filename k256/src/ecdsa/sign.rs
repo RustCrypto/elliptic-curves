@@ -10,6 +10,7 @@ use ecdsa_core::{
     hazmat::SignPrimitive,
     signature::{
         digest::{Digest, FixedOutput},
+        hazmat::PrehashSigner,
         DigestSigner, RandomizedDigestSigner,
     },
 };
@@ -44,18 +45,14 @@ pub struct SigningKey {
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
     pub fn random(rng: impl CryptoRng + RngCore) -> Self {
-        Self {
-            inner: NonZeroScalar::random(rng),
-        }
+        NonZeroScalar::random(rng).into()
     }
 
     /// Initialize [`SigningKey`] from a raw scalar value (big endian).
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let inner = SecretKey::from_be_bytes(bytes)
-            .map(|sk| sk.to_nonzero_scalar())
-            .map_err(|_| Error::new())?;
-
-        Ok(Self { inner })
+        SecretKey::from_be_bytes(bytes)
+            .map(|sk| sk.to_nonzero_scalar().into())
+            .map_err(|_| Error::new())
     }
 
     /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`].
@@ -88,7 +85,7 @@ where
     S: PrehashSignature,
     Self: RandomizedDigestSigner<S::Digest, S>,
 {
-    fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> Result<S, Error> {
+    fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> signature::Result<S> {
         self.try_sign_digest_with_rng(rng, S::Digest::new_with_prefix(msg))
     }
 }
@@ -97,9 +94,8 @@ impl<D> DigestSigner<D, Signature> for SigningKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
-    fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
-        let sig: recoverable::Signature = self.try_sign_digest(digest)?;
-        Ok(sig.into())
+    fn try_sign_digest(&self, msg_digest: D) -> signature::Result<Signature> {
+        self.sign_prehash(&msg_digest.finalize_fixed())
     }
 }
 
@@ -107,14 +103,31 @@ impl<D> DigestSigner<D, recoverable::Signature> for SigningKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
-    fn try_sign_digest(&self, msg_digest: D) -> Result<recoverable::Signature, Error> {
-        let digest = msg_digest.finalize_fixed();
+    fn try_sign_digest(&self, msg_digest: D) -> signature::Result<recoverable::Signature> {
+        self.sign_prehash(&msg_digest.finalize_fixed())
+    }
+}
+
+impl PrehashSigner<Signature> for SigningKey {
+    fn sign_prehash(&self, prehash: &[u8]) -> signature::Result<Signature> {
+        let prehash = <[u8; 32]>::try_from(prehash).map_err(|_| Error::new())?;
+
+        Ok(self
+            .inner
+            .try_sign_prehashed_rfc6979::<Sha256>(prehash.into(), &[])?
+            .0)
+    }
+}
+
+impl PrehashSigner<recoverable::Signature> for SigningKey {
+    fn sign_prehash(&self, prehash: &[u8]) -> signature::Result<recoverable::Signature> {
+        let prehash = <[u8; 32]>::try_from(prehash).map_err(|_| Error::new())?;
 
         // Ethereum signatures use SHA-256 for RFC6979, even if the message
         // has been hashed with Keccak256
         let (signature, recid) = self
             .inner
-            .try_sign_prehashed_rfc6979::<Sha256>(digest, &[])?;
+            .try_sign_prehashed_rfc6979::<Sha256>(prehash.into(), &[])?;
 
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
         recoverable::Signature::new(&signature, recoverable_id)
@@ -130,8 +143,10 @@ where
         rng: impl CryptoRng + RngCore,
         digest: D,
     ) -> Result<Signature, Error> {
-        let sig: recoverable::Signature = self.try_sign_digest_with_rng(rng, digest)?;
-        Ok(sig.into())
+        RandomizedDigestSigner::<D, recoverable::Signature>::try_sign_digest_with_rng(
+            self, rng, digest,
+        )
+        .map(Into::into)
     }
 }
 
@@ -195,10 +210,11 @@ impl SignPrimitive<Secp256k1> for Scalar {
         }
 
         let signature = Signature::from_scalars(r, s)?;
-        let is_r_odd: bool = R.y.normalize().is_odd().into();
-        let is_s_high: bool = signature.s().is_high().into();
+        let is_r_odd = R.y.normalize().is_odd();
+        let is_s_high = signature.s().is_high();
+        let is_y_odd = is_r_odd ^ is_s_high;
         let signature_low = signature.normalize_s().unwrap_or(signature);
-        let recovery_id = ecdsa_core::RecoveryId::new(is_r_odd ^ is_s_high, false);
+        let recovery_id = ecdsa_core::RecoveryId::new(is_y_odd.into(), false);
 
         Ok((signature_low, Some(recovery_id)))
     }
