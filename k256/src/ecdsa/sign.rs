@@ -11,7 +11,7 @@ use ecdsa_core::{
     signature::{
         digest::{Digest, FixedOutput},
         hazmat::PrehashSigner,
-        DigestSigner, RandomizedDigestSigner,
+        DigestSigner, Keypair, RandomizedDigestSigner,
     },
 };
 use elliptic_curve::{
@@ -38,8 +38,11 @@ use core::str::FromStr;
 #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 #[derive(Clone)]
 pub struct SigningKey {
-    /// Inner secret key value
-    inner: NonZeroScalar,
+    /// Secret scalar value (i.e. the private key)
+    secret_scalar: NonZeroScalar,
+
+    /// Verifying key which corresponds to this signing key.
+    verifying_key: VerifyingKey,
 }
 
 impl SigningKey {
@@ -57,14 +60,18 @@ impl SigningKey {
 
     /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`].
     pub fn verifying_key(&self) -> VerifyingKey {
-        VerifyingKey {
-            inner: PublicKey::from_secret_scalar(&self.inner).into(),
-        }
+        self.verifying_key
     }
 
     /// Serialize this [`SigningKey`] as bytes
     pub fn to_bytes(&self) -> FieldBytes {
-        self.inner.to_bytes()
+        self.secret_scalar.to_bytes()
+    }
+}
+
+impl AsRef<VerifyingKey> for SigningKey {
+    fn as_ref(&self) -> &VerifyingKey {
+        &self.verifying_key
     }
 }
 
@@ -108,12 +115,24 @@ where
     }
 }
 
+#[cfg(feature = "sha256")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
+impl Keypair<Signature> for SigningKey {
+    type VerifyingKey = VerifyingKey;
+}
+
+#[cfg(feature = "keccak256")]
+#[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
+impl Keypair<recoverable::Signature> for SigningKey {
+    type VerifyingKey = VerifyingKey;
+}
+
 impl PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> signature::Result<Signature> {
         let prehash = <[u8; 32]>::try_from(prehash).map_err(|_| Error::new())?;
 
         Ok(self
-            .inner
+            .secret_scalar
             .try_sign_prehashed_rfc6979::<Sha256>(prehash.into(), &[])?
             .0)
     }
@@ -126,7 +145,7 @@ impl PrehashSigner<recoverable::Signature> for SigningKey {
         // Ethereum signatures use SHA-256 for RFC6979, even if the message
         // has been hashed with Keccak256
         let (signature, recid) = self
-            .inner
+            .secret_scalar
             .try_sign_prehashed_rfc6979::<Sha256>(prehash.into(), &[])?;
 
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
@@ -167,7 +186,7 @@ where
         // Ethereum signatures use SHA-256 for RFC6979, even if the message
         // has been hashed with Keccak256
         let (signature, recid) = self
-            .inner
+            .secret_scalar
             .try_sign_prehashed_rfc6979::<Sha256>(digest, &ad)?;
 
         let recoverable_id = recid.ok_or_else(Error::new)?.try_into()?;
@@ -222,7 +241,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
 
 impl ConstantTimeEq for SigningKey {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.inner.ct_eq(&other.inner)
+        self.secret_scalar.ct_eq(&other.secret_scalar)
     }
 }
 
@@ -248,21 +267,19 @@ impl From<SecretKey> for SigningKey {
 
 impl From<&SecretKey> for SigningKey {
     fn from(secret_key: &SecretKey) -> SigningKey {
-        Self {
-            inner: secret_key.to_nonzero_scalar(),
-        }
+        secret_key.to_nonzero_scalar().into()
     }
 }
 
 impl From<SigningKey> for SecretKey {
     fn from(signing_key: SigningKey) -> SecretKey {
-        signing_key.inner.into()
+        signing_key.secret_scalar.into()
     }
 }
 
 impl From<&SigningKey> for SecretKey {
     fn from(signing_key: &SigningKey) -> SecretKey {
-        signing_key.inner.into()
+        signing_key.secret_scalar.into()
     }
 }
 
@@ -280,23 +297,24 @@ impl From<&SigningKey> for VerifyingKey {
 
 impl From<NonZeroScalar> for SigningKey {
     fn from(secret_scalar: NonZeroScalar) -> Self {
+        let public_key = PublicKey::from_secret_scalar(&secret_scalar);
+
         Self {
-            inner: secret_scalar,
+            secret_scalar,
+            verifying_key: public_key.into(),
         }
     }
 }
 
 impl From<&NonZeroScalar> for SigningKey {
     fn from(secret_scalar: &NonZeroScalar) -> Self {
-        Self {
-            inner: *secret_scalar,
-        }
+        Self::from(*secret_scalar)
     }
 }
 
 impl Drop for SigningKey {
     fn drop(&mut self) {
-        self.inner.zeroize();
+        self.secret_scalar.zeroize();
     }
 }
 
