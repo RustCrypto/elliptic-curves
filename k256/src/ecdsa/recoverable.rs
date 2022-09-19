@@ -44,7 +44,7 @@ use crate::{
     ecdsa::{
         signature::{
             digest::{Digest, FixedOutput},
-            DigestVerifier,
+            hazmat::PrehashVerifier,
         },
         VerifyingKey,
     },
@@ -126,15 +126,28 @@ impl Signature {
     where
         D: Clone + Digest + FixedOutput<OutputSize = U32>,
     {
+        Self::from_digest_bytes_trial_recovery(public_key, &digest.finalize(), signature)
+    }
+
+    /// Given a public key, message digest, and signature, use trial recovery
+    /// to determine if a suitable recovery ID exists, or return an error
+    /// otherwise.
+    #[cfg(feature = "ecdsa")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
+    pub fn from_digest_bytes_trial_recovery(
+        public_key: &VerifyingKey,
+        digest_bytes: &FieldBytes,
+        signature: &super::Signature,
+    ) -> Result<Self> {
         let signature = signature.normalize_s().unwrap_or(*signature);
 
         for recovery_id in 0..=1 {
             if let Ok(recoverable_signature) = Signature::new(&signature, Id(recovery_id)) {
                 if let Ok(recovered_key) =
-                    recoverable_signature.recover_verifying_key_from_digest(digest.clone())
+                    recoverable_signature.recover_verifying_key_from_digest_bytes(digest_bytes)
                 {
                     if public_key == &recovered_key
-                        && public_key.verify_digest(digest.clone(), &signature).is_ok()
+                        && public_key.verify_prehash(digest_bytes, &signature).is_ok()
                     {
                         return Ok(recoverable_signature);
                     }
