@@ -204,7 +204,7 @@ mod tests {
         /// Verifying key
         public_key: [u8; 32],
 
-        /// Auxilliary randomness value
+        /// Auxiliary randomness value
         aux_rand: [u8; 32],
 
         /// Message digest

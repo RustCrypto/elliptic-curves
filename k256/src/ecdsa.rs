@@ -51,7 +51,7 @@
 //! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
-//! // Note: the signature type must be annotated or otherwise inferrable as
+//! // Note: The signature type must be annotated or otherwise inferable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
 //! let signature: Signature = signing_key.sign(message);
