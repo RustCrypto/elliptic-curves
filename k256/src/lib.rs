@@ -54,7 +54,7 @@ pub use elliptic_curve::pkcs8;
 #[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
 pub use sha2;
 
-use elliptic_curve::{consts::U33, generic_array::GenericArray};
+use elliptic_curve::{consts::{U33, U65}, generic_array::GenericArray};
 
 /// Order of the secp256k1 elliptic curve
 const ORDER: U256 =
@@ -102,6 +102,9 @@ impl pkcs8::AssociatedOid for Secp256k1 {
 
 /// Compressed SEC1-encoded secp256k1 (K-256) curve point.
 pub type CompressedPoint = GenericArray<u8, U33>;
+
+/// Uncompressed SEC1-encoded secp256k1 (K-256) curve point.
+pub type UncompressedPoint = GenericArray<u8, U65>;
 
 /// secp256k1 (K-256) field element serialized as bytes.
 ///

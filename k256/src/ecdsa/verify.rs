@@ -3,7 +3,7 @@
 use super::{recoverable, Error, Signature};
 use crate::{
     AffinePoint, CompressedPoint, EncodedPoint, FieldBytes, ProjectivePoint, PublicKey, Scalar,
-    Secp256k1,
+    Secp256k1, UncompressedPoint,
 };
 use ecdsa_core::{
     hazmat::VerifyPrimitive,
@@ -71,6 +71,19 @@ impl VerifyingKey {
     /// (with point compression applied)
     pub fn to_bytes(&self) -> CompressedPoint {
         CompressedPoint::clone_from_slice(EncodedPoint::from(self).as_bytes())
+    }
+
+    /// Serialize this [`VerifyingKey`] as a SEC1-encoded bytestring
+    /// (without point compression applied)
+    pub fn to_bytes_uncompressed(&self) -> UncompressedPoint {
+        let affine = self.inner.as_affine();
+        let x = affine.x.to_bytes();
+        let y = affine.y.to_bytes();
+        let mut bytes = [0u8; 65];
+        bytes[0] = 0x04;
+        bytes[1..33].copy_from_slice(&x);
+        bytes[33..].copy_from_slice(&y);
+        UncompressedPoint::clone_from_slice(&bytes)
     }
 }
 
