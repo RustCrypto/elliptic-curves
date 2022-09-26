@@ -224,6 +224,24 @@ impl ProjectivePoint {
             z: self.z,
         }
     }
+
+    /// Check whether `self` is equal to an affine point.
+    ///
+    /// This is a lot faster than first converting `self` to an `AffinePoint` and then doing the
+    /// comparision. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
+    pub fn eq_affine(&self, other: &AffinePoint) -> Choice {
+        // For understanding of this algorithm see Projective equality comment. It's the same except
+        // that we know z = 1 for rhs and we have to check identity as a separate case.
+        let both_identity = self.is_identity() & other.is_identity();
+        let rhs_identity = other.is_identity();
+        let rhs_x = &other.x * &self.z;
+        let x_eq = rhs_x.negate(1).add(&self.x).normalizes_to_zero();
+
+        let rhs_y = &other.y * &self.z;
+        let y_eq = rhs_y.negate(1).add(&self.y).normalizes_to_zero();
+
+        both_identity | (!rhs_identity & x_eq & y_eq)
+    }
 }
 
 impl From<AffinePoint> for ProjectivePoint {
@@ -279,13 +297,46 @@ impl ConditionallySelectable for ProjectivePoint {
 
 impl ConstantTimeEq for ProjectivePoint {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.to_affine().ct_eq(&other.to_affine())
+        // If both points are not equal to inifinity then they are in the form:
+        //
+        // lhs: (x₁z₁, y₁z₁, z₁), rhs: (x₂z₂, y₂z₂, z₂) where z₁ ≠ 0 and z₂ ≠ 0.
+        // we want to know if x₁ == x₂ and y₁ == y₂
+        // So we multiply the x and y by the opposing z to get:
+        // lhs: (x₁z₁z₂, y₁z₁z₂) rhs: (x₂z₁z₂, y₂z₁z₂)
+        // and check lhs == rhs which implies x₁ == x₂ and y₁ == y₂.
+        //
+        // If one point is infinity it is always in the form (0, y, 0). Note that the above
+        // algorithm still works here. If They are both infinity then they'll both evalute to (0,0).
+        // If for example the first point is infinity then the above will evaluate to (z₂ * 0, z₂ *
+        // y₂) = (0, z₂y₂) for the first point and (0 * x₂z₂, 0 * y₂z₂) = (0, 0) for the second.
+        //
+        // Since z₂y₂ will never be 0 they will not be equal in this case either.
+        let lhs_x = self.x * &other.z;
+        let rhs_x = other.x * &self.z;
+        let x_eq = rhs_x.negate(1).add(&lhs_x).normalizes_to_zero();
+
+        let lhs_y = self.y * &other.z;
+        let rhs_y = other.y * &self.z;
+        let y_eq = rhs_y.negate(1).add(&lhs_y).normalizes_to_zero();
+        x_eq & y_eq
     }
 }
 
 impl PartialEq for ProjectivePoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl PartialEq<AffinePoint> for ProjectivePoint {
+    fn eq(&self, other: &AffinePoint) -> bool {
+        self.eq_affine(other).into()
+    }
+}
+
+impl PartialEq<ProjectivePoint> for AffinePoint {
+    fn eq(&self, other: &ProjectivePoint) -> bool {
+        other.eq_affine(self).into()
     }
 }
 
@@ -307,7 +358,7 @@ impl Group for ProjectivePoint {
     }
 
     fn is_identity(&self) -> Choice {
-        self.ct_eq(&Self::IDENTITY)
+        self.z.normalizes_to_zero()
     }
 
     #[must_use]
@@ -712,5 +763,27 @@ mod tests {
             assert_eq!(res.x.to_bytes(), coords.0.into());
             assert_eq!(res.y.to_bytes(), coords.1.into());
         }
+    }
+
+    #[test]
+    fn projective_equality() {
+        use core::ops::Neg;
+        assert_ne!(ProjectivePoint::GENERATOR, ProjectivePoint::IDENTITY);
+        assert_ne!(ProjectivePoint::IDENTITY, ProjectivePoint::GENERATOR);
+        assert_eq!(ProjectivePoint::IDENTITY, ProjectivePoint::IDENTITY);
+        assert_eq!(ProjectivePoint::IDENTITY.neg(), ProjectivePoint::IDENTITY);
+        assert_eq!(ProjectivePoint::GENERATOR, ProjectivePoint::GENERATOR);
+        assert_ne!(ProjectivePoint::GENERATOR, ProjectivePoint::GENERATOR.neg());
+
+        assert_ne!(ProjectivePoint::GENERATOR, AffinePoint::IDENTITY);
+        assert_ne!(ProjectivePoint::IDENTITY, AffinePoint::GENERATOR);
+        assert_eq!(ProjectivePoint::IDENTITY, AffinePoint::IDENTITY);
+        assert_eq!(ProjectivePoint::IDENTITY.neg(), AffinePoint::IDENTITY);
+        assert_eq!(ProjectivePoint::GENERATOR, AffinePoint::GENERATOR);
+        assert_ne!(ProjectivePoint::GENERATOR.neg(), AffinePoint::GENERATOR);
+        assert_eq!(
+            ProjectivePoint::GENERATOR.neg(),
+            AffinePoint::GENERATOR.neg()
+        );
     }
 }
