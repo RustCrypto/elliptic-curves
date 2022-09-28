@@ -77,10 +77,17 @@ impl VerifyPrimitive<NistP384> for AffinePoint {}
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        ecdsa::{signature::Signer, SigningKey},
-        SecretKey,
+        ecdsa::{
+            signature::hazmat::{PrehashSigner, PrehashVerifier},
+            signature::Signer,
+            Signature, SigningKey, VerifyingKey,
+        },
+        AffinePoint, EncodedPoint, SecretKey,
     };
+
+    use elliptic_curve::{generic_array::GenericArray, sec1::FromEncodedPoint};
     use hex_literal::hex;
+    use sha2::Digest;
 
     // Test vector from RFC 6979 Appendix 2.6 (NIST P-384 + SHA-384)
     // <https://tools.ietf.org/html/rfc6979#appendix-A.2.6>
@@ -104,6 +111,48 @@ mod tests {
                 ddd0760448d42d8a43af45af836fce4de8be06b485e9b61b827c2f13173923e06a739f040649a667bf3b828246baa5a5"
             )[..]
         );
+    }
+
+    // Test signing with PrehashSigner using SHA-256 which output is smaller than P-384 field size.
+    #[test]
+    fn prehash_signer_signing_with_sha256() {
+        let x = &hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
+        let signer = SigningKey::from_bytes(x).unwrap();
+        let digest = sha2::Sha256::digest(b"test");
+        let signature = signer.sign_prehash(&digest).unwrap();
+        assert_eq!(
+            signature.as_ref(),
+            &hex!(
+                "010c3ab1a300f8c9d63eafa9a41813f0c5416c08814bdfc0236458d6c2603d71c4941f4696e60aff5717476170bb6ab4
+                03c4ad6274c61691346b2178def879424726909af308596ffb6355a042f48a114e2eb28eaa6918592b4727961057c0c1"
+            )[..]
+        );
+    }
+
+    // Test verifying with PrehashVerifier using SHA-256 which output is smaller than P-384 field size.
+    #[test]
+    fn prehash_signer_verification_with_sha256() {
+        // The following test vector adapted from the FIPS 186-4 ECDSA test vectors
+        // (P-384, SHA-256, from `SigGen.txt` in `186-4ecdsatestvectors.zip`)
+        // <https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/digital-signatures>
+        let verifier = VerifyingKey::from_affine(
+            AffinePoint::from_encoded_point(
+                &EncodedPoint::from_affine_coordinates(
+                    GenericArray::from_slice(&hex!("0400193b21f07cd059826e9453d3e96dd145041c97d49ff6b7047f86bb0b0439e909274cb9c282bfab88674c0765bc75")),
+                    GenericArray::from_slice(&hex!("f70d89c52acbc70468d2c5ae75c76d7f69b76af62dcf95e99eba5dd11adf8f42ec9a425b0c5ec98e2f234a926b82a147")),
+                    false,
+                ),
+            ).unwrap()
+        ).unwrap();
+        let signature = Signature::from_scalars(
+            GenericArray::clone_from_slice(&hex!("b11db00cdaf53286d4483f38cd02785948477ed7ebc2ad609054551da0ab0359978c61851788aa2ec3267946d440e878")),
+            GenericArray::clone_from_slice(&hex!("16007873c5b0604ce68112a8fee973e8e2b6e3319c683a762ff5065a076512d7c98b27e74b7887671048ac027df8cbf2")),
+        ).unwrap();
+        let result = verifier.verify_prehash(
+            &hex!("bbbd0a5f645d3fda10e288d172b299455f9dff00e0fbc2833e18cd017d7f3ed1"),
+            &signature,
+        );
+        assert!(result.is_ok());
     }
 
     #[test]
