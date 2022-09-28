@@ -25,7 +25,7 @@
 //! let verifying_key = signing_key.verifying_key();
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
-//! // Note: the signature type must be annotated or otherwise inferrable as
+//! // Note: The signature type must be annotated or otherwise inferable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
 //! let signature: recoverable::Signature = signing_key.sign(message);
