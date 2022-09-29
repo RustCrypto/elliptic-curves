@@ -38,6 +38,7 @@ jobs:
           override: true
           profile: minimal
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk

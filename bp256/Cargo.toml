@@ -21,11 +21,13 @@ sha2 = { version = "0.10", optional = true, default-features = false }
 
 [features]
 default = ["pkcs8", "std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std"]
+
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
 sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
-std = ["elliptic-curve/std"]
 
 [package.metadata.docs.rs]
 all-features = true

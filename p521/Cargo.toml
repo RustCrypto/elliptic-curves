@@ -17,7 +17,9 @@ elliptic-curve = { version = "0.12.3", default-features = false, features = ["ha
 
 [features]
 default = ["pem", "std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
+
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
-std = ["elliptic-curve/std"]
