@@ -75,7 +75,7 @@ const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 /// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-pub struct Scalar(U256);
+pub struct Scalar(pub(crate) U256);
 
 impl Scalar {
     /// Zero scalar.
