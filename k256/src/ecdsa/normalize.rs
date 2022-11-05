@@ -5,13 +5,12 @@
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::ecdsa::Signature;
-    use ecdsa_core::signature::Signature as _;
 
     // Test vectors generated using rust-secp256k1
     #[test]
     #[rustfmt::skip]
     fn normalize_s_high() {
-        let sig_hi = Signature::from_bytes(&[
+        let sig_hi = Signature::try_from([
             0x20, 0xc0, 0x1a, 0x91, 0x0e, 0xbb, 0x26, 0x10,
             0xaf, 0x2d, 0x76, 0x3f, 0xa0, 0x9b, 0x3b, 0x30,
             0x92, 0x3c, 0x8e, 0x40, 0x8b, 0x11, 0xdf, 0x2c,
@@ -20,9 +19,9 @@ mod tests {
             0x61, 0x7d, 0x13, 0x57, 0xf4, 0xd5, 0x56, 0x41,
             0x09, 0x0a, 0x48, 0xf2, 0x01, 0xe9, 0xb9, 0x59,
             0xc4, 0x8f, 0x6f, 0x6b, 0xec, 0x6f, 0x93, 0x8f,
-        ]).unwrap();
+        ].as_slice()).unwrap();
 
-        let sig_lo = Signature::from_bytes(&[
+        let sig_lo = Signature::try_from([
             0x20, 0xc0, 0x1a, 0x91, 0x0e, 0xbb, 0x26, 0x10,
             0xaf, 0x2d, 0x76, 0x3f, 0xa0, 0x9b, 0x3b, 0x30,
             0x92, 0x3c, 0x8e, 0x40, 0x8b, 0x11, 0xdf, 0x2c,
@@ -31,7 +30,7 @@ mod tests {
             0x9e, 0x82, 0xec, 0xa8, 0x0b, 0x2a, 0xa9, 0xbd,
             0xb1, 0xa4, 0x93, 0xf4, 0xad, 0x5e, 0xe6, 0xe1,
             0xfb, 0x42, 0xef, 0x20, 0xe3, 0xc6, 0xad, 0xb2,
-        ]).unwrap();
+        ].as_slice()).unwrap();
 
         let sig_normalized = sig_hi.normalize_s().unwrap();
         assert_eq!(sig_lo, sig_normalized);
@@ -40,12 +39,12 @@ mod tests {
     #[test]
     fn normalize_s_low() {
         #[rustfmt::skip]
-            let sig = Signature::from_bytes(&[
+        let sig = Signature::try_from([
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        ]).unwrap();
+        ].as_slice()).unwrap();
 
         assert_eq!(sig.normalize_s(), None);
     }

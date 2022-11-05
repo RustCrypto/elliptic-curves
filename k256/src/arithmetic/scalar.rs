@@ -13,7 +13,7 @@ use elliptic_curve::{
     generic_array::arr,
     group::ff::{Field, PrimeField},
     ops::{Reduce, ReduceNonZero},
-    rand_core::{CryptoRng, RngCore},
+    rand_core::{CryptoRngCore, RngCore},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
@@ -184,7 +184,7 @@ impl Scalar {
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
-    pub fn generate_biased(mut rng: impl CryptoRng + RngCore) -> Self {
+    pub fn generate_biased(rng: &mut impl CryptoRngCore) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution, but the process is constant-time.
         let mut buf = [0u8; 64];
@@ -194,7 +194,7 @@ impl Scalar {
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
     // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
-    pub fn generate_vartime(mut rng: impl RngCore) -> Self {
+    pub fn generate_vartime(rng: &mut impl RngCore) -> Self {
         let mut bytes = FieldBytes::default();
 
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
@@ -223,7 +223,7 @@ impl Scalar {
 }
 
 impl Field for Scalar {
-    fn random(rng: impl RngCore) -> Self {
+    fn random(mut rng: impl RngCore) -> Self {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
         //
@@ -233,7 +233,7 @@ impl Field for Scalar {
         //
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
-        Self::generate_vartime(rng)
+        Self::generate_vartime(&mut rng)
     }
 
     fn zero() -> Self {

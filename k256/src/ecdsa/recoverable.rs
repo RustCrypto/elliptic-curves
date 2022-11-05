@@ -36,7 +36,7 @@
 //! ```
 
 use core::fmt::{self, Debug};
-use ecdsa_core::{signature::Signature as _, Error, Result};
+use ecdsa_core::{Error, Result};
 use elliptic_curve::subtle::Choice;
 
 #[cfg(feature = "ecdsa")]
@@ -85,7 +85,7 @@ impl Signature {
     /// is valid for this signature.
     pub fn new(signature: &super::Signature, recovery_id: Id) -> Result<Self> {
         let mut bytes = [0u8; SIZE];
-        bytes[..64].copy_from_slice(signature.as_ref());
+        bytes[..64].copy_from_slice(&signature.to_bytes());
         bytes[64] = recovery_id.0;
         Ok(Self { bytes })
     }
@@ -223,9 +223,11 @@ impl Signature {
     }
 }
 
-impl ecdsa_core::signature::Signature for Signature {
-    fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        bytes.try_into()
+impl ecdsa_core::signature::SignatureEncoding for Signature {
+    type Repr = [u8; SIZE];
+
+    fn to_bytes(&self) -> Self::Repr {
+        self.bytes
     }
 }
 
@@ -238,6 +240,12 @@ impl AsRef<[u8]> for Signature {
 impl Debug for Signature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "RecoverableSignature {{ bytes: {:?}) }}", self.as_ref())
+    }
+}
+
+impl From<Signature> for [u8; SIZE] {
+    fn from(signature: Signature) -> [u8; SIZE] {
+        signature.bytes
     }
 }
 
@@ -257,7 +265,7 @@ impl TryFrom<&[u8]> for Signature {
 
 impl From<Signature> for super::Signature {
     fn from(sig: Signature) -> Self {
-        Self::from_bytes(&sig.bytes[..64]).unwrap()
+        Self::try_from(&sig.bytes[..64]).unwrap()
     }
 }
 

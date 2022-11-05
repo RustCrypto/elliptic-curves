@@ -27,7 +27,7 @@
 //! // Signing
 //! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
-//! let signature = signing_key.sign(message);
+//! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
 //! use p384::ecdsa::{signature::Verifier, VerifyingKey};
@@ -95,21 +95,22 @@ mod tests {
     fn rfc6979() {
         let x = &hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
         let signer = SigningKey::from_bytes(x).unwrap();
-        let signature = signer.sign(b"sample");
+        let signature: Signature = signer.sign(b"sample");
         assert_eq!(
-            signature.as_ref(),
+            signature.to_bytes().as_slice(),
             &hex!(
                 "94edbb92a5ecb8aad4736e56c691916b3f88140666ce9fa73d64c4ea95ad133c81a648152e44acf96e36dd1e80fabe46
                 99ef4aeb15f178cea1fe40db2603138f130e740a19624526203b6351d0a3a94fa329c145786e679e7b82c71a38628ac8"
-            )[..]
+            )
         );
-        let signature = signer.sign(b"test");
+
+        let signature: Signature = signer.sign(b"test");
         assert_eq!(
-            signature.as_ref(),
+            signature.to_bytes().as_slice(),
             &hex!(
                 "8203b63d3c853e8d77227fb377bcf7b7b772e97892a80f36ab775d509d7a5feb0542a7f0812998da8f1dd3ca3cf023db
                 ddd0760448d42d8a43af45af836fce4de8be06b485e9b61b827c2f13173923e06a739f040649a667bf3b828246baa5a5"
-            )[..]
+            )
         );
     }
 
@@ -119,13 +120,13 @@ mod tests {
         let x = &hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
         let signer = SigningKey::from_bytes(x).unwrap();
         let digest = sha2::Sha256::digest(b"test");
-        let signature = signer.sign_prehash(&digest).unwrap();
+        let signature: Signature = signer.sign_prehash(&digest).unwrap();
         assert_eq!(
-            signature.as_ref(),
+            signature.to_bytes().as_slice(),
             &hex!(
                 "010c3ab1a300f8c9d63eafa9a41813f0c5416c08814bdfc0236458d6c2603d71c4941f4696e60aff5717476170bb6ab4
                 03c4ad6274c61691346b2178def879424726909af308596ffb6355a042f48a114e2eb28eaa6918592b4727961057c0c1"
-            )[..]
+            )
         );
     }
 

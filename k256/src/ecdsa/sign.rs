@@ -11,14 +11,14 @@ use ecdsa_core::{
     signature::{
         digest::{Digest, FixedOutput},
         hazmat::PrehashSigner,
-        DigestSigner, Keypair, RandomizedDigestSigner,
+        DigestSigner, KeypairRef, RandomizedDigestSigner,
     },
 };
 use elliptic_curve::{
     bigint::U256,
     consts::U32,
     ops::{Invert, Reduce},
-    rand_core::{CryptoRng, RngCore},
+    rand_core::CryptoRngCore,
     subtle::{Choice, ConstantTimeEq, CtOption},
     zeroize::{Zeroize, ZeroizeOnDrop},
     IsHigh,
@@ -47,7 +47,7 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn random(rng: impl CryptoRng + RngCore) -> Self {
+    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         NonZeroScalar::random(rng).into()
     }
 
@@ -92,7 +92,7 @@ where
     S: PrehashSignature,
     Self: RandomizedDigestSigner<S::Digest, S>,
 {
-    fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> signature::Result<S> {
+    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> signature::Result<S> {
         self.try_sign_digest_with_rng(rng, S::Digest::new_with_prefix(msg))
     }
 }
@@ -117,13 +117,7 @@ where
 
 #[cfg(feature = "sha256")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
-impl Keypair<Signature> for SigningKey {
-    type VerifyingKey = VerifyingKey;
-}
-
-#[cfg(feature = "keccak256")]
-#[cfg_attr(docsrs, doc(cfg(feature = "keccak256")))]
-impl Keypair<recoverable::Signature> for SigningKey {
+impl KeypairRef for SigningKey {
     type VerifyingKey = VerifyingKey;
 }
 
@@ -159,7 +153,7 @@ where
 {
     fn try_sign_digest_with_rng(
         &self,
-        rng: impl CryptoRng + RngCore,
+        rng: &mut impl CryptoRngCore,
         digest: D,
     ) -> Result<Signature, Error> {
         RandomizedDigestSigner::<D, recoverable::Signature>::try_sign_digest_with_rng(
@@ -175,7 +169,7 @@ where
 {
     fn try_sign_digest_with_rng(
         &self,
-        mut rng: impl CryptoRng + RngCore,
+        rng: &mut impl CryptoRngCore,
         msg_digest: D,
     ) -> Result<recoverable::Signature, Error> {
         let mut ad = FieldBytes::default();

@@ -6,11 +6,7 @@
 use super::Scalar;
 use core::borrow::Borrow;
 use elliptic_curve::{
-    group::ff::Field,
-    ops::Invert,
-    rand_core::{CryptoRng, RngCore},
-    subtle::CtOption,
-    zeroize::Zeroize,
+    group::ff::Field, ops::Invert, rand_core::CryptoRngCore, subtle::CtOption, zeroize::Zeroize,
 };
 
 /// Scalar blinded with a randomly generated masking value.
@@ -28,8 +24,8 @@ pub struct BlindedScalar {
 }
 
 impl BlindedScalar {
-    /// Create a new [`BlindedScalar`] from a scalar and a [`CryptoRng`]
-    pub fn new(scalar: Scalar, rng: impl CryptoRng + RngCore) -> Self {
+    /// Create a new [`BlindedScalar`] from a scalar and a [`CryptoRngCore`]
+    pub fn new(scalar: Scalar, rng: &mut impl CryptoRngCore) -> Self {
         Self {
             scalar,
             mask: Scalar::random(rng),
