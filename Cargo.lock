@@ -318,7 +318,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.15.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#1578fe31b96cad80afdc1be47e5f0d088bd5bc2b"
+source = "git+https://github.com/RustCrypto/signatures.git#beb7271cb0b4a476d3285bb9f755824715536d77"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -871,7 +871,7 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.3.1"
-source = "git+https://github.com/RustCrypto/signatures.git#1578fe31b96cad80afdc1be47e5f0d088bd5bc2b"
+source = "git+https://github.com/RustCrypto/signatures.git#beb7271cb0b4a476d3285bb9f755824715536d77"
 dependencies = [
  "crypto-bigint",
  "hmac",
