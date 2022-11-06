@@ -46,15 +46,14 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features hash2curve
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features keccak256
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features schnorr
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,keccak256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,hash2curve,jwk,keccak256,pem,pkcs8,schnorr,serde,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,hash2curve,jwk,pem,pkcs8,schnorr,serde,sha256
 
   benches:
     runs-on: ubuntu-latest
