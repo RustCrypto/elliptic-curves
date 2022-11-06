@@ -22,7 +22,7 @@ cfg-if = "1.0"
 elliptic-curve = { version = "0.12.3", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "=0.15.0-pre", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "=0.15.0-pre.0", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.3", optional = true }
 serdect = { version = "0.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
@@ -30,7 +30,7 @@ sha2 = { version = "0.10", optional = true, default-features = false }
 [dev-dependencies]
 blobby = "0.3"
 criterion = "0.4"
-ecdsa-core = { version = "=0.15.0-pre", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "=0.15.0-pre.0", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.3"
 num-bigint = "0.4"
 num-traits = "0.2"

@@ -317,8 +317,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.15.0-pre"
-source = "git+https://github.com/RustCrypto/signatures.git#beb7271cb0b4a476d3285bb9f755824715536d77"
+version = "0.15.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "182a7465bb488400384150cf63ca94cb3c6821481bfccd367d9d11ca667031d1"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -871,7 +872,8 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.3.1"
-source = "git+https://github.com/RustCrypto/signatures.git#beb7271cb0b4a476d3285bb9f755824715536d77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7743f17af12fa0b03b803ba12cd6a8d9483a587e89c69445e3909655c0b9fabb"
 dependencies = [
  "crypto-bigint",
  "hmac",
