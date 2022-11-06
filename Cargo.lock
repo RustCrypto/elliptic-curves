@@ -317,9 +317,8 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.14.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "413301934810f597c1d19ca71c8710e99a3f1ba28a0d2ebc01551a2daeea3c5c"
+version = "0.15.0-pre"
+source = "git+https://github.com/RustCrypto/signatures.git#1578fe31b96cad80afdc1be47e5f0d088bd5bc2b"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -514,7 +513,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.11.6"
+version = "0.12.0-pre"
 dependencies = [
  "blobby",
  "cfg-if",
@@ -871,9 +870,8 @@ dependencies = [
 
 [[package]]
 name = "rfc6979"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88c86280f057430a52f4861551b092a01b419b8eacefc7c995eacb9dc132fe32"
+version = "0.3.1"
+source = "git+https://github.com/RustCrypto/signatures.git#1578fe31b96cad80afdc1be47e5f0d088bd5bc2b"
 dependencies = [
  "crypto-bigint",
  "hmac",
@@ -992,9 +990,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.6.2"
+version = "2.0.0-pre.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a622c5fc69cf2a070d3217981bded5071cdd1b1ac17ae906646debae83579b54"
+checksum = "3b7d7471fcfa786b75b657061bd5bf1d51179b3aac54db33bba7e44f5a4b5b75"
 dependencies = [
  "digest",
  "rand_core",

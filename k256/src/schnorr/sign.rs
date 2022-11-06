@@ -9,7 +9,7 @@ use ecdsa_core::signature::{
 use elliptic_curve::{
     bigint::U256,
     ops::Reduce,
-    rand_core::{CryptoRng, RngCore},
+    rand_core::CryptoRngCore,
     subtle::ConditionallySelectable,
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
@@ -27,7 +27,7 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn random(rng: impl CryptoRng + RngCore) -> Self {
+    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         let bytes = NonZeroScalar::random(rng).to_bytes();
         Self::from_bytes(&bytes).unwrap()
     }
@@ -110,14 +110,8 @@ impl SigningKey {
         );
 
         let s = *secret_key + e * *self.secret_key;
-        let s: NonZeroScalar = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;
-
-        let mut bytes = [0u8; Signature::BYTE_SIZE];
-        let (r_bytes, s_bytes) = bytes.split_at_mut(Signature::BYTE_SIZE / 2);
-        r_bytes.copy_from_slice(&r.to_bytes());
-        s_bytes.copy_from_slice(&s.to_bytes());
-
-        let sig = Signature { bytes, r, s };
+        let s = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;
+        let sig = Signature { r, s };
 
         #[cfg(debug_assertions)]
         self.verifying_key.verify_prehashed(msg_digest, &sig)?;
@@ -141,7 +135,7 @@ where
 {
     fn try_sign_digest_with_rng(
         &self,
-        mut rng: impl CryptoRng + RngCore,
+        rng: &mut impl CryptoRngCore,
         digest: D,
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
@@ -151,7 +145,7 @@ where
 }
 
 impl RandomizedSigner<Signature> for SigningKey {
-    fn try_sign_with_rng(&self, rng: impl CryptoRng + RngCore, msg: &[u8]) -> Result<Signature> {
+    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> Result<Signature> {
         self.try_sign_digest_with_rng(rng, Sha256::new_with_prefix(msg))
     }
 }

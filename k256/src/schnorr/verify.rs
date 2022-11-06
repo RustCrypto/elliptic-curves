@@ -34,7 +34,7 @@ impl VerifyingKey {
 
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
             tagged_hash(CHALLENGE_TAG)
-                .chain_update(&sig.bytes[..32])
+                .chain_update(sig.r.to_bytes())
                 .chain_update(self.to_bytes())
                 .chain_update(msg_digest)
                 .finalize(),
