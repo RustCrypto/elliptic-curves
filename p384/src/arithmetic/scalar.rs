@@ -66,7 +66,7 @@ use core::ops::{Add, Mul, Sub};
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U384);
 
-weierstrass::impl_field_element!(
+primeorder::impl_field_element!(
     Scalar,
     FieldBytes,
     U384,

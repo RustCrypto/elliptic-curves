@@ -7,7 +7,7 @@ members = [
     "p256",
     "p384",
     "p521",
-    "weierstrass"
+    "primeorder"
 ]
 
 [profile.dev]

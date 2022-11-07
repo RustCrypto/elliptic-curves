@@ -1,4 +1,4 @@
-# RustCrypto: Weierstrass Formulas
+# RustCrypto: Prime Order Elliptic Curve Formulas
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -68,12 +68,12 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/weierstrass
-[crate-link]: https://crates.io/crates/weierstrass
-[docs-image]: https://docs.rs/weierstrass/badge.svg
-[docs-link]: https://docs.rs/weierstrass/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/weierstrass.yml/badge.svg
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/weierstrass.yml
+[crate-image]: https://buildstats.info/crate/primeorder
+[crate-link]: https://crates.io/crates/primeorder
+[docs-image]: https://docs.rs/primeorder/badge.svg
+[docs-link]: https://docs.rs/primeorder/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/primeorder.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/primeorder.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.57+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg

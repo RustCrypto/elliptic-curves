@@ -1,5 +1,5 @@
 [package]
-name = "weierstrass"
+name = "primeorder"
 version = "0.0.0"
 description = """
 Pure Rust implementation of complete addition formulas for prime order elliptic
@@ -8,8 +8,8 @@ equation coefficients
 """
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
-documentation = "https://docs.rs/weierstrass"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/weierstrass"
+documentation = "https://docs.rs/primeorder"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/primeorder"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc"]
