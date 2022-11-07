@@ -17,8 +17,9 @@ pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField};
 
 use elliptic_curve::{AffineArithmetic, ProjectiveArithmetic, ScalarArithmetic};
 
-/// Weierstrass curve parameters.
-pub trait WeierstrassCurve:
+/// Curves of prime order which can be described by the short Weierstrass
+/// curve equation.
+pub trait PrimeOrderCurve:
     PrimeCurve
     + ScalarArithmetic
     + AffineArithmetic<AffinePoint = AffinePoint<Self>>

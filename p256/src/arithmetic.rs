@@ -11,15 +11,15 @@ use crate::NistP256;
 use elliptic_curve::{
     AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
 };
-use weierstrass::WeierstrassCurve;
+use primeorder::PrimeOrderCurve;
 
 /// Elliptic curve point in affine coordinates.
-pub type AffinePoint = weierstrass::AffinePoint<NistP256>;
+pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 
 /// Elliptic curve point in projective coordinates.
-pub type ProjectivePoint = weierstrass::ProjectivePoint<NistP256>;
+pub type ProjectivePoint = primeorder::ProjectivePoint<NistP256>;
 
-impl WeierstrassCurve for NistP256 {
+impl PrimeOrderCurve for NistP256 {
     type FieldElement = FieldElement;
 
     const ZERO: FieldElement = FieldElement::ZERO;

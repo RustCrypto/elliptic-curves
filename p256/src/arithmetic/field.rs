@@ -31,7 +31,7 @@ const R_2: U256 =
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(crate) U256);
 
-weierstrass::impl_field_element!(
+primeorder::impl_field_element!(
     FieldElement,
     FieldBytes,
     U256,

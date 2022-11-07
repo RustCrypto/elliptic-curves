@@ -41,7 +41,7 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex("ffffffffffffffffffffffffffff
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U384);
 
-weierstrass::impl_field_element!(
+primeorder::impl_field_element!(
     FieldElement,
     FieldBytes,
     U384,

@@ -16,15 +16,15 @@ use crate::NistP384;
 use elliptic_curve::{
     AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
 };
-use weierstrass::WeierstrassCurve;
+use primeorder::PrimeOrderCurve;
 
 /// Elliptic curve point in affine coordinates.
-pub type AffinePoint = weierstrass::AffinePoint<NistP384>;
+pub type AffinePoint = primeorder::AffinePoint<NistP384>;
 
 /// Elliptic curve point in projective coordinates.
-pub type ProjectivePoint = weierstrass::ProjectivePoint<NistP384>;
+pub type ProjectivePoint = primeorder::ProjectivePoint<NistP384>;
 
-impl WeierstrassCurve for NistP384 {
+impl PrimeOrderCurve for NistP384 {
     type FieldElement = FieldElement;
 
     const ZERO: FieldElement = FieldElement::ZERO;

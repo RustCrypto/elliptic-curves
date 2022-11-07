@@ -1,17 +1,17 @@
-name: weierstrass
+name: primeorder
 
 on:
   pull_request:
     paths:
-      - ".github/workflows/weierstrass.yml"
-      - "weierstrass/**"
+      - ".github/workflows/primeorder.yml"
+      - "primeorder/**"
       - "Cargo.*"
   push:
     branches: master
 
 defaults:
   run:
-    working-directory: weierstrass
+    working-directory: primeorder
 
 env:
   CARGO_INCREMENTAL: 0
