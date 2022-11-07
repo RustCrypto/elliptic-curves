@@ -17,7 +17,7 @@
 //! Most users of this library who want to sign/verify signatures will want to
 //! enable the `ecdsa` and `sha256` Cargo features.
 //!
-//! ## Signing and Verifying
+//! ## Signing and Verifying Signatures
 //!
 //! This example requires the `ecdsa` and `sha256` Cargo features are enabled:
 //!
@@ -58,6 +58,23 @@
 //!
 //! One common application of signature recovery with secp256k1 is Ethereum.
 //!
+//! ### Upgrading recoverable signature code from earlier versions of `k256`
+//!
+//! The v0.12 release of `k256` contains a brand new recoverable signature API
+//! from previous releases. Functionality has been upstreamed from `k256` to a
+//! generic implementation in the [`ecdsa`](`ecdsa_core`) crate.
+//!
+//! If you previously used `k256::ecdsa::recoverable::Signature`, the old
+//! functionality now uses a "detached" [`Signature`] and [`RecoveryId`].
+//! Here is where the various functionality went:
+//!
+//! - Signing now requires the use of the [`hazmat::SignPrimitive`] trait
+//!   (see examples immediately below).
+//! - Signature recovery is now implemented as methods of the [`VerifyingKey`]
+//!   type (i.e. `::recover_from_*`).
+//! - Trial recovery is now defined on the [`RecoveryId`] type
+//!   (i.e. `::trial_recovery_from_*`).
+//!
 //! ### Computing a signature with a [`RecoveryId`].
 //!
 //! This example shows how to compute a signature and its associated
@@ -77,7 +94,9 @@
 //! ))?;
 //!
 //! let msg = hex!("e9808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca0080018080");
+//!
 //! let digest = Keccak256::digest(msg);
+//!
 //! let (signature, recid) = signing_key
 //!     .as_nonzero_scalar()
 //!     .try_sign_prehashed_rfc6979::<Sha256>(digest, b"")?;
@@ -103,10 +122,12 @@
 //! use elliptic_curve::sec1::ToEncodedPoint;
 //!
 //! let msg = b"example message";
+//!
 //! let signature = Signature::try_from(hex!(
 //!     "46c05b6368a44b8810d79859441d819b8e7cdc8bfd371e35c53196f4bcacdb51
 //!      35c7facce2a97b95eacba8a586d87b7958aaf8368ab29cee481f76e871dbd9cb"
 //! ).as_slice())?;
+//!
 //! let recid = RecoveryId::try_from(1u8)?;
 //!
 //! let recovered_key = VerifyingKey::recover_from_digest(
