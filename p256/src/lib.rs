@@ -134,10 +134,12 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
 
 /// Non-zero NIST P-256 scalar field element.
 #[cfg(feature = "arithmetic")]
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
 
 /// NIST P-256 public key.
 #[cfg(feature = "arithmetic")]
+#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
 
 /// NIST P-256 secret key.
