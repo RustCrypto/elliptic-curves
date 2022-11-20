@@ -2,7 +2,6 @@
 
 use super::{tagged_hash, Signature, CHALLENGE_TAG};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
-use ecdsa_core::signature::{DigestVerifier, Error, Result, Verifier};
 use elliptic_curve::{
     bigint::U256,
     ops::{LinearCombination, Reduce},
@@ -12,6 +11,7 @@ use sha2::{
     digest::{consts::U32, FixedOutput},
     Digest, Sha256,
 };
+use signature::{hazmat::PrehashVerifier, DigestVerifier, Error, Result, Verifier};
 
 /// Taproot Schnorr verifying key.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -21,40 +21,6 @@ pub struct VerifyingKey {
 }
 
 impl VerifyingKey {
-    /// Verify Schnorr signature.
-    ///
-    /// # ⚠️ Warning
-    ///
-    /// This is a low-level interface intended only for unusual use cases
-    /// involving verifying pre-hashed messages.
-    ///
-    /// The preferred interface is the [`Verifier`] trait.
-    pub fn verify_prehashed(&self, msg_digest: &[u8; 32], sig: &Signature) -> Result<()> {
-        let (r, s) = sig.split();
-
-        let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
-            tagged_hash(CHALLENGE_TAG)
-                .chain_update(sig.r.to_bytes())
-                .chain_update(self.to_bytes())
-                .chain_update(msg_digest)
-                .finalize(),
-        );
-
-        let R = ProjectivePoint::lincomb(
-            &ProjectivePoint::GENERATOR,
-            &*s,
-            &self.inner.to_projective(),
-            &-e,
-        )
-        .to_affine();
-
-        if R.y.normalize().is_odd().into() || R.x.normalize() != *r {
-            return Err(Error::new());
-        }
-
-        Ok(())
-    }
-
     /// Borrow the inner [`AffinePoint`] this type wraps.
     pub fn as_affine(&self) -> &AffinePoint {
         self.inner.as_affine()
@@ -75,12 +41,49 @@ impl VerifyingKey {
     }
 }
 
+//
+// `*Verifier` trait impls
+//
+
 impl<D> DigestVerifier<D, Signature> for VerifyingKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn verify_digest(&self, digest: D, signature: &Signature) -> Result<()> {
-        self.verify_prehashed(&digest.finalize_fixed().into(), signature)
+        self.verify_prehash(digest.finalize_fixed().as_slice(), signature)
+    }
+}
+
+impl PrehashVerifier<Signature> for VerifyingKey {
+    fn verify_prehash(
+        &self,
+        prehash: &[u8],
+        signature: &Signature,
+    ) -> core::result::Result<(), Error> {
+        let prehash: [u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
+        let (r, s) = signature.split();
+
+        let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
+            tagged_hash(CHALLENGE_TAG)
+                .chain_update(signature.r.to_bytes())
+                .chain_update(self.to_bytes())
+                .chain_update(prehash)
+                .finalize(),
+        );
+
+        let R = ProjectivePoint::lincomb(
+            &ProjectivePoint::GENERATOR,
+            &*s,
+            &self.inner.to_projective(),
+            &-e,
+        )
+        .to_affine();
+
+        if R.y.normalize().is_odd().into() || R.x.normalize() != *r {
+            return Err(Error::new());
+        }
+
+        Ok(())
     }
 }
 
@@ -89,6 +92,10 @@ impl Verifier<Signature> for VerifyingKey {
         self.verify_digest(Sha256::new_with_prefix(msg), signature)
     }
 }
+
+//
+// Other trait impls
+//
 
 impl From<VerifyingKey> for AffinePoint {
     fn from(vk: VerifyingKey) -> AffinePoint {

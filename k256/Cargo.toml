@@ -26,6 +26,7 @@ ecdsa-core = { version = "=0.15.0-pre.0", package = "ecdsa", optional = true, de
 hex-literal = { version = "0.3", optional = true }
 serdect = { version = "0.1", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
+signature = { version = "=2.0.0-pre.2", optional = true }
 
 [dev-dependencies]
 blobby = "0.3"
@@ -53,7 +54,7 @@ hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["ecdsa-core/pem", "elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core/pkcs8", "elliptic-curve/pkcs8"]
-schnorr = ["arithmetic", "sha256"]
+schnorr = ["arithmetic", "sha256", "signature"]
 serde = ["ecdsa-core/serde", "elliptic-curve/serde", "serdect"]
 sha256 = ["digest", "sha2"]
 test-vectors = ["hex-literal"]

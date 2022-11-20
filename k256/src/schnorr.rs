@@ -66,13 +66,13 @@ mod sign;
 mod verify;
 
 pub use self::{sign::SigningKey, verify::VerifyingKey};
-pub use ecdsa_core::signature::{self, rand_core::CryptoRngCore, Error};
+pub use signature::{self, rand_core::CryptoRngCore, Error};
 
 use crate::{arithmetic::FieldElement, NonZeroScalar};
 use core::fmt;
-use ecdsa_core::signature::Result;
 use elliptic_curve::subtle::ConstantTimeEq;
 use sha2::{Digest, Sha256};
+use signature::Result;
 
 const AUX_TAG: &[u8] = b"BIP0340/aux";
 const NONCE_TAG: &[u8] = b"BIP0340/nonce";
@@ -191,6 +191,7 @@ fn tagged_hash(tag: &[u8]) -> Sha256 {
 mod tests {
     use super::{Signature, SigningKey, VerifyingKey};
     use hex_literal::hex;
+    use signature::hazmat::PrehashVerifier;
 
     /// Signing test vector
     struct SignVector {
@@ -269,7 +270,7 @@ mod tests {
             assert_eq!(sk.verifying_key().to_bytes().as_slice(), &vector.public_key);
 
             let sig = sk
-                .try_sign_prehashed(&vector.message, &vector.aux_rand)
+                .sign_prehash_with_aux_rand(&vector.message, &vector.aux_rand)
                 .unwrap_or_else(|_| {
                     panic!(
                         "low-level Schnorr signing failure for index {}",
@@ -435,7 +436,7 @@ mod tests {
                 VerifyingKey::from_bytes(&vector.public_key),
                 Signature::try_from(vector.signature.as_slice()),
             ) {
-                (Ok(pk), Ok(sig)) => pk.verify_prehashed(&vector.message, &sig).is_ok(),
+                (Ok(pk), Ok(sig)) => pk.verify_prehash(&vector.message, &sig).is_ok(),
                 _ => false,
             };
 
