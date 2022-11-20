@@ -2,10 +2,6 @@
 
 use super::{tagged_hash, Signature, VerifyingKey, AUX_TAG, CHALLENGE_TAG, NONCE_TAG};
 use crate::{AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar};
-use ecdsa_core::signature::{
-    digest::{consts::U32, FixedOutput},
-    DigestSigner, Error, RandomizedDigestSigner, RandomizedSigner, Result, Signer,
-};
 use elliptic_curve::{
     bigint::U256,
     ops::Reduce,
@@ -14,6 +10,14 @@ use elliptic_curve::{
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
 use sha2::{Digest, Sha256};
+use signature::{
+    digest::{consts::U32, FixedOutput},
+    hazmat::{PrehashSigner, RandomizedPrehashSigner},
+    DigestSigner, Error, KeypairRef, RandomizedDigestSigner, RandomizedSigner, Result, Signer,
+};
+
+#[cfg(debug_assertions)]
+use signature::hazmat::PrehashVerifier;
 
 /// Taproot Schnorr signing key.
 #[derive(Clone)]
@@ -79,7 +83,7 @@ impl SigningKey {
     /// involving signing pre-hashed messages.
     ///
     /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
-    pub fn try_sign_prehashed(
+    pub fn sign_prehash_with_aux_rand(
         &self,
         msg_digest: &[u8; 32],
         aux_rand: &[u8; 32],
@@ -114,18 +118,29 @@ impl SigningKey {
         let sig = Signature { r, s };
 
         #[cfg(debug_assertions)]
-        self.verifying_key.verify_prehashed(msg_digest, &sig)?;
+        self.verifying_key.verify_prehash(msg_digest, &sig)?;
 
         Ok(sig)
     }
 }
+
+//
+// `*Signer` trait impls
+//
 
 impl<D> DigestSigner<D, Signature> for SigningKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature> {
-        self.try_sign_prehashed(&digest.finalize_fixed().into(), &Default::default())
+        self.sign_prehash_with_aux_rand(&digest.finalize_fixed().into(), &Default::default())
+    }
+}
+
+impl PrehashSigner<Signature> for SigningKey {
+    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
+        let prehash = prehash.try_into().map_err(|_| Error::new())?;
+        self.sign_prehash_with_aux_rand(&prehash, &Default::default())
     }
 }
 
@@ -140,7 +155,7 @@ where
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
         rng.fill_bytes(&mut aux_rand);
-        self.try_sign_prehashed(&digest.finalize_fixed().into(), &aux_rand)
+        self.sign_prehash_with_aux_rand(&digest.finalize_fixed().into(), &aux_rand)
     }
 }
 
@@ -150,9 +165,34 @@ impl RandomizedSigner<Signature> for SigningKey {
     }
 }
 
+impl RandomizedPrehashSigner<Signature> for SigningKey {
+    fn sign_prehash_with_rng(
+        &self,
+        rng: &mut impl CryptoRngCore,
+        prehash: &[u8],
+    ) -> Result<Signature> {
+        let prehash = prehash.try_into().map_err(|_| Error::new())?;
+
+        let mut aux_rand = [0u8; 32];
+        rng.fill_bytes(&mut aux_rand);
+
+        self.sign_prehash_with_aux_rand(&prehash, &aux_rand)
+    }
+}
+
 impl Signer<Signature> for SigningKey {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
         self.try_sign_digest(Sha256::new_with_prefix(msg))
+    }
+}
+
+//
+// Other trait impls
+//
+
+impl AsRef<VerifyingKey> for SigningKey {
+    fn as_ref(&self) -> &VerifyingKey {
+        &self.verifying_key
     }
 }
 
@@ -160,6 +200,10 @@ impl Drop for SigningKey {
     fn drop(&mut self) {
         self.secret_key.zeroize();
     }
+}
+
+impl KeypairRef for SigningKey {
+    type VerifyingKey = VerifyingKey;
 }
 
 impl ZeroizeOnDrop for SigningKey {}
