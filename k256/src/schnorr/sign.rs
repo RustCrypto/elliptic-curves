@@ -75,6 +75,17 @@ impl SigningKey {
         &self.verifying_key
     }
 
+    /// Borrow the secret [`NonZeroScalar`] value for this key.
+    ///
+    /// # ⚠️ Warning
+    ///
+    /// This value is key material.
+    ///
+    /// Please treat it with the care it deserves!
+    pub fn as_nonzero_scalar(&self) -> &NonZeroScalar {
+        &self.secret_key
+    }
+
     /// Compute Schnorr signature.
     ///
     /// # ⚠️ Warning
