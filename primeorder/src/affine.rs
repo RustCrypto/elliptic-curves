@@ -2,7 +2,7 @@
 
 #![allow(clippy::op_ref)]
 
-use crate::{PrimeOrderCurve, ProjectivePoint};
+use crate::{PrimeCurveParams, ProjectivePoint};
 use core::{
     borrow::Borrow,
     ops::{Mul, Neg},
@@ -27,7 +27,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 /// Point on a Weierstrass curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct AffinePoint<C: PrimeOrderCurve> {
+pub struct AffinePoint<C: PrimeCurveParams> {
     /// x-coordinate
     pub(crate) x: C::FieldElement,
 
@@ -43,7 +43,7 @@ pub struct AffinePoint<C: PrimeOrderCurve> {
 
 impl<C> AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     /// Additive identity of the group a.k.a. the point at infinity.
     pub const IDENTITY: Self = Self {
@@ -80,7 +80,7 @@ where
 
 impl<C> AffineXCoordinate<C> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn x(&self) -> FieldBytes<C> {
         self.x.to_repr()
@@ -89,7 +89,7 @@ where
 
 impl<C> ConditionallySelectable for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self {
@@ -102,7 +102,7 @@ where
 
 impl<C> ConstantTimeEq for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y) & self.infinity.ct_eq(&other.infinity)
@@ -111,18 +111,18 @@ where
 
 impl<C> Default for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn default() -> Self {
         Self::IDENTITY
     }
 }
 
-impl<C> DefaultIsZeroes for AffinePoint<C> where C: PrimeOrderCurve {}
+impl<C> DefaultIsZeroes for AffinePoint<C> where C: PrimeCurveParams {}
 
 impl<C> DecompressPoint<C> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
 {
     fn decompress(x_bytes: &FieldBytes<C>, y_is_odd: Choice) -> CtOption<Self> {
@@ -145,7 +145,7 @@ where
 
 impl<C> DecompactPoint<C> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
 {
     fn decompact(x_bytes: &FieldBytes<C>) -> CtOption<Self> {
@@ -153,11 +153,11 @@ where
     }
 }
 
-impl<C> Eq for AffinePoint<C> where C: PrimeOrderCurve {}
+impl<C> Eq for AffinePoint<C> where C: PrimeCurveParams {}
 
 impl<C> FromEncodedPoint<C> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -187,7 +187,7 @@ where
 
 impl<C> From<ProjectivePoint<C>> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(p: ProjectivePoint<C>) -> AffinePoint<C> {
         p.to_affine()
@@ -196,7 +196,7 @@ where
 
 impl<C> From<&ProjectivePoint<C>> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(p: &ProjectivePoint<C>) -> AffinePoint<C> {
         p.to_affine()
@@ -205,7 +205,7 @@ where
 
 impl<C> From<PublicKey<C>> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(public_key: PublicKey<C>) -> AffinePoint<C> {
         *public_key.as_affine()
@@ -214,7 +214,7 @@ where
 
 impl<C> From<&PublicKey<C>> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(public_key: &PublicKey<C>) -> AffinePoint<C> {
         AffinePoint::from(*public_key)
@@ -223,7 +223,7 @@ where
 
 impl<C> From<AffinePoint<C>> for EncodedPoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
@@ -235,7 +235,7 @@ where
 
 impl<C> GroupEncoding for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -271,7 +271,7 @@ where
 
 impl<C> PartialEq for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
@@ -280,7 +280,7 @@ where
 
 impl<C> PrimeCurveAffine for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -308,7 +308,7 @@ where
 
 impl<C> ToCompactEncodedPoint<C> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
@@ -329,7 +329,7 @@ where
 
 impl<C> ToEncodedPoint<C> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
@@ -349,7 +349,7 @@ where
 
 impl<C> TryFrom<EncodedPoint<C>> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -363,7 +363,7 @@ where
 
 impl<C> TryFrom<&EncodedPoint<C>> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -377,7 +377,7 @@ where
 
 impl<C> TryFrom<AffinePoint<C>> for PublicKey<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Error = Error;
 
@@ -388,7 +388,7 @@ where
 
 impl<C> TryFrom<&AffinePoint<C>> for PublicKey<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Error = Error;
 
@@ -403,7 +403,7 @@ where
 
 impl<C, S> Mul<S> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
     type Output = ProjectivePoint<C>;
@@ -415,7 +415,7 @@ where
 
 impl<C> Neg for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = Self;
 
@@ -430,7 +430,7 @@ where
 
 impl<C> Neg for &AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = AffinePoint<C>;
 
@@ -447,7 +447,7 @@ where
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<C> Serialize for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
@@ -464,7 +464,7 @@ where
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, C> Deserialize<'de> for AffinePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,

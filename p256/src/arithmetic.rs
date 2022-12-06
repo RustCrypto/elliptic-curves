@@ -11,7 +11,7 @@ use crate::NistP256;
 use elliptic_curve::{
     AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
 };
-use primeorder::PrimeOrderCurve;
+use primeorder::PrimeCurveParams;
 
 /// Elliptic curve point in affine coordinates.
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
@@ -22,7 +22,7 @@ pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP256>;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
-impl PrimeOrderCurve for NistP256 {
+impl PrimeCurveParams for NistP256 {
     type FieldElement = FieldElement;
 
     const ZERO: FieldElement = FieldElement::ZERO;

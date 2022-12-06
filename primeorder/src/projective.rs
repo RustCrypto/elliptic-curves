@@ -2,7 +2,7 @@
 
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
-use crate::{AffinePoint, Field, PrimeOrderCurve};
+use crate::{AffinePoint, Field, PrimeCurveParams};
 use core::{
     borrow::Borrow,
     iter::Sum,
@@ -27,7 +27,7 @@ use elliptic_curve::{
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct ProjectivePoint<C: PrimeOrderCurve> {
+pub struct ProjectivePoint<C: PrimeCurveParams> {
     x: C::FieldElement,
     y: C::FieldElement,
     z: C::FieldElement,
@@ -35,7 +35,7 @@ pub struct ProjectivePoint<C: PrimeOrderCurve> {
 
 impl<C> ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     /// Additive identity of the group a.k.a. the point at infinity.
     pub const IDENTITY: Self = Self {
@@ -222,7 +222,7 @@ where
 
 impl<C> CofactorGroup for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -245,7 +245,7 @@ where
 
 impl<C> ConditionallySelectable for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self {
@@ -258,7 +258,7 @@ where
 
 impl<C> ConstantTimeEq for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.to_affine().ct_eq(&other.to_affine())
@@ -267,20 +267,20 @@ where
 
 impl<C> Default for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn default() -> Self {
         Self::IDENTITY
     }
 }
 
-impl<C> DefaultIsZeroes for ProjectivePoint<C> where C: PrimeOrderCurve {}
+impl<C> DefaultIsZeroes for ProjectivePoint<C> where C: PrimeCurveParams {}
 
-impl<C> Eq for ProjectivePoint<C> where C: PrimeOrderCurve {}
+impl<C> Eq for ProjectivePoint<C> where C: PrimeCurveParams {}
 
 impl<C> From<AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(p: AffinePoint<C>) -> Self {
         let projective = ProjectivePoint {
@@ -294,7 +294,7 @@ where
 
 impl<C> From<&AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(p: &AffinePoint<C>) -> Self {
         Self::from(*p)
@@ -303,7 +303,7 @@ where
 
 impl<C> From<PublicKey<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(public_key: PublicKey<C>) -> ProjectivePoint<C> {
         AffinePoint::from(public_key).into()
@@ -312,7 +312,7 @@ where
 
 impl<C> From<&PublicKey<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn from(public_key: &PublicKey<C>) -> ProjectivePoint<C> {
         AffinePoint::<C>::from(public_key).into()
@@ -321,7 +321,7 @@ where
 
 impl<C> Group for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Scalar = Scalar<C>;
 
@@ -349,7 +349,7 @@ where
 
 impl<C> GroupEncoding for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -373,7 +373,7 @@ where
 
 impl<C> group::Curve for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type AffineRepr = AffinePoint<C>;
 
@@ -382,11 +382,11 @@ where
     }
 }
 
-impl<C> LinearCombination for ProjectivePoint<C> where C: PrimeOrderCurve {}
+impl<C> LinearCombination for ProjectivePoint<C> where C: PrimeCurveParams {}
 
 impl<C> PrimeGroup for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -396,7 +396,7 @@ where
 
 impl<C> PrimeCurve for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
@@ -407,7 +407,7 @@ where
 
 impl<C> PartialEq for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
@@ -416,7 +416,7 @@ where
 
 impl<C> TryFrom<ProjectivePoint<C>> for PublicKey<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Error = Error;
 
@@ -427,7 +427,7 @@ where
 
 impl<C> TryFrom<&ProjectivePoint<C>> for PublicKey<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Error = Error;
 
@@ -442,7 +442,7 @@ where
 
 impl<C> Add<ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -453,7 +453,7 @@ where
 
 impl<C> Add<&ProjectivePoint<C>> for &ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -464,7 +464,7 @@ where
 
 impl<C> Add<&ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -475,7 +475,7 @@ where
 
 impl<C> AddAssign<ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn add_assign(&mut self, rhs: ProjectivePoint<C>) {
         *self = ProjectivePoint::add(self, &rhs);
@@ -484,7 +484,7 @@ where
 
 impl<C> AddAssign<&ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn add_assign(&mut self, rhs: &ProjectivePoint<C>) {
         *self = ProjectivePoint::add(self, rhs);
@@ -493,7 +493,7 @@ where
 
 impl<C> Add<AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -504,7 +504,7 @@ where
 
 impl<C> Add<&AffinePoint<C>> for &ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -515,7 +515,7 @@ where
 
 impl<C> Add<&AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -526,7 +526,7 @@ where
 
 impl<C> AddAssign<AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn add_assign(&mut self, rhs: AffinePoint<C>) {
         *self = ProjectivePoint::add_mixed(self, &rhs);
@@ -535,7 +535,7 @@ where
 
 impl<C> AddAssign<&AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn add_assign(&mut self, rhs: &AffinePoint<C>) {
         *self = ProjectivePoint::add_mixed(self, rhs);
@@ -544,7 +544,7 @@ where
 
 impl<C> Sum for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(ProjectivePoint::IDENTITY, |a, b| a + b)
@@ -553,7 +553,7 @@ where
 
 impl<'a, C> Sum<&'a ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn sum<I: Iterator<Item = &'a ProjectivePoint<C>>>(iter: I) -> Self {
         iter.cloned().sum()
@@ -562,7 +562,7 @@ where
 
 impl<C> Sub<ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -573,7 +573,7 @@ where
 
 impl<C> Sub<&ProjectivePoint<C>> for &ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -584,7 +584,7 @@ where
 
 impl<C> Sub<&ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -595,7 +595,7 @@ where
 
 impl<C> SubAssign<ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn sub_assign(&mut self, rhs: ProjectivePoint<C>) {
         *self = ProjectivePoint::sub(self, &rhs);
@@ -604,7 +604,7 @@ where
 
 impl<C> SubAssign<&ProjectivePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn sub_assign(&mut self, rhs: &ProjectivePoint<C>) {
         *self = ProjectivePoint::sub(self, rhs);
@@ -613,7 +613,7 @@ where
 
 impl<C> Sub<AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -624,7 +624,7 @@ where
 
 impl<C> Sub<&AffinePoint<C>> for &ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -635,7 +635,7 @@ where
 
 impl<C> Sub<&AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -646,7 +646,7 @@ where
 
 impl<C> SubAssign<AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn sub_assign(&mut self, rhs: AffinePoint<C>) {
         *self = ProjectivePoint::sub_mixed(self, &rhs);
@@ -655,7 +655,7 @@ where
 
 impl<C> SubAssign<&AffinePoint<C>> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     fn sub_assign(&mut self, rhs: &AffinePoint<C>) {
         *self = ProjectivePoint::sub_mixed(self, rhs);
@@ -664,7 +664,7 @@ where
 
 impl<C, S> Mul<S> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
     type Output = Self;
@@ -676,7 +676,7 @@ where
 
 impl<C> Mul<&Scalar<C>> for &ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -687,7 +687,7 @@ where
 
 impl<C, S> MulAssign<S> for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
     fn mul_assign(&mut self, scalar: S) {
@@ -697,7 +697,7 @@ where
 
 impl<C> Neg for ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
@@ -708,7 +708,7 @@ where
 
 impl<'a, C> Neg for &'a ProjectivePoint<C>
 where
-    C: PrimeOrderCurve,
+    C: PrimeCurveParams,
 {
     type Output = ProjectivePoint<C>;
 
