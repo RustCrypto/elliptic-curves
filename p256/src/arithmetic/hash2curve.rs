@@ -230,7 +230,7 @@ mod tests {
         }
     }
 
-    /// Taken from <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-09.html#name-oprfp-256-sha-256-2>.
+    /// Taken from <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-16.html#name-oprfp-256-sha-256-2>.
     #[test]
     fn hash_to_scalar_voprf() {
         struct TestVector {
@@ -242,22 +242,22 @@ mod tests {
 
         const TEST_VECTORS: &[TestVector] = &[
             TestVector {
-                dst: b"DeriveKeyPairVOPRF09-\x00\x00\x03",
+                dst: b"DeriveKeyPairVOPRF10-\x00\x00\x03",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("88a91851d93ab3e4f2636babc60d6ce9d1aee2b86dece13fa8590d955a08d987"),
+                sk_sm: &hex!("274d7747cf2e26352ecea6bd768c426087da3dfcd466b6841b441ada8412fb33"),
             },
             TestVector {
-                dst: b"DeriveKeyPairVOPRF09-\x01\x00\x03",
+                dst: b"DeriveKeyPairVOPRF10-\x01\x00\x03",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("c8a626b52be02b06e9cdb1a05490392938642a30b1451b0cd1be1d3612b336b5"),
+                sk_sm: &hex!("b3d12edba73e40401fdc27c0094a56337feb3646d1633345af7e7142a6b1559d"),
             },
             TestVector {
-                dst: b"DeriveKeyPairVOPRF09-\x02\x00\x03",
+                dst: b"DeriveKeyPairVOPRF10-\x02\x00\x03",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("b75567bfc40aaaf7735c35c6ad5d55a725c9d42ac66df2e1dbd2027bde289264"),
+                sk_sm: &hex!("59519f6c7da344f340ad35ad895a5b97437673cc3ac8b964b823cdb52c932f86"),
             },
         ];
 
