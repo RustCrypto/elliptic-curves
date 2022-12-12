@@ -306,9 +306,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.10.5"
+version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "adfbc57365a37acbd2ebf2b64d7e69bb766e2fea813521ed536f5d0520dcf86c"
+checksum = "8168378f4e5023e7218c89c891c0fd8ecdb5e5e4f18cb78f38cf245dd021e76f"
 dependencies = [
  "block-buffer",
  "crypto-common",
@@ -317,9 +317,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.15.0-pre.0"
+version = "0.15.0-pre.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "182a7465bb488400384150cf63ca94cb3c6821481bfccd367d9d11ca667031d1"
+checksum = "deb984c19733374d04faa1143d4a952d9621564760561d5272bffcf45723268e"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -1001,9 +1001,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "2.0.0-pre.2"
+version = "2.0.0-pre.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b7d7471fcfa786b75b657061bd5bf1d51179b3aac54db33bba7e44f5a4b5b75"
+checksum = "72c5ea30954aaba8f04263dd4d766a33d4838ae5535fccc81341b147604e7526"
 dependencies = [
  "digest",
  "rand_core",
