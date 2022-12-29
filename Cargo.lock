@@ -628,7 +628,7 @@ checksum = "9ff7415e9ae3fff1225851df9e0d9e4e5479f947619774677a63572e55e80eff"
 
 [[package]]
 name = "p256"
-version = "0.12.0-pre.0"
+version = "0.12.0-pre.1"
 dependencies = [
  "blobby",
  "criterion",
@@ -644,7 +644,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.12.0-pre.0"
+version = "0.12.0-pre.1"
 dependencies = [
  "blobby",
  "criterion",
