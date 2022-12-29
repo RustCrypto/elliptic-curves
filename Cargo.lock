@@ -720,7 +720,7 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "primeorder"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "elliptic-curve",
  "serdect",
