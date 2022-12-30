@@ -12,6 +12,7 @@ pub(crate) mod scalar;
 mod dev;
 
 pub use field::FieldElement;
+pub use mul::mul_by_generator;
 
 use affine::AffinePoint;
 use projective::ProjectivePoint;
