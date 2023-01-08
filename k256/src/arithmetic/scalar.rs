@@ -263,7 +263,7 @@ impl Field for Scalar {
     #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
         // Note: `pow_vartime` is constant-time with respect to `self`
-        let w = self.pow_vartime(&[
+        let w = self.pow_vartime([
             0x777fa4bd19a06c82,
             0xfd755db9cd5e9140,
             0xffffffffffffffff,

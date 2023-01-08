@@ -31,6 +31,8 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
+    // TODO(tarcieri): eliminate usage of unwrap
+    #[allow(clippy::unwrap_used)]
     pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         let bytes = NonZeroScalar::random(rng).to_bytes();
         Self::from_bytes(&bytes).unwrap()
@@ -106,8 +108,8 @@ impl SigningKey {
         }
 
         let rand = tagged_hash(NONCE_TAG)
-            .chain_update(&t)
-            .chain_update(&self.verifying_key.as_affine().x.to_bytes())
+            .chain_update(t)
+            .chain_update(self.verifying_key.as_affine().x.to_bytes())
             .chain_update(msg_digest)
             .finalize();
 
@@ -118,8 +120,8 @@ impl SigningKey {
 
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
             tagged_hash(CHALLENGE_TAG)
-                .chain_update(&r.to_bytes())
-                .chain_update(&self.verifying_key.to_bytes())
+                .chain_update(r.to_bytes())
+                .chain_update(self.verifying_key.to_bytes())
                 .chain_update(msg_digest)
                 .finalize(),
         );

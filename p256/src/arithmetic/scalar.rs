@@ -133,7 +133,7 @@ impl Scalar {
         // Thus inversion can be implemented with a single exponentiation.
         //
         // This is `n - 2`, so the top right two digits are `4f` instead of `51`.
-        let inverse = self.pow_vartime(&[
+        let inverse = self.pow_vartime([
             0xf3b9_cac2_fc63_254f,
             0xbce6_faad_a717_9e84,
             0xffff_ffff_ffff_ffff,
@@ -258,7 +258,7 @@ impl Field for Scalar {
     #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
         // Note: `pow_vartime` is constant-time with respect to `self`
-        let w = self.pow_vartime(&[
+        let w = self.pow_vartime([
             0x279dce5617e3192a,
             0xfde737d56d38bcf4,
             0x07ffffffffffffff,

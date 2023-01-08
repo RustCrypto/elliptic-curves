@@ -73,7 +73,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
 
         let R = ProjectivePoint::lincomb(
             &ProjectivePoint::GENERATOR,
-            &*s,
+            s,
             &self.inner.to_projective(),
             &-e,
         )

@@ -195,7 +195,7 @@ where
         let mut pos = C::UInt::BIT_SIZE - 4;
 
         loop {
-            let slot = (k[(pos >> 3) as usize] >> (pos & 7)) & 0xf;
+            let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
 
             let mut t = ProjectivePoint::IDENTITY;
 
