@@ -31,7 +31,7 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn random<R: CryptoRngCore + ?Sized>(rng: &mut R) -> Self {
+    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         let bytes = NonZeroScalar::random(rng).to_bytes();
         Self::from_bytes(&bytes).unwrap()
     }
@@ -159,9 +159,9 @@ impl<D> RandomizedDigestSigner<D, Signature> for SigningKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
-    fn try_sign_digest_with_rng<R: CryptoRngCore + ?Sized>(
+    fn try_sign_digest_with_rng(
         &self,
-        rng: &mut R,
+        rng: &mut impl CryptoRngCore,
         digest: D,
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
@@ -171,19 +171,15 @@ where
 }
 
 impl RandomizedSigner<Signature> for SigningKey {
-    fn try_sign_with_rng<R: CryptoRngCore + ?Sized>(
-        &self,
-        rng: &mut R,
-        msg: &[u8],
-    ) -> Result<Signature> {
+    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> Result<Signature> {
         self.try_sign_digest_with_rng(rng, Sha256::new_with_prefix(msg))
     }
 }
 
 impl RandomizedPrehashSigner<Signature> for SigningKey {
-    fn sign_prehash_with_rng<R: CryptoRngCore + ?Sized>(
+    fn sign_prehash_with_rng(
         &self,
-        rng: &mut R,
+        rng: &mut impl CryptoRngCore,
         prehash: &[u8],
     ) -> Result<Signature> {
         let prehash = prehash.try_into().map_err(|_| Error::new())?;

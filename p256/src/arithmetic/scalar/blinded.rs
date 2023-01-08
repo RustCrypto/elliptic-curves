@@ -25,7 +25,7 @@ pub struct BlindedScalar {
 
 impl BlindedScalar {
     /// Create a new [`BlindedScalar`] from a scalar and a [`CryptoRngCore`]
-    pub fn new<R: CryptoRngCore + ?Sized>(scalar: Scalar, rng: &mut R) -> Self {
+    pub fn new(scalar: Scalar, rng: &mut impl CryptoRngCore) -> Self {
         Self {
             scalar,
             mask: Scalar::random(rng),
