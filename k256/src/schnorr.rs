@@ -62,10 +62,10 @@
 
 #![allow(non_snake_case, clippy::many_single_char_names)]
 
-mod sign;
-mod verify;
+mod signing;
+mod verifying;
 
-pub use self::{sign::SigningKey, verify::VerifyingKey};
+pub use self::{signing::SigningKey, verifying::VerifyingKey};
 pub use signature::{self, rand_core::CryptoRngCore, Error};
 
 use crate::{arithmetic::FieldElement, NonZeroScalar};
