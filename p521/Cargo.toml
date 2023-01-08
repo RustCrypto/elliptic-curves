@@ -10,7 +10,7 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "secp521r1"]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.60"
 
 [dependencies]
 elliptic-curve = { version = "0.12.3", default-features = false, features = ["hazmat", "sec1"] }
@@ -18,7 +18,7 @@ elliptic-curve = { version = "0.12.3", default-features = false, features = ["ha
 [features]
 default = ["pem", "std"]
 alloc = ["elliptic-curve/alloc"]
-std = ["alloc", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
+std = ["alloc", "elliptic-curve/std"]
 
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]

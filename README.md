@@ -29,7 +29,7 @@ if you are interested in curves beyond the ones listed here.
 
 ## Minimum Supported Rust Version
 
-All crates in this repository support Rust **1.57** or higher.
+All crates in this repository support Rust **1.60** or higher.
 
 Minimum supported Rust version can be changed in the future, but it will be
 done with a minor version bump.
@@ -51,7 +51,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[rustc-image]: https://img.shields.io/badge/rustc-1.57+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.60+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 [deps-image]: https://deps.rs/repo/github/RustCrypto/elliptic-curves/status.svg
@@ -68,10 +68,10 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (curves)
 
-[secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
-[NIST P-256]: http://oid-info.com/get/1.2.840.10045.3.1.7
-[NIST P-384]: http://oid-info.com/get/1.3.132.0.34
-[NIST P-521]: http://oid-info.com/get/1.3.132.0.35
+[secp256k1]: https://neuromancer.sk/std/secg/secp256k1
+[NIST P-256]: https://neuromancer.sk/std/nist/P-256
+[NIST P-384]: https://neuromancer.sk/std/nist/P-384
+[NIST P-521]: https://neuromancer.sk/std/nist/P-521
 
 [//]: # (links)
 
