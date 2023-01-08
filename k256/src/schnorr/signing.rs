@@ -1,7 +1,9 @@
 //! Taproot Schnorr signing key.
 
 use super::{tagged_hash, Signature, VerifyingKey, AUX_TAG, CHALLENGE_TAG, NONCE_TAG};
-use crate::{AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar};
+use crate::{
+    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
+};
 use elliptic_curve::{
     bigint::U256,
     ops::Reduce,
@@ -134,6 +136,19 @@ impl From<NonZeroScalar> for SigningKey {
             secret_key,
             verifying_key,
         }
+    }
+}
+
+impl From<SecretKey> for SigningKey {
+    #[inline]
+    fn from(secret_key: SecretKey) -> SigningKey {
+        SigningKey::from(&secret_key)
+    }
+}
+
+impl From<&SecretKey> for SigningKey {
+    fn from(secret_key: &SecretKey) -> SigningKey {
+        secret_key.to_nonzero_scalar().into()
     }
 }
 
