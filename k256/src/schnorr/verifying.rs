@@ -17,7 +17,7 @@ use signature::{hazmat::PrehashVerifier, DigestVerifier, Error, Result, Verifier
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct VerifyingKey {
     /// Inner public key
-    inner: PublicKey,
+    pub(super) inner: PublicKey,
 }
 
 impl VerifyingKey {

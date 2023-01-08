@@ -31,40 +31,15 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    // TODO(tarcieri): eliminate usage of unwrap
-    #[allow(clippy::unwrap_used)]
     pub fn random(rng: &mut impl CryptoRngCore) -> Self {
-        let bytes = NonZeroScalar::random(rng).to_bytes();
-        Self::from_bytes(&bytes).unwrap()
+        NonZeroScalar::random(rng).into()
     }
 
     /// Parse signing key from big endian-encoded bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let (secret_key, verifying_point) = Self::raw_from_bytes(bytes)?;
-        let verifying_key = PublicKey::from_affine(verifying_point).map_err(|_| Error::new())?;
-
-        Ok(Self {
-            secret_key,
-            verifying_key: verifying_key.try_into()?,
-        })
-    }
-
-    // a little type dance for use in SigningKey's `from_bytes` and `try_sign`.
-    fn raw_from_bytes(bytes: &[u8]) -> Result<(NonZeroScalar, AffinePoint)> {
-        let trial_secret_key = NonZeroScalar::try_from(bytes).map_err(|_| Error::new())?;
-
-        let even = (ProjectivePoint::GENERATOR * *trial_secret_key)
-            .to_affine()
-            .y
-            .normalize()
-            .is_even();
-
-        let secret_key =
-            NonZeroScalar::conditional_select(&-trial_secret_key, &trial_secret_key, even);
-
-        let verifying_point = (ProjectivePoint::GENERATOR * *secret_key).to_affine();
-
-        Ok((secret_key, verifying_point))
+        NonZeroScalar::try_from(bytes)
+            .map(Into::into)
+            .map_err(|_| Error::new())
     }
 
     /// Serialize as bytes.
@@ -113,9 +88,12 @@ impl SigningKey {
             .chain_update(msg_digest)
             .finalize();
 
-        // the ephemeral key "k"
-        let (secret_key, verifying_point) = SigningKey::raw_from_bytes(&rand)?;
+        let k = NonZeroScalar::try_from(&*rand)
+            .map(Self::from)
+            .map_err(|_| Error::new())?;
 
+        let secret_key = k.secret_key;
+        let verifying_point = AffinePoint::from(k.verifying_key);
         let r = verifying_point.x.normalize();
 
         let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
@@ -134,6 +112,28 @@ impl SigningKey {
         self.verifying_key.verify_prehash(msg_digest, &sig)?;
 
         Ok(sig)
+    }
+}
+
+impl From<NonZeroScalar> for SigningKey {
+    #[inline]
+    fn from(mut secret_key: NonZeroScalar) -> SigningKey {
+        let odd = (ProjectivePoint::GENERATOR * *secret_key)
+            .to_affine()
+            .y
+            .normalize()
+            .is_odd();
+
+        secret_key.conditional_assign(&-secret_key, odd);
+
+        let verifying_key = VerifyingKey {
+            inner: PublicKey::from_secret_scalar(&secret_key),
+        };
+
+        SigningKey {
+            secret_key,
+            verifying_key,
+        }
     }
 }
 
