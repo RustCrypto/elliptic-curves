@@ -15,7 +15,7 @@ readme = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.60"
 
 [dependencies]
 cfg-if = "1.0"
@@ -41,8 +41,8 @@ sha3 = { version = "0.10", default-features = false }
 
 [features]
 default = ["arithmetic", "ecdsa", "pkcs8", "schnorr", "std"]
-alloc = ["elliptic-curve/alloc"]
-std = ["alloc", "ecdsa-core/std", "elliptic-curve/std"] # TODO: use weak activation for `ecdsa-core/std` when available
+alloc = ["ecdsa-core?/alloc", "elliptic-curve/alloc"]
+std = ["alloc", "ecdsa-core?/std", "elliptic-curve/std"]
 
 arithmetic = ["elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]

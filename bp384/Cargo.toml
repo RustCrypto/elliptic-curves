@@ -10,7 +10,7 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
 edition = "2021"
-rust-version = "1.57"
+rust-version = "1.60"
 
 [dependencies]
 elliptic-curve = { version = "0.12", default-features = false, features = ["hazmat", "sec1"] }
@@ -21,8 +21,8 @@ sha2 = { version = "0.10", optional = true, default-features = false }
 
 [features]
 default = ["pkcs8", "std"]
-alloc = ["elliptic-curve/alloc"]
-std = ["alloc", "elliptic-curve/std"]
+alloc = ["ecdsa?/alloc", "elliptic-curve/alloc"]
+std = ["alloc", "ecdsa?/std", "elliptic-curve/std"]
 
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
