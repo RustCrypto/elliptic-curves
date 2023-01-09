@@ -6,7 +6,7 @@ use criterion::{
 use hex_literal::hex;
 use k256::{
     elliptic_curve::{generic_array::arr, group::ff::PrimeField, ops::LinearCombination},
-    mul_by_generator, ProjectivePoint, Scalar,
+    ProjectivePoint, Scalar,
 };
 
 fn test_scalar_x() -> Scalar {
@@ -51,7 +51,7 @@ fn bench_point_mul_by_generator<'a, M: Measurement>(group: &mut BenchmarkGroup<'
     group.bench_function("mul_by_generator naive", |b| b.iter(|| &p * &x));
 
     group.bench_function("mul_by_generator precomputed", |b| {
-        b.iter(|| mul_by_generator(&x))
+        b.iter(|| ProjectivePoint::mul_by_generator(&x))
     });
 }
 
