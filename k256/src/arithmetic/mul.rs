@@ -45,7 +45,7 @@ use elliptic_curve::{
     IsHigh,
 };
 
-#[cfg(feature = "basepoint-tables")]
+#[cfg(feature = "precomputed-tables")]
 use once_cell::sync::Lazy;
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
@@ -375,10 +375,10 @@ fn lincomb_generic<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) 
 }
 
 /// Lazily computed basepoint table.
-#[cfg(feature = "basepoint-tables")]
+#[cfg(feature = "precomputed-tables")]
 static GEN_LOOKUP_TABLE: Lazy<[LookupTable; 33]> = Lazy::new(precompute_gen_lookup_table);
 
-#[cfg(feature = "basepoint-tables")]
+#[cfg(feature = "precomputed-tables")]
 fn precompute_gen_lookup_table() -> [LookupTable; 33] {
     let mut gen = ProjectivePoint::GENERATOR;
     let mut res = [LookupTable::default(); 33];
@@ -396,13 +396,13 @@ fn precompute_gen_lookup_table() -> [LookupTable; 33] {
 
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
-    #[cfg(not(feature = "basepoint-tables"))]
+    #[cfg(not(feature = "precomputed-tables"))]
     pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
         ProjectivePoint::GENERATOR * k
     }
 
     /// Calculates `k * G`, where `G` is the generator.
-    #[cfg(feature = "basepoint-tables")]
+    #[cfg(feature = "precomputed-tables")]
     pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
         let digits = Radix16Decomposition::<65>::new(k);
         let table = *GEN_LOOKUP_TABLE;
