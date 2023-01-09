@@ -40,6 +40,7 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features basepoint-tables
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdh
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
@@ -53,7 +54,7 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,hash2curve,jwk,pem,pkcs8,schnorr,serde,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features basepoint-tables,bits,ecdh,ecdsa,hash2curve,jwk,pem,pkcs8,schnorr,serde,sha256
 
   benches:
     runs-on: ubuntu-latest
