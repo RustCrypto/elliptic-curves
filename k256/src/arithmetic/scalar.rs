@@ -10,8 +10,7 @@ use crate::{FieldBytes, Secp256k1, ORDER};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
 use elliptic_curve::{
     bigint::{self, prelude::*, Limb, Word, U256, U512},
-    generic_array::arr,
-    group::ff::{Field, PrimeField},
+    group::ff::{helpers::sqrt_ratio_generic, Field, PrimeField},
     ops::{Reduce, ReduceNonZero},
     rand_core::{CryptoRngCore, RngCore},
     subtle::{
@@ -180,7 +179,7 @@ impl Scalar {
     /// Returns the scalar modulus as a `BigUint` object.
     #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
-        Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
+        Self::ONE.negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
@@ -223,6 +222,10 @@ impl Scalar {
 }
 
 impl Field for Scalar {
+    const ZERO: Self = Self::ZERO;
+
+    const ONE: Self = Self::ONE;
+
     fn random(mut rng: impl RngCore) -> Self {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
@@ -234,14 +237,6 @@ impl Field for Scalar {
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
         Self::generate_vartime(&mut rng)
-    }
-
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    fn one() -> Self {
-        Self::ONE
     }
 
     #[must_use]
@@ -256,6 +251,10 @@ impl Field for Scalar {
 
     fn invert(&self) -> CtOption<Self> {
         Scalar::invert(self)
+    }
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        sqrt_ratio_generic(num, div)
     }
 
     /// Tonelli-Shank's algorithm for q mod 16 = 1
@@ -273,7 +272,7 @@ impl Field for Scalar {
         let mut v = Self::S;
         let mut x = *self * w;
         let mut b = x * w;
-        let mut z = Self::root_of_unity();
+        let mut z = Self::ROOT_OF_UNITY;
 
         for max_v in (1..=Self::S).rev() {
             let mut k = 1;
@@ -281,7 +280,7 @@ impl Field for Scalar {
             let mut j_less_than_v = Choice::from(1);
 
             for j in 2..max_v {
-                let tmp_is_one = tmp.ct_eq(&Self::one());
+                let tmp_is_one = tmp.ct_eq(&Self::ONE);
                 let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
                 tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
                 let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
@@ -291,7 +290,7 @@ impl Field for Scalar {
             }
 
             let result = x * z;
-            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::ONE));
             z = z.square();
             b *= z;
             v = k;
@@ -308,6 +307,24 @@ impl PrimeField for Scalar {
     const CAPACITY: u32 = 255;
     const S: u32 = 6;
 
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U256::from_u8(7));
+
+    const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
+        "0c1dc060e7a91986df9879a3fbc483a898bdeab680756045992f4b5402b052f2",
+    ));
+
+    const MODULUS: &'static str =
+        "0xFFFFFFFF_FFFFFFFF_FFFFFFFF_FFFFFFFE_BAAEDCE6_AF48A03B_BFD25E8C_D0364141";
+    const TWO_INV: Self = Self(U256::from_be_hex(
+        "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1",
+    ));
+    const ROOT_OF_UNITY_INV: Self = Self(U256::from_be_hex(
+        "fd3ae181f12d7096efc7b0c75b8cbb7277a275910aa413c3b6fb30a0884f0d1c",
+    ));
+    const DELTA: Self = Self(U256::from_be_hex(
+        "0000000000000000000cbc21fe4561c8d63b78e780e1341e199417c8c0bb7601",
+    ));
+
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
@@ -323,19 +340,6 @@ impl PrimeField for Scalar {
 
     fn is_odd(&self) -> Choice {
         self.0.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        7u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Scalar::from_repr(arr![u8;
-            0x0c, 0x1d, 0xc0, 0x60, 0xe7, 0xa9, 0x19, 0x86, 0xdf, 0x98, 0x79, 0xa3, 0xfb, 0xc4,
-            0x83, 0xa8, 0x98, 0xbd, 0xea, 0xb6, 0x80, 0x75, 0x60, 0x45, 0x99, 0x2f, 0x4b, 0x54,
-            0x02, 0xb0, 0x52, 0xf2
-        ])
-        .unwrap()
     }
 }
 
@@ -652,6 +656,30 @@ impl<'de> Deserialize<'de> for Scalar {
     }
 }
 
+impl core::iter::Sum for Scalar {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+    }
+}
+
+impl<'a> core::iter::Sum<&'a Self> for Scalar {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.cloned().sum()
+    }
+}
+
+impl core::iter::Product for Scalar {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
+    }
+}
+
+impl<'a> core::iter::Product<&'a Self> for Scalar {
+    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.cloned().product()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Scalar;
@@ -691,7 +719,7 @@ mod tests {
     #[test]
     fn is_high() {
         // 0 is not high
-        let high: bool = Scalar::zero().is_high().into();
+        let high: bool = Scalar::ZERO.is_high().into();
         assert!(!high);
 
         // 1 is not high
@@ -727,15 +755,15 @@ mod tests {
 
     #[test]
     fn negate() {
-        let zero_neg = -Scalar::zero();
-        assert_eq!(zero_neg, Scalar::zero());
+        let zero_neg = -Scalar::ZERO;
+        assert_eq!(zero_neg, Scalar::ZERO);
 
         let m = Scalar::modulus_as_biguint();
         let one = 1.to_biguint().unwrap();
         let m_minus_one = &m - &one;
         let m_by_2 = &m >> 1;
 
-        let one_neg = -Scalar::one();
+        let one_neg = -Scalar::ONE;
         assert_eq!(one_neg, Scalar::from(&m_minus_one));
 
         let frac_modulus_2_neg = -Scalar::from(&m_by_2);
@@ -743,7 +771,7 @@ mod tests {
         assert_eq!(frac_modulus_2_neg, frac_modulus_2_plus_one);
 
         let modulus_minus_one_neg = -Scalar::from(&m - &one);
-        assert_eq!(modulus_minus_one_neg, Scalar::one());
+        assert_eq!(modulus_minus_one_neg, Scalar::ONE);
     }
 
     #[test]
@@ -958,7 +986,7 @@ mod tests {
         fn fuzzy_invert(
             a in scalar()
         ) {
-            let a = if bool::from(a.is_zero()) { Scalar::one() } else { a };
+            let a = if bool::from(a.is_zero()) { Scalar::ONE } else { a };
             let a_bi = a.to_biguint().unwrap();
             let inv = a.invert().unwrap();
             let inv_bi = inv.to_biguint().unwrap();

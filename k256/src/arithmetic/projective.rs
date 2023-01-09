@@ -253,7 +253,7 @@ impl From<AffinePoint> for ProjectivePoint {
         let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
-            z: FieldElement::one(),
+            z: FieldElement::ONE,
         };
         Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
     }
