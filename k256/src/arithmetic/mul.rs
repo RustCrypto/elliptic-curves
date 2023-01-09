@@ -394,29 +394,31 @@ fn precompute_gen_lookup_table() -> [LookupTable; 33] {
     res
 }
 
-/// Calculates `k * G`, where `G` is the generator.
-#[cfg(not(feature = "basepoint-tables"))]
-pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
-    ProjectivePoint::GENERATOR * k
-}
+impl ProjectivePoint {
+    /// Calculates `k * G`, where `G` is the generator.
+    #[cfg(not(feature = "basepoint-tables"))]
+    pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
+        ProjectivePoint::GENERATOR * k
+    }
 
-/// Calculates `k * G`, where `G` is the generator.
-#[cfg(feature = "basepoint-tables")]
-pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
-    let digits = Radix16Decomposition::<65>::new(k);
-    let table = *GEN_LOOKUP_TABLE;
-    let mut acc = table[32].select(digits.0[64]);
-    let mut acc2 = ProjectivePoint::IDENTITY;
-    for i in (0..32).rev() {
-        acc2 += &table[i].select(digits.0[i * 2 + 1]);
-        acc += &table[i].select(digits.0[i * 2]);
+    /// Calculates `k * G`, where `G` is the generator.
+    #[cfg(feature = "basepoint-tables")]
+    pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
+        let digits = Radix16Decomposition::<65>::new(k);
+        let table = *GEN_LOOKUP_TABLE;
+        let mut acc = table[32].select(digits.0[64]);
+        let mut acc2 = ProjectivePoint::IDENTITY;
+        for i in (0..32).rev() {
+            acc2 += &table[i].select(digits.0[i * 2 + 1]);
+            acc += &table[i].select(digits.0[i * 2]);
+        }
+        // This is the price of halving the precomputed table size (from 60kb to 30kb)
+        // The performance hit is minor, about 3%.
+        for _ in 0..4 {
+            acc2 = acc2.double();
+        }
+        acc + acc2
     }
-    // This is the price of halving the precomputed table size (from 60kb to 30kb)
-    // The performance hit is minor, about 3%.
-    for _ in 0..4 {
-        acc2 = acc2.double();
-    }
-    acc + acc2
 }
 
 #[inline(always)]
@@ -473,7 +475,6 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 
 #[cfg(test)]
 mod tests {
-    use super::mul_by_generator;
     use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::{ops::LinearCombination, rand_core::OsRng, Field, Group};
 
@@ -493,7 +494,7 @@ mod tests {
     fn test_mul_by_generator() {
         let k = Scalar::random(&mut OsRng);
         let reference = &ProjectivePoint::GENERATOR * &k;
-        let test = mul_by_generator(&k);
+        let test = ProjectivePoint::mul_by_generator(&k);
         assert_eq!(reference, test);
     }
 }
