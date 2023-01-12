@@ -380,8 +380,20 @@ impl Ord for Scalar {
     }
 }
 
+impl From<u32> for Scalar {
+    fn from(k: u32) -> Self {
+        Scalar(k.into())
+    }
+}
+
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
+        Scalar(k.into())
+    }
+}
+
+impl From<u128> for Scalar {
+    fn from(k: u128) -> Self {
         Scalar(k.into())
     }
 }
@@ -708,7 +720,7 @@ mod tests {
             0xffff_ffff,
         ]);
 
-        let scalar_bits = ScalarBits::from(&-Scalar::from(1));
+        let scalar_bits = ScalarBits::from(&-Scalar::from(1u32));
         assert_eq!(minus_one, scalar_bits);
     }
 }

@@ -123,8 +123,20 @@ impl FieldElement {
     }
 }
 
+impl From<u32> for FieldElement {
+    fn from(n: u32) -> FieldElement {
+        Self::from_uint(U384::from(n)).unwrap()
+    }
+}
+
 impl From<u64> for FieldElement {
     fn from(n: u64) -> FieldElement {
+        Self::from_uint(U384::from(n)).unwrap()
+    }
+}
+
+impl From<u128> for FieldElement {
+    fn from(n: u128) -> FieldElement {
         Self::from_uint(U384::from(n)).unwrap()
     }
 }
@@ -149,7 +161,7 @@ impl PrimeField for FieldElement {
     }
 
     fn multiplicative_generator() -> Self {
-        19.into()
+        19u32.into()
     }
 
     fn root_of_unity() -> Self {
