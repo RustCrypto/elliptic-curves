@@ -361,12 +361,18 @@ impl DefaultIsZeroes for Scalar {}
 
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {
-        Self::from(k as u64)
+        Self(k.into())
     }
 }
 
 impl From<u64> for Scalar {
     fn from(k: u64) -> Self {
+        Self(k.into())
+    }
+}
+
+impl From<u128> for Scalar {
+    fn from(k: u128) -> Self {
         Self(k.into())
     }
 }

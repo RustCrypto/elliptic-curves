@@ -217,8 +217,20 @@ impl Reduce<U384> for Scalar {
     }
 }
 
+impl From<u32> for Scalar {
+    fn from(n: u32) -> Scalar {
+        Self::from_uint_unchecked(U384::from(n))
+    }
+}
+
 impl From<u64> for Scalar {
     fn from(n: u64) -> Scalar {
+        Self::from_uint_unchecked(U384::from(n))
+    }
+}
+
+impl From<u128> for Scalar {
+    fn from(n: u128) -> Scalar {
         Self::from_uint_unchecked(U384::from(n))
     }
 }
