@@ -175,22 +175,18 @@ pub type DerSignature = ecdsa_core::der::Signature<Secp256k1>;
 
 /// ECDSA/secp256k1 signing key
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type SigningKey = ecdsa_core::SigningKey<Secp256k1>;
 
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<Secp256k1>;
 
 #[cfg(feature = "sha256")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
 }
 
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 impl SignPrimitive<Secp256k1> for Scalar {
     #[allow(non_snake_case, clippy::many_single_char_names)]
     fn try_sign_prehashed<K>(
@@ -237,7 +233,6 @@ impl SignPrimitive<Secp256k1> for Scalar {
 }
 
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 impl VerifyPrimitive<Secp256k1> for AffinePoint {}
 
 #[cfg(all(test, feature = "ecdsa", feature = "arithmetic"))]

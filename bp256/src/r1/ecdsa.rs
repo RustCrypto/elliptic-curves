@@ -9,7 +9,6 @@ pub type Signature = ecdsa::Signature<BrainpoolP256r1>;
 pub type DerSignature = ecdsa::der::Signature<BrainpoolP256r1>;
 
 #[cfg(feature = "sha256")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa::hazmat::DigestPrimitive for BrainpoolP256r1 {
     type Digest = sha2::Sha256;
 }

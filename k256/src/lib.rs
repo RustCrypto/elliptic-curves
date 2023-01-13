@@ -1,5 +1,5 @@
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
@@ -30,19 +30,15 @@
 mod arithmetic;
 
 #[cfg(feature = "ecdh")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdh")))]
 pub mod ecdh;
 
 #[cfg(feature = "ecdsa-core")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa-core")))]
 pub mod ecdsa;
 
 #[cfg(feature = "schnorr")]
-#[cfg_attr(docsrs, doc(cfg(feature = "schnorr")))]
 pub mod schnorr;
 
 #[cfg(any(feature = "test-vectors", test))]
-#[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
 pub mod test_vectors;
 
 pub use elliptic_curve::{self, bigint::U256};
@@ -54,11 +50,9 @@ pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::S
 pub use arithmetic::FieldElement;
 
 #[cfg(feature = "pkcs8")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
 #[cfg(feature = "sha2")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha2")))]
 pub use sha2;
 
 use elliptic_curve::{consts::U33, generic_array::GenericArray};
@@ -97,7 +91,6 @@ impl elliptic_curve::PointCompression for Secp256k1 {
 }
 
 #[cfg(feature = "jwk")]
-#[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
 impl elliptic_curve::JwkParameters for Secp256k1 {
     const CRV: &'static str = "secp256k1";
 }
@@ -134,5 +127,4 @@ impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
 
 /// Bit representation of a secp256k1 (K-256) scalar field element.
 #[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;

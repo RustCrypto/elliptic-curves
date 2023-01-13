@@ -79,7 +79,6 @@ pub const MU: [u64; 5] = [
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug, Default)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(pub(crate) U256);
 
 impl Scalar {
@@ -335,7 +334,6 @@ impl PrimeField for Scalar {
 }
 
 #[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl PrimeFieldBits for Scalar {
     #[cfg(target_pointer_width = "32")]
     type ReprBits = [u32; 8];
@@ -453,7 +451,6 @@ impl From<&Scalar> for U256 {
 }
 
 #[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         scalar.0.to_words().into()
@@ -614,7 +611,6 @@ impl ConstantTimeEq for Scalar {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl Serialize for Scalar {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -625,7 +621,6 @@ impl Serialize for Scalar {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for Scalar {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

@@ -19,11 +19,9 @@ use elliptic_curve::{
 use primeorder::PrimeCurveParams;
 
 /// Elliptic curve point in affine coordinates.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type AffinePoint = primeorder::AffinePoint<NistP384>;
 
 /// Elliptic curve point in projective coordinates.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP384>;
 
 impl PrimeCurveParams for NistP384 {

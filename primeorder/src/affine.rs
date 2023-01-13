@@ -444,7 +444,6 @@ where
 //
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<C> Serialize for AffinePoint<C>
 where
     C: PrimeCurveParams,
@@ -461,7 +460,6 @@ where
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de, C> Deserialize<'de> for AffinePoint<C>
 where
     C: PrimeCurveParams,

@@ -1,5 +1,5 @@
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
@@ -30,15 +30,12 @@
 mod arithmetic;
 
 #[cfg(feature = "ecdh")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdh")))]
 pub mod ecdh;
 
 #[cfg(feature = "ecdsa-core")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa-core")))]
 pub mod ecdsa;
 
 #[cfg(any(feature = "test-vectors", test))]
-#[cfg_attr(docsrs, doc(cfg(feature = "test-vectors")))]
 pub mod test_vectors;
 
 pub use elliptic_curve::{self, bigint::U256};
@@ -53,7 +50,6 @@ pub use arithmetic::{
 pub use arithmetic::field::FieldElement;
 
 #[cfg(feature = "pkcs8")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{consts::U33, generic_array::GenericArray};
@@ -118,7 +114,6 @@ impl elliptic_curve::PointCompaction for NistP256 {
 }
 
 #[cfg(feature = "jwk")]
-#[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
 impl elliptic_curve::JwkParameters for NistP256 {
     const CRV: &'static str = "P-256";
 }
@@ -141,12 +136,10 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
 
 /// Non-zero NIST P-256 scalar field element.
 #[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP256>;
 
 /// NIST P-256 public key.
 #[cfg(feature = "arithmetic")]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type PublicKey = elliptic_curve::PublicKey<NistP256>;
 
 /// NIST P-256 secret key.
@@ -157,11 +150,9 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 
 /// Bit representation of a NIST P-256 scalar field element.
 #[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
 
 #[cfg(feature = "voprf")]
-#[cfg_attr(docsrs, doc(cfg(feature = "voprf")))]
 impl elliptic_curve::VoprfParameters for NistP256 {
     /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.3-1.3>.
     const ID: u16 = 0x0003;

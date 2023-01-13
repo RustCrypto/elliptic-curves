@@ -54,16 +54,13 @@ pub type DerSignature = ecdsa_core::der::Signature<NistP384>;
 
 /// ECDSA/P-384 signing key
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type SigningKey = ecdsa_core::SigningKey<NistP384>;
 
 /// ECDSA/P-384 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP384>;
 
 #[cfg(feature = "sha384")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha384")))]
 impl ecdsa_core::hazmat::DigestPrimitive for NistP384 {
     type Digest = sha2::Sha384;
 }

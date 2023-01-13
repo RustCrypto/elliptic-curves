@@ -57,16 +57,13 @@ pub type DerSignature = ecdsa_core::der::Signature<NistP256>;
 
 /// ECDSA/P-256 signing key
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type SigningKey = ecdsa_core::SigningKey<NistP256>;
 
 /// ECDSA/P-256 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
 
 #[cfg(feature = "sha256")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha256")))]
 impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
     type Digest = sha2::Sha256;
 }

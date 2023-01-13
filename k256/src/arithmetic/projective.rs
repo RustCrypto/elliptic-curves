@@ -39,7 +39,6 @@ impl PrimeCurveArithmetic for Secp256k1 {
 
 /// A point on the secp256k1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,

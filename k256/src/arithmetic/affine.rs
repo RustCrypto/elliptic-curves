@@ -35,7 +35,6 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 ///
 /// [SEC1]: https://www.secg.org/sec1-v2.pdf
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct AffinePoint {
     /// x-coordinate
     pub(crate) x: FieldElement,
@@ -338,7 +337,6 @@ impl TryFrom<&AffinePoint> for PublicKey {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl Serialize for AffinePoint {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -349,7 +347,6 @@ impl Serialize for AffinePoint {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for AffinePoint {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where

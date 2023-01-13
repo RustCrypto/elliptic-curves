@@ -63,7 +63,6 @@ use core::ops::{Add, Mul, Sub};
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct Scalar(U384);
 
 primeorder::impl_field_element!(
@@ -196,7 +195,6 @@ impl PrimeField for Scalar {
 }
 
 #[cfg(feature = "bits")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bits")))]
 impl PrimeFieldBits for Scalar {
     type ReprBits = fiat_p384_scalar_montgomery_domain_field_element;
 
@@ -298,7 +296,6 @@ impl TryFrom<U384> for Scalar {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl Serialize for Scalar {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -309,7 +306,6 @@ impl Serialize for Scalar {
 }
 
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 impl<'de> Deserialize<'de> for Scalar {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where
