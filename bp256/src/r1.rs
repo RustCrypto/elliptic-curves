@@ -1,7 +1,6 @@
 //! brainpoolP256r1 elliptic curve: verifiably pseudo-random variant
 
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub mod ecdsa;
 
 use elliptic_curve::bigint::U256;

@@ -1,5 +1,5 @@
 #![no_std]
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
@@ -18,7 +18,6 @@
 pub use elliptic_curve::{self, bigint::U576};
 
 #[cfg(feature = "pkcs8")]
-#[cfg_attr(docsrs, doc(cfg(feature = "pkcs8")))]
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{consts::U66, generic_array::GenericArray};
@@ -48,7 +47,6 @@ impl elliptic_curve::PointCompaction for NistP521 {
 }
 
 #[cfg(feature = "jwk")]
-#[cfg_attr(docsrs, doc(cfg(feature = "jwk")))]
 impl elliptic_curve::JwkParameters for NistP521 {
     const CRV: &'static str = "P-521";
 }

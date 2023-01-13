@@ -9,7 +9,6 @@ pub type Signature = ecdsa::Signature<BrainpoolP384t1>;
 pub type DerSignature = ecdsa::der::Signature<BrainpoolP384t1>;
 
 #[cfg(feature = "sha384")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sha384")))]
 impl ecdsa::hazmat::DigestPrimitive for BrainpoolP384t1 {
     type Digest = sha2::Sha384;
 }

@@ -14,7 +14,6 @@ use elliptic_curve::{
 /// This provides a randomly blinded impl of [`Invert`] which is useful for
 /// ECDSA ephemeral (`k`) scalars.
 #[derive(Clone)]
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub struct BlindedScalar {
     /// Actual scalar value
     scalar: Scalar,

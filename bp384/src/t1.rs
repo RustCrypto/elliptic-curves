@@ -1,7 +1,6 @@
 //! brainpoolP384t1 elliptic curve: twisted variant
 
 #[cfg(feature = "ecdsa")]
-#[cfg_attr(docsrs, doc(cfg(feature = "ecdsa")))]
 pub mod ecdsa;
 
 use elliptic_curve::bigint::U384;

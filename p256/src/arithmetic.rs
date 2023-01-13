@@ -14,14 +14,11 @@ use elliptic_curve::{
 use primeorder::PrimeCurveParams;
 
 /// Elliptic curve point in affine coordinates.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 
 /// Elliptic curve point in projective coordinates.
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP256>;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 impl PrimeCurveParams for NistP256 {
     type FieldElement = FieldElement;
 
@@ -56,22 +53,18 @@ impl PrimeCurveParams for NistP256 {
     );
 }
 
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 impl AffineArithmetic for NistP256 {
     type AffinePoint = AffinePoint;
 }
 
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 impl ProjectiveArithmetic for NistP256 {
     type ProjectivePoint = ProjectivePoint;
 }
 
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 impl PrimeCurveArithmetic for NistP256 {
     type CurveGroup = ProjectivePoint;
 }
 
-#[cfg_attr(docsrs, doc(cfg(feature = "arithmetic")))]
 impl ScalarArithmetic for NistP256 {
     type Scalar = Scalar;
 }
