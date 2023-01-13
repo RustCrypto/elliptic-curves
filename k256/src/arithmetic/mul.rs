@@ -34,6 +34,12 @@
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
+#[cfg(all(
+    feature = "precomputed-tables",
+    not(any(feature = "critical-section", feature = "std"))
+))]
+compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
+
 use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
     ProjectivePoint,

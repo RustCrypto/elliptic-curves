@@ -41,6 +41,7 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features critical-section
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdh
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
@@ -48,13 +49,12 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features jwk
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features precomputed-tables
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features schnorr
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits,ecdh,ecdsa,hash2curve,jwk,pem,pkcs8,precomputed-tables,schnorr,serde,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits,critical-section,ecdh,ecdsa,hash2curve,jwk,pem,pkcs8,schnorr,serde,sha256
 
   benches:
     runs-on: ubuntu-latest
