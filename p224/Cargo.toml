@@ -1,0 +1,28 @@
+[package]
+name = "p224"
+version = "0.12.0-pre"
+description = "Pure Rust implementation of the NIST P-224 (a.k.a. secp224r1) elliptic curve"
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/p224"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p224"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "nist", "secp224r1"]
+edition = "2021"
+rust-version = "1.60"
+
+[dependencies]
+elliptic-curve = { version = "0.12", default-features = false, features = ["hazmat", "sec1"] }
+primeorder = { version = "=0.0.2", path = "../primeorder" }
+
+[features]
+default = ["pem", "std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std"]
+
+pem = ["elliptic-curve/pem", "pkcs8"]
+pkcs8 = ["elliptic-curve/pkcs8"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]
