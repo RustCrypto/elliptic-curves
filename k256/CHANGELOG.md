@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Impl `From<NonZeroScalar>` for `schnorr::SigningKey` ([#703])
 - Impl `From<SecretKey>` for `schnorr::SigningKey` ([#704])
 - `precomputed-tables` feature ([#697], [#705], [#707])
-- Constructors for scalars from `u128` ([#709])
+- Constructors for `Scalar` from `u128` ([#709])
 
 ### Changed
 - Use weak feature activation; MSRV 1.60 ([#701])
