@@ -651,7 +651,6 @@ name = "p224"
 version = "0.12.0-pre"
 dependencies = [
  "elliptic-curve",
- "primeorder",
 ]
 
 [[package]]
@@ -748,7 +747,7 @@ checksum = "eb9f9e6e233e5c4a35559a617bf40a4ec447db2e84c20b55a6f83167b7e57872"
 
 [[package]]
 name = "primeorder"
-version = "0.0.2"
+version = "0.12.0"
 dependencies = [
  "elliptic-curve",
  "serdect",
