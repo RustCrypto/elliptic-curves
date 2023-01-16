@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.12.0 (2023-01-16)
+### Added
+- 32-bit scalar backend ([#636])
+- `alloc` feature ([#670])
+- Constructors for `Scalar` from `u128` ([#709])
+
+### Changed
+- Use generic curve arithmetic implementation from `primeorder` crate ([#631], [#716])
+- Use `U256` as the inner type for `FieldElement` ([#634])
+- Update P-256 VOPRF test vectors ([#693])
+- Use weak feature activation; MSRV 1.60 ([#701])
+- Bump `ecdsa` dependency to v0.15 ([#713])
+
+[#631]: https://github.com/RustCrypto/elliptic-curves/pull/631
+[#634]: https://github.com/RustCrypto/elliptic-curves/pull/634
+[#636]: https://github.com/RustCrypto/elliptic-curves/pull/636
+[#670]: https://github.com/RustCrypto/elliptic-curves/pull/670
+[#693]: https://github.com/RustCrypto/elliptic-curves/pull/693
+[#701]: https://github.com/RustCrypto/elliptic-curves/pull/701
+[#709]: https://github.com/RustCrypto/elliptic-curves/pull/709
+[#713]: https://github.com/RustCrypto/elliptic-curves/pull/713
+[#716]: https://github.com/RustCrypto/elliptic-curves/pull/716
+
 ## 0.11.1 (2022-06-12)
 ### Added
 - Re-export low-level `diffie_hellman` function ([#556])
