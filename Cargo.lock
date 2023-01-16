@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.12.0-pre.0"
+version = "0.12.0"
 dependencies = [
  "blobby",
  "cfg-if",
