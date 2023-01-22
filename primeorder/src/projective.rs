@@ -19,7 +19,10 @@ use elliptic_curve::{
     },
     ops::LinearCombination,
     rand_core::RngCore,
-    sec1::{CompressedPoint, ModulusSize, UncompressedPointSize},
+    sec1::{
+        CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
+        UncompressedPointSize,
+    },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
     Error, FieldBytes, FieldSize, PublicKey, Result, Scalar,
@@ -319,6 +322,18 @@ where
     }
 }
 
+impl<C> FromEncodedPoint<C> for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+    FieldSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+{
+    fn from_encoded_point(p: &EncodedPoint<C>) -> CtOption<Self> {
+        AffinePoint::<C>::from_encoded_point(p).map(Self::from)
+    }
+}
+
 impl<C> Group for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
@@ -411,6 +426,18 @@ where
 {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl<C> ToEncodedPoint<C> for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+{
+    fn to_encoded_point(&self, compress: bool) -> EncodedPoint<C> {
+        self.to_affine().to_encoded_point(compress)
     }
 }
 
