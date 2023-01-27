@@ -10,6 +10,7 @@ use p384::{
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     AffinePoint, ProjectivePoint, Scalar,
 };
+use primeorder::Double;
 
 /// Assert that the provided projective point matches the given test vector.
 // TODO(tarcieri): use coordinate APIs. See zkcrypto/group#30

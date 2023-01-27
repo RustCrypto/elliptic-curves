@@ -205,9 +205,10 @@ impl<C> Double for ProjectivePoint<C>
 where
     C: PrimeCurveParams<CurveEquationAProperties = CurveEquationAIsMinusThree>,
 {
-    /// We implement the exception-free point doubling formula from
-    /// Renes-Costello-Batina 2015 (Algorithm 6), for prime order short
-    /// Weierstrass curves `y² = x³ + ax + b` where `a = -3`.
+    /// Adapted from Renes-Costello-Batina 2015 (Algorithm 6)
+    ///
+    /// Exception-free point doubling formula for prime order short Weierstrass
+    /// curves `y² = x³ + ax + b` where `a = -3`.
     ///
     /// The comments after each lines indicate which algorithm steps
     /// are being performed.
