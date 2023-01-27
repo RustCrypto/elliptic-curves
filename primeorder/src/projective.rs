@@ -201,6 +201,7 @@ pub trait Double {
     fn double(&self) -> Self;
 }
 
+// TODO(tarcieri): impls for `CurveEquationAIsGeneric` and `CurveEquationAIsZero`
 impl<C> Double for ProjectivePoint<C>
 where
     C: PrimeCurveParams<CurveEquationAProperties = CurveEquationAIsMinusThree>,
