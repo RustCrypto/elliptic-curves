@@ -10,20 +10,25 @@
 //! on `PrimeCurveParams::EQUATION_A` in the future (including ones which
 //! could be used as trait bounds).
 
-/// Sealed trait which identifies special properties of the curve's
-/// 𝒂-coefficient.
-pub trait CurveEquationAProperties {}
+mod sealed {
+    /// Sealed trait which identifies special properties of the curve's
+    /// 𝒂-coefficient.
+    pub trait EquationAProperties {}
+}
+
+// Allow crate-local visibility
+pub(crate) use sealed::EquationAProperties;
 
 /// The 𝒂-coefficient of the short Weierstrass equation is 0.
-pub struct CurveEquationAIsZero {}
+pub struct IsZero {}
 
 /// The 𝒂-coefficient of the short Weierstrass equation is -3.
-pub struct CurveEquationAIsMinusThree {}
+pub struct IsMinusThree {}
 
 /// The 𝒂-coefficient of the short Weierstrass equation does not have specific
 /// properties which allow for an optimized implementation.
-pub struct CurveEquationAIsGeneric {}
+pub struct IsGeneric {}
 
-impl CurveEquationAProperties for CurveEquationAIsZero {}
-impl CurveEquationAProperties for CurveEquationAIsMinusThree {}
-impl CurveEquationAProperties for CurveEquationAIsGeneric {}
+impl EquationAProperties for IsZero {}
+impl EquationAProperties for IsMinusThree {}
+impl EquationAProperties for IsGeneric {}
