@@ -203,7 +203,7 @@ pub trait Double {
 
 impl<C> Double for ProjectivePoint<C>
 where
-    C: PrimeCurveParams + CurveEquationAIsMinusThree,
+    C: PrimeCurveParams<CurveEquationAProperties = CurveEquationAIsMinusThree>,
 {
     /// We implement the exception-free point doubling formula from
     /// Renes-Costello-Batina 2015 (Algorithm 6), for prime order short

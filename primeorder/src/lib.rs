@@ -33,6 +33,9 @@ pub trait PrimeCurveParams:
     /// Base field element type.
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>;
 
+    /// Special properties of the `a`-coefficient.
+    type CurveEquationAProperties: equation_a::CurveEquationAProperties;
+
     /// Zero element of the base field.
     // TODO(tarcieri): use `Field` trait instead. See zkcrypto/ff#87
     const ZERO: Self::FieldElement;
