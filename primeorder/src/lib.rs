@@ -8,11 +8,16 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+pub mod equation_a;
+
 mod affine;
 mod field;
 mod projective;
 
-pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
+pub use crate::{
+    affine::AffinePoint,
+    projective::{Double, ProjectivePoint},
+};
 pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField};
 
 use elliptic_curve::{AffineArithmetic, ProjectiveArithmetic, ScalarArithmetic};
@@ -27,6 +32,9 @@ pub trait PrimeCurveParams:
 {
     /// Base field element type.
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>;
+
+    /// Special properties of the `a`-coefficient.
+    type EquationAProperties: equation_a::EquationAProperties;
 
     /// Zero element of the base field.
     // TODO(tarcieri): use `Field` trait instead. See zkcrypto/ff#87
