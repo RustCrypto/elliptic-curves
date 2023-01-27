@@ -9,10 +9,15 @@
 #![doc = include_str!("../README.md")]
 
 mod affine;
+mod equation_a;
 mod field;
 mod projective;
 
-pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
+pub use crate::{
+    affine::AffinePoint,
+    equation_a::{CurveEquationAIsGeneric, CurveEquationAIsMinusThree, CurveEquationAIsZero},
+    projective::{Double, ProjectivePoint},
+};
 pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField};
 
 use elliptic_curve::{AffineArithmetic, ProjectiveArithmetic, ScalarArithmetic};

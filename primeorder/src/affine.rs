@@ -2,7 +2,7 @@
 
 #![allow(clippy::op_ref)]
 
-use crate::{PrimeCurveParams, ProjectivePoint};
+use crate::{Double, PrimeCurveParams, ProjectivePoint};
 use core::{
     borrow::Borrow,
     ops::{Mul, Neg},
@@ -283,6 +283,7 @@ where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
+    ProjectivePoint<C>: Double,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -405,6 +406,7 @@ impl<C, S> Mul<S> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
+    ProjectivePoint<C>: Double,
 {
     type Output = ProjectivePoint<C>;
 

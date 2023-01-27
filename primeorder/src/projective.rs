@@ -2,7 +2,7 @@
 
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
-use crate::{AffinePoint, Field, PrimeCurveParams};
+use crate::{AffinePoint, CurveEquationAIsMinusThree, Field, PrimeCurveParams};
 use core::{
     borrow::Borrow,
     iter::Sum,
@@ -136,38 +136,6 @@ where
         ret
     }
 
-    /// Doubles this point.
-    pub fn double(&self) -> Self {
-        // We implement the exception-free point doubling formula from
-        // Renes-Costello-Batina 2015 (Algorithm 6). The comments after each line
-        // indicate which algorithm steps are being performed.
-
-        let xx = self.x.square(); // 1
-        let yy = self.y.square(); // 2
-        let zz = self.z.square(); // 3
-        let xy2 = (self.x * &self.y).double(); // 4, 5
-        let xz2 = (self.x * &self.z).double(); // 6, 7
-
-        let bzz_part = (C::EQUATION_B * &zz) - &xz2; // 8, 9
-        let bzz3_part = bzz_part.double() + &bzz_part; // 10, 11
-        let yy_m_bzz3 = yy - &bzz3_part; // 12
-        let yy_p_bzz3 = yy + &bzz3_part; // 13
-        let y_frag = yy_p_bzz3 * &yy_m_bzz3; // 14
-        let x_frag = yy_m_bzz3 * &xy2; // 15
-
-        let zz3 = zz.double() + &zz; // 16, 17
-        let bxz2_part = (C::EQUATION_B * &xz2) - &(zz3 + &xx); // 18, 19, 20
-        let bxz6_part = bxz2_part.double() + &bxz2_part; // 21, 22
-        let xx3_m_zz3 = xx.double() + &xx - &zz3; // 23, 24, 25
-
-        let y = y_frag + &(xx3_m_zz3 * &bxz6_part); // 26, 27
-        let yz2 = (self.y * &self.z).double(); // 28, 29
-        let x = x_frag - &(bxz6_part * &yz2); // 30, 31
-        let z = (yz2 * &yy).double().double(); // 32, 33, 34
-
-        Self { x, y, z }
-    }
-
     /// Returns `self - other`.
     pub fn sub(&self, other: &Self) -> Self {
         self.add(&other.neg())
@@ -179,7 +147,10 @@ where
     }
 
     /// Returns `[k] self`.
-    fn mul(&self, k: &Scalar<C>) -> Self {
+    fn mul(&self, k: &Scalar<C>) -> Self
+    where
+        Self: Double,
+    {
         let k = Into::<C::UInt>::into(*k).to_le_byte_array();
 
         let mut pc = [Self::default(); 16];
@@ -188,7 +159,7 @@ where
 
         for i in 2..16 {
             pc[i] = if i % 2 == 0 {
-                pc[i / 2].double()
+                Double::double(&pc[i / 2])
             } else {
                 pc[i - 1].add(self)
             };
@@ -215,7 +186,7 @@ where
                 break;
             }
 
-            q = q.double().double().double().double();
+            q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
             pos -= 4;
         }
 
@@ -223,8 +194,60 @@ where
     }
 }
 
+/// Double a point (i.e. add it to itself)
+// TODO(tarcieri): extract this into `elliptic_curve::ops`
+pub trait Double {
+    /// Double this point.
+    fn double(&self) -> Self;
+}
+
+impl<C> Double for ProjectivePoint<C>
+where
+    C: PrimeCurveParams + CurveEquationAIsMinusThree,
+{
+    /// We implement the exception-free point doubling formula from
+    /// Renes-Costello-Batina 2015 (Algorithm 6), for prime order short
+    /// Weierstrass curves `y² = x³ + ax + b` where `a = -3`.
+    ///
+    /// The comments after each lines indicate which algorithm steps
+    /// are being performed.
+    fn double(&self) -> Self {
+        debug_assert_eq!(
+            C::EQUATION_A,
+            -C::FieldElement::from(3),
+            "this implementation is only valid for C::EQUATION_A = -3"
+        );
+
+        let xx = self.x.square(); // 1
+        let yy = self.y.square(); // 2
+        let zz = self.z.square(); // 3
+        let xy2 = (self.x * &self.y).double(); // 4, 5
+        let xz2 = (self.x * &self.z).double(); // 6, 7
+
+        let bzz_part = (C::EQUATION_B * &zz) - &xz2; // 8, 9
+        let bzz3_part = bzz_part.double() + &bzz_part; // 10, 11
+        let yy_m_bzz3 = yy - &bzz3_part; // 12
+        let yy_p_bzz3 = yy + &bzz3_part; // 13
+        let y_frag = yy_p_bzz3 * &yy_m_bzz3; // 14
+        let x_frag = yy_m_bzz3 * &xy2; // 15
+
+        let zz3 = zz.double() + &zz; // 16, 17
+        let bxz2_part = (C::EQUATION_B * &xz2) - &(zz3 + &xx); // 18, 19, 20
+        let bxz6_part = bxz2_part.double() + &bxz2_part; // 21, 22
+        let xx3_m_zz3 = xx.double() + &xx - &zz3; // 23, 24, 25
+
+        let y = y_frag + &(xx3_m_zz3 * &bxz6_part); // 26, 27
+        let yz2 = (self.y * &self.z).double(); // 28, 29
+        let x = x_frag - &(bxz6_part * &yz2); // 30, 31
+        let z = (yz2 * &yy).double().double(); // 32, 33, 34
+
+        Self { x, y, z }
+    }
+}
+
 impl<C> CofactorGroup for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
@@ -336,6 +359,7 @@ where
 
 impl<C> Group for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
 {
     type Scalar = Scalar<C>;
@@ -358,7 +382,7 @@ where
 
     #[must_use]
     fn double(&self) -> Self {
-        ProjectivePoint::double(self)
+        Double::double(self)
     }
 }
 
@@ -388,6 +412,7 @@ where
 
 impl<C> group::Curve for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
 {
     type AffineRepr = AffinePoint<C>;
@@ -397,10 +422,16 @@ where
     }
 }
 
-impl<C> LinearCombination for ProjectivePoint<C> where C: PrimeCurveParams {}
+impl<C> LinearCombination for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+{
+}
 
 impl<C> PrimeGroup for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
@@ -411,6 +442,7 @@ where
 
 impl<C> PrimeCurve for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldSize<C>: ModulusSize,
@@ -691,6 +723,7 @@ where
 
 impl<C, S> Mul<S> for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
@@ -704,6 +737,7 @@ where
 impl<C> Mul<&Scalar<C>> for &ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    ProjectivePoint<C>: Double,
 {
     type Output = ProjectivePoint<C>;
 
@@ -714,6 +748,7 @@ where
 
 impl<C, S> MulAssign<S> for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
