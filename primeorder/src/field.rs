@@ -242,7 +242,7 @@ macro_rules! impl_field_element {
             }
 
             /// Multiply elements.
-            pub const fn mul(&self, rhs: &Self) -> Self {
+            pub const fn multiply(&self, rhs: &Self) -> Self {
                 Self(<$uint>::from_words($mul(
                     self.0.as_words(),
                     rhs.0.as_words(),
@@ -274,10 +274,27 @@ macro_rules! impl_field_element {
         }
 
         impl Eq for $fe {}
-
         impl PartialEq for $fe {
             fn eq(&self, rhs: &Self) -> bool {
                 self.0.ct_eq(&(rhs.0)).into()
+            }
+        }
+
+        impl From<u32> for $fe {
+            fn from(n: u32) -> $fe {
+                Self::from_uint_unchecked(<$uint>::from(n))
+            }
+        }
+
+        impl From<u64> for $fe {
+            fn from(n: u64) -> $fe {
+                Self::from_uint_unchecked(<$uint>::from(n))
+            }
+        }
+
+        impl From<u128> for $fe {
+            fn from(n: u128) -> $fe {
+                Self::from_uint_unchecked(<$uint>::from(n))
             }
         }
 
@@ -308,8 +325,11 @@ macro_rules! impl_field_element {
         impl $crate::elliptic_curve::zeroize::DefaultIsZeroes for $fe {}
 
         impl $crate::elliptic_curve::ff::Field for $fe {
+            const ZERO: Self = Self::ZERO;
+            const ONE: Self = Self::ONE;
+
             fn random(mut rng: impl $crate::elliptic_curve::rand_core::RngCore) -> Self {
-                // NOTE: can't use ScalarCore::random due to CryptoRng bound
+                // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
                 let mut bytes = <$bytes>::default();
 
                 loop {
@@ -318,14 +338,6 @@ macro_rules! impl_field_element {
                         return fe;
                     }
                 }
-            }
-
-            fn zero() -> Self {
-                Self::ZERO
-            }
-
-            fn one() -> Self {
-                Self::ONE
             }
 
             fn is_zero(&self) -> Choice {
@@ -349,11 +361,15 @@ macro_rules! impl_field_element {
             fn sqrt(&self) -> CtOption<Self> {
                 self.sqrt()
             }
+
+            fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+                $crate::elliptic_curve::ff::helpers::sqrt_ratio_generic(num, div)
+            }
         }
 
-        $crate::elliptic_curve::impl_field_op!($fe, $uint, Add, add, $add);
-        $crate::elliptic_curve::impl_field_op!($fe, $uint, Sub, sub, $sub);
-        $crate::elliptic_curve::impl_field_op!($fe, $uint, Mul, mul, $mul);
+        $crate::impl_field_op!($fe, $uint, Add, add, $add);
+        $crate::impl_field_op!($fe, $uint, Sub, sub, $sub);
+        $crate::impl_field_op!($fe, $uint, Mul, mul, $mul);
 
         impl AddAssign<$fe> for $fe {
             #[inline]
@@ -403,6 +419,30 @@ macro_rules! impl_field_element {
             #[inline]
             fn neg(self) -> $fe {
                 Self($neg(self.as_ref()).into())
+            }
+        }
+
+        impl Sum for $fe {
+            fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+                iter.fold(Self::ZERO, |acc, w| acc + w)
+            }
+        }
+
+        impl<'a> Sum<&'a $fe> for $fe {
+            fn sum<I: Iterator<Item = &'a $fe>>(iter: I) -> Self {
+                iter.fold(Self::ZERO, |acc, w| acc + w)
+            }
+        }
+
+        impl Product for $fe {
+            fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+                iter.fold(Self::ZERO, |acc, w| acc * w)
+            }
+        }
+
+        impl<'a> Product<&'a $fe> for $fe {
+            fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+                iter.fold(Self::ZERO, |acc, w| acc * w)
             }
         }
     };

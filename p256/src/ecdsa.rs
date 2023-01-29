@@ -97,8 +97,8 @@ mod tests {
     // <https://tools.ietf.org/html/rfc6979#appendix-A.2.5>
     #[test]
     fn rfc6979() {
-        let x = &hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
-        let signer = SigningKey::from_bytes(x).unwrap();
+        let x = hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
+        let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let signature: Signature = signer.sign(b"sample");
         assert_eq!(
             signature.to_bytes().as_slice(),
@@ -120,8 +120,8 @@ mod tests {
     // Test signing with PrehashSigner using SHA-384 which output is larger than P-256 field size.
     #[test]
     fn prehash_signer_signing_with_sha384() {
-        let x = &hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
-        let signer = SigningKey::from_bytes(x).unwrap();
+        let x = hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
+        let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let digest = sha2::Sha384::digest(b"test");
         let signature: Signature = signer.sign_prehash(&digest).unwrap();
         assert_eq!(
@@ -175,7 +175,7 @@ mod tests {
         let k = Scalar::from_repr(GenericArray::clone_from_slice(vector.k)).unwrap();
         let k_blinded = BlindedScalar::new(k, &mut OsRng);
         let z = GenericArray::clone_from_slice(vector.m);
-        let sig = d.try_sign_prehashed(k_blinded, z).unwrap().0;
+        let sig = d.try_sign_prehashed(k_blinded, &z).unwrap().0;
 
         assert_eq!(vector.r, sig.r().to_bytes().as_slice());
         assert_eq!(vector.s, sig.s().to_bytes().as_slice());

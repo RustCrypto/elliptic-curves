@@ -91,7 +91,7 @@
 //!
 //! let signing_key = SigningKey::from_bytes(&hex!(
 //!     "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
-//! ))?;
+//! ).into())?;
 //!
 //! let msg = hex!("e9808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca0080018080");
 //!
@@ -99,7 +99,7 @@
 //!
 //! let (signature, recid) = signing_key
 //!     .as_nonzero_scalar()
-//!     .try_sign_prehashed_rfc6979::<Sha256>(digest, b"")?;
+//!     .try_sign_prehashed_rfc6979::<Sha256>(&digest, b"")?;
 //!
 //! assert_eq!(
 //!     signature.to_bytes().as_slice(),
@@ -150,20 +150,20 @@ pub use ecdsa_core::{
     RecoveryId,
 };
 
-#[cfg(feature = "ecdsa")]
+#[cfg(any(feature = "ecdsa", feature = "sha256"))]
 pub use ecdsa_core::hazmat;
 
 use crate::Secp256k1;
 
 #[cfg(feature = "ecdsa")]
 use {
-    crate::{AffinePoint, FieldBytes, ProjectivePoint, Scalar, U256},
-    core::borrow::Borrow,
+    crate::{AffinePoint, FieldBytes, ProjectivePoint, Scalar},
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
     elliptic_curve::{
-        ops::{Invert, Reduce},
+        ops::{Invert, MulByGenerator, Reduce},
+        scalar::IsHigh,
         subtle::CtOption,
-        IsHigh,
+        Curve,
     },
 };
 
@@ -182,7 +182,7 @@ pub type SigningKey = ecdsa_core::SigningKey<Secp256k1>;
 pub type VerifyingKey = ecdsa_core::VerifyingKey<Secp256k1>;
 
 #[cfg(feature = "sha256")]
-impl ecdsa_core::hazmat::DigestPrimitive for Secp256k1 {
+impl hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
 }
 
@@ -191,31 +191,30 @@ impl SignPrimitive<Secp256k1> for Scalar {
     #[allow(non_snake_case, clippy::many_single_char_names)]
     fn try_sign_prehashed<K>(
         &self,
-        ephemeral_scalar: K,
-        z: FieldBytes,
+        k: K,
+        z: &FieldBytes,
     ) -> Result<(Signature, Option<RecoveryId>), Error>
     where
-        K: Borrow<Scalar> + Invert<Output = CtOption<Scalar>>,
+        K: AsRef<Self> + Invert<Output = CtOption<Self>>,
     {
-        let z = <Self as Reduce<U256>>::from_be_bytes_reduced(z);
-        let k_inverse = ephemeral_scalar.invert();
-        let k = ephemeral_scalar.borrow();
-
-        if k_inverse.is_none().into() || k.is_zero().into() {
+        if k.as_ref().is_zero().into() {
             return Err(Error::new());
         }
 
-        let k_inverse = k_inverse.unwrap();
+        let z = Self::reduce(Secp256k1::decode_field_bytes(z));
 
-        // Compute 𝐑 = 𝑘×𝑮
-        let R = ProjectivePoint::mul_by_generator(k).to_affine();
+        // Compute scalar inversion of 𝑘
+        let k_inv = Option::<Scalar>::from(k.invert()).ok_or_else(Error::new)?;
 
-        // Lift x-coordinate of 𝐑 (element of base field) into a serialized big
+        // Compute 𝑹 = 𝑘×𝑮
+        let R = ProjectivePoint::mul_by_generator(k.as_ref()).to_affine();
+
+        // Lift x-coordinate of 𝑹 (element of base field) into a serialized big
         // integer, then reduce it into an element of the scalar field
-        let r = <Scalar as Reduce<U256>>::from_be_bytes_reduced(R.x.to_bytes());
+        let r = Self::reduce(Secp256k1::decode_field_bytes(&R.x.to_bytes()));
 
-        // Compute `s` as a signature over `r` and `z`.
-        let s = k_inverse * (z + (r * self));
+        // Compute 𝒔 as a signature over 𝒓 and 𝒛.
+        let s = k_inv * (z + (r * self));
 
         if s.is_zero().into() {
             return Err(Error::new());
@@ -223,10 +222,10 @@ impl SignPrimitive<Secp256k1> for Scalar {
 
         let signature = Signature::from_scalars(r, s)?;
         let is_r_odd = R.y.normalize().is_odd();
-        let is_s_high = signature.s().is_high();
+        let is_s_high = s.is_high();
         let is_y_odd = is_r_odd ^ is_s_high;
         let signature_low = signature.normalize_s().unwrap_or(signature);
-        let recovery_id = ecdsa_core::RecoveryId::new(is_y_odd.into(), false);
+        let recovery_id = RecoveryId::new(is_y_odd.into(), false);
 
         Ok((signature_low, Some(recovery_id)))
     }
@@ -339,18 +338,18 @@ mod tests {
     mod wycheproof {
         use crate::{EncodedPoint, Secp256k1};
         use ecdsa_core::{signature::Verifier, Signature};
+        use elliptic_curve::generic_array::typenum::Unsigned;
 
         #[test]
         fn wycheproof() {
             use blobby::Blob5Iterator;
-            use elliptic_curve::bigint::Encoding as _;
 
             // Build a field element but allow for too-short input (left pad with zeros)
             // or too-long input (check excess leftmost bytes are zeros).
             fn element_from_padded_slice<C: elliptic_curve::Curve>(
                 data: &[u8],
             ) -> elliptic_curve::FieldBytes<C> {
-                let point_len = C::UInt::BYTE_SIZE;
+                let point_len = C::FieldBytesSize::USIZE;
                 if data.len() >= point_len {
                     let offset = data.len() - point_len;
                     for v in data.iter().take(offset) {

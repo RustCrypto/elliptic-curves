@@ -55,11 +55,17 @@ pub use elliptic_curve::pkcs8;
 #[cfg(feature = "sha2")]
 pub use sha2;
 
-use elliptic_curve::{consts::U33, generic_array::GenericArray};
+use elliptic_curve::{
+    bigint::ArrayEncoding,
+    consts::{U32, U33, U64},
+    generic_array::GenericArray,
+};
 
-/// Order of the secp256k1 elliptic curve
-const ORDER: U256 =
-    U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+/// Order of the secp256k1 elliptic curve in hexadecimal.
+const ORDER_HEX: &str = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
+
+/// Order of the secp256k1 elliptic curve.
+const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
 
 /// secp256k1 (K-256) elliptic curve.
 ///
@@ -76,16 +82,29 @@ const ORDER: U256 =
 pub struct Secp256k1;
 
 impl elliptic_curve::Curve for Secp256k1 {
-    /// 256-bit field modulus
-    type UInt = U256;
+    /// 32-byte serialized field elements.
+    type FieldBytesSize = U32;
 
-    /// Curve order
+    /// 256-bit field modulus.
+    type Uint = U256;
+
+    /// Curve order.
     const ORDER: U256 = ORDER;
+
+    /// Decode unsigned integer from serialized field element.
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> U256 {
+        U256::from_be_byte_array(*field_bytes)
+    }
+
+    /// Encode unsigned integer into serialized field element.
+    fn encode_field_bytes(uint: &U256) -> FieldBytes {
+        uint.to_be_byte_array()
+    }
 }
 
 impl elliptic_curve::PrimeCurve for Secp256k1 {}
 
-impl elliptic_curve::PointCompression for Secp256k1 {
+impl elliptic_curve::point::PointCompression for Secp256k1 {
     /// secp256k1 points are typically compressed.
     const COMPRESS_POINTS: bool = true;
 }
@@ -108,6 +127,9 @@ pub type CompressedPoint = GenericArray<u8, U33>;
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
 
+/// Bytes used by a wide reduction: twice the width of [`FieldBytes`].
+pub type WideBytes = GenericArray<u8, U64>;
+
 /// SEC1-encoded secp256k1 (K-256) curve point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
 
@@ -127,4 +149,4 @@ impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
 
 /// Bit representation of a secp256k1 (K-256) scalar field element.
 #[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::ScalarBits<Secp256k1>;
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<Secp256k1>;

@@ -9,7 +9,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Encoding},
+    bigint::{ArrayEncoding, Integer},
     generic_array::ArrayLength,
     group::{
         self,
@@ -17,7 +17,8 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
         Group, GroupEncoding,
     },
-    ops::LinearCombination,
+    ops::{LinearCombination, MulByGenerator},
+    point::Double,
     rand_core::RngCore,
     sec1::{
         CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
@@ -25,7 +26,7 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, FieldBytes, FieldSize, PublicKey, Result, Scalar,
+    Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
 /// Point on a Weierstrass curve in projective coordinates.
@@ -42,16 +43,16 @@ where
 {
     /// Additive identity of the group a.k.a. the point at infinity.
     pub const IDENTITY: Self = Self {
-        x: C::ZERO,
-        y: C::ONE,
-        z: C::ZERO,
+        x: C::FieldElement::ZERO,
+        y: C::FieldElement::ONE,
+        z: C::FieldElement::ZERO,
     };
 
     /// Base point of the curve.
     pub const GENERATOR: Self = Self {
         x: C::GENERATOR.0,
         y: C::GENERATOR.1,
-        z: C::ONE,
+        z: C::FieldElement::ONE,
     };
 
     /// Returns the affine representation of this point, or `None` if it is the identity.
@@ -151,7 +152,7 @@ where
     where
         Self: Double,
     {
-        let k = Into::<C::UInt>::into(*k).to_le_byte_array();
+        let k = Into::<C::Uint>::into(*k).to_le_byte_array();
 
         let mut pc = [Self::default(); 16];
         pc[0] = Self::IDENTITY;
@@ -166,7 +167,7 @@ where
         }
 
         let mut q = Self::IDENTITY;
-        let mut pos = C::UInt::BIT_SIZE - 4;
+        let mut pos = C::Uint::BITS - 4;
 
         loop {
             let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
@@ -199,7 +200,7 @@ where
     Self: Double,
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -250,13 +251,6 @@ where
 }
 
 impl<C> DefaultIsZeroes for ProjectivePoint<C> where C: PrimeCurveParams {}
-
-/// Double a point (i.e. add it to itself)
-// TODO(tarcieri): extract this into `elliptic_curve::ops`
-pub trait Double {
-    /// Double this point.
-    fn double(&self) -> Self;
-}
 
 // TODO(tarcieri): impls for `equation_a::IsGeneric` and `equation_a::IsZero`
 impl<C> Double for ProjectivePoint<C>
@@ -314,7 +308,7 @@ where
         let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
-            z: C::ONE,
+            z: C::FieldElement::ONE,
         };
         Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
     }
@@ -351,7 +345,7 @@ impl<C> FromEncodedPoint<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
     fn from_encoded_point(p: &EncodedPoint<C>) -> CtOption<Self> {
@@ -392,7 +386,7 @@ impl<C> GroupEncoding for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -431,12 +425,23 @@ where
 {
 }
 
+impl<C> MulByGenerator for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+{
+    fn mul_by_generator(scalar: &Self::Scalar) -> Self {
+        // TODO(tarcieri): precomputed basepoint tables
+        Self::generator() * scalar
+    }
+}
+
 impl<C> PrimeGroup for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -447,7 +452,7 @@ where
     Self: Double,
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -466,7 +471,7 @@ where
 impl<C> ToEncodedPoint<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {

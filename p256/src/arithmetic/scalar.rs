@@ -1,26 +1,27 @@
 //! Scalar field arithmetic modulo n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 
-pub mod blinded;
-
 #[cfg_attr(target_pointer_width = "32", path = "scalar/scalar32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "scalar/scalar64.rs")]
 mod scalar_impl;
 
 use self::scalar_impl::barrett_reduce;
-use crate::{FieldBytes, NistP256, SecretKey};
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use crate::{FieldBytes, NistP256, SecretKey, ORDER_HEX};
+use core::{
+    iter::{Product, Sum},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
+};
 use elliptic_curve::{
     bigint::{prelude::*, Limb, U256},
-    generic_array::arr,
-    group::ff::{Field, PrimeField},
+    group::ff::{self, Field, PrimeField},
     ops::{Reduce, ReduceNonZero},
     rand_core::RngCore,
+    scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, IsHigh, ScalarCore,
+    Curve, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
@@ -109,7 +110,7 @@ impl Scalar {
     }
 
     /// Returns self * rhs mod n
-    pub const fn mul(&self, rhs: &Self) -> Self {
+    pub const fn multiply(&self, rhs: &Self) -> Self {
         let (lo, hi) = self.0.mul_wide(&rhs.0);
         Self(barrett_reduce(lo, hi))
     }
@@ -117,11 +118,25 @@ impl Scalar {
     /// Returns self * self mod p
     pub const fn square(&self) -> Self {
         // Schoolbook multiplication.
-        self.mul(self)
+        self.multiply(self)
+    }
+
+    /// Right shifts the scalar.
+    ///
+    /// Note: not constant-time with respect to the `shift` parameter.
+    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
+        Self(self.0.shr_vartime(shift))
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero
     pub fn invert(&self) -> CtOption<Self> {
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
         // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
         // field, we can apply Fermat's Little Theorem:
         //
@@ -132,65 +147,41 @@ impl Scalar {
         // Thus inversion can be implemented with a single exponentiation.
         //
         // This is `n - 2`, so the top right two digits are `4f` instead of `51`.
-        let inverse = self.pow_vartime([
+        self.pow_vartime(&[
             0xf3b9_cac2_fc63_254f,
             0xbce6_faad_a717_9e84,
             0xffff_ffff_ffff_ffff,
             0xffff_ffff_0000_0000,
-        ]);
+        ])
+    }
 
-        CtOption::new(inverse, !self.is_zero())
+    /// Exponentiates `self` by `exp`, where `exp` is a little-endian order integer
+    /// exponent.
+    pub(crate) const fn pow_vartime(&self, exp: &[u64]) -> Self {
+        let mut res = Self::ONE;
+
+        let mut i = exp.len();
+        while i > 0 {
+            i -= 1;
+
+            let mut j = 64;
+            while j > 0 {
+                j -= 1;
+                res = res.square();
+
+                if ((exp[i] >> j) & 1) == 1 {
+                    res = res.multiply(self);
+                }
+            }
+        }
+
+        res
     }
 
     /// Faster inversion using Stein's algorithm
     #[allow(non_snake_case)]
     pub fn invert_vartime(&self) -> CtOption<Self> {
-        // https://link.springer.com/article/10.1007/s13389-016-0135-4
-
-        let mut u = *self;
-        // currently an invalid scalar
-        let mut v = Scalar(NistP256::ORDER);
-        let mut A = Self::one();
-        let mut C = Self::zero();
-
-        while !bool::from(u.is_zero()) {
-            // u-loop
-            while bool::from(u.is_even()) {
-                u.shr1();
-
-                let was_odd: bool = A.is_odd().into();
-                A.shr1();
-
-                if was_odd {
-                    A += FRAC_MODULUS_2;
-                    A += Self::one();
-                }
-            }
-
-            // v-loop
-            while bool::from(v.is_even()) {
-                v.shr1();
-
-                let was_odd: bool = C.is_odd().into();
-                C.shr1();
-
-                if was_odd {
-                    C += FRAC_MODULUS_2;
-                    C += Self::one();
-                }
-            }
-
-            // sub-step
-            if u >= v {
-                u -= &v;
-                A -= &C;
-            } else {
-                v -= &u;
-                C -= &A;
-            }
-        }
-
-        CtOption::new(C, !self.is_zero())
+        elliptic_curve::scalar::invert_vartime::<NistP256>(self)
     }
 
     /// Is integer representing equivalence class odd?
@@ -202,14 +193,18 @@ impl Scalar {
     pub fn is_even(&self) -> Choice {
         !self.is_odd()
     }
+}
 
-    /// Shift right by one bit
-    fn shr1(&mut self) {
-        self.0 >>= 1;
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
     }
 }
 
 impl Field for Scalar {
+    const ZERO: Self = Self::ZERO;
+    const ONE: Self = Self::ONE;
+
     fn random(mut rng: impl RngCore) -> Self {
         let mut bytes = FieldBytes::default();
 
@@ -228,14 +223,6 @@ impl Field for Scalar {
                 return scalar;
             }
         }
-    }
-
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    fn one() -> Self {
-        Self::ONE
     }
 
     #[must_use]
@@ -257,7 +244,7 @@ impl Field for Scalar {
     #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
         // Note: `pow_vartime` is constant-time with respect to `self`
-        let w = self.pow_vartime([
+        let w = self.pow_vartime(&[
             0x279dce5617e3192a,
             0xfde737d56d38bcf4,
             0x07ffffffffffffff,
@@ -267,7 +254,7 @@ impl Field for Scalar {
         let mut v = Self::S;
         let mut x = *self * w;
         let mut b = x * w;
-        let mut z = Self::root_of_unity();
+        let mut z = Self::ROOT_OF_UNITY;
 
         for max_v in (1..=Self::S).rev() {
             let mut k = 1;
@@ -275,7 +262,7 @@ impl Field for Scalar {
             let mut j_less_than_v = Choice::from(1);
 
             for j in 2..max_v {
-                let tmp_is_one = tmp.ct_eq(&Self::one());
+                let tmp_is_one = tmp.ct_eq(&Self::ONE);
                 let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
                 tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
                 let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
@@ -285,7 +272,7 @@ impl Field for Scalar {
             }
 
             let result = x * z;
-            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::ONE));
             z = z.square();
             b *= z;
             v = k;
@@ -293,14 +280,26 @@ impl Field for Scalar {
 
         CtOption::new(x, x.square().ct_eq(self))
     }
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        ff::helpers::sqrt_ratio_generic(num, div)
+    }
 }
 
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
+    const MODULUS: &'static str = ORDER_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
+    const TWO_INV: Self = Self(U256::from_u8(2)).invert_unchecked();
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U256::from_u8(7));
     const S: u32 = 4;
+    const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
+        "ffc97f062a770992ba807ace842a3dfc1546cad004378daf0592d7fbb41e6602",
+    ));
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
+    const DELTA: Self = Self::ZERO; // TODO
 
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
@@ -317,19 +316,6 @@ impl PrimeField for Scalar {
 
     fn is_odd(&self) -> Choice {
         self.0.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        7u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Scalar::from_repr(arr![u8;
-            0xff, 0xc9, 0x7f, 0x06, 0x2a, 0x77, 0x09, 0x92, 0xba, 0x80, 0x7a, 0xce, 0x84, 0x2a,
-            0x3d, 0xfc, 0x15, 0x46, 0xca, 0xd0, 0x04, 0x37, 0x8d, 0xaf, 0x05, 0x92, 0xd7, 0xfb,
-            0xb4, 0x1e, 0x66, 0x02,
-        ])
-        .unwrap()
     }
 }
 
@@ -354,9 +340,39 @@ impl DefaultIsZeroes for Scalar {}
 
 impl Eq for Scalar {}
 
+impl FromUintUnchecked for Scalar {
+    type Uint = U256;
+
+    fn from_uint_unchecked(uint: Self::Uint) -> Self {
+        Self(uint)
+    }
+}
+
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         self.0.ct_gt(&FRAC_MODULUS_2.0)
+    }
+}
+
+impl Shr<usize> for Scalar {
+    type Output = Self;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        self.shr_vartime(rhs)
+    }
+}
+
+impl Shr<usize> for &Scalar {
+    type Output = Scalar;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        self.shr_vartime(rhs)
+    }
+}
+
+impl ShrAssign<usize> for Scalar {
+    fn shr_assign(&mut self, rhs: usize) {
+        *self = *self >> rhs;
     }
 }
 
@@ -408,27 +424,27 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-impl From<ScalarCore<NistP256>> for Scalar {
-    fn from(scalar: ScalarCore<NistP256>) -> Scalar {
+impl From<ScalarPrimitive<NistP256>> for Scalar {
+    fn from(scalar: ScalarPrimitive<NistP256>) -> Scalar {
         Scalar(*scalar.as_uint())
     }
 }
 
-impl From<&ScalarCore<NistP256>> for Scalar {
-    fn from(scalar: &ScalarCore<NistP256>) -> Scalar {
+impl From<&ScalarPrimitive<NistP256>> for Scalar {
+    fn from(scalar: &ScalarPrimitive<NistP256>) -> Scalar {
         Scalar(*scalar.as_uint())
     }
 }
 
-impl From<Scalar> for ScalarCore<NistP256> {
-    fn from(scalar: Scalar) -> ScalarCore<NistP256> {
-        ScalarCore::from(&scalar)
+impl From<Scalar> for ScalarPrimitive<NistP256> {
+    fn from(scalar: Scalar) -> ScalarPrimitive<NistP256> {
+        ScalarPrimitive::from(&scalar)
     }
 }
 
-impl From<&Scalar> for ScalarCore<NistP256> {
-    fn from(scalar: &Scalar) -> ScalarCore<NistP256> {
-        ScalarCore::new(scalar.0).unwrap()
+impl From<&Scalar> for ScalarPrimitive<NistP256> {
+    fn from(scalar: &Scalar) -> ScalarPrimitive<NistP256> {
+        ScalarPrimitive::new(scalar.0).unwrap()
     }
 }
 
@@ -533,7 +549,7 @@ impl Mul<Scalar> for Scalar {
     type Output = Scalar;
 
     fn mul(self, other: Scalar) -> Scalar {
-        Scalar::mul(&self, &other)
+        Scalar::multiply(&self, &other)
     }
 }
 
@@ -541,7 +557,7 @@ impl Mul<&Scalar> for &Scalar {
     type Output = Scalar;
 
     fn mul(self, other: &Scalar) -> Scalar {
-        Scalar::mul(self, other)
+        Scalar::multiply(self, other)
     }
 }
 
@@ -549,19 +565,19 @@ impl Mul<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn mul(self, other: &Scalar) -> Scalar {
-        Scalar::mul(&self, other)
+        Scalar::multiply(&self, other)
     }
 }
 
 impl MulAssign<Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: Scalar) {
-        *self = Scalar::mul(self, &rhs);
+        *self = Scalar::multiply(self, &rhs);
     }
 }
 
 impl MulAssign<&Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: &Scalar) {
-        *self = Scalar::mul(self, rhs);
+        *self = Scalar::multiply(self, rhs);
     }
 }
 
@@ -569,7 +585,7 @@ impl Neg for Scalar {
     type Output = Scalar;
 
     fn neg(self) -> Scalar {
-        Scalar::zero() - self
+        Scalar::ZERO - self
     }
 }
 
@@ -577,24 +593,58 @@ impl<'a> Neg for &'a Scalar {
     type Output = Scalar;
 
     fn neg(self) -> Scalar {
-        Scalar::zero() - self
+        Scalar::ZERO - self
     }
 }
 
 impl Reduce<U256> for Scalar {
-    fn from_uint_reduced(w: U256) -> Self {
+    type Bytes = FieldBytes;
+
+    fn reduce(w: U256) -> Self {
         let (r, underflow) = w.sbb(&NistP256::ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow))
+    }
+
+    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+        Self::reduce(U256::from_be_byte_array(*bytes))
     }
 }
 
 impl ReduceNonZero<U256> for Scalar {
-    fn from_uint_reduced_nonzero(w: U256) -> Self {
+    fn reduce_nonzero(w: U256) -> Self {
         const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
         let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow).wrapping_add(&U256::ONE))
+    }
+
+    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
+        Self::reduce_nonzero(U256::from_be_byte_array(*bytes))
+    }
+}
+
+impl Sum for Scalar {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |acc, w| acc + w)
+    }
+}
+
+impl<'a> Sum<&'a Scalar> for Scalar {
+    fn sum<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |acc, w| acc + w)
+    }
+}
+
+impl Product for Scalar {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |acc, w| acc * w)
+    }
+}
+
+impl<'a> Product<&'a Scalar> for Scalar {
+    fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |acc, w| acc * w)
     }
 }
 
@@ -616,7 +666,7 @@ impl Serialize for Scalar {
     where
         S: ser::Serializer,
     {
-        ScalarCore::from(self).serialize(serializer)
+        ScalarPrimitive::from(self).serialize(serializer)
     }
 }
 
@@ -626,7 +676,7 @@ impl<'de> Deserialize<'de> for Scalar {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(ScalarCore::deserialize(deserializer)?.into())
+        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
     }
 }
 
@@ -649,7 +699,7 @@ mod tests {
     /// Basic tests that multiplication works.
     #[test]
     fn multiply() {
-        let one = Scalar::one();
+        let one = Scalar::ONE;
         let two = one + &one;
         let three = two + &one;
         let six = three + &three;
@@ -666,7 +716,7 @@ mod tests {
     /// Basic tests that scalar inversion works.
     #[test]
     fn invert() {
-        let one = Scalar::one();
+        let one = Scalar::ONE;
         let three = one + &one + &one;
         let inv_three = three.invert().unwrap();
         // println!("1/3 = {:x?}", &inv_three);
@@ -693,8 +743,8 @@ mod tests {
     /// Tests that a Scalar can be safely converted to a SecretKey and back
     #[test]
     fn from_ec_secret() {
-        let scalar = Scalar::one();
-        let secret = SecretKey::from_be_bytes(&scalar.to_bytes()).unwrap();
+        let scalar = Scalar::ONE;
+        let secret = SecretKey::from_bytes(&scalar.to_bytes()).unwrap();
         let rederived_scalar = Scalar::from(&secret);
         assert_eq!(scalar.0, rederived_scalar.0);
     }

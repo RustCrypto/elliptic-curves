@@ -14,35 +14,24 @@ mod affine;
 mod field;
 mod projective;
 
-pub use crate::{
-    affine::AffinePoint,
-    projective::{Double, ProjectivePoint},
-};
-pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField};
+pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
+pub use elliptic_curve::{self, point::Double, Field, FieldBytes, PrimeCurve, PrimeField};
 
-use elliptic_curve::{AffineArithmetic, ProjectiveArithmetic, ScalarArithmetic};
+use elliptic_curve::CurveArithmetic;
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
 pub trait PrimeCurveParams:
     PrimeCurve
-    + ScalarArithmetic
-    + AffineArithmetic<AffinePoint = AffinePoint<Self>>
-    + ProjectiveArithmetic<ProjectivePoint = ProjectivePoint<Self>>
+    + CurveArithmetic
+    + CurveArithmetic<AffinePoint = AffinePoint<Self>>
+    + CurveArithmetic<ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>;
 
     /// Special properties of the `a`-coefficient.
     type EquationAProperties: equation_a::EquationAProperties;
-
-    /// Zero element of the base field.
-    // TODO(tarcieri): use `Field` trait instead. See zkcrypto/ff#87
-    const ZERO: Self::FieldElement;
-
-    /// Multiplicative identity of the base field.
-    // TODO(tarcieri): use `Field` trait instead. See zkcrypto/ff#87
-    const ONE: Self::FieldElement;
 
     /// Coefficient `a` in the curve equation.
     const EQUATION_A: Self::FieldElement;

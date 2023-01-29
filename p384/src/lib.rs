@@ -31,7 +31,7 @@ pub mod ecdsa;
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
-pub use elliptic_curve::{self, bigint::U384};
+pub use elliptic_curve::{self, bigint::U384, consts::U48};
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
@@ -42,28 +42,44 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{consts::U49, generic_array::GenericArray};
+use elliptic_curve::{bigint::ArrayEncoding, consts::U49, generic_array::GenericArray};
+
+/// Order of NIST P-384's elliptic curve group (i.e. scalar modulus) in hexadecimal.
+const ORDER_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973";
 
 /// NIST P-384 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP384;
 
 impl elliptic_curve::Curve for NistP384 {
+    /// 48-byte serialized field elements.
+    type FieldBytesSize = U48;
+
     /// 384-bit integer type used for internally representing field elements.
-    type UInt = U384;
+    type Uint = U384;
 
     /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U384 = U384::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973");
+    const ORDER: U384 = U384::from_be_hex(ORDER_HEX);
+
+    /// Decode unsigned integer from serialized field element.
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> U384 {
+        U384::from_be_byte_array(*field_bytes)
+    }
+
+    /// Encode unsigned integer into serialized field element.
+    fn encode_field_bytes(uint: &U384) -> FieldBytes {
+        uint.to_be_byte_array()
+    }
 }
 
 impl elliptic_curve::PrimeCurve for NistP384 {}
 
-impl elliptic_curve::PointCompression for NistP384 {
+impl elliptic_curve::point::PointCompression for NistP384 {
     /// NIST P-384 points are typically uncompressed.
     const COMPRESS_POINTS: bool = false;
 }
 
-impl elliptic_curve::PointCompaction for NistP384 {
+impl elliptic_curve::point::PointCompaction for NistP384 {
     /// NIST P-384 points are typically uncompressed.
     const COMPACT_POINTS: bool = false;
 }
@@ -106,7 +122,7 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP384 {}
 
 /// Bit representation of a NIST P-384 scalar field element.
 #[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::ScalarBits<NistP384>;
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP384>;
 
 #[cfg(feature = "voprf")]
 impl elliptic_curve::VoprfParameters for NistP384 {

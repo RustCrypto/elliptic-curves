@@ -13,9 +13,7 @@ pub(crate) mod scalar;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP384;
-use elliptic_curve::{
-    AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
-};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
 use primeorder::{equation_a, PrimeCurveParams};
 
 /// Elliptic curve point in affine coordinates.
@@ -24,12 +22,19 @@ pub type AffinePoint = primeorder::AffinePoint<NistP384>;
 /// Elliptic curve point in projective coordinates.
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP384>;
 
+impl CurveArithmetic for NistP384 {
+    type AffinePoint = AffinePoint;
+    type ProjectivePoint = ProjectivePoint;
+    type Scalar = Scalar;
+}
+
+impl PrimeCurveArithmetic for NistP384 {
+    type CurveGroup = ProjectivePoint;
+}
+
 impl PrimeCurveParams for NistP384 {
     type FieldElement = FieldElement;
     type EquationAProperties = equation_a::IsMinusThree;
-
-    const ZERO: FieldElement = FieldElement::ZERO;
-    const ONE: FieldElement = FieldElement::ONE;
 
     /// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
     const EQUATION_A: FieldElement = FieldElement::ZERO
@@ -58,20 +63,4 @@ impl PrimeCurveParams for NistP384 {
         FieldElement::from_be_hex("aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7"),
         FieldElement::from_be_hex("3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f"),
     );
-}
-
-impl AffineArithmetic for NistP384 {
-    type AffinePoint = AffinePoint;
-}
-
-impl ProjectiveArithmetic for NistP384 {
-    type ProjectivePoint = ProjectivePoint;
-}
-
-impl PrimeCurveArithmetic for NistP384 {
-    type CurveGroup = ProjectivePoint;
-}
-
-impl ScalarArithmetic for NistP384 {
-    type Scalar = Scalar;
 }

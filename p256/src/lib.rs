@@ -38,13 +38,10 @@ pub mod ecdsa;
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
-pub use elliptic_curve::{self, bigint::U256};
+pub use elliptic_curve::{self, bigint::U256, consts::U32};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{
-    scalar::{blinded::BlindedScalar, Scalar},
-    AffinePoint, ProjectivePoint,
-};
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
@@ -52,7 +49,27 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{consts::U33, generic_array::GenericArray};
+use elliptic_curve::{bigint::ArrayEncoding, consts::U33, generic_array::GenericArray};
+
+/// Order of NIST P-256's elliptic curve group (i.e. scalar modulus) serialized
+/// as hexadecimal.
+///
+/// ```text
+/// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
+/// ```
+///
+/// # Calculating the order
+/// One way to calculate the order is with `GP/PARI`:
+///
+/// ```text
+/// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
+/// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
+/// E = ellinit([Mod(-3, p), Mod(b, p)])
+/// default(parisize, 120000000)
+/// n = ellsea(E)
+/// isprime(n)
+/// ```
+const ORDER_HEX: &str = "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551";
 
 /// NIST P-256 elliptic curve.
 ///
@@ -77,38 +94,34 @@ use elliptic_curve::{consts::U33, generic_array::GenericArray};
 pub struct NistP256;
 
 impl elliptic_curve::Curve for NistP256 {
+    /// 32-byte serialized field elements.
+    type FieldBytesSize = U32;
+
     /// 256-bit integer type used for internally representing field elements.
-    type UInt = U256;
+    type Uint = U256;
 
     /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus).
-    ///
-    /// ```text
-    /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
-    /// ```
-    ///
-    /// # Calculating the order
-    /// One way to calculate the order is with `GP/PARI`:
-    ///
-    /// ```text
-    /// p = (2^224) * (2^32 - 1) + 2^192 + 2^96 - 1
-    /// b = 41058363725152142129326129780047268409114441015993725554835256314039467401291
-    /// E = ellinit([Mod(-3, p), Mod(b, p)])
-    /// default(parisize, 120000000)
-    /// n = ellsea(E)
-    /// isprime(n)
-    /// ```
-    const ORDER: U256 =
-        U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
+    const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
+
+    /// Decode unsigned integer from serialized field element.
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> U256 {
+        U256::from_be_byte_array(*field_bytes)
+    }
+
+    /// Encode unsigned integer into serialized field element.
+    fn encode_field_bytes(uint: &U256) -> FieldBytes {
+        uint.to_be_byte_array()
+    }
 }
 
 impl elliptic_curve::PrimeCurve for NistP256 {}
 
-impl elliptic_curve::PointCompression for NistP256 {
+impl elliptic_curve::point::PointCompression for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPRESS_POINTS: bool = false;
 }
 
-impl elliptic_curve::PointCompaction for NistP256 {
+impl elliptic_curve::point::PointCompaction for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPACT_POINTS: bool = false;
 }
@@ -122,6 +135,10 @@ impl elliptic_curve::JwkParameters for NistP256 {
 impl pkcs8::AssociatedOid for NistP256 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.3.1.7");
 }
+
+/// Blinded scalar.
+#[cfg(feature = "arithmetic")]
+pub type BlindedScalar = elliptic_curve::scalar::BlindedScalar<NistP256>;
 
 /// Compressed SEC1-encoded NIST P-256 curve point.
 pub type CompressedPoint = GenericArray<u8, U33>;
@@ -150,7 +167,7 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 
 /// Bit representation of a NIST P-256 scalar field element.
 #[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::ScalarBits<NistP256>;
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
 
 #[cfg(feature = "voprf")]
 impl elliptic_curve::VoprfParameters for NistP256 {

@@ -10,21 +10,17 @@ use elliptic_curve::{
 /// Scalars modulo SECP256k1 modulus (2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1).
 /// Uses 5 64-bit limbs (little-endian), where in the normalized form
 /// first 4 contain 52 bits of the value each, and the last one contains 48 bits.
-/// ProjectiveArithmetic operations can be done without modulo reduction for some time,
+/// CurveArithmetic operations can be done without modulo reduction for some time,
 /// using the remaining overflow bits.
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement5x52(pub(crate) [u64; 5]);
 
 impl FieldElement5x52 {
-    /// Returns the zero element.
-    pub const fn zero() -> Self {
-        Self([0, 0, 0, 0, 0])
-    }
+    /// Zero element.
+    pub const ZERO: Self = Self([0, 0, 0, 0, 0]);
 
-    /// Returns the multiplicative identity.
-    pub const fn one() -> Self {
-        Self([1, 0, 0, 0, 0])
-    }
+    /// Multiplicative identity.
+    pub const ONE: Self = Self([1, 0, 0, 0, 0]);
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
@@ -454,7 +450,7 @@ impl FieldElement5x52 {
 
 impl Default for FieldElement5x52 {
     fn default() -> Self {
-        Self::zero()
+        Self::ZERO
     }
 }
 
