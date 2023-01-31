@@ -460,25 +460,29 @@ impl Neg for &FieldElement {
 
 impl Sum for FieldElement {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |acc, w| acc + w)
+        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
     }
 }
 
 impl<'a> Sum<&'a FieldElement> for FieldElement {
     fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |acc, w| acc + w)
+        iter.copied()
+            .reduce(core::ops::Add::add)
+            .unwrap_or(Self::ZERO)
     }
 }
 
 impl Product for FieldElement {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |acc, w| acc * w)
+        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ZERO)
     }
 }
 
 impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |acc, w| acc * w)
+        iter.copied()
+            .reduce(core::ops::Mul::mul)
+            .unwrap_or(Self::ZERO)
     }
 }
 

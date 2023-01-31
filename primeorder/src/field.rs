@@ -424,25 +424,29 @@ macro_rules! impl_field_element {
 
         impl Sum for $fe {
             fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-                iter.fold(Self::ZERO, |acc, w| acc + w)
+                iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
             }
         }
 
         impl<'a> Sum<&'a $fe> for $fe {
             fn sum<I: Iterator<Item = &'a $fe>>(iter: I) -> Self {
-                iter.fold(Self::ZERO, |acc, w| acc + w)
+                iter.copied()
+                    .reduce(core::ops::Add::add)
+                    .unwrap_or(Self::ZERO)
             }
         }
 
         impl Product for $fe {
             fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-                iter.fold(Self::ZERO, |acc, w| acc * w)
+                iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ZERO)
             }
         }
 
         impl<'a> Product<&'a $fe> for $fe {
             fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-                iter.fold(Self::ZERO, |acc, w| acc * w)
+                iter.copied()
+                    .reduce(core::ops::Mul::mul)
+                    .unwrap_or(Self::ZERO)
             }
         }
     };
