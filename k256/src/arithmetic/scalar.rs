@@ -646,9 +646,7 @@ impl Sum for Scalar {
 
 impl<'a> Sum<&'a Scalar> for Scalar {
     fn sum<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
-        iter.copied()
-            .reduce(core::ops::Add::add)
-            .unwrap_or(Self::ZERO)
+        iter.copied().sum()
     }
 }
 
@@ -660,9 +658,7 @@ impl Product for Scalar {
 
 impl<'a> Product<&'a Scalar> for Scalar {
     fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
-        iter.copied()
-            .reduce(core::ops::Mul::mul)
-            .unwrap_or(Self::ZERO)
+        iter.copied().product()
     }
 }
 

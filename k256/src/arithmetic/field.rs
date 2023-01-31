@@ -466,9 +466,7 @@ impl Sum for FieldElement {
 
 impl<'a> Sum<&'a FieldElement> for FieldElement {
     fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
-        iter.copied()
-            .reduce(core::ops::Add::add)
-            .unwrap_or(Self::ZERO)
+        iter.copied().sum()
     }
 }
 
@@ -480,9 +478,7 @@ impl Product for FieldElement {
 
 impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
-        iter.copied()
-            .reduce(core::ops::Mul::mul)
-            .unwrap_or(Self::ZERO)
+        iter.copied().product()
     }
 }
 

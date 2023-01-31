@@ -430,9 +430,7 @@ macro_rules! impl_field_element {
 
         impl<'a> Sum<&'a $fe> for $fe {
             fn sum<I: Iterator<Item = &'a $fe>>(iter: I) -> Self {
-                iter.copied()
-                    .reduce(core::ops::Add::add)
-                    .unwrap_or(Self::ZERO)
+                iter.copied().sum()
             }
         }
 
@@ -444,9 +442,7 @@ macro_rules! impl_field_element {
 
         impl<'a> Product<&'a $fe> for $fe {
             fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-                iter.copied()
-                    .reduce(core::ops::Mul::mul)
-                    .unwrap_or(Self::ZERO)
+                iter.copied().product()
             }
         }
     };
