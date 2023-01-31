@@ -401,7 +401,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO(tarcieri): debug stack overflow
     fn from_okm_fuzz() {
         let mut wide_order = GenericArray::default();
         wide_order[16..].copy_from_slice(&Secp256k1::ORDER.to_be_byte_array());
@@ -410,7 +409,7 @@ mod tests {
         let simple_from_okm = move |data: GenericArray<u8, U48>| -> Scalar {
             let data = U384::from_be_slice(&data);
 
-            let scalar = data % wide_order; // TODO(tarcieri): stack overflow occurs here
+            let scalar = data % wide_order;
             let reduced_scalar = U256::from_be_slice(&scalar.to_be_byte_array()[16..]);
 
             Scalar(reduced_scalar)

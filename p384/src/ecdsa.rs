@@ -89,7 +89,6 @@ mod tests {
     // Test vector from RFC 6979 Appendix 2.6 (NIST P-384 + SHA-384)
     // <https://tools.ietf.org/html/rfc6979#appendix-A.2.6>
     #[test]
-    #[ignore] // TODO(tarcieri): fix!
     fn rfc6979() {
         let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
         let signer = SigningKey::from_bytes(&x.into()).unwrap();
@@ -114,7 +113,6 @@ mod tests {
 
     // Test signing with PrehashSigner using SHA-256 which output is smaller than P-384 field size.
     #[test]
-    #[ignore] // TODO(tarcieri): fix!
     fn prehash_signer_signing_with_sha256() {
         let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
         let signer = SigningKey::from_bytes(&x.into()).unwrap();
