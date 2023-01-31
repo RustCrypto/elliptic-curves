@@ -310,14 +310,20 @@ impl PrimeField for Scalar {
     const MODULUS: &'static str = ORDER_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::ZERO; // TODO
-    const MULTIPLICATIVE_GENERATOR: Self = Self(U256::from_u64(7));
+    const TWO_INV: Self = Self(U256::from_be_hex(
+        "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1",
+    ));
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U256::from_u8(7));
     const S: u32 = 6;
     const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
         "0c1dc060e7a91986df9879a3fbc483a898bdeab680756045992f4b5402b052f2",
     ));
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
-    const DELTA: Self = Self::ZERO; // TODO
+    const ROOT_OF_UNITY_INV: Self = Self(U256::from_be_hex(
+        "fd3ae181f12d7096efc7b0c75b8cbb7277a275910aa413c3b6fb30a0884f0d1c",
+    ));
+    const DELTA: Self = Self(U256::from_be_hex(
+        "0000000000000000000cbc21fe4561c8d63b78e780e1341e199417c8c0bb7601",
+    ));
 
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///

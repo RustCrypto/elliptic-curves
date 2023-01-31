@@ -79,6 +79,14 @@ impl FieldElement10x26 {
         CtOption::new(res, !overflow)
     }
 
+    pub const fn from_u64(val: u64) -> Self {
+        let w0 = (val as u32) & 0x3FFFFFF;
+        let val = val >> 26;
+        let w1 = (val as u32) & 0x3FFFFFF;
+        let w2 = (val >> 26) as u32;
+        Self([w0, w1, w2, 0, 0, 0, 0, 0, 0, 0])
+    }
+
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
         let mut r = FieldBytes::default();

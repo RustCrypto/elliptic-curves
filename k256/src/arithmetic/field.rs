@@ -284,13 +284,25 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str =
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
     const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 255; // TODO(tarcieri): double check this
-    const TWO_INV: Self = Self::ZERO; // TODO
-    const MULTIPLICATIVE_GENERATOR: Self = Self::ZERO; // TODO
-    const S: u32 = 0; // TODO
-    const ROOT_OF_UNITY: Self = Self::ZERO; // TODO
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
-    const DELTA: Self = Self::ZERO; // TODO
+    const CAPACITY: u32 = 255;
+    const TWO_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+        0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0xff,
+        0xfe, 0x18,
+    ]));
+    const MULTIPLICATIVE_GENERATOR: Self = Self(FieldElementImpl::from_u64(3));
+    const S: u32 = 0;
+    const ROOT_OF_UNITY: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
+        0xfc, 0x2e,
+    ]));
+    const ROOT_OF_UNITY_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
+        0xfc, 0x2e,
+    ]));
+    const DELTA: Self = Self(FieldElementImpl::from_u64(9));
 
     fn from_repr(repr: Self::Repr) -> CtOption<Self> {
         Self::from_bytes(&repr)
@@ -328,11 +340,8 @@ impl DefaultIsZeroes for FieldElement {}
 impl Eq for FieldElement {}
 
 impl From<u64> for FieldElement {
-    fn from(w: u64) -> FieldElement {
-        let mut bytes = FieldBytes::default();
-        let offset = bytes.len() - 8;
-        bytes[offset..].copy_from_slice(&w.to_be_bytes());
-        Self::from_repr(bytes).unwrap()
+    fn from(k: u64) -> Self {
+        Self(FieldElementImpl::from_u64(k))
     }
 }
 

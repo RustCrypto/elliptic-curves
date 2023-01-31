@@ -66,6 +66,10 @@ impl FieldElementImpl {
         Self::new_normalized(&value)
     }
 
+    pub(crate) const fn from_u64(val: u64) -> Self {
+        Self::new_normalized(&FieldElementUnsafeImpl::from_u64(val))
+    }
+
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let value = FieldElementUnsafeImpl::from_bytes(bytes);
         CtOption::map(value, |x| Self::new_normalized(&x))
