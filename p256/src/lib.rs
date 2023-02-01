@@ -49,7 +49,9 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{bigint::ArrayEncoding, consts::U33, generic_array::GenericArray};
+use elliptic_curve::{
+    bigint::ArrayEncoding, consts::U33, generic_array::GenericArray, FieldBytesEncoding,
+};
 
 /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus) serialized
 /// as hexadecimal.
@@ -102,16 +104,6 @@ impl elliptic_curve::Curve for NistP256 {
 
     /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus).
     const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
-
-    /// Decode unsigned integer from serialized field element.
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> U256 {
-        U256::from_be_byte_array(*field_bytes)
-    }
-
-    /// Encode unsigned integer into serialized field element.
-    fn encode_field_bytes(uint: &U256) -> FieldBytes {
-        uint.to_be_byte_array()
-    }
 }
 
 impl elliptic_curve::PrimeCurve for NistP256 {}
@@ -143,13 +135,23 @@ pub type BlindedScalar = elliptic_curve::scalar::BlindedScalar<NistP256>;
 /// Compressed SEC1-encoded NIST P-256 curve point.
 pub type CompressedPoint = GenericArray<u8, U33>;
 
+/// NIST P-256 SEC1 encoded point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
+
 /// NIST P-256 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP256>;
 
-/// NIST P-256 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
+impl FieldBytesEncoding<NistP256> for U256 {
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
+        U256::from_be_byte_array(*field_bytes)
+    }
+
+    fn encode_field_bytes(&self) -> FieldBytes {
+        self.to_be_byte_array()
+    }
+}
 
 /// Non-zero NIST P-256 scalar field element.
 #[cfg(feature = "arithmetic")]
@@ -171,8 +173,8 @@ pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
 
 #[cfg(feature = "voprf")]
 impl elliptic_curve::VoprfParameters for NistP256 {
-    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.3-1.3>.
-    const ID: u16 = 0x0003;
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-19.html#section-4.3>.
+    const ID: &'static str = "P256-SHA256";
 
     /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.3-1.2>.
     type Hash = sha2::Sha256;

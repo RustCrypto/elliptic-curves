@@ -13,7 +13,3 @@ members = [
 
 [profile.dev]
 opt-level = 2
-
-[patch.crates-io]
-elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
