@@ -20,7 +20,7 @@ pub use elliptic_curve::{self, bigint::U576};
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{consts::U66, generic_array::GenericArray};
+use elliptic_curve::{consts::U66, generic_array::GenericArray, FieldBytesEncoding};
 
 /// NIST P-521 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -62,14 +62,16 @@ impl pkcs8::AssociatedOid for NistP521 {
 /// Compressed SEC1-encoded NIST P-521 curve point.
 pub type CompressedPoint = GenericArray<u8, U66>;
 
+/// NIST P-521 SEC1 encoded point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
+
 /// NIST P-521 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP521>;
 
-/// NIST P-521 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
+impl FieldBytesEncoding<NistP521> for U576 {}
 
 /// NIST P-521 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP521>;

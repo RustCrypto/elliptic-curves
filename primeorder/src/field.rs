@@ -4,14 +4,11 @@
 /// # Inherent impls
 /// - `const ZERO: Self`
 /// - `const ONE: Self` (multiplicative identity)
-/// - `pub fn from_be_bytes`
-/// - `pub fn from_be_slice`
-/// - `pub fn from_le_bytes`
-/// - `pub fn from_le_slice`
+/// - `pub fn from_bytes`
+/// - `pub fn from_slice`
 /// - `pub fn from_uint`
 /// - `fn from_uint_unchecked`
-/// - `pub fn to_be_bytes`
-/// - `pub fn to_le_bytes`
+/// - `pub fn to_bytes`
 /// - `pub fn to_canonical`
 /// - `pub fn is_odd`
 /// - `pub fn is_zero`
@@ -47,6 +44,7 @@
 #[macro_export]
 macro_rules! impl_field_element {
     (
+        $curve:tt,
         $fe:tt,
         $bytes:ty,
         $uint:ty,
@@ -70,36 +68,22 @@ macro_rules! impl_field_element {
             /// Create a [`
             #[doc = stringify!($fe)]
             /// `] from a canonical big-endian representation.
-            pub fn from_be_bytes(repr: $bytes) -> $crate::elliptic_curve::subtle::CtOption<Self> {
-                use $crate::elliptic_curve::bigint::ArrayEncoding as _;
-                Self::from_uint(<$uint>::from_be_byte_array(repr))
+            pub fn from_bytes(repr: &$bytes) -> $crate::elliptic_curve::subtle::CtOption<Self> {
+                use $crate::elliptic_curve::FieldBytesEncoding;
+                Self::from_uint(FieldBytesEncoding::<$curve>::decode_field_bytes(repr))
             }
 
             /// Decode [`
             #[doc = stringify!($fe)]
             /// `] from a big endian byte slice.
-            pub fn from_be_slice(slice: &[u8]) -> $crate::elliptic_curve::Result<Self> {
-                <$uint as $crate::elliptic_curve::bigint::Encoding>::Repr::try_from(slice)
-                    .ok()
-                    .and_then(|array| Self::from_be_bytes(array.into()).into())
-                    .ok_or($crate::elliptic_curve::Error)
-            }
+            pub fn from_slice(slice: &[u8]) -> $crate::elliptic_curve::Result<Self> {
+                use $crate::elliptic_curve::generic_array::{typenum::Unsigned, GenericArray};
 
-            /// Create a [`
-            #[doc = stringify!($fe)]
-            /// `] from a canonical little-endian representation.
-            pub fn from_le_bytes(repr: $bytes) -> $crate::elliptic_curve::subtle::CtOption<Self> {
-                use $crate::elliptic_curve::bigint::ArrayEncoding as _;
-                Self::from_uint(<$uint>::from_le_byte_array(repr))
-            }
+                if slice.len() != <$curve as $crate::elliptic_curve::Curve>::FieldBytesSize::USIZE {
+                    return Err($crate::elliptic_curve::Error);
+                }
 
-            /// Decode [`
-            #[doc = stringify!($fe)]
-            /// `] from a little endian byte slice.
-            pub fn from_le_slice(slice: &[u8]) -> $crate::elliptic_curve::Result<Self> {
-                <$uint as $crate::elliptic_curve::bigint::Encoding>::Repr::try_from(slice)
-                    .ok()
-                    .and_then(|array| Self::from_le_bytes(array.into()).into())
+                Option::from(Self::from_bytes(GenericArray::from_slice(slice)))
                     .ok_or($crate::elliptic_curve::Error)
             }
 
@@ -130,20 +114,8 @@ macro_rules! impl_field_element {
             ///
             /// This method is primarily intended for defining internal constants.
             #[allow(dead_code)]
-            pub(crate) const fn from_be_hex(hex: &str) -> Self {
+            pub(crate) const fn from_hex(hex: &str) -> Self {
                 Self::from_uint_unchecked(<$uint>::from_be_hex(hex))
-            }
-
-            /// Parse a [`
-            #[doc = stringify!($fe)]
-            /// `] from little endian hex-encoded bytes.
-            ///
-            /// Does *not* perform a check that the field element does not overflow the order.
-            ///
-            /// This method is primarily intended for defining internal constants.
-            #[allow(dead_code)]
-            pub(crate) const fn from_le_hex(hex: &str) -> Self {
-                Self::from_uint_unchecked(<$uint>::from_le_hex(hex))
             }
 
             /// Decode [`
@@ -162,17 +134,9 @@ macro_rules! impl_field_element {
             /// Returns the big-endian encoding of this [`
             #[doc = stringify!($fe)]
             /// `].
-            pub fn to_be_bytes(self) -> $bytes {
-                use $crate::elliptic_curve::bigint::ArrayEncoding as _;
-                self.to_canonical().to_be_byte_array()
-            }
-
-            /// Returns the little-endian encoding of this [`
-            #[doc = stringify!($fe)]
-            /// `].
-            pub fn to_le_bytes(self) -> $bytes {
-                use $crate::elliptic_curve::bigint::ArrayEncoding as _;
-                self.to_canonical().to_le_byte_array()
+            pub fn to_bytes(self) -> $bytes {
+                use $crate::elliptic_curve::FieldBytesEncoding;
+                FieldBytesEncoding::<$curve>::encode_field_bytes(&self.to_canonical())
             }
 
             /// Translate [`
@@ -334,7 +298,7 @@ macro_rules! impl_field_element {
 
                 loop {
                     rng.fill_bytes(&mut bytes);
-                    if let Some(fe) = Self::from_be_bytes(bytes).into() {
+                    if let Some(fe) = Self::from_bytes(&bytes).into() {
                         return fe;
                     }
                 }

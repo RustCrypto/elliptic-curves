@@ -59,6 +59,7 @@ use elliptic_curve::{
     bigint::ArrayEncoding,
     consts::{U32, U33, U64},
     generic_array::GenericArray,
+    FieldBytesEncoding,
 };
 
 /// Order of the secp256k1 elliptic curve in hexadecimal.
@@ -90,16 +91,6 @@ impl elliptic_curve::Curve for Secp256k1 {
 
     /// Curve order.
     const ORDER: U256 = ORDER;
-
-    /// Decode unsigned integer from serialized field element.
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> U256 {
-        U256::from_be_byte_array(*field_bytes)
-    }
-
-    /// Encode unsigned integer into serialized field element.
-    fn encode_field_bytes(uint: &U256) -> FieldBytes {
-        uint.to_be_byte_array()
-    }
 }
 
 impl elliptic_curve::PrimeCurve for Secp256k1 {}
@@ -122,16 +113,26 @@ impl pkcs8::AssociatedOid for Secp256k1 {
 /// Compressed SEC1-encoded secp256k1 (K-256) curve point.
 pub type CompressedPoint = GenericArray<u8, U33>;
 
+/// SEC1-encoded secp256k1 (K-256) curve point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
+
 /// secp256k1 (K-256) field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
 
+impl FieldBytesEncoding<Secp256k1> for U256 {
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
+        U256::from_be_byte_array(*field_bytes)
+    }
+
+    fn encode_field_bytes(&self) -> FieldBytes {
+        self.to_be_byte_array()
+    }
+}
+
 /// Bytes used by a wide reduction: twice the width of [`FieldBytes`].
 pub type WideBytes = GenericArray<u8, U64>;
-
-/// SEC1-encoded secp256k1 (K-256) curve point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
 
 /// Non-zero secp256k1 (K-256) scalar field element.
 #[cfg(feature = "arithmetic")]

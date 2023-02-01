@@ -69,7 +69,7 @@ impl MapToCurve for FieldElement {
         let (qx, qy) = self.osswu();
 
         // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
-        AffinePoint::decompress(&qx.to_sec1(), qy.is_odd())
+        AffinePoint::decompress(&qx.to_bytes(), qy.is_odd())
             .unwrap()
             .into()
     }
@@ -211,8 +211,8 @@ mod tests {
                 };
             }
 
-            assert_eq!(u[0].to_sec1().as_slice(), test_vector.u_0);
-            assert_eq!(u[1].to_sec1().as_slice(), test_vector.u_1);
+            assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
+            assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
             let q0 = u[0].map_to_curve();
             assert_point_eq!(q0, test_vector.q0_x, test_vector.q0_y);

@@ -70,6 +70,7 @@ use core::ops::{Add, Mul, Sub};
 pub struct Scalar(U384);
 
 primeorder::impl_field_element!(
+    NistP384,
     Scalar,
     FieldBytes,
     U384,
@@ -157,14 +158,6 @@ impl Scalar {
     pub const fn shr_vartime(&self, shift: usize) -> Scalar {
         Self(self.0.shr_vartime(shift))
     }
-
-    /// Returns the SEC1 encoding of this scalar.
-    ///
-    /// Required for running test vectors.
-    #[cfg(test)]
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.to_be_bytes()
-    }
 }
 
 impl AsRef<Scalar> for Scalar {
@@ -219,18 +212,21 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::ZERO; // TODO
     const MULTIPLICATIVE_GENERATOR: Self = Self(U384::from_u64(2));
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
+    const ROOT_OF_UNITY: Self = Self::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
     const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
     const DELTA: Self = Self::ZERO; // TODO
 
+    #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_be_bytes(bytes)
+        Self::from_bytes(&bytes)
     }
 
+    #[inline]
     fn to_repr(&self) -> FieldBytes {
-        self.to_be_bytes()
+        self.to_bytes()
     }
 
+    #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }
@@ -356,10 +352,10 @@ mod tests {
     fn from_to_bytes_roundtrip() {
         let k: u64 = 42;
         let mut bytes = FieldBytes::default();
-        bytes[40..].copy_from_slice(k.to_le_bytes().as_ref());
+        bytes[40..].copy_from_slice(k.to_be_bytes().as_ref());
 
         let scalar = Scalar::from_repr(bytes).unwrap();
-        assert_eq!(bytes, scalar.to_be_bytes());
+        assert_eq!(bytes, scalar.to_bytes());
     }
 
     /// Basic tests that multiplication works.

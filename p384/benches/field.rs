@@ -7,14 +7,14 @@ use hex_literal::hex;
 use p384::FieldElement;
 
 fn test_field_element_x() -> FieldElement {
-    FieldElement::from_sec1(
+    FieldElement::from_bytes(
         hex!("c2b47944fb5de342d03285880177ca5f7d0f2fcad7678cce4229d6e1932fcac11bfc3c3e97d942a3c56bf34123013dbf").into()
     )
     .unwrap()
 }
 
 fn test_field_element_y() -> FieldElement {
-    FieldElement::from_sec1(
+    FieldElement::from_bytes(
         hex!("37257906a8223866eda0743c519616a76a758ae58aee81c5fd35fbf3a855b7754a36d4a0672df95d6c44a81cf7620c2d").into()
     )
     .unwrap()

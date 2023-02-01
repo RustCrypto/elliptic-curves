@@ -42,7 +42,9 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{bigint::ArrayEncoding, consts::U49, generic_array::GenericArray};
+use elliptic_curve::{
+    bigint::ArrayEncoding, consts::U49, generic_array::GenericArray, FieldBytesEncoding,
+};
 
 /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus) in hexadecimal.
 const ORDER_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973";
@@ -60,16 +62,6 @@ impl elliptic_curve::Curve for NistP384 {
 
     /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus).
     const ORDER: U384 = U384::from_be_hex(ORDER_HEX);
-
-    /// Decode unsigned integer from serialized field element.
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> U384 {
-        U384::from_be_byte_array(*field_bytes)
-    }
-
-    /// Encode unsigned integer into serialized field element.
-    fn encode_field_bytes(uint: &U384) -> FieldBytes {
-        uint.to_be_byte_array()
-    }
 }
 
 impl elliptic_curve::PrimeCurve for NistP384 {}
@@ -97,15 +89,24 @@ impl pkcs8::AssociatedOid for NistP384 {
 /// Compressed SEC1-encoded NIST P-384 curve point.
 pub type CompressedPoint = GenericArray<u8, U49>;
 
+/// NIST P-384 SEC1 encoded point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
+
 /// NIST P-384 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
 
-/// NIST P-384 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
+impl FieldBytesEncoding<NistP384> for U384 {
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
+        U384::from_be_byte_array(*field_bytes)
+    }
 
+    fn encode_field_bytes(&self) -> FieldBytes {
+        self.to_be_byte_array()
+    }
+}
 /// Non-zero NIST P-384 scalar field element.
 #[cfg(feature = "arithmetic")]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP384>;
@@ -126,9 +127,9 @@ pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP384>;
 
 #[cfg(feature = "voprf")]
 impl elliptic_curve::VoprfParameters for NistP384 {
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-19.html#name-oprfp-384-sha-384-2>.
+    const ID: &'static str = "P384-SHA384";
+
     /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.4-1.2>.
     type Hash = sha2::Sha384;
-
-    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.4-1.3>.
-    const ID: u16 = 0x0004;
 }

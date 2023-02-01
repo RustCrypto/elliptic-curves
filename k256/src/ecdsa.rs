@@ -160,10 +160,10 @@ use {
     crate::{AffinePoint, FieldBytes, ProjectivePoint, Scalar},
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
     elliptic_curve::{
+        bigint::U256,
         ops::{Invert, MulByGenerator, Reduce},
         scalar::IsHigh,
         subtle::CtOption,
-        Curve,
     },
 };
 
@@ -201,7 +201,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
             return Err(Error::new());
         }
 
-        let z = Self::reduce(Secp256k1::decode_field_bytes(z));
+        let z = <Self as Reduce<U256>>::reduce_bytes(z);
 
         // Compute scalar inversion of 𝑘
         let k_inv = Option::<Scalar>::from(k.invert()).ok_or_else(Error::new)?;
@@ -211,7 +211,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
 
         // Lift x-coordinate of 𝑹 (element of base field) into a serialized big
         // integer, then reduce it into an element of the scalar field
-        let r = Self::reduce(Secp256k1::decode_field_bytes(&R.x.to_bytes()));
+        let r = <Self as Reduce<U256>>::reduce_bytes(&R.x.to_bytes());
 
         // Compute 𝒔 as a signature over 𝒓 and 𝒛.
         let s = k_inv * (z + (r * self));

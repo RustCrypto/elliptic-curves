@@ -25,7 +25,7 @@
 mod field_impl;
 
 use self::field_impl::*;
-use crate::FieldBytes;
+use crate::{FieldBytes, NistP384};
 use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
@@ -45,6 +45,7 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex(FieldElement::MODULUS);
 pub struct FieldElement(pub(super) U384);
 
 primeorder::impl_field_element!(
+    NistP384,
     FieldElement,
     FieldBytes,
     U384,
@@ -60,19 +61,6 @@ primeorder::impl_field_element!(
 );
 
 impl FieldElement {
-    /// Parse the given byte array as an SEC1-encoded field element.
-    ///
-    /// Returns `None` if the byte array does not contain a big-endian integer in
-    /// the range `[0, p)`.
-    pub fn from_sec1(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_be_bytes(bytes)
-    }
-
-    /// Returns the SEC1 encoding of this field element.
-    pub fn to_sec1(self) -> FieldBytes {
-        self.to_be_bytes()
-    }
-
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         let ret = impl_field_invert!(
@@ -135,18 +123,21 @@ impl PrimeField for FieldElement {
     const TWO_INV: Self = Self::ZERO; // TODO
     const MULTIPLICATIVE_GENERATOR: Self = Self(U384::from_u32(19));
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe");
+    const ROOT_OF_UNITY: Self = Self::from_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe");
     const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
     const DELTA: Self = Self::ZERO; // TODO
 
+    #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_be_bytes(bytes)
+        Self::from_bytes(&bytes)
     }
 
+    #[inline]
     fn to_repr(&self) -> FieldBytes {
-        self.to_be_bytes()
+        self.to_bytes()
     }
 
+    #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }

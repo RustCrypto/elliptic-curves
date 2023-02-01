@@ -7,7 +7,7 @@
 mod field_impl;
 
 use self::field_impl::*;
-use crate::FieldBytes;
+use crate::{FieldBytes, NistP256};
 use core::{
     iter::{Product, Sum},
     ops::{AddAssign, Mul, MulAssign, Neg, SubAssign},
@@ -37,6 +37,7 @@ const R_2: U256 =
 pub struct FieldElement(pub(crate) U256);
 
 primeorder::impl_field_element!(
+    NistP256,
     FieldElement,
     FieldBytes,
     U256,
@@ -52,19 +53,6 @@ primeorder::impl_field_element!(
 );
 
 impl FieldElement {
-    /// Attempts to parse the given byte array as an SEC1-encoded field element.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    pub fn from_sec1(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_be_bytes(bytes)
-    }
-
-    /// Returns the SEC1 encoding of this field element.
-    pub fn to_sec1(self) -> FieldBytes {
-        self.to_be_bytes()
-    }
-
     /// Returns `self^by`, where `by` is a little-endian integer exponent.
     ///
     /// **This operation is variable time with respect to the exponent.** If the exponent
@@ -168,14 +156,17 @@ impl PrimeField for FieldElement {
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::ZERO; // TODO
 
+    #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_sec1(bytes)
+        Self::from_bytes(&bytes)
     }
 
+    #[inline]
     fn to_repr(&self) -> FieldBytes {
-        self.to_sec1()
+        self.to_bytes()
     }
 
+    #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }
@@ -205,12 +196,12 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_sec1(FieldBytes::default()).unwrap(),
+            FieldElement::from_bytes(&FieldBytes::default()).unwrap(),
             FieldElement::ZERO
         );
         assert_eq!(
-            FieldElement::from_sec1(
-                [
+            FieldElement::from_bytes(
+                &[
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 1
                 ]
@@ -220,15 +211,15 @@ mod tests {
             FieldElement::ONE
         );
         assert!(bool::from(
-            FieldElement::from_sec1([0xff; 32].into()).is_none()
+            FieldElement::from_bytes(&[0xff; 32].into()).is_none()
         ));
     }
 
     #[test]
     fn to_bytes() {
-        assert_eq!(FieldElement::ZERO.to_sec1(), FieldBytes::default());
+        assert_eq!(FieldElement::ZERO.to_bytes(), FieldBytes::default());
         assert_eq!(
-            FieldElement::ONE.to_sec1(),
+            FieldElement::ONE.to_bytes(),
             [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
@@ -241,7 +232,7 @@ mod tests {
     fn repeated_add() {
         let mut r = FieldElement::ONE;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_sec1(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
             r = r + &r;
         }
     }
@@ -250,7 +241,7 @@ mod tests {
     fn repeated_double() {
         let mut r = FieldElement::ONE;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_sec1(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
             r = r.double();
         }
     }
@@ -260,7 +251,7 @@ mod tests {
         let mut r = FieldElement::ONE;
         let two = r + &r;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_sec1(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
             r = r * &two;
         }
     }

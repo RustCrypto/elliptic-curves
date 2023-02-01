@@ -3,7 +3,11 @@
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
 
-use elliptic_curve::{bigint::U384, consts::U48};
+use elliptic_curve::{
+    bigint::{ArrayEncoding, U384},
+    consts::U48,
+    FieldBytesEncoding,
+};
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8;
@@ -36,13 +40,23 @@ impl pkcs8::AssociatedOid for BrainpoolP384r1 {
         pkcs8::ObjectIdentifier::new_unwrap("1.3.36.3.3.2.8.1.1.11");
 }
 
+/// brainpoolP384r1 SEC1 encoded point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<BrainpoolP384r1>;
+
 /// brainpoolP384r1 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<BrainpoolP384r1>;
 
-/// brainpoolP384r1 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<BrainpoolP384r1>;
+impl FieldBytesEncoding<BrainpoolP384r1> for U384 {
+    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
+        U384::from_be_byte_array(*field_bytes)
+    }
+
+    fn encode_field_bytes(&self) -> FieldBytes {
+        self.to_be_byte_array()
+    }
+}
 
 /// brainpoolP384r1 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<BrainpoolP384r1>;

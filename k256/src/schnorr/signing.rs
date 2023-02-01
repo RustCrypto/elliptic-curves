@@ -2,8 +2,7 @@
 
 use super::{tagged_hash, Signature, VerifyingKey, AUX_TAG, CHALLENGE_TAG, NONCE_TAG};
 use crate::{
-    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, Secp256k1,
-    SecretKey,
+    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
 use elliptic_curve::{
     bigint::U256,
@@ -11,7 +10,6 @@ use elliptic_curve::{
     rand_core::CryptoRngCore,
     subtle::ConditionallySelectable,
     zeroize::{Zeroize, ZeroizeOnDrop},
-    Curve,
 };
 use sha2::{Digest, Sha256};
 use signature::{
@@ -100,13 +98,13 @@ impl SigningKey {
         let verifying_point = AffinePoint::from(k.verifying_key);
         let r = verifying_point.x.normalize();
 
-        let e = <Scalar as Reduce<U256>>::reduce(Secp256k1::decode_field_bytes(
+        let e = <Scalar as Reduce<U256>>::reduce_bytes(
             &tagged_hash(CHALLENGE_TAG)
                 .chain_update(r.to_bytes())
                 .chain_update(self.verifying_key.to_bytes())
                 .chain_update(msg_digest)
                 .finalize(),
-        ));
+        );
 
         let s = *secret_key + e * *self.secret_key;
         let s = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;

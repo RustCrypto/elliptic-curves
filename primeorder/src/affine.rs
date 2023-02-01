@@ -18,7 +18,7 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
+    Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
 #[cfg(feature = "serde")]
@@ -66,8 +66,8 @@ where
     /// Conditionally negate [`AffinePoint`] for use with point compaction.
     fn to_compact(self) -> Self {
         let neg_self = -self;
-        let choice = C::decode_field_bytes(&self.y.to_repr())
-            .ct_gt(&C::decode_field_bytes(&neg_self.y.to_repr()));
+        let choice = C::Uint::decode_field_bytes(&self.y.to_repr())
+            .ct_gt(&C::Uint::decode_field_bytes(&neg_self.y.to_repr()));
 
         Self {
             x: self.x,

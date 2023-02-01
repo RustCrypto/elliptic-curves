@@ -16,6 +16,7 @@ pub use elliptic_curve::{self, bigint::U256};
 use elliptic_curve::{
     consts::{U28, U29},
     generic_array::GenericArray,
+    FieldBytesEncoding,
 };
 
 /// NIST P-224 elliptic curve.
@@ -52,14 +53,16 @@ impl pkcs8::AssociatedOid for NistP224 {
 /// Compressed SEC1-encoded NIST P-224 curve point.
 pub type CompressedPoint = GenericArray<u8, U29>;
 
+/// NIST P-224 SEC1 encoded point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP224>;
+
 /// NIST P-224 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP224>;
 
-/// NIST P-224 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP224>;
+impl FieldBytesEncoding<NistP224> for U256 {}
 
 /// NIST P-224 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP224>;
