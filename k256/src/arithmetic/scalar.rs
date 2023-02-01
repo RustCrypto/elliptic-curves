@@ -758,6 +758,28 @@ mod tests {
     }
 
     #[test]
+    fn two_inv_constant() {
+        assert_eq!(Scalar::from(2u32) * Scalar::TWO_INV, Scalar::ONE);
+    }
+
+    #[test]
+    fn root_of_unity_constant() {
+        // ROOT_OF_UNITY^{2^s} mod m == 1
+        assert_eq!(
+            Scalar::ROOT_OF_UNITY.pow_vartime(&[1u64 << Scalar::S, 0, 0, 0]),
+            Scalar::ONE
+        );
+    }
+
+    #[test]
+    fn root_of_unity_inv_constant() {
+        assert_eq!(
+            Scalar::ROOT_OF_UNITY * Scalar::ROOT_OF_UNITY_INV,
+            Scalar::ONE
+        );
+    }
+
+    #[test]
     fn is_high() {
         // 0 is not high
         let high: bool = Scalar::ZERO.is_high().into();

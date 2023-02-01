@@ -158,8 +158,34 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
-    use elliptic_curve::bigint::U256;
+    use elliptic_curve::{bigint::U256, ff::PrimeField};
     use proptest::{num, prelude::*};
+
+    #[test]
+    fn two_inv_constant() {
+        assert_eq!(
+            FieldElement::from(2u32) * FieldElement::TWO_INV,
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    #[ignore] // TODO(tarcieri): debug failure
+    fn root_of_unity_constant() {
+        // ROOT_OF_UNITY^{2^s} mod m == 1
+        assert_eq!(
+            FieldElement::ROOT_OF_UNITY.pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0]),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn root_of_unity_inv_constant() {
+        assert_eq!(
+            FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV,
+            FieldElement::ONE
+        );
+    }
 
     #[test]
     fn zero_is_additive_identity() {
