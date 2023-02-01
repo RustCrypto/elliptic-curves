@@ -7,7 +7,7 @@ use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp25
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     group::{prime::PrimeCurveAffine, GroupEncoding},
-    point::{AffineXCoordinate, AffineYIsOdd, DecompactPoint, DecompressPoint},
+    point::{AffineCoordinates, DecompactPoint, DecompressPoint},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -107,15 +107,13 @@ impl PrimeCurveAffine for AffinePoint {
     }
 }
 
-impl AffineXCoordinate for AffinePoint {
+impl AffineCoordinates for AffinePoint {
     type FieldRepr = FieldBytes;
 
     fn x(&self) -> FieldBytes {
         self.x.to_bytes()
     }
-}
 
-impl AffineYIsOdd for AffinePoint {
     fn y_is_odd(&self) -> Choice {
         self.y.normalize().is_odd()
     }
