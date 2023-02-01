@@ -11,7 +11,7 @@ use elliptic_curve::{
     ff::{Field, PrimeField},
     generic_array::ArrayLength,
     group::{prime::PrimeCurveAffine, GroupEncoding},
-    point::{AffineXCoordinate, AffineYIsOdd, DecompactPoint, DecompressPoint, Double},
+    point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double},
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
@@ -77,7 +77,7 @@ where
     }
 }
 
-impl<C> AffineXCoordinate for AffinePoint<C>
+impl<C> AffineCoordinates for AffinePoint<C>
 where
     C: PrimeCurveParams,
 {
@@ -86,12 +86,7 @@ where
     fn x(&self) -> FieldBytes<C> {
         self.x.to_repr()
     }
-}
 
-impl<C> AffineYIsOdd for AffinePoint<C>
-where
-    C: PrimeCurveParams,
-{
     fn y_is_odd(&self) -> Choice {
         self.y.is_odd()
     }
