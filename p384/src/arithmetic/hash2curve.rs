@@ -18,7 +18,7 @@ impl FromOkm for FieldElement {
     type Length = U72;
 
     fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
-        const F_2_288: FieldElement = FieldElement::from_be_hex(
+        const F_2_288: FieldElement = FieldElement::from_hex(
             "000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
@@ -50,16 +50,16 @@ impl OsswuMap for FieldElement {
             0xffff_ffff_ffff_ffff,
             0x3fff_ffff_ffff_ffff,
         ],
-        c2: FieldElement::from_be_hex(
+        c2: FieldElement::from_hex(
             "019877cc1041b7555743c0ae2e3a3e61fb2aaa2e0e87ea557a563d8b598a0940d0a697a9e0b9e92cfaa314f583c9d066",
         ),
-        map_a: FieldElement::from_be_hex(
+        map_a: FieldElement::from_hex(
             "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc",
         ),
-        map_b: FieldElement::from_be_hex(
+        map_b: FieldElement::from_hex(
             "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
         ),
-        z: FieldElement::from_be_hex(
+        z: FieldElement::from_hex(
             "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffff3",
         ),
     };
@@ -72,7 +72,7 @@ impl MapToCurve for FieldElement {
         let (qx, qy) = self.osswu();
 
         // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
-        AffinePoint::decompress(&qx.to_sec1(), qy.is_odd())
+        AffinePoint::decompress(&qx.to_bytes(), qy.is_odd())
             .unwrap()
             .into()
     }
@@ -82,7 +82,7 @@ impl FromOkm for Scalar {
     type Length = U72;
 
     fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
-        const F_2_288: Scalar = Scalar::from_be_hex(
+        const F_2_288: Scalar = Scalar::from_hex(
             "000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
@@ -214,8 +214,8 @@ mod tests {
                 };
             }
 
-            assert_eq!(u[0].to_sec1().as_slice(), test_vector.u_0);
-            assert_eq!(u[1].to_sec1().as_slice(), test_vector.u_1);
+            assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
+            assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
             let q0 = u[0].map_to_curve();
             assert_point_eq!(q0, test_vector.q0_x, test_vector.q0_y);
