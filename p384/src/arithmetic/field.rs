@@ -63,8 +63,15 @@ primeorder::impl_field_element!(
 impl FieldElement {
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        let ret = impl_field_invert!(
-            self.to_canonical().to_words(),
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        let words = impl_field_invert!(
+            self.to_canonical().as_words(),
             Self::ONE.0.to_words(),
             Limb::BITS,
             bigint::nlimbs!(U384::BITS),
@@ -75,7 +82,8 @@ impl FieldElement {
             fiat_p384_msat,
             fiat_p384_selectznz,
         );
-        CtOption::new(Self(ret.into()), !self.is_zero())
+
+        Self(U384::from_words(words))
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
@@ -120,11 +128,11 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff";
     const NUM_BITS: u32 = 384;
     const CAPACITY: u32 = 383;
-    const TWO_INV: Self = Self::ZERO; // TODO
-    const MULTIPLICATIVE_GENERATOR: Self = Self(U384::from_u32(19));
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(19);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self::from_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe");
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::ZERO; // TODO
 
     #[inline]

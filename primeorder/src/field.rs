@@ -118,6 +118,13 @@ macro_rules! impl_field_element {
                 Self::from_uint_unchecked(<$uint>::from_be_hex(hex))
             }
 
+            /// Convert a `u64` into a [`
+            #[doc = stringify!($fe)]
+            /// `].
+            pub const fn from_u64(w: u64) -> Self {
+                Self::from_uint_unchecked(<$uint>::from_u64(w))
+            }
+
             /// Decode [`
             #[doc = stringify!($fe)]
             /// `] from [`
@@ -222,6 +229,32 @@ macro_rules! impl_field_element {
             #[must_use]
             pub const fn square(&self) -> Self {
                 Self(<$uint>::from_words($square(self.0.as_words())))
+            }
+
+            /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
+            ///
+            /// **This operation is variable time with respect to the exponent.**
+            ///
+            /// If the exponent is fixed, this operation is effectively constant time.
+            pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+                let mut res = Self::ONE;
+                let mut i = exp.len();
+
+                while i > 0 {
+                    i -= 1;
+
+                    let mut j = 64;
+                    while j > 0 {
+                        j -= 1;
+                        res = res.square();
+
+                        if ((exp[i] >> j) & 1) == 1 {
+                            res = res.multiply(self);
+                        }
+                    }
+                }
+
+                res
             }
         }
 
