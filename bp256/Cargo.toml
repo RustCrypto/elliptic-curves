@@ -1,6 +1,6 @@
 [package]
 name = "bp256"
-version = "0.5.0"
+version = "0.6.0-pre"
 description = "Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -10,13 +10,13 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.61"
 
 [dependencies]
-elliptic-curve = { version = "0.12", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "=0.13.0-pre.2", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa = { version = "0.15", optional = true, default-features = false, features = ["der"] }
+ecdsa = { version = "=0.16.0-pre", optional = true, default-features = false, features = ["der"] }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [features]

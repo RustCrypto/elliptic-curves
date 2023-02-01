@@ -6,20 +6,23 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, Secp256k1, ORDER};
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, Sub, SubAssign};
+use crate::{FieldBytes, Secp256k1, WideBytes, ORDER, ORDER_HEX};
+use core::{
+    iter::{Product, Sum},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
+};
 use elliptic_curve::{
     bigint::{self, prelude::*, Limb, Word, U256, U512},
-    generic_array::arr,
-    group::ff::{Field, PrimeField},
+    ff::{self, Field, PrimeField},
     ops::{Reduce, ReduceNonZero},
     rand_core::{CryptoRngCore, RngCore},
+    scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, IsHigh, ScalarArithmetic, ScalarCore,
+    Curve, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
@@ -30,10 +33,6 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
-
-impl ScalarArithmetic for Secp256k1 {
-    type Scalar = Scalar;
-}
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
@@ -73,7 +72,7 @@ const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 ///
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialOrd, Ord)]
 pub struct Scalar(pub(crate) U256);
 
 impl Scalar {
@@ -179,7 +178,7 @@ impl Scalar {
     /// Returns the scalar modulus as a `BigUint` object.
     #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
-        Self::one().negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
+        Self::ONE.negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
@@ -222,6 +221,9 @@ impl Scalar {
 }
 
 impl Field for Scalar {
+    const ZERO: Self = Self::ZERO;
+    const ONE: Self = Self::ONE;
+
     fn random(mut rng: impl RngCore) -> Self {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
@@ -233,14 +235,6 @@ impl Field for Scalar {
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
         Self::generate_vartime(&mut rng)
-    }
-
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    fn one() -> Self {
-        Self::ONE
     }
 
     #[must_use]
@@ -272,7 +266,7 @@ impl Field for Scalar {
         let mut v = Self::S;
         let mut x = *self * w;
         let mut b = x * w;
-        let mut z = Self::root_of_unity();
+        let mut z = Self::ROOT_OF_UNITY;
 
         for max_v in (1..=Self::S).rev() {
             let mut k = 1;
@@ -280,7 +274,7 @@ impl Field for Scalar {
             let mut j_less_than_v = Choice::from(1);
 
             for j in 2..max_v {
-                let tmp_is_one = tmp.ct_eq(&Self::one());
+                let tmp_is_one = tmp.ct_eq(&Self::ONE);
                 let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
                 tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
                 let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
@@ -290,7 +284,7 @@ impl Field for Scalar {
             }
 
             let result = x * z;
-            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::one()));
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::ONE));
             z = z.square();
             b *= z;
             v = k;
@@ -298,14 +292,38 @@ impl Field for Scalar {
 
         CtOption::new(x, x.square().ct_eq(self))
     }
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        ff::helpers::sqrt_ratio_generic(num, div)
+    }
+}
+
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
+    }
 }
 
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
+    const MODULUS: &'static str = ORDER_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
+    const TWO_INV: Self = Self(U256::from_be_hex(
+        "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1",
+    ));
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U256::from_u8(7));
     const S: u32 = 6;
+    const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
+        "0c1dc060e7a91986df9879a3fbc483a898bdeab680756045992f4b5402b052f2",
+    ));
+    const ROOT_OF_UNITY_INV: Self = Self(U256::from_be_hex(
+        "fd3ae181f12d7096efc7b0c75b8cbb7277a275910aa413c3b6fb30a0884f0d1c",
+    ));
+    const DELTA: Self = Self(U256::from_be_hex(
+        "0000000000000000000cbc21fe4561c8d63b78e780e1341e199417c8c0bb7601",
+    ));
 
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
@@ -322,19 +340,6 @@ impl PrimeField for Scalar {
 
     fn is_odd(&self) -> Choice {
         self.0.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        7u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Scalar::from_repr(arr![u8;
-            0x0c, 0x1d, 0xc0, 0x60, 0xe7, 0xa9, 0x19, 0x86, 0xdf, 0x98, 0x79, 0xa3, 0xfb, 0xc4,
-            0x83, 0xa8, 0x98, 0xbd, 0xea, 0xb6, 0x80, 0x75, 0x60, 0x45, 0x99, 0x2f, 0x4b, 0x54,
-            0x02, 0xb0, 0x52, 0xf2
-        ])
-        .unwrap()
     }
 }
 
@@ -375,27 +380,35 @@ impl From<u128> for Scalar {
     }
 }
 
-impl From<ScalarCore<Secp256k1>> for Scalar {
-    fn from(scalar: ScalarCore<Secp256k1>) -> Scalar {
+impl From<ScalarPrimitive<Secp256k1>> for Scalar {
+    fn from(scalar: ScalarPrimitive<Secp256k1>) -> Scalar {
         Scalar(*scalar.as_uint())
     }
 }
 
-impl From<&ScalarCore<Secp256k1>> for Scalar {
-    fn from(scalar: &ScalarCore<Secp256k1>) -> Scalar {
+impl From<&ScalarPrimitive<Secp256k1>> for Scalar {
+    fn from(scalar: &ScalarPrimitive<Secp256k1>) -> Scalar {
         Scalar(*scalar.as_uint())
     }
 }
 
-impl From<Scalar> for ScalarCore<Secp256k1> {
-    fn from(scalar: Scalar) -> ScalarCore<Secp256k1> {
-        ScalarCore::from(&scalar)
+impl From<Scalar> for ScalarPrimitive<Secp256k1> {
+    fn from(scalar: Scalar) -> ScalarPrimitive<Secp256k1> {
+        ScalarPrimitive::from(&scalar)
     }
 }
 
-impl From<&Scalar> for ScalarCore<Secp256k1> {
-    fn from(scalar: &Scalar) -> ScalarCore<Secp256k1> {
-        ScalarCore::new(scalar.0).unwrap()
+impl From<&Scalar> for ScalarPrimitive<Secp256k1> {
+    fn from(scalar: &Scalar) -> ScalarPrimitive<Secp256k1> {
+        ScalarPrimitive::new(scalar.0).unwrap()
+    }
+}
+
+impl FromUintUnchecked for Scalar {
+    type Uint = U256;
+
+    fn from_uint_unchecked(uint: Self::Uint) -> Self {
+        Self(uint)
     }
 }
 
@@ -418,6 +431,12 @@ impl Shr<usize> for &Scalar {
 
     fn shr(self, rhs: usize) -> Self::Output {
         self.shr_vartime(rhs)
+    }
+}
+
+impl ShrAssign<usize> for Scalar {
+    fn shr_assign(&mut self, rhs: usize) {
+        *self = *self >> rhs;
     }
 }
 
@@ -574,31 +593,78 @@ impl MulAssign<&Scalar> for Scalar {
 }
 
 impl Reduce<U256> for Scalar {
-    fn from_uint_reduced(w: U256) -> Self {
+    type Bytes = FieldBytes;
+
+    fn reduce(w: U256) -> Self {
         let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow))
+    }
+
+    #[inline]
+    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+        Self::reduce(U256::from_be_byte_array(*bytes))
     }
 }
 
 impl Reduce<U512> for Scalar {
-    fn from_uint_reduced(w: U512) -> Self {
+    type Bytes = WideBytes;
+
+    fn reduce(w: U512) -> Self {
         WideScalar(w).reduce()
+    }
+
+    fn reduce_bytes(bytes: &WideBytes) -> Self {
+        Self::reduce(U512::from_be_byte_array(*bytes))
     }
 }
 
 impl ReduceNonZero<U256> for Scalar {
-    fn from_uint_reduced_nonzero(w: U256) -> Self {
+    fn reduce_nonzero(w: U256) -> Self {
         const ORDER_MINUS_ONE: U256 = ORDER.wrapping_sub(&U256::ONE);
         let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(&w, &r, !underflow).wrapping_add(&U256::ONE))
+    }
+
+    #[inline]
+    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
+        Self::reduce_nonzero(U256::from_be_byte_array(*bytes))
     }
 }
 
 impl ReduceNonZero<U512> for Scalar {
-    fn from_uint_reduced_nonzero(w: U512) -> Self {
+    fn reduce_nonzero(w: U512) -> Self {
         WideScalar(w).reduce_nonzero()
+    }
+
+    #[inline]
+    fn reduce_nonzero_bytes(bytes: &WideBytes) -> Self {
+        Self::reduce_nonzero(U512::from_be_byte_array(*bytes))
+    }
+}
+
+impl Sum for Scalar {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+    }
+}
+
+impl<'a> Sum<&'a Scalar> for Scalar {
+    fn sum<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
+        iter.copied().sum()
+    }
+}
+
+impl Product for Scalar {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ZERO)
+    }
+}
+
+impl<'a> Product<&'a Scalar> for Scalar {
+    fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
+        iter.copied().product()
     }
 }
 
@@ -639,7 +705,7 @@ impl Serialize for Scalar {
     where
         S: ser::Serializer,
     {
-        ScalarCore::from(self).serialize(serializer)
+        ScalarPrimitive::from(self).serialize(serializer)
     }
 }
 
@@ -649,21 +715,23 @@ impl<'de> Deserialize<'de> for Scalar {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(ScalarCore::deserialize(deserializer)?.into())
+        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use crate::arithmetic::dev::{biguint_to_bytes, bytes_to_biguint};
-    use crate::{NonZeroScalar, ORDER};
+    use crate::{
+        arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
+        FieldBytes, NonZeroScalar, WideBytes, ORDER,
+    };
     use elliptic_curve::{
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
         generic_array::GenericArray,
         ops::Reduce,
-        IsHigh,
+        scalar::IsHigh,
     };
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
@@ -692,7 +760,7 @@ mod tests {
     #[test]
     fn is_high() {
         // 0 is not high
-        let high: bool = Scalar::zero().is_high().into();
+        let high: bool = Scalar::ZERO.is_high().into();
         assert!(!high);
 
         // 1 is not high
@@ -728,15 +796,15 @@ mod tests {
 
     #[test]
     fn negate() {
-        let zero_neg = -Scalar::zero();
-        assert_eq!(zero_neg, Scalar::zero());
+        let zero_neg = -Scalar::ZERO;
+        assert_eq!(zero_neg, Scalar::ZERO);
 
         let m = Scalar::modulus_as_biguint();
         let one = 1.to_biguint().unwrap();
         let m_minus_one = &m - &one;
         let m_by_2 = &m >> 1;
 
-        let one_neg = -Scalar::one();
+        let one_neg = -Scalar::ONE;
         assert_eq!(one_neg, Scalar::from(&m_minus_one));
 
         let frac_modulus_2_neg = -Scalar::from(&m_by_2);
@@ -744,7 +812,7 @@ mod tests {
         assert_eq!(frac_modulus_2_neg, frac_modulus_2_plus_one);
 
         let modulus_minus_one_neg = -Scalar::from(&m - &one);
-        assert_eq!(modulus_minus_one_neg, Scalar::one());
+        assert_eq!(modulus_minus_one_neg, Scalar::ONE);
     }
 
     #[test]
@@ -784,8 +852,8 @@ mod tests {
     fn from_bytes_reduced() {
         let m = Scalar::modulus_as_biguint();
 
-        fn reduce<T: Reduce<U256>>(arr: &[u8]) -> T {
-            T::from_be_bytes_reduced(GenericArray::clone_from_slice(arr))
+        fn reduce<T: Reduce<U256, Bytes = FieldBytes>>(arr: &[u8]) -> T {
+            T::reduce_bytes(GenericArray::from_slice(arr))
         }
 
         // Regular reduction
@@ -827,10 +895,10 @@ mod tests {
     fn from_wide_bytes_reduced() {
         let m = Scalar::modulus_as_biguint();
 
-        fn reduce<T: Reduce<U512>>(arr: &[u8]) -> T {
-            let mut full_arr = [0u8; 64];
-            full_arr[(64 - arr.len())..64].copy_from_slice(arr);
-            T::from_be_bytes_reduced(GenericArray::clone_from_slice(&full_arr))
+        fn reduce<T: Reduce<U512, Bytes = WideBytes>>(slice: &[u8]) -> T {
+            let mut bytes = WideBytes::default();
+            bytes[(64 - slice.len())..].copy_from_slice(slice);
+            T::reduce_bytes(&bytes)
         }
 
         // Regular reduction
@@ -959,7 +1027,7 @@ mod tests {
         fn fuzzy_invert(
             a in scalar()
         ) {
-            let a = if bool::from(a.is_zero()) { Scalar::one() } else { a };
+            let a = if bool::from(a.is_zero()) { Scalar::ONE } else { a };
             let a_bi = a.to_biguint().unwrap();
             let inv = a.invert().unwrap();
             let inv_bi = inv.to_biguint().unwrap();
@@ -973,7 +1041,7 @@ mod tests {
             let mut bytes = [0u8; 64];
             bytes[0..32].clone_from_slice(&bytes_hi);
             bytes[32..64].clone_from_slice(&bytes_lo);
-            let s = <Scalar as Reduce<U512>>::from_be_bytes_reduced(GenericArray::clone_from_slice(&bytes));
+            let s = <Scalar as Reduce<U512>>::reduce(U512::from_be_slice(&bytes));
             let s_bu = s.to_biguint().unwrap();
             assert!(s_bu < m);
         }

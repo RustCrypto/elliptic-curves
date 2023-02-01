@@ -5,7 +5,9 @@ use criterion::{
 };
 use hex_literal::hex;
 use k256::{
-    elliptic_curve::{generic_array::arr, group::ff::PrimeField, ops::LinearCombination},
+    elliptic_curve::{
+        generic_array::arr, group::ff::PrimeField, ops::LinearCombination, ops::MulByGenerator,
+    },
     ProjectivePoint, Scalar,
 };
 

@@ -5,8 +5,8 @@ use elliptic_curve::{
     consts::U48,
     generic_array::GenericArray,
     hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0},
+    point::DecompressPoint,
     subtle::Choice,
-    DecompressPoint,
 };
 
 impl GroupDigest for NistP256 {
@@ -41,7 +41,7 @@ impl Sgn0 for FieldElement {
 
 impl OsswuMap for FieldElement {
     const PARAMS: OsswuMapParams<Self> = OsswuMapParams {
-        c1: [
+        c1: &[
             0xffff_ffff_ffff_ffff,
             0x0000_0000_3fff_ffff,
             0x4000_0000_0000_0000,

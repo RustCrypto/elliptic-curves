@@ -26,16 +26,19 @@ mod field_impl;
 
 use self::field_impl::*;
 use crate::FieldBytes;
-use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
+use core::{
+    iter::{Product, Sum},
+    ops::{AddAssign, MulAssign, Neg, SubAssign},
+};
 use elliptic_curve::{
-    bigint::{self, Encoding, Limb, U384},
+    bigint::{self, Limb, U384},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-pub(crate) const MODULUS: U384 = U384::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff");
+pub(crate) const MODULUS: U384 = U384::from_be_hex(FieldElement::MODULUS);
 
 /// Element of the secp384r1 base field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -75,8 +78,8 @@ impl FieldElement {
         let ret = impl_field_invert!(
             self.to_canonical().to_words(),
             Self::ONE.0.to_words(),
-            Limb::BIT_SIZE,
-            bigint::nlimbs!(U384::BIT_SIZE),
+            Limb::BITS,
+            bigint::nlimbs!(U384::BITS),
             fiat_p384_mul,
             fiat_p384_opp,
             fiat_p384_divstep_precomp,
@@ -123,30 +126,18 @@ impl FieldElement {
     }
 }
 
-impl From<u32> for FieldElement {
-    fn from(n: u32) -> FieldElement {
-        Self::from_uint(U384::from(n)).unwrap()
-    }
-}
-
-impl From<u64> for FieldElement {
-    fn from(n: u64) -> FieldElement {
-        Self::from_uint(U384::from(n)).unwrap()
-    }
-}
-
-impl From<u128> for FieldElement {
-    fn from(n: u128) -> FieldElement {
-        Self::from_uint(U384::from(n)).unwrap()
-    }
-}
-
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
+    const MODULUS: &'static str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff";
     const NUM_BITS: u32 = 384;
     const CAPACITY: u32 = 383;
+    const TWO_INV: Self = Self::ZERO; // TODO
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U384::from_u32(19));
     const S: u32 = 1;
+    const ROOT_OF_UNITY: Self = Self::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffe");
+    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
+    const DELTA: Self = Self::ZERO; // TODO
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         Self::from_be_bytes(bytes)
@@ -158,23 +149,6 @@ impl PrimeField for FieldElement {
 
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        19u32.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Self::from_repr(
-            [
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-                0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-                0x0, 0xff, 0xff, 0xff, 0xfe,
-            ]
-            .into(),
-        )
-        .unwrap()
     }
 }
 

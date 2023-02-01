@@ -46,9 +46,9 @@ use crate::arithmetic::{
 };
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::{
-    ops::LinearCombination,
+    ops::{LinearCombination, MulByGenerator},
+    scalar::IsHigh,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
-    IsHigh,
 };
 
 #[cfg(feature = "precomputed-tables")]
@@ -400,16 +400,16 @@ fn precompute_gen_lookup_table() -> [LookupTable; 33] {
     res
 }
 
-impl ProjectivePoint {
+impl MulByGenerator for ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(not(feature = "precomputed-tables"))]
-    pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
+    fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
         ProjectivePoint::GENERATOR * k
     }
 
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(feature = "precomputed-tables")]
-    pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
+    fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
         let digits = Radix16Decomposition::<65>::new(k);
         let table = *GEN_LOOKUP_TABLE;
         let mut acc = table[32].select(digits.0[64]);
@@ -482,7 +482,11 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 #[cfg(test)]
 mod tests {
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::{ops::LinearCombination, rand_core::OsRng, Field, Group};
+    use elliptic_curve::{
+        ops::{LinearCombination, MulByGenerator},
+        rand_core::OsRng,
+        Field, Group,
+    };
 
     #[test]
     fn test_lincomb() {

@@ -12,14 +12,18 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP384, SecretKey, U384};
-use core::ops::{AddAssign, MulAssign, Neg, SubAssign};
+use crate::{FieldBytes, NistP384, SecretKey, ORDER_HEX, U384};
+use core::{
+    iter::{Product, Sum},
+    ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
+};
 use elliptic_curve::{
-    bigint::{self, Encoding, Limb},
+    bigint::{self, ArrayEncoding, Limb},
     ff::PrimeField,
     ops::Reduce,
+    scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
-    Curve as _, Error, IsHigh, Result, ScalarCore,
+    Curve as _, Error, Result, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
@@ -62,7 +66,7 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct Scalar(U384);
 
 primeorder::impl_field_element!(
@@ -81,16 +85,13 @@ primeorder::impl_field_element!(
 );
 
 impl Scalar {
-    /// `2^s` root of unity.
-    pub const ROOT_OF_UNITY: Self = Self::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
-
     /// Compute [`Scalar`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         let ret = impl_field_invert!(
             self.to_canonical().to_words(),
             Self::ONE.0.to_words(),
-            Limb::BIT_SIZE,
-            bigint::nlimbs!(U384::BIT_SIZE),
+            Limb::BITS,
+            bigint::nlimbs!(U384::BITS),
             fiat_p384_scalar_mul,
             fiat_p384_scalar_opp,
             fiat_p384_scalar_divstep_precomp,
@@ -150,12 +151,33 @@ impl Scalar {
         x
     }
 
+    /// Right shifts the scalar.
+    ///
+    /// Note: not constant-time with respect to the `shift` parameter.
+    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
+        Self(self.0.shr_vartime(shift))
+    }
+
     /// Returns the SEC1 encoding of this scalar.
     ///
     /// Required for running test vectors.
     #[cfg(test)]
     pub fn to_bytes(&self) -> FieldBytes {
         self.to_be_bytes()
+    }
+}
+
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
+    }
+}
+
+impl FromUintUnchecked for Scalar {
+    type Uint = U384;
+
+    fn from_uint_unchecked(uint: Self::Uint) -> Self {
+        Self::from_uint_unchecked(uint)
     }
 }
 
@@ -166,12 +188,40 @@ impl IsHigh for Scalar {
     }
 }
 
+impl Shr<usize> for Scalar {
+    type Output = Self;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        self.shr_vartime(rhs)
+    }
+}
+
+impl Shr<usize> for &Scalar {
+    type Output = Scalar;
+
+    fn shr(self, rhs: usize) -> Self::Output {
+        self.shr_vartime(rhs)
+    }
+}
+
+impl ShrAssign<usize> for Scalar {
+    fn shr_assign(&mut self, rhs: usize) {
+        *self = *self >> rhs;
+    }
+}
+
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
+    const MODULUS: &'static str = ORDER_HEX;
     const CAPACITY: u32 = 383;
     const NUM_BITS: u32 = 384;
+    const TWO_INV: Self = Self::ZERO; // TODO
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U384::from_u64(2));
     const S: u32 = 1;
+    const ROOT_OF_UNITY: Self = Self::from_be_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
+    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
+    const DELTA: Self = Self::ZERO; // TODO
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         Self::from_be_bytes(bytes)
@@ -183,14 +233,6 @@ impl PrimeField for Scalar {
 
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-
-    fn multiplicative_generator() -> Self {
-        2u64.into()
-    }
-
-    fn root_of_unity() -> Self {
-        Self::ROOT_OF_UNITY
     }
 }
 
@@ -208,52 +250,41 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl Reduce<U384> for Scalar {
-    fn from_uint_reduced(w: U384) -> Self {
+    type Bytes = FieldBytes;
+
+    fn reduce(w: U384) -> Self {
         let (r, underflow) = w.sbb(&NistP384::ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BIT_SIZE - 1)) as u8);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(U384::conditional_select(&w, &r, !underflow))
     }
-}
 
-impl From<u32> for Scalar {
-    fn from(n: u32) -> Scalar {
-        Self::from_uint_unchecked(U384::from(n))
+    #[inline]
+    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+        Self::reduce(U384::from_be_byte_array(*bytes))
     }
 }
 
-impl From<u64> for Scalar {
-    fn from(n: u64) -> Scalar {
-        Self::from_uint_unchecked(U384::from(n))
-    }
-}
-
-impl From<u128> for Scalar {
-    fn from(n: u128) -> Scalar {
-        Self::from_uint_unchecked(U384::from(n))
-    }
-}
-
-impl From<ScalarCore<NistP384>> for Scalar {
-    fn from(w: ScalarCore<NistP384>) -> Self {
+impl From<ScalarPrimitive<NistP384>> for Scalar {
+    fn from(w: ScalarPrimitive<NistP384>) -> Self {
         Scalar::from(&w)
     }
 }
 
-impl From<&ScalarCore<NistP384>> for Scalar {
-    fn from(w: &ScalarCore<NistP384>) -> Scalar {
+impl From<&ScalarPrimitive<NistP384>> for Scalar {
+    fn from(w: &ScalarPrimitive<NistP384>) -> Scalar {
         Scalar::from_uint_unchecked(*w.as_uint())
     }
 }
 
-impl From<Scalar> for ScalarCore<NistP384> {
-    fn from(scalar: Scalar) -> ScalarCore<NistP384> {
-        ScalarCore::from(&scalar)
+impl From<Scalar> for ScalarPrimitive<NistP384> {
+    fn from(scalar: Scalar) -> ScalarPrimitive<NistP384> {
+        ScalarPrimitive::from(&scalar)
     }
 }
 
-impl From<&Scalar> for ScalarCore<NistP384> {
-    fn from(scalar: &Scalar) -> ScalarCore<NistP384> {
-        ScalarCore::new(scalar.into()).unwrap()
+impl From<&Scalar> for ScalarPrimitive<NistP384> {
+    fn from(scalar: &Scalar) -> ScalarPrimitive<NistP384> {
+        ScalarPrimitive::new(scalar.into()).unwrap()
     }
 }
 
@@ -301,7 +332,7 @@ impl Serialize for Scalar {
     where
         S: ser::Serializer,
     {
-        ScalarCore::from(self).serialize(serializer)
+        ScalarPrimitive::from(self).serialize(serializer)
     }
 }
 
@@ -311,7 +342,7 @@ impl<'de> Deserialize<'de> for Scalar {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(ScalarCore::deserialize(deserializer)?.into())
+        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
     }
 }
 
@@ -319,7 +350,7 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::Scalar;
     use crate::FieldBytes;
-    use elliptic_curve::ff::{Field, PrimeField};
+    use elliptic_curve::ff::PrimeField;
 
     #[test]
     fn from_to_bytes_roundtrip() {
@@ -334,7 +365,7 @@ mod tests {
     /// Basic tests that multiplication works.
     #[test]
     fn multiply() {
-        let one = Scalar::one();
+        let one = Scalar::ONE;
         let two = one + one;
         let three = two + one;
         let six = three + three;
@@ -351,7 +382,7 @@ mod tests {
     /// Basic tests that scalar inversion works.
     #[test]
     fn invert() {
-        let one = Scalar::one();
+        let one = Scalar::ONE;
         let three = one + one + one;
         let inv_three = three.invert().unwrap();
         assert_eq!(three * inv_three, one);

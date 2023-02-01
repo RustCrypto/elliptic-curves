@@ -8,9 +8,7 @@ pub(crate) mod util;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP256;
-use elliptic_curve::{
-    AffineArithmetic, PrimeCurveArithmetic, ProjectiveArithmetic, ScalarArithmetic,
-};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
 use primeorder::{equation_a, PrimeCurveParams};
 
 /// Elliptic curve point in affine coordinates.
@@ -19,12 +17,19 @@ pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 /// Elliptic curve point in projective coordinates.
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP256>;
 
+impl CurveArithmetic for NistP256 {
+    type AffinePoint = AffinePoint;
+    type ProjectivePoint = ProjectivePoint;
+    type Scalar = Scalar;
+}
+
+impl PrimeCurveArithmetic for NistP256 {
+    type CurveGroup = ProjectivePoint;
+}
+
 impl PrimeCurveParams for NistP256 {
     type FieldElement = FieldElement;
     type EquationAProperties = equation_a::IsMinusThree;
-
-    const ZERO: FieldElement = FieldElement::ZERO;
-    const ONE: FieldElement = FieldElement::ONE;
 
     /// a = -3
     const EQUATION_A: FieldElement = FieldElement::ZERO
@@ -52,20 +57,4 @@ impl PrimeCurveParams for NistP256 {
             "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
         ),
     );
-}
-
-impl AffineArithmetic for NistP256 {
-    type AffinePoint = AffinePoint;
-}
-
-impl ProjectiveArithmetic for NistP256 {
-    type ProjectivePoint = ProjectivePoint;
-}
-
-impl PrimeCurveArithmetic for NistP256 {
-    type CurveGroup = ProjectivePoint;
-}
-
-impl ScalarArithmetic for NistP256 {
-    type Scalar = Scalar;
 }

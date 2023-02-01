@@ -90,8 +90,8 @@ mod tests {
     // <https://tools.ietf.org/html/rfc6979#appendix-A.2.6>
     #[test]
     fn rfc6979() {
-        let x = &hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
-        let signer = SigningKey::from_bytes(x).unwrap();
+        let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
+        let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let signature: Signature = signer.sign(b"sample");
         assert_eq!(
             signature.to_bytes().as_slice(),
@@ -114,8 +114,8 @@ mod tests {
     // Test signing with PrehashSigner using SHA-256 which output is smaller than P-384 field size.
     #[test]
     fn prehash_signer_signing_with_sha256() {
-        let x = &hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
-        let signer = SigningKey::from_bytes(x).unwrap();
+        let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
+        let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let digest = sha2::Sha256::digest(b"test");
         let signature: Signature = signer.sign_prehash(&digest).unwrap();
         assert_eq!(
@@ -161,11 +161,11 @@ mod tests {
             102, 30, 237, 90, 198, 36, 97, 52, 12, 234, 150,
         ];
 
-        let sigk = SigningKey::from_bytes(raw_sk.as_slice()).unwrap();
-        let seck = SecretKey::from_be_bytes(raw_sk.as_slice()).unwrap();
+        let seck = SecretKey::from_bytes(&raw_sk.into()).unwrap();
+        let sigk = SigningKey::from_bytes(&raw_sk.into()).unwrap();
 
+        assert_eq!(seck.to_bytes().as_slice(), &raw_sk);
         assert_eq!(sigk.to_bytes().as_slice(), &raw_sk);
-        assert_eq!(sigk.to_bytes(), seck.to_be_bytes());
     }
 
     mod sign {

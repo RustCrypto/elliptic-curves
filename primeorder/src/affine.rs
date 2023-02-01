@@ -2,24 +2,23 @@
 
 #![allow(clippy::op_ref)]
 
-use crate::{Double, PrimeCurveParams, ProjectivePoint};
+use crate::{PrimeCurveParams, ProjectivePoint};
 use core::{
     borrow::Borrow,
     ops::{Mul, Neg},
 };
 use elliptic_curve::{
-    bigint::ArrayEncoding,
     ff::{Field, PrimeField},
     generic_array::ArrayLength,
     group::{prime::PrimeCurveAffine, GroupEncoding},
+    point::{AffineXCoordinate, AffineYIsOdd, DecompactPoint, DecompressPoint, Double},
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     zeroize::DefaultIsZeroes,
-    AffineXCoordinate, DecompactPoint, DecompressPoint, Error, FieldBytes, FieldSize, PublicKey,
-    Result, Scalar,
+    Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
 #[cfg(feature = "serde")]
@@ -47,8 +46,8 @@ where
 {
     /// Additive identity of the group a.k.a. the point at infinity.
     pub const IDENTITY: Self = Self {
-        x: C::ZERO,
-        y: C::ZERO,
+        x: C::FieldElement::ZERO,
+        y: C::FieldElement::ZERO,
         infinity: 1,
     };
 
@@ -67,8 +66,8 @@ where
     /// Conditionally negate [`AffinePoint`] for use with point compaction.
     fn to_compact(self) -> Self {
         let neg_self = -self;
-        let choice = C::UInt::from_be_byte_array(self.y.to_repr())
-            .ct_gt(&C::UInt::from_be_byte_array(neg_self.y.to_repr()));
+        let choice = C::decode_field_bytes(&self.y.to_repr())
+            .ct_gt(&C::decode_field_bytes(&neg_self.y.to_repr()));
 
         Self {
             x: self.x,
@@ -78,12 +77,23 @@ where
     }
 }
 
-impl<C> AffineXCoordinate<C> for AffinePoint<C>
+impl<C> AffineXCoordinate for AffinePoint<C>
 where
     C: PrimeCurveParams,
 {
+    type FieldRepr = FieldBytes<C>;
+
     fn x(&self) -> FieldBytes<C> {
         self.x.to_repr()
+    }
+}
+
+impl<C> AffineYIsOdd for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn y_is_odd(&self) -> Choice {
+        self.y.is_odd()
     }
 }
 
@@ -159,7 +169,7 @@ impl<C> FromEncodedPoint<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
     /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded
@@ -224,7 +234,7 @@ where
 impl<C> From<AffinePoint<C>> for EncodedPoint<C>
 where
     C: PrimeCurveParams,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -237,7 +247,7 @@ impl<C> GroupEncoding for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -282,7 +292,7 @@ impl<C> PrimeCurveAffine for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     ProjectivePoint<C>: Double,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
@@ -310,7 +320,7 @@ where
 impl<C> ToCompactEncodedPoint<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -331,7 +341,7 @@ where
 impl<C> ToEncodedPoint<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -352,7 +362,7 @@ impl<C> TryFrom<EncodedPoint<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
     type Error = Error;
@@ -366,7 +376,7 @@ impl<C> TryFrom<&EncodedPoint<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
     type Error = Error;
@@ -449,7 +459,7 @@ where
 impl<C> Serialize for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
 {
@@ -466,7 +476,7 @@ impl<'de, C> Deserialize<'de> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
-    FieldSize<C>: ModulusSize,
+    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>

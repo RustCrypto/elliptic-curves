@@ -1,11 +1,12 @@
 //! Taproot Schnorr verifying key.
 
 use super::{tagged_hash, Signature, CHALLENGE_TAG};
-use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
+use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar, Secp256k1};
 use elliptic_curve::{
     bigint::U256,
     ops::{LinearCombination, Reduce},
-    DecompactPoint,
+    point::DecompactPoint,
+    Curve,
 };
 use sha2::{
     digest::{consts::U32, FixedOutput},
@@ -63,13 +64,13 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         let prehash: [u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
         let (r, s) = signature.split();
 
-        let e = <Scalar as Reduce<U256>>::from_be_bytes_reduced(
-            tagged_hash(CHALLENGE_TAG)
+        let e = <Scalar as Reduce<U256>>::reduce(Secp256k1::decode_field_bytes(
+            &tagged_hash(CHALLENGE_TAG)
                 .chain_update(signature.r.to_bytes())
                 .chain_update(self.to_bytes())
                 .chain_update(prehash)
                 .finalize(),
-        );
+        ));
 
         let R = ProjectivePoint::lincomb(
             &ProjectivePoint::GENERATOR,

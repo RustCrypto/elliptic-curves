@@ -3,7 +3,7 @@
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
 
-use elliptic_curve::bigint::U256;
+use elliptic_curve::{bigint::U256, consts::U32};
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8;
@@ -13,8 +13,11 @@ use crate::pkcs8;
 pub struct BrainpoolP256r1;
 
 impl elliptic_curve::Curve for BrainpoolP256r1 {
-    /// 256-bit field modulus
-    type UInt = U256;
+    /// 32-byte serialized field elements.
+    type FieldBytesSize = U32;
+
+    /// 256-bit field modulus.
+    type Uint = U256;
 
     /// Curve order
     const ORDER: U256 =
@@ -23,7 +26,7 @@ impl elliptic_curve::Curve for BrainpoolP256r1 {
 
 impl elliptic_curve::PrimeCurve for BrainpoolP256r1 {}
 
-impl elliptic_curve::PointCompression for BrainpoolP256r1 {
+impl elliptic_curve::point::PointCompression for BrainpoolP256r1 {
     const COMPRESS_POINTS: bool = false;
 }
 

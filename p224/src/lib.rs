@@ -13,18 +13,24 @@ pub use elliptic_curve::pkcs8;
 
 pub use elliptic_curve::{self, bigint::U256};
 
-use elliptic_curve::{consts::U29, generic_array::GenericArray};
+use elliptic_curve::{
+    consts::{U28, U29},
+    generic_array::GenericArray,
+};
 
 /// NIST P-224 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP224;
 
 impl elliptic_curve::Curve for NistP224 {
+    /// 28-byte serialized field elements.
+    type FieldBytesSize = U28;
+
     /// Big integer type used for representing field elements.
     ///
     /// Uses `U256` to allow 4 x 64-bit limbs.
     // TODO(tarcieri): use a `U224` on 32-bit targets?
-    type UInt = U256;
+    type Uint = U256;
 
     /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus).
     const ORDER: U256 =
@@ -33,7 +39,7 @@ impl elliptic_curve::Curve for NistP224 {
 
 impl elliptic_curve::PrimeCurve for NistP224 {}
 
-impl elliptic_curve::PointCompression for NistP224 {
+impl elliptic_curve::point::PointCompression for NistP224 {
     /// NIST P-224 points are typically uncompressed.
     const COMPRESS_POINTS: bool = false;
 }

@@ -1,6 +1,6 @@
 [package]
 name = "primeorder"
-version = "0.12.1"
+version = "0.13.0-pre"
 description = """
 Pure Rust implementation of complete addition formulas for prime order elliptic
 curves (Renes-Costello-Batina 2015). Generic over field elements and curve
@@ -14,10 +14,10 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc"]
 edition = "2021"
-rust-version = "1.60"
+rust-version = "1.61"
 
 [dependencies]
-elliptic-curve = { version = "0.12.3", default-features = false, features = ["arithmetic", "sec1"] }
+elliptic-curve = { version = "=0.13.0-pre.2", default-features = false, features = ["arithmetic", "sec1"] }
 
 # optional dependencies
 serdect = { version = "0.1", optional = true, default-features = false }

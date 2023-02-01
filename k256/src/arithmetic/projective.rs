@@ -18,7 +18,7 @@ use elliptic_curve::{
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, PrimeCurveArithmetic, ProjectiveArithmetic, Result,
+    Error, Result,
 };
 
 #[rustfmt::skip]
@@ -28,14 +28,6 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
     0xc1, 0x39, 0x6c, 0x28, 0x71, 0x95, 0x01, 0xee,
 ]);
-
-impl ProjectiveArithmetic for Secp256k1 {
-    type ProjectivePoint = ProjectivePoint;
-}
-
-impl PrimeCurveArithmetic for Secp256k1 {
-    type CurveGroup = ProjectivePoint;
-}
 
 /// A point on the secp256k1 curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -252,7 +244,7 @@ impl From<AffinePoint> for ProjectivePoint {
         let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
-            z: FieldElement::one(),
+            z: FieldElement::ONE,
         };
         Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
     }
