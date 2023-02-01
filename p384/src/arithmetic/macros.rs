@@ -17,11 +17,15 @@ macro_rules! impl_field_invert {
         let mut d = 1;
         let mut f = $msat();
         let mut g = [0; $nlimbs + 1];
-        let mut v = Default::default();
+        let mut v = [0; $nlimbs];
         let mut r = $one;
         let mut i = 0;
+        let mut j = 0;
 
-        g[..$nlimbs].copy_from_slice($a.as_ref());
+        while j < $nlimbs {
+            g[j] = $a[j];
+            j += 1;
+        }
 
         while i < ITERATIONS - ITERATIONS % 2 {
             let (out1, out2, out3, out4, out5) = $divstep(d, &f, &g, &v, &r);

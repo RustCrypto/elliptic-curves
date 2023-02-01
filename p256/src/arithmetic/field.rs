@@ -53,24 +53,6 @@ primeorder::impl_field_element!(
 );
 
 impl FieldElement {
-    /// Returns `self^by`, where `by` is a little-endian integer exponent.
-    ///
-    /// **This operation is variable time with respect to the exponent.** If the exponent
-    /// is fixed, this operation is effectively constant time.
-    pub fn pow_vartime(&self, by: &[u64; 4]) -> Self {
-        let mut res = Self::ONE;
-        for e in by.iter().rev() {
-            for i in (0..64).rev() {
-                res = res.square();
-
-                if ((*e >> i) & 1) == 1 {
-                    res = res * self;
-                }
-            }
-        }
-        res
-    }
-
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
         CtOption::new(self.invert_unchecked(), !self.is_zero())
@@ -147,8 +129,8 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::ONE.add(&Self::ONE).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_uint_unchecked(U256::from_u8(6));
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(6);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
         "ffffffff00000001000000000000000000000000fffffffffffffffffffffffe",
