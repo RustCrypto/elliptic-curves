@@ -194,7 +194,7 @@ mod tests {
             let mut u = [FieldElement::default(), FieldElement::default()];
             hash2curve::hash_to_field::<ExpandMsgXmd<Sha384>, FieldElement>(
                 &[test_vector.msg],
-                DST,
+                &[DST],
                 &mut u,
             )
             .unwrap();
@@ -227,8 +227,8 @@ mod tests {
             assert_point_eq!(p, test_vector.p_x, test_vector.p_y);
 
             // complete run
-            let pt =
-                NistP384::hash_from_bytes::<ExpandMsgXmd<Sha384>>(&[test_vector.msg], DST).unwrap();
+            let pt = NistP384::hash_from_bytes::<ExpandMsgXmd<Sha384>>(&[test_vector.msg], &[DST])
+                .unwrap();
             assert_point_eq!(pt, test_vector.p_x, test_vector.p_y);
         }
     }
@@ -277,7 +277,7 @@ mod tests {
                         test_vector.key_info,
                         &counter.to_be_bytes(),
                     ],
-                    test_vector.dst,
+                    &[test_vector.dst],
                 )
                 .unwrap();
 
