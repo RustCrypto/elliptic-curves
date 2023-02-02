@@ -132,9 +132,8 @@ impl PrimeField for FieldElement {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(6);
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
-        "ffffffff00000001000000000000000000000000fffffffffffffffffffffffe",
-    ));
+    const ROOT_OF_UNITY: Self =
+        Self::from_hex("ffffffff00000001000000000000000000000000fffffffffffffffffffffffe");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::ZERO; // TODO
 
@@ -170,7 +169,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO(tarcieri): debug failure
     fn root_of_unity_constant() {
         // ROOT_OF_UNITY^{2^s} mod m == 1
         assert_eq!(
