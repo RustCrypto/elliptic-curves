@@ -12,7 +12,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{self, prelude::*, Limb, Word, U256, U512},
+    bigint::{prelude::*, Limb, Word, U256, U512},
     ff::{self, Field, PrimeField},
     ops::{Reduce, ReduceNonZero},
     rand_core::{CryptoRngCore, RngCore},
@@ -36,7 +36,7 @@ use num_bigint::{BigUint, ToBigUint};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-const MODULUS: [Word; bigint::nlimbs!(256)] = ORDER.to_words();
+const MODULUS: [Word; U256::LIMBS] = ORDER.to_words();
 
 /// Constant representing the modulus / 2
 const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
@@ -777,6 +777,19 @@ mod tests {
             Scalar::ROOT_OF_UNITY * Scalar::ROOT_OF_UNITY_INV,
             Scalar::ONE
         );
+    }
+
+    #[test]
+    fn delta_constant() {
+        const T: [u64; 4] = [
+            0xeeff497a3340d905,
+            0xfaeabb739abd2280,
+            0xffffffffffffffff,
+            0x03ffffffffffffff,
+        ];
+
+        // DELTA^{t} mod m == 1
+        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
     }
 
     #[test]

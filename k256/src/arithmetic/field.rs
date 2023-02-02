@@ -550,6 +550,22 @@ mod tests {
     }
 
     #[test]
+    fn delta_constant() {
+        const T: [u64; 4] = [
+            0xffffffff7ffffe17,
+            0xffffffffffffffff,
+            0xffffffffffffffff,
+            0x7fffffffffffffff,
+        ];
+
+        // DELTA^{t} mod m == 1
+        assert_eq!(
+            FieldElement::DELTA.pow_vartime(&T).normalize(),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
     fn zero_is_additive_identity() {
         let zero = FieldElement::ZERO;
         let one = FieldElement::ONE;
