@@ -518,10 +518,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // TODO(tarcieri): debug failure
     fn two_inv_constant() {
         assert_eq!(
-            FieldElement::from(2u64) * FieldElement::TWO_INV,
+            (FieldElement::from(2u64) * FieldElement::TWO_INV).normalize(),
             FieldElement::ONE
         );
     }
@@ -531,16 +530,17 @@ mod tests {
     fn root_of_unity_constant() {
         // ROOT_OF_UNITY^{2^s} mod m == 1
         assert_eq!(
-            FieldElement::ROOT_OF_UNITY.pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0]),
+            FieldElement::ROOT_OF_UNITY
+                .pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0])
+                .normalize(),
             FieldElement::ONE
         );
     }
 
     #[test]
-    #[ignore] // TODO(tarcieri): debug failure
     fn root_of_unity_inv_constant() {
         assert_eq!(
-            FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV,
+            (FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV).normalize(),
             FieldElement::ONE
         );
     }
