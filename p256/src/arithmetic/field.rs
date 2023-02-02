@@ -187,16 +187,15 @@ mod tests {
 
     #[test]
     fn delta_constant() {
+        const T: [u64; 4] = [
+            0xffffffffffffffff,
+            0x000000007fffffff,
+            0x8000000000000000,
+            0x7fffffff80000000,
+        ];
+
         // DELTA^{t} mod m == 1
-        assert_eq!(
-            FieldElement::DELTA.pow_vartime(&[
-                0xffffffffffffffff,
-                0x000000007fffffff,
-                0x8000000000000000,
-                0x7fffffff80000000,
-            ]),
-            FieldElement::ONE,
-        );
+        assert_eq!(FieldElement::DELTA.pow_vartime(&T), FieldElement::ONE,);
     }
 
     #[test]

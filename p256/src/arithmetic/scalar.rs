@@ -157,7 +157,7 @@ impl Scalar {
 
     /// Exponentiates `self` by `exp`, where `exp` is a little-endian order integer
     /// exponent.
-    pub(crate) const fn pow_vartime(&self, exp: &[u64]) -> Self {
+    pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
         let mut res = Self::ONE;
 
         let mut i = exp.len();
@@ -299,7 +299,7 @@ impl PrimeField for Scalar {
         "ffc97f062a770992ba807ace842a3dfc1546cad004378daf0592d7fbb41e6602",
     ));
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::ZERO; // TODO
+    const DELTA: Self = Self(U256::from_u64(33232930569601));
 
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
     ///
@@ -706,6 +706,19 @@ mod tests {
             Scalar::ROOT_OF_UNITY * Scalar::ROOT_OF_UNITY_INV,
             Scalar::ONE
         );
+    }
+
+    #[test]
+    fn delta_constant() {
+        const T: [u64; 4] = [
+            0x4f3b9cac2fc63255,
+            0xfbce6faada7179e8,
+            0x0fffffffffffffff,
+            0x0ffffffff0000000,
+        ];
+
+        // DELTA^{t} mod m == 1
+        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE,);
     }
 
     #[test]
