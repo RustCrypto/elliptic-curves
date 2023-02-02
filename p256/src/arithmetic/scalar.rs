@@ -718,7 +718,7 @@ mod tests {
         ];
 
         // DELTA^{t} mod m == 1
-        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE,);
+        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
     }
 
     #[test]

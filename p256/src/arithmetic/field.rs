@@ -195,7 +195,7 @@ mod tests {
         ];
 
         // DELTA^{t} mod m == 1
-        assert_eq!(FieldElement::DELTA.pow_vartime(&T), FieldElement::ONE,);
+        assert_eq!(FieldElement::DELTA.pow_vartime(&T), FieldElement::ONE);
     }
 
     #[test]
