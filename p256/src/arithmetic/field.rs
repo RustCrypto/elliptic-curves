@@ -135,7 +135,7 @@ impl PrimeField for FieldElement {
     const ROOT_OF_UNITY: Self =
         Self::from_hex("ffffffff00000001000000000000000000000000fffffffffffffffffffffffe");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::ZERO; // TODO
+    const DELTA: Self = Self::from_u64(36);
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -182,6 +182,20 @@ mod tests {
         assert_eq!(
             FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV,
             FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn delta_constant() {
+        // DELTA^{t} mod m == 1
+        assert_eq!(
+            FieldElement::DELTA.pow_vartime(&[
+                0xffffffffffffffff,
+                0x000000007fffffff,
+                0x8000000000000000,
+                0x7fffffff80000000,
+            ]),
+            FieldElement::ONE,
         );
     }
 
