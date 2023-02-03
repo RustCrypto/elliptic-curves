@@ -13,7 +13,7 @@ use core::{
 use elliptic_curve::{
     bigint::{prelude::*, Limb, U256},
     group::ff::{self, Field, PrimeField},
-    ops::{Reduce, ReduceNonZero},
+    ops::{Invert, Reduce, ReduceNonZero},
     rand_core::RngCore,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
@@ -178,12 +178,6 @@ impl Scalar {
         res
     }
 
-    /// Faster inversion using Stein's algorithm
-    #[allow(non_snake_case)]
-    pub fn invert_vartime(&self) -> CtOption<Self> {
-        elliptic_curve::scalar::invert_vartime::<NistP256>(self)
-    }
-
     /// Is integer representing equivalence class odd?
     pub fn is_odd(&self) -> Choice {
         self.0.is_odd()
@@ -345,6 +339,72 @@ impl FromUintUnchecked for Scalar {
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self(uint)
+    }
+}
+
+impl Invert for Scalar {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
+
+    /// Fast variable-time inversion using Stein's algorithm.
+    ///
+    /// Returns none if the scalar is zero.
+    ///
+    /// <https://link.springer.com/article/10.1007/s13389-016-0135-4>
+    ///
+    /// ⚠️ WARNING!
+    ///
+    /// This method should not be used with (unblinded) secret scalars, as its
+    /// variable-time operation can potentially leak secrets through
+    /// sidechannels.
+    #[allow(non_snake_case)]
+    fn invert_vartime(&self) -> CtOption<Self> {
+        let mut u = *self;
+        let mut v = Self(MODULUS);
+        let mut A = Self::ONE;
+        let mut C = Self::ZERO;
+
+        while !bool::from(u.is_zero()) {
+            // u-loop
+            while bool::from(u.is_even()) {
+                u >>= 1;
+
+                let was_odd: bool = A.is_odd().into();
+                A >>= 1;
+
+                if was_odd {
+                    A += FRAC_MODULUS_2;
+                    A += Self::ONE;
+                }
+            }
+
+            // v-loop
+            while bool::from(v.is_even()) {
+                v >>= 1;
+
+                let was_odd: bool = C.is_odd().into();
+                C >>= 1;
+
+                if was_odd {
+                    C += FRAC_MODULUS_2;
+                    C += Self::ONE;
+                }
+            }
+
+            // sub-step
+            if u >= v {
+                u -= &v;
+                A -= &C;
+            } else {
+                v -= &u;
+                C -= &A;
+            }
+        }
+
+        CtOption::new(C, !self.is_zero())
     }
 }
 
