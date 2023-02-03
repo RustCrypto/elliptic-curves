@@ -178,12 +178,6 @@ impl Scalar {
         res
     }
 
-    /// Faster inversion using Stein's algorithm
-    #[allow(non_snake_case)]
-    pub fn invert_vartime(&self) -> CtOption<Self> {
-        elliptic_curve::scalar::invert_vartime::<NistP256>(self)
-    }
-
     /// Is integer representing equivalence class odd?
     pub fn is_odd(&self) -> Choice {
         self.0.is_odd()

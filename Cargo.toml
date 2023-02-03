@@ -15,5 +15,5 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
-ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
+ecdsa = { git = "https://github.com/daxpedda/signatures.git", branch = "elliptic-curve-0.13.0-pre.4" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
