@@ -98,6 +98,11 @@ impl FieldElement {
         FieldElementImpl::from_bytes(bytes).map(Self)
     }
 
+    /// Convert a `u64` to a field element.
+    pub const fn from_u64(w: u64) -> Self {
+        Self(FieldElementImpl::from_u64(w))
+    }
+
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
         self.0.normalize().to_bytes()
@@ -290,8 +295,8 @@ impl PrimeField for FieldElement {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0xff,
         0xfe, 0x18,
     ]));
-    const MULTIPLICATIVE_GENERATOR: Self = Self(FieldElementImpl::from_u64(3));
-    const S: u32 = 0;
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
+    const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
@@ -302,7 +307,7 @@ impl PrimeField for FieldElement {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
         0xfc, 0x2e,
     ]));
-    const DELTA: Self = Self(FieldElementImpl::from_u64(9));
+    const DELTA: Self = Self::from_u64(9);
 
     fn from_repr(repr: Self::Repr) -> CtOption<Self> {
         Self::from_bytes(&repr)
@@ -493,6 +498,7 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 
 #[cfg(test)]
 mod tests {
+    use elliptic_curve::ff::{Field, PrimeField};
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -514,6 +520,49 @@ mod tests {
         fn to_biguint(&self) -> Option<BigUint> {
             Some(bytes_to_biguint(self.to_bytes().as_ref()))
         }
+    }
+
+    #[test]
+    fn two_inv_constant() {
+        assert_eq!(
+            (FieldElement::from(2u64) * FieldElement::TWO_INV).normalize(),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn root_of_unity_constant() {
+        // ROOT_OF_UNITY^{2^s} mod m == 1
+        assert_eq!(
+            FieldElement::ROOT_OF_UNITY
+                .pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0])
+                .normalize(),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn root_of_unity_inv_constant() {
+        assert_eq!(
+            (FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV).normalize(),
+            FieldElement::ONE
+        );
+    }
+
+    #[test]
+    fn delta_constant() {
+        const T: [u64; 4] = [
+            0xffffffff7ffffe17,
+            0xffffffffffffffff,
+            0xffffffffffffffff,
+            0x7fffffffffffffff,
+        ];
+
+        // DELTA^{t} mod m == 1
+        assert_eq!(
+            FieldElement::DELTA.pow_vartime(&T).normalize(),
+            FieldElement::ONE
+        );
     }
 
     #[test]

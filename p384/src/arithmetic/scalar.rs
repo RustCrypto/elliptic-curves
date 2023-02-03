@@ -222,7 +222,7 @@ impl PrimeField for Scalar {
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::ZERO; // TODO
+    const DELTA: Self = Self::from_u64(4);
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -355,6 +355,43 @@ mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::PrimeField;
+
+    #[test]
+    fn two_inv_constant() {
+        assert_eq!(Scalar::from(2u32) * Scalar::TWO_INV, Scalar::ONE);
+    }
+
+    #[test]
+    fn root_of_unity_constant() {
+        // ROOT_OF_UNITY^{2^s} mod m == 1
+        assert_eq!(
+            Scalar::ROOT_OF_UNITY.pow_vartime(&[1u64 << Scalar::S, 0, 0, 0]),
+            Scalar::ONE
+        );
+    }
+
+    #[test]
+    fn root_of_unity_inv_constant() {
+        assert_eq!(
+            Scalar::ROOT_OF_UNITY * Scalar::ROOT_OF_UNITY_INV,
+            Scalar::ONE
+        );
+    }
+
+    #[test]
+    fn delta_constant() {
+        const T: [u64; 6] = [
+            0x76760cb5666294b9,
+            0xac0d06d9245853bd,
+            0xe3b1a6c0fa1b96ef,
+            0xffffffffffffffff,
+            0xffffffffffffffff,
+            0x7fffffffffffffff,
+        ];
+
+        // DELTA^{t} mod m == 1
+        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
+    }
 
     #[test]
     fn from_to_bytes_roundtrip() {
