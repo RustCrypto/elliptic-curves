@@ -757,6 +757,14 @@ mod tests {
         }
     }
 
+    /// t = (modulus - 1) >> S
+    const T: [u64; 4] = [
+        0xeeff497a3340d905,
+        0xfaeabb739abd2280,
+        0xffffffffffffffff,
+        0x03ffffffffffffff,
+    ];
+
     #[test]
     fn two_inv_constant() {
         assert_eq!(Scalar::from(2u32) * Scalar::TWO_INV, Scalar::ONE);
@@ -769,6 +777,12 @@ mod tests {
             Scalar::ROOT_OF_UNITY.pow_vartime(&[1u64 << Scalar::S, 0, 0, 0]),
             Scalar::ONE
         );
+
+        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
+        assert_eq!(
+            Scalar::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
+            Scalar::ROOT_OF_UNITY
+        )
     }
 
     #[test]
@@ -781,13 +795,6 @@ mod tests {
 
     #[test]
     fn delta_constant() {
-        const T: [u64; 4] = [
-            0xeeff497a3340d905,
-            0xfaeabb739abd2280,
-            0xffffffffffffffff,
-            0x03ffffffffffffff,
-        ];
-
         // DELTA^{t} mod m == 1
         assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
     }
