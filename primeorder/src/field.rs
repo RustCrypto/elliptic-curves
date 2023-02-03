@@ -478,3 +478,40 @@ macro_rules! impl_field_op {
         }
     };
 }
+
+/// Implement tests for the `PrimeField` trait.
+#[macro_export]
+macro_rules! impl_primefield_tests {
+    ($fe:tt, $t:expr) => {
+        #[test]
+        fn two_inv_constant() {
+            assert_eq!($fe::from(2u32) * $fe::TWO_INV, $fe::ONE);
+        }
+
+        #[test]
+        fn root_of_unity_constant() {
+            // ROOT_OF_UNITY^{2^s} mod m == 1
+            assert_eq!(
+                $fe::ROOT_OF_UNITY.pow_vartime(&[1u64 << $fe::S, 0, 0, 0]),
+                $fe::ONE
+            );
+
+            // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
+            assert_eq!(
+                $fe::MULTIPLICATIVE_GENERATOR.pow_vartime(&$t),
+                $fe::ROOT_OF_UNITY
+            )
+        }
+
+        #[test]
+        fn root_of_unity_inv_constant() {
+            assert_eq!($fe::ROOT_OF_UNITY * $fe::ROOT_OF_UNITY_INV, $fe::ONE);
+        }
+
+        #[test]
+        fn delta_constant() {
+            // DELTA^{t} mod m == 1
+            assert_eq!($fe::DELTA.pow_vartime(&$t), $fe::ONE);
+        }
+    };
+}

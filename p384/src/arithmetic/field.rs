@@ -155,6 +155,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
+    use primeorder::impl_primefield_tests;
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -166,42 +167,7 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
-    #[test]
-    fn two_inv_constant() {
-        assert_eq!(
-            FieldElement::from(2u32) * FieldElement::TWO_INV,
-            FieldElement::ONE
-        );
-    }
-
-    #[test]
-    fn root_of_unity_constant() {
-        // ROOT_OF_UNITY^{2^s} mod m == 1
-        assert_eq!(
-            FieldElement::ROOT_OF_UNITY.pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0]),
-            FieldElement::ONE
-        );
-
-        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
-        assert_eq!(
-            FieldElement::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
-            FieldElement::ROOT_OF_UNITY
-        )
-    }
-
-    #[test]
-    fn root_of_unity_inv_constant() {
-        assert_eq!(
-            FieldElement::ROOT_OF_UNITY * FieldElement::ROOT_OF_UNITY_INV,
-            FieldElement::ONE
-        );
-    }
-
-    #[test]
-    fn delta_constant() {
-        // DELTA^{t} mod m == 1
-        assert_eq!(FieldElement::DELTA.pow_vartime(&T), FieldElement::ONE);
-    }
+    impl_primefield_tests!(FieldElement, T);
 
     /// Basic tests that field inversion works.
     #[test]

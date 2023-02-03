@@ -355,6 +355,7 @@ mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::PrimeField;
+    use primeorder::impl_primefield_tests;
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -366,39 +367,7 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
-    #[test]
-    fn two_inv_constant() {
-        assert_eq!(Scalar::from(2u32) * Scalar::TWO_INV, Scalar::ONE);
-    }
-
-    #[test]
-    fn root_of_unity_constant() {
-        // ROOT_OF_UNITY^{2^s} mod m == 1
-        assert_eq!(
-            Scalar::ROOT_OF_UNITY.pow_vartime(&[1u64 << Scalar::S, 0, 0, 0]),
-            Scalar::ONE
-        );
-
-        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
-        assert_eq!(
-            Scalar::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
-            Scalar::ROOT_OF_UNITY
-        )
-    }
-
-    #[test]
-    fn root_of_unity_inv_constant() {
-        assert_eq!(
-            Scalar::ROOT_OF_UNITY * Scalar::ROOT_OF_UNITY_INV,
-            Scalar::ONE
-        );
-    }
-
-    #[test]
-    fn delta_constant() {
-        // DELTA^{t} mod m == 1
-        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
-    }
+    impl_primefield_tests!(Scalar, T);
 
     #[test]
     fn from_to_bytes_roundtrip() {
