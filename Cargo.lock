@@ -330,8 +330,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.16.0-pre.0"
-source = "git+https://github.com/RustCrypto/signatures.git#82776dc4cc21d665788a1ab04bcfaabf30fb86db"
+version = "0.16.0-pre.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba4b03f6cc5266bc4eae6f67eaa9bf9833633384b8e5ca7445c7c6dda41bd4c8"
 dependencies = [
  "der",
  "elliptic-curve",
@@ -348,8 +349,9 @@ checksum = "90e5c1c8368803113bf0c9584fc495a58b86dc8a29edbf8fe877d21d9507e797"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.13.0-pre.4"
-source = "git+https://github.com/RustCrypto/traits.git#d14be8eb1510812efc7422711ee285ee79f76a80"
+version = "0.13.0-pre.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1ed75d4b5bc2388c2160e14532c72fa6c9d23b37b742f2c81d3577954e1e23a"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -913,7 +915,8 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.4.0-pre.0"
-source = "git+https://github.com/RustCrypto/signatures.git#82776dc4cc21d665788a1ab04bcfaabf30fb86db"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b3595c18d975a2c373afdb4f8d17016589e65f9d84305c1c36fc55272def0bd"
 dependencies = [
  "hmac",
  "subtle",
