@@ -156,6 +156,16 @@ mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
 
+    /// t = (modulus - 1) >> S
+    const T: [u64; 6] = [
+        0x000000007fffffff,
+        0x7fffffff80000000,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x7fffffffffffffff,
+    ];
+
     #[test]
     fn two_inv_constant() {
         assert_eq!(
@@ -171,6 +181,12 @@ mod tests {
             FieldElement::ROOT_OF_UNITY.pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0]),
             FieldElement::ONE
         );
+
+        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
+        assert_eq!(
+            FieldElement::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
+            FieldElement::ROOT_OF_UNITY
+        )
     }
 
     #[test]
@@ -183,15 +199,6 @@ mod tests {
 
     #[test]
     fn delta_constant() {
-        const T: [u64; 6] = [
-            0x000000007fffffff,
-            0x7fffffff80000000,
-            0xffffffffffffffff,
-            0xffffffffffffffff,
-            0xffffffffffffffff,
-            0x7fffffffffffffff,
-        ];
-
         // DELTA^{t} mod m == 1
         assert_eq!(FieldElement::DELTA.pow_vartime(&T), FieldElement::ONE);
     }

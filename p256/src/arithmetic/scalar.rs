@@ -686,6 +686,14 @@ mod tests {
     use crate::{FieldBytes, SecretKey};
     use elliptic_curve::group::ff::{Field, PrimeField};
 
+    /// t = (modulus - 1) >> S
+    const T: [u64; 4] = [
+        0x4f3b9cac2fc63255,
+        0xfbce6faada7179e8,
+        0x0fffffffffffffff,
+        0x0ffffffff0000000,
+    ];
+
     #[test]
     fn two_inv_constant() {
         assert_eq!(Scalar::from(2u32) * Scalar::TWO_INV, Scalar::ONE);
@@ -698,6 +706,12 @@ mod tests {
             Scalar::ROOT_OF_UNITY.pow_vartime(&[1u64 << Scalar::S, 0, 0, 0]),
             Scalar::ONE
         );
+
+        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
+        assert_eq!(
+            Scalar::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
+            Scalar::ROOT_OF_UNITY
+        )
     }
 
     #[test]
@@ -710,13 +724,6 @@ mod tests {
 
     #[test]
     fn delta_constant() {
-        const T: [u64; 4] = [
-            0x4f3b9cac2fc63255,
-            0xfbce6faada7179e8,
-            0x0fffffffffffffff,
-            0x0ffffffff0000000,
-        ];
-
         // DELTA^{t} mod m == 1
         assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
     }

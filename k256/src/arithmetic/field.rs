@@ -522,6 +522,14 @@ mod tests {
         }
     }
 
+    /// t = (modulus - 1) >> S
+    const T: [u64; 4] = [
+        0xffffffff7ffffe17,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x7fffffffffffffff,
+    ];
+
     #[test]
     fn two_inv_constant() {
         assert_eq!(
@@ -539,6 +547,14 @@ mod tests {
                 .normalize(),
             FieldElement::ONE
         );
+
+        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
+        assert_eq!(
+            FieldElement::MULTIPLICATIVE_GENERATOR
+                .pow_vartime(&T)
+                .normalize(),
+            FieldElement::ROOT_OF_UNITY
+        )
     }
 
     #[test]
@@ -551,13 +567,6 @@ mod tests {
 
     #[test]
     fn delta_constant() {
-        const T: [u64; 4] = [
-            0xffffffff7ffffe17,
-            0xffffffffffffffff,
-            0xffffffffffffffff,
-            0x7fffffffffffffff,
-        ];
-
         // DELTA^{t} mod m == 1
         assert_eq!(
             FieldElement::DELTA.pow_vartime(&T).normalize(),
