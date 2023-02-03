@@ -14,7 +14,7 @@ use core::{
 use elliptic_curve::{
     bigint::{prelude::*, Limb, Word, U256, U512},
     ff::{self, Field, PrimeField},
-    ops::{Reduce, ReduceNonZero},
+    ops::{Invert, Reduce, ReduceNonZero},
     rand_core::{CryptoRngCore, RngCore},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
@@ -409,6 +409,14 @@ impl FromUintUnchecked for Scalar {
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self(uint)
+    }
+}
+
+impl Invert for Scalar {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 
