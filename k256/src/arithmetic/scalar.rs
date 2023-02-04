@@ -418,6 +418,64 @@ impl Invert for Scalar {
     fn invert(&self) -> CtOption<Self> {
         self.invert()
     }
+
+    /// Fast variable-time inversion using Stein's algorithm.
+    ///
+    /// Returns none if the scalar is zero.
+    ///
+    /// <https://link.springer.com/article/10.1007/s13389-016-0135-4>
+    ///
+    /// ⚠️ WARNING!
+    ///
+    /// This method should not be used with (unblinded) secret scalars, as its
+    /// variable-time operation can potentially leak secrets through
+    /// sidechannels.
+    #[allow(non_snake_case)]
+    fn invert_vartime(&self) -> CtOption<Self> {
+        let mut u = *self;
+        let mut v = Self::from_uint_unchecked(Secp256k1::ORDER);
+        let mut A = Self::ONE;
+        let mut C = Self::ZERO;
+
+        while !bool::from(u.is_zero()) {
+            // u-loop
+            while bool::from(u.is_even()) {
+                u >>= 1;
+
+                let was_odd: bool = A.is_odd().into();
+                A >>= 1;
+
+                if was_odd {
+                    A += Self::from_uint_unchecked(FRAC_MODULUS_2);
+                    A += Self::ONE;
+                }
+            }
+
+            // v-loop
+            while bool::from(v.is_even()) {
+                v >>= 1;
+
+                let was_odd: bool = C.is_odd().into();
+                C >>= 1;
+
+                if was_odd {
+                    C += Self::from_uint_unchecked(FRAC_MODULUS_2);
+                    C += Self::ONE;
+                }
+            }
+
+            // sub-step
+            if u >= v {
+                u -= &v;
+                A -= &C;
+            } else {
+                v -= &u;
+                C -= &A;
+            }
+        }
+
+        CtOption::new(C, !self.is_zero())
+    }
 }
 
 impl IsHigh for Scalar {
@@ -738,7 +796,7 @@ mod tests {
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
         generic_array::GenericArray,
-        ops::Reduce,
+        ops::{Invert, Reduce},
         scalar::IsHigh,
     };
     use num_bigint::{BigUint, ToBigUint};
@@ -988,14 +1046,7 @@ mod tests {
 
     prop_compose! {
         fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
-            let mut res = bytes_to_biguint(&bytes);
-            let m = Scalar::modulus_as_biguint();
-            // Modulus is 256 bit long, same as the maximum `res`,
-            // so this is guaranteed to land us in the correct range.
-            if res >= m {
-                res -= m;
-            }
-            Scalar::from(&res)
+            <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into())
         }
     }
 
@@ -1083,6 +1134,13 @@ mod tests {
             let inv_bi = inv.to_biguint().unwrap();
             let m = Scalar::modulus_as_biguint();
             assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
+        }
+
+        #[test]
+        fn fuzzy_invert_vartime(w in scalar()) {
+            let inv: Option<Scalar> = w.invert().into();
+            let inv_vartime: Option<Scalar> = w.invert_vartime().into();
+            assert_eq!(inv, inv_vartime);
         }
 
         #[test]
