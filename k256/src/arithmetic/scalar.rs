@@ -902,6 +902,28 @@ mod tests {
         }
     }
 
+    /// Basic tests that invert works.
+    #[test]
+    fn invert() {
+        assert!(bool::from(Scalar::ZERO.invert().is_none()));
+        assert_eq!(Scalar::from(2u64).invert().unwrap(), Scalar::TWO_INV);
+        assert_eq!(
+            Scalar::ROOT_OF_UNITY.invert_vartime().unwrap(),
+            Scalar::ROOT_OF_UNITY_INV
+        );
+
+        // invert_vartime
+        assert!(bool::from(Scalar::ZERO.invert_vartime().is_none()));
+        assert_eq!(
+            Scalar::from(2u64).invert_vartime().unwrap(),
+            Scalar::TWO_INV
+        );
+        assert_eq!(
+            Scalar::ROOT_OF_UNITY.invert_vartime().unwrap(),
+            Scalar::ROOT_OF_UNITY_INV
+        );
+    }
+
     #[test]
     fn negate() {
         let zero_neg = -Scalar::ZERO;
