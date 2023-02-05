@@ -1,7 +1,10 @@
 [package]
 name = "p224"
 version = "0.0.0"
-description = "Pure Rust implementation of the NIST P-224 (a.k.a. secp224r1) elliptic curve"
+description = """
+Pure Rust implementation of the NIST P-224 (a.k.a. secp224r1) elliptic curve
+as defined in SP 800-186
+"""
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/p224"

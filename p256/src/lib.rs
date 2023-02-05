@@ -76,9 +76,9 @@ const ORDER_HEX: &str = "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac
 /// NIST P-256 elliptic curve.
 ///
 /// This curve is also known as prime256v1 (ANSI X9.62) and secp256r1 (SECG)
-/// and is specified in FIPS 186-4: Digital Signature Standard (DSS):
-///
-/// <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
+/// and is specified in [NIST SP 800-186]:
+/// Recommendations for Discrete Logarithm-based Cryptography:
+/// Elliptic Curve Domain Parameters.
 ///
 /// It's included in the US National Security Agency's "Suite B" and is widely
 /// used in protocols like TLS and the associated X.509 PKI.
@@ -91,7 +91,9 @@ const ORDER_HEX: &str = "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac
 /// ```
 ///
 /// † *NOTE: the specific origins of this constant have never been fully disclosed
-///   (it is the SHA-1 digest of an inexplicable NSA-selected constant)*
+///   (it is the SHA-1 digest of an unknown NSA-selected constant)*
+///
+/// [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP256;
 

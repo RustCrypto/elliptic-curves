@@ -1,4 +1,4 @@
-# RustCrypto: NIST P-384 (secp384r1) elliptic curve
+# [RustCrypto]: NIST P-384 (secp384r1) elliptic curve
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -34,10 +34,9 @@ USE AT YOUR OWN RISK!
 
 ## About P-384
 
-NIST P-384 is a Weierstrass curve specified in FIPS 186-4: Digital Signature
-Standard (DSS):
-
-<https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
+NIST P-384 is a Weierstrass curve specified in [SP 800-186]:
+Recommendations for Discrete Logarithm-based Cryptography:
+Elliptic Curve Domain Parameters.
 
 Also known as secp384r1 (SECG), it's included in the US National Security
 Agency's "Suite B" and is widely used in protocols like TLS and the associated
@@ -85,6 +84,8 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (general links)
 
+[RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+[SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final

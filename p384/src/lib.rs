@@ -107,6 +107,7 @@ impl FieldBytesEncoding<NistP384> for U384 {
         self.to_be_byte_array()
     }
 }
+
 /// Non-zero NIST P-384 scalar field element.
 #[cfg(feature = "arithmetic")]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP384>;

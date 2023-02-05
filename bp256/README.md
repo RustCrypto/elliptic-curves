@@ -1,4 +1,4 @@
-# RustCrypto: Brainpool P-256 elliptic curves
+# [RustCrypto]: Brainpool P-256 elliptic curves
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -54,4 +54,5 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (general links)
 
+[RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
