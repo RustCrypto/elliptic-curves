@@ -1,4 +1,4 @@
-# RustCrypto: NIST P-224 (secp224r1) elliptic curve
+# [RustCrypto]: NIST P-224 (secp224r1) elliptic curve
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -34,12 +34,11 @@ USE AT YOUR OWN RISK!
 
 ## About P-224
 
-NIST P-224 is a Weierstrass curve specified in FIPS 186-4: Digital Signature
-Standard (DSS):
+NIST P-224 is a Weierstrass curve specified in [SP 800-186]:
+Recommendations for Discrete Logarithm-based Cryptography:
+Elliptic Curve Domain Parameters.
 
-<https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
-
-Also known as secp224r1 (SECG)
+Also known as secp224r1 (SECG).
 
 ## Minimum Supported Rust Version
 
@@ -83,6 +82,8 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (general links)
 
+[RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
+[SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final

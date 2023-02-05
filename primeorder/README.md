@@ -1,4 +1,4 @@
-# RustCrypto: Prime Order Elliptic Curve Formulas
+# [RustCrypto]: Prime Order Elliptic Curve Formulas
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -81,6 +81,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (links)
 
+[RustCrypto]: https://github.com/rustcrypto/
 [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
 [Weierstrass equation]: https://crypto.stanford.edu/pbc/notes/elliptic/weier.html
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256

@@ -1,4 +1,8 @@
 //! Pure Rust implementation of group operations on secp256r1.
+//!
+//! Curve parameters can be found in [NIST SP 800-186] § G.1.2: Curve P-256.
+//!
+//! [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 
 pub(crate) mod field;
 #[cfg(feature = "hash2curve")]
@@ -27,22 +31,22 @@ impl PrimeCurveArithmetic for NistP256 {
     type CurveGroup = ProjectivePoint;
 }
 
+/// Adapted from [NIST SP 800-186] § G.1.2: Curve P-256.
+///
+/// [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 impl PrimeCurveParams for NistP256 {
     type FieldElement = FieldElement;
     type EquationAProperties = equation_a::IsMinusThree;
 
     /// a = -3
-    const EQUATION_A: FieldElement = FieldElement::ZERO
-        .sub(&FieldElement::ONE)
-        .sub(&FieldElement::ONE)
-        .sub(&FieldElement::ONE);
+    const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();
 
     const EQUATION_B: FieldElement =
         FieldElement::from_hex("5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
 
     /// Base point of P-256.
     ///
-    /// Defined in FIPS 186-4 § D.1.2.3:
+    /// Defined in NIST SP 800-186 § G.1.2:
     ///
     /// ```text
     /// Gₓ = 6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296
