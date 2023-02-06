@@ -147,8 +147,8 @@ impl TryFrom<&PublicKey> for VerifyingKey {
 #[cfg(feature = "serde")]
 impl Serialize for VerifyingKey {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
+    where
+        S: ser::Serializer,
     {
         self.inner.serialize(serializer)
     }
@@ -157,11 +157,9 @@ impl Serialize for VerifyingKey {
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for VerifyingKey {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
+    where
+        D: de::Deserializer<'de>,
     {
-        VerifyingKey::try_from(PublicKey::deserialize(deserializer)?)
-            .map_err(de::Error::custom)
+        VerifyingKey::try_from(PublicKey::deserialize(deserializer)?).map_err(de::Error::custom)
     }
 }
-

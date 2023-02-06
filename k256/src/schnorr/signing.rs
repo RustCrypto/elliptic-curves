@@ -242,8 +242,8 @@ impl ZeroizeOnDrop for SigningKey {}
 #[cfg(feature = "serde")]
 impl Serialize for SigningKey {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
-        where
-            S: ser::Serializer,
+    where
+        S: ser::Serializer,
     {
         self.secret_key.serialize(serializer)
     }
@@ -252,8 +252,8 @@ impl Serialize for SigningKey {
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for SigningKey {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
-        where
-            D: de::Deserializer<'de>,
+    where
+        D: de::Deserializer<'de>,
     {
         Ok(SigningKey::from(NonZeroScalar::deserialize(deserializer)?))
     }
