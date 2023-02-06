@@ -8,16 +8,25 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub mod arithmetic;
+
+pub use elliptic_curve;
+
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
-
-pub use elliptic_curve::{self, bigint::U256};
 
 use elliptic_curve::{
     consts::{U28, U29},
     generic_array::GenericArray,
     FieldBytesEncoding,
 };
+
+#[cfg(target_pointer_width = "32")]
+pub use elliptic_curve::bigint::U224 as Uint;
+
+#[cfg(target_pointer_width = "64")]
+use elliptic_curve::bigint::U256 as Uint;
 
 /// NIST P-224 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -28,14 +37,17 @@ impl elliptic_curve::Curve for NistP224 {
     type FieldBytesSize = U28;
 
     /// Big integer type used for representing field elements.
-    ///
-    /// Uses `U256` to allow 4 x 64-bit limbs.
-    // TODO(tarcieri): use a `U224` on 32-bit targets?
-    type Uint = U256;
+    type Uint = Uint;
 
     /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U256 =
-        U256::from_be_hex("00000000ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d");
+    #[cfg(target_pointer_width = "32")]
+    const ORDER: Uint =
+        Uint::from_be_hex("ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d");
+
+    /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus).
+    #[cfg(target_pointer_width = "64")]
+    const ORDER: Uint =
+        Uint::from_be_hex("00000000ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d");
 }
 
 impl elliptic_curve::PrimeCurve for NistP224 {}
@@ -62,7 +74,7 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP224>;
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP224>;
 
-impl FieldBytesEncoding<NistP224> for U256 {}
+impl FieldBytesEncoding<NistP224> for Uint {}
 
 /// NIST P-224 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP224>;
