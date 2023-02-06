@@ -17,27 +17,27 @@ use elliptic_curve::{subtle::ConditionallySelectable, Field};
 use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
 
 mod sealed {
-    /// Seals `PointArithmetic` trait
-    pub trait Sealed {}
+    use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
+
+    /// Elliptic point artihmetic implementation
+    ///
+    /// Provides implementation of point arithmetic (point addition, point doubling) which
+    /// might be optimized for the curve.
+    pub trait PointArithmetic<C: PrimeCurveParams> {
+        /// Returns `point + point`
+        fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C>;
+        /// Returns `lhs + rhs`
+        fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C>;
+        /// Returns `lhs + rhs`
+        fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C>;
+    }
 }
 
-/// Elliptic point artihmetic implementation
-///
-/// Provides implementation of point arithmetic (point addition, point doubling) which
-/// might be optimized for the curve.
-pub trait PointArithmetic<C: PrimeCurveParams>: sealed::Sealed {
-    /// Returns `point + point`
-    fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C>;
-    /// Returns `lhs + rhs`
-    fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C>;
-    /// Returns `lhs + rhs`
-    fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C>;
-}
+/// Allow crate-local visibility
+pub(crate) use sealed::PointArithmetic;
 
 /// The 𝒂-coefficient of the short Weierstrass equation is -3.
 pub struct EquationAIsMinusThree {}
-
-impl sealed::Sealed for EquationAIsMinusThree {}
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     /// Implements point doubling for curves with `a = -3`
@@ -161,8 +161,6 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
 /// The 𝒂-coefficient of the short Weierstrass equation does not have specific
 /// properties which allow for an optimized implementation.
 pub struct EquationAIsGeneric {}
-
-impl sealed::Sealed for EquationAIsGeneric {}
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
     /// Implements point doubling for curves with any `a`
