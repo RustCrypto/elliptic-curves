@@ -85,18 +85,24 @@ impl PrimeField for FieldElement {
 
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 224;
-    const CAPACITY: u32 = 224; // TODO: double check
+    const CAPACITY: u32 = 224;
     const TWO_INV: Self = Self::ZERO; // TODO: unimplemented
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(22);
-    const S: u32 = 1; // TODO: double check
+    const S: u32 = 96;
     #[cfg(target_pointer_width = "32")]
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("ffffffffffffffffffffffffffffffff000000000000000000000000"); // TODO
+        Self::from_hex("395e40142de25856b7e38879fc315d7e6f6de3c1aa72e8c906610583");
     #[cfg(target_pointer_width = "64")]
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("00000000ffffffffffffffffffffffffffffffff000000000000000000000000"); // TODO
+        Self::from_hex("00000000395e40142de25856b7e38879fc315d7e6f6de3c1aa72e8c906610583");
     const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO: unimplemented
-    const DELTA: Self = Self::from_u64(484); // TODO: double check
+    #[cfg(target_pointer_width = "32")]
+    const DELTA: Self = Self::from_hex("697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
+    #[cfg(target_pointer_width = "64")]
+    const DELTA: Self =
+        Self::from_hex("00000000697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
+
+    // NOTE: t = 0xffffffffffffffffffffffffffffffff
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
