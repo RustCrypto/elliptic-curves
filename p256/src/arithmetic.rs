@@ -13,7 +13,7 @@ pub(crate) mod util;
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP256;
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
-use primeorder::{equation_a, PrimeCurveParams};
+use primeorder::{point_arithmetic, PrimeCurveParams};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<NistP256>;
@@ -36,7 +36,7 @@ impl PrimeCurveArithmetic for NistP256 {
 /// [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 impl PrimeCurveParams for NistP256 {
     type FieldElement = FieldElement;
-    type EquationAProperties = equation_a::IsMinusThree;
+    type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
     /// a = -3
     const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();

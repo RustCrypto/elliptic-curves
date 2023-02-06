@@ -8,7 +8,7 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
-pub mod equation_a;
+pub mod point_arithmetic;
 
 mod affine;
 mod field;
@@ -30,8 +30,8 @@ pub trait PrimeCurveParams:
     /// Base field element type.
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>;
 
-    /// Special properties of the `a`-coefficient.
-    type EquationAProperties: equation_a::EquationAProperties;
+    /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
+    type PointArithmetic: point_arithmetic::PointArithmetic<Self>;
 
     /// Coefficient `a` in the curve equation.
     const EQUATION_A: Self::FieldElement;
