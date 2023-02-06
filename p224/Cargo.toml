@@ -17,6 +17,7 @@ rust-version = "1.61"
 
 [dependencies]
 elliptic-curve = { version = "=0.13.0-pre.5", default-features = false, features = ["hazmat", "sec1"] }
+primeorder = { version = "=0.13.0-pre", path = "../primeorder" }
 
 [features]
 default = ["pem", "std"]
@@ -25,6 +26,7 @@ std = ["alloc", "elliptic-curve/std"]
 
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
+wip-arithmetic-do-not-use = []
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]

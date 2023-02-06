@@ -287,8 +287,7 @@ dependencies = [
 [[package]]
 name = "crypto-bigint"
 version = "0.5.0-pre.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c37ac947d5ac4ad24acbfe3ae18154b71eb91a360319c2f82e8c9d54d8de71c9"
+source = "git+https://github.com/rustcrypto/crypto-bigint.git#14056cb89b692e8e00d11c698c43a0c12d8ba8ba"
 dependencies = [
  "generic-array",
  "rand_core",
@@ -660,6 +659,7 @@ name = "p224"
 version = "0.0.0"
 dependencies = [
  "elliptic-curve",
+ "primeorder",
 ]
 
 [[package]]
