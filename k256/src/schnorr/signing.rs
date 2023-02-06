@@ -255,6 +255,6 @@ impl<'de> Deserialize<'de> for SigningKey {
         where
             D: de::Deserializer<'de>,
     {
-        Ok(NonZeroScalar::deserialize(deserializer)? as SigningKey)
+        Ok(SigningKey::from(NonZeroScalar::deserialize(deserializer)?))
     }
 }
