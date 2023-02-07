@@ -13,6 +13,9 @@ use sha2::{
 };
 use signature::{hazmat::PrehashVerifier, DigestVerifier, Error, Result, Verifier};
 
+#[cfg(feature = "serde")]
+use serdect::serde::{de, ser, Deserialize, Serialize};
+
 /// Taproot Schnorr verifying key.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct VerifyingKey {
@@ -138,5 +141,25 @@ impl TryFrom<&PublicKey> for VerifyingKey {
 
     fn try_from(public_key: &PublicKey) -> Result<VerifyingKey> {
         Self::try_from(*public_key)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for VerifyingKey {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        self.inner.serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for VerifyingKey {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        VerifyingKey::try_from(PublicKey::deserialize(deserializer)?).map_err(de::Error::custom)
     }
 }
