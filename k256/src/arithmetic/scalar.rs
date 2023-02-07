@@ -902,17 +902,42 @@ mod tests {
         }
     }
 
-    /// Basic tests that invert works.
+    /// Basic tests that `invert` works.
     #[test]
     fn invert() {
+        assert_eq!(Scalar::ONE, Scalar::ONE.invert().unwrap());
+
+        let three = Scalar::from(3u64);
+        let inv_three = three.invert().unwrap();
+        assert_eq!(three * inv_three, Scalar::ONE);
+
+        let minus_three = -three;
+        let inv_minus_three = minus_three.invert().unwrap();
+        assert_eq!(inv_minus_three, -inv_three);
+        assert_eq!(three * inv_minus_three, -Scalar::ONE);
+
         assert!(bool::from(Scalar::ZERO.invert().is_none()));
         assert_eq!(Scalar::from(2u64).invert().unwrap(), Scalar::TWO_INV);
         assert_eq!(
             Scalar::ROOT_OF_UNITY.invert_vartime().unwrap(),
             Scalar::ROOT_OF_UNITY_INV
         );
+    }
 
-        // invert_vartime
+    /// Basic tests that `invert_vartime` works.
+    #[test]
+    fn invert_vartime() {
+        assert_eq!(Scalar::ONE, Scalar::ONE.invert_vartime().unwrap());
+
+        let three = Scalar::from(3u64);
+        let inv_three = three.invert_vartime().unwrap();
+        assert_eq!(three * inv_three, Scalar::ONE);
+
+        let minus_three = -three;
+        let inv_minus_three = minus_three.invert_vartime().unwrap();
+        assert_eq!(inv_minus_three, -inv_three);
+        assert_eq!(three * inv_minus_three, -Scalar::ONE);
+
         assert!(bool::from(Scalar::ZERO.invert_vartime().is_none()));
         assert_eq!(
             Scalar::from(2u64).invert_vartime().unwrap(),
