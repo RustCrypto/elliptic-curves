@@ -85,7 +85,7 @@ impl PrimeField for FieldElement {
 
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 224;
-    const CAPACITY: u32 = 224;
+    const CAPACITY: u32 = 223;
     const TWO_INV: Self = Self::ZERO; // TODO: unimplemented
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(22);
     const S: u32 = 96;
