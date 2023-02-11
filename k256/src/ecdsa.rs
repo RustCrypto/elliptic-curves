@@ -79,7 +79,8 @@
 //!
 //! This example shows how to compute a signature and its associated
 //! [`RecoveryId`] in a manner which is byte-for-byte compatible with
-//! Ethereum libraries:
+//! Ethereum libraries, leveraging the [`SigningKey::sign_digest_recoverable`]
+//! API:
 //!
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
@@ -94,19 +95,15 @@
 //! ).into())?;
 //!
 //! let msg = hex!("e9808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca0080018080");
-//!
-//! let digest = Keccak256::digest(msg);
-//!
-//! let (signature, recid) = signing_key
-//!     .as_nonzero_scalar()
-//!     .try_sign_prehashed_rfc6979::<Sha256>(&digest, b"")?;
+//! let digest = Keccak256::new_with_prefix(msg);
+//! let (signature, recid) = signing_key.sign_digest_recoverable(digest)?;
 //!
 //! assert_eq!(
 //!     signature.to_bytes().as_slice(),
 //!     &hex!("c9cf86333bcb065d140032ecaab5d9281bde80f21b9687b3e94161de42d51895727a108a0b8d101465414033c3f705a9c7b826e596766046ee1183dbc8aeaa68")
 //! );
 //!
-//! assert_eq!(recid, RecoveryId::try_from(0u8).ok());
+//! assert_eq!(recid, RecoveryId::try_from(0u8).unwrap());
 //! # Ok(())
 //! # }
 //! ```
