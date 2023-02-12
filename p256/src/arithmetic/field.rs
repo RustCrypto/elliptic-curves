@@ -36,7 +36,7 @@ const R_2: U256 =
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(crate) U256);
 
-primeorder::impl_field_element!(
+primeorder::impl_mont_field_element!(
     NistP256,
     FieldElement,
     FieldBytes,

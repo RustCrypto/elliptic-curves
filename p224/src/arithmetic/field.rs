@@ -51,7 +51,7 @@ const MODULUS: Uint =
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) Uint);
 
-primeorder::impl_field_element!(
+primeorder::impl_mont_field_element!(
     NistP224,
     FieldElement,
     FieldBytes,
