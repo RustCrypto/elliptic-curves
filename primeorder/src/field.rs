@@ -1,5 +1,8 @@
-/// Provides both inherent and trait impls for a field element type which are
-/// backed by a core set of arithmetic functions specified as macro arguments.
+/// Implements a field element type whose internal representation is in
+/// Montgomery form, providing a combination of trait impls and inherent impls
+/// which are `const fn` where possible.
+///
+/// Accepts a set of `const fn` arithmetic operation functions as arguments.
 ///
 /// # Inherent impls
 /// - `const ZERO: Self`
@@ -42,7 +45,7 @@
 /// - `MulAssign`
 /// - `Neg`
 #[macro_export]
-macro_rules! impl_field_element {
+macro_rules! impl_mont_field_element {
     (
         $curve:tt,
         $fe:tt,
@@ -364,9 +367,9 @@ macro_rules! impl_field_element {
             }
         }
 
-        $crate::impl_field_op!($fe, $uint, Add, add, $add);
-        $crate::impl_field_op!($fe, $uint, Sub, sub, $sub);
-        $crate::impl_field_op!($fe, $uint, Mul, mul, $mul);
+        $crate::impl_field_op!($fe, Add, add, $add);
+        $crate::impl_field_op!($fe, Sub, sub, $sub);
+        $crate::impl_field_op!($fe, Mul, mul, $mul);
 
         impl AddAssign<$fe> for $fe {
             #[inline]
@@ -449,7 +452,7 @@ macro_rules! impl_field_element {
 /// which thunk to the given function.
 #[macro_export]
 macro_rules! impl_field_op {
-    ($fe:tt, $uint:ty, $op:tt, $op_fn:ident, $func:ident) => {
+    ($fe:tt, $op:tt, $op_fn:ident, $func:ident) => {
         impl ::core::ops::$op for $fe {
             type Output = $fe;
 

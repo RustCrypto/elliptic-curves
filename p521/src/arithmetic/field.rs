@@ -20,8 +20,6 @@
     clippy::identity_op,
     rustdoc::bare_urls
 )]
-// TODO(tarcieri): use all variables
-#![allow(unused_variables)]
 
 // TODO(tarcieri): 32-bit backend?
 #[path = "field/p521_64.rs"]

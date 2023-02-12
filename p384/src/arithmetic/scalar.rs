@@ -69,7 +69,7 @@ use core::ops::{Add, Mul, Sub};
 #[derive(Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct Scalar(U384);
 
-primeorder::impl_field_element!(
+primeorder::impl_mont_field_element!(
     NistP384,
     Scalar,
     FieldBytes,
