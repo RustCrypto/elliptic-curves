@@ -39,10 +39,14 @@ use core::{
 use elliptic_curve::{
     ff::{self, Field, PrimeField},
     generic_array::GenericArray,
+    rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
-    FieldBytesEncoding,
+    Error, FieldBytesEncoding,
 };
+
+#[cfg(target_pointer_width = "32")]
+use super::u32x18_to_u64x9;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -73,10 +77,10 @@ impl FieldElement {
     /// Decode [`FieldElement`] from a big endian byte slice.
     pub fn from_slice(slice: &[u8]) -> elliptic_curve::Result<Self> {
         if slice.len() != Self::BYTES {
-            return Err(elliptic_curve::Error);
+            return Err(Error);
         }
 
-        Option::from(Self::from_bytes(GenericArray::from_slice(slice))).ok_or(elliptic_curve::Error)
+        Option::from(Self::from_bytes(GenericArray::from_slice(slice))).ok_or(Error)
     }
 
     /// Decode [`FieldElement`] from [`U576`].
@@ -107,19 +111,7 @@ impl FieldElement {
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        let words = w.to_words();
-
-        Self([
-            (words[0] as u64) | ((words[1] as u64) << 32),
-            (words[2] as u64) | ((words[3] as u64) << 32),
-            (words[4] as u64) | ((words[5] as u64) << 32),
-            (words[6] as u64) | ((words[7] as u64) << 32),
-            (words[8] as u64) | ((words[9] as u64) << 32),
-            (words[10] as u64) | ((words[11] as u64) << 32),
-            (words[12] as u64) | ((words[13] as u64) << 32),
-            (words[14] as u64) | ((words[15] as u64) << 32),
-            (words[16] as u64) | ((words[17] as u64) << 32),
-        ])
+        Self(u32x18_to_u64x9(w.as_words()))
     }
 
     /// Decode [`FieldElement`] from [`U576`].
@@ -326,7 +318,7 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl elliptic_curve::rand_core::RngCore) -> Self {
+    fn random(mut rng: impl RngCore) -> Self {
         // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
