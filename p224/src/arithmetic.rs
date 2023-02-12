@@ -5,3 +5,4 @@
 //! [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 
 pub mod field;
+pub mod scalar;

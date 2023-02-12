@@ -70,13 +70,13 @@ primeorder::impl_field_element!(
 impl FieldElement {
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("invert not yet implemented")
+        todo!("`invert` not yet implemented")
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("sqrt not yet implemented")
+        todo!("`sqrt` not yet implemented")
     }
 }
 

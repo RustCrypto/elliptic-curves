@@ -28,6 +28,10 @@ pub use elliptic_curve::bigint::U224 as Uint;
 #[cfg(target_pointer_width = "64")]
 use elliptic_curve::bigint::U256 as Uint;
 
+/// Order of NIST P-224's elliptic curve group (i.e. scalar modulus) in hexadecimal.
+#[cfg(any(target_pointer_width = "32", feature = "wip-arithmetic-do-not-use"))]
+const ORDER_HEX: &str = "ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d";
+
 /// NIST P-224 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP224;
@@ -41,8 +45,7 @@ impl elliptic_curve::Curve for NistP224 {
 
     /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus).
     #[cfg(target_pointer_width = "32")]
-    const ORDER: Uint =
-        Uint::from_be_hex("ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d");
+    const ORDER: Uint = Uint::from_be_hex(ORDER_HEX);
 
     /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus).
     #[cfg(target_pointer_width = "64")]
