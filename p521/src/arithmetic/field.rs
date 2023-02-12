@@ -171,9 +171,29 @@ impl FieldElement {
         LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
     }
 
+    /// Subtract elements.
+    pub(crate) const fn sub(&self, rhs: &Self) -> LooseFieldElement {
+        LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
+    }
+
+    /// Negate element.
+    pub(crate) const fn neg(&self) -> LooseFieldElement {
+        LooseFieldElement(fiat_p521_opp(&self.0))
+    }
+
     /// Add elements and carry.
     pub const fn add_carry(&self, rhs: &Self) -> Self {
         self.add(rhs).carry()
+    }
+
+    /// Subtract elements and carry.
+    pub const fn sub_carry(&self, rhs: &Self) -> Self {
+        self.sub(rhs).carry()
+    }
+
+    /// Negate element and carry.
+    pub const fn neg_carry(&self) -> Self {
+        self.neg().carry()
     }
 
     /// Double element (add it to itself).
@@ -182,24 +202,9 @@ impl FieldElement {
         self.add_carry(self)
     }
 
-    /// Subtract elements.
-    pub(crate) const fn sub(&self, rhs: &Self) -> LooseFieldElement {
-        LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
-    }
-
-    /// Subtract elements and carry.
-    pub const fn sub_carry(&self, rhs: &Self) -> Self {
-        self.sub(rhs).carry()
-    }
-
     /// Multiply elements.
     pub const fn multiply(&self, rhs: &Self) -> Self {
         self.relax().carry_mul(&rhs.relax())
-    }
-
-    /// Negate element.
-    pub const fn neg(&self) -> Self {
-        LooseFieldElement(fiat_p521_opp(&self.0)).carry()
     }
 
     /// Square element.
@@ -511,7 +516,7 @@ impl Neg for FieldElement {
 
     #[inline]
     fn neg(self) -> FieldElement {
-        LooseFieldElement(fiat_p521_opp(&self.0)).carry()
+        self.neg_carry()
     }
 }
 
