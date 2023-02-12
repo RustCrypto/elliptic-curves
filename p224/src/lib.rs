@@ -29,6 +29,9 @@ use elliptic_curve::{
     FieldBytesEncoding,
 };
 
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+
 #[cfg(target_pointer_width = "32")]
 pub use elliptic_curve::bigint::U224 as Uint;
 
@@ -89,7 +92,7 @@ impl FieldBytesEncoding<NistP224> for Uint {}
 /// NIST P-224 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP224>;
 
-#[cfg(not(feature = "arithmetic"))]
+#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP224 {}
 
 /// Bit representation of a NIST P-224 scalar field element.
