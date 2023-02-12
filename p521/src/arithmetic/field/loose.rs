@@ -11,12 +11,12 @@ impl LooseFieldElement {
     }
 
     /// Multiplies two field elements and reduces the result.
-    pub(crate) const fn carry_mul(&self, rhs: &Self) -> FieldElement {
+    pub(crate) const fn mul(&self, rhs: &Self) -> FieldElement {
         FieldElement(fiat_p521_carry_mul(&self.0, &rhs.0))
     }
 
     /// Squares a field element and reduces the result.
-    pub(crate) const fn carry_square(&self) -> FieldElement {
+    pub(crate) const fn square(&self) -> FieldElement {
         FieldElement(fiat_p521_carry_square(&self.0))
     }
 }
@@ -54,7 +54,7 @@ impl Mul for LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: LooseFieldElement) -> FieldElement {
-        self.carry_mul(&rhs)
+        Self::mul(&self, &rhs)
     }
 }
 
@@ -63,7 +63,7 @@ impl Mul<&LooseFieldElement> for LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
-        self.carry_mul(rhs)
+        Self::mul(&self, rhs)
     }
 }
 
@@ -72,6 +72,6 @@ impl Mul<&LooseFieldElement> for &LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
-        self.carry_mul(rhs)
+        LooseFieldElement::mul(self, rhs)
     }
 }

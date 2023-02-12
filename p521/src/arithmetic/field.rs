@@ -167,49 +167,59 @@ impl FieldElement {
     }
 
     /// Add elements.
-    pub(crate) const fn add(&self, rhs: &Self) -> LooseFieldElement {
+    #[allow(dead_code)] // TODO(tarcieri): use this
+    pub(crate) const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
     }
 
-    /// Subtract elements.
-    pub(crate) const fn sub(&self, rhs: &Self) -> LooseFieldElement {
+    /// Double element (add it to itself).
+    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[must_use]
+    pub(crate) const fn double_loose(&self) -> LooseFieldElement {
+        Self::add_loose(self, self)
+    }
+
+    /// Subtract elements, returning a loose field element.
+    #[allow(dead_code)] // TODO(tarcieri): use this
+    pub(crate) const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
     }
 
-    /// Negate element.
-    pub(crate) const fn neg(&self) -> LooseFieldElement {
+    /// Negate element, returning a loose field element.
+    #[allow(dead_code)] // TODO(tarcieri): use this
+    pub(crate) const fn neg_loose(&self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_opp(&self.0))
     }
 
-    /// Add elements and carry.
-    pub const fn add_carry(&self, rhs: &Self) -> Self {
-        self.add(rhs).carry()
+    /// Add two field elements.
+    pub const fn add(&self, rhs: &Self) -> Self {
+        Self(fiat_p521_carry_add(&self.0, &rhs.0))
     }
 
-    /// Subtract elements and carry.
-    pub const fn sub_carry(&self, rhs: &Self) -> Self {
-        self.sub(rhs).carry()
+    /// Subtract field elements.
+    pub const fn sub(&self, rhs: &Self) -> Self {
+        Self(fiat_p521_carry_sub(&self.0, &rhs.0))
     }
 
-    /// Negate element and carry.
-    pub const fn neg_carry(&self) -> Self {
-        self.neg().carry()
+    /// Negate element.
+    pub const fn neg(&self) -> Self {
+        Self(fiat_p521_carry_opp(&self.0))
     }
 
     /// Double element (add it to itself).
     #[must_use]
     pub const fn double(&self) -> Self {
-        self.add_carry(self)
+        self.add(self)
     }
 
     /// Multiply elements.
-    pub const fn multiply(&self, rhs: &Self) -> Self {
-        self.relax().carry_mul(&rhs.relax())
+    pub const fn mul(&self, rhs: &Self) -> Self {
+        LooseFieldElement::mul(&self.relax(), &rhs.relax())
     }
 
     /// Square element.
     pub const fn square(&self) -> Self {
-        self.relax().carry_square()
+        self.relax().square()
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -230,7 +240,7 @@ impl FieldElement {
                 res = res.square();
 
                 if ((exp[i] >> j) & 1) == 1 {
-                    res = res.multiply(self);
+                    res = Self::mul(&res, self);
                 }
             }
         }
@@ -393,7 +403,7 @@ impl Add for FieldElement {
 
     #[inline]
     fn add(self, rhs: FieldElement) -> FieldElement {
-        self.add_carry(&rhs)
+        Self::add(&self, &rhs)
     }
 }
 
@@ -402,7 +412,7 @@ impl Add<&FieldElement> for FieldElement {
 
     #[inline]
     fn add(self, rhs: &FieldElement) -> FieldElement {
-        self.add_carry(rhs)
+        Self::add(&self, rhs)
     }
 }
 
@@ -411,7 +421,7 @@ impl Add<&FieldElement> for &FieldElement {
 
     #[inline]
     fn add(self, rhs: &FieldElement) -> FieldElement {
-        self.add_carry(rhs)
+        FieldElement::add(self, rhs)
     }
 }
 
@@ -434,7 +444,7 @@ impl Sub for FieldElement {
 
     #[inline]
     fn sub(self, rhs: FieldElement) -> FieldElement {
-        self.sub_carry(&rhs)
+        Self::sub(&self, &rhs)
     }
 }
 
@@ -443,7 +453,7 @@ impl Sub<&FieldElement> for FieldElement {
 
     #[inline]
     fn sub(self, rhs: &FieldElement) -> FieldElement {
-        self.sub_carry(rhs)
+        Self::sub(&self, rhs)
     }
 }
 
@@ -452,7 +462,7 @@ impl Sub<&FieldElement> for &FieldElement {
 
     #[inline]
     fn sub(self, rhs: &FieldElement) -> FieldElement {
-        self.sub_carry(rhs)
+        FieldElement::sub(self, rhs)
     }
 }
 
@@ -475,7 +485,7 @@ impl Mul for FieldElement {
 
     #[inline]
     fn mul(self, rhs: FieldElement) -> FieldElement {
-        self.relax().carry_mul(&rhs.relax())
+        self.relax().mul(&rhs.relax())
     }
 }
 
@@ -484,7 +494,7 @@ impl Mul<&FieldElement> for FieldElement {
 
     #[inline]
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        self.relax().carry_mul(&rhs.relax())
+        self.relax().mul(&rhs.relax())
     }
 }
 
@@ -493,7 +503,7 @@ impl Mul<&FieldElement> for &FieldElement {
 
     #[inline]
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        self.relax().carry_mul(&rhs.relax())
+        self.relax().mul(&rhs.relax())
     }
 }
 
@@ -516,7 +526,7 @@ impl Neg for FieldElement {
 
     #[inline]
     fn neg(self) -> FieldElement {
-        self.neg_carry()
+        Self::neg(&self)
     }
 }
 
