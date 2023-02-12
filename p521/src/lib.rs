@@ -15,6 +15,9 @@
     unused_qualifications
 )]
 
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub mod arithmetic;
+
 pub use elliptic_curve::{self, bigint::U576};
 
 #[cfg(feature = "pkcs8")]
