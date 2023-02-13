@@ -29,9 +29,6 @@ use elliptic_curve::{
     FieldBytesEncoding,
 };
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
-
 #[cfg(target_pointer_width = "32")]
 pub use elliptic_curve::bigint::U224 as Uint;
 
