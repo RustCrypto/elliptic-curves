@@ -44,7 +44,7 @@ use elliptic_curve::{
 };
 
 #[cfg(target_pointer_width = "32")]
-use super::u32x18_to_u64x9;
+use super::util::u32x18_to_u64x9;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1

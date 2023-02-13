@@ -24,6 +24,7 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
     Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
 };
+use primeorder::impl_field_op;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -35,7 +36,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 use core::ops::{Add, Mul, Sub};
 
 #[cfg(target_pointer_width = "32")]
-use super::{u32x18_to_u64x9, u64x9_to_u32x18};
+use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
 
 /// Scalars are elements in the finite field modulo `n`.
 ///
@@ -369,41 +370,6 @@ impl Field for Scalar {
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
         ff::helpers::sqrt_ratio_generic(num, div)
     }
-}
-
-/// Emit impls for a `core::ops` trait for all combinations of reference types,
-/// which thunk to the given function.
-// TODO(tarcieri): import this macro from `primeorder` when it's a dependency
-#[macro_export]
-macro_rules! impl_field_op {
-    ($fe:tt, $op:tt, $op_fn:ident, $func:ident) => {
-        impl ::core::ops::$op for $fe {
-            type Output = $fe;
-
-            #[inline]
-            fn $op_fn(self, rhs: $fe) -> $fe {
-                $fe($func(self.as_ref(), rhs.as_ref()).into())
-            }
-        }
-
-        impl ::core::ops::$op<&$fe> for $fe {
-            type Output = $fe;
-
-            #[inline]
-            fn $op_fn(self, rhs: &$fe) -> $fe {
-                $fe($func(self.as_ref(), rhs.as_ref()).into())
-            }
-        }
-
-        impl ::core::ops::$op<&$fe> for &$fe {
-            type Output = $fe;
-
-            #[inline]
-            fn $op_fn(self, rhs: &$fe) -> $fe {
-                $fe($func(self.as_ref(), rhs.as_ref()).into())
-            }
-        }
-    };
 }
 
 impl_field_op!(Scalar, Add, add, fiat_p521_scalar_add);
