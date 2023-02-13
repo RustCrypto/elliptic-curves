@@ -490,9 +490,17 @@ macro_rules! impl_primefield_tests {
 
         #[test]
         fn root_of_unity_constant() {
+            assert!($fe::S < 128);
+            let two_to_s = 1u128 << $fe::S;
+
             // ROOT_OF_UNITY^{2^s} mod m == 1
             assert_eq!(
-                $fe::ROOT_OF_UNITY.pow_vartime(&[1u64 << $fe::S, 0, 0, 0]),
+                $fe::ROOT_OF_UNITY.pow_vartime(&[
+                    (two_to_s & 0xFFFFFFFFFFFFFFFF) as u64,
+                    (two_to_s >> 64) as u64,
+                    0,
+                    0
+                ]),
                 $fe::ONE
             );
 

@@ -70,13 +70,53 @@ primeorder::impl_field_element!(
 impl FieldElement {
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("`invert` not yet implemented")
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        // Adapted from addchain: github.com/mmcloughlin/addchain
+        let z = self.square();
+        let t0 = self.multiply(&z);
+        let z = t0.square();
+        let z = self.multiply(&z);
+        let t1 = z.sqn(3);
+        let t1 = z.multiply(&t1);
+        let t2 = t1.sqn(6);
+        let t1 = t1.multiply(&t2);
+        let t1 = t1.sqn(2);
+        let t0 = t0.multiply(&t1);
+        let t1 = t0.sqn(3);
+        let z = z.multiply(&t1);
+        let t1 = z.sqn(14);
+        let t0 = t0.multiply(&t1);
+        let t1 = t0.sqn(17);
+        let z = z.multiply(&t1);
+        let t1 = z.sqn(48);
+        let z = z.multiply(&t1);
+        let t1 = z.sqn(31);
+        let t0 = t0.multiply(&t1);
+        let t0 = t0.sqn(97);
+        z.multiply(&t0)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
         todo!("`sqrt` not yet implemented")
+    }
+
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 }
 
@@ -86,7 +126,7 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 224;
     const CAPACITY: u32 = 223;
-    const TWO_INV: Self = Self::ZERO; // TODO: unimplemented
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(22);
     const S: u32 = 96;
     #[cfg(target_pointer_width = "32")]
@@ -95,14 +135,12 @@ impl PrimeField for FieldElement {
     #[cfg(target_pointer_width = "64")]
     const ROOT_OF_UNITY: Self =
         Self::from_hex("00000000395e40142de25856b7e38879fc315d7e6f6de3c1aa72e8c906610583");
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO: unimplemented
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     #[cfg(target_pointer_width = "32")]
     const DELTA: Self = Self::from_hex("697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
     #[cfg(target_pointer_width = "64")]
     const DELTA: Self =
         Self::from_hex("00000000697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
-
-    // NOTE: t = 0xffffffffffffffffffffffffffffffff
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -117,5 +155,38 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::impl_primefield_tests;
+
+    /// t = (modulus - 1) >> S
+    const T: [u64; 4] = [
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x0000000000000000,
+        0x0000000000000000,
+    ];
+
+    impl_primefield_tests!(FieldElement, T);
+
+    /// Basic tests that field inversion works.
+    #[test]
+    fn invert() {
+        let one = FieldElement::ONE;
+        assert_eq!(one.invert().unwrap(), one);
+
+        let three = one + &one + &one;
+        let inv_three = three.invert().unwrap();
+        assert_eq!(three * &inv_three, one);
+
+        let minus_three = -three;
+        let inv_minus_three = minus_three.invert().unwrap();
+        assert_eq!(inv_minus_three, -inv_three);
+        assert_eq!(three * &inv_minus_three, -one);
     }
 }
