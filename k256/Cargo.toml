@@ -22,7 +22,7 @@ cfg-if = "1.0"
 elliptic-curve = { version = "=0.13.0-pre.5", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-once_cell = { version = "1.16", optional = true, default-features = false }
+once_cell = { version = "1.17", optional = true, default-features = false }
 ecdsa-core = { version = "=0.16.0-pre.1", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.3", optional = true }
 serdect = { version = "0.1", optional = true, default-features = false }
