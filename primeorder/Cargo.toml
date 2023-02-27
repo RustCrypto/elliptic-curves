@@ -20,7 +20,7 @@ rust-version = "1.61"
 elliptic-curve = { version = "=0.13.0-pre.5", default-features = false, features = ["arithmetic", "sec1"] }
 
 # optional dependencies
-serdect = { version = "0.1", optional = true, default-features = false }
+serdect = { version = "0.2", optional = true, default-features = false }
 
 [features]
 std = ["elliptic-curve/std"]

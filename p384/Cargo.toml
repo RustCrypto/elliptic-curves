@@ -23,7 +23,7 @@ primeorder = { version = "=0.13.0-pre", path = "../primeorder" }
 # optional dependencies
 ecdsa-core = { version = "=0.16.0-pre.1", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.3", optional = true }
-serdect = { version = "0.1", optional = true, default-features = false }
+serdect = { version = "0.2", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]

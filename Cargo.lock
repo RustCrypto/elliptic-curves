@@ -41,6 +41,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349a06037c7bf932dd7e7d1f653678b2038b9ad46a74102f1fc7bd7872678cce"
 
 [[package]]
+name = "base16ct"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
+
+[[package]]
 name = "base64ct"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -336,7 +342,7 @@ dependencies = [
  "der",
  "elliptic-curve",
  "rfc6979",
- "serdect",
+ "serdect 0.1.0",
  "signature",
 ]
 
@@ -352,7 +358,7 @@ version = "0.13.0-pre.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1ed75d4b5bc2388c2160e14532c72fa6c9d23b37b742f2c81d3577954e1e23a"
 dependencies = [
- "base16ct",
+ "base16ct 0.1.1",
  "base64ct",
  "crypto-bigint",
  "digest",
@@ -366,7 +372,7 @@ dependencies = [
  "rand_core",
  "sec1",
  "serde_json",
- "serdect",
+ "serdect 0.1.0",
  "subtle",
  "zeroize",
 ]
@@ -547,7 +553,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.2.0",
  "sha2",
  "sha3",
  "signature",
@@ -681,7 +687,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.2.0",
  "sha2",
 ]
 
@@ -697,7 +703,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.2.0",
  "sha2",
 ]
 
@@ -767,7 +773,7 @@ name = "primeorder"
 version = "0.13.0-pre"
 dependencies = [
  "elliptic-curve",
- "serdect",
+ "serdect 0.2.0",
 ]
 
 [[package]]
@@ -970,11 +976,11 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3be24c1842290c45df0a7bf069e0c268a747ad05a192f2fd7dcfdbc1cba40928"
 dependencies = [
- "base16ct",
+ "base16ct 0.1.1",
  "der",
  "generic-array",
  "pkcs8",
- "serdect",
+ "serdect 0.1.0",
  "subtle",
  "zeroize",
 ]
@@ -1016,7 +1022,17 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "038fce1bf4d74b9b30ea7dcd59df75ba8ec669a5dcb3cc64fbfcef7334ced32c"
 dependencies = [
- "base16ct",
+ "base16ct 0.1.1",
+ "serde",
+]
+
+[[package]]
+name = "serdect"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a84f14a19e9a014bb9f4512488d9829a68e04ecabffb0f9904cd1ace94598177"
+dependencies = [
+ "base16ct 0.2.0",
  "serde",
 ]
 
