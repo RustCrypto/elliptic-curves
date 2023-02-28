@@ -13,6 +13,3 @@ members = [
 
 [profile.dev]
 opt-level = 2
-
-[patch.crates-io.crypto-bigint]
-git = "https://github.com/rustcrypto/crypto-bigint.git"
