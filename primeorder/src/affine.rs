@@ -328,7 +328,7 @@ where
         bytes[1..].copy_from_slice(&point.x.to_repr());
 
         let encoded = EncodedPoint::<C>::from_bytes(bytes);
-        let is_some = Choice::from(encoded.is_ok() as u8);
+        let is_some = point.y.ct_eq(&self.y);
         CtOption::new(encoded.unwrap_or_default(), is_some)
     }
 }
