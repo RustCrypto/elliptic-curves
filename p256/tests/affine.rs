@@ -121,13 +121,15 @@ fn identity_encoding() {
 
 #[test]
 fn noncompatible_is_none() {
-    let noncompactable_secret = [
+    use elliptic_curve::generic_array::GenericArray;
+    let noncompactable_secret = GenericArray::from([
         175, 232, 180, 255, 91, 106, 124, 191, 224, 31, 177, 208, 236, 127, 191, 169, 201, 217, 75,
         141, 184, 175, 120, 85, 171, 8, 54, 57, 33, 177, 83, 211,
-    ];
-    let secret = p256::SecretKey::from_bytes(&noncompactable_secret).unwrap();
-    let is_compactable = secret
-        .public_key()
+    ]);
+    let public_key = p256::SecretKey::from_bytes(&noncompactable_secret)
+        .unwrap()
+        .public_key();
+    let is_compactable = public_key
         .as_affine()
         .to_compact_encoded_point()
         .is_some()
