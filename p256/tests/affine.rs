@@ -125,7 +125,7 @@ fn noncompatible_is_none() {
         175, 232, 180, 255, 91, 106, 124, 191, 224, 31, 177, 208, 236, 127, 191, 169, 201, 217,
         75, 141, 184, 175, 120, 85, 171, 8, 54, 57, 33, 177, 83, 211,
     ];
-    let secret = p256::SecretKey::from_be_bytes(&noncompactable_secret).unwrap();
+    let secret = p256::SecretKey::from_bytes(&noncompactable_secret).unwrap();
     let is_compactable = secret.public_key().as_affine().to_compact_encoded_point().is_some().unwrap_u8();
     assert_eq!(is_compactable, 0);
 }
