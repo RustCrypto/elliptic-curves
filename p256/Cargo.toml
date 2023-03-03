@@ -18,7 +18,7 @@ rust-version = "1.65"
 
 [dependencies]
 elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
-primeorder = { version = "=0.13.0-pre", path = "../primeorder" }
+primeorder = { version = "0.13", path = "../primeorder" }
 
 # optional dependencies
 ecdsa-core = { version = "0.16", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
