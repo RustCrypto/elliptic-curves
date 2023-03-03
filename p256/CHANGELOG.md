@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.0 (2023-03-03)
+### Added
+- `PrimeField` constants/tests ([#730], [#737], [#738])
+- `const fn` inversions for all field elements ([#736])
+
+### Changed
+- `FieldBytesEncoding` trait impls ([#732])
+- Update `hash2curve` implementations to new API ([#735])
+- Impl `Invert` trait for `Scalar` types ([#741])
+- Bump `ecdsa` dependency to v0.16 ([#770])
+- Bump `elliptic-curve` dependency to v0.13 ([#770])
+- Bump `primeorder` dependency to v0.13 ([#777])
+
+### Fixed
+- Point compactabtility check ([#772])
+
+[#730]: https://github.com/RustCrypto/elliptic-curves/pull/730
+[#732]: https://github.com/RustCrypto/elliptic-curves/pull/732
+[#735]: https://github.com/RustCrypto/elliptic-curves/pull/735
+[#736]: https://github.com/RustCrypto/elliptic-curves/pull/736
+[#737]: https://github.com/RustCrypto/elliptic-curves/pull/737
+[#738]: https://github.com/RustCrypto/elliptic-curves/pull/738
+[#741]: https://github.com/RustCrypto/elliptic-curves/pull/741
+[#770]: https://github.com/RustCrypto/elliptic-curves/pull/770
+[#772]: https://github.com/RustCrypto/elliptic-curves/pull/772
+[#777]: https://github.com/RustCrypto/elliptic-curves/pull/777
+
 ## 0.12.0 (2023-01-16)
 ### Added
 - 32-bit scalar backend ([#636])
