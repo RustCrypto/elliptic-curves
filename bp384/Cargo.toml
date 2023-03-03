@@ -1,6 +1,6 @@
 [package]
 name = "bp384"
-version = "0.6.0-pre"
+version = "0.6.0"
 description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"

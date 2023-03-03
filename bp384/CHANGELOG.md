@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2023-03-02)
+### Added
+- `FieldBytesEncoding` trait impls ([#732])
+
+### Changed
+- Bump `elliptic-curve` dependency to v0.13 ([#770])
+- Bump `ecdsa` to v0.16 ([#770])
+
+[#732]: https://github.com/RustCrypto/elliptic-curves/pull/732
+[#770]: https://github.com/RustCrypto/elliptic-curves/pull/770
+
 ## 0.5.0 (2023-01-15)
 ### Added
 - `alloc` feature ([#670])
