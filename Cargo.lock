@@ -96,7 +96,7 @@ dependencies = [
 
 [[package]]
 name = "bp256"
-version = "0.6.0-pre"
+version = "0.6.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
