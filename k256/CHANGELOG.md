@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.0 (2023-03-02)
+### Added
+- `FieldBytesEncoding` trait impls ([#732])
+- Fast `invert_vartime` using Stein's algorithm ([#743])
+- `serde` support for `schnorr` types ([#748])
+
+### Changed
+- `AffineCoordinates` trait ([#734])
+- Bump `elliptic-curve` dependency to v0.13 ([#770])
+- Bump `ecdsa` to v0.16 ([#770])
+
+[#732]: https://github.com/RustCrypto/elliptic-curves/pull/732
+[#734]: https://github.com/RustCrypto/elliptic-curves/pull/734
+[#743]: https://github.com/RustCrypto/elliptic-curves/pull/743
+[#748]: https://github.com/RustCrypto/elliptic-curves/pull/748
+[#770]: https://github.com/RustCrypto/elliptic-curves/pull/770
+
 ## 0.12.0 (2022-01-16)
 ### Added
 - `alloc` feature ([#670])
