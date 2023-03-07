@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#748]: https://github.com/RustCrypto/elliptic-curves/pull/748
 [#770]: https://github.com/RustCrypto/elliptic-curves/pull/770
 
-## 0.12.0 (2022-01-16)
+## 0.12.0 (2023-01-16)
 ### Added
 - `alloc` feature ([#670])
 - Impl `FromOkm` for `Scalar` ([#673])
