@@ -12,7 +12,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, NistP224, Uint, ORDER_HEX};
+use crate::{FieldBytes, FieldBytesEncoding, NistP224, SecretKey, Uint, ORDER_HEX};
 use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
@@ -25,6 +25,7 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     Curve as _, Error, Result, ScalarPrimitive,
 };
+use primeorder::impl_bernstein_yang_invert;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -80,7 +81,29 @@ primeorder::impl_mont_field_element!(
 impl Scalar {
     /// Compute [`Scalar`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("`invert` not yet implemented")
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Compute [`Scalar`] inversion: `1 / self`.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        let words = impl_bernstein_yang_invert!(
+            self.0.as_words(),
+            Self::ONE.0.to_words(),
+            224,
+            Uint::LIMBS,
+            Limb,
+            fiat_p224_scalar_from_montgomery,
+            fiat_p224_scalar_mul,
+            fiat_p224_scalar_opp,
+            fiat_p224_scalar_divstep_precomp,
+            fiat_p224_scalar_divstep,
+            fiat_p224_scalar_msat,
+            fiat_p224_scalar_selectznz,
+        );
+
+        Self(Uint::from_words(words))
     }
 
     /// Compute modular square root.
@@ -153,7 +176,7 @@ impl PrimeField for Scalar {
     const MODULUS: &'static str = ORDER_HEX;
     const CAPACITY: u32 = 223;
     const NUM_BITS: u32 = 224;
-    const TWO_INV: Self = Self::ZERO; // TODO
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
     const S: u32 = 2;
     #[cfg(target_pointer_width = "32")]
@@ -162,10 +185,8 @@ impl PrimeField for Scalar {
     #[cfg(target_pointer_width = "64")]
     const ROOT_OF_UNITY: Self =
         Self::from_hex("00000000317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(16);
-
-    // NOTE: t = 0x3fffffffffffffffffffffffffffc5a8b82e3c0f84f74a5157170a8f
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -260,12 +281,11 @@ impl From<&Scalar> for Uint {
     }
 }
 
-// TODO
-// impl From<&SecretKey> for Scalar {
-//     fn from(secret_key: &SecretKey) -> Scalar {
-//         *secret_key.to_nonzero_scalar()
-//     }
-// }
+impl From<&SecretKey> for Scalar {
+    fn from(secret_key: &SecretKey) -> Scalar {
+        *secret_key.to_nonzero_scalar()
+    }
+}
 
 impl TryFrom<Uint> for Scalar {
     type Error = Error;
@@ -273,4 +293,24 @@ impl TryFrom<Uint> for Scalar {
     fn try_from(w: Uint) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Scalar;
+    use elliptic_curve::PrimeField;
+    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
+
+    // NOTE: t = 0x3fffffffffffffffffffffffffffc5a8b82e3c0f84f74a5157170a8f
+
+    /// t = (modulus - 1) >> S
+    const T: [u64; 4] = [
+        0x84f74a5157170a8f,
+        0xffffc5a8b82e3c0f,
+        0xffffffffffffffff,
+        0x000000003fffffff,
+    ];
+
+    impl_field_invert_tests!(Scalar);
+    impl_primefield_tests!(Scalar, T);
 }
