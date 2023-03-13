@@ -158,7 +158,10 @@ mod tests {
     use super::FieldElement;
     use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
     use elliptic_curve::{bigint::U256, ff::PrimeField};
-    use primeorder::impl_primefield_tests;
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
     use proptest::{num, prelude::*};
 
     /// t = (modulus - 1) >> S
@@ -169,21 +172,10 @@ mod tests {
         0x7fffffff80000000,
     ];
 
+    impl_field_identity_tests!(FieldElement);
+    impl_field_invert_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
-
-    #[test]
-    fn zero_is_additive_identity() {
-        let zero = FieldElement::ZERO;
-        let one = FieldElement::ONE;
-        assert_eq!(zero.add(&zero), zero);
-        assert_eq!(one.add(&zero), one);
-    }
-
-    #[test]
-    fn one_is_multiplicative_identity() {
-        let one = FieldElement::ONE;
-        assert_eq!(one.multiply(&one), one);
-    }
 
     #[test]
     fn from_bytes() {
@@ -262,26 +254,6 @@ mod tests {
         let two = one + &one;
         let four = two.square();
         assert_eq!(two.pow_vartime(&[2, 0, 0, 0]), four);
-    }
-
-    #[test]
-    fn invert() {
-        assert!(bool::from(FieldElement::ZERO.invert().is_none()));
-
-        let one = FieldElement::ONE;
-        assert_eq!(one.invert().unwrap(), one);
-
-        let two = one + &one;
-        let inv_two = two.invert().unwrap();
-        assert_eq!(two * &inv_two, one);
-    }
-
-    #[test]
-    fn sqrt() {
-        let one = FieldElement::ONE;
-        let two = one + &one;
-        let four = two.square();
-        assert_eq!(four.sqrt().unwrap(), two);
     }
 
     proptest! {

@@ -330,7 +330,10 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_invert_tests, impl_field_sqrt_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -340,6 +343,7 @@ mod tests {
         0x0000000000000000,
     ];
 
+    impl_field_identity_tests!(FieldElement);
     impl_field_invert_tests!(FieldElement);
     impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);

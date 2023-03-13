@@ -539,11 +539,30 @@ macro_rules! impl_bernstein_yang_invert {
     }};
 }
 
+/// Implement field element identity tests.
+#[macro_export]
+macro_rules! impl_field_identity_tests {
+    ($fe:tt) => {
+        #[test]
+        fn zero_is_additive_identity() {
+            let zero = $fe::ZERO;
+            let one = $fe::ONE;
+            assert_eq!(zero.add(&zero), zero);
+            assert_eq!(one.add(&zero), one);
+        }
+
+        #[test]
+        fn one_is_multiplicative_identity() {
+            let one = $fe::ONE;
+            assert_eq!(one.multiply(&one), one);
+        }
+    };
+}
+
 /// Implement field element inversion tests.
 #[macro_export]
 macro_rules! impl_field_invert_tests {
     ($fe:tt) => {
-        /// Basic tests that field inversion works.
         #[test]
         fn invert() {
             let one = $fe::ONE;
@@ -565,13 +584,18 @@ macro_rules! impl_field_invert_tests {
 #[macro_export]
 macro_rules! impl_field_sqrt_tests {
     ($fe:tt) => {
-        /// Basic test that `sqrt` works.
         #[test]
         fn sqrt() {
-            let one = FieldElement::ONE;
+            let one = $fe::ONE;
             let two = one + &one;
             let four = two.square();
             assert_eq!(four.sqrt().unwrap(), two);
+
+            for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
+                let fe = $fe::from(n);
+                let sqrt = fe.sqrt().unwrap();
+                assert_eq!(sqrt.square(), fe);
+            }
         }
     };
 }
