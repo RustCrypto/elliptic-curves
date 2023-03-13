@@ -11,7 +11,7 @@ impl LooseFieldElement {
     }
 
     /// Multiplies two field elements and reduces the result.
-    pub(crate) const fn mul(&self, rhs: &Self) -> FieldElement {
+    pub(crate) const fn multiply(&self, rhs: &Self) -> FieldElement {
         FieldElement(fiat_p521_carry_mul(&self.0, &rhs.0))
     }
 
@@ -54,7 +54,7 @@ impl Mul for LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: LooseFieldElement) -> FieldElement {
-        Self::mul(&self, &rhs)
+        Self::multiply(&self, &rhs)
     }
 }
 
@@ -63,7 +63,7 @@ impl Mul<&LooseFieldElement> for LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
-        Self::mul(&self, rhs)
+        Self::multiply(&self, rhs)
     }
 }
 
@@ -72,6 +72,6 @@ impl Mul<&LooseFieldElement> for &LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
-        LooseFieldElement::mul(self, rhs)
+        LooseFieldElement::multiply(self, rhs)
     }
 }

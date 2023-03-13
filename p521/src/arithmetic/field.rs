@@ -203,13 +203,24 @@ impl FieldElement {
     }
 
     /// Multiply elements.
-    pub const fn mul(&self, rhs: &Self) -> Self {
-        LooseFieldElement::mul(&self.relax(), &rhs.relax())
+    pub const fn multiply(&self, rhs: &Self) -> Self {
+        LooseFieldElement::multiply(&self.relax(), &rhs.relax())
     }
 
     /// Square element.
     pub const fn square(&self) -> Self {
         self.relax().square()
+    }
+
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -230,7 +241,7 @@ impl FieldElement {
                 res = res.square();
 
                 if ((exp[i] >> j) & 1) == 1 {
-                    res = Self::mul(&res, self);
+                    res = Self::multiply(&res, self);
                 }
             }
         }
@@ -240,7 +251,40 @@ impl FieldElement {
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("`invert` not yet implemented")
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        // Adapted from addchain: github.com/mmcloughlin/addchain
+        let z = self.square();
+        let z = self.multiply(&z);
+        let t0 = z.sqn(2);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(4);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(8);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(16);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(32);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(64);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(129);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(259);
+        let z = z.multiply(&t0);
+        let z = z.sqn(2);
+        self.multiply(&z)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
@@ -475,7 +519,7 @@ impl Mul for FieldElement {
 
     #[inline]
     fn mul(self, rhs: FieldElement) -> FieldElement {
-        self.relax().mul(&rhs.relax())
+        self.relax().multiply(&rhs.relax())
     }
 }
 
@@ -484,7 +528,7 @@ impl Mul<&FieldElement> for FieldElement {
 
     #[inline]
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        self.relax().mul(&rhs.relax())
+        self.relax().multiply(&rhs.relax())
     }
 }
 
@@ -493,7 +537,7 @@ impl Mul<&FieldElement> for &FieldElement {
 
     #[inline]
     fn mul(self, rhs: &FieldElement) -> FieldElement {
-        self.relax().mul(&rhs.relax())
+        self.relax().multiply(&rhs.relax())
     }
 }
 
@@ -546,4 +590,13 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.copied().product()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use primeorder::impl_field_invert_tests;
+
+    impl_field_invert_tests!(FieldElement);
+    // TODO(tarcieri): impl_primefield_tests!
 }
