@@ -33,7 +33,7 @@ use core::{
 };
 use elliptic_curve::{
     ff::PrimeField,
-    subtle::{Choice, ConstantTimeEq, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus serialized as hex.
@@ -106,7 +106,174 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+        let t0 = self;
+        let t1 = t0.square();
+        let t2 = t1 * t0;
+        let t3 = t2.square();
+        let t4 = t3 * t0;
+        let t5 = t4.square();
+        let t6 = t5 * t0;
+        let t7 = t6.square();
+        let t8 = t7.square();
+        let t9 = t8.square();
+        let t10 = t9 * t4;
+        let t11 = t10.square();
+        let t12 = t11 * t0;
+        let t13 = t12.square();
+        let t14 = t13.square();
+        let t15 = t14.square();
+        let t16 = t15.square();
+        let t17 = t16.square();
+        let t18 = t17.square();
+        let t19 = t18.square();
+        let t20 = t19 * t10;
+        let t21 = t20.square();
+        let t22 = t21 * t0;
+        let t23 = t22.square();
+        let t24 = t23.square();
+        let t25 = t24.square();
+        let t26 = t25.square();
+        let t27 = t26.square();
+        let t28 = t27.square();
+        let t29 = t28.square();
+        let t30 = t29.square();
+        let t31 = t30.square();
+        let t32 = t31.square();
+        let t33 = t32.square();
+        let t34 = t33.square();
+        let t35 = t34.square();
+        let t36 = t35.square();
+        let t37 = t36.square();
+        let t38 = t37 * t20;
+        let t39 = t38.square();
+        let t40 = t39 * t0;
+        let t41 = t40.square();
+        let t42 = t41.square();
+        let t43 = t42.square();
+        let t44 = t43.square();
+        let t45 = t44.square();
+        let t46 = t45.square();
+        let t47 = t46.square();
+        let t48 = t47.square();
+        let t49 = t48.square();
+        let t50 = t49.square();
+        let t51 = t50.square();
+        let t52 = t51.square();
+        let t53 = t52.square();
+        let t54 = t53.square();
+        let t55 = t54.square();
+        let t56 = t55.square();
+        let t57 = t56.square();
+        let t58 = t57.square();
+        let t59 = t58.square();
+        let t60 = t59.square();
+        let t61 = t60.square();
+        let t62 = t61.square();
+        let t63 = t62.square();
+        let t64 = t63.square();
+        let t65 = t64.square();
+        let t66 = t65.square();
+        let t67 = t66.square();
+        let t68 = t67.square();
+        let t69 = t68.square();
+        let t70 = t69.square();
+        let t71 = t70.square();
+        let t72 = t71 * t38;
+        let t73 = t72.square();
+        let t74 = t73 * t0;
+        let t75 = t74.square();
+        let t76 = t75.square();
+        let t77 = t76.square();
+        let t78 = t77.square();
+        let t79 = t78.square();
+        let t80 = t79.square();
+        let t81 = t80.square();
+        let t82 = t81.square();
+        let t83 = t82.square();
+        let t84 = t83.square();
+        let t85 = t84.square();
+        let t86 = t85.square();
+        let t87 = t86.square();
+        let t88 = t87.square();
+        let t89 = t88.square();
+        let t90 = t89.square();
+        let t91 = t90.square();
+        let t92 = t91.square();
+        let t93 = t92.square();
+        let t94 = t93.square();
+        let t95 = t94.square();
+        let t96 = t95.square();
+        let t97 = t96.square();
+        let t98 = t97.square();
+        let t99 = t98.square();
+        let t100 = t99.square();
+        let t101 = t100.square();
+        let t102 = t101.square();
+        let t103 = t102.square();
+        let t104 = t103.square();
+        let t105 = t104.square();
+        let t106 = t105.square();
+        let t107 = t106.square();
+        let t108 = t107.square();
+        let t109 = t108.square();
+        let t110 = t109.square();
+        let t111 = t110.square();
+        let t112 = t111.square();
+        let t113 = t112.square();
+        let t114 = t113.square();
+        let t115 = t114.square();
+        let t116 = t115.square();
+        let t117 = t116.square();
+        let t118 = t117.square();
+        let t119 = t118.square();
+        let t120 = t119.square();
+        let t121 = t120.square();
+        let t122 = t121.square();
+        let t123 = t122.square();
+        let t124 = t123.square();
+        let t125 = t124.square();
+        let t126 = t125.square();
+        let t127 = t126.square();
+        let t128 = t127.square();
+        let t129 = t128.square();
+        let t130 = t129.square();
+        let t131 = t130.square();
+        let t132 = t131.square();
+        let t133 = t132.square();
+        let t134 = t133.square();
+        let t135 = t134.square();
+        let t136 = t135.square();
+        let t137 = t136.square();
+        let w = t137 * t72;
+
+        let mut v = Self::S;
+        let mut x = *self * w;
+        let mut b = x * w;
+        let mut z = Self::ROOT_OF_UNITY;
+
+        for max_v in (1..=Self::S).rev() {
+            let mut k = 1;
+            let mut tmp = b.square();
+            let mut j_less_than_v = Choice::from(1);
+
+            for j in 2..max_v {
+                let tmp_is_one = tmp.ct_eq(&Self::ONE);
+                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
+                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
+                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
+                j_less_than_v &= !j.ct_eq(&v);
+                k = u32::conditional_select(&j, &k, tmp_is_one);
+                z = Self::conditional_select(&z, &new_z, j_less_than_v);
+            }
+
+            let result = x * z;
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::ONE));
+            z = z.square();
+            b *= &z;
+            v = k;
+        }
+
+        CtOption::new(x, x.square().ct_eq(self))
     }
 
     /// Returns self^(2^n) mod p
@@ -163,7 +330,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{impl_field_invert_tests, impl_field_sqrt_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -174,5 +341,6 @@ mod tests {
     ];
 
     impl_field_invert_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
 }

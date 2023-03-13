@@ -158,7 +158,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{impl_field_invert_tests, impl_field_sqrt_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -171,13 +171,6 @@ mod tests {
     ];
 
     impl_field_invert_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
-
-    #[test]
-    fn sqrt() {
-        let one = FieldElement::ONE;
-        let two = one + &one;
-        let four = two.square();
-        assert_eq!(four.sqrt().unwrap(), two);
-    }
 }
