@@ -561,6 +561,21 @@ macro_rules! impl_field_invert_tests {
     };
 }
 
+/// Implement field element square root tests.
+#[macro_export]
+macro_rules! impl_field_sqrt_tests {
+    ($fe:tt) => {
+        /// Basic test that `sqrt` works.
+        #[test]
+        fn sqrt() {
+            let one = FieldElement::ONE;
+            let two = one + &one;
+            let four = two.square();
+            assert_eq!(four.sqrt().unwrap(), two);
+        }
+    };
+}
+
 /// Implement tests for the `PrimeField` trait.
 #[macro_export]
 macro_rules! impl_primefield_tests {
