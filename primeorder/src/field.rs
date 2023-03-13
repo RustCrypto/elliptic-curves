@@ -482,6 +482,85 @@ macro_rules! impl_field_op {
     };
 }
 
+/// Implement Bernstein-Yang field element inversion.
+#[macro_export]
+macro_rules! impl_bernstein_yang_invert {
+    (
+        $a:expr,
+        $one:expr,
+        $d:expr,
+        $nlimbs:expr,
+        $word:ty,
+        $from_montgomery:ident,
+        $mul:ident,
+        $neg:ident,
+        $divstep_precomp:ident,
+        $divstep:ident,
+        $msat:ident,
+        $selectznz:ident,
+    ) => {{
+        // See Bernstein-Yang 2019 p.366
+        const ITERATIONS: usize = (49 * $d + 57) / 17;
+
+        let a = $from_montgomery($a);
+        let mut d = 1;
+        let mut f = $msat();
+        let mut g = [0; $nlimbs + 1];
+        let mut v = [0; $nlimbs];
+        let mut r = $one;
+        let mut i = 0;
+        let mut j = 0;
+
+        while j < $nlimbs {
+            g[j] = a[j];
+            j += 1;
+        }
+
+        while i < ITERATIONS - ITERATIONS % 2 {
+            let (out1, out2, out3, out4, out5) = $divstep(d, &f, &g, &v, &r);
+            let (out1, out2, out3, out4, out5) = $divstep(out1, &out2, &out3, &out4, &out5);
+            d = out1;
+            f = out2;
+            g = out3;
+            v = out4;
+            r = out5;
+            i += 2;
+        }
+
+        if ITERATIONS % 2 != 0 {
+            let (_out1, out2, _out3, out4, _out5) = $divstep(d, &f, &g, &v, &r);
+            v = out4;
+            f = out2;
+        }
+
+        let s = ((f[f.len() - 1] >> <$word>::BITS - 1) & 1) as u8;
+        let v = $selectznz(s, &v, &$neg(&v));
+        $mul(&v, &$divstep_precomp())
+    }};
+}
+
+/// Implement field element inversion tests.
+#[macro_export]
+macro_rules! impl_field_invert_tests {
+    ($fe:tt) => {
+        /// Basic tests that field inversion works.
+        #[test]
+        fn invert() {
+            let one = $fe::ONE;
+            assert_eq!(one.invert().unwrap(), one);
+
+            let three = one + &one + &one;
+            let inv_three = three.invert().unwrap();
+            assert_eq!(three * &inv_three, one);
+
+            let minus_three = -three;
+            let inv_minus_three = minus_three.invert().unwrap();
+            assert_eq!(inv_minus_three, -inv_three);
+            assert_eq!(three * &inv_minus_three, -one);
+        }
+    };
+}
+
 /// Implement tests for the `PrimeField` trait.
 #[macro_export]
 macro_rules! impl_primefield_tests {

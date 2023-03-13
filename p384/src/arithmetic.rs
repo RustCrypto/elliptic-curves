@@ -4,9 +4,6 @@
 //!
 //! [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 
-#[macro_use]
-mod macros;
-
 pub(crate) mod field;
 #[cfg(feature = "hash2curve")]
 mod hash2curve;

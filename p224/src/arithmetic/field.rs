@@ -76,6 +76,7 @@ impl FieldElement {
     /// Returns the multiplicative inverse of self.
     ///
     /// Does not check that self is non-zero.
+    // TODO(tarcieri): double check this is faster than Bernstein-Yang
     const fn invert_unchecked(&self) -> Self {
         // Adapted from addchain: github.com/mmcloughlin/addchain
         let z = self.square();
@@ -162,7 +163,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::impl_primefield_tests;
+    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -172,21 +173,6 @@ mod tests {
         0x0000000000000000,
     ];
 
+    impl_field_invert_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
-
-    /// Basic tests that field inversion works.
-    #[test]
-    fn invert() {
-        let one = FieldElement::ONE;
-        assert_eq!(one.invert().unwrap(), one);
-
-        let three = one + &one + &one;
-        let inv_three = three.invert().unwrap();
-        assert_eq!(three * &inv_three, one);
-
-        let minus_three = -three;
-        let inv_minus_three = minus_three.invert().unwrap();
-        assert_eq!(inv_minus_three, -inv_three);
-        assert_eq!(three * &inv_minus_three, -one);
-    }
 }

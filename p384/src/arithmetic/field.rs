@@ -31,10 +31,11 @@ use core::{
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{self, Limb, U384},
+    bigint::{Limb, U384},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
+use primeorder::impl_bernstein_yang_invert;
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
@@ -70,11 +71,13 @@ impl FieldElement {
     ///
     /// Does not check that self is non-zero.
     const fn invert_unchecked(&self) -> Self {
-        let words = impl_field_invert!(
-            self.to_canonical().as_words(),
+        let words = impl_bernstein_yang_invert!(
+            self.0.as_words(),
             Self::ONE.0.to_words(),
-            Limb::BITS,
-            bigint::nlimbs!(U384::BITS),
+            384,
+            U384::LIMBS,
+            Limb,
+            fiat_p384_from_montgomery,
             fiat_p384_mul,
             fiat_p384_opp,
             fiat_p384_divstep_precomp,
@@ -155,7 +158,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::impl_primefield_tests;
+    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -167,23 +170,8 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
+    impl_field_invert_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
-
-    /// Basic tests that field inversion works.
-    #[test]
-    fn invert() {
-        let one = FieldElement::ONE;
-        assert_eq!(one.invert().unwrap(), one);
-
-        let three = one + &one + &one;
-        let inv_three = three.invert().unwrap();
-        assert_eq!(three * &inv_three, one);
-
-        let minus_three = -three;
-        let inv_minus_three = minus_three.invert().unwrap();
-        assert_eq!(inv_minus_three, -inv_three);
-        assert_eq!(three * &inv_minus_three, -one);
-    }
 
     #[test]
     fn sqrt() {

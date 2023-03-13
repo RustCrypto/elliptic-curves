@@ -18,13 +18,14 @@ use core::{
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{self, ArrayEncoding, Limb},
+    bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
     ops::{Invert, Reduce},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     Curve as _, Error, Result, ScalarPrimitive,
 };
+use primeorder::impl_bernstein_yang_invert;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -95,11 +96,13 @@ impl Scalar {
     ///
     /// Does not check that self is non-zero.
     const fn invert_unchecked(&self) -> Self {
-        let words = impl_field_invert!(
-            self.to_canonical().as_words(),
+        let words = impl_bernstein_yang_invert!(
+            self.0.as_words(),
             Self::ONE.0.to_words(),
-            Limb::BITS,
-            bigint::nlimbs!(U384::BITS),
+            384,
+            U384::LIMBS,
+            Limb,
+            fiat_p384_scalar_from_montgomery,
             fiat_p384_scalar_mul,
             fiat_p384_scalar_opp,
             fiat_p384_scalar_divstep_precomp,
@@ -363,7 +366,7 @@ mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::impl_primefield_tests;
+    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -375,6 +378,7 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
+    impl_field_invert_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 
     #[test]
@@ -402,20 +406,6 @@ mod tests {
 
         assert_eq!(minus_three * minus_two, minus_two * minus_three);
         assert_eq!(six, minus_two * minus_three);
-    }
-
-    /// Basic tests that scalar inversion works.
-    #[test]
-    fn invert() {
-        let one = Scalar::ONE;
-        let three = one + one + one;
-        let inv_three = three.invert().unwrap();
-        assert_eq!(three * inv_three, one);
-
-        let minus_three = -three;
-        let inv_minus_three = minus_three.invert().unwrap();
-        assert_eq!(inv_minus_three, -inv_three);
-        assert_eq!(three * inv_minus_three, -one);
     }
 
     /// Basic tests that sqrt works.
