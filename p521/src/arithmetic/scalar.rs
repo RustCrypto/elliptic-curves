@@ -648,7 +648,7 @@ impl TryFrom<U576> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::PrimeField;
-    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 9] = [
@@ -663,6 +663,7 @@ mod tests {
         0x000000000000003f,
     ];
 
+    impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }

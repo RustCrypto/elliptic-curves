@@ -299,9 +299,7 @@ impl TryFrom<Uint> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::PrimeField;
-    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
-
-    // NOTE: t = 0x3fffffffffffffffffffffffffffc5a8b82e3c0f84f74a5157170a8f
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -311,6 +309,8 @@ mod tests {
         0x000000003fffffff,
     ];
 
+    impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
+    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): not yet implemented
     impl_primefield_tests!(Scalar, T);
 }

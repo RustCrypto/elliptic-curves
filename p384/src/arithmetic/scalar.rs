@@ -366,7 +366,7 @@ mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -378,7 +378,9 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
+    impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
+    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): debug test failures
     impl_primefield_tests!(Scalar, T);
 
     #[test]

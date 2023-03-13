@@ -745,7 +745,7 @@ mod tests {
     use super::Scalar;
     use crate::{FieldBytes, SecretKey};
     use elliptic_curve::group::ff::{Field, PrimeField};
-    use primeorder::impl_primefield_tests;
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -755,6 +755,9 @@ mod tests {
         0x0ffffffff0000000,
     ];
 
+    impl_field_identity_tests!(Scalar);
+    impl_field_invert_tests!(Scalar);
+    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): debug test failures
     impl_primefield_tests!(Scalar, T);
 
     #[test]
@@ -782,23 +785,6 @@ mod tests {
 
         assert_eq!(minus_three * &minus_two, minus_two * &minus_three);
         assert_eq!(six, minus_two * &minus_three);
-    }
-
-    /// Basic tests that scalar inversion works.
-    #[test]
-    fn invert() {
-        let one = Scalar::ONE;
-        let three = one + &one + &one;
-        let inv_three = three.invert().unwrap();
-        // println!("1/3 = {:x?}", &inv_three);
-        assert_eq!(three * &inv_three, one);
-
-        let minus_three = -three;
-        // println!("-3 = {:x?}", &minus_three);
-        let inv_minus_three = minus_three.invert().unwrap();
-        assert_eq!(inv_minus_three, -inv_three);
-        // println!("-1/3 = {:x?}", &inv_minus_three);
-        assert_eq!(three * &inv_minus_three, -one);
     }
 
     /// Basic tests that sqrt works.
