@@ -19,7 +19,7 @@ use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
 mod sealed {
     use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
 
-    /// Elliptic point artihmetic implementation
+    /// Elliptic point arithmetic implementation
     ///
     /// Provides implementation of point arithmetic (point addition, point doubling) which
     /// might be optimized for the curve.
