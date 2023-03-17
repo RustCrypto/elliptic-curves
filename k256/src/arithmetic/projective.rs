@@ -223,7 +223,7 @@ impl ProjectivePoint {
     /// Check whether `self` is equal to an affine point.
     ///
     /// This is a lot faster than first converting `self` to an `AffinePoint` and then doing the
-    /// comparision. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
+    /// comparison. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
     pub fn eq_affine(&self, other: &AffinePoint) -> Choice {
         // For understanding of this algorithm see Projective equality comment. It's the same except
         // that we know z = 1 for rhs and we have to check identity as a separate case.
@@ -301,7 +301,7 @@ impl ConstantTimeEq for ProjectivePoint {
         // and check lhs == rhs which implies x₁ == x₂ and y₁ == y₂.
         //
         // If one point is infinity it is always in the form (0, y, 0). Note that the above
-        // algorithm still works here. If They are both infinity then they'll both evalute to (0,0).
+        // algorithm still works here. If They are both infinity then they'll both evaluate to (0,0).
         // If for example the first point is infinity then the above will evaluate to (z₂ * 0, z₂ *
         // y₂) = (0, z₂y₂) for the first point and (0 * x₂z₂, 0 * y₂z₂) = (0, 0) for the second.
         //
