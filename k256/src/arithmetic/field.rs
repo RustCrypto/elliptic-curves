@@ -703,7 +703,7 @@ mod tests {
         assert!(y.normalize().is_odd().unwrap_u8() == 0);
 
         // This panics since `y` is not normalized.
-        let _result = y.is_odd().unwrap_u8();
+        let _result = y.is_odd();
     }
 
     prop_compose! {
