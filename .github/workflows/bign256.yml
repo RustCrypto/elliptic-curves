@@ -1,4 +1,4 @@
-name: p256
+name: bign256
 
 on:
   pull_request:
