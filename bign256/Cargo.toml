@@ -18,7 +18,7 @@ rust-version = "1.65"
 
 [dependencies]
 elliptic-curve = { version = "0.13.1", features = ["hazmat", "sec1", "arithmetic"] }
-primeorder = { git = "https://github.com/RustCrypto/elliptic-curves.git" }
+primeorder = { version = "0.13", path = "../primeorder" }
 
 ecdsa-core = { version = "0.16", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 serdect = { version = "0.2", optional = true, default-features = false }
