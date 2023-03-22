@@ -47,6 +47,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
+name = "belt-block"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a1be3fcfd5950762b6ac3f929b7ac65f31b35afee94e17f6fcadd58ee47abee"
+
+[[package]]
+name = "belt-hash"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4d8ee43afdfcc493dec1e51c8032546cc1c52b4d68549e6469d03ff2cf3c3d91"
+dependencies = [
+ "belt-block",
+ "digest",
+]
+
+[[package]]
+name = "bign256"
+version = "0.1.0"
+dependencies = [
+ "belt-hash",
+ "ecdsa",
+ "elliptic-curve",
+ "hex-literal",
+ "primeorder 0.13.0 (git+https://github.com/RustCrypto/elliptic-curves.git)",
+ "serdect",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -711,7 +739,7 @@ name = "p224"
 version = "0.13.0"
 dependencies = [
  "elliptic-curve",
- "primeorder",
+ "primeorder 0.13.0",
 ]
 
 [[package]]
@@ -723,7 +751,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.0",
  "proptest",
  "rand_core",
  "serdect",
@@ -739,7 +767,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.0",
  "proptest",
  "rand_core",
  "serdect",
@@ -751,7 +779,7 @@ name = "p521"
 version = "0.13.0"
 dependencies = [
  "elliptic-curve",
- "primeorder",
+ "primeorder 0.13.0",
 ]
 
 [[package]]
@@ -813,6 +841,14 @@ version = "0.13.0"
 dependencies = [
  "elliptic-curve",
  "serdect",
+]
+
+[[package]]
+name = "primeorder"
+version = "0.13.0"
+source = "git+https://github.com/RustCrypto/elliptic-curves.git#b5092f1dd50fc61753d815174c0a25b2826cf531"
+dependencies = [
+ "elliptic-curve",
 ]
 
 [[package]]
