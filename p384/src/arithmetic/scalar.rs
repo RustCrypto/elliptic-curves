@@ -373,7 +373,10 @@ mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -387,7 +390,7 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): debug test failures
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 
     #[test]
@@ -415,15 +418,5 @@ mod tests {
 
         assert_eq!(minus_three * minus_two, minus_two * minus_three);
         assert_eq!(six, minus_two * minus_three);
-    }
-
-    /// Basic tests that sqrt works.
-    #[test]
-    fn sqrt() {
-        for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
-            let scalar = Scalar::from(n);
-            let sqrt = scalar.sqrt().unwrap();
-            assert_eq!(sqrt.square(), scalar);
-        }
     }
 }
