@@ -7,6 +7,7 @@ mod scalar_impl;
 use self::scalar_impl::barrett_reduce;
 use crate::{FieldBytes, NistP256, SecretKey, ORDER_HEX};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
@@ -79,7 +80,7 @@ pub const MU: [u64; 5] = [
 ///
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Default)]
 pub struct Scalar(pub(crate) U256);
 
 impl Scalar {
@@ -717,6 +718,12 @@ impl ConditionallySelectable for Scalar {
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0.ct_eq(&other.0)
+    }
+}
+
+impl Debug for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 
