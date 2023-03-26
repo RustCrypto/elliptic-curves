@@ -27,6 +27,7 @@ mod field_impl;
 use self::field_impl::*;
 use crate::{FieldBytes, NistP384};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
@@ -42,7 +43,7 @@ use primeorder::impl_bernstein_yang_invert;
 pub(crate) const MODULUS: U384 = U384::from_be_hex(FieldElement::MODULUS);
 
 /// Element of the secp384r1 base field used for curve coordinates.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U384);
 
 primeorder::impl_mont_field_element!(
@@ -151,6 +152,12 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
+    }
+}
+
+impl Debug for FieldElement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "FieldElement(0x{:X})", &self.0)
     }
 }
 

@@ -14,6 +14,7 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{FieldBytes, FieldBytesEncoding, NistP224, SecretKey, Uint, ORDER_HEX};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
@@ -59,7 +60,7 @@ use core::ops::{Add, Mul, Sub};
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(Uint);
 
 primeorder::impl_mont_field_element!(
@@ -292,6 +293,12 @@ impl TryFrom<Uint> for Scalar {
 
     fn try_from(w: Uint) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
+    }
+}
+
+impl Debug for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 

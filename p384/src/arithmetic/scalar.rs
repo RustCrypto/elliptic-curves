@@ -14,6 +14,7 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, SecretKey, ORDER_HEX, U384};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
@@ -67,7 +68,7 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(U384);
 
 primeorder::impl_mont_field_element!(
@@ -338,6 +339,12 @@ impl TryFrom<U384> for Scalar {
 
     fn try_from(w: U384) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
+    }
+}
+
+impl Debug for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 
