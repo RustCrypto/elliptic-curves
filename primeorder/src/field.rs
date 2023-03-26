@@ -586,11 +586,6 @@ macro_rules! impl_field_sqrt_tests {
     ($fe:tt) => {
         #[test]
         fn sqrt() {
-            let one = $fe::ONE;
-            let two = one + &one;
-            let four = two.square();
-            assert_eq!(four.sqrt().unwrap(), two);
-
             for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
                 let fe = $fe::from(n);
                 let sqrt = fe.sqrt().unwrap();
