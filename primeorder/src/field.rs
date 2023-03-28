@@ -436,7 +436,7 @@ macro_rules! impl_mont_field_element {
 
         impl Product for $fe {
             fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-                iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ZERO)
+                iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
             }
         }
 
