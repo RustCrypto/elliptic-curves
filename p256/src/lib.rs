@@ -49,6 +49,9 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
+#[cfg(feature = "algorithm-identifier")]
+use elliptic_curve::pkcs8::spki::{AlgorithmIdentifierRef, AssociatedAlgorithmIdentifier};
+
 use elliptic_curve::{
     bigint::ArrayEncoding, consts::U33, generic_array::GenericArray, FieldBytesEncoding,
 };
@@ -128,6 +131,14 @@ impl elliptic_curve::JwkParameters for NistP256 {
 #[cfg(feature = "pkcs8")]
 impl pkcs8::AssociatedOid for NistP256 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.2.840.10045.3.1.7");
+}
+
+#[cfg(feature = "algorithm-identifier")]
+impl AssociatedAlgorithmIdentifier for NistP256 {
+    const ALGORITHM_IDENTIFIER: AlgorithmIdentifierRef<'static> = AlgorithmIdentifierRef {
+        oid: const_oid::ObjectIdentifier::new_unwrap("1.2.840.10045.4.3.2"),
+        parameters: None,
+    };
 }
 
 /// Blinded scalar.
