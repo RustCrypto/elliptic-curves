@@ -19,6 +19,7 @@ rust-version = "1.65"
 elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
+const-oid = { version = "0.9", optional = true }
 primeorder = { version = "0.13", optional = true, path = "../primeorder" }
 
 [features]
@@ -26,6 +27,7 @@ default = ["pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
+algorithm-identifier = ["elliptic-curve/pkcs8", "const-oid"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]

@@ -23,6 +23,9 @@ pub use elliptic_curve::{self, bigint::U576};
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
+#[cfg(feature = "algorithm-identifier")]
+use elliptic_curve::pkcs8::spki::{AlgorithmIdentifierRef, AssociatedAlgorithmIdentifier};
+
 use elliptic_curve::{consts::U66, generic_array::GenericArray, FieldBytesEncoding};
 
 /// NIST P-521 elliptic curve.
@@ -60,6 +63,14 @@ impl elliptic_curve::JwkParameters for NistP521 {
 #[cfg(feature = "pkcs8")]
 impl pkcs8::AssociatedOid for NistP521 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.3.132.0.35");
+}
+
+#[cfg(feature = "algorithm-identifier")]
+impl AssociatedAlgorithmIdentifier for NistP521 {
+    const ALGORITHM_IDENTIFIER: AlgorithmIdentifierRef<'static> = AlgorithmIdentifierRef {
+        oid: const_oid::ObjectIdentifier::new_unwrap("1.2.840.10045.4.3.4"),
+        parameters: None,
+    };
 }
 
 /// Compressed SEC1-encoded NIST P-521 curve point.
