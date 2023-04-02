@@ -23,6 +23,9 @@ pub use elliptic_curve;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
+#[cfg(feature = "algorithm-identifier")]
+use elliptic_curve::pkcs8::spki::{AlgorithmIdentifierRef, AssociatedAlgorithmIdentifier};
+
 use elliptic_curve::{
     consts::{U28, U29},
     generic_array::GenericArray,
@@ -70,6 +73,14 @@ impl elliptic_curve::point::PointCompression for NistP224 {
 #[cfg(feature = "pkcs8")]
 impl pkcs8::AssociatedOid for NistP224 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.3.132.0.33");
+}
+
+#[cfg(feature = "algorithm-identifier")]
+impl AssociatedAlgorithmIdentifier for NistP224 {
+    const ALGORITHM_IDENTIFIER: AlgorithmIdentifierRef<'static> = AlgorithmIdentifierRef {
+        oid: const_oid::ObjectIdentifier::new_unwrap("1.2.840.10045.4.3.1"),
+        parameters: None,
+    };
 }
 
 /// Compressed SEC1-encoded NIST P-224 curve point.
