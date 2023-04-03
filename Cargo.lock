@@ -366,7 +366,7 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
- "hex-literal",
+ "hex-literal 0.3.4",
  "hkdf",
  "pem-rfc7468",
  "pkcs8",
@@ -501,6 +501,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
 
 [[package]]
+name = "hex-literal"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bcb5b3e439c92a7191df2f9bbe733de8de55c3f86368cdb1c63f8be7e9e328e"
+
+[[package]]
 name = "hkdf"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -580,7 +586,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 0.4.0",
  "num-bigint",
  "num-traits",
  "once_cell",
@@ -722,7 +728,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 0.4.0",
  "primeorder",
  "proptest",
  "rand_core",
@@ -738,7 +744,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 0.4.0",
  "primeorder",
  "proptest",
  "rand_core",
