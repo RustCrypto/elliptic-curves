@@ -538,7 +538,7 @@ impl<'a> Sum<&'a FieldElement> for FieldElement {
 
 impl Product for FieldElement {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ZERO)
+        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
     }
 }
 
