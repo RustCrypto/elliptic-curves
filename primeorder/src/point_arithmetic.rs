@@ -2,15 +2,6 @@
 //!
 //! Support for formulas specialized to the short Weierstrass equation's
 //! 𝒂-coefficient.
-//!
-//! This module is largely a workaround for things which should be possible
-//! to implement more elegantly with future Rust features like
-//! `generic_const_exprs` and `impl const Trait`.
-//!
-//! In absence of such features, we define ZSTs that implement point arithmetic
-//! for different curve equations that depend on properties of the 𝒂-coefficient
-//! which could potentially be written as const expressions on `PrimeCurveParams::EQUATION_A`
-//! in the future (including ones which could be used as trait bounds).
 
 use elliptic_curve::{subtle::ConditionallySelectable, Field};
 
