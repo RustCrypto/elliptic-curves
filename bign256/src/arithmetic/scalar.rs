@@ -42,7 +42,7 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// Much of the important functionality of scalars is provided by traits from
 /// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
-/// `p384::elliptic_curve::ff`:
+/// `bign256::elliptic_curve::ff`:
 ///
 /// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
 ///   represents elements of finite fields and provides:
@@ -59,14 +59,6 @@ use core::ops::{Add, Mul, Sub};
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
-///
-/// # `serde` support
-///
-/// When the `serde` feature of this crate is enabled, the `Serialize` and
-/// `Deserialize` traits are impl'd for this type.
-///
-/// The serialization is a fixed-width big endian encoding. When used with
-/// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct Scalar(Uint);
 

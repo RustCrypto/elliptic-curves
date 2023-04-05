@@ -1,9 +1,9 @@
-//! Pure Rust implementation of group operations on secp384r1.
+//! Pure Rust implementation of group operations on bign-curve256v1.
 //!
-//! Curve parameters can be found in FIPS 186-4: Digital Signature Standard
-//! (DSS): <https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-4.pdf>
+//! Curve parameters can be found in STB 34.101.45-2013
+//! <https://apmi.bsu.by/assets/files/std/bign-spec294.pdf>
 //!
-//! See section D.1.2.4: Curve P-384.
+//! See table B.1: l = 128.
 
 pub(crate) mod field;
 pub(crate) mod scalar;

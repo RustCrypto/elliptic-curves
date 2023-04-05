@@ -17,10 +17,9 @@
 
 pub mod arithmetic;
 
-#[cfg(feature = "ecdsa-core")]
-mod ecdsa;
-
 pub use elliptic_curve;
+
+pub use arithmetic::field::FieldElement;
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
