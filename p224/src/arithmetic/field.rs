@@ -28,6 +28,7 @@ mod field_impl;
 use self::field_impl::*;
 use crate::{FieldBytes, NistP224, Uint};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
@@ -48,7 +49,7 @@ const MODULUS: Uint =
     Uint::from_be_hex("00000000ffffffffffffffffffffffffffffffff000000000000000000000001");
 
 /// Element of the secp224r1 base field used for curve coordinates.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) Uint);
 
 primeorder::impl_mont_field_element!(
@@ -323,6 +324,12 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
+    }
+}
+
+impl Debug for FieldElement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "FieldElement(0x{:X})", &self.0)
     }
 }
 

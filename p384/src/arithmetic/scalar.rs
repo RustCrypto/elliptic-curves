@@ -14,6 +14,7 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, SecretKey, ORDER_HEX, U384};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
@@ -67,7 +68,7 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(U384);
 
 primeorder::impl_mont_field_element!(
@@ -341,6 +342,12 @@ impl TryFrom<U384> for Scalar {
     }
 }
 
+impl Debug for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Scalar(0x{:X})", &self.0)
+    }
+}
+
 #[cfg(feature = "serde")]
 impl Serialize for Scalar {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
@@ -366,7 +373,10 @@ mod tests {
     use super::Scalar;
     use crate::FieldBytes;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -380,7 +390,7 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): debug test failures
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 
     #[test]
@@ -408,15 +418,5 @@ mod tests {
 
         assert_eq!(minus_three * minus_two, minus_two * minus_three);
         assert_eq!(six, minus_two * minus_three);
-    }
-
-    /// Basic tests that sqrt works.
-    #[test]
-    fn sqrt() {
-        for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
-            let scalar = Scalar::from(n);
-            let sqrt = scalar.sqrt().unwrap();
-            assert_eq!(sqrt.square(), scalar);
-        }
     }
 }
