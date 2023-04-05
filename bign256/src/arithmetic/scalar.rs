@@ -79,7 +79,7 @@ primeorder::impl_mont_field_element!(
 );
 
 impl Scalar {
-    /// Compute [`FieldElement`] inversion: `1 / self`.
+    /// Compute [`Scalar`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         CtOption::new(self.invert_unchecked(), !self.is_zero())
     }
