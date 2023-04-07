@@ -91,8 +91,77 @@ impl FieldElement {
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
-    const fn sqrt(&self) -> CtOption<Self> {
-        todo!()
+    pub fn sqrt(&self) -> CtOption<Self> {
+        // Adapted code from ff crate
+        let sqrt = {
+            let t0 = self;
+            let t4 = t0.sqn(4);
+            let t5 = t4 * t0;
+            let t7 = t5.sqn(2);
+            let t8 = t7 * t5;
+            let t9 = t8.square();
+            let t10 = t9 * t5;
+            let t12 = t10.square();
+            let t13 = t12 * t10;
+            let t17 = t13.sqn(4);
+            let t18 = t17 * t13;
+            let t20 = t18.square();
+            let t21 = t20 * t18;
+            let t26 = t21.sqn(5);
+            let t27 = t26 * t21;
+            let t29 = t27.square();
+            let t30 = t29.square();
+            let t31 = t30.square();
+            let t32 = t31 * t30;
+            let t34 = t32.square();
+            let t35 = t34.square();
+            let t36 = t35.square();
+            let t37 = t36 * t30;
+            let t38 = t37 * t21;
+            let t39 = t38.square();
+            let t40 = t39 * t38;
+            let t41 = t40 * t27;
+            let t42 = t41.square();
+            let t43 = t42 * t38;
+            let t44 = t43.square();
+            let t45 = t44 * t43;
+            let t46 = t45 * t41;
+            let t47 = t46.square();
+            let t48 = t47.square();
+            let t49 = t48 * t46;
+            let t50 = t49.square();
+            let t51 = t50 * t46;
+            let t52 = t51 * t43;
+            let t53 = t52 * t46;
+            let t54 = t53.square();
+            let t55 = t54.square();
+            let t56 = t55 * t52;
+            let t78 = t56.sqn(22);
+            let t79 = t78 * t53;
+            let t80 = t79 * t13;
+            let t81 = t80 * t18;
+            let t82 = t81 * t80;
+            let t83 = t82 * t81;
+            let t84 = t83 * t82;
+            let t85 = t84 * t83;
+            let t86 = t85.square();
+            let t87 = t86 * t85;
+            let t88 = t87 * t84;
+            let t89 = t88.square();
+            let t90 = t89 * t85;
+            let t91 = t90 * t88;
+            let t92 = t91 * t90;
+            let t93 = t92 * t91;
+            let t152 = t93.sqn(59);
+            let t153 = t152 * t92;
+            let t154 = t153 * t5;
+            let t156 = t154.sqn(2);
+            let t157 = t156 * t10;
+            let t283 = t157.sqn(126);
+            t283 * t154
+        };
+
+        CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self) )
     }
 
     #[allow(dead_code)]
@@ -143,7 +212,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests, impl_primefield_tests};
 
     // t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -155,6 +224,6 @@ mod tests {
 
     impl_field_identity_tests!(FieldElement);
     impl_field_invert_tests!(FieldElement);
-    // impl_field_sqrt_tests!(FieldElement); // TODO(makavity): not yet implemented
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
 }

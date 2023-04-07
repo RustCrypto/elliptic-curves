@@ -32,10 +32,10 @@ fn bench_field_element_square<'a, M: Measurement>(group: &mut BenchmarkGroup<'a,
     group.bench_function("square", |b| b.iter(|| x.square()));
 }
 
-// fn bench_field_element_sqrt<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
-//     let x = test_field_element_x();
-//     group.bench_function("sqrt", |b| b.iter(|| x.sqrt()));
-// }
+fn bench_field_element_sqrt<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+    let x = test_field_element_x();
+    group.bench_function("sqrt", |b| b.iter(|| x.sqrt()));
+}
 
 fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
@@ -47,7 +47,7 @@ fn bench_field_element(c: &mut Criterion) {
     bench_field_element_mul(&mut group);
     bench_field_element_square(&mut group);
     bench_field_element_invert(&mut group);
-    // bench_field_element_sqrt(&mut group);
+    bench_field_element_sqrt(&mut group);
     group.finish();
 }
 
