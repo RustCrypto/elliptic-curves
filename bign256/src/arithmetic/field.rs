@@ -161,7 +161,7 @@ impl FieldElement {
             t283 * t154
         };
 
-        CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self) )
+        CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self))
     }
 
     #[allow(dead_code)]
@@ -212,7 +212,10 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     // t = (modulus - 1) >> S
     const T: [u64; 4] = [
