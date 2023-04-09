@@ -111,7 +111,7 @@ mod tests {
         );
     }
 
-    // Test signing with PrehashSigner using SHA-256 which output is smaller than P-384 field size.
+    // Test signing with PrehashSigner using SHA-256 whose output is smaller than P-384 field size.
     #[test]
     fn prehash_signer_signing_with_sha256() {
         let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
@@ -127,7 +127,7 @@ mod tests {
         );
     }
 
-    // Test verifying with PrehashVerifier using SHA-256 which output is smaller than P-384 field size.
+    // Test verifying with PrehashVerifier using SHA-256 whose output is smaller than P-384 field size.
     #[test]
     fn prehash_signer_verification_with_sha256() {
         // The following test vector adapted from the FIPS 186-4 ECDSA test vectors
