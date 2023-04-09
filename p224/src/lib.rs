@@ -21,6 +21,9 @@ mod arithmetic;
 #[cfg(feature = "ecdh")]
 pub mod ecdh;
 
+#[cfg(feature = "ecdsa-core")]
+pub mod ecdsa;
+
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 

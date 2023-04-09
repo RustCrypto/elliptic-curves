@@ -337,9 +337,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.16.4"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "106401dadc137d05cb0d4ab4d42be089746aefdfe8992df4d0edcf351c16ddca"
+checksum = "298d10b6d24e99de17b92bd41bfe33f4e8530ee7948233eb2a4158f4464d2046"
 dependencies = [
  "der",
  "digest",
@@ -357,9 +357,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22cdacd4d6ed3f9b98680b679c0e52a823b8a2c7a97358d508fe247f2180c282"
+checksum = "75c71eaa367f2e5d556414a8eea812bc62985c879748d6403edabd9cb03f16e7"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -368,7 +368,7 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
- "hex-literal 0.3.4",
+ "hex-literal",
  "hkdf",
  "pem-rfc7468",
  "pkcs8",
@@ -498,12 +498,6 @@ dependencies = [
 
 [[package]]
 name = "hex-literal"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
-
-[[package]]
-name = "hex-literal"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
@@ -588,7 +582,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal 0.4.1",
+ "hex-literal",
  "num-bigint",
  "num-traits",
  "once_cell",
@@ -718,10 +712,12 @@ checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
 name = "p224"
 version = "0.13.0"
 dependencies = [
+ "ecdsa",
  "elliptic-curve",
- "hex-literal 0.4.1",
+ "hex-literal",
  "primeorder",
  "rand_core",
+ "sha2",
 ]
 
 [[package]]
@@ -732,7 +728,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal 0.4.1",
+ "hex-literal",
  "primeorder",
  "proptest",
  "rand_core",
@@ -748,7 +744,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal 0.4.1",
+ "hex-literal",
  "primeorder",
  "proptest",
  "rand_core",
