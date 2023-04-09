@@ -1,7 +1,7 @@
 //! Elliptic Curve Diffie-Hellman (Ephemeral) Support.
 //!
 //! This module contains a high-level interface for performing ephemeral
-//! Diffie-Hellman key exchanges using the secp256k1 elliptic curve.
+//! Diffie-Hellman key exchanges using the secp256r1 elliptic curve.
 //!
 //! # Usage
 //!

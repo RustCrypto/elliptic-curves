@@ -1,7 +1,7 @@
 //! Elliptic Curve Diffie-Hellman (Ephemeral) Support.
 //!
 //! This module contains a high-level interface for performing ephemeral
-//! Diffie-Hellman key exchanges using the secp384r1 elliptic curve.
+//! Diffie-Hellman key exchanges using the secp224r1 elliptic curve.
 //!
 //! # Usage
 //!
@@ -9,7 +9,7 @@
 //! exchange, nicknamed "Alice" and "Bob".
 //!
 //! ```
-//! use p384::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
+//! use p224::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Alice
@@ -38,10 +38,10 @@
 
 pub use elliptic_curve::ecdh::diffie_hellman;
 
-use crate::NistP384;
+use crate::NistP224;
 
-/// NIST P-384 Ephemeral Diffie-Hellman Secret.
-pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<NistP384>;
+/// NIST P-224 Ephemeral Diffie-Hellman Secret.
+pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<NistP224>;
 
 /// Shared secret value computed via ECDH key agreement.
-pub type SharedSecret = elliptic_curve::ecdh::SharedSecret<NistP384>;
+pub type SharedSecret = elliptic_curve::ecdh::SharedSecret<NistP224>;
