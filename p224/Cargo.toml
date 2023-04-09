@@ -32,11 +32,11 @@ default = ["pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
-ecdh = ["wip-arithmetic-do-not-use", "elliptic-curve/ecdh"]
+ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 test-vectors = ["dep:hex-literal"]
-wip-arithmetic-do-not-use = ["dep:primeorder"]
+arithmetic = ["dep:primeorder"]
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]

@@ -15,8 +15,8 @@
     unused_qualifications
 )]
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
-pub mod arithmetic;
+#[cfg(feature = "arithmetic")]
+mod arithmetic;
 
 #[cfg(feature = "ecdh")]
 pub mod ecdh;
@@ -26,7 +26,7 @@ pub mod test_vectors;
 
 pub use elliptic_curve;
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 #[cfg(feature = "pkcs8")]
@@ -45,7 +45,7 @@ pub use elliptic_curve::bigint::U224 as Uint;
 use elliptic_curve::bigint::U256 as Uint;
 
 /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus) in hexadecimal.
-#[cfg(any(target_pointer_width = "32", feature = "wip-arithmetic-do-not-use"))]
+#[cfg(any(target_pointer_width = "32", feature = "arithmetic"))]
 const ORDER_HEX: &str = "ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d";
 
 /// NIST P-224 elliptic curve.
@@ -81,6 +81,10 @@ impl pkcs8::AssociatedOid for NistP224 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.3.132.0.33");
 }
 
+/// Blinded scalar.
+#[cfg(feature = "arithmetic")]
+pub type BlindedScalar = elliptic_curve::scalar::BlindedScalar<NistP224>;
+
 /// Compressed SEC1-encoded NIST P-224 curve point.
 pub type CompressedPoint = GenericArray<u8, U29>;
 
@@ -95,14 +99,18 @@ pub type FieldBytes = elliptic_curve::FieldBytes<NistP224>;
 
 impl FieldBytesEncoding<NistP224> for Uint {}
 
+/// Non-zero NIST P-256 scalar field element.
+#[cfg(feature = "arithmetic")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP224>;
+
 /// NIST P-224 public key.
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub type PublicKey = elliptic_curve::PublicKey<NistP224>;
 
 /// NIST P-224 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP224>;
 
-#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP224 {}
 
 /// Bit representation of a NIST P-224 scalar field element.
