@@ -719,6 +719,7 @@ name = "p224"
 version = "0.13.0"
 dependencies = [
  "elliptic-curve",
+ "hex-literal 0.4.1",
  "primeorder",
 ]
 

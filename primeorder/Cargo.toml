@@ -24,6 +24,8 @@ serdect = { version = "0.2", optional = true, default-features = false }
 
 [features]
 std = ["elliptic-curve/std"]
+
+dev = []
 serde = ["elliptic-curve/serde", "serdect"]
 
 [package.metadata.docs.rs]

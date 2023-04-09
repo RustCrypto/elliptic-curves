@@ -1,12 +1,12 @@
 //! Projective arithmetic tests.
 
-#![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
+#![cfg(all(feature = "wip-arithmetic-do-not-use", feature = "test-vectors"))]
 
 use elliptic_curve::{
+    group::ff::PrimeField,
     sec1::{self, ToEncodedPoint},
-    PrimeField,
 };
-use p384::{
+use p224::{
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     AffinePoint, ProjectivePoint, Scalar,
 };

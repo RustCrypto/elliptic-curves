@@ -18,7 +18,13 @@
 #[cfg(feature = "wip-arithmetic-do-not-use")]
 pub mod arithmetic;
 
+#[cfg(any(feature = "test-vectors", test))]
+pub mod test_vectors;
+
 pub use elliptic_curve;
+
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
