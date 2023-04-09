@@ -1,7 +1,5 @@
 //! Affine arithmetic tests.
 
-// TODO(tarcieri): point compaction support
-
 #![cfg(all(feature = "arithmetic"))]
 
 use elliptic_curve::{
