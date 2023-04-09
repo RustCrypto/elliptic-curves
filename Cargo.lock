@@ -721,6 +721,7 @@ dependencies = [
  "elliptic-curve",
  "hex-literal 0.4.1",
  "primeorder",
+ "rand_core",
 ]
 
 [[package]]

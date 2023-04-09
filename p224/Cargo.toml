@@ -25,12 +25,14 @@ primeorder = { version = "0.13", optional = true, path = "../primeorder" }
 [dev-dependencies]
 hex-literal = "0.4"
 primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
+rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
 default = ["pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
+ecdh = ["wip-arithmetic-do-not-use", "elliptic-curve/ecdh"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 test-vectors = ["dep:hex-literal"]
