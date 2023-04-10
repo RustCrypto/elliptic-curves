@@ -1,5 +1,7 @@
 //! Development-related functionality.
 
+// TODO(tarcieri): move all development-related macros into this module
+
 /// Implement projective arithmetic tests.
 #[macro_export]
 macro_rules! impl_projective_arithmetic_tests {

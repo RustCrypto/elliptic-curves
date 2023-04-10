@@ -8,11 +8,11 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
-#[cfg(feature = "dev")]
-pub mod dev;
 pub mod point_arithmetic;
 
 mod affine;
+#[cfg(feature = "dev")]
+mod dev;
 mod field;
 mod projective;
 
