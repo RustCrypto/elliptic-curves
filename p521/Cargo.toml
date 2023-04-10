@@ -19,7 +19,7 @@ rust-version = "1.65"
 elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-primeorder = { version = "0.13", optional = true, path = "../primeorder" }
+primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
 
 [features]
 default = ["pem", "std"]
