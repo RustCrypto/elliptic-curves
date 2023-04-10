@@ -19,12 +19,13 @@ rust-version = "1.65"
 elliptic-curve = { version = "0.13.4", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.16.5", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.16.6", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.4", optional = true }
 primeorder = { version = "0.13", optional = true, path = "../primeorder" }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
+ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.4"
 primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
 rand_core = { version = "0.6", features = ["getrandom"] }
