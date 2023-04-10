@@ -712,6 +712,7 @@ checksum = "9b7820b9daea5457c9f21c69448905d723fbd21136ccf521748f23fd49e723ee"
 name = "p224"
 version = "0.13.0"
 dependencies = [
+ "blobby",
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
