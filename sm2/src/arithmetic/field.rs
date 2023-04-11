@@ -81,7 +81,7 @@ impl FieldElement {
         let words = primeorder::impl_bernstein_yang_invert!(
             self.0.as_words(),
             Self::ONE.0.to_words(),
-            192,
+            256,
             U256::LIMBS,
             Limb,
             fiat_sm2_from_montgomery,
@@ -109,12 +109,13 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::ZERO; // TODO
-    const MULTIPLICATIVE_GENERATOR: Self = Self::ZERO; // TODO
-    const S: u32 = 0; // TODO
-    const ROOT_OF_UNITY: Self = Self::ZERO; // TODO
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
-    const DELTA: Self = Self::ZERO; // TODO
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(13);
+    const S: u32 = 1;
+    const ROOT_OF_UNITY: Self =
+        Self::from_hex("fffffffeffffffffffffffffffffffffffffffff00000000fffffffffffffffe");
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
+    const DELTA: Self = Self::from_u64(169);
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -130,4 +131,25 @@ impl PrimeField for FieldElement {
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+
+    /// t = (modulus - 1) >> S
+    /// 0x7fffffff7fffffffffffffffffffffffffffffff800000007fffffffffffffff
+    const T: [u64; 4] = [
+        0x7fffffffffffffff,
+        0xffffffff80000000,
+        0xffffffffffffffff,
+        0x7fffffff7fffffff,
+    ];
+
+    impl_field_identity_tests!(FieldElement);
+    impl_field_invert_tests!(FieldElement);
+    // impl_field_sqrt_tests!(FieldElement);
+    impl_primefield_tests!(FieldElement, T);
 }
