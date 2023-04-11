@@ -15,6 +15,9 @@
     unused_qualifications
 )]
 
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub mod arithmetic;
+
 pub use elliptic_curve;
 
 #[cfg(feature = "pkcs8")]
@@ -25,6 +28,8 @@ use elliptic_curve::{
     consts::U32,
     FieldBytesEncoding,
 };
+
+const ORDER_HEX: &str = "fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123";
 
 /// SM2 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -38,11 +43,15 @@ impl elliptic_curve::Curve for Sm2 {
     type Uint = U256;
 
     /// Order of SM2's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U256 =
-        U256::from_be_hex("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123");
+    const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for Sm2 {}
+
+impl elliptic_curve::point::PointCompression for Sm2 {
+    /// SM2 points are typically uncompressed.
+    const COMPRESS_POINTS: bool = false;
+}
 
 #[cfg(feature = "pkcs8")]
 impl pkcs8::AssociatedOid for Sm2 {

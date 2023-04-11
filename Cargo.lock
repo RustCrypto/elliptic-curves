@@ -1122,6 +1122,7 @@ name = "sm2"
 version = "0.0.0"
 dependencies = [
  "elliptic-curve",
+ "primeorder",
 ]
 
 [[package]]
