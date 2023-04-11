@@ -14,6 +14,23 @@ elliptic curve.
 
 ## ⚠️ Security Warning
 
+### Small Key Size!
+
+P-192 provides equivalent strength to a 96-bit symmetric key, which is
+considered too weak for modern usage.
+
+For more information, see:
+[NIST Special Publication 800-131A Revision 2]:
+Transitioning the Use of Cryptographic Algorithms and Key Lengths:
+
+> ECDSA and EdDSA: The security strength provided by an elliptic-curve-based
+> signature algorithm is no greater than 1/2 of the length of the domain
+> parameter n. Therefore, the length of n shall be at least 224 bits to meet
+> the minimum security-strength requirement of 112 bits for Federal
+> Government use.
+
+### Unaudited!
+
 The elliptic curve arithmetic contained in this crate has never been
 independently audited!
 
@@ -26,9 +43,7 @@ USE AT YOUR OWN RISK!
 
 ## About P-192
 
-NIST P-192 is a Weierstrass curve specified in [SP 800-186]:
-Recommendations for Discrete Logarithm-based Cryptography:
-Elliptic Curve Domain Parameters.
+NIST P-192 is a Weierstrass curve specified in [FIPS 186-4].
 
 Also known as secp192r1 (SECG).
 
@@ -75,4 +90,5 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # (general links)
 
 [RustCrypto]: https://github.com/rustcrypto/
-[SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
+[NIST Special Publication 800-131A Revision 2]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf
+[FIPS 186-4]: https://csrc.nist.gov/publications/detail/fips/186/4/final

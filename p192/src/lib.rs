@@ -15,6 +15,9 @@
     unused_qualifications
 )]
 
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+mod arithmetic;
+
 pub use elliptic_curve;
 
 #[cfg(feature = "pkcs8")]
@@ -26,6 +29,8 @@ use elliptic_curve::{
     generic_array::GenericArray,
     FieldBytesEncoding,
 };
+
+const ORDER_HEX: &str = "ffffffffffffffffffffffff99def836146bc9b1b4d22831";
 
 /// NIST P-192 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -39,7 +44,7 @@ impl elliptic_curve::Curve for NistP192 {
     type Uint = U192;
 
     /// Order of NIST P-192's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U192 = U192::from_be_hex("ffffffffffffffffffffffff99def836146bc9b1b4d22831");
+    const ORDER: U192 = U192::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP192 {}
@@ -75,9 +80,6 @@ impl FieldBytesEncoding<NistP192> for U192 {
         self.to_be_byte_array()
     }
 }
-
-/// NIST P-192 secret key.
-pub type SecretKey = elliptic_curve::SecretKey<NistP192>;
 
 impl elliptic_curve::sec1::ValidatePublicKey for NistP192 {}
 
