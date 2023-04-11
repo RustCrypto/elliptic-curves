@@ -180,12 +180,13 @@ impl PrimeField for Scalar {
     const MODULUS: &'static str = ORDER_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::ZERO; // TODO
-    const MULTIPLICATIVE_GENERATOR: Self = Self::ZERO; // TODO
-    const S: u32 = 0; // TODO
-    const ROOT_OF_UNITY: Self = Self::ZERO; // TODO
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
-    const DELTA: Self = Self::ZERO; // TODO
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
+    const S: u32 = 1;
+    const ROOT_OF_UNITY: Self =
+        Self::from_hex("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122");
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
+    const DELTA: Self = Self::from_u64(9);
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -286,4 +287,25 @@ impl TryFrom<U256> for Scalar {
     fn try_from(w: U256) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Scalar;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+
+    /// t = (modulus - 1) >> S
+    /// 0x7fffffff7fffffffffffffffffffffffb901efb590e30295a9ddfa049ceaa091
+    const T: [u64; 4] = [
+        0xa9ddfa049ceaa091,
+        0xb901efb590e30295,
+        0xffffffffffffffff,
+        0x7fffffff7fffffff,
+    ];
+
+    impl_field_identity_tests!(Scalar);
+    impl_field_invert_tests!(Scalar);
+    // impl_field_sqrt_tests!(Scalar);
+    impl_primefield_tests!(Scalar, T);
 }
