@@ -29,8 +29,12 @@ USE AT YOUR OWN RISK!
 SM2 is a Weierstrass curve specified in [GM/T 0003-2012]:
 Cryptography Industry Standard of the People's Republic of China.
 
-The standard also covers digital signature and encryption schemes based on
-the elliptic curve, however this crate does not yet implement those.
+The SM2 cryptosystem is composed of three distinct algorithms, which are NOT
+yet implemented by this crate:
+
+- [ ] **SM2DSA**: digital signature algorithm defined in [GBT.32918.2-2016], [ISO.IEC.14888-3] (SM2-2)
+- [ ] **SM2KEP**: key exchange protocol defined in [GBT.32918.3-2016] (SM2-3)
+- [ ] **SM2PKE**: public key encryption algorithm defined in [GBT.32918.4-2016] (SM2-4)
 
 ## Minimum Supported Rust Version
 
@@ -72,8 +76,12 @@ dual licensed as above, without any additional terms or conditions.
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 
-[//]: # (general links)
+[//]: # (links)
 
 [RustCrypto]: https://github.com/rustcrypto/
 [GM/T 0003-2012]: https://www.chinesestandard.net/PDF.aspx/GMT0003.4-2012
+[GBT.32918.2-2016]: https://www.chinesestandard.net/PDF.aspx/GBT32918.2-2016
+[GBT.32918.3-2016]: https://www.chinesestandard.net/PDF.aspx/GBT32918.3-2016
+[GBT.32918.4-2016]: https://www.chinesestandard.net/PDF.aspx/GBT32918.4-2016
 [ISO/IEC 14888]: https://www.iso.org/standard/76382.html
+[ISO.IEC.14888-3]: https://www.iso.org/standard/76382.html
