@@ -32,7 +32,7 @@ primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
 rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
-default = ["pem", "std"]
+default = ["arithmetic", "ecdsa", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
