@@ -713,6 +713,7 @@ name = "p192"
 version = "0.0.0"
 dependencies = [
  "elliptic-curve",
+ "hex-literal",
  "primeorder",
  "sec1",
 ]
