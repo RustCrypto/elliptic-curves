@@ -16,7 +16,10 @@
 )]
 
 #[cfg(feature = "wip-arithmetic-do-not-use")]
-mod arithmetic;
+pub mod arithmetic;
+
+#[cfg(any(feature = "test-vectors", test))]
+pub mod test_vectors;
 
 pub use elliptic_curve;
 
