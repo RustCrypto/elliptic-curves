@@ -81,6 +81,7 @@ impl FieldBytesEncoding<NistP192> for U192 {
     }
 }
 
+#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP192 {}
 
 /// Bit representation of a NIST P-192 scalar field element.
