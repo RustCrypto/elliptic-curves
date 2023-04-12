@@ -77,6 +77,7 @@ impl FieldBytesEncoding<Sm2> for U256 {
 /// SM2 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<Sm2>;
 
+#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Sm2 {}
 
 /// Bit representation of a SM2 scalar field element.

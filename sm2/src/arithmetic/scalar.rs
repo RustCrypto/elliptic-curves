@@ -10,7 +10,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, Sm2, ORDER_HEX, U256};
+use crate::{FieldBytes, FieldBytesEncoding, SecretKey, Sm2, ORDER_HEX, U256};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
@@ -278,6 +278,12 @@ impl From<Scalar> for U256 {
 impl From<&Scalar> for U256 {
     fn from(scalar: &Scalar) -> U256 {
         scalar.to_canonical()
+    }
+}
+
+impl From<&SecretKey> for Scalar {
+    fn from(secret_key: &SecretKey) -> Scalar {
+        *secret_key.to_nonzero_scalar()
     }
 }
 
