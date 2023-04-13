@@ -104,9 +104,18 @@ impl Scalar {
         Self(U256::from_words(words))
     }
 
-    /// Compute modular square root.
+    /// Returns the square root of self mod n, or `None` if no square root
+    /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+        // Because n ≡ 3 mod 4 for SM2's scalar field modulus, sqrt can be done with only one
+        // exponentiation via the computation of self^((n + 1) // 4) (mod n).
+        let sqrt = self.pow_vartime(&[
+            0xd4eefd024e755049,
+            0xdc80f7dac871814a,
+            0xffffffffffffffff,
+            0x3fffffffbfffffff,
+        ]);
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 
     /// Right shifts the scalar.
@@ -299,7 +308,10 @@ impl TryFrom<U256> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     /// 0x7fffffff7fffffffffffffffffffffffb901efb590e30295a9ddfa049ceaa091
@@ -312,6 +324,6 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar);
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }
