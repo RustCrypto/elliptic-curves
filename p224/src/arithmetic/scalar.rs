@@ -108,6 +108,7 @@ impl Scalar {
 
     /// Compute modular square root.
     pub fn sqrt(&self) -> CtOption<Self> {
+        // See RustCrypto/elliptic-curves#847
         todo!("`sqrt` not yet implemented")
     }
 
