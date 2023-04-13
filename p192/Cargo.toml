@@ -28,13 +28,13 @@ hex-literal = "0.4"
 primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
 
 [features]
-default = ["pem", "std"]
+default = ["arithmetic", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
+arithmetic = ["elliptic-curve/arithmetic", "primeorder"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
-wip-arithmetic-do-not-use = ["elliptic-curve/arithmetic", "primeorder"]
 test-vectors = ["hex-literal"]
 
 [package.metadata.docs.rs]

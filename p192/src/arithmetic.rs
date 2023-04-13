@@ -7,9 +7,7 @@
 pub(crate) mod field;
 pub(crate) mod scalar;
 
-pub use self::scalar::Scalar;
-
-use self::field::FieldElement;
+use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP192;
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
 use primeorder::{point_arithmetic, PrimeCurveParams};
