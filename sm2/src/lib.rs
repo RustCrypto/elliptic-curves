@@ -15,10 +15,13 @@
     unused_qualifications
 )]
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
-pub mod arithmetic;
+#[cfg(feature = "arithmetic")]
+mod arithmetic;
 
 pub use elliptic_curve;
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
@@ -84,17 +87,17 @@ impl FieldBytesEncoding<Sm2> for U256 {
 }
 
 /// Non-zero scalar field element.
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Sm2>;
 
 /// SM2 public key: wrapper type for an elliptic curve point.
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub type PublicKey = elliptic_curve::PublicKey<Sm2>;
 
 /// SM2 secret key: wrapper point for a secret scalar.
 pub type SecretKey = elliptic_curve::SecretKey<Sm2>;
 
-#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Sm2 {}
 
 /// Bit representation of a SM2 scalar field element.
