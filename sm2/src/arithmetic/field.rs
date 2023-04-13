@@ -99,7 +99,14 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+        // For SM2, p ≡ 3 mod 4, so use (p + 1) / 4.
+        let sqrt = self.pow_vartime(&[
+            0x4000000000000000,
+            0xffffffffc0000000,
+            0xffffffffffffffff,
+            0x3fffffffbfffffff,
+        ]);
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 }
 
@@ -137,7 +144,10 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     /// 0x7fffffff7fffffffffffffffffffffffffffffff800000007fffffffffffffff
@@ -150,6 +160,6 @@ mod tests {
 
     impl_field_identity_tests!(FieldElement);
     impl_field_invert_tests!(FieldElement);
-    // impl_field_sqrt_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
 }
