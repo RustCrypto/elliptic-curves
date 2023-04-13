@@ -26,7 +26,7 @@ USE AT YOUR OWN RISK!
 
 ## About SM2
 
-SM2 is a Weierstrass curve specified in [GM/T 0003-2012]:
+ShangMi 2 (SM2) is a Weierstrass curve specified in [GM/T 0003-2012]:
 Cryptography Industry Standard of the People's Republic of China.
 
 The SM2 cryptosystem is composed of three distinct algorithms, which are NOT
