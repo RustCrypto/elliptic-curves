@@ -15,13 +15,16 @@
     unused_qualifications
 )]
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
-pub mod arithmetic;
+#[cfg(feature = "arithmetic")]
+mod arithmetic;
 
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
 pub use elliptic_curve;
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
@@ -84,7 +87,7 @@ impl FieldBytesEncoding<NistP192> for U192 {
     }
 }
 
-#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP192 {}
 
 /// Bit representation of a NIST P-192 scalar field element.
