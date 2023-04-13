@@ -106,9 +106,42 @@ impl Scalar {
         Self(U192::from_words(words))
     }
 
-    /// Compute modular square root.
-    pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+    /// Tonelli-Shank's algorithm for q mod 16 = 1
+    /// <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
+    #[allow(clippy::many_single_char_names)]
+    fn sqrt(&self) -> CtOption<Self> {
+        // w = self^((t - 1) // 2)
+        // Note: `pow_vartime` is constant-time with respect to `self`
+        let w = self.pow_vartime(&[0xb0a35e4d8da69141, 0xfffffffffccef7c1, 0x07ffffffffffffff]);
+
+        let mut v = Self::S;
+        let mut x = *self * w;
+        let mut b = x * w;
+        let mut z = Self::ROOT_OF_UNITY;
+
+        for max_v in (1..=Self::S).rev() {
+            let mut k = 1;
+            let mut tmp = b.square();
+            let mut j_less_than_v = Choice::from(1);
+
+            for j in 2..max_v {
+                let tmp_is_one = tmp.ct_eq(&Self::ONE);
+                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
+                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
+                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
+                j_less_than_v &= !j.ct_eq(&v);
+                k = u32::conditional_select(&j, &k, tmp_is_one);
+                z = Self::conditional_select(&z, &new_z, j_less_than_v);
+            }
+
+            let result = x * z;
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::ONE));
+            z = z.square();
+            b *= z;
+            v = k;
+        }
+
+        CtOption::new(x, x.square().ct_eq(self))
     }
 
     /// Right shifts the scalar.
@@ -294,7 +327,10 @@ impl TryFrom<U192> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     /// 0xffffffffffffffffffffffff99def836146bc9b1b4d2283
@@ -302,6 +338,6 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar);
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }
