@@ -26,9 +26,12 @@ pub use elliptic_curve::pkcs8;
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     consts::U32,
+    generic_array::{typenum::U33, GenericArray},
     FieldBytesEncoding,
 };
 
+/// Order of SM2's elliptic curve group (i.e. scalar modulus) serialized as
+/// hexadecimal.
 const ORDER_HEX: &str = "fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123";
 
 /// SM2 elliptic curve.
@@ -58,6 +61,12 @@ impl pkcs8::AssociatedOid for Sm2 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.2.156.10197.1.301");
 }
 
+/// Compressed SEC1-encoded curve point.
+pub type CompressedPoint = GenericArray<u8, U33>;
+
+/// SEC1 encoded point.
+pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Sm2>;
+
 /// SM2 field element serialized as bytes.
 ///
 /// Byte array containing a serialized field element value (base field or
@@ -74,7 +83,15 @@ impl FieldBytesEncoding<Sm2> for U256 {
     }
 }
 
-/// SM2 secret key.
+/// Non-zero scalar field element.
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<Sm2>;
+
+/// SM2 public key: wrapper type for an elliptic curve point.
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub type PublicKey = elliptic_curve::PublicKey<Sm2>;
+
+/// SM2 secret key: wrapper point for a secret scalar.
 pub type SecretKey = elliptic_curve::SecretKey<Sm2>;
 
 #[cfg(not(feature = "wip-arithmetic-do-not-use"))]

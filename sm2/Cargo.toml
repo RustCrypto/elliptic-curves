@@ -21,6 +21,9 @@ elliptic-curve = { version = "0.13", default-features = false, features = ["hazm
 # optional dependencies
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
 
+[dev-dependencies]
+hex-literal = "0.4"
+
 [features]
 default = ["pem", "std"]
 alloc = ["elliptic-curve/alloc"]
