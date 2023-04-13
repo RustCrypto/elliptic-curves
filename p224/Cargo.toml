@@ -1,6 +1,6 @@
 [package]
 name = "p224"
-version = "0.13.0"
+version = "0.13.1"
 description = """
 Pure Rust implementation of the NIST P-224 (a.k.a. secp224r1) elliptic curve
 as defined in SP 800-186
@@ -19,18 +19,20 @@ rust-version = "1.65"
 elliptic-curve = { version = "0.13.4", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.16.5", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.16.6", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.4", optional = true }
-primeorder = { version = "0.13", optional = true, path = "../primeorder" }
+primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
+blobby = "0.3"
+ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.4"
 primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
 rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
-default = ["pem", "std"]
+default = ["arithmetic", "ecdsa", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 

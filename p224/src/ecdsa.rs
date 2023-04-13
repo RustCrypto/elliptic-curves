@@ -100,4 +100,19 @@ mod tests {
             )
         );
     }
+
+    mod sign {
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP224};
+        ecdsa_core::new_signing_test!(NistP224, ECDSA_TEST_VECTORS);
+    }
+
+    mod verify {
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP224};
+        ecdsa_core::new_verification_test!(NistP224, ECDSA_TEST_VECTORS);
+    }
+
+    mod wycheproof {
+        use crate::NistP224;
+        ecdsa_core::new_wycheproof_test!(wycheproof, "wycheproof", NistP224);
+    }
 }

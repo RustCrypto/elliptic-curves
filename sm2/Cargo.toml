@@ -1,17 +1,17 @@
 [package]
-name = "p521"
-version = "0.13.0"
+name = "sm2"
+version = "0.0.0"
 description = """
-Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve
-as defined in SP 800-186
+Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
+national standard GM/T 0003-2012 as well as ISO/IEC 14888
 """
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
-documentation = "https://docs.rs/p521"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p521"
+documentation = "https://docs.rs/sm2"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/sm2"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
-keywords = ["crypto", "ecc", "nist", "secp521r1"]
+keywords = ["crypto", "ecc"]
 edition = "2021"
 rust-version = "1.65"
 
@@ -26,7 +26,9 @@ default = ["pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
-jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
-wip-arithmetic-do-not-use = ["primeorder"]
+wip-arithmetic-do-not-use = ["elliptic-curve/arithmetic", "primeorder"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]

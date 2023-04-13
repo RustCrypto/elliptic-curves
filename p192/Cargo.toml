@@ -1,0 +1,41 @@
+[package]
+name = "p192"
+version = "0.0.0"
+description = """
+Pure Rust implementation of the NIST P-192 (a.k.a. secp192r1) elliptic curve
+as defined in SP 800-186
+"""
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/p192"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p192"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "nist", "secp192r1"]
+edition = "2021"
+rust-version = "1.65"
+
+[dependencies]
+elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
+sec1 = { version = "0.7.2", default-features = false }
+
+# optional dependencies
+hex-literal = { version = "0.4", optional = true }
+primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+
+[dev-dependencies]
+hex-literal = "0.4"
+primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
+
+[features]
+default = ["arithmetic", "pem", "std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std"]
+
+arithmetic = ["elliptic-curve/arithmetic", "primeorder"]
+pem = ["elliptic-curve/pem", "pkcs8"]
+pkcs8 = ["elliptic-curve/pkcs8"]
+test-vectors = ["hex-literal"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["--cfg", "docsrs"]

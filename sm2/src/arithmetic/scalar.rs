@@ -1,9 +1,7 @@
-//! secp224r1 scalar field elements.
+//! SM2 scalar field elements.
 
-#![allow(clippy::unusual_byte_groupings)]
-
-#[cfg_attr(target_pointer_width = "32", path = "scalar/p224_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/p224_scalar_64.rs")]
+#[cfg_attr(target_pointer_width = "32", path = "scalar/sm2_scalar_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/sm2_scalar_64.rs")]
 #[allow(
     clippy::identity_op,
     clippy::too_many_arguments,
@@ -12,7 +10,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, NistP224, SecretKey, Uint, ORDER_HEX};
+use crate::{FieldBytes, FieldBytesEncoding, SecretKey, Sm2, ORDER_HEX, U256};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
@@ -42,7 +40,7 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// Much of the important functionality of scalars is provided by traits from
 /// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
-/// `p224::elliptic_curve::ff`:
+/// `sm2::elliptic_curve::ff`:
 ///
 /// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
 ///   represents elements of finite fields and provides:
@@ -60,22 +58,22 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(Uint);
+pub struct Scalar(U256);
 
 primeorder::impl_mont_field_element!(
-    NistP224,
+    Sm2,
     Scalar,
     FieldBytes,
-    Uint,
-    NistP224::ORDER,
-    fiat_p224_scalar_montgomery_domain_field_element,
-    fiat_p224_scalar_from_montgomery,
-    fiat_p224_scalar_to_montgomery,
-    fiat_p224_scalar_add,
-    fiat_p224_scalar_sub,
-    fiat_p224_scalar_mul,
-    fiat_p224_scalar_opp,
-    fiat_p224_scalar_square
+    U256,
+    Sm2::ORDER,
+    fiat_sm2_scalar_montgomery_domain_field_element,
+    fiat_sm2_scalar_from_montgomery,
+    fiat_sm2_scalar_to_montgomery,
+    fiat_sm2_scalar_add,
+    fiat_sm2_scalar_sub,
+    fiat_sm2_scalar_mul,
+    fiat_sm2_scalar_opp,
+    fiat_sm2_scalar_square
 );
 
 impl Scalar {
@@ -91,19 +89,19 @@ impl Scalar {
         let words = primeorder::impl_bernstein_yang_invert!(
             self.0.as_words(),
             Self::ONE.0.to_words(),
-            224,
-            Uint::LIMBS,
+            256,
+            U256::LIMBS,
             Limb,
-            fiat_p224_scalar_from_montgomery,
-            fiat_p224_scalar_mul,
-            fiat_p224_scalar_opp,
-            fiat_p224_scalar_divstep_precomp,
-            fiat_p224_scalar_divstep,
-            fiat_p224_scalar_msat,
-            fiat_p224_scalar_selectznz,
+            fiat_sm2_scalar_from_montgomery,
+            fiat_sm2_scalar_mul,
+            fiat_sm2_scalar_opp,
+            fiat_sm2_scalar_divstep_precomp,
+            fiat_sm2_scalar_divstep,
+            fiat_sm2_scalar_msat,
+            fiat_sm2_scalar_selectznz,
         );
 
-        Self(Uint::from_words(words))
+        Self(U256::from_words(words))
     }
 
     /// Compute modular square root.
@@ -125,8 +123,14 @@ impl AsRef<Scalar> for Scalar {
     }
 }
 
+impl Debug for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Scalar(0x{:X})", &self.0)
+    }
+}
+
 impl FromUintUnchecked for Scalar {
-    type Uint = Uint;
+    type Uint = U256;
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self::from_uint_unchecked(uint)
@@ -143,7 +147,7 @@ impl Invert for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        const MODULUS_SHR1: Uint = NistP224::ORDER.shr_vartime(1);
+        const MODULUS_SHR1: U256 = Sm2::ORDER.shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
     }
 }
@@ -174,19 +178,15 @@ impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
     const MODULUS: &'static str = ORDER_HEX;
-    const CAPACITY: u32 = 223;
-    const NUM_BITS: u32 = 224;
+    const NUM_BITS: u32 = 256;
+    const CAPACITY: u32 = 255;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
-    const S: u32 = 2;
-    #[cfg(target_pointer_width = "32")]
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
+    const S: u32 = 1;
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
-    #[cfg(target_pointer_width = "64")]
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex("00000000317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
+        Self::from_hex("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(16);
+    const DELTA: Self = Self::from_u64(9);
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -206,53 +206,53 @@ impl PrimeField for Scalar {
 
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    type ReprBits = fiat_p224_scalar_montgomery_domain_field_element;
+    type ReprBits = fiat_sm2_scalar_montgomery_domain_field_element;
 
     fn to_le_bits(&self) -> ScalarBits {
         self.to_canonical().to_words().into()
     }
 
     fn char_le_bits() -> ScalarBits {
-        NistP224::ORDER.to_words().into()
+        Sm2::ORDER.to_words().into()
     }
 }
 
-impl Reduce<Uint> for Scalar {
+impl Reduce<U256> for Scalar {
     type Bytes = FieldBytes;
 
-    fn reduce(w: Uint) -> Self {
-        let (r, underflow) = w.sbb(&NistP224::ORDER, Limb::ZERO);
+    fn reduce(w: U256) -> Self {
+        let (r, underflow) = w.sbb(&Sm2::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(Uint::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U256::conditional_select(&w, &r, !underflow))
     }
 
     #[inline]
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        let w = <Uint as FieldBytesEncoding<NistP224>>::decode_field_bytes(bytes);
+        let w = <U256 as FieldBytesEncoding<Sm2>>::decode_field_bytes(bytes);
         Self::reduce(w)
     }
 }
 
-impl From<ScalarPrimitive<NistP224>> for Scalar {
-    fn from(w: ScalarPrimitive<NistP224>) -> Self {
+impl From<ScalarPrimitive<Sm2>> for Scalar {
+    fn from(w: ScalarPrimitive<Sm2>) -> Self {
         Scalar::from(&w)
     }
 }
 
-impl From<&ScalarPrimitive<NistP224>> for Scalar {
-    fn from(w: &ScalarPrimitive<NistP224>) -> Scalar {
+impl From<&ScalarPrimitive<Sm2>> for Scalar {
+    fn from(w: &ScalarPrimitive<Sm2>) -> Scalar {
         Scalar::from_uint_unchecked(*w.as_uint())
     }
 }
 
-impl From<Scalar> for ScalarPrimitive<NistP224> {
-    fn from(scalar: Scalar) -> ScalarPrimitive<NistP224> {
+impl From<Scalar> for ScalarPrimitive<Sm2> {
+    fn from(scalar: Scalar) -> ScalarPrimitive<Sm2> {
         ScalarPrimitive::from(&scalar)
     }
 }
 
-impl From<&Scalar> for ScalarPrimitive<NistP224> {
-    fn from(scalar: &Scalar) -> ScalarPrimitive<NistP224> {
+impl From<&Scalar> for ScalarPrimitive<Sm2> {
+    fn from(scalar: &Scalar) -> ScalarPrimitive<Sm2> {
         ScalarPrimitive::new(scalar.into()).unwrap()
     }
 }
@@ -269,14 +269,14 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-impl From<Scalar> for Uint {
-    fn from(scalar: Scalar) -> Uint {
-        Uint::from(&scalar)
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> U256 {
+        U256::from(&scalar)
     }
 }
 
-impl From<&Scalar> for Uint {
-    fn from(scalar: &Scalar) -> Uint {
+impl From<&Scalar> for U256 {
+    fn from(scalar: &Scalar) -> U256 {
         scalar.to_canonical()
     }
 }
@@ -287,36 +287,31 @@ impl From<&SecretKey> for Scalar {
     }
 }
 
-impl TryFrom<Uint> for Scalar {
+impl TryFrom<U256> for Scalar {
     type Error = Error;
 
-    fn try_from(w: Uint) -> Result<Self> {
+    fn try_from(w: U256) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
-    }
-}
-
-impl Debug for Scalar {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use elliptic_curve::PrimeField;
+    use elliptic_curve::ff::PrimeField;
     use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
+    /// 0x7fffffff7fffffffffffffffffffffffb901efb590e30295a9ddfa049ceaa091
     const T: [u64; 4] = [
-        0x84f74a5157170a8f,
-        0xffffc5a8b82e3c0f,
+        0xa9ddfa049ceaa091,
+        0xb901efb590e30295,
         0xffffffffffffffff,
-        0x000000003fffffff,
+        0x7fffffff7fffffff,
     ];
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): not yet implemented
+    // impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }

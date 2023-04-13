@@ -1,4 +1,4 @@
-# [RustCrypto]: Prime Order Elliptic Curve Formulas
+# [RustCrypto]: SM2 elliptic curve
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -7,26 +7,10 @@
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
 
-Pure Rust implementation of complete addition formulas for prime order elliptic
-curves ([Renes-Costello-Batina 2015]). Generic over field elements and curve
-equation coefficients.
+Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
+national standard [GM/T 0003-2012] as well as [ISO/IEC 14888].
 
 [Documentation][docs-link]
-
-## About
-
-This crate provides a generic implementation of complete formulas for prime
-order elliptic curves which are defined by the short [Weierstrass equation]:
-
-```text
-y² = x³ + ax + b
-```
-
-It's used to implement the following elliptic curves:
-
-- [`p224`]: NIST P-224
-- [`p256`]: NIST P-256
-- [`p384`]: NIST P-384
 
 ## ⚠️ Security Warning
 
@@ -39,6 +23,18 @@ constant-time formulas). However, it has not been thoroughly assessed to ensure
 that generated assembly is constant time on common CPU architectures.
 
 USE AT YOUR OWN RISK!
+
+## About SM2
+
+SM2 is a Weierstrass curve specified in [GM/T 0003-2012]:
+Cryptography Industry Standard of the People's Republic of China.
+
+The SM2 cryptosystem is composed of three distinct algorithms, which are NOT
+yet implemented by this crate:
+
+- [ ] **SM2DSA**: digital signature algorithm defined in [GBT.32918.2-2016], [ISO.IEC.14888-3] (SM2-2)
+- [ ] **SM2KEP**: key exchange protocol defined in [GBT.32918.3-2016] (SM2-3)
+- [ ] **SM2PKE**: public key encryption algorithm defined in [GBT.32918.4-2016] (SM2-4)
 
 ## Minimum Supported Rust Version
 
@@ -54,10 +50,10 @@ done with a minor version bump.
 
 ## License
 
-All crates licensed under either of:
+All crates licensed under either of
 
-- [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
-- [MIT license](http://opensource.org/licenses/MIT)
+ * [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+ * [MIT license](http://opensource.org/licenses/MIT)
 
 at your option.
 
@@ -69,12 +65,12 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/primeorder
-[crate-link]: https://crates.io/crates/primeorder
-[docs-image]: https://docs.rs/primeorder/badge.svg
-[docs-link]: https://docs.rs/primeorder/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/primeorder.yml/badge.svg
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/primeorder.yml
+[crate-image]: https://buildstats.info/crate/sm2
+[crate-link]: https://crates.io/crates/sm2
+[docs-image]: https://docs.rs/sm2/badge.svg
+[docs-link]: https://docs.rs/sm2/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/sm2.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/sm2.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.65+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
@@ -83,8 +79,9 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # (links)
 
 [RustCrypto]: https://github.com/rustcrypto/
-[Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-[Weierstrass equation]: https://crypto.stanford.edu/pbc/notes/elliptic/weier.html
-[`p224`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p224
-[`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
-[`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
+[GM/T 0003-2012]: https://www.chinesestandard.net/PDF.aspx/GMT0003.4-2012
+[GBT.32918.2-2016]: https://www.chinesestandard.net/PDF.aspx/GBT32918.2-2016
+[GBT.32918.3-2016]: https://www.chinesestandard.net/PDF.aspx/GBT32918.3-2016
+[GBT.32918.4-2016]: https://www.chinesestandard.net/PDF.aspx/GBT32918.4-2016
+[ISO/IEC 14888]: https://www.iso.org/standard/76382.html
+[ISO.IEC.14888-3]: https://www.iso.org/standard/76382.html
