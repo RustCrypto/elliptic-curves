@@ -11,6 +11,20 @@
 //!   services or hardware devices (HSM or crypto hardware wallet).
 //! - `ecdsa`: provides `ecdsa-core` features plus [`VerifyingKey`] types
 //!   which natively implement ECDSA/P-192 verification.
+//!
+//! ## Verification only
+//!
+//! Following guidance from [NIST Special Publication 800-131A Revision 2]:
+//! "Transitioning the Use of Cryptographic Algorithms and Key Lengths", this
+//! crate only supports ECDSA verification, not signing.
+//!
+//! From Section 3: Digital Signatures:
+//!
+//! > ECDSA: See FIPS 186-238 and FIPS 186-4, which include specifications of
+//! > elliptic curves that may continue to be used for signature verification but not
+//! > signature generation: B-163, K-163 and P-192.
+//!
+//! [NIST Special Publication 800-131A Revision 2]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf
 
 pub use ecdsa_core::signature::{self, Error};
 #[cfg(feature = "ecdsa")]
