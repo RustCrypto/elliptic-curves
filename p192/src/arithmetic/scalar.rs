@@ -323,6 +323,26 @@ impl TryFrom<U192> for Scalar {
     }
 }
 
+#[cfg(feature = "serde")]
+impl Serialize for Scalar {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        ScalarPrimitive::from(self).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Scalar {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Scalar;
