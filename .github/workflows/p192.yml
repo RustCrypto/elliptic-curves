@@ -39,7 +39,8 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc,arithmetic,pkcs8
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc,arithmetic,pkcs8,serde
 
   test:
     runs-on: ubuntu-latest

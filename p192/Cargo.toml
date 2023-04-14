@@ -22,6 +22,7 @@ sec1 = { version = "0.7.2", default-features = false }
 # optional dependencies
 hex-literal = { version = "0.4", optional = true }
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+serdect = { version = "0.2", optional = true, default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.4"
@@ -35,6 +36,7 @@ std = ["alloc", "elliptic-curve/std"]
 arithmetic = ["elliptic-curve/arithmetic", "primeorder"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
+serde = ["elliptic-curve/serde", "primeorder/serde", "serdect"]
 test-vectors = ["hex-literal"]
 
 [package.metadata.docs.rs]

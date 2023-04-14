@@ -716,6 +716,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "sec1",
+ "serdect",
 ]
 
 [[package]]
@@ -728,6 +729,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "rand_core",
+ "serdect",
  "sha2",
 ]
 
