@@ -39,10 +39,7 @@
 
 pub use ecdsa_core::signature::{self, Error};
 #[cfg(feature = "ecdsa")]
-use {
-    crate::{AffinePoint, Scalar},
-    ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-};
+use {crate::AffinePoint, ecdsa_core::hazmat::VerifyPrimitive};
 
 use super::NistP192;
 
@@ -59,9 +56,6 @@ pub type SigningKey = ecdsa_core::SigningKey<NistP192>;
 /// ECDSA/P-192 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP192>;
-
-#[cfg(feature = "ecdsa")]
-impl SignPrimitive<NistP192> for Scalar {}
 
 #[cfg(feature = "ecdsa")]
 impl VerifyPrimitive<NistP192> for AffinePoint {}
