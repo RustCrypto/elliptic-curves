@@ -21,13 +21,17 @@ considered too weak for modern usage.
 
 For more information, see:
 [NIST Special Publication 800-131A Revision 2]:
-Transitioning the Use of Cryptographic Algorithms and Key Lengths:
+"Transitioning the Use of Cryptographic Algorithms and Key Lengths":
 
 > ECDSA and EdDSA: The security strength provided by an elliptic-curve-based
 > signature algorithm is no greater than 1/2 of the length of the domain
 > parameter n. Therefore, the length of n shall be at least 224 bits to meet
 > the minimum security-strength requirement of 112 bits for Federal
 > Government use.
+
+Following the recommendations from this document, this crate only provides
+public-key operations intended for legacy interop purposes. There is
+deliberately no `SecretKey`, ECDH support, or ECDSA `SigningKey`.
 
 ### Unaudited!
 
