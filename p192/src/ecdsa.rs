@@ -20,9 +20,14 @@
 //!
 //! From Section 3: Digital Signatures:
 //!
-//! > ECDSA: See FIPS 186-238 and FIPS 186-4, which include specifications of
-//! > elliptic curves that may continue to be used for signature verification but not
-//! > signature generation: B-163, K-163 and P-192.
+//! > <112 bits of security strength: ECDSA: len(n) < 224
+//! >
+//! > [...]
+//! >
+//! > Digital signature generation:
+//! >
+//! > Private-key lengths providing less than 112 bits of security **shall not** be used to
+//! > generate digital signatures.
 //!
 //! [NIST Special Publication 800-131A Revision 2]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf
 
