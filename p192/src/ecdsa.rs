@@ -9,7 +9,7 @@
 //!   interoperability purposes. Example use cases for this include other
 //!   software implementations of ECDSA/P-192 and wrappers for cloud KMS
 //!   services or hardware devices (HSM or crypto hardware wallet).
-//! - `ecdsa`: provides `ecdsa-core` features plus [`VerifyingKey`] types 
+//! - `ecdsa`: provides `ecdsa-core` features plus [`VerifyingKey`] types
 //!   which natively implement ECDSA/P-192 verification.
 
 pub use ecdsa_core::signature::{self, Error};
