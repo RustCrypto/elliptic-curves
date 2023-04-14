@@ -30,7 +30,7 @@ For more information, see:
 > Government use.
 
 Following the recommendations from this document, this crate only provides
-public-key operations intended for legacy interop purposes. There is
+public key operations intended for legacy interop purposes. There is
 deliberately no `SecretKey`, ECDH support, or ECDSA `SigningKey`.
 
 ### Unaudited!
