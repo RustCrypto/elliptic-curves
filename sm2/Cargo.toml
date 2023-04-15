@@ -1,9 +1,10 @@
 [package]
 name = "sm2"
-version = "0.0.0"
+version = "0.13.0"
 description = """
 Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
-national standard GM/T 0003-2012 as well as ISO/IEC 14888
+national standard GM/T 0003-2012 as well as ISO/IEC 14888. Includes support for
+the SM2DSA Digital Signature Algorithm.
 """
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -11,7 +12,7 @@ documentation = "https://docs.rs/sm2"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/sm2"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
-keywords = ["crypto", "ecc", "shangmi"]
+keywords = ["crypto", "ecc", "shangmi", "signature"]
 edition = "2021"
 rust-version = "1.65"
 
