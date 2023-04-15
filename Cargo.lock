@@ -1128,6 +1128,20 @@ dependencies = [
  "elliptic-curve",
  "hex-literal",
  "primeorder",
+ "proptest",
+ "rand_core",
+ "rfc6979",
+ "signature",
+ "sm3",
+]
+
+[[package]]
+name = "sm3"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f943a7c5e3089f2bd046221d1e9f4fa59396bf0fe966360983649683086215da"
+dependencies = [
+ "digest",
 ]
 
 [[package]]

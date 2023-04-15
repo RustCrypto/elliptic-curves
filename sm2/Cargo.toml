@@ -20,16 +20,23 @@ elliptic-curve = { version = "0.13", default-features = false, features = ["hazm
 
 # optional dependencies
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+rfc6979 = { version = "0.4", optional = true }
+signature = { version = "2", optional = true }
+sm3 = { version = "0.4", optional = true, default-features = false }
 
 [dev-dependencies]
 hex-literal = "0.4"
+proptest = "1"
+rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
 default = ["arithmetic", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
-std = ["alloc", "elliptic-curve/std"]
+std = ["alloc", "elliptic-curve/std", "signature?/std"]
 
-arithmetic = ["elliptic-curve/arithmetic", "primeorder"]
+arithmetic = ["elliptic-curve/arithmetic", "dep:primeorder"]
+dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]
+getrandom = ["rand_core/getrandom"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 
