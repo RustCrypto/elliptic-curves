@@ -1,6 +1,6 @@
 [package]
 name = "sm2"
-version = "0.13.0"
+version = "0.13.1"
 description = """
 Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
 national standard GM/T 0003-2012 as well as ISO/IEC 14888. Includes support for
