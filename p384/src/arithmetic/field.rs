@@ -1,7 +1,6 @@
 //! Field arithmetic modulo p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
 //!
-//! Arithmetic implementations are extracted Rust code from the Coq fiat-crypto
-//! libraries.
+//! Arithmetic implementations have been synthesized using fiat-crypto.
 //!
 //! # License
 //!
