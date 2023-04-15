@@ -15,7 +15,9 @@
 #![allow(non_snake_case)]
 
 use super::{Signature, VerifyingKey};
-use crate::{FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey, Sm2};
+use crate::{
+    DistId, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey, Sm2,
+};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
     generic_array::typenum::Unsigned,
@@ -48,26 +50,26 @@ pub struct SigningKey {
 impl SigningKey {
     /// Create signing key from a signer's distinguishing identifier and
     /// secret key.
-    pub fn new(dist_id: &str, secret_key: &SecretKey) -> Result<Self> {
-        Self::from_nonzero_scalar(dist_id, secret_key.to_nonzero_scalar())
+    pub fn new(distid: &DistId, secret_key: &SecretKey) -> Result<Self> {
+        Self::from_nonzero_scalar(distid, secret_key.to_nonzero_scalar())
     }
 
     /// Parse signing key from big endian-encoded bytes.
-    pub fn from_bytes(dist_id: &str, bytes: &FieldBytes) -> Result<Self> {
-        Self::from_slice(dist_id, bytes)
+    pub fn from_bytes(distid: &DistId, bytes: &FieldBytes) -> Result<Self> {
+        Self::from_slice(distid, bytes)
     }
 
     /// Parse signing key from big endian-encoded byte slice containing a secret
     /// scalar value.
-    pub fn from_slice(dist_id: &str, slice: &[u8]) -> Result<Self> {
+    pub fn from_slice(distid: &DistId, slice: &[u8]) -> Result<Self> {
         let secret_scalar = NonZeroScalar::try_from(slice).map_err(|_| Error::new())?;
-        Self::from_nonzero_scalar(dist_id, secret_scalar)
+        Self::from_nonzero_scalar(distid, secret_scalar)
     }
 
     /// Create a signing key from a non-zero scalar.
-    pub fn from_nonzero_scalar(dist_id: &str, secret_scalar: NonZeroScalar) -> Result<Self> {
+    pub fn from_nonzero_scalar(distid: &DistId, secret_scalar: NonZeroScalar) -> Result<Self> {
         let public_key = PublicKey::from_secret_scalar(&secret_scalar);
-        let verifying_key = VerifyingKey::new(dist_id, public_key)?;
+        let verifying_key = VerifyingKey::new(distid, public_key)?;
         Ok(Self {
             secret_scalar,
             verifying_key,
@@ -97,8 +99,8 @@ impl SigningKey {
 
     /// Get the distinguishing identifier for this key.
     #[cfg(feature = "alloc")]
-    pub fn dist_id(&self) -> &str {
-        self.verifying_key.dist_id()
+    pub fn distid(&self) -> &DistId {
+        self.verifying_key.distid()
     }
 }
 
