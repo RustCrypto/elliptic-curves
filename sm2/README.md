@@ -29,10 +29,9 @@ USE AT YOUR OWN RISK!
 ShangMi 2 (SM2) is a Weierstrass curve specified in [GM/T 0003-2012]:
 Cryptography Industry Standard of the People's Republic of China.
 
-The SM2 cryptosystem is composed of three distinct algorithms, which are NOT
-yet implemented by this crate:
+The SM2 cryptosystem is composed of three distinct algorithms:
 
-- [ ] **SM2DSA**: digital signature algorithm defined in [GBT.32918.2-2016], [ISO.IEC.14888-3] (SM2-2)
+- [x] **SM2DSA**: digital signature algorithm defined in [GBT.32918.2-2016], [ISO.IEC.14888-3] (SM2-2)
 - [ ] **SM2KEP**: key exchange protocol defined in [GBT.32918.3-2016] (SM2-3)
 - [ ] **SM2PKE**: public key encryption algorithm defined in [GBT.32918.4-2016] (SM2-4)
 

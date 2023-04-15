@@ -1,12 +1,17 @@
 //! SM2 scalar field elements.
 
-#[cfg_attr(target_pointer_width = "32", path = "scalar/sm2_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/sm2_scalar_64.rs")]
-#[allow(
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
     clippy::identity_op,
+    clippy::integer_arithmetic,
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
+
+#[cfg_attr(target_pointer_width = "32", path = "scalar/sm2_scalar_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/sm2_scalar_64.rs")]
 mod scalar_impl;
 
 use self::scalar_impl::*;

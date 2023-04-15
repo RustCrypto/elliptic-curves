@@ -8,6 +8,16 @@
 #![forbid(unsafe_code)]
 #![warn(
     clippy::mod_module_files,
+    clippy::cast_lossless,
+    clippy::cast_possible_truncation,
+    clippy::cast_possible_wrap,
+    clippy::cast_precision_loss,
+    clippy::cast_sign_loss,
+    clippy::checked_conversions,
+    clippy::implicit_saturating_sub,
+    clippy::integer_arithmetic,
+    clippy::panic,
+    clippy::panic_in_result_fn,
     clippy::unwrap_used,
     missing_docs,
     rust_2018_idioms,
@@ -15,10 +25,17 @@
     unused_qualifications
 )]
 
+#[cfg(feature = "alloc")]
+#[allow(unused_extern_crates)]
+extern crate alloc;
+
+#[cfg(feature = "dsa")]
+pub mod dsa;
+
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
-pub use elliptic_curve;
+pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
@@ -27,7 +44,7 @@ pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
-    bigint::{ArrayEncoding, U256},
+    bigint::ArrayEncoding,
     consts::U32,
     generic_array::{typenum::U33, GenericArray},
     FieldBytesEncoding,

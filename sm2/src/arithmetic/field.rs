@@ -11,6 +11,10 @@
 //! users may pick which license to apply.
 
 #![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    clippy::integer_arithmetic,
     clippy::should_implement_trait,
     clippy::suspicious_op_assign_impl,
     clippy::unused_unit,
