@@ -1,4 +1,14 @@
 //! secp224r1 scalar field elements.
+//!
+//! Arithmetic implementations have been synthesized using fiat-crypto.
+//!
+//! # License
+//!
+//! Copyright (c) 2015-2020 the fiat-crypto authors
+//!
+//! fiat-crypto is distributed under the terms of the MIT License, the
+//! Apache License (Version 2.0), and the BSD 1-Clause License;
+//! users may pick which license to apply.
 
 #![allow(clippy::unusual_byte_groupings)]
 
