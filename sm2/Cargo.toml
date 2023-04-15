@@ -44,4 +44,5 @@ pkcs8 = ["elliptic-curve/pkcs8"]
 serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
 
 [package.metadata.docs.rs]
+all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

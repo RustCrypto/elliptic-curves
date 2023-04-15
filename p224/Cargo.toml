@@ -48,4 +48,5 @@ sha224 = ["digest", "sha2"]
 test-vectors = ["dep:hex-literal"]
 
 [package.metadata.docs.rs]
+all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
