@@ -1131,6 +1131,7 @@ dependencies = [
  "proptest",
  "rand_core",
  "rfc6979",
+ "serdect",
  "signature",
  "sm3",
 ]
