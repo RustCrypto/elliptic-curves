@@ -59,6 +59,14 @@ use core::ops::{Add, Mul, Sub};
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
+///
+/// # Warning: `sqrt` unimplemented!
+///
+/// `Scalar::sqrt` has not been implemented and will panic if invoked!
+///
+/// See [RustCrypto/elliptic-curves#847] for more info.
+///
+/// [RustCrypto/elliptic-curves#847]: https://github.com/RustCrypto/elliptic-curves/issues/847
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(Uint);
 
