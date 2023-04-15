@@ -1,6 +1,6 @@
 [package]
 name = "p192"
-version = "0.0.0"
+version = "0.13.0"
 description = """
 Pure Rust implementation of the NIST P-192 (a.k.a. secp192r1) elliptic curve
 as defined in SP 800-186
