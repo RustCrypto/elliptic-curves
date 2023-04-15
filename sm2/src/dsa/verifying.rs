@@ -12,16 +12,18 @@
 //! B7: calculate R=(e'+x1') modn, verification pass if yes, otherwise failed
 //! ```
 
-use super::{Hash, Signature};
-use crate::{AffinePoint, EncodedPoint, FieldBytes, ProjectivePoint, PublicKey, Scalar, Sm2};
+use super::Signature;
+use crate::{
+    distid::hash_z, AffinePoint, DistId, EncodedPoint, FieldBytes, Hash, ProjectivePoint,
+    PublicKey, Scalar, Sm2,
+};
 use elliptic_curve::{
     generic_array::typenum::Unsigned,
     ops::{LinearCombination, Reduce},
     point::AffineCoordinates,
-    sec1::{self, ToEncodedPoint},
+    sec1::ToEncodedPoint,
     Curve, Group,
 };
-use primeorder::PrimeCurveParams;
 use signature::{hazmat::PrehashVerifier, Error, Result, Verifier};
 use sm3::{digest::Digest, Sm3};
 
@@ -57,58 +59,36 @@ pub struct VerifyingKey {
 
     /// Distinguishing identifier used to compute `Z`.
     #[cfg(feature = "alloc")]
-    dist_id: String,
+    distid: String,
 }
 
 impl VerifyingKey {
     /// Initialize [`VerifyingKey`] from a signer's distinguishing identifier
     /// and public key.
-    pub fn new(dist_id: &str, public_key: PublicKey) -> Result<Self> {
-        let entla: u16 = dist_id
-            .len()
-            .checked_mul(8)
-            .and_then(|l| l.try_into().ok())
-            .ok_or_else(Error::new)?;
+    pub fn new(distid: &DistId, public_key: PublicKey) -> Result<Self> {
+        let identity_hash = hash_z(distid, &public_key).map_err(|_| Error::new())?;
 
-        // Compute user information hash `Z` according to draft-shen-sm2-ecdsa § 5.1.4.4.
-        //
-        // ZA=H256(ENTLA || IDA || a || b || xG || yG || xA || yA)
-        let mut sm3 = Sm3::new();
-        sm3.update(entla.to_be_bytes());
-        sm3.update(dist_id);
-        sm3.update(Sm2::EQUATION_A.to_bytes());
-        sm3.update(Sm2::EQUATION_B.to_bytes());
-        sm3.update(Sm2::GENERATOR.0.to_bytes());
-        sm3.update(Sm2::GENERATOR.1.to_bytes());
-
-        match public_key.to_encoded_point(false).coordinates() {
-            sec1::Coordinates::Uncompressed { x, y } => {
-                sm3.update(x);
-                sm3.update(y);
-                Ok(Self {
-                    identity_hash: sm3.finalize(),
-                    public_key,
-                    #[cfg(feature = "alloc")]
-                    dist_id: dist_id.into(),
-                })
-            }
-            _ => Err(Error::new()),
-        }
+        Ok(Self {
+            identity_hash,
+            public_key,
+            #[cfg(feature = "alloc")]
+            distid: distid.into(),
+        })
     }
 
     /// Initialize [`VerifyingKey`] from a SEC1-encoded public key.
-    pub fn from_sec1_bytes(dist_id: &str, bytes: &[u8]) -> Result<Self> {
+    pub fn from_sec1_bytes(distid: &DistId, bytes: &[u8]) -> Result<Self> {
         let public_key = PublicKey::from_sec1_bytes(bytes).map_err(|_| Error::new())?;
-        Self::new(dist_id, public_key)
+        Self::new(distid, public_key)
     }
 
     /// Initialize [`VerifyingKey`] from an affine point.
     ///
     /// Returns an [`Error`] if the given affine point is the additive identity
     /// (a.k.a. point at infinity).
-    pub fn from_affine(dist_id: &str, affine: AffinePoint) -> Result<Self> {
+    pub fn from_affine(distid: &DistId, affine: AffinePoint) -> Result<Self> {
         let public_key = PublicKey::from_affine(affine).map_err(|_| Error::new())?;
-        Self::new(dist_id, public_key)
+        Self::new(distid, public_key)
     }
 
     /// Borrow the inner [`AffinePoint`] for this public key.
@@ -118,8 +98,8 @@ impl VerifyingKey {
 
     /// Get the distinguishing identifier for this key.
     #[cfg(feature = "alloc")]
-    pub fn dist_id(&self) -> &str {
-        self.dist_id.as_str()
+    pub fn distid(&self) -> &DistId {
+        self.distid.as_str()
     }
 
     /// Convert this [`VerifyingKey`] into the

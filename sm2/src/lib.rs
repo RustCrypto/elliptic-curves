@@ -34,6 +34,8 @@ pub mod dsa;
 
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
+#[cfg(feature = "dsa")]
+mod distid;
 
 pub use elliptic_curve::{self, bigint::U256};
 
@@ -50,9 +52,16 @@ use elliptic_curve::{
     FieldBytesEncoding,
 };
 
+#[cfg(feature = "dsa")]
+use crate::distid::DistId;
+
 /// Order of SM2's elliptic curve group (i.e. scalar modulus) serialized as
 /// hexadecimal.
 const ORDER_HEX: &str = "fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54123";
+
+/// SM3 hash output.
+#[cfg(feature = "dsa")]
+type Hash = sm3::digest::Output<sm3::Sm3>;
 
 /// SM2 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]

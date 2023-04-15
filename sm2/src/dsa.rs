@@ -16,8 +16,8 @@
 //!
 //! // Signing
 //! let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
-//! let dist_id = "example@rustcrypto.org"; // distinguishing identifier
-//! let signing_key = SigningKey::new(dist_id, &secret_key)?;
+//! let distid = "example@rustcrypto.org"; // distinguishing identifier
+//! let signing_key = SigningKey::new(distid, &secret_key)?;
 //! let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();
 //! let message = b"test message";
 //! let signature: Signature = signing_key.sign(message);
@@ -25,7 +25,7 @@
 //! // Verifying
 //! use sm2::dsa::{VerifyingKey, signature::Verifier};
 //!
-//! let verifying_key = VerifyingKey::from_sec1_bytes(dist_id, &verifying_key_bytes)?;
+//! let verifying_key = VerifyingKey::from_sec1_bytes(distid, &verifying_key_bytes)?;
 //! verifying_key.verify(message, &signature)?;
 //! # Ok(())
 //! # }
@@ -53,9 +53,6 @@ use alloc::vec::Vec;
 
 /// SM2DSA signature serialized as bytes.
 pub type SignatureBytes = [u8; Signature::BYTE_SIZE];
-
-/// SM3 hash output.
-type Hash = sm3::digest::Output<sm3::Sm3>;
 
 /// Primitive scalar type (works without the `arithmetic` feature).
 type ScalarPrimitive = elliptic_curve::ScalarPrimitive<Sm2>;
