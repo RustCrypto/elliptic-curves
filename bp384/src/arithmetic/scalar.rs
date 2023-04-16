@@ -37,7 +37,7 @@ use elliptic_curve::{
 use core::ops::{Add, Mul, Sub};
 
 /// Element of the brainpoolP384's scalar field.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(pub(super) U384);
 
 impl Scalar {
