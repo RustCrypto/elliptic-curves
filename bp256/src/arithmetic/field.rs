@@ -286,7 +286,7 @@ mod tests {
     use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
-    /// 0x54fdabedd0f754de1f3305484ec1c6b9371dfb11ea9310141009a40e8fb729bb'
+    /// 0x54fdabedd0f754de1f3305484ec1c6b9371dfb11ea9310141009a40e8fb729bb
     const T: [u64; 4] = [
         0x1009a40e8fb729bb,
         0x371dfb11ea931014,
