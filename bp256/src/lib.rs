@@ -18,13 +18,13 @@
 pub mod r1;
 pub mod t1;
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 mod arithmetic;
 
 pub use crate::{r1::BrainpoolP256r1, t1::BrainpoolP256t1};
 pub use elliptic_curve::{self, bigint::U256};
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub use crate::arithmetic::scalar::Scalar;
 
 #[cfg(feature = "pkcs8")]
@@ -32,7 +32,7 @@ pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::generic_array::{typenum::U32, GenericArray};
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub(crate) use crate::arithmetic::field::FieldElement;
 
 /// Byte representation of a base/scalar field element of a given curve.

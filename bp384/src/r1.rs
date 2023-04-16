@@ -3,10 +3,10 @@
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 mod arithmetic;
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub use {
     self::arithmetic::{AffinePoint, ProjectivePoint},
     crate::Scalar,
@@ -70,5 +70,5 @@ impl FieldBytesEncoding<BrainpoolP384r1> for U384 {
 /// brainpoolP384r1 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<BrainpoolP384r1>;
 
-#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
+#[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for BrainpoolP384r1 {}
