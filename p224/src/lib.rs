@@ -118,4 +118,4 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP224 {}
 
 /// Bit representation of a NIST P-224 scalar field element.
 #[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::ScalarBits<NistP224>;
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP224>;

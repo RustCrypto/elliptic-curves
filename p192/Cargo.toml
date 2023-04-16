@@ -36,6 +36,7 @@ alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
 arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
+bits = ["arithmetic", "elliptic-curve/bits"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying"]
 pem = ["elliptic-curve/pem", "pkcs8"]
