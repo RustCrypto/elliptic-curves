@@ -217,7 +217,7 @@ impl Scalar {
     pub fn sqrt(&self) -> CtOption<Self> {
         // Because n ≡ 3 mod 4 for brainpoolP256's scalar field modulus, sqrt
         // can be implemented with only one exponentiation via the computation
-        // of self^((p + 1) // 4) (mod p).
+        // of self^((n + 1) // 4) (mod n).
         let sqrt = self.pow_vartime(&[
             0xe40783a0a5d215aa,
             0x630e5ea8ed5869bd,
