@@ -201,7 +201,16 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not implemented")
+        // Because p ≡ 3 mod 4 for brainpoolP256's base field modulus, sqrt can
+        // be implemented with only one exponentiation via the computation of
+        // self^((p + 1) // 4) (mod p).
+        let sqrt = self.pow_vartime(&[
+            0x0804d20747db94de,
+            0x9b8efd88f549880a,
+            0x0f9982a42760e35c,
+            0x2a7ed5f6e87baa6f,
+        ]);
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
@@ -283,7 +292,10 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     /// 0x54fdabedd0f754de1f3305484ec1c6b9371dfb11ea9310141009a40e8fb729bb
@@ -296,6 +308,6 @@ mod tests {
 
     impl_field_identity_tests!(FieldElement);
     impl_field_invert_tests!(FieldElement);
-    //impl_field_sqrt_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
 }

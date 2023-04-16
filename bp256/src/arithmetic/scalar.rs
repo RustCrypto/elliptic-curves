@@ -212,10 +212,19 @@ impl Scalar {
         res
     }
 
-    /// Returns the square root of self mod p, or `None` if no square root
+    /// Returns the square root of self mod n, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not implemented")
+        // Because n ≡ 3 mod 4 for brainpoolP256's scalar field modulus, sqrt
+        // can be implemented with only one exponentiation via the computation
+        // of self^((p + 1) // 4) (mod p).
+        let sqrt = self.pow_vartime(&[
+            0xe40783a0a5d215aa,
+            0x630e5ea8ed5869bd,
+            0x0f9982a42760e35c,
+            0x2a7ed5f6e87baa6f,
+        ]);
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 
     /// Compute [`Scalar`] inversion: `1 / self`.
@@ -395,7 +404,10 @@ impl TryFrom<U256> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     /// 0x54fdabedd0f754de1f3305484ec1c6b8c61cbd51dab0d37bc80f07414ba42b53
@@ -408,6 +420,6 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar);
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }
