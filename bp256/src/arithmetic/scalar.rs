@@ -36,8 +36,8 @@ use elliptic_curve::{
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
 
-/// Element of the brainpoolP256's scalar field.
-#[derive(Clone, Copy)]
+/// Element of brainpoolP256's scalar field.
+#[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(pub(super) U256);
 
 impl Scalar {
