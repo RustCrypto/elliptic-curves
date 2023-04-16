@@ -256,11 +256,12 @@ impl PrimeField for FieldElement {
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::ZERO; // TODO
-    const S: u32 = 0; // TODO
-    const ROOT_OF_UNITY: Self = Self::ZERO; // TODO
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO
-    const DELTA: Self = Self::ZERO; // TODO
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(11);
+    const S: u32 = 1;
+    const ROOT_OF_UNITY: Self =
+        Self::from_hex("a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5376");
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
+    const DELTA: Self = Self::from_u64(121);
 
     #[inline]
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
@@ -276,4 +277,25 @@ impl PrimeField for FieldElement {
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+
+    /// t = (modulus - 1) >> S
+    /// 0x54fdabedd0f754de1f3305484ec1c6b9371dfb11ea9310141009a40e8fb729bb'
+    const T: [u64; 4] = [
+        0x1009a40e8fb729bb,
+        0x371dfb11ea931014,
+        0x1f3305484ec1c6b9,
+        0x54fdabedd0f754de,
+    ];
+
+    impl_field_identity_tests!(FieldElement);
+    impl_field_invert_tests!(FieldElement);
+    //impl_field_sqrt_tests!(FieldElement);
+    impl_primefield_tests!(FieldElement, T);
 }
