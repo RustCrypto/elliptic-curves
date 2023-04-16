@@ -3,6 +3,7 @@
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
 
+use crate::ORDER;
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     consts::U32,
@@ -24,8 +25,7 @@ impl elliptic_curve::Curve for BrainpoolP256t1 {
     type Uint = U256;
 
     /// Curve order
-    const ORDER: U256 =
-        U256::from_be_hex("a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7");
+    const ORDER: U256 = ORDER;
 }
 
 impl elliptic_curve::PrimeCurve for BrainpoolP256t1 {}
