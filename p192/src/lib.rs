@@ -95,4 +95,4 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP192 {}
 
 /// Bit representation of a NIST P-192 scalar field element.
 #[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::ScalarBits<NistP192>;
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP192>;
