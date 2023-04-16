@@ -261,6 +261,25 @@ macro_rules! impl_mont_field_element {
             }
         }
 
+        $crate::impl_mont_field_element_arithmetic!(
+            $fe, $bytes, $uint, $arr, $add, $sub, $mul, $neg
+        );
+    };
+}
+
+/// Add arithmetic impls to the given field element.
+#[macro_export]
+macro_rules! impl_mont_field_element_arithmetic {
+    (
+        $fe:tt,
+        $bytes:ty,
+        $uint:ty,
+        $arr:ty,
+        $add:ident,
+        $sub:ident,
+        $mul:ident,
+        $neg:ident
+    ) => {
         impl AsRef<$arr> for $fe {
             fn as_ref(&self) -> &$arr {
                 self.0.as_ref()
@@ -491,7 +510,7 @@ macro_rules! impl_bernstein_yang_invert {
         $d:expr,
         $nlimbs:expr,
         $word:ty,
-        $from_montgomery:ident,
+        $from_mont:ident,
         $mul:ident,
         $neg:ident,
         $divstep_precomp:ident,
@@ -502,7 +521,7 @@ macro_rules! impl_bernstein_yang_invert {
         // See Bernstein-Yang 2019 p.366
         const ITERATIONS: usize = (49 * $d + 57) / 17;
 
-        let a = $from_montgomery($a);
+        let a = $from_mont($a);
         let mut d = 1;
         let mut f = $msat();
         let mut g = [0; $nlimbs + 1];
