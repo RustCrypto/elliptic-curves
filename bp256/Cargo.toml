@@ -1,6 +1,6 @@
 [package]
 name = "bp256"
-version = "0.6.0"
+version = "0.6.1"
 description = "Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
