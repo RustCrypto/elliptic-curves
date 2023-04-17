@@ -37,13 +37,12 @@ jobs:
           targets: ${{ matrix.target }}
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha384
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,ecdsa,pem,pkcs8,serde,sha384
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,pem,pkcs8,serde,sha384
 
   test:
     runs-on: ubuntu-latest

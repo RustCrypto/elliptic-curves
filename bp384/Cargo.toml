@@ -25,11 +25,11 @@ default = ["pkcs8", "std"]
 alloc = ["ecdsa?/alloc", "elliptic-curve/alloc"]
 std = ["alloc", "ecdsa?/std", "elliptic-curve/std"]
 
-arithmetic = ["dep:primeorder"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
-serde = ["ecdsa/serde", "elliptic-curve/serde", "primeorder?/serde"]
+serde = ["ecdsa/serde", "elliptic-curve/serde"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+wip-arithmetic-do-not-use = ["dep:primeorder"]
 
 [package.metadata.docs.rs]
 all-features = true
