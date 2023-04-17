@@ -26,7 +26,7 @@ impl PrimeCurveArithmetic for BrainpoolP256r1 {
 
 impl PrimeCurveParams for BrainpoolP256r1 {
     type FieldElement = FieldElement;
-    type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
+    type PointArithmetic = point_arithmetic::EquationAIsGeneric;
 
     const EQUATION_A: FieldElement =
         FieldElement::from_hex("7d5a0975fc2c3057eef67530417affe7fb8055c126dc5c6ce94a4b44f330b5d9");
