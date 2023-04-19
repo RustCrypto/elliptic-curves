@@ -9,9 +9,9 @@
 
 [secp256k1] (a.k.a. K-256) elliptic curve library written in pure Rust with
 support for [ECDSA] signing/verification/public-key recovery, Taproot
-[Schnorr signatures], Elliptic Curve Diffie-Hellman (ECDH), and general-purpose
-secp256k1 elliptic curve group operations which can be used to implement
-arbitrary group-based protocols.
+[Schnorr signatures] as defined in BIP340, Elliptic Curve Diffie-Hellman (ECDH),
+and general-purpose secp256k1 elliptic curve group operations which can be used
+to implement arbitrary group-based protocols.
 
 Uses traits and base types from the [`elliptic-curve`] crate.
 

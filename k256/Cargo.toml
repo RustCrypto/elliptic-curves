@@ -3,7 +3,7 @@ name = "k256"
 version = "0.13.1"
 description = """
 secp256k1 elliptic curve library written in pure Rust with support for ECDSA
-signing/verification/public-key recovery, Taproot Schnorr signatures,
+signing/verification/public-key recovery, Taproot Schnorr signatures (BIP340),
 Elliptic Curve Diffie-Hellman (ECDH), and general-purpose secp256k1 elliptic
 curve group operations which can be used to implement arbitrary protocols
 """
