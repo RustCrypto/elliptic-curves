@@ -1,6 +1,6 @@
 [package]
 name = "primeorder"
-version = "0.13.0"
+version = "0.13.1"
 description = """
 Pure Rust implementation of complete addition formulas for prime order elliptic
 curves (Renes-Costello-Batina 2015). Generic over field elements and curve
@@ -24,6 +24,8 @@ serdect = { version = "0.2", optional = true, default-features = false }
 
 [features]
 std = ["elliptic-curve/std"]
+
+dev = []
 serde = ["elliptic-curve/serde", "serdect"]
 
 [package.metadata.docs.rs]

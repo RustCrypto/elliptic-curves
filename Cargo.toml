@@ -5,11 +5,13 @@ members = [
     "bp256",
     "bp384",
     "k256",
+    "p192",
     "p224",
     "p256",
     "p384",
     "p521",
-    "primeorder"
+    "primeorder",
+    "sm2"
 ]
 
 [profile.dev]

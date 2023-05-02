@@ -24,6 +24,7 @@ y² = x³ + ax + b
 
 It's used to implement the following elliptic curves:
 
+- [`p224`]: NIST P-224
 - [`p256`]: NIST P-256
 - [`p384`]: NIST P-384
 
@@ -84,5 +85,6 @@ dual licensed as above, without any additional terms or conditions.
 [RustCrypto]: https://github.com/rustcrypto/
 [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
 [Weierstrass equation]: https://crypto.stanford.edu/pbc/notes/elliptic/weier.html
+[`p224`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p224
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
 [`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256

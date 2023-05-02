@@ -11,6 +11,8 @@
 pub mod point_arithmetic;
 
 mod affine;
+#[cfg(feature = "dev")]
+mod dev;
 mod field;
 mod projective;
 

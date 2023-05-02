@@ -1,4 +1,14 @@
 //! secp224r1 scalar field elements.
+//!
+//! Arithmetic implementations have been synthesized using fiat-crypto.
+//!
+//! # License
+//!
+//! Copyright (c) 2015-2020 the fiat-crypto authors
+//!
+//! fiat-crypto is distributed under the terms of the MIT License, the
+//! Apache License (Version 2.0), and the BSD 1-Clause License;
+//! users may pick which license to apply.
 
 #![allow(clippy::unusual_byte_groupings)]
 
@@ -26,7 +36,6 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     Curve as _, Error, Result, ScalarPrimitive,
 };
-use primeorder::impl_bernstein_yang_invert;
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -60,6 +69,14 @@ use core::ops::{Add, Mul, Sub};
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
+///
+/// # Warning: `sqrt` unimplemented!
+///
+/// `Scalar::sqrt` has not been implemented and will panic if invoked!
+///
+/// See [RustCrypto/elliptic-curves#847] for more info.
+///
+/// [RustCrypto/elliptic-curves#847]: https://github.com/RustCrypto/elliptic-curves/issues/847
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(Uint);
 
@@ -89,7 +106,7 @@ impl Scalar {
     ///
     /// Does not check that self is non-zero.
     const fn invert_unchecked(&self) -> Self {
-        let words = impl_bernstein_yang_invert!(
+        let words = primeorder::impl_bernstein_yang_invert!(
             self.0.as_words(),
             Self::ONE.0.to_words(),
             224,
@@ -109,6 +126,7 @@ impl Scalar {
 
     /// Compute modular square root.
     pub fn sqrt(&self) -> CtOption<Self> {
+        // See RustCrypto/elliptic-curves#847
         todo!("`sqrt` not yet implemented")
     }
 
@@ -299,6 +317,26 @@ impl TryFrom<Uint> for Scalar {
 impl Debug for Scalar {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Scalar(0x{:X})", &self.0)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl Serialize for Scalar {
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        ScalarPrimitive::from(self).serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Scalar {
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
     }
 }
 

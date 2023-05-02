@@ -1,0 +1,48 @@
+[package]
+name = "sm2"
+version = "0.13.2"
+description = """
+Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
+national standard GM/T 0003-2012 as well as ISO/IEC 14888. Includes support for
+the SM2DSA Digital Signature Algorithm.
+"""
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/sm2"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/sm2"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "shangmi", "signature"]
+edition = "2021"
+rust-version = "1.65"
+
+[dependencies]
+elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
+
+# optional dependencies
+primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+rfc6979 = { version = "0.4", optional = true }
+serdect = { version = "0.2", optional = true, default-features = false }
+signature = { version = "2", optional = true }
+sm3 = { version = "0.4", optional = true, default-features = false }
+
+[dev-dependencies]
+hex-literal = "0.4"
+proptest = "1"
+rand_core = { version = "0.6", features = ["getrandom"] }
+
+[features]
+default = ["arithmetic", "dsa", "pem", "std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std", "signature?/std"]
+
+arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
+dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]
+getrandom = ["rand_core/getrandom"]
+pem = ["elliptic-curve/pem", "pkcs8"]
+pkcs8 = ["elliptic-curve/pkcs8"]
+serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

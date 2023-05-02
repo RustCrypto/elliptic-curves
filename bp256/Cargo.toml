@@ -1,6 +1,6 @@
 [package]
 name = "bp256"
-version = "0.6.0"
+version = "0.6.1"
 description = "Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -17,6 +17,7 @@ elliptic-curve = { version = "0.13", default-features = false, features = ["hazm
 
 # optional dependencies
 ecdsa = { version = "0.16", optional = true, default-features = false, features = ["der"] }
+primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [features]
@@ -28,6 +29,7 @@ pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
 sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+wip-arithmetic-do-not-use = ["dep:primeorder"]
 
 [package.metadata.docs.rs]
 all-features = true

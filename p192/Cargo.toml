@@ -1,0 +1,49 @@
+[package]
+name = "p192"
+version = "0.13.0"
+description = """
+Pure Rust implementation of the NIST P-192 (a.k.a. secp192r1) elliptic curve
+as defined in SP 800-186
+"""
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/p192"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p192"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "nist", "secp192r1"]
+edition = "2021"
+rust-version = "1.65"
+
+[dependencies]
+elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
+sec1 = { version = "0.7.2", default-features = false }
+
+# optional dependencies
+ecdsa-core = { version = "0.16.6", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+hex-literal = { version = "0.4", optional = true }
+primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+serdect = { version = "0.2", optional = true, default-features = false }
+
+[dev-dependencies]
+ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
+hex-literal = "0.4"
+primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
+
+[features]
+default = ["arithmetic", "ecdsa", "pem", "std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std"]
+
+arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
+bits = ["arithmetic", "elliptic-curve/bits"]
+digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
+ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying"]
+pem = ["elliptic-curve/pem", "pkcs8"]
+pkcs8 = ["elliptic-curve/pkcs8"]
+serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
+test-vectors = ["hex-literal"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

@@ -37,9 +37,12 @@ jobs:
           targets: ${{ matrix.target }}
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features wip-arithmetic-do-not-use
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc,pkcs8,wip-arithmetic-do-not-use
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc,arithmetic,ecdsa,pkcs8,serde
 
   test:
     runs-on: ubuntu-latest

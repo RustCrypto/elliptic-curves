@@ -3,6 +3,16 @@
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
 
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+mod arithmetic;
+
+#[cfg(feature = "wip-arithmetic-do-not-use")]
+pub use {
+    self::arithmetic::{AffinePoint, ProjectivePoint},
+    crate::Scalar,
+};
+
+use crate::ORDER;
 use elliptic_curve::{
     bigint::{ArrayEncoding, U384},
     consts::U48,
@@ -24,8 +34,7 @@ impl elliptic_curve::Curve for BrainpoolP384r1 {
     type Uint = U384;
 
     /// Curve order.
-    const ORDER: U384 =
-        U384::from_be_hex("8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b31f166e6cac0425a7cf3ab6af6b7fc3103b883202e9046565");
+    const ORDER: U384 = ORDER;
 }
 
 impl elliptic_curve::PrimeCurve for BrainpoolP384r1 {}
@@ -61,4 +70,5 @@ impl FieldBytesEncoding<BrainpoolP384r1> for U384 {
 /// brainpoolP384r1 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<BrainpoolP384r1>;
 
+#[cfg(not(feature = "wip-arithmetic-do-not-use"))]
 impl elliptic_curve::sec1::ValidatePublicKey for BrainpoolP384r1 {}
