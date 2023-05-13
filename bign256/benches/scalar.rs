@@ -1,4 +1,4 @@
-//! secp256r1 scalar arithmetic benchmarks
+//! bign-curve256v1 scalar arithmetic benchmarks
 
 use bign256::{elliptic_curve::group::ff::PrimeField, ProjectivePoint, Scalar};
 use criterion::{
