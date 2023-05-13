@@ -1,4 +1,4 @@
-//! secp256r1 field element benchmarks
+//! bign-curve256v1 field element benchmarks
 
 use bign256::elliptic_curve::Field;
 use bign256::FieldElement;

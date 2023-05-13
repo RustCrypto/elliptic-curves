@@ -1,6 +1,6 @@
 [package]
 name = "bign256"
-version = "0.1.0"
+version = "0.0.0"
 description = """
 Pure Rust implementation of the Bign P-256 (a.k.a. bign-curve256v1)
 elliptic curve as defined in STB 34.101.45-2013, with
@@ -9,7 +9,7 @@ general purpose curve arithmetic
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/bign-curve256v1"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/bign-curve256v1"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/bign256"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "stb", "bign-curve256v1", "bignp256"]
