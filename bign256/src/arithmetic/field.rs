@@ -102,18 +102,6 @@ impl FieldElement {
         ]);
         CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self))
     }
-
-    #[allow(dead_code)]
-    /// Returns self^(2^n) mod p.
-    const fn sqn(&self, n: usize) -> Self {
-        let mut x = *self;
-        let mut i = 0;
-        while i < n {
-            x = x.square();
-            i += 1;
-        }
-        x
-    }
 }
 
 impl PrimeField for FieldElement {
