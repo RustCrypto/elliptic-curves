@@ -2,8 +2,8 @@
 
 #![cfg(feature = "arithmetic")]
 
-use elliptic_curve::ops::{Invert, Reduce};
 use bign256::{Scalar, U256};
+use elliptic_curve::ops::{Invert, Reduce};
 use proptest::prelude::*;
 
 prop_compose! {
