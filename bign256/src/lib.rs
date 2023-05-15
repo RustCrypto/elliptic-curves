@@ -17,6 +17,9 @@
 
 pub mod arithmetic;
 
+#[cfg(any(feature = "test-vectors", test))]
+pub mod test_vectors;
+
 pub use elliptic_curve;
 
 pub use arithmetic::field::FieldElement;
