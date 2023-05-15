@@ -28,9 +28,6 @@ USE AT YOUR OWN RISK!
 
 ## Supported Algorithms
 
-- [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
-  `ecdsa` feature.
-
 ## About BIGN P-256
 
 BIGN P-256 is a Weierstrass curve specified in [STB 34.101.45-2013]:
