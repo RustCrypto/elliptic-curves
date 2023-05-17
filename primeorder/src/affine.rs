@@ -182,8 +182,11 @@ where
             }
             sec1::Coordinates::Uncompressed { x, y } => {
                 C::FieldElement::from_repr(*y).and_then(|y| {
-                    Self::decompress(x, y.is_odd())
-                        .and_then(|point| CtOption::new(point, point.y.ct_eq(&y)))
+                    C::FieldElement::from_repr(*x).and_then(|x| {
+                        let lhs = y * &y;
+                        let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
+                        CtOption::new(Self { x, y, infinity: 0 }, lhs.ct_eq(&rhs))
+                    })
                 })
             }
         }
