@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "bign256",
     "bp256",
     "bp384",
     "k256",
