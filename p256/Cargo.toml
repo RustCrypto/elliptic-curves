@@ -28,7 +28,7 @@ sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
 blobby = "0.3"
-criterion = "0.4"
+criterion = "0.5"
 ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.4"
 primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
