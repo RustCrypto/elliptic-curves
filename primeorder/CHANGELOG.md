@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.2 (2023-05-29)
+### Changed
+- Improve decoding performance for uncompressed SEC1 points ([#891])
+
+[#891]: https://github.com/RustCrypto/elliptic-curves/pull/891
+
 ## 0.13.1 (2023-04-09)
 ### Added
 - `impl_bernstein_yang_invert!` macro ([#786])
