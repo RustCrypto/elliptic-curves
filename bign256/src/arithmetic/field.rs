@@ -12,12 +12,17 @@
 //! users may pick which license to apply.
 
 #![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    clippy::integer_arithmetic,
     clippy::should_implement_trait,
     clippy::suspicious_op_assign_impl,
     clippy::unused_unit,
     clippy::unnecessary_cast,
     clippy::too_many_arguments,
-    clippy::identity_op
+    clippy::identity_op,
+    rustdoc::bare_urls
 )]
 
 #[cfg_attr(target_pointer_width = "32", path = "field/bign256_32.rs")]
@@ -25,7 +30,7 @@
 mod field_impl;
 
 use self::field_impl::*;
-use crate::{BignP256, FieldBytes, Uint};
+use crate::{BignP256, FieldBytes, U256};
 use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
@@ -39,18 +44,18 @@ use primeorder::impl_bernstein_yang_invert;
 
 /// Constant representing the modulus
 /// p = 2^{256} − 189
-pub(crate) const MODULUS: Uint =
-    Uint::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43");
+pub(crate) const MODULUS: U256 =
+    U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43");
 
 /// Element of the bign-256 base field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(pub(super) Uint);
+pub struct FieldElement(pub(super) U256);
 
 primeorder::impl_mont_field_element!(
     BignP256,
     FieldElement,
     FieldBytes,
-    Uint,
+    U256,
     MODULUS,
     fiat_bign256_montgomery_domain_field_element,
     fiat_bign256_from_montgomery,
@@ -76,7 +81,7 @@ impl FieldElement {
             self.0.as_words(),
             Self::ONE.0.to_words(),
             256,
-            Uint::LIMBS,
+            U256::LIMBS,
             Limb,
             fiat_bign256_from_montgomery,
             fiat_bign256_mul,
@@ -86,7 +91,7 @@ impl FieldElement {
             fiat_bign256_msat,
             fiat_bign256_selectznz,
         );
-        Self(Uint::from_words(words))
+        Self(U256::from_words(words))
     }
 
     /// Returns the square root of self mod p, or `None` if no square root

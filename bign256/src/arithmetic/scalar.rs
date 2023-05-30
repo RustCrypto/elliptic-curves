@@ -1,18 +1,21 @@
 //! bign-curve256v1 scalar field elements.
 
-#![allow(clippy::unusual_byte_groupings)]
-
-#[cfg_attr(target_pointer_width = "32", path = "scalar/bign256_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/bign256_scalar_64.rs")]
-#[allow(
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
     clippy::identity_op,
+    clippy::integer_arithmetic,
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
+
+#[cfg_attr(target_pointer_width = "32", path = "scalar/bign256_scalar_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/bign256_scalar_64.rs")]
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{BignP256, FieldBytes, FieldBytesEncoding, SecretKey, Uint, ORDER_HEX};
+use crate::{BignP256, FieldBytes, FieldBytesEncoding, SecretKey, ORDER_HEX, U256};
 use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
@@ -60,13 +63,13 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, PartialOrd, Ord)]
-pub struct Scalar(Uint);
+pub struct Scalar(U256);
 
 primeorder::impl_mont_field_element!(
     BignP256,
     Scalar,
     FieldBytes,
-    Uint,
+    U256,
     BignP256::ORDER,
     fiat_bign256_scalar_montgomery_domain_field_element,
     fiat_bign256_scalar_from_montgomery,
@@ -92,7 +95,7 @@ impl Scalar {
             self.0.as_words(),
             Self::ONE.0.to_words(),
             256,
-            Uint::LIMBS,
+            U256::LIMBS,
             Limb,
             fiat_bign256_scalar_from_montgomery,
             fiat_bign256_scalar_mul,
@@ -102,7 +105,7 @@ impl Scalar {
             fiat_bign256_scalar_msat,
             fiat_bign256_scalar_selectznz,
         );
-        Self(Uint::from_words(words))
+        Self(U256::from_words(words))
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
@@ -134,7 +137,7 @@ impl AsRef<Scalar> for Scalar {
 }
 
 impl FromUintUnchecked for Scalar {
-    type Uint = Uint;
+    type Uint = U256;
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self::from_uint_unchecked(uint)
@@ -151,7 +154,7 @@ impl Invert for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        const MODULUS_SHR1: Uint = BignP256::ORDER.shr_vartime(1);
+        const MODULUS_SHR1: U256 = BignP256::ORDER.shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
     }
 }
@@ -218,18 +221,18 @@ impl PrimeFieldBits for Scalar {
     }
 }
 
-impl Reduce<Uint> for Scalar {
+impl Reduce<U256> for Scalar {
     type Bytes = FieldBytes;
 
-    fn reduce(w: Uint) -> Self {
+    fn reduce(w: U256) -> Self {
         let (r, underflow) = w.sbb(&BignP256::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(Uint::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U256::conditional_select(&w, &r, !underflow))
     }
 
     #[inline]
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        let w = <Uint as FieldBytesEncoding<BignP256>>::decode_field_bytes(bytes);
+        let w = <U256 as FieldBytesEncoding<BignP256>>::decode_field_bytes(bytes);
         Self::reduce(w)
     }
 }
@@ -270,14 +273,14 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-impl From<Scalar> for Uint {
-    fn from(scalar: Scalar) -> Uint {
-        Uint::from(&scalar)
+impl From<Scalar> for U256 {
+    fn from(scalar: Scalar) -> U256 {
+        U256::from(&scalar)
     }
 }
 
-impl From<&Scalar> for Uint {
-    fn from(scalar: &Scalar) -> Uint {
+impl From<&Scalar> for U256 {
+    fn from(scalar: &Scalar) -> U256 {
         scalar.to_canonical()
     }
 }
@@ -288,10 +291,10 @@ impl From<&SecretKey> for Scalar {
     }
 }
 
-impl TryFrom<Uint> for Scalar {
+impl TryFrom<U256> for Scalar {
     type Error = Error;
 
-    fn try_from(w: Uint) -> Result<Self> {
+    fn try_from(w: U256) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
     }
 }
