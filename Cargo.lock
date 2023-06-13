@@ -42,32 +42,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
-name = "belt-block"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a1be3fcfd5950762b6ac3f929b7ac65f31b35afee94e17f6fcadd58ee47abee"
-
-[[package]]
-name = "belt-hash"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d8ee43afdfcc493dec1e51c8032546cc1c52b4d68549e6469d03ff2cf3c3d91"
-dependencies = [
- "belt-block",
- "digest",
-]
-
-[[package]]
 name = "bign256"
 version = "0.0.0"
 dependencies = [
- "belt-hash",
  "criterion",
- "ecdsa",
  "elliptic-curve",
  "hex-literal",
  "primeorder",
- "serdect",
+ "proptest",
 ]
 
 [[package]]
@@ -730,9 +712,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.17.2"
+version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9670a07f94779e00908f3e686eab508878ebb390ba6e604d3a284c00e8d0487b"
+checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
 dependencies = [
  "atomic-polyfill",
  "critical-section",
