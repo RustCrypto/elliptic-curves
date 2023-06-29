@@ -40,7 +40,7 @@ pub use elliptic_curve::ecdh::diffie_hellman;
 
 use crate::{AffinePoint, Secp256k1};
 
-/// NIST P-256 Ephemeral Diffie-Hellman Secret.
+/// secp256k1 Ephemeral Diffie-Hellman Secret.
 pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<Secp256k1>;
 
 /// Shared secret value computed via ECDH key agreement.
