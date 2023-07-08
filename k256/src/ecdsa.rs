@@ -213,7 +213,7 @@ impl SignPrimitive<Secp256k1> for Scalar {
         // Compute 𝒔 as a signature over 𝒓 and 𝒛.
         let s = k_inv * (z + (r * self));
 
-        if s.is_zero().into() {
+        if s.is_zero().into() || r.is_zero().into() {
             return Err(Error::new());
         }
 
