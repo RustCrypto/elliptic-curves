@@ -124,10 +124,24 @@ impl Scalar {
         Self(Uint::from_words(words))
     }
 
-    /// Compute modular square root.
+    /// Atkin algorithm for q mod 8 = 5
+    /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>
+    /// (page 10, algorithm 3)
     pub fn sqrt(&self) -> CtOption<Self> {
-        // See RustCrypto/elliptic-curves#847
-        todo!("`sqrt` not yet implemented")
+        let w = &[
+            0xc27ba528ab8b8547,
+            0xffffe2d45c171e07,
+            0xffffffffffffffff,
+            0x1fffffff,
+        ];
+        let t = Self::from_u64(2).pow_vartime(w);
+        let a1 = self.pow_vartime(w);
+        let a0 = (a1.square() * self).square();
+        let b = t * a1;
+        let ab = self * &b;
+        let i = Self::from_u64(2) * ab * b;
+        let x = ab * (i - Self::ONE);
+        CtOption::new(x, !a0.ct_eq(&-Self::ONE))
     }
 
     /// Right shifts the scalar.
@@ -344,7 +358,10 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -356,6 +373,6 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar); // TODO(tarcieri): not yet implemented
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }
