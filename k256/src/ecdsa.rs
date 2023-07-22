@@ -198,7 +198,15 @@ impl SignPrimitive<Secp256k1> for Scalar {
 }
 
 #[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<Secp256k1> for AffinePoint {}
+impl VerifyPrimitive<Secp256k1> for AffinePoint {
+    fn verify_prehashed(&self, z: &FieldBytes, sig: &Signature) -> Result<(), Error> {
+        if sig.s().is_high().into() {
+            return Err(Error::new());
+        }
+
+        hazmat::verify_prehashed(&self.into(), z, sig)
+    }
+}
 
 #[cfg(all(test, feature = "ecdsa", feature = "arithmetic"))]
 mod tests {
