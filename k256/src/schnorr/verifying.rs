@@ -4,6 +4,7 @@ use super::{tagged_hash, Signature, CHALLENGE_TAG};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
 use elliptic_curve::{
     bigint::U256,
+    group::prime::PrimeCurveAffine,
     ops::{LinearCombination, Reduce},
     point::DecompactPoint,
 };
@@ -82,7 +83,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         )
         .to_affine();
 
-        if R.y.normalize().is_odd().into() || R.x.normalize() != *r {
+        if R.is_identity().into() || R.y.normalize().is_odd().into() || R.x.normalize() != *r {
             return Err(Error::new());
         }
 
