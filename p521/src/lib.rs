@@ -78,3 +78,12 @@ impl FieldBytesEncoding<NistP521> for U576 {}
 
 /// NIST P-521 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP521>;
+
+#[cfg(feature = "voprf")]
+impl elliptic_curve::VoprfParameters for NistP521 {
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-19.html#section-4.5-1>.
+    const ID: &'static str = "P521-SHA512";
+
+    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.5-1.2>.
+    type Hash = sha2::Sha512;
+}
