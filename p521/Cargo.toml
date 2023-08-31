@@ -31,7 +31,7 @@ jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 wip-arithmetic-do-not-use = ["dep:primeorder"]
-voprf = ["elliptic-curve/voprf", "sha2"]
+voprf = ["elliptic-curve/voprf", "dep:sha2"]
 
 [package.metadata.docs.rs]
 all-features = true
