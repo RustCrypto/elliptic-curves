@@ -17,6 +17,7 @@ rust-version = "1.65"
 
 [dependencies]
 elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
+sha2 = { version = "0.10", optional = true, default-features = false }
 
 # optional dependencies
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
@@ -30,6 +31,7 @@ jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 wip-arithmetic-do-not-use = ["dep:primeorder"]
+voprf = ["elliptic-curve/voprf", "dep:sha2"]
 
 [package.metadata.docs.rs]
 all-features = true

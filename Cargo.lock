@@ -790,6 +790,7 @@ version = "0.13.0"
 dependencies = [
  "elliptic-curve",
  "primeorder",
+ "sha2",
 ]
 
 [[package]]
