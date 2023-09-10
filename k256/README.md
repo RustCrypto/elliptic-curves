@@ -22,15 +22,19 @@ which can be used to generically construct group-based protocols.
 
 [Documentation][docs-link]
 
-## ⚠️ Security Warning
+## Security Notes
 
-The secp256k1 elliptic curve arithmetic contained in this crate has never been
-independently audited!
+This crate has been [audited by NCC Group], which found a high severity issue
+in the ECDSA/secp256k1 implementation and another high severity issue in the
+Schnorr/secp256k1 signature implementation, both of which have since been
+corrected. We would like to thank [Entropy] for funding the audit.
 
 This crate has been designed with the goal of ensuring that secret-dependent
 secp256k1 operations are performed in constant time (using the `subtle` crate
-and constant-time formulas). However, it has not been thoroughly assessed to
-ensure that generated assembly is constant time on common CPU architectures.
+and constant-time formulas). However, it is not suitable for use on processors
+with a variable-time multiplication operation (e.g. short circuit on
+multiply-by-zero / multiply-by-one, such as certain 32-bit PowerPC CPUs and
+some non-ARM microcontrollers).
 
 USE AT YOUR OWN RISK!
 
@@ -115,5 +119,7 @@ dual licensed as above, without any additional terms or conditions.
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 [Schnorr signatures]: https://en.wikipedia.org/wiki/Schnorr_signature
+[audited by NCC Group]: https://research.nccgroup.com/2023/08/30/public-report-entropy-rust-cryptography-review/
+[Entropy]: https://entropy.xyz/
 [BIP0062]: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki
 [BIP0340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
