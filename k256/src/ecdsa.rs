@@ -154,14 +154,9 @@ use crate::Secp256k1;
 
 #[cfg(feature = "ecdsa")]
 use {
-    crate::{AffinePoint, FieldBytes, ProjectivePoint, Scalar},
+    crate::{AffinePoint, FieldBytes, Scalar},
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-    elliptic_curve::{
-        bigint::U256,
-        ops::{Invert, MulByGenerator, Reduce},
-        scalar::IsHigh,
-        subtle::CtOption,
-    },
+    elliptic_curve::{ops::Invert, scalar::IsHigh, subtle::CtOption},
 };
 
 /// ECDSA/secp256k1 signature (fixed-size)
@@ -194,42 +189,24 @@ impl SignPrimitive<Secp256k1> for Scalar {
     where
         K: AsRef<Self> + Invert<Output = CtOption<Self>>,
     {
-        if k.as_ref().is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let z = <Self as Reduce<U256>>::reduce_bytes(z);
-
-        // Compute scalar inversion of 𝑘
-        let k_inv = Option::<Scalar>::from(k.invert()).ok_or_else(Error::new)?;
-
-        // Compute 𝑹 = 𝑘×𝑮
-        let R = ProjectivePoint::mul_by_generator(k.as_ref()).to_affine();
-
-        // Lift x-coordinate of 𝑹 (element of base field) into a serialized big
-        // integer, then reduce it into an element of the scalar field
-        let r = <Self as Reduce<U256>>::reduce_bytes(&R.x.to_bytes());
-
-        // Compute 𝒔 as a signature over 𝒓 and 𝒛.
-        let s = k_inv * (z + (r * self));
-
-        if s.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let signature = Signature::from_scalars(r, s)?;
-        let is_r_odd = R.y.normalize().is_odd();
-        let is_s_high = s.is_high();
-        let is_y_odd = is_r_odd ^ is_s_high;
-        let signature_low = signature.normalize_s().unwrap_or(signature);
-        let recovery_id = RecoveryId::new(is_y_odd.into(), false);
-
-        Ok((signature_low, Some(recovery_id)))
+        let (sig, recid) = hazmat::sign_prehashed::<Secp256k1, K>(self, k, z)?;
+        let is_y_odd = recid.is_y_odd() ^ bool::from(sig.s().is_high());
+        let sig_low = sig.normalize_s().unwrap_or(sig);
+        let recid = RecoveryId::new(is_y_odd, recid.is_x_reduced());
+        Ok((sig_low, Some(recid)))
     }
 }
 
 #[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<Secp256k1> for AffinePoint {}
+impl VerifyPrimitive<Secp256k1> for AffinePoint {
+    fn verify_prehashed(&self, z: &FieldBytes, sig: &Signature) -> Result<(), Error> {
+        if sig.s().is_high().into() {
+            return Err(Error::new());
+        }
+
+        hazmat::verify_prehashed(&self.into(), z, sig)
+    }
+}
 
 #[cfg(all(test, feature = "ecdsa", feature = "arithmetic"))]
 mod tests {
