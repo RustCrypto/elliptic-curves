@@ -10,10 +10,10 @@ pub(crate) mod scalar;
 
 pub use self::scalar::Scalar;
 
-use self::field::FieldElement;
+pub use self::field::FieldElement;
 use crate::BignP256;
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
-use primeorder::{point_arithmetic, PrimeCurveParams};
+pub use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+pub use primeorder::{point_arithmetic, PrimeCurveParams};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<BignP256>;

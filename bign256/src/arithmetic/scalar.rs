@@ -5,7 +5,7 @@
     clippy::cast_sign_loss,
     clippy::cast_possible_truncation,
     clippy::identity_op,
-    clippy::integer_arithmetic,
+    clippy::arithmetic_side_effects,
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
@@ -63,7 +63,7 @@ use core::ops::{Add, Mul, Sub};
 ///
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, Debug, PartialOrd, Ord)]
-pub struct Scalar(U256);
+pub struct Scalar(pub U256);
 
 primeorder::impl_mont_field_element!(
     BignP256,
