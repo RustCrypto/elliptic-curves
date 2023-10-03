@@ -1,3 +1,7 @@
+//! bign256 DSA Tests
+
+#![cfg(feature = "dsa")]
+
 use bign256::{
     dsa::{
         signature::{Signer, Verifier},
