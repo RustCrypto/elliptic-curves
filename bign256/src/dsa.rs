@@ -4,9 +4,31 @@
 //!
 //! NOTE: requires the `dsa` crate feature enabled, and `rand_core` dependency
 //! with `getrandom` feature enabled.
-//!
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
+//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! use rand_core::OsRng; // requires 'getrandom` feature
+//! use bign256::{
+//!     dsa::{Signature, SigningKey, signature::Signer},
+//!     SecretKey
+//! };
+//!
+//! // Signing
+//! let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
+//! let signing_key = SigningKey::new(&secret_key)?;
+//! let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();
+//! let message = b"test message";
+//! let signature: Signature = signing_key.sign(message);
+//!
+//! // Verifying
+//! use bign256::dsa::{VerifyingKey, signature::Verifier};
+//!
+//! let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes)?;
+//! verifying_key.verify(message, &signature)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! [STB 34.101.45-2013 § 7]: https://apmi.bsu.by/assets/files/std/bign-spec294.pdf
 
 #[cfg(feature = "arithmetic")]
@@ -198,25 +220,3 @@ impl TryFrom<&[u8]> for Signature {
         Signature::from_slice(bytes)
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use crate::SecretKey;
-//     use rand_core::OsRng;
-//     use signature::Signer;
-//     use signature::Verifier;
-//     use super::{signing::SigningKey, Signature, verifying::VerifyingKey};
-
-//     #[test]
-//     fn test() {
-//     let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
-//     let signing_key = SigningKey::new(&secret_key).unwrap();
-//     let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();
-//     let message = b"test message";
-//     let signature: Signature = signing_key.sign(message);
-
-// // ! use sm2::dsa::{VerifyingKey, signature::Verifier};
-//     let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes).unwrap();
-//     verifying_key.verify(message, &signature).unwrap();
-//     }
-// }
