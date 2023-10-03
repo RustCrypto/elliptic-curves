@@ -212,19 +212,26 @@ impl Scalar {
         res
     }
 
-    /// Returns the square root of self mod n, or `None` if no square root
-    /// exists.
+    /// Atkin algorithm for q mod 8 = 5
+    /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>
+    /// (page 10, algorithm 3)
     pub fn sqrt(&self) -> CtOption<Self> {
-        // Because n ≡ 3 mod 4 for brainpoolP384's scalar field modulus, sqrt
-        // can be implemented with only one exponentiation via the computation
-        // of self^((n + 1) // 4) (mod n).
-        let sqrt = self.pow_vartime(&[
-            0xe40783a0a5d215aa,
-            0x630e5ea8ed5869bd,
-            0x0f9982a42760e35c,
-            0x2a7ed5f6e87baa6f,
-        ]);
-        CtOption::new(sqrt, sqrt.square().ct_eq(self))
+        let w = &[
+            0x077106405d208cac,
+            0xf9e756d5ed6ff862,
+            0x63e2cdcd958084b4,
+            0xe2a5ee213daa8ad6,
+            0x01ebadefca1cc83b,
+            0x119723d054670da5,
+        ];
+        let t = Self::from_u64(2).pow_vartime(w);
+        let a1 = self.pow_vartime(w);
+        let a0 = (a1.square() * self).square();
+        let b = t * a1;
+        let ab = self * &b;
+        let i = Self::from_u64(2) * ab * b;
+        let x = ab * (i - Self::ONE);
+        CtOption::new(x, !a0.ct_eq(&-Self::ONE))
     }
 
     /// Compute [`Scalar`] inversion: `1 / self`.
@@ -403,7 +410,10 @@ impl TryFrom<U384> for Scalar {
 mod tests {
     use super::Scalar;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     /// 0x232e47a0a8ce1b4a03d75bdf94399077c54bdc427b5515acc7c59b9b2b010969f3ceadabdadff0c40ee20c80ba411959
@@ -418,6 +428,6 @@ mod tests {
 
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
-    // impl_field_sqrt_tests!(Scalar);
+    impl_field_sqrt_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
 }
