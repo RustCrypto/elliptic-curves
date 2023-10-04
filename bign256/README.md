@@ -30,10 +30,7 @@ USE AT YOUR OWN RISK!
 
 ## About BIGN P-256
 
-BIGN P-256 is a Weierstrass curve specified in [STB 34.101.45-2013]:
-Recommendations for Discrete Logarithm-based Cryptography:
-Elliptic Curve Domain Parameters.
-
+BIGN P-256 is a Weierstrass curve specified in [STB 34.101.45-2013].
 Also known as bign-curve256v1.
 
 ## Minimum Supported Rust Version
@@ -65,12 +62,12 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/p224
-[crate-link]: https://crates.io/crates/p224
-[docs-image]: https://docs.rs/p224/badge.svg
-[docs-link]: https://docs.rs/p224/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p224.yml/badge.svg
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p224.yml
+[crate-image]: https://buildstats.info/crate/bign256
+[crate-link]: https://crates.io/crates/bign256
+[docs-image]: https://docs.rs/bign256/badge.svg
+[docs-link]: https://docs.rs/bign256/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bign256.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bign256.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.65+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
