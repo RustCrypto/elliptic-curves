@@ -461,6 +461,7 @@ impl Default for FieldElement5x52 {
 }
 
 impl ConditionallySelectable for FieldElement5x52 {
+    #[inline(always)]
     fn conditional_select(
         a: &FieldElement5x52,
         b: &FieldElement5x52,

@@ -142,6 +142,7 @@ impl Default for FieldElementImpl {
 }
 
 impl ConditionallySelectable for FieldElementImpl {
+    #[inline(always)]
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         // 1. It's debug only, so it shouldn't present a security risk
         // 2. Being normalized does is independent from the field element value;

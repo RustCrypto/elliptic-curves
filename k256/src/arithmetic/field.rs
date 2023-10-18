@@ -323,6 +323,7 @@ impl PrimeField for FieldElement {
 }
 
 impl ConditionallySelectable for FieldElement {
+    #[inline(always)]
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self(FieldElementImpl::conditional_select(&(a.0), &(b.0), choice))
     }
