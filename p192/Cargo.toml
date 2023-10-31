@@ -22,13 +22,13 @@ sec1 = { version = "0.7.3", default-features = false }
 # optional dependencies
 ecdsa-core = { version = "0.16.6", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "0.4", optional = true }
-primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+primeorder = { version = "0.13.2", optional = true }
 serdect = { version = "0.2", optional = true, default-features = false }
 
 [dev-dependencies]
 ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.4"
-primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
+primeorder = { version = "0.13.2", features = ["dev"] }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]

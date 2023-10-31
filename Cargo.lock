@@ -48,7 +48,7 @@ dependencies = [
  "criterion",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest",
 ]
 
@@ -112,7 +112,7 @@ version = "0.6.1"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2",
 ]
 
@@ -122,7 +122,7 @@ version = "0.6.1"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2",
 ]
 
@@ -723,7 +723,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sec1",
  "serdect",
 ]
@@ -736,7 +736,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_core",
  "serdect",
  "sha2",
@@ -751,7 +751,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest",
  "rand_core",
  "serdect",
@@ -767,7 +767,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest",
  "rand_core",
  "serdect",
@@ -779,7 +779,7 @@ name = "p521"
 version = "0.13.0"
 dependencies = [
  "elliptic-curve",
- "primeorder",
+ "primeorder 0.13.2",
  "sha2",
 ]
 
@@ -839,6 +839,16 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 [[package]]
 name = "primeorder"
 version = "0.13.2"
+dependencies = [
+ "elliptic-curve",
+ "serdect",
+]
+
+[[package]]
+name = "primeorder"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c2fcef82c0ec6eefcc179b978446c399b3cdf73c392c35604e399eee6df1ee3"
 dependencies = [
  "elliptic-curve",
  "serdect",
@@ -1149,7 +1159,7 @@ version = "0.13.2"
 dependencies = [
  "elliptic-curve",
  "hex-literal",
- "primeorder",
+ "primeorder 0.13.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "proptest",
  "rand_core",
  "rfc6979",
