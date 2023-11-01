@@ -42,7 +42,7 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-use super::util::uint_to_le_bytes_unchecked;
+use super::util::u576_to_le_bytes;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -106,7 +106,7 @@ impl FieldElement {
     ///
     /// Used incorrectly this can lead to invalid results!
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_from_bytes(&uint_to_le_bytes_unchecked(w)))
+        Self(fiat_p521_from_bytes(&u576_to_le_bytes(w)))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
@@ -190,7 +190,7 @@ impl FieldElement {
     }
 
     /// Multiply elements.
-    pub const fn mul(&self, rhs: &Self) -> Self {
+    pub const fn multiply(&self, rhs: &Self) -> Self {
         LooseFieldElement::mul(&self.relax(), &rhs.relax())
     }
 
@@ -217,7 +217,7 @@ impl FieldElement {
                 res = res.square();
 
                 if ((exp[i] >> j) & 1) == 1 {
-                    res = Self::mul(&res, self);
+                    res = Self::multiply(&res, self);
                 }
             }
         }
@@ -533,4 +533,29 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.copied().product()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{impl_field_identity_tests, impl_primefield_tests};
+
+    /// t = (modulus - 1) >> S
+    const T: [u64; 9] = [
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0xffffffff_ffffffff,
+        0x00000000_000000ff,
+    ];
+
+    impl_field_identity_tests!(FieldElement);
+    //impl_field_invert_tests!(FieldElement);
+    //impl_field_sqrt_tests!(FieldElement);
+    impl_primefield_tests!(FieldElement, T);
 }

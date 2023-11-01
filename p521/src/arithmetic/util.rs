@@ -35,7 +35,7 @@ pub(crate) const fn u64x9_to_u32x18(w: &[u64; 9]) -> [u32; 18] {
 
 /// Converts the saturated representation [`U576`] into a 528bit array. Each
 /// word is copied in little-endian.
-pub const fn uint_to_le_bytes_unchecked(w: U576) -> [u8; 66] {
+pub const fn u576_to_le_bytes(w: U576) -> [u8; 66] {
     #[cfg(target_pointer_width = "32")]
     let words = u32x18_to_u64x9(w.as_words());
     #[cfg(target_pointer_width = "64")]
