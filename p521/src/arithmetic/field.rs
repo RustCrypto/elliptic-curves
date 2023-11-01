@@ -42,8 +42,7 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-#[cfg(target_pointer_width = "32")]
-use super::util::u32x18_to_u64x9;
+use super::util::uint_to_le_bytes_unchecked;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -101,66 +100,13 @@ impl FieldElement {
         Self::from_uint_unchecked(U576::from_u64(w))
     }
 
-    /// Converts the words into a byte array to be consumed by [`fiat_p521_from_bytes`]
-    const fn words_to_le_bytes_unchecked(words: [u64; 9]) -> [u8; 66] {
-        let mut result: [u8; 66] = [0u8; 66];
-        let mut i = 0;
-        while i < words.len() - 1 {
-            let word = words[i].to_le_bytes();
-            let start = i * 8;
-            result[start] = word[0];
-            result[start + 1] = word[1];
-            result[start + 2] = word[2];
-            result[start + 3] = word[3];
-            result[start + 4] = word[4];
-            result[start + 5] = word[5];
-            result[start + 6] = word[6];
-            result[start + 7] = word[7];
-            i += 1;
-        }
-        let last_word = words[8].to_le_bytes();
-        debug_assert!(
-            last_word[1] <= 0x1,
-            "Input bound for the result[65] is [0x0 ~> 0x1]"
-        );
-        debug_assert!(
-            last_word[2] == 0
-                && last_word[3] == 0
-                && last_word[4] == 0
-                && last_word[5] == 0
-                && last_word[6] == 0
-                && last_word[7] == 0,
-            "Expected last word to have leading zeroes"
-        );
-
-        result[i * 8] = last_word[0];
-        result[(i * 8) + 1] = last_word[1];
-
-        result
-    }
-
     /// Decode [`FieldElement`] from [`U576`].
     ///
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// Used incorrectly this can lead to invalid results!
-    #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_from_bytes(&Self::words_to_le_bytes_unchecked(
-            u32x18_to_u64x9(w.as_words()),
-        )))
-    }
-
-    /// Decode [`FieldElement`] from [`U576`].
-    ///
-    /// Does *not* perform a check that the field element does not overflow the order.
-    ///
-    /// Used incorrectly this can lead to invalid results!
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_from_bytes(&Self::words_to_le_bytes_unchecked(
-            w.to_words(),
-        )))
+        Self(fiat_p521_from_bytes(&uint_to_le_bytes_unchecked(w)))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
