@@ -42,8 +42,7 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-#[cfg(target_pointer_width = "32")]
-use super::util::u32x18_to_u64x9;
+use super::util::uint_to_le_bytes_unchecked;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -106,19 +105,8 @@ impl FieldElement {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// Used incorrectly this can lead to invalid results!
-    #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(u32x18_to_u64x9(w.as_words()))
-    }
-
-    /// Decode [`FieldElement`] from [`U576`].
-    ///
-    /// Does *not* perform a check that the field element does not overflow the order.
-    ///
-    /// Used incorrectly this can lead to invalid results!
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(w.to_words())
+        Self(fiat_p521_from_bytes(&uint_to_le_bytes_unchecked(w)))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
