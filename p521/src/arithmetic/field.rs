@@ -233,7 +233,21 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+        // Tonelli-Shank's algorithm for q mod 4 = 3 (i.e. Shank's algorithm)
+        // https://eprint.iacr.org/2012/685.pdf
+        let w = self.pow_vartime(&[
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000000,
+            0x00000000_00000080,
+        ]);
+
+        CtOption::new(w, w.square().ct_eq(self))
     }
 
     /// Relax a tight field element into a loose one.
@@ -257,7 +271,7 @@ impl Default for FieldElement {
 impl Eq for FieldElement {}
 impl PartialEq for FieldElement {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0.ct_eq(&(rhs.0)).into()
+        self.ct_eq(&rhs).into()
     }
 }
 
@@ -293,7 +307,9 @@ impl ConditionallySelectable for FieldElement {
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        let a = fiat_p521_to_bytes(&self.0);
+        let b = fiat_p521_to_bytes(&other.0);
+        a.ct_eq(&b)
     }
 }
 
@@ -539,7 +555,7 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_primefield_tests};
+    use primeorder::{impl_field_identity_tests, impl_field_sqrt_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 9] = [
@@ -556,6 +572,6 @@ mod tests {
 
     impl_field_identity_tests!(FieldElement);
     //impl_field_invert_tests!(FieldElement);
-    //impl_field_sqrt_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
 }
