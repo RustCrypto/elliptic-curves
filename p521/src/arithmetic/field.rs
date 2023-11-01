@@ -120,8 +120,11 @@ impl FieldElement {
         }
         let last_word = words[8].to_le_bytes();
         debug_assert!(
-            last_word[1] <= 0x1
-                && last_word[2] == 0
+            last_word[1] <= 0x1,
+            "Input bound for the result[65] is [0x0 ~> 0x1]"
+        );
+        debug_assert!(
+            last_word[2] == 0
                 && last_word[3] == 0
                 && last_word[4] == 0
                 && last_word[5] == 0
