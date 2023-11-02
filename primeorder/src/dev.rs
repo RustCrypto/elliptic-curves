@@ -139,12 +139,15 @@ macro_rules! impl_projective_arithmetic_tests {
                 .iter()
                 .enumerate()
                 .map(|(k, coords)| (<$scalar>::from(k as u64 + 1), *coords))
-                .chain(
-                    $mul_vectors
-                        .iter()
-                        .cloned()
-                        .map(|(k, x, y)| (<$scalar>::from_repr(k.into()).unwrap(), (x, y))),
-                )
+                .chain($mul_vectors.iter().cloned().map(|(k, x, y)| {
+                    (
+                        <$scalar>::from_repr(
+                            $crate::generic_array::GenericArray::clone_from_slice(&k),
+                        )
+                        .unwrap(),
+                        (x, y),
+                    )
+                }))
             {
                 let p = generator * &k;
                 assert_point_eq!(p, coords);

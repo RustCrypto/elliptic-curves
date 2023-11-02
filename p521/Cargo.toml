@@ -26,6 +26,7 @@ base16ct = "0.2.0"
 
 [dev-dependencies]
 hex-literal = "0.4"
+primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
 
 [features]
 default = ["pem", "std"]
