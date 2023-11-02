@@ -51,8 +51,44 @@ const MODULUS_HEX: &str = "00000000000001fffffffffffffffffffffffffffffffffffffff
 const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp521r1 base field used for curve coordinates.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FieldElement(fiat_p521_tight_field_element);
+
+impl core::fmt::Debug for FieldElement {
+    /// Formatting machinery for [`FieldElement`]
+    ///
+    /// # Why
+    /// ```
+    /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// let fe2 = FieldElement([
+    ///     8,
+    ///     0,
+    ///     288230376151711744,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     144115188075855871,
+    /// ]);
+    /// ```
+    ///
+    /// For the above example, deriving [`core::fmt::Debug`] will result in returning 2 different strings,
+    /// which are in reality the same due to p521's unsaturated math, instead print the output as a hex string in
+    /// big-endian
+    ///
+    /// This makes debugging easier.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let mut bytes = fiat_p521_to_bytes(&self.0);
+        bytes.reverse();
+
+        write!(f, "0x")?;
+        for b in bytes {
+            write!(f, "{b:02X}")?;
+        }
+        Ok(())
+    }
+}
 
 impl FieldElement {
     /// Zero element.
