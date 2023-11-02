@@ -280,15 +280,15 @@ impl FieldElement {
         // Tonelli-Shank's algorithm for q mod 4 = 3 (i.e. Shank's algorithm)
         // https://eprint.iacr.org/2012/685.pdf
         let w = self.pow_vartime(&[
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000000,
-            0x00000000_00000080,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000080,
         ]);
 
         CtOption::new(w, w.square().ct_eq(self))
@@ -607,15 +607,15 @@ mod tests {
     /// t = (modulus - 1) >> S
     #[allow(dead_code)]
     const T: [u64; 9] = [
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0xffffffff_ffffffff,
-        0x00000000_000000ff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x00000000000000ff,
     ];
 
     impl_field_identity_tests!(FieldElement);
