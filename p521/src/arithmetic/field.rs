@@ -81,12 +81,10 @@ impl core::fmt::Debug for FieldElement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut bytes = fiat_p521_to_bytes(&self.0);
         bytes.reverse();
-
-        write!(f, "0x")?;
-        for b in bytes {
-            write!(f, "{b:02X}")?;
-        }
-        Ok(())
+        let formatter = base16ct::HexDisplay(&bytes);
+        f.debug_tuple("FieldElement")
+            .field(&format_args!("0x{formatter:X}"))
+            .finish()
     }
 }
 

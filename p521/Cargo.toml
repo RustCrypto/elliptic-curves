@@ -21,6 +21,7 @@ sha2 = { version = "0.10", optional = true, default-features = false }
 
 # optional dependencies
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+base16ct = "0.2.0"
 
 [features]
 default = ["pem", "std"]
