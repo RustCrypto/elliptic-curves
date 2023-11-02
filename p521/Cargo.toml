@@ -25,6 +25,7 @@ primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
 
 [dev-dependencies]
 hex-literal = "0.4"
+primeorder = { version = "0.13", features = ["dev"], path = "../primeorder" }
 
 [features]
 default = ["pem", "std"]
