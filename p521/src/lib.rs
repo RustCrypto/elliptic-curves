@@ -18,6 +18,9 @@
 #[cfg(feature = "wip-arithmetic-do-not-use")]
 pub mod arithmetic;
 
+#[cfg(any(feature = "test-vectors", test))]
+pub mod test_vectors;
+
 pub use elliptic_curve::{self, bigint::U576};
 
 #[cfg(feature = "pkcs8")]
