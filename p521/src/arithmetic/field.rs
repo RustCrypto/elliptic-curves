@@ -199,6 +199,17 @@ impl FieldElement {
         self.relax().square()
     }
 
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
+    }
+
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
     ///
     /// **This operation is variable time with respect to the exponent.**
@@ -227,7 +238,40 @@ impl FieldElement {
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("`invert` not yet implemented")
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        // Adapted from addchain: github.com/mmcloughlin/addchain
+        let z = self.square();
+        let z = self.multiply(&z);
+        let t0 = z.sqn(2);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(4);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(8);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(16);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(32);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(64);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(129);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(259);
+        let z = z.multiply(&t0);
+        let z = z.sqn(2);
+        self.multiply(&z)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
@@ -364,11 +408,11 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
-    const TWO_INV: Self = Self::ZERO; // TODO: unimplemented
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self::from_hex("00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe");
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO: unimplemented
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
 
     #[inline]
@@ -553,10 +597,12 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    // TODO(tarcieri): inversion implementation
     use super::FieldElement;
-    //use elliptic_curve::ff::PrimeField;
-    use primeorder::{impl_field_identity_tests, impl_field_sqrt_tests};
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
 
     /// t = (modulus - 1) >> S
     #[allow(dead_code)]
@@ -573,7 +619,7 @@ mod tests {
     ];
 
     impl_field_identity_tests!(FieldElement);
-    //impl_field_invert_tests!(FieldElement);
+    impl_field_invert_tests!(FieldElement);
     impl_field_sqrt_tests!(FieldElement);
-    //impl_primefield_tests!(FieldElement, T);
+    impl_primefield_tests!(FieldElement, T);
 }
