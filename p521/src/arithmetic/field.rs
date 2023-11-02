@@ -201,8 +201,8 @@ impl FieldElement {
 
     /// Returns self^(2^n) mod p
     const fn sqn(&self, n: usize) -> Self {
-        let mut x = *self;
-        let mut i = 0;
+        let mut x = self.square();
+        let mut i = 1;
         while i < n {
             x = x.square();
             i += 1;
@@ -277,21 +277,9 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        // Tonelli-Shank's algorithm for q mod 4 = 3 (i.e. Shank's algorithm)
-        // https://eprint.iacr.org/2012/685.pdf
-        let w = self.pow_vartime(&[
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000000,
-            0x0000000000000080,
-        ]);
-
-        CtOption::new(w, w.square().ct_eq(self))
+        // See explanation @ https://github.com/RustCrypto/elliptic-curves/pull/946#discussion_r1380465035
+        let sqrt = self.sqn(519);
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 
     /// Relax a tight field element into a loose one.
