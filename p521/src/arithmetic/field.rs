@@ -276,8 +276,16 @@ impl FieldElement {
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
+    ///
+    /// # Implementation details
+    /// If _x_ has a sqrt, then due to Euler's criterion this implies x<sup>(p - 1)/2</sup> = 1.
+    /// 1. x<sup>(p + 1)/2</sup> = x.
+    /// 2. There's a special property due to _p ≡ 3 (mod 4)_ which implies _(p + 1)/4_ is an integer.
+    /// 3. We can rewrite `1.` as x<sup>((p+1)/4)<sup>2</sup></sup>
+    /// 4. x<sup>(p+1)/4</sup> is the square root.
+    /// 5. This is simplified as (2<sup>251</sup> - 1 + 1) /4 = 2<sup>519</sup>
+    /// 6. Hence, x<sup>2<sup>519</sup></sup> is the square root iff _result.square() == self_
     pub fn sqrt(&self) -> CtOption<Self> {
-        // See explanation @ https://github.com/RustCrypto/elliptic-curves/pull/946#discussion_r1380465035
         let sqrt = self.sqn(519);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
