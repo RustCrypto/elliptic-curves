@@ -58,7 +58,7 @@ impl core::fmt::Debug for FieldElement {
     /// Formatting machinery for [`FieldElement`]
     ///
     /// # Why
-    /// ```
+    /// ```ignore
     /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
     /// let fe2 = FieldElement([
     ///     8,
