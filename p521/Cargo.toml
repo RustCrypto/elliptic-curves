@@ -20,7 +20,11 @@ elliptic-curve = { version = "0.13", default-features = false, features = ["hazm
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 # optional dependencies
+hex-literal = { version = "0.4", optional = true }
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
+
+[dev-dependencies]
+hex-literal = "0.4"
 
 [features]
 default = ["pem", "std"]
@@ -30,6 +34,7 @@ std = ["alloc", "elliptic-curve/std"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
+test-vectors = ["dep:hex-literal"]
 wip-arithmetic-do-not-use = ["dep:primeorder"]
 voprf = ["elliptic-curve/voprf", "dep:sha2"]
 
