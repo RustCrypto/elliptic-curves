@@ -42,7 +42,7 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-use super::util::uint_to_le_bytes_unchecked;
+use super::util::u576_to_le_bytes;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -106,7 +106,7 @@ impl FieldElement {
     ///
     /// Used incorrectly this can lead to invalid results!
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_from_bytes(&uint_to_le_bytes_unchecked(w)))
+        Self(fiat_p521_from_bytes(&u576_to_le_bytes(w)))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
@@ -190,13 +190,24 @@ impl FieldElement {
     }
 
     /// Multiply elements.
-    pub const fn mul(&self, rhs: &Self) -> Self {
+    pub const fn multiply(&self, rhs: &Self) -> Self {
         LooseFieldElement::mul(&self.relax(), &rhs.relax())
     }
 
     /// Square element.
     pub const fn square(&self) -> Self {
         self.relax().square()
+    }
+
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -217,7 +228,7 @@ impl FieldElement {
                 res = res.square();
 
                 if ((exp[i] >> j) & 1) == 1 {
-                    res = Self::mul(&res, self);
+                    res = Self::multiply(&res, self);
                 }
             }
         }
@@ -227,13 +238,60 @@ impl FieldElement {
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("`invert` not yet implemented")
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        // Adapted from addchain: github.com/mmcloughlin/addchain
+        let z = self.square();
+        let z = self.multiply(&z);
+        let t0 = z.sqn(2);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(4);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(8);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(16);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(32);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(64);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(129);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(259);
+        let z = z.multiply(&t0);
+        let z = z.sqn(2);
+        self.multiply(&z)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+        // Tonelli-Shank's algorithm for q mod 4 = 3 (i.e. Shank's algorithm)
+        // https://eprint.iacr.org/2012/685.pdf
+        let w = self.pow_vartime(&[
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000000,
+            0x0000000000000080,
+        ]);
+
+        CtOption::new(w, w.square().ct_eq(self))
     }
 
     /// Relax a tight field element into a loose one.
@@ -257,7 +315,7 @@ impl Default for FieldElement {
 impl Eq for FieldElement {}
 impl PartialEq for FieldElement {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0.ct_eq(&(rhs.0)).into()
+        self.ct_eq(rhs).into()
     }
 }
 
@@ -293,7 +351,9 @@ impl ConditionallySelectable for FieldElement {
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        let a = fiat_p521_to_bytes(&self.0);
+        let b = fiat_p521_to_bytes(&other.0);
+        a.ct_eq(&b)
     }
 }
 
@@ -348,11 +408,11 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
-    const TWO_INV: Self = Self::ZERO; // TODO: unimplemented
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self::from_hex("00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe");
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO: unimplemented
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
 
     #[inline]
@@ -533,4 +593,33 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.copied().product()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
+
+    /// t = (modulus - 1) >> S
+    #[allow(dead_code)]
+    const T: [u64; 9] = [
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x00000000000000ff,
+    ];
+
+    impl_field_identity_tests!(FieldElement);
+    impl_field_invert_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
+    impl_primefield_tests!(FieldElement, T);
 }
