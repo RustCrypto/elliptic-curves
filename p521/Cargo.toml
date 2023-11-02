@@ -29,15 +29,15 @@ hex-literal = "0.4"
 primeorder = { version = "0.13.3", features = ["dev"], path = "../primeorder" }
 
 [features]
-default = ["pem", "std"]
+default = ["arithmetic", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
+arithmetic = ["dep:primeorder"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 test-vectors = ["dep:hex-literal"]
-wip-arithmetic-do-not-use = ["dep:primeorder"]
 voprf = ["elliptic-curve/voprf", "dep:sha2"]
 
 [package.metadata.docs.rs]
