@@ -601,7 +601,6 @@ mod tests {
     };
 
     /// t = (modulus - 1) >> S
-    #[allow(dead_code)]
     const T: [u64; 9] = [
         0xffffffffffffffff,
         0xffffffffffffffff,
