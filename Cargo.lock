@@ -782,6 +782,7 @@ dependencies = [
  "elliptic-curve",
  "hex-literal",
  "primeorder",
+ "rand_core",
  "sha2",
 ]
 

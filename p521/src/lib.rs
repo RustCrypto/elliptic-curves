@@ -18,6 +18,9 @@
 #[cfg(feature = "arithmetic")]
 pub mod arithmetic;
 
+#[cfg(feature = "ecdh")]
+pub mod ecdh;
+
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
@@ -81,6 +84,10 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP521>;
 
 impl FieldBytesEncoding<NistP521> for U576 {}
+
+/// NIST P-521 public key.
+#[cfg(feature = "arithmetic")]
+pub type PublicKey = elliptic_curve::PublicKey<NistP521>;
 
 /// NIST P-521 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP521>;
