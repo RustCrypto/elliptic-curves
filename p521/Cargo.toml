@@ -27,6 +27,7 @@ base16ct = "0.2.0"
 [dev-dependencies]
 hex-literal = "0.4"
 primeorder = { version = "0.13.3", features = ["dev"], path = "../primeorder" }
+rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
 default = ["arithmetic", "pem", "std"]
@@ -34,6 +35,7 @@ alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
 arithmetic = ["dep:primeorder"]
+ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
