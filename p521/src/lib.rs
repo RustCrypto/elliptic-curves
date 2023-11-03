@@ -15,11 +15,14 @@
     unused_qualifications
 )]
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
+#[cfg(feature = "arithmetic")]
 pub mod arithmetic;
 
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 pub use elliptic_curve::{self, bigint::U576};
 

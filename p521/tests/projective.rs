@@ -1,6 +1,6 @@
 //! Projective arithmetic tests.
 
-#![cfg(all(feature = "wip-arithmetic-do-not-use", feature = "test-vectors"))]
+#![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
 
 use elliptic_curve::{
     group::ff::PrimeField,
