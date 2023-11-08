@@ -28,6 +28,8 @@
 
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::lincomb;
 
 #[cfg(feature = "ecdh")]
 pub mod ecdh;

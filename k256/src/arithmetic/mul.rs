@@ -310,7 +310,7 @@ fn static_zip_map<T: Copy, S: Copy, V: Copy, const N: usize>(
 
 /// Calculates a linear combination `sum(x[i] * k[i])`, `i = 0..N`
 #[inline(always)]
-fn lincomb_generic<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) -> ProjectivePoint {
+pub fn lincomb<const N: usize>(xs: &[ProjectivePoint; N], ks: &[Scalar; N]) -> ProjectivePoint {
     let rs = static_map(
         |k| decompose_scalar(&k),
         ks,
@@ -429,7 +429,7 @@ impl MulByGenerator for ProjectivePoint {
 
 #[inline(always)]
 fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    lincomb_generic(&[*x], &[*k])
+    lincomb(&[*x], &[*k])
 }
 
 impl LinearCombination for ProjectivePoint {
@@ -439,7 +439,7 @@ impl LinearCombination for ProjectivePoint {
         y: &ProjectivePoint,
         l: &Scalar,
     ) -> ProjectivePoint {
-        lincomb_generic(&[*x, *y], &[*k, *l])
+        lincomb(&[*x, *y], &[*k, *l])
     }
 }
 
