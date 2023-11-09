@@ -21,6 +21,9 @@ pub mod arithmetic;
 #[cfg(feature = "ecdh")]
 pub mod ecdh;
 
+#[cfg(feature = "ecdsa-core")]
+pub mod ecdsa;
+
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
@@ -84,6 +87,10 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP521>;
 
 impl FieldBytesEncoding<NistP521> for U576 {}
+
+/// Non-zero NIST P-521 scalar field element.
+#[cfg(feature = "arithmetic")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP521>;
 
 /// NIST P-521 public key.
 #[cfg(feature = "arithmetic")]

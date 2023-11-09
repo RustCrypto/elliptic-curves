@@ -779,6 +779,7 @@ name = "p521"
 version = "0.13.0"
 dependencies = [
  "base16ct",
+ "ecdsa",
  "elliptic-curve",
  "hex-literal",
  "primeorder",
