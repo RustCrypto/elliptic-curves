@@ -49,11 +49,11 @@ use super::util::u576_to_le_bytes;
 /// p = 2^{521} − 1
 const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
-const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
+pub(crate) const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
-pub struct FieldElement(fiat_p521_tight_field_element);
+pub struct FieldElement(pub(crate) fiat_p521_tight_field_element);
 
 impl FieldElement {
     /// Zero element.

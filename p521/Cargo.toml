@@ -32,6 +32,7 @@ blobby = "0.3"
 ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.4"
 primeorder = { version = "0.13.3", features = ["dev"], path = "../primeorder" }
+proptest = "1.3"
 rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
@@ -44,6 +45,7 @@ digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha512"]
 getrandom = ["rand_core/getrandom"]
+hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core?/pkcs8", "elliptic-curve/pkcs8"]

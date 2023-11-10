@@ -784,6 +784,7 @@ dependencies = [
  "elliptic-curve",
  "hex-literal",
  "primeorder",
+ "proptest",
  "rand_core",
  "serdect",
  "sha2",
