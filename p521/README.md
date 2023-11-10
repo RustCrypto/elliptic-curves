@@ -11,6 +11,24 @@ Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve.
 
 [Documentation][docs-link]
 
+## ⚠️ Security Warning
+
+The elliptic curve arithmetic contained in this crate has never been
+independently audited!
+
+This crate has been designed with the goal of ensuring that secret-dependent
+operations are performed in constant time (using the `subtle` crate and
+constant-time formulas). However, it has not been thoroughly assessed to ensure
+that generated assembly is constant time on common CPU architectures.
+
+USE AT YOUR OWN RISK!
+
+## Supported Algorithms
+
+- [Elliptic Curve Diffie-Hellman (ECDH)][ECDH]: gated under the `ecdh` feature.
+- [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
+  `ecdsa` feature.
+
 ## About P-521
 
 NIST P-521 is a Weierstrass curve specified in [SP 800-186]:
@@ -63,4 +81,6 @@ dual licensed as above, without any additional terms or conditions.
 
 [RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
+[ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
+[ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 [SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final

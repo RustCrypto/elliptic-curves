@@ -776,7 +776,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.13.1"
+version = "0.13.2"
 dependencies = [
  "base16ct",
  "blobby",
