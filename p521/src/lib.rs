@@ -15,8 +15,30 @@
     unused_qualifications
 )]
 
-#[cfg(feature = "wip-arithmetic-do-not-use")]
-pub mod arithmetic;
+//! ## `serde` support
+//!
+//! When the `serde` feature of this crate is enabled, `Serialize` and
+//! `Deserialize` are impl'd for the following types:
+//!
+//! - [`AffinePoint`]
+//! - [`Scalar`]
+//!
+//! Please see type-specific documentation for more information.
+
+#[cfg(feature = "arithmetic")]
+mod arithmetic;
+
+#[cfg(feature = "ecdh")]
+pub mod ecdh;
+
+#[cfg(feature = "ecdsa-core")]
+pub mod ecdsa;
+
+#[cfg(any(feature = "test-vectors", test))]
+pub mod test_vectors;
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 pub use elliptic_curve::{self, bigint::U576};
 
@@ -75,6 +97,14 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP521>;
 
 impl FieldBytesEncoding<NistP521> for U576 {}
+
+/// Non-zero NIST P-521 scalar field element.
+#[cfg(feature = "arithmetic")]
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<NistP521>;
+
+/// NIST P-521 public key.
+#[cfg(feature = "arithmetic")]
+pub type PublicKey = elliptic_curve::PublicKey<NistP521>;
 
 /// NIST P-521 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<NistP521>;

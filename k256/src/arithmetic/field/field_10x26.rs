@@ -674,6 +674,7 @@ impl Default for FieldElement10x26 {
 }
 
 impl ConditionallySelectable for FieldElement10x26 {
+    #[inline(always)]
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self([
             u32::conditional_select(&a.0[0], &b.0[0], choice),

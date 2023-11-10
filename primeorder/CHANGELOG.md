@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.3 (2023-11-02)
+### Added
+- Inline annotations on `conditional_select` ([#942])
+
+### Changed
+- Support field elements larger than 64-bytes in `impl_projective_arithmetic_tests!` ([#951])
+
+[#942]: https://github.com/RustCrypto/elliptic-curves/pull/942
+[#951]: https://github.com/RustCrypto/elliptic-curves/pull/951
+
 ## 0.13.2 (2023-05-29)
 ### Changed
 - Improve decoding performance for uncompressed SEC1 points ([#891])

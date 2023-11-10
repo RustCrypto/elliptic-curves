@@ -24,9 +24,12 @@ y² = x³ + ax + b
 
 It's used to implement the following elliptic curves:
 
+- [`p192`]: NIST P-192
 - [`p224`]: NIST P-224
 - [`p256`]: NIST P-256
 - [`p384`]: NIST P-384
+- [`p521`]: NIST P-521
+- [`sm2`]: ShangMi 2
 
 ## ⚠️ Security Warning
 
@@ -85,6 +88,9 @@ dual licensed as above, without any additional terms or conditions.
 [RustCrypto]: https://github.com/rustcrypto/
 [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
 [Weierstrass equation]: https://crypto.stanford.edu/pbc/notes/elliptic/weier.html
+[`p192`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p192
 [`p224`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p224
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
-[`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
+[`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
+[`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
+[`sm2`]: https://github.com/RustCrypto/elliptic-curves/tree/master/sm2

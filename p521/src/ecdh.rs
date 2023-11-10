@@ -1,7 +1,7 @@
 //! Elliptic Curve Diffie-Hellman (Ephemeral) Support.
 //!
 //! This module contains a high-level interface for performing ephemeral
-//! Diffie-Hellman key exchanges using the secp256k1 elliptic curve.
+//! Diffie-Hellman key exchanges using the secp521r1 elliptic curve.
 //!
 //! # Usage
 //!
@@ -9,7 +9,7 @@
 //! exchange, nicknamed "Alice" and "Bob".
 //!
 //! ```
-//! use k256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
+//! use p521::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
 //! use rand_core::OsRng; // requires 'getrandom' feature
 //!
 //! // Alice
@@ -38,16 +38,10 @@
 
 pub use elliptic_curve::ecdh::diffie_hellman;
 
-use crate::{AffinePoint, Secp256k1};
+use crate::NistP521;
 
-/// secp256k1 Ephemeral Diffie-Hellman Secret.
-pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<Secp256k1>;
+/// NIST P-521 Ephemeral Diffie-Hellman Secret.
+pub type EphemeralSecret = elliptic_curve::ecdh::EphemeralSecret<NistP521>;
 
 /// Shared secret value computed via ECDH key agreement.
-pub type SharedSecret = elliptic_curve::ecdh::SharedSecret<Secp256k1>;
-
-impl From<&AffinePoint> for SharedSecret {
-    fn from(affine: &AffinePoint) -> SharedSecret {
-        affine.x.to_bytes().into()
-    }
-}
+pub type SharedSecret = elliptic_curve::ecdh::SharedSecret<NistP521>;

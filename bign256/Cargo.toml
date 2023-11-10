@@ -17,7 +17,7 @@ edition = "2021"
 rust-version = "1.65"
 
 [dependencies]
-elliptic-curve = { version = "0.13.5", features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "0.13.6", features = ["hazmat", "sec1"] }
 
 # optional dependencies
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }

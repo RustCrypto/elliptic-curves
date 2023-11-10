@@ -1,4 +1,4 @@
-//! Field element modulo the curve internal modulus using 32-bit limbs.
+//! Field element modulo the curve internal modulus using 64-bit limbs.
 //! Inspired by the implementation in <https://github.com/bitcoin-core/secp256k1>
 
 use crate::FieldBytes;
@@ -461,6 +461,7 @@ impl Default for FieldElement5x52 {
 }
 
 impl ConditionallySelectable for FieldElement5x52 {
+    #[inline(always)]
     fn conditional_select(
         a: &FieldElement5x52,
         b: &FieldElement5x52,

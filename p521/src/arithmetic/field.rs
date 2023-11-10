@@ -42,8 +42,7 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-#[cfg(target_pointer_width = "32")]
-use super::util::u32x18_to_u64x9;
+use super::util::u576_to_le_bytes;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -52,8 +51,42 @@ const MODULUS_HEX: &str = "00000000000001fffffffffffffffffffffffffffffffffffffff
 const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp521r1 base field used for curve coordinates.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FieldElement(fiat_p521_tight_field_element);
+
+impl core::fmt::Debug for FieldElement {
+    /// Formatting machinery for [`FieldElement`]
+    ///
+    /// # Why
+    /// ```ignore
+    /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// let fe2 = FieldElement([
+    ///     8,
+    ///     0,
+    ///     288230376151711744,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     144115188075855871,
+    /// ]);
+    /// ```
+    ///
+    /// For the above example, deriving [`core::fmt::Debug`] will result in returning 2 different strings,
+    /// which are in reality the same due to p521's unsaturated math, instead print the output as a hex string in
+    /// big-endian
+    ///
+    /// This makes debugging easier.
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let mut bytes = fiat_p521_to_bytes(&self.0);
+        bytes.reverse();
+        let formatter = base16ct::HexDisplay(&bytes);
+        f.debug_tuple("FieldElement")
+            .field(&format_args!("0x{formatter:X}"))
+            .finish()
+    }
+}
 
 impl FieldElement {
     /// Zero element.
@@ -91,7 +124,6 @@ impl FieldElement {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// This method is primarily intended for defining internal constants.
-    #[allow(dead_code)]
     pub(crate) const fn from_hex(hex: &str) -> Self {
         Self::from_uint_unchecked(U576::from_be_hex(hex))
     }
@@ -106,19 +138,8 @@ impl FieldElement {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// Used incorrectly this can lead to invalid results!
-    #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(u32x18_to_u64x9(w.as_words()))
-    }
-
-    /// Decode [`FieldElement`] from [`U576`].
-    ///
-    /// Does *not* perform a check that the field element does not overflow the order.
-    ///
-    /// Used incorrectly this can lead to invalid results!
-    #[cfg(target_pointer_width = "64")]
-    pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(w.to_words())
+        Self(fiat_p521_from_bytes(&u576_to_le_bytes(w)))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
@@ -156,26 +177,26 @@ impl FieldElement {
     }
 
     /// Add elements.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
     }
 
     /// Double element (add it to itself).
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     #[must_use]
     pub(crate) const fn double_loose(&self) -> LooseFieldElement {
         Self::add_loose(self, self)
     }
 
     /// Subtract elements, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
     }
 
     /// Negate element, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn neg_loose(&self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_opp(&self.0))
     }
@@ -202,13 +223,24 @@ impl FieldElement {
     }
 
     /// Multiply elements.
-    pub const fn mul(&self, rhs: &Self) -> Self {
+    pub const fn multiply(&self, rhs: &Self) -> Self {
         LooseFieldElement::mul(&self.relax(), &rhs.relax())
     }
 
     /// Square element.
     pub const fn square(&self) -> Self {
         self.relax().square()
+    }
+
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        let mut x = self.square();
+        let mut i = 1;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -229,7 +261,7 @@ impl FieldElement {
                 res = res.square();
 
                 if ((exp[i] >> j) & 1) == 1 {
-                    res = Self::mul(&res, self);
+                    res = Self::multiply(&res, self);
                 }
             }
         }
@@ -239,13 +271,56 @@ impl FieldElement {
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        todo!("`invert` not yet implemented")
+        CtOption::new(self.invert_unchecked(), !self.is_zero())
+    }
+
+    /// Returns the multiplicative inverse of self.
+    ///
+    /// Does not check that self is non-zero.
+    const fn invert_unchecked(&self) -> Self {
+        // Adapted from addchain: github.com/mmcloughlin/addchain
+        let z = self.square();
+        let z = self.multiply(&z);
+        let t0 = z.sqn(2);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(4);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(8);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(16);
+        let z = z.multiply(&t0);
+        let t0 = z.sqn(32);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(64);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(129);
+        let z = z.multiply(&t0);
+        let t0 = z.square();
+        let t0 = self.multiply(&t0);
+        let t0 = t0.sqn(259);
+        let z = z.multiply(&t0);
+        let z = z.sqn(2);
+        self.multiply(&z)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
+    ///
+    /// # Implementation details
+    /// If _x_ has a sqrt, then due to Euler's criterion this implies x<sup>(p - 1)/2</sup> = 1.
+    /// 1. x<sup>(p + 1)/2</sup> = x.
+    /// 2. There's a special property due to _p ≡ 3 (mod 4)_ which implies _(p + 1)/4_ is an integer.
+    /// 3. We can rewrite `1.` as x<sup>((p+1)/4)<sup>2</sup></sup>
+    /// 4. x<sup>(p+1)/4</sup> is the square root.
+    /// 5. This is simplified as (2<sup>251</sup> - 1 + 1) /4 = 2<sup>519</sup>
+    /// 6. Hence, x<sup>2<sup>519</sup></sup> is the square root iff _result.square() == self_
     pub fn sqrt(&self) -> CtOption<Self> {
-        todo!("`sqrt` not yet implemented")
+        let sqrt = self.sqn(519);
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 
     /// Relax a tight field element into a loose one.
@@ -269,7 +344,7 @@ impl Default for FieldElement {
 impl Eq for FieldElement {}
 impl PartialEq for FieldElement {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0.ct_eq(&(rhs.0)).into()
+        self.ct_eq(rhs).into()
     }
 }
 
@@ -305,7 +380,9 @@ impl ConditionallySelectable for FieldElement {
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        let a = fiat_p521_to_bytes(&self.0);
+        let b = fiat_p521_to_bytes(&other.0);
+        a.ct_eq(&b)
     }
 }
 
@@ -360,11 +437,11 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
-    const TWO_INV: Self = Self::ZERO; // TODO: unimplemented
+    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self::from_hex("00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe");
-    const ROOT_OF_UNITY_INV: Self = Self::ZERO; // TODO: unimplemented
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
 
     #[inline]
@@ -545,4 +622,32 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.copied().product()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::FieldElement;
+    use elliptic_curve::ff::PrimeField;
+    use primeorder::{
+        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
+        impl_primefield_tests,
+    };
+
+    /// t = (modulus - 1) >> S
+    const T: [u64; 9] = [
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0xffffffffffffffff,
+        0x00000000000000ff,
+    ];
+
+    impl_field_identity_tests!(FieldElement);
+    impl_field_invert_tests!(FieldElement);
+    impl_field_sqrt_tests!(FieldElement);
+    impl_primefield_tests!(FieldElement, T);
 }
