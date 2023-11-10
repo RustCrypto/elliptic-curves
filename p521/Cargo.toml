@@ -24,6 +24,7 @@ ecdsa-core = { version = "0.16.5", package = "ecdsa", optional = true, default-f
 hex-literal = { version = "0.4", optional = true }
 primeorder = { version = "0.13.3", optional = true, path = "../primeorder" }
 rand_core = { version = "0.6", optional = true, default-features = false }
+serdect = { version = "0.2", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [dev-dependencies]
@@ -45,7 +46,8 @@ ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha512"]
 getrandom = ["rand_core/getrandom"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]
-pkcs8 = ["elliptic-curve/pkcs8"]
+pkcs8 = ["ecdsa-core?/pkcs8", "elliptic-curve/pkcs8"]
+serde = ["ecdsa-core?/serde", "elliptic-curve/serde", "primeorder?/serde", "serdect"]
 sha512 = ["digest", "dep:sha2"]
 test-vectors = ["dep:hex-literal"]
 voprf = ["elliptic-curve/voprf", "dep:sha2"]

@@ -785,6 +785,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "rand_core",
+ "serdect",
  "sha2",
 ]
 
