@@ -16,7 +16,7 @@
 )]
 
 #[cfg(feature = "arithmetic")]
-pub mod arithmetic;
+mod arithmetic;
 
 #[cfg(feature = "ecdh")]
 pub mod ecdh;
