@@ -15,6 +15,16 @@
     unused_qualifications
 )]
 
+//! ## `serde` support
+//!
+//! When the `serde` feature of this crate is enabled, `Serialize` and
+//! `Deserialize` are impl'd for the following types:
+//!
+//! - [`AffinePoint`]
+//! - [`Scalar`]
+//!
+//! Please see type-specific documentation for more information.
+
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
