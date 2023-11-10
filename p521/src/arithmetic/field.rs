@@ -124,7 +124,6 @@ impl FieldElement {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// This method is primarily intended for defining internal constants.
-    #[allow(dead_code)]
     pub(crate) const fn from_hex(hex: &str) -> Self {
         Self::from_uint_unchecked(U576::from_be_hex(hex))
     }
@@ -178,26 +177,26 @@ impl FieldElement {
     }
 
     /// Add elements.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
     }
 
     /// Double element (add it to itself).
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     #[must_use]
     pub(crate) const fn double_loose(&self) -> LooseFieldElement {
         Self::add_loose(self, self)
     }
 
     /// Subtract elements, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
     }
 
     /// Negate element, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn neg_loose(&self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_opp(&self.0))
     }
