@@ -43,7 +43,8 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-use super::util::u576_to_le_bytes;
+#[cfg(target_pointer_width = "32")]
+use super::util;
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{521} − 1
@@ -106,7 +107,39 @@ impl FieldElement {
     ///
     /// Used incorrectly this can lead to invalid results!
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_from_bytes(&u576_to_le_bytes(w)))
+        // Converts the saturated representation used by `U576` into a 66-byte array with a
+        // little-endian byte ordering.
+        //
+        // TODO(tarcieri): use `FieldBytesEncoding::encode_field_bytes` when `const impl` is stable
+        #[cfg(target_pointer_width = "32")]
+        let words = util::u32x18_to_u64x9(w.as_words());
+        #[cfg(target_pointer_width = "64")]
+        let words = w.as_words();
+
+        let mut le_bytes = [0u8; 66];
+        let mut i = 0;
+
+        while i < words.len() - 1 {
+            let word = words[i].to_le_bytes();
+            let start = i * 8;
+            le_bytes[start] = word[0];
+            le_bytes[start + 1] = word[1];
+            le_bytes[start + 2] = word[2];
+            le_bytes[start + 3] = word[3];
+            le_bytes[start + 4] = word[4];
+            le_bytes[start + 5] = word[5];
+            le_bytes[start + 6] = word[6];
+            le_bytes[start + 7] = word[7];
+            i += 1;
+        }
+
+        let last_word = words[8].to_le_bytes();
+        le_bytes[i * 8] = last_word[0];
+        le_bytes[(i * 8) + 1] = last_word[1];
+
+        // Decode the little endian serialization into the unsaturated big integer form used by
+        // the fiat-crypto synthesized code.
+        Self(fiat_p521_from_bytes(&le_bytes))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
