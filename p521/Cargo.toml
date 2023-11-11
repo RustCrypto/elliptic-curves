@@ -1,6 +1,6 @@
 [package]
 name = "p521"
-version = "0.13.2"
+version = "0.13.3"
 description = """
 Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve
 as defined in SP 800-186
