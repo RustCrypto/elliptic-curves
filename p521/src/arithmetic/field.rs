@@ -630,6 +630,7 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
+    use hex_literal::hex;
     use primeorder::{
         impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
         impl_primefield_tests,
@@ -652,4 +653,12 @@ mod tests {
     impl_field_invert_tests!(FieldElement);
     impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
+
+    /// Regression test for RustCrypto/elliptic-curves#965
+    #[test]
+    fn decode_invalid_field_element_returns_err() {
+        let overflowing_bytes = hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        let ct_option = FieldElement::from_bytes(overflowing_bytes.as_ref().into());
+        assert!(bool::from(ct_option.is_none()));
+    }
 }

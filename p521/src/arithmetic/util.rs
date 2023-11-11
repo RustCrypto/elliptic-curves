@@ -57,20 +57,6 @@ pub const fn u576_to_le_bytes(w: U576) -> [u8; 66] {
         i += 1;
     }
     let last_word = words[8].to_le_bytes();
-    debug_assert!(
-        last_word[1] <= 0x1,
-        "Input bound for the result[65] is [0x0 ~> 0x1]"
-    );
-    debug_assert!(
-        last_word[2] == 0
-            && last_word[3] == 0
-            && last_word[4] == 0
-            && last_word[5] == 0
-            && last_word[6] == 0
-            && last_word[7] == 0,
-        "Expected last word to have leading zeroes"
-    );
-
     result[i * 8] = last_word[0];
     result[(i * 8) + 1] = last_word[1];
 
