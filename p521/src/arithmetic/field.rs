@@ -30,6 +30,7 @@ pub(crate) use self::loose::LooseFieldElement;
 use self::field_impl::*;
 use crate::{FieldBytes, NistP521, U576};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -53,40 +54,6 @@ const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
 pub struct FieldElement(fiat_p521_tight_field_element);
-
-impl core::fmt::Debug for FieldElement {
-    /// Formatting machinery for [`FieldElement`]
-    ///
-    /// # Why
-    /// ```ignore
-    /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
-    /// let fe2 = FieldElement([
-    ///     8,
-    ///     0,
-    ///     288230376151711744,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     144115188075855871,
-    /// ]);
-    /// ```
-    ///
-    /// For the above example, deriving [`core::fmt::Debug`] will result in returning 2 different strings,
-    /// which are in reality the same due to p521's unsaturated math, instead print the output as a hex string in
-    /// big-endian
-    ///
-    /// This makes debugging easier.
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let mut bytes = fiat_p521_to_bytes(&self.0);
-        bytes.reverse();
-        let formatter = base16ct::HexDisplay(&bytes);
-        f.debug_tuple("FieldElement")
-            .field(&format_args!("0x{formatter:X}"))
-            .finish()
-    }
-}
 
 impl FieldElement {
     /// Zero element.
@@ -338,6 +305,41 @@ impl AsRef<fiat_p521_tight_field_element> for FieldElement {
 impl Default for FieldElement {
     fn default() -> Self {
         Self::ZERO
+    }
+}
+
+impl Debug for FieldElement {
+    /// Formatting machinery for [`FieldElement`]
+    ///
+    /// # Why
+    /// ```ignore
+    /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// let fe2 = FieldElement([
+    ///     8,
+    ///     0,
+    ///     288230376151711744,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     144115188075855871,
+    /// ]);
+    /// ```
+    ///
+    /// For the above example, deriving [`core::fmt::Debug`] will result in returning 2 different
+    /// strings, which are in reality the same due to p521's unsaturated math, instead print the
+    /// output as a hex string in big-endian.
+    ///
+    /// This makes debugging easier.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut bytes = fiat_p521_to_bytes(&self.0);
+        bytes.reverse();
+
+        let formatter = base16ct::HexDisplay(&bytes);
+        f.debug_tuple("FieldElement")
+            .field(&format_args!("0x{formatter:X}"))
+            .finish()
     }
 }
 
