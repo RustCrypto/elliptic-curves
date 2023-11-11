@@ -46,11 +46,8 @@ use elliptic_curve::{
 #[cfg(target_pointer_width = "32")]
 use super::util;
 
-/// Constant representing the modulus serialized as hex.
-/// p = 2^{521} − 1
-const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-
-pub(crate) const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
+/// Field modulus: p = 2^{521} − 1
+pub(crate) const MODULUS: U576 = U576::from_be_hex("00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
@@ -469,7 +466,7 @@ impl Field for FieldElement {
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
-    const MODULUS: &'static str = MODULUS_HEX;
+    const MODULUS: &'static str = "1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
