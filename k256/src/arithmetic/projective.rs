@@ -20,7 +20,6 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
     Error, Result,
 };
-
 #[rustfmt::skip]
 const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
@@ -34,7 +33,7 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
 pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
-    z: FieldElement,
+    pub(super) z: FieldElement,
 }
 
 impl ProjectivePoint {
@@ -69,12 +68,14 @@ impl ProjectivePoint {
     pub fn to_affine(&self) -> AffinePoint {
         self.z
             .invert()
-            .map(|zinv| {
-                let x = self.x * &zinv;
-                let y = self.y * &zinv;
-                AffinePoint::new(x.normalize(), y.normalize())
-            })
+            .map(|zinv| self.to_affine_internal(zinv))
             .unwrap_or_else(|| AffinePoint::IDENTITY)
+    }
+
+    pub(super) fn to_affine_internal(&self, zinv: FieldElement) -> AffinePoint {
+        let x = self.x * &zinv;
+        let y = self.y * &zinv;
+        AffinePoint::new(x.normalize(), y.normalize())
     }
 
     /// Returns `-self`.

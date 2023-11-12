@@ -26,6 +26,8 @@
 //!
 //! Please see type-specific documentation for more information.
 
+extern crate alloc;
+
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
