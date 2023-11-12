@@ -42,8 +42,7 @@ impl ToAffineBatch for Secp256k1 {
         let mut zs = [FieldElement::ONE; N];
 
         for i in 0..N {
-            let z = points[i].z;
-            if z != FieldElement::ZERO {
+            if points[i].z != FieldElement::ZERO {
                 // Even a single zero value will fail inversion for the entire batch.
                 // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
                 // and treat that case specially later-on.
@@ -56,19 +55,43 @@ impl ToAffineBatch for Secp256k1 {
 
         let mut affine_points = [AffinePoint::IDENTITY; N];
         for i in 0..N {
-            let point = points[i];
-            if point.z != FieldElement::ZERO {
+            if points[i].z != FieldElement::ZERO {
                 // If the `z` coordinate is non-zero, we can use it to invert;
                 // otherwise it defaults to the `IDENTITY` value in initialization.
-                affine_points[i] = point.to_affine_internal(zs_inverses[i])
+                affine_points[i] = points[i].to_affine_internal(zs_inverses[i])
             }
         }
 
         affine_points
     }
 
+    #[cfg(feature = "alloc")]
     fn to_affine_batch<B: FromIterator<Self::AffinePoint>>(points: &[Self::ProjectivePoint]) -> B {
-        todo!()
+        let mut zs: Vec<_> = (0..points.len()).map(|_| FieldElement::ONE).collect();
+
+        for i in 0..points.len() {
+            if points[i].z != FieldElement::ZERO {
+                // Even a single zero value will fail inversion for the entire batch.
+                // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
+                // and treat that case specially later-on.
+                zs[i] = points[i].z;
+            }
+        }
+
+        // This is safe to unwrap since we assured that all elements are non-zero
+        let zs_inverses: Vec<_> =
+            <FieldElement as InvertBatch>::invert_batch(zs.as_slice()).unwrap();
+
+        let mut affine_points: Vec<_> = (0..points.len()).map(|_| AffinePoint::IDENTITY).collect();
+        for i in 0..points.len() {
+            if points[i].z != FieldElement::ZERO {
+                // If the `z` coordinate is non-zero, we can use it to invert;
+                // otherwise it defaults to the `IDENTITY` value in initialization.
+                affine_points[i] = points[i].to_affine_internal(zs_inverses[i])
+            }
+        }
+
+        affine_points.into_iter().collect()
     }
 }
 
