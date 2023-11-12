@@ -792,6 +792,7 @@ mod tests {
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         FieldBytes, NonZeroScalar, WideBytes, ORDER,
     };
+    use elliptic_curve::ops::InvertBatch;
     use elliptic_curve::{
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
@@ -802,6 +803,7 @@ mod tests {
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
+    use rand_core::OsRng;
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
@@ -947,6 +949,30 @@ mod tests {
             Scalar::ROOT_OF_UNITY.invert_vartime().unwrap(),
             Scalar::ROOT_OF_UNITY_INV
         );
+    }
+
+    #[test]
+    fn inverts_batch_generic() {
+        let k: Scalar = Scalar::random(&mut OsRng);
+        let l: Scalar = Scalar::random(&mut OsRng);
+
+        let expected = [k.invert().unwrap(), l.invert().unwrap()];
+        assert_eq!(
+            <Scalar as InvertBatch>::invert_batch_generic(&[k, l]).unwrap(),
+            expected
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn inverts_batch() {
+        extern crate alloc;
+        let k: Scalar = Scalar::random(&mut OsRng);
+        let l: Scalar = Scalar::random(&mut OsRng);
+
+        let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
+        let res: alloc::vec::Vec<_> = <Scalar as InvertBatch>::invert_batch(&[k, l]).unwrap();
+        assert_eq!(res, expected);
     }
 
     #[test]
