@@ -72,7 +72,7 @@ impl ProjectivePoint {
             .unwrap_or_else(|| AffinePoint::IDENTITY)
     }
 
-    pub(super) fn to_affine_internal(&self, zinv: FieldElement) -> AffinePoint {
+    pub(super) fn to_affine_internal(self, zinv: FieldElement) -> AffinePoint {
         let x = self.x * &zinv;
         let y = self.y * &zinv;
         AffinePoint::new(x.normalize(), y.normalize())

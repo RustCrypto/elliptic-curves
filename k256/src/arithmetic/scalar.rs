@@ -792,7 +792,6 @@ mod tests {
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         FieldBytes, NonZeroScalar, WideBytes, ORDER,
     };
-    use elliptic_curve::ops::InvertBatch;
     use elliptic_curve::{
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
@@ -958,7 +957,7 @@ mod tests {
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
-            <Scalar as InvertBatch>::invert_batch_generic(&[k, l]).unwrap(),
+            <Scalar as Invert>::invert_batch_array(&[k, l]).unwrap(),
             expected
         );
     }
@@ -971,7 +970,7 @@ mod tests {
         let l: Scalar = Scalar::random(&mut OsRng);
 
         let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: alloc::vec::Vec<_> = <Scalar as InvertBatch>::invert_batch(&[k, l]).unwrap();
+        let res: alloc::vec::Vec<_> = <Scalar as Invert>::invert_batch_slice(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 

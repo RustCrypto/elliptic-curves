@@ -16,7 +16,7 @@ pub use field::FieldElement;
 
 use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 use crate::Secp256k1;
-use elliptic_curve::ops::InvertBatch;
+use elliptic_curve::ops::Invert;
 use elliptic_curve::{CurveArithmetic, ToAffineBatch};
 
 impl CurveArithmetic for Secp256k1 {
@@ -36,7 +36,7 @@ pub(crate) const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unche
 ]);
 
 impl ToAffineBatch for Secp256k1 {
-    fn to_affine_batch_generic<const N: usize>(
+    fn to_affine_batch_array<const N: usize>(
         points: &[Self::ProjectivePoint; N],
     ) -> [Self::AffinePoint; N] {
         let mut zs = [FieldElement::ONE; N];
@@ -51,7 +51,7 @@ impl ToAffineBatch for Secp256k1 {
         }
 
         // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses = <FieldElement as InvertBatch>::invert_batch_generic(&zs).unwrap();
+        let zs_inverses = <FieldElement as Invert>::invert_batch_array(&zs).unwrap();
 
         let mut affine_points = [AffinePoint::IDENTITY; N];
         for i in 0..N {
@@ -66,7 +66,9 @@ impl ToAffineBatch for Secp256k1 {
     }
 
     #[cfg(feature = "alloc")]
-    fn to_affine_batch<B: FromIterator<Self::AffinePoint>>(points: &[Self::ProjectivePoint]) -> B {
+    fn to_affine_batch_slice<B: FromIterator<Self::AffinePoint>>(
+        points: &[Self::ProjectivePoint],
+    ) -> B {
         let mut zs: Vec<_> = (0..points.len()).map(|_| FieldElement::ONE).collect();
 
         for i in 0..points.len() {
@@ -80,7 +82,7 @@ impl ToAffineBatch for Secp256k1 {
 
         // This is safe to unwrap since we assured that all elements are non-zero
         let zs_inverses: Vec<_> =
-            <FieldElement as InvertBatch>::invert_batch(zs.as_slice()).unwrap();
+            <FieldElement as Invert>::invert_batch_slice(zs.as_slice()).unwrap();
 
         let mut affine_points: Vec<_> = (0..points.len()).map(|_| AffinePoint::IDENTITY).collect();
         for i in 0..points.len() {
@@ -134,13 +136,13 @@ mod tests {
 
         let expected = [g.to_affine(), h.to_affine()];
         assert_eq!(
-            <Secp256k1 as ToAffineBatch>::to_affine_batch_generic(&[g, h]),
+            <Secp256k1 as ToAffineBatch>::to_affine_batch_array(&[g, h]),
             expected
         );
 
         let expected = [g.to_affine(), AffinePoint::IDENTITY];
         assert_eq!(
-            <Secp256k1 as ToAffineBatch>::to_affine_batch_generic(&[g, ProjectivePoint::IDENTITY]),
+            <Secp256k1 as ToAffineBatch>::to_affine_batch_array(&[g, ProjectivePoint::IDENTITY]),
             expected
         );
     }
@@ -155,12 +157,12 @@ mod tests {
         let h = ProjectivePoint::mul_by_generator(&l);
 
         let expected = proptest::std_facade::vec![g.to_affine(), h.to_affine()];
-        let res: alloc::vec::Vec<_> = <Secp256k1 as ToAffineBatch>::to_affine_batch(&[g, h]);
+        let res: alloc::vec::Vec<_> = <Secp256k1 as ToAffineBatch>::to_affine_batch_slice(&[g, h]);
         assert_eq!(res, expected);
 
         let expected = proptest::std_facade::vec![g.to_affine(), AffinePoint::IDENTITY];
         let res: alloc::vec::Vec<_> =
-            <Secp256k1 as ToAffineBatch>::to_affine_batch(&[g, ProjectivePoint::IDENTITY]);
+            <Secp256k1 as ToAffineBatch>::to_affine_batch_slice(&[g, ProjectivePoint::IDENTITY]);
 
         assert_eq!(res, expected);
     }

@@ -509,7 +509,7 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 #[cfg(test)]
 mod tests {
     use elliptic_curve::ff::{Field, PrimeField};
-    use elliptic_curve::ops::InvertBatch;
+    use elliptic_curve::ops::Invert;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
     use rand_core::OsRng;
@@ -690,7 +690,7 @@ mod tests {
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
-            <FieldElement as InvertBatch>::invert_batch_generic(&[k, l]).unwrap(),
+            <FieldElement as Invert>::invert_batch_array(&[k, l]).unwrap(),
             expected
         );
     }
@@ -703,7 +703,8 @@ mod tests {
         let l: FieldElement = FieldElement::random(&mut OsRng);
 
         let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: alloc::vec::Vec<_> = <FieldElement as InvertBatch>::invert_batch(&[k, l]).unwrap();
+        let res: alloc::vec::Vec<_> =
+            <FieldElement as Invert>::invert_batch_slice(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 
