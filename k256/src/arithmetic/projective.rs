@@ -254,13 +254,7 @@ impl From<AffinePoint> for ProjectivePoint {
 }
 
 impl Normalize for ProjectivePoint {
-    type AffinePoint = AffinePoint;
-
-    fn to_affine(&self) -> Self::AffinePoint {
-        ProjectivePoint::to_affine(self)
-    }
-
-    fn batch_normalize_array<const N: usize>(points: &[Self; N]) -> [Self::AffinePoint; N] {
+    fn batch_normalize_array<const N: usize>(points: &[Self; N]) -> [Self::AffineRepr; N] {
         let mut zs = [FieldElement::ONE; N];
 
         for i in 0..N {
@@ -287,8 +281,13 @@ impl Normalize for ProjectivePoint {
         affine_points
     }
 
+    #[cfg(not(feature = "alloc"))]
+    fn batch_normalize_slice<B: FromIterator<Self::AffineRepr>>(_points: &[Self]) -> B {
+        todo!()
+    }
+
     #[cfg(feature = "alloc")]
-    fn batch_normalize<B: FromIterator<Self::AffinePoint>>(points: &[Self]) -> B {
+    fn batch_normalize_slice<B: FromIterator<Self::AffineRepr>>(points: &[Self]) -> B {
         let mut zs: alloc::vec::Vec<_> = (0..points.len()).map(|_| FieldElement::ONE).collect();
 
         for i in 0..points.len() {
@@ -302,7 +301,7 @@ impl Normalize for ProjectivePoint {
 
         // This is safe to unwrap since we assured that all elements are non-zero
         let zs_inverses: alloc::vec::Vec<_> =
-            <FieldElement as Invert>::batch_invert(zs.as_slice()).unwrap();
+            <FieldElement as Invert>::batch_invert_slice(zs.as_slice()).unwrap();
 
         let mut affine_points: alloc::vec::Vec<_> =
             (0..points.len()).map(|_| AffinePoint::IDENTITY).collect();
@@ -449,11 +448,29 @@ impl GroupEncoding for ProjectivePoint {
 
 impl PrimeGroup for ProjectivePoint {}
 
+#[cfg(not(feature = "alloc"))]
 impl Curve for ProjectivePoint {
     type AffineRepr = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {
         ProjectivePoint::to_affine(self)
+    }
+}
+#[cfg(feature = "alloc")]
+impl Curve for ProjectivePoint {
+    type AffineRepr = AffinePoint;
+
+    fn to_affine(&self) -> AffinePoint {
+        ProjectivePoint::to_affine(self)
+    }
+
+    fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
+        assert_eq!(p.len(), q.len());
+
+        let affine_points: alloc::vec::Vec<_> = <Self as Normalize>::batch_normalize_slice(p);
+        for i in 0..q.len() {
+            q[i] = affine_points[i];
+        }
     }
 }
 
@@ -679,7 +696,7 @@ mod tests {
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
     use elliptic_curve::ops::MulByGenerator;
     use elliptic_curve::Field;
-    use elliptic_curve::Normalize;
+    use elliptic_curve::{group, Normalize};
     use rand_core::OsRng;
 
     #[test]
@@ -700,42 +717,62 @@ mod tests {
     }
 
     #[test]
-    fn to_affine_batch_generic() {
+    fn batch_normalize_array() {
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 
+        let mut res = [AffinePoint::IDENTITY; 2];
         let expected = [g.to_affine(), h.to_affine()];
         assert_eq!(
             <ProjectivePoint as Normalize>::batch_normalize_array(&[g, h]),
             expected
         );
 
+        <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], &mut res);
+        assert_eq!(res, expected);
+
         let expected = [g.to_affine(), AffinePoint::IDENTITY];
         assert_eq!(
             <ProjectivePoint as Normalize>::batch_normalize_array(&[g, ProjectivePoint::IDENTITY]),
             expected
         );
+
+        <ProjectivePoint as group::Curve>::batch_normalize(
+            &[g, ProjectivePoint::IDENTITY],
+            &mut res,
+        );
+        assert_eq!(res, expected);
     }
 
     #[test]
     #[cfg(feature = "alloc")]
-    fn to_affine_batch() {
+    fn batch_normalize_slice() {
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 
         let expected = proptest::std_facade::vec![g.to_affine(), h.to_affine()];
-        let res: alloc::vec::Vec<_> = <ProjectivePoint as Normalize>::batch_normalize(&[g, h]);
+        let mut res: alloc::vec::Vec<_> =
+            <ProjectivePoint as Normalize>::batch_normalize_slice(&[g, h]);
         assert_eq!(res, expected);
+
+        <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], res.as_mut());
+        assert_eq!(res.to_vec(), expected);
 
         let expected = proptest::std_facade::vec![g.to_affine(), AffinePoint::IDENTITY];
-        let res: alloc::vec::Vec<_> =
-            <ProjectivePoint as Normalize>::batch_normalize(&[g, ProjectivePoint::IDENTITY]);
+        res =
+            <ProjectivePoint as Normalize>::batch_normalize_slice(&[g, ProjectivePoint::IDENTITY]);
 
         assert_eq!(res, expected);
+
+        <ProjectivePoint as group::Curve>::batch_normalize(
+            &[g, ProjectivePoint::IDENTITY],
+            res.as_mut(),
+        );
+        assert_eq!(res.to_vec(), expected);
     }
 
     #[test]
