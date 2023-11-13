@@ -698,7 +698,6 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        extern crate alloc;
         let k: FieldElement = FieldElement::random(&mut OsRng);
         let l: FieldElement = FieldElement::random(&mut OsRng);
 

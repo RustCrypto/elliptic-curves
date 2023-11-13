@@ -965,7 +965,6 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        extern crate alloc;
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
 

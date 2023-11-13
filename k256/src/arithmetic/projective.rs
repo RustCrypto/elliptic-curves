@@ -722,7 +722,6 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn to_affine_batch() {
-        extern crate alloc;
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
         let g = ProjectivePoint::mul_by_generator(&k);
