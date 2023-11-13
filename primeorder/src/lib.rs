@@ -21,6 +21,8 @@ pub use elliptic_curve::{
     self, generic_array, point::Double, Field, FieldBytes, PrimeCurve, PrimeField,
 };
 
+use elliptic_curve::ops::Invert;
+use elliptic_curve::subtle::CtOption;
 use elliptic_curve::CurveArithmetic;
 
 /// Parameters for elliptic curves of prime order which can be described by the
@@ -32,7 +34,8 @@ pub trait PrimeCurveParams:
     + CurveArithmetic<ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
-    type FieldElement: PrimeField<Repr = FieldBytes<Self>>;
+    type FieldElement: PrimeField<Repr = FieldBytes<Self>>
+        + Invert<Output = CtOption<Self::FieldElement>>;
 
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
     type PointArithmetic: point_arithmetic::PointArithmetic<Self>;

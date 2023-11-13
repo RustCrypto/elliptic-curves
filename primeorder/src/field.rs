@@ -317,6 +317,14 @@ macro_rules! impl_mont_field_element_arithmetic {
             }
         }
 
+        impl $crate::elliptic_curve::ops::Invert for $fe {
+            type Output = $crate::elliptic_curve::subtle::CtOption<Self>;
+
+            fn invert(&self) -> $crate::elliptic_curve::subtle::CtOption<Self> {
+                self.invert()
+            }
+        }
+
         impl $crate::elliptic_curve::subtle::ConditionallySelectable for $fe {
             fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
                 Self(<$uint>::conditional_select(&a.0, &b.0, choice))
