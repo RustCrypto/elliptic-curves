@@ -448,15 +448,6 @@ impl GroupEncoding for ProjectivePoint {
 
 impl PrimeGroup for ProjectivePoint {}
 
-#[cfg(not(feature = "alloc"))]
-impl Curve for ProjectivePoint {
-    type AffineRepr = AffinePoint;
-
-    fn to_affine(&self) -> AffinePoint {
-        ProjectivePoint::to_affine(self)
-    }
-}
-#[cfg(feature = "alloc")]
 impl Curve for ProjectivePoint {
     type AffineRepr = AffinePoint;
 
@@ -464,6 +455,7 @@ impl Curve for ProjectivePoint {
         ProjectivePoint::to_affine(self)
     }
 
+    #[cfg(feature = "alloc")]
     fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
         assert_eq!(p.len(), q.len());
 
