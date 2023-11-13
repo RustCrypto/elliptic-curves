@@ -26,6 +26,7 @@
 //!
 //! Please see type-specific documentation for more information.
 
+#[cfg(feature = "alloc")]
 extern crate alloc;
 
 #[cfg(feature = "arithmetic")]

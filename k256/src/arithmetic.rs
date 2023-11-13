@@ -11,7 +11,6 @@ pub(crate) mod scalar;
 #[cfg(test)]
 mod dev;
 
-use alloc::vec::Vec;
 pub use field::FieldElement;
 
 use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
@@ -69,7 +68,7 @@ impl ToAffineBatch for Secp256k1 {
     fn to_affine_batch_slice<B: FromIterator<Self::AffinePoint>>(
         points: &[Self::ProjectivePoint],
     ) -> B {
-        let mut zs: Vec<_> = (0..points.len()).map(|_| FieldElement::ONE).collect();
+        let mut zs: alloc::vec::Vec<_> = (0..points.len()).map(|_| FieldElement::ONE).collect();
 
         for i in 0..points.len() {
             if points[i].z != FieldElement::ZERO {
@@ -81,10 +80,11 @@ impl ToAffineBatch for Secp256k1 {
         }
 
         // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses: Vec<_> =
+        let zs_inverses: alloc::vec::Vec<_> =
             <FieldElement as Invert>::invert_batch_slice(zs.as_slice()).unwrap();
 
-        let mut affine_points: Vec<_> = (0..points.len()).map(|_| AffinePoint::IDENTITY).collect();
+        let mut affine_points: alloc::vec::Vec<_> =
+            (0..points.len()).map(|_| AffinePoint::IDENTITY).collect();
         for i in 0..points.len() {
             if points[i].z != FieldElement::ZERO {
                 // If the `z` coordinate is non-zero, we can use it to invert;
