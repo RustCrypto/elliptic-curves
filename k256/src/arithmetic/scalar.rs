@@ -951,26 +951,26 @@ mod tests {
     }
 
     #[test]
-    fn inverts_batch_generic() {
+    fn batch_invert_array() {
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
-            <Scalar as Invert>::invert_batch_array(&[k, l]).unwrap(),
+            <Scalar as Invert>::batch_invert_array(&[k, l]).unwrap(),
             expected
         );
     }
 
     #[test]
     #[cfg(feature = "alloc")]
-    fn inverts_batch() {
+    fn batch_invert() {
         extern crate alloc;
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
 
         let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: alloc::vec::Vec<_> = <Scalar as Invert>::invert_batch_slice(&[k, l]).unwrap();
+        let res: alloc::vec::Vec<_> = <Scalar as Invert>::batch_invert(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 

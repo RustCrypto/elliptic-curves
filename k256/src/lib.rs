@@ -27,6 +27,8 @@
 //! Please see type-specific documentation for more information.
 
 #[cfg(feature = "alloc")]
+#[allow(unused_imports)]
+#[macro_use]
 extern crate alloc;
 
 #[cfg(feature = "arithmetic")]
