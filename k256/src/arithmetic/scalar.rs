@@ -969,7 +969,7 @@ mod tests {
         let l: Scalar = Scalar::random(&mut OsRng);
 
         let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: alloc::vec::Vec<_> = <Scalar as Invert>::batch_invert_slice(&[k, l]).unwrap();
+        let res: alloc::vec::Vec<_> = <Scalar as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 

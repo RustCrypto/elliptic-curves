@@ -703,7 +703,7 @@ mod tests {
 
         let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
         let res: alloc::vec::Vec<_> =
-            <FieldElement as Invert>::batch_invert_slice(&[k, l]).unwrap();
+            <FieldElement as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 
