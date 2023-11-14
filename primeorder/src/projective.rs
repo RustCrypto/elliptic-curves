@@ -335,10 +335,8 @@ where
     fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
         assert_eq!(p.len(), q.len());
 
-        let affine_points: alloc::vec::Vec<_> = <Self as Normalize>::batch_normalize_vec(p);
-        for i in 0..q.len() {
-            q[i] = affine_points[i];
-        }
+        let affine_points: Vec<_> = <Self as Normalize>::batch_normalize_vec(p);
+        q.copy_from_slice(affine_points)
     }
 }
 
@@ -375,8 +373,8 @@ where
     }
 
     #[cfg(feature = "alloc")]
-    fn batch_normalize_vec(points: alloc::vec::Vec<Self>) -> alloc::vec::Vec<Self::AffineRepr> {
-        let mut zs: alloc::vec::Vec<_> = (0..points.len()).map(|_| C::FieldElement::ONE).collect();
+    fn batch_normalize_vec(points: Vec<Self>) -> Vec<Self::AffineRepr> {
+        let mut zs: Vec<_> = vec![C::FieldElement::ONE; points.len()];
 
         for i in 0..points.len() {
             if points[i].z != C::FieldElement::ZERO {
@@ -388,11 +386,10 @@ where
         }
 
         // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses: alloc::vec::Vec<_> =
+        let zs_inverses: Vec<_> =
             <C::FieldElement as Invert>::batch_invert_vec(zs.as_vec()).unwrap();
 
-        let mut affine_points: alloc::vec::Vec<_> =
-            (0..points.len()).map(|_| AffinePoint::IDENTITY).collect();
+        let mut affine_points: Vec<_> = vec![AffinePoint::IDENTITY; points.len()];
         for i in 0..points.len() {
             if points[i].z != C::FieldElement::ZERO {
                 // If the `z` coordinate is non-zero, we can use it to invert;

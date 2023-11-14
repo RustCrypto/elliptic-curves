@@ -804,6 +804,9 @@ mod tests {
     use proptest::prelude::*;
     use rand_core::OsRng;
 
+    #[cfg(feature = "alloc")]
+    use alloc::vec::Vec;
+
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
             debug_assert!(x < &Scalar::modulus_as_biguint());
@@ -968,8 +971,8 @@ mod tests {
         let k: Scalar = Scalar::random(&mut OsRng);
         let l: Scalar = Scalar::random(&mut OsRng);
 
-        let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: alloc::vec::Vec<_> = <Scalar as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
+        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
+        let res: Vec<_> = <Scalar as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 

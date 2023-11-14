@@ -521,6 +521,9 @@ mod tests {
         FieldBytes,
     };
 
+    #[cfg(feature = "alloc")]
+    use alloc::vec::Vec;
+
     impl From<&BigUint> for FieldElement {
         fn from(x: &BigUint) -> Self {
             let bytes = biguint_to_bytes(x);
@@ -701,9 +704,8 @@ mod tests {
         let k: FieldElement = FieldElement::random(&mut OsRng);
         let l: FieldElement = FieldElement::random(&mut OsRng);
 
-        let expected = proptest::std_facade::vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: alloc::vec::Vec<_> =
-            <FieldElement as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
+        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
+        let res: Vec<_> = <FieldElement as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
         assert_eq!(res, expected);
     }
 
