@@ -48,17 +48,13 @@ impl OsswuMap for FieldElement {
             0x3fff_ffff_c000_0000,
         ],
         c2: FieldElement(U256::from_be_hex(
-            "a3323851ba997e271ac5d59c3298bf50b2806c63966a1a6653e43951f64fdbe7",
+            "9051d26e12a8f3046913c88f9ea8dfee78400ad7423dcf70a1fd38ee98a195fd",
         )),
-        map_a: FieldElement(U256::from_be_hex(
-            "fffffffc00000004000000000000000000000003fffffffffffffffffffffffc",
-        )),
+        map_a: FieldElement::from_u64(3).neg(),
         map_b: FieldElement(U256::from_be_hex(
             "dc30061d04874834e5a220abf7212ed6acf005cd78843090d89cdf6229c4bddf",
         )),
-        z: FieldElement(U256::from_be_hex(
-            "fffffff50000000b00000000000000000000000afffffffffffffffffffffff5",
-        )),
+        z: FieldElement::from_u64(10).neg(),
     };
 }
 
@@ -97,19 +93,34 @@ impl FromOkm for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{FieldElement, NistP256, Scalar, U256};
+    use crate::{arithmetic::field::MODULUS, FieldElement, NistP256, Scalar, U256};
     use elliptic_curve::{
-        bigint::{ArrayEncoding, NonZero, U384},
+        bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
         consts::U48,
         generic_array::GenericArray,
         group::cofactor::CofactorGroup,
-        hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve},
+        hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         sec1::{self, ToEncodedPoint},
         Curve, Field,
     };
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha256;
+
+    #[test]
+    fn params() {
+        let params = <FieldElement as OsswuMap>::PARAMS;
+
+        let c1 = MODULUS.0.checked_sub(&U256::from_u8(3)).unwrap()
+            / NonZero::new(U256::from_u8(4)).unwrap();
+        assert_eq!(
+            GenericArray::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
+            c1.to_be_byte_array()
+        );
+
+        let c2 = FieldElement::from_u64(10).sqrt().unwrap();
+        assert_eq!(params.c2, c2);
+    }
 
     #[allow(dead_code)] // TODO(tarcieri): fix commented out code
     #[test]
@@ -230,7 +241,7 @@ mod tests {
         }
     }
 
-    /// Taken from <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-16.html#name-oprfp-256-sha-256-2>.
+    /// Taken from <https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf#appendix-A.3>.
     #[test]
     fn hash_to_scalar_voprf() {
         struct TestVector {
@@ -242,22 +253,22 @@ mod tests {
 
         const TEST_VECTORS: &[TestVector] = &[
             TestVector {
-                dst: b"DeriveKeyPairVOPRF10-\x00\x00\x03",
+                dst: b"DeriveKeyPairOPRFV1-\x00-P256-SHA256",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("274d7747cf2e26352ecea6bd768c426087da3dfcd466b6841b441ada8412fb33"),
+                sk_sm: &hex!("159749d750713afe245d2d39ccfaae8381c53ce92d098a9375ee70739c7ac0bf"),
             },
             TestVector {
-                dst: b"DeriveKeyPairVOPRF10-\x01\x00\x03",
+                dst: b"DeriveKeyPairOPRFV1-\x01-P256-SHA256",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("b3d12edba73e40401fdc27c0094a56337feb3646d1633345af7e7142a6b1559d"),
+                sk_sm: &hex!("ca5d94c8807817669a51b196c34c1b7f8442fde4334a7121ae4736364312fca6"),
             },
             TestVector {
-                dst: b"DeriveKeyPairVOPRF10-\x02\x00\x03",
+                dst: b"DeriveKeyPairOPRFV1-\x02-P256-SHA256",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("59519f6c7da344f340ad35ad895a5b97437673cc3ac8b964b823cdb52c932f86"),
+                sk_sm: &hex!("6ad2173efa689ef2c27772566ad7ff6e2d59b3b196f00219451fb2c89ee4dae2"),
             },
         ];
 

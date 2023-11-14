@@ -30,6 +30,7 @@ pub(crate) use self::loose::LooseFieldElement;
 use self::field_impl::*;
 use crate::{FieldBytes, NistP521, U576};
 use core::{
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -43,51 +44,15 @@ use elliptic_curve::{
     Error, FieldBytesEncoding,
 };
 
-use super::util::u576_to_le_bytes;
+#[cfg(target_pointer_width = "32")]
+use super::util;
 
-/// Constant representing the modulus serialized as hex.
-/// p = 2^{521} − 1
-const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-
-const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
+/// Field modulus: p = 2^{521} − 1
+pub(crate) const MODULUS: U576 = U576::from_be_hex("00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
 
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
-pub struct FieldElement(fiat_p521_tight_field_element);
-
-impl core::fmt::Debug for FieldElement {
-    /// Formatting machinery for [`FieldElement`]
-    ///
-    /// # Why
-    /// ```ignore
-    /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
-    /// let fe2 = FieldElement([
-    ///     8,
-    ///     0,
-    ///     288230376151711744,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     288230376151711743,
-    ///     144115188075855871,
-    /// ]);
-    /// ```
-    ///
-    /// For the above example, deriving [`core::fmt::Debug`] will result in returning 2 different strings,
-    /// which are in reality the same due to p521's unsaturated math, instead print the output as a hex string in
-    /// big-endian
-    ///
-    /// This makes debugging easier.
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        let mut bytes = fiat_p521_to_bytes(&self.0);
-        bytes.reverse();
-        let formatter = base16ct::HexDisplay(&bytes);
-        f.debug_tuple("FieldElement")
-            .field(&format_args!("0x{formatter:X}"))
-            .finish()
-    }
-}
+pub struct FieldElement(pub(crate) fiat_p521_tight_field_element);
 
 impl FieldElement {
     /// Zero element.
@@ -125,7 +90,6 @@ impl FieldElement {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// This method is primarily intended for defining internal constants.
-    #[allow(dead_code)]
     pub(crate) const fn from_hex(hex: &str) -> Self {
         Self::from_uint_unchecked(U576::from_be_hex(hex))
     }
@@ -141,7 +105,39 @@ impl FieldElement {
     ///
     /// Used incorrectly this can lead to invalid results!
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_from_bytes(&u576_to_le_bytes(w)))
+        // Converts the saturated representation used by `U576` into a 66-byte array with a
+        // little-endian byte ordering.
+        //
+        // TODO(tarcieri): use `FieldBytesEncoding::encode_field_bytes` when `const impl` is stable
+        #[cfg(target_pointer_width = "32")]
+        let words = util::u32x18_to_u64x9(w.as_words());
+        #[cfg(target_pointer_width = "64")]
+        let words = w.as_words();
+
+        let mut le_bytes = [0u8; 66];
+        let mut i = 0;
+
+        while i < words.len() - 1 {
+            let word = words[i].to_le_bytes();
+            let start = i * 8;
+            le_bytes[start] = word[0];
+            le_bytes[start + 1] = word[1];
+            le_bytes[start + 2] = word[2];
+            le_bytes[start + 3] = word[3];
+            le_bytes[start + 4] = word[4];
+            le_bytes[start + 5] = word[5];
+            le_bytes[start + 6] = word[6];
+            le_bytes[start + 7] = word[7];
+            i += 1;
+        }
+
+        let last_word = words[8].to_le_bytes();
+        le_bytes[i * 8] = last_word[0];
+        le_bytes[(i * 8) + 1] = last_word[1];
+
+        // Decode the little endian serialization into the unsaturated big integer form used by
+        // the fiat-crypto synthesized code.
+        Self(fiat_p521_from_bytes(&le_bytes))
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
@@ -179,26 +175,26 @@ impl FieldElement {
     }
 
     /// Add elements.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
     }
 
     /// Double element (add it to itself).
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     #[must_use]
     pub(crate) const fn double_loose(&self) -> LooseFieldElement {
         Self::add_loose(self, self)
     }
 
     /// Subtract elements, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
     }
 
     /// Negate element, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): use this
+    #[allow(dead_code)] // TODO(tarcieri): currently unused
     pub(crate) const fn neg_loose(&self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_opp(&self.0))
     }
@@ -343,6 +339,41 @@ impl Default for FieldElement {
     }
 }
 
+impl Debug for FieldElement {
+    /// Formatting machinery for [`FieldElement`]
+    ///
+    /// # Why
+    /// ```ignore
+    /// let fe1 = FieldElement([9, 0, 0, 0, 0, 0, 0, 0, 0]);
+    /// let fe2 = FieldElement([
+    ///     8,
+    ///     0,
+    ///     288230376151711744,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     288230376151711743,
+    ///     144115188075855871,
+    /// ]);
+    /// ```
+    ///
+    /// For the above example, deriving [`core::fmt::Debug`] will result in returning 2 different
+    /// strings, which are in reality the same due to p521's unsaturated math, instead print the
+    /// output as a hex string in big-endian.
+    ///
+    /// This makes debugging easier.
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut bytes = fiat_p521_to_bytes(&self.0);
+        bytes.reverse();
+
+        let formatter = base16ct::HexDisplay(&bytes);
+        f.debug_tuple("FieldElement")
+            .field(&format_args!("0x{formatter:X}"))
+            .finish()
+    }
+}
+
 impl Eq for FieldElement {}
 impl PartialEq for FieldElement {
     fn eq(&self, rhs: &Self) -> bool {
@@ -436,7 +467,7 @@ impl Field for FieldElement {
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
-    const MODULUS: &'static str = MODULUS_HEX;
+    const MODULUS: &'static str = "1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
@@ -638,6 +669,7 @@ impl Invert for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
+    use hex_literal::hex;
     use primeorder::{
         impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
         impl_primefield_tests,
@@ -660,4 +692,12 @@ mod tests {
     impl_field_invert_tests!(FieldElement);
     impl_field_sqrt_tests!(FieldElement);
     impl_primefield_tests!(FieldElement, T);
+
+    /// Regression test for RustCrypto/elliptic-curves#965
+    #[test]
+    fn decode_invalid_field_element_returns_err() {
+        let overflowing_bytes = hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        let ct_option = FieldElement::from_bytes(overflowing_bytes.as_ref().into());
+        assert!(bool::from(ct_option.is_none()));
+    }
 }
