@@ -8,6 +8,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, Integer},
     generic_array::ArrayLength,
@@ -26,7 +27,7 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
+    BatchNormalize, Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
 /// Point on a Weierstrass curve in projective coordinates.
@@ -57,14 +58,17 @@ where
 
     /// Returns the affine representation of this point, or `None` if it is the identity.
     pub fn to_affine(&self) -> AffinePoint<C> {
-        self.z
-            .invert()
-            .map(|zinv| AffinePoint {
-                x: self.x * &zinv,
-                y: self.y * &zinv,
-                infinity: 0,
-            })
+        <C::FieldElement as Field>::invert(&self.z)
+            .map(|zinv| self.to_affine_internal(zinv))
             .unwrap_or(AffinePoint::IDENTITY)
+    }
+
+    pub(super) fn to_affine_internal(self, zinv: C::FieldElement) -> AffinePoint<C> {
+        AffinePoint {
+            x: self.x * &zinv,
+            y: self.y * &zinv,
+            infinity: 0,
+        }
     }
 
     /// Returns `-self`.
@@ -325,6 +329,90 @@ where
 
     fn to_affine(&self) -> AffinePoint<C> {
         ProjectivePoint::to_affine(self)
+    }
+
+    #[cfg(feature = "alloc")]
+    fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
+        assert_eq!(p.len(), q.len());
+
+        let affine_points: Vec<_> = <Self as BatchNormalize>::batch_normalize_vec(p);
+        q.copy_from_slice(affine_points)
+    }
+}
+
+impl<const N: usize, C> BatchNormalize<&[ProjectivePoint<C>; N]> for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+{
+    type Output = [Self::AffineRepr; N];
+
+    fn batch_normalize(
+        points: &[Self; N],
+    ) -> <Self as BatchNormalize<&[ProjectivePoint<C>; N]>>::Output {
+        let mut zs = [C::FieldElement::ONE; N];
+
+        for i in 0..N {
+            if points[i].z != C::FieldElement::ZERO {
+                // Even a single zero value will fail inversion for the entire batch.
+                // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
+                // and treat that case specially later-on.
+                zs[i] = points[i].z;
+            }
+        }
+
+        // This is safe to unwrap since we assured that all elements are non-zero
+        let zs_inverses = <C::FieldElement as BatchInvert<_>>::batch_invert(&zs).unwrap();
+
+        let mut affine_points = [AffinePoint::IDENTITY; N];
+        for i in 0..N {
+            if points[i].z != C::FieldElement::ZERO {
+                // If the `z` coordinate is non-zero, we can use it to invert;
+                // otherwise it defaults to the `IDENTITY` value in initialization.
+                affine_points[i] = points[i].to_affine_internal(zs_inverses[i])
+            }
+        }
+
+        affine_points
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<C> BatchNormalize<&[ProjectivePoint<C>]> for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+{
+    type Output = Vec<Self::AffineRepr>;
+
+    fn batch_normalize(
+        points: &[Self; N],
+    ) -> <Self as BatchNormalize<&[ProjectivePoint<C>; N]>>::Output {
+        let mut zs: Vec<_> = vec![C::FieldElement::ONE; points.len()];
+
+        for i in 0..points.len() {
+            if points[i].z != C::FieldElement::ZERO {
+                // Even a single zero value will fail inversion for the entire batch.
+                // Put a dummy value (above `C::FieldElement::ONE`) so inversion succeeds
+                // and treat that case specially later-on.
+                zs[i] = points[i].z;
+            }
+        }
+
+        // This is safe to unwrap since we assured that all elements are non-zero
+        let zs_inverses: Vec<_> =
+            <C::FieldElement as Invert>::batch_invert_vec(zs.as_vec()).unwrap();
+
+        let mut affine_points: Vec<_> = vec![AffinePoint::IDENTITY; points.len()];
+        for i in 0..points.len() {
+            if points[i].z != C::FieldElement::ZERO {
+                // If the `z` coordinate is non-zero, we can use it to invert;
+                // otherwise it defaults to the `IDENTITY` value in initialization.
+                affine_points[i] = points[i].to_affine_internal(zs_inverses[i])
+            }
+        }
+
+        affine_points.into_iter().collect()
     }
 }
 
