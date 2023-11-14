@@ -49,9 +49,11 @@ pub mod test_vectors;
 pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{
-    affine::AffinePoint, lincomb_array, lincomb_slice, projective::ProjectivePoint, scalar::Scalar,
-};
+pub use arithmetic::lincomb_array;
+#[cfg(all(feature = "alloc", feature = "arithmetic"))]
+pub use arithmetic::lincomb_slice;
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::FieldElement;
