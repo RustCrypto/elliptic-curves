@@ -12,13 +12,19 @@ pub(crate) mod scalar;
 mod dev;
 
 pub use field::FieldElement;
-pub use mul::lincomb_array;
-#[cfg(feature = "alloc")]
-pub use mul::lincomb_slice;
 
 use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 use crate::Secp256k1;
-use elliptic_curve::CurveArithmetic;
+use elliptic_curve::{group, CurveArithmetic};
+
+/// Linear combination.
+///
+/// This trait enables providing an optimized implementation of
+/// linear combinations (e.g. Shamir's Trick).
+pub trait LinearCombination<PointsAndScalars: AsRef<[(Self, Self::Scalar)]>>: group::Curve {
+    /// Calculates `x1 * k1 + ... + xn * kn`.
+    fn linear_combination(points_and_scalars: PointsAndScalars) -> Self;
+}
 
 impl CurveArithmetic for Secp256k1 {
     type AffinePoint = AffinePoint;

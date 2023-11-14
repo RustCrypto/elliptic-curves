@@ -40,13 +40,16 @@
 ))]
 compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
 
+use crate::arithmetic::LinearCombination;
 use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
     ProjectivePoint,
 };
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::{
-    ops::{LinearCombination, MulByGenerator},
+    ops::MulByGenerator,
     scalar::IsHigh,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
@@ -278,33 +281,33 @@ impl<const D: usize> Default for Radix16Decomposition<D> {
     }
 }
 
-/// Calculates a linear combination `sum(x[i] * k[i])`, `i = 0..N`.
-/// Works over a const-generic array and thus does not require `alloc`.
-#[inline(always)]
-pub fn lincomb_array<const N: usize>(xks: &[(ProjectivePoint, Scalar); N]) -> ProjectivePoint {
-    let mut tables = [(LookupTable::default(), LookupTable::default()); N];
-    let mut digits = [(
-        Radix16Decomposition::<33>::default(),
-        Radix16Decomposition::<33>::default(),
-    ); N];
+impl<const N: usize> LinearCombination<&[(ProjectivePoint, Scalar); N]> for ProjectivePoint {
+    fn linear_combination(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
+        let mut tables = [(LookupTable::default(), LookupTable::default()); N];
+        let mut digits = [(
+            Radix16Decomposition::<33>::default(),
+            Radix16Decomposition::<33>::default(),
+        ); N];
 
-    lincomb(xks, &mut tables, &mut digits)
+        lincomb(points_and_scalars, &mut tables, &mut digits)
+    }
 }
 
-/// Calculates a linear combination `sum(x[i] * k[i])`, `i = 0..N`
-/// Work over a (possibly dynamically allocated) slice and requires `alloc` due to internal allocations.
 #[cfg(feature = "alloc")]
-pub fn lincomb_slice(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePoint {
-    let mut tables = vec![(LookupTable::default(), LookupTable::default()); xks.len()];
-    let mut digits = vec![
-        (
-            Radix16Decomposition::<33>::default(),
-            Radix16Decomposition::<33>::default(),
-        );
-        xks.len()
-    ];
+impl LinearCombination<Vec<(ProjectivePoint, Scalar)>> for ProjectivePoint {
+    fn linear_combination(points_and_scalars: Vec<(ProjectivePoint, Scalar)>) -> Self {
+        let mut tables =
+            vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
+        let mut digits = vec![
+            (
+                Radix16Decomposition::<33>::default(),
+                Radix16Decomposition::<33>::default(),
+            );
+            points_and_scalars.len()
+        ];
 
-    lincomb(xks, &mut tables, &mut digits)
+        lincomb(points_and_scalars.as_slice(), &mut tables, &mut digits)
+    }
 }
 
 fn lincomb(
@@ -409,17 +412,17 @@ impl MulByGenerator for ProjectivePoint {
 
 #[inline(always)]
 fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    lincomb_array(&[(*x, *k)])
+    ProjectivePoint::linear_combination(&[(*x, *k)])
 }
 
-impl LinearCombination for ProjectivePoint {
+impl elliptic_curve::ops::LinearCombination for ProjectivePoint {
     fn lincomb(
         x: &ProjectivePoint,
         k: &Scalar,
         y: &ProjectivePoint,
         l: &Scalar,
     ) -> ProjectivePoint {
-        lincomb_array(&[(*x, *k), (*y, *l)])
+        ProjectivePoint::linear_combination(&[(*x, *k), (*y, *l)])
     }
 }
 
@@ -464,7 +467,7 @@ mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::{
-        ops::{LinearCombination, MulByGenerator},
+        ops::{LinearCombination as _, MulByGenerator},
         rand_core::OsRng,
         Field, Group,
     };
@@ -491,14 +494,14 @@ mod tests {
 
     #[cfg(feature = "alloc")]
     #[test]
-    fn test_lincomb_slice() {
+    fn test_lincomb_vec() {
         let x = ProjectivePoint::random(&mut OsRng);
         let y = ProjectivePoint::random(&mut OsRng);
         let k = Scalar::random(&mut OsRng);
         let l = Scalar::random(&mut OsRng);
 
         let reference = &x * &k + &y * &l;
-        let test = lincomb_slice(&[(x, k), (y, l)]);
+        let test = ProjectivePoint::linear_combination(vec![(x, k), (y, l)]);
         assert_eq!(reference, test);
     }
 }
