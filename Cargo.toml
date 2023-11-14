@@ -18,4 +18,4 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
-elliptic-curve = { git = "https://github.com/ycscaly/traits", branch = "batch_invert" }
+elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
