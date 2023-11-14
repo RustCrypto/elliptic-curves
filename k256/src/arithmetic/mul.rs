@@ -278,7 +278,8 @@ impl<const D: usize> Default for Radix16Decomposition<D> {
     }
 }
 
-/// Calculates a linear combination `sum(x[i] * k[i])`, `i = 0..N`
+/// Calculates a linear combination `sum(x[i] * k[i])`, `i = 0..N`.
+/// Works over a const-generic array and thus does not require `alloc`.
 #[inline(always)]
 pub fn lincomb_array<const N: usize>(xks: &[(ProjectivePoint, Scalar); N]) -> ProjectivePoint {
     let mut tables = [(LookupTable::default(), LookupTable::default()); N];
@@ -290,6 +291,8 @@ pub fn lincomb_array<const N: usize>(xks: &[(ProjectivePoint, Scalar); N]) -> Pr
     lincomb(xks, &mut tables, &mut digits)
 }
 
+/// Calculates a linear combination `sum(x[i] * k[i])`, `i = 0..N`
+/// Work over a (possibly dynamically allocated) slice and requires `alloc` due to internal allocations.
 #[cfg(feature = "alloc")]
 pub fn lincomb_slice(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePoint {
     let mut tables = vec![(LookupTable::default(), LookupTable::default()); xks.len()];
