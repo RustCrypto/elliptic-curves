@@ -372,7 +372,7 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 [[package]]
 name = "elliptic-curve"
 version = "0.13.6"
-source = "git+https://github.com/ycscaly/traits?branch=batch_invert#719afbb10da35e485b6072992ea5a18237a0ccac"
+source = "git+https://github.com/ycscaly/traits?branch=batch_invert#0b9e030ee4ce429972a7083814420914915c763e"
 dependencies = [
  "base16ct",
  "base64ct",

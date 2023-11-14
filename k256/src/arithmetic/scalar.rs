@@ -806,6 +806,7 @@ mod tests {
 
     #[cfg(feature = "alloc")]
     use alloc::vec::Vec;
+    use elliptic_curve::ops::BatchInvert;
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
@@ -960,7 +961,7 @@ mod tests {
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
-            <Scalar as Invert>::batch_invert_array(&[k, l]).unwrap(),
+            <Scalar as BatchInvert<_>>::batch_invert(&[k, l]).unwrap(),
             expected
         );
     }
@@ -972,7 +973,8 @@ mod tests {
         let l: Scalar = Scalar::random(&mut OsRng);
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let res: Vec<_> = <Scalar as Invert>::batch_invert_to_vec(&[k, l]).unwrap();
+        let scalars = vec![k, l];
+        let res: Vec<_> = <Scalar as BatchInvert<_>>::batch_invert(scalars.as_slice()).unwrap();
         assert_eq!(res, expected);
     }
 

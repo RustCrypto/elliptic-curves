@@ -8,7 +8,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::ops::Invert;
+use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, Integer},
     generic_array::ArrayLength,
@@ -340,12 +340,16 @@ where
     }
 }
 
-impl<C> Normalize for ProjectivePoint<C>
+impl<const N: usize, C> Normalize<&[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
 {
-    fn batch_normalize_array<const N: usize>(points: &[Self; N]) -> [Self::AffineRepr; N] {
+    type Output = [Self::AffineRepr; N];
+
+    fn batch_normalize(
+        points: &[Self; N],
+    ) -> <Self as Normalize<&[ProjectivePoint<C>; N]>>::Output {
         let mut zs = [C::FieldElement::ONE; N];
 
         for i in 0..N {
@@ -358,7 +362,7 @@ where
         }
 
         // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses = <C::FieldElement as Invert>::batch_invert_array(&zs).unwrap();
+        let zs_inverses = <C::FieldElement as BatchInvert<_>>::batch_invert(&zs).unwrap();
 
         let mut affine_points = [AffinePoint::IDENTITY; N];
         for i in 0..N {
@@ -371,9 +375,19 @@ where
 
         affine_points
     }
+}
 
-    #[cfg(feature = "alloc")]
-    fn batch_normalize_vec(points: Vec<Self>) -> Vec<Self::AffineRepr> {
+#[cfg(feature = "alloc")]
+impl<C> Normalize<&[ProjectivePoint<C>]> for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+{
+    type Output = Vec<Self::AffineRepr>;
+
+    fn batch_normalize(
+        points: &[Self; N],
+    ) -> <Self as Normalize<&[ProjectivePoint<C>; N]>>::Output {
         let mut zs: Vec<_> = vec![C::FieldElement::ONE; points.len()];
 
         for i in 0..points.len() {

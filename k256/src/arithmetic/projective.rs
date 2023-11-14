@@ -8,7 +8,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::ops::Invert;
+use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
     group::{
         ff::Field,
@@ -256,8 +256,10 @@ impl From<AffinePoint> for ProjectivePoint {
     }
 }
 
-impl Normalize for ProjectivePoint {
-    fn batch_normalize_array<const N: usize>(points: &[Self; N]) -> [Self::AffineRepr; N] {
+impl<const N: usize> Normalize<&[ProjectivePoint; N]> for ProjectivePoint {
+    type Output = [Self::AffineRepr; N];
+
+    fn batch_normalize(points: &[Self; N]) -> <Self as Normalize<&[ProjectivePoint; N]>>::Output {
         let mut zs = [FieldElement::ONE; N];
 
         for i in 0..N {
@@ -270,7 +272,7 @@ impl Normalize for ProjectivePoint {
         }
 
         // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses = <FieldElement as Invert>::batch_invert_array(&zs).unwrap();
+        let zs_inverses = <FieldElement as BatchInvert<_>>::batch_invert(&zs).unwrap();
 
         let mut affine_points = [AffinePoint::IDENTITY; N];
         for i in 0..N {
@@ -283,9 +285,13 @@ impl Normalize for ProjectivePoint {
 
         affine_points
     }
+}
 
-    #[cfg(feature = "alloc")]
-    fn batch_normalize_to_vec(points: &[Self]) -> Vec<Self::AffineRepr> {
+#[cfg(feature = "alloc")]
+impl Normalize<&[ProjectivePoint]> for ProjectivePoint {
+    type Output = Vec<Self::AffineRepr>;
+
+    fn batch_normalize(points: &[Self]) -> <Self as Normalize<&[ProjectivePoint]>>::Output {
         let mut zs: Vec<_> = vec![FieldElement::ONE; points.len()];
 
         for i in 0..points.len() {
@@ -299,7 +305,7 @@ impl Normalize for ProjectivePoint {
 
         // This is safe to unwrap since we assured that all elements are non-zero
         let zs_inverses: Vec<_> =
-            <FieldElement as Invert>::batch_invert_to_vec(zs.as_slice()).unwrap();
+            <FieldElement as BatchInvert<_>>::batch_invert(zs.as_slice()).unwrap();
 
         let mut affine_points: Vec<_> = vec![AffinePoint::IDENTITY; points.len()];
         for i in 0..points.len() {
@@ -456,7 +462,7 @@ impl Curve for ProjectivePoint {
     fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
         assert_eq!(p.len(), q.len());
 
-        let affine_points: Vec<_> = <Self as Normalize>::batch_normalize_to_vec(p);
+        let affine_points: Vec<_> = <Self as Normalize<_>>::batch_normalize(p);
         q.copy_from_slice(&affine_points);
     }
 }
@@ -716,7 +722,7 @@ mod tests {
         let mut res = [AffinePoint::IDENTITY; 2];
         let expected = [g.to_affine(), h.to_affine()];
         assert_eq!(
-            <ProjectivePoint as Normalize>::batch_normalize_array(&[g, h]),
+            <ProjectivePoint as Normalize<_>>::batch_normalize(&[g, h]),
             expected
         );
 
@@ -725,7 +731,7 @@ mod tests {
 
         let expected = [g.to_affine(), AffinePoint::IDENTITY];
         assert_eq!(
-            <ProjectivePoint as Normalize>::batch_normalize_array(&[g, ProjectivePoint::IDENTITY]),
+            <ProjectivePoint as Normalize<_>>::batch_normalize(&[g, ProjectivePoint::IDENTITY]),
             expected
         );
 
@@ -745,15 +751,17 @@ mod tests {
         let h = ProjectivePoint::mul_by_generator(&l);
 
         let expected = vec![g.to_affine(), h.to_affine()];
-        let mut res: Vec<_> = <ProjectivePoint as Normalize>::batch_normalize_to_vec(&[g, h]);
+        let scalars = vec![g, h];
+        let mut res: Vec<_> =
+            <ProjectivePoint as Normalize<_>>::batch_normalize(scalars.as_slice());
         assert_eq!(res, expected);
 
         <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], res.as_mut());
         assert_eq!(res.to_vec(), expected);
 
         let expected = vec![g.to_affine(), AffinePoint::IDENTITY];
-        res =
-            <ProjectivePoint as Normalize>::batch_normalize_to_vec(&[g, ProjectivePoint::IDENTITY]);
+        let scalars = vec![g, ProjectivePoint::IDENTITY];
+        res = <ProjectivePoint as Normalize<_>>::batch_normalize(scalars.as_slice());
 
         assert_eq!(res, expected);
 
