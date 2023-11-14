@@ -455,9 +455,7 @@ impl Curve for ProjectivePoint {
         assert_eq!(p.len(), q.len());
 
         let affine_points: alloc::vec::Vec<_> = <Self as Normalize>::batch_normalize_to_vec(p);
-        for i in 0..q.len() {
-            q[i] = affine_points[i];
-        }
+        q.copy_from_slice(&affine_points);
     }
 }
 

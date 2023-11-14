@@ -30,6 +30,7 @@ use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
+use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     bigint::{Limb, U384},
     ff::PrimeField,
@@ -157,6 +158,14 @@ impl PrimeField for FieldElement {
 impl Debug for FieldElement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "FieldElement(0x{:X})", &self.0)
+    }
+}
+
+impl Invert for FieldElement {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 

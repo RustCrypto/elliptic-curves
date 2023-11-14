@@ -48,6 +48,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
+use elliptic_curve::ops::Invert;
 
 /// Scalars are elements in the finite field modulo `n`.
 ///
@@ -328,6 +329,14 @@ impl<'de> Deserialize<'de> for Scalar {
         D: de::Deserializer<'de>,
     {
         Ok(ScalarPrimitive::deserialize(deserializer)?.into())
+    }
+}
+
+impl Invert for Scalar {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 

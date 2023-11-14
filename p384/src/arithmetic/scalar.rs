@@ -31,7 +31,7 @@ use core::{
 use elliptic_curve::{
     bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
-    ops::Reduce,
+    ops::{Invert, Reduce},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     Curve as _, Error, Result, ScalarPrimitive,
@@ -193,6 +193,14 @@ impl FromUintUnchecked for Scalar {
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self::from_uint_unchecked(uint)
+    }
+}
+
+impl Invert for Scalar {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 
