@@ -63,7 +63,7 @@ where
             .unwrap_or(AffinePoint::IDENTITY)
     }
 
-    pub(super) fn to_affine_internal(&self, zinv: C::FieldElement) -> AffinePoint<C> {
+    pub(super) fn to_affine_internal(self, zinv: C::FieldElement) -> AffinePoint<C> {
         AffinePoint {
             x: self.x * &zinv,
             y: self.y * &zinv,
