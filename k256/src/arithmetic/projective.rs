@@ -19,7 +19,7 @@ use elliptic_curve::{
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, Normalize, Result,
+    BatchNormalize, Error, Result,
 };
 
 #[cfg(feature = "alloc")]
@@ -256,10 +256,12 @@ impl From<AffinePoint> for ProjectivePoint {
     }
 }
 
-impl<const N: usize> Normalize<&[ProjectivePoint; N]> for ProjectivePoint {
+impl<const N: usize> BatchNormalize<&[ProjectivePoint; N]> for ProjectivePoint {
     type Output = [Self::AffineRepr; N];
 
-    fn batch_normalize(points: &[Self; N]) -> <Self as Normalize<&[ProjectivePoint; N]>>::Output {
+    fn batch_normalize(
+        points: &[Self; N],
+    ) -> <Self as BatchNormalize<&[ProjectivePoint; N]>>::Output {
         let mut zs = [FieldElement::ONE; N];
 
         for i in 0..N {
@@ -288,10 +290,10 @@ impl<const N: usize> Normalize<&[ProjectivePoint; N]> for ProjectivePoint {
 }
 
 #[cfg(feature = "alloc")]
-impl Normalize<&[ProjectivePoint]> for ProjectivePoint {
+impl BatchNormalize<&[ProjectivePoint]> for ProjectivePoint {
     type Output = Vec<Self::AffineRepr>;
 
-    fn batch_normalize(points: &[Self]) -> <Self as Normalize<&[ProjectivePoint]>>::Output {
+    fn batch_normalize(points: &[Self]) -> <Self as BatchNormalize<&[ProjectivePoint]>>::Output {
         let mut zs: Vec<_> = vec![FieldElement::ONE; points.len()];
 
         for i in 0..points.len() {
@@ -462,7 +464,7 @@ impl Curve for ProjectivePoint {
     fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
         assert_eq!(p.len(), q.len());
 
-        let affine_points: Vec<_> = <Self as Normalize<_>>::batch_normalize(p);
+        let affine_points: Vec<_> = <Self as BatchNormalize<_>>::batch_normalize(p);
         q.copy_from_slice(&affine_points);
     }
 }
@@ -689,7 +691,7 @@ mod tests {
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
     use elliptic_curve::ops::MulByGenerator;
     use elliptic_curve::Field;
-    use elliptic_curve::{group, Normalize};
+    use elliptic_curve::{group, BatchNormalize};
     use rand_core::OsRng;
 
     #[cfg(feature = "alloc")]
@@ -722,7 +724,7 @@ mod tests {
         let mut res = [AffinePoint::IDENTITY; 2];
         let expected = [g.to_affine(), h.to_affine()];
         assert_eq!(
-            <ProjectivePoint as Normalize<_>>::batch_normalize(&[g, h]),
+            <ProjectivePoint as BatchNormalize<_>>::batch_normalize(&[g, h]),
             expected
         );
 
@@ -731,7 +733,10 @@ mod tests {
 
         let expected = [g.to_affine(), AffinePoint::IDENTITY];
         assert_eq!(
-            <ProjectivePoint as Normalize<_>>::batch_normalize(&[g, ProjectivePoint::IDENTITY]),
+            <ProjectivePoint as BatchNormalize<_>>::batch_normalize(&[
+                g,
+                ProjectivePoint::IDENTITY
+            ]),
             expected
         );
 
@@ -753,7 +758,7 @@ mod tests {
         let expected = vec![g.to_affine(), h.to_affine()];
         let scalars = vec![g, h];
         let mut res: Vec<_> =
-            <ProjectivePoint as Normalize<_>>::batch_normalize(scalars.as_slice());
+            <ProjectivePoint as BatchNormalize<_>>::batch_normalize(scalars.as_slice());
         assert_eq!(res, expected);
 
         <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], res.as_mut());
@@ -761,7 +766,7 @@ mod tests {
 
         let expected = vec![g.to_affine(), AffinePoint::IDENTITY];
         let scalars = vec![g, ProjectivePoint::IDENTITY];
-        res = <ProjectivePoint as Normalize<_>>::batch_normalize(scalars.as_slice());
+        res = <ProjectivePoint as BatchNormalize<_>>::batch_normalize(scalars.as_slice());
 
         assert_eq!(res, expected);
 

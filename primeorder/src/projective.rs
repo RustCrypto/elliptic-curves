@@ -27,7 +27,7 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, FieldBytes, FieldBytesSize, Normalize, PublicKey, Result, Scalar,
+    BatchNormalize, Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
 /// Point on a Weierstrass curve in projective coordinates.
@@ -335,12 +335,12 @@ where
     fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
         assert_eq!(p.len(), q.len());
 
-        let affine_points: Vec<_> = <Self as Normalize>::batch_normalize_vec(p);
+        let affine_points: Vec<_> = <Self as BatchNormalize>::batch_normalize_vec(p);
         q.copy_from_slice(affine_points)
     }
 }
 
-impl<const N: usize, C> Normalize<&[ProjectivePoint<C>; N]> for ProjectivePoint<C>
+impl<const N: usize, C> BatchNormalize<&[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
@@ -349,7 +349,7 @@ where
 
     fn batch_normalize(
         points: &[Self; N],
-    ) -> <Self as Normalize<&[ProjectivePoint<C>; N]>>::Output {
+    ) -> <Self as BatchNormalize<&[ProjectivePoint<C>; N]>>::Output {
         let mut zs = [C::FieldElement::ONE; N];
 
         for i in 0..N {
@@ -378,7 +378,7 @@ where
 }
 
 #[cfg(feature = "alloc")]
-impl<C> Normalize<&[ProjectivePoint<C>]> for ProjectivePoint<C>
+impl<C> BatchNormalize<&[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
@@ -387,7 +387,7 @@ where
 
     fn batch_normalize(
         points: &[Self; N],
-    ) -> <Self as Normalize<&[ProjectivePoint<C>; N]>>::Output {
+    ) -> <Self as BatchNormalize<&[ProjectivePoint<C>; N]>>::Output {
         let mut zs: Vec<_> = vec![C::FieldElement::ONE; points.len()];
 
         for i in 0..points.len() {
