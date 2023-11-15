@@ -175,27 +175,23 @@ impl FieldElement {
     }
 
     /// Add elements.
-    #[allow(dead_code)] // TODO(tarcieri): currently unused
-    pub(crate) const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
+    pub const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
     }
 
     /// Double element (add it to itself).
-    #[allow(dead_code)] // TODO(tarcieri): currently unused
     #[must_use]
-    pub(crate) const fn double_loose(&self) -> LooseFieldElement {
+    pub const fn double_loose(&self) -> LooseFieldElement {
         Self::add_loose(self, self)
     }
 
     /// Subtract elements, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): currently unused
-    pub(crate) const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
+    pub const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
     }
 
     /// Negate element, returning a loose field element.
-    #[allow(dead_code)] // TODO(tarcieri): currently unused
-    pub(crate) const fn neg_loose(&self) -> LooseFieldElement {
+    pub const fn neg_loose(&self) -> LooseFieldElement {
         LooseFieldElement(fiat_p521_opp(&self.0))
     }
 
@@ -222,7 +218,7 @@ impl FieldElement {
 
     /// Multiply elements.
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        LooseFieldElement::mul(&self.relax(), &rhs.relax())
+        LooseFieldElement::multiply(&self.relax(), &rhs.relax())
     }
 
     /// Square element.
