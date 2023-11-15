@@ -482,14 +482,16 @@ mod tests {
 
     #[cfg(feature = "alloc")]
     #[test]
-    fn test_lincomb_vec() {
+    fn test_lincomb_slice() {
         let x = ProjectivePoint::random(&mut OsRng);
         let y = ProjectivePoint::random(&mut OsRng);
         let k = Scalar::random(&mut OsRng);
         let l = Scalar::random(&mut OsRng);
 
         let reference = &x * &k + &y * &l;
-        let test = ProjectivePoint::lincomb_ext(&vec![(x, k), (y, l)]);
+        let points_and_scalars = vec![(x, k), (y, l)];
+
+        let test = ProjectivePoint::lincomb_ext(points_and_scalars.as_slice());
         assert_eq!(reference, test);
     }
 }
