@@ -331,13 +331,9 @@ where
     }
 
     #[cfg(feature = "alloc")]
+    #[inline]
     fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
         assert_eq!(projective.len(), affine.len());
-
-        for point in affine.iter_mut() {
-            *point = AffinePoint::IDENTITY;
-        }
-
         let mut zs = vec![FieldElement::ONE; projective.len()];
         batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
@@ -350,6 +346,7 @@ where
 {
     type Output = [Self::AffineRepr; N];
 
+    #[inline]
     fn batch_normalize(points: &[Self; N]) -> [Self::AffineRepr; N] {
         let mut zs = [C::FieldElement::ONE; N];
         let mut affine_points = [C::AffinePoint::IDENTITY; N];
@@ -366,6 +363,7 @@ where
 {
     type Output = Vec<Self::AffineRepr>;
 
+    #[inline]
     fn batch_normalize(points: &[Self; N]) -> Vec<Self::AffineRepr> {
         let mut zs = vec![C::FieldElement::ONE; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
@@ -388,23 +386,23 @@ where
     let out = out.as_mut();
 
     for i in 0..points.len() {
-        if points[i].z != C::FieldElement::ZERO {
-            // Even a single zero value will fail inversion for the entire batch.
-            // Put a dummy value (above `C::FieldElement::ONE`) so inversion succeeds
-            // and treat that case specially later-on.
-            zs.as_mut()[i] = points[i].z;
-        }
+        // Even a single zero value will fail inversion for the entire batch.
+        // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
+        // and treat that case specially later-on.
+        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.ct_eq(&C::FieldElement::ZERO));
     }
 
     // This is safe to unwrap since we assured that all elements are non-zero
     let zs_inverses = <C::FieldElement as BatchInvert<Z>>::batch_invert(zs).unwrap();
 
     for i in 0..out.len() {
-        if points[i].z != C::FieldElement::ZERO {
-            // If the `z` coordinate is non-zero, we can use it to invert;
-            // otherwise it defaults to the `IDENTITY` value in initialization.
-            out[i] = points[i].to_affine_internal(zs_inverses.as_ref()[i])
-        }
+        // If the `z` coordinate is non-zero, we can use it to invert;
+        // otherwise it defaults to the `IDENTITY` value.
+        out[i] = C::AffinePoint::conditional_select(
+            &points[i].to_affine_internal(zs_inverses.as_ref()[i]),
+            &C::AffinePoint::IDENTITY,
+            points[i].z.ct_eq(&C::FieldElement::ZERO),
+        );
     }
 }
 
