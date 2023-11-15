@@ -12,7 +12,6 @@ pub(crate) mod scalar;
 mod dev;
 
 pub use field::FieldElement;
-pub use mul::lincomb;
 
 use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 use crate::Secp256k1;
