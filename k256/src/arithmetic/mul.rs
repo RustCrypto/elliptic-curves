@@ -40,7 +40,6 @@
 ))]
 compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
 
-use crate::arithmetic::LinearCombination;
 use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
     ProjectivePoint,
@@ -48,6 +47,7 @@ use crate::arithmetic::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 use core::ops::{Mul, MulAssign};
+use elliptic_curve::ops::LinearCombinationExt as LinearCombination;
 use elliptic_curve::{
     ops::MulByGenerator,
     scalar::IsHigh,
@@ -281,8 +281,8 @@ impl<const D: usize> Default for Radix16Decomposition<D> {
     }
 }
 
-impl<const N: usize> LinearCombination<&[(ProjectivePoint, Scalar); N]> for ProjectivePoint {
-    fn linear_combination(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
+impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for ProjectivePoint {
+    fn lincomb_ext(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
         let mut tables = [(LookupTable::default(), LookupTable::default()); N];
         let mut digits = [(
             Radix16Decomposition::<33>::default(),
@@ -295,7 +295,7 @@ impl<const N: usize> LinearCombination<&[(ProjectivePoint, Scalar); N]> for Proj
 
 #[cfg(feature = "alloc")]
 impl LinearCombination<Vec<(ProjectivePoint, Scalar)>> for ProjectivePoint {
-    fn linear_combination(points_and_scalars: Vec<(ProjectivePoint, Scalar)>) -> Self {
+    fn lincomb_ext(points_and_scalars: &Vec<(ProjectivePoint, Scalar)>) -> Self {
         let mut tables =
             vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
         let mut digits = vec![
@@ -412,18 +412,7 @@ impl MulByGenerator for ProjectivePoint {
 
 #[inline(always)]
 fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    ProjectivePoint::linear_combination(&[(*x, *k)])
-}
-
-impl elliptic_curve::ops::LinearCombination for ProjectivePoint {
-    fn lincomb(
-        x: &ProjectivePoint,
-        k: &Scalar,
-        y: &ProjectivePoint,
-        l: &Scalar,
-    ) -> ProjectivePoint {
-        ProjectivePoint::linear_combination(&[(*x, *k), (*y, *l)])
-    }
+    ProjectivePoint::lincomb_ext(&[(*x, *k)])
 }
 
 impl Mul<Scalar> for ProjectivePoint {
@@ -501,7 +490,7 @@ mod tests {
         let l = Scalar::random(&mut OsRng);
 
         let reference = &x * &k + &y * &l;
-        let test = ProjectivePoint::linear_combination(vec![(x, k), (y, l)]);
+        let test = ProjectivePoint::lincomb_ext(&vec![(x, k), (y, l)]);
         assert_eq!(reference, test);
     }
 }
