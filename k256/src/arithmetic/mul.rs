@@ -44,8 +44,7 @@ use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
     ProjectivePoint,
 };
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+
 use core::ops::{Mul, MulAssign};
 use elliptic_curve::ops::LinearCombinationExt as LinearCombination;
 use elliptic_curve::{
@@ -295,7 +294,7 @@ impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for Proje
 
 #[cfg(feature = "alloc")]
 impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
-    fn lincomb_ext(points_and_scalars: &Vec<(ProjectivePoint, Scalar)>) -> Self {
+    fn lincomb_ext(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
         let mut tables =
             vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
         let mut digits = vec![
@@ -306,7 +305,7 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
             points_and_scalars.len()
         ];
 
-        lincomb(points_and_scalars.as_slice(), &mut tables, &mut digits)
+        lincomb(points_and_scalars, &mut tables, &mut digits)
     }
 }
 
