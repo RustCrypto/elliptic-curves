@@ -272,8 +272,8 @@ impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
     type Output = Vec<Self::AffineRepr>;
 
     fn batch_normalize(points: &[Self]) -> Vec<Self::AffineRepr> {
-        let mut zs: Vec<_> = vec![FieldElement::ONE; points.len()];
-        let mut affine_points: Vec<_> = vec![AffinePoint::IDENTITY; points.len()];
+        let mut zs = vec![FieldElement::ONE; points.len()];
+        let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
         affine_points
     }
@@ -449,11 +449,15 @@ impl Curve for ProjectivePoint {
     }
 
     #[cfg(feature = "alloc")]
-    fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
-        assert_eq!(p.len(), q.len());
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
 
-        let affine_points: Vec<_> = <Self as BatchNormalize<_>>::batch_normalize(p);
-        q.copy_from_slice(&affine_points);
+        for point in affine.iter_mut() {
+            *point = AffinePoint::IDENTITY;
+        }
+
+        let mut zs = vec![FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
 }
 

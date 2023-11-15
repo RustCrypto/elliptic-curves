@@ -331,11 +331,15 @@ where
     }
 
     #[cfg(feature = "alloc")]
-    fn batch_normalize(p: &[Self], q: &mut [Self::AffineRepr]) {
-        assert_eq!(p.len(), q.len());
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
 
-        let affine_points: Vec<_> = <Self as BatchNormalize>::batch_normalize_vec(p);
-        q.copy_from_slice(affine_points)
+        for point in affine.iter_mut() {
+            *point = AffinePoint::IDENTITY;
+        }
+
+        let mut zs = vec![FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
 }
 
@@ -363,8 +367,8 @@ where
     type Output = Vec<Self::AffineRepr>;
 
     fn batch_normalize(points: &[Self; N]) -> Vec<Self::AffineRepr> {
-        let mut zs: Vec<_> = vec![C::FieldElement::ONE; points.len()];
-        let mut affine_points: Vec<_> = vec![AffinePoint::IDENTITY; points.len()];
+        let mut zs = vec![C::FieldElement::ONE; points.len()];
+        let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
         affine_points
     }
@@ -375,7 +379,7 @@ fn batch_normalize_generic<C, P, Z, O>(points: &P, zs: &mut Z, out: &mut O)
 where
     C: PrimeCurveParams,
     C::FieldElement: BatchInvert<Z>,
-    ProjectivePoint<C>: Double,
+    C::ProjectivePoint: Double,
     P: AsRef<[ProjectivePoint<C>]> + ?Sized,
     Z: AsMut<[C::FieldElement]> + ?Sized,
     O: AsMut<[AffinePoint<C>]> + ?Sized,
