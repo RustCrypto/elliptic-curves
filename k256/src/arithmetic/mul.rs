@@ -388,7 +388,7 @@ static GEN_LOOKUP_TABLE: Lazy<[LookupTable; 33]> = Lazy::new(precompute_gen_look
 fn precompute_gen_lookup_table() -> [LookupTable; 33] {
     let mut gen = ProjectivePoint::GENERATOR;
     let mut res = [LookupTable::default(); 33];
-    #[allow(clippy::needless_range_loop)]
+
     for i in 0..33 {
         res[i] = LookupTable::from(&gen);
         // We are storing tables spaced by two radix steps,
