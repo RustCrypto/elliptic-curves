@@ -8,7 +8,6 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, Integer},
     generic_array::ArrayLength,
@@ -18,7 +17,7 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
         Group, GroupEncoding,
     },
-    ops::{LinearCombination, MulByGenerator},
+    ops::{BatchInvert, LinearCombination, MulByGenerator},
     point::Double,
     rand_core::RngCore,
     sec1::{
@@ -340,79 +339,68 @@ where
     }
 }
 
-impl<const N: usize, C> BatchNormalize<&[ProjectivePoint<C>; N]> for ProjectivePoint<C>
+impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
 {
     type Output = [Self::AffineRepr; N];
 
-    fn batch_normalize(
-        points: &[Self; N],
-    ) -> <Self as BatchNormalize<&[ProjectivePoint<C>; N]>>::Output {
+    fn batch_normalize(points: &[Self; N]) -> [Self::AffineRepr; N] {
         let mut zs = [C::FieldElement::ONE; N];
-
-        for i in 0..N {
-            if points[i].z != C::FieldElement::ZERO {
-                // Even a single zero value will fail inversion for the entire batch.
-                // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
-                // and treat that case specially later-on.
-                zs[i] = points[i].z;
-            }
-        }
-
-        // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses = <C::FieldElement as BatchInvert<_>>::batch_invert(&zs).unwrap();
-
-        let mut affine_points = [AffinePoint::IDENTITY; N];
-        for i in 0..N {
-            if points[i].z != C::FieldElement::ZERO {
-                // If the `z` coordinate is non-zero, we can use it to invert;
-                // otherwise it defaults to the `IDENTITY` value in initialization.
-                affine_points[i] = points[i].to_affine_internal(zs_inverses[i])
-            }
-        }
-
+        let mut affine_points = [C::AffinePoint::IDENTITY; N];
+        batch_normalize_generic(points, &mut zs, &mut affine_points);
         affine_points
     }
 }
 
 #[cfg(feature = "alloc")]
-impl<C> BatchNormalize<&[ProjectivePoint<C>]> for ProjectivePoint<C>
+impl<C> BatchNormalize<[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
 {
     type Output = Vec<Self::AffineRepr>;
 
-    fn batch_normalize(
-        points: &[Self; N],
-    ) -> <Self as BatchNormalize<&[ProjectivePoint<C>; N]>>::Output {
+    fn batch_normalize(points: &[Self; N]) -> Vec<Self::AffineRepr> {
         let mut zs: Vec<_> = vec![C::FieldElement::ONE; points.len()];
-
-        for i in 0..points.len() {
-            if points[i].z != C::FieldElement::ZERO {
-                // Even a single zero value will fail inversion for the entire batch.
-                // Put a dummy value (above `C::FieldElement::ONE`) so inversion succeeds
-                // and treat that case specially later-on.
-                zs[i] = points[i].z;
-            }
-        }
-
-        // This is safe to unwrap since we assured that all elements are non-zero
-        let zs_inverses: Vec<_> =
-            <C::FieldElement as Invert>::batch_invert_vec(zs.as_vec()).unwrap();
-
         let mut affine_points: Vec<_> = vec![AffinePoint::IDENTITY; points.len()];
-        for i in 0..points.len() {
-            if points[i].z != C::FieldElement::ZERO {
-                // If the `z` coordinate is non-zero, we can use it to invert;
-                // otherwise it defaults to the `IDENTITY` value in initialization.
-                affine_points[i] = points[i].to_affine_internal(zs_inverses[i])
-            }
-        }
+        batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
+        affine_points
+    }
+}
 
-        affine_points.into_iter().collect()
+/// Generic implementation of batch normalization.
+fn batch_normalize_generic<C, P, Z, O>(points: &P, zs: &mut Z, out: &mut O)
+where
+    C: PrimeCurveParams,
+    C::FieldElement: BatchInvert<Z>,
+    ProjectivePoint<C>: Double,
+    P: AsRef<[ProjectivePoint<C>]> + ?Sized,
+    Z: AsMut<[C::FieldElement]> + ?Sized,
+    O: AsMut<[AffinePoint<C>]> + ?Sized,
+{
+    let points = points.as_ref();
+    let out = out.as_mut();
+
+    for i in 0..points.len() {
+        if points[i].z != C::FieldElement::ZERO {
+            // Even a single zero value will fail inversion for the entire batch.
+            // Put a dummy value (above `C::FieldElement::ONE`) so inversion succeeds
+            // and treat that case specially later-on.
+            zs.as_mut()[i] = points[i].z;
+        }
+    }
+
+    // This is safe to unwrap since we assured that all elements are non-zero
+    let zs_inverses = <C::FieldElement as BatchInvert<Z>>::batch_invert(zs).unwrap();
+
+    for i in 0..out.len() {
+        if points[i].z != C::FieldElement::ZERO {
+            // If the `z` coordinate is non-zero, we can use it to invert;
+            // otherwise it defaults to the `IDENTITY` value in initialization.
+            out[i] = points[i].to_affine_internal(zs_inverses.as_ref()[i])
+        }
     }
 }
 
