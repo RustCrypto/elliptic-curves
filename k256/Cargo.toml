@@ -1,6 +1,6 @@
 [package]
 name = "k256"
-version = "0.13.1"
+version = "0.13.2"
 description = """
 secp256k1 elliptic curve library written in pure Rust with support for ECDSA
 signing/verification/public-key recovery, Taproot Schnorr signatures (BIP340),

@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.2 (2023-11-15)
+### Added
+- `#[inline]` annotations on `conditional_select` ([#942])
+- `BatchInvert` and `BatchNormalize` impls ([#971])
+- Optimized implementation of `LinearCombinationExt` trait ([#974])
+
+### Changed
+- Use generic signing implementation from `ecdsa` crate ([#911])
+- Simplify internal helper functions in the scalar arithmetic ([#917])
+- Bump `elliptic-curve` to v0.13.7 ([#979])
+
+### Fixed
+- Reject signatures which aren't low-`S` normalized ([#914])
+- Check for `R` being the identity point on Schnorr verification ([#916])
+
+[#911]: https://github.com/RustCrypto/elliptic-curves/pull/911
+[#914]: https://github.com/RustCrypto/elliptic-curves/pull/914
+[#916]: https://github.com/RustCrypto/elliptic-curves/pull/916
+[#917]: https://github.com/RustCrypto/elliptic-curves/pull/917
+[#942]: https://github.com/RustCrypto/elliptic-curves/pull/942
+[#971]: https://github.com/RustCrypto/elliptic-curves/pull/971
+[#974]: https://github.com/RustCrypto/elliptic-curves/pull/974
+[#979]: https://github.com/RustCrypto/elliptic-curves/pull/979
+
 ## 0.13.1 (2023-04-09)
 ### Fixed
 - Correct product definition for empty iterators ([#802])
