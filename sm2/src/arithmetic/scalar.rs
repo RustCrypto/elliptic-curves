@@ -34,7 +34,7 @@ use core::{
 use elliptic_curve::{
     bigint::Limb,
     ff::PrimeField,
-    ops::{Invert, Reduce},
+    ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     Curve as _, Error, Result, ScalarPrimitive,
@@ -48,6 +48,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
+use elliptic_curve::ops::Invert;
 
 /// Scalars are elements in the finite field modulo `n`.
 ///
@@ -158,14 +159,6 @@ impl FromUintUnchecked for Scalar {
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self::from_uint_unchecked(uint)
-    }
-}
-
-impl Invert for Scalar {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
     }
 }
 
@@ -336,6 +329,14 @@ impl<'de> Deserialize<'de> for Scalar {
         D: de::Deserializer<'de>,
     {
         Ok(ScalarPrimitive::deserialize(deserializer)?.into())
+    }
+}
+
+impl Invert for Scalar {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 

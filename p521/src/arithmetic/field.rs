@@ -34,6 +34,7 @@ use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     ff::{self, Field, PrimeField},
     generic_array::GenericArray,
@@ -653,6 +654,14 @@ impl Product for FieldElement {
 impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.copied().product()
+    }
+}
+
+impl Invert for FieldElement {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 

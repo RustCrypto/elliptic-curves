@@ -36,6 +36,7 @@ use core::{
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
 use elliptic_curve::bigint::Limb;
+use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
@@ -138,6 +139,14 @@ impl PrimeField for FieldElement {
         Self::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff42");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(4);
+}
+
+impl Invert for FieldElement {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
 }
 
 #[cfg(test)]
