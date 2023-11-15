@@ -294,7 +294,7 @@ impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for Proje
 }
 
 #[cfg(feature = "alloc")]
-impl LinearCombination<Vec<(ProjectivePoint, Scalar)>> for ProjectivePoint {
+impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
     fn lincomb_ext(points_and_scalars: &Vec<(ProjectivePoint, Scalar)>) -> Self {
         let mut tables =
             vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
