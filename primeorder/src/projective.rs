@@ -29,6 +29,9 @@ use elliptic_curve::{
     BatchNormalize, Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct ProjectivePoint<C: PrimeCurveParams> {
@@ -334,7 +337,7 @@ where
     #[inline]
     fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
         assert_eq!(projective.len(), affine.len());
-        let mut zs = vec![FieldElement::ONE; projective.len()];
+        let mut zs = vec![C::FieldElement::ONE; projective.len()];
         batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
 }
@@ -364,7 +367,7 @@ where
     type Output = Vec<Self::AffineRepr>;
 
     #[inline]
-    fn batch_normalize(points: &[Self; N]) -> Vec<Self::AffineRepr> {
+    fn batch_normalize(points: &[Self]) -> Vec<Self::AffineRepr> {
         let mut zs = vec![C::FieldElement::ONE; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
