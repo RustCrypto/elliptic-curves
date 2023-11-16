@@ -23,7 +23,8 @@ elliptic-curve = { version = "0.13.7", default-features = false, features = ["ar
 serdect = { version = "0.2", optional = true, default-features = false }
 
 [features]
-std = ["elliptic-curve/std"]
+alloc = ["elliptic-curve/alloc"]
+std = ["alloc", "elliptic-curve/std"]
 
 dev = []
 serde = ["elliptic-curve/serde", "serdect"]

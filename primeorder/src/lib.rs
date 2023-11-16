@@ -8,6 +8,10 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "alloc")]
+#[macro_use]
+extern crate alloc;
+
 pub mod point_arithmetic;
 
 mod affine;
