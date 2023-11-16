@@ -4,13 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.13.5 (2023-11-15)
+## 0.13.5 (2023-11-15) [YANKED]
 ### Added
 - `alloc` feature ([#982])
 
 [#982]: https://github.com/RustCrypto/elliptic-curves/pull/982
 
-## 0.13.4 (2023-11-15)
+## 0.13.4 (2023-11-15) [YANKED]
 ### Added
 - `BatchInvert` and `BatchNormalize` impls ([#971])
 
