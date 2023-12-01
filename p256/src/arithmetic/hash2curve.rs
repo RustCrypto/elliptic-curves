@@ -93,7 +93,9 @@ impl FromOkm for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{arithmetic::field::MODULUS, FieldElement, NistP256, Scalar, U256};
+    #[cfg(feature = "expose-field")]
+    use crate::FieldElement;
+    use crate::{arithmetic::field::MODULUS, NistP256, Scalar, U256};
     use elliptic_curve::{
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
         consts::U48,
@@ -105,8 +107,10 @@ mod tests {
     };
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
+    #[cfg(feature = "sha256")]
     use sha2::Sha256;
 
+    #[cfg(feature = "expose-field")]
     #[test]
     fn params() {
         let params = <FieldElement as OsswuMap>::PARAMS;
@@ -122,6 +126,7 @@ mod tests {
         assert_eq!(params.c2, c2);
     }
 
+    #[cfg(feature = "expose-field")]
     #[allow(dead_code)] // TODO(tarcieri): fix commented out code
     #[test]
     fn hash_to_curve() {
@@ -241,6 +246,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "sha256")]
     /// Taken from <https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf#appendix-A.3>.
     #[test]
     fn hash_to_scalar_voprf() {
