@@ -93,7 +93,8 @@ impl FromOkm for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{arithmetic::field::MODULUS, FieldElement, NistP256, Scalar, U256};
+    use super::FieldElement;
+    use crate::{arithmetic::field::MODULUS, NistP256, Scalar, U256};
     use elliptic_curve::{
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
         consts::U48,
