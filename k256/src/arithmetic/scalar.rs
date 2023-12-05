@@ -83,26 +83,31 @@ impl Scalar {
     pub const ONE: Self = Self(U256::ONE);
 
     /// Checks if the scalar is zero.
+    #[inline(always)]
     pub fn is_zero(&self) -> Choice {
         self.0.is_zero()
     }
 
     /// Returns the SEC1 encoding of this scalar.
+    #[inline(always)]
     pub fn to_bytes(&self) -> FieldBytes {
         self.0.to_be_byte_array()
     }
 
     /// Negates the scalar.
+    #[inline(always)]
     pub const fn negate(&self) -> Self {
         Self(self.0.neg_mod(&ORDER))
     }
 
     /// Returns self + rhs mod n.
+    #[inline(always)]
     pub const fn add(&self, rhs: &Self) -> Self {
         Self(self.0.add_mod(&rhs.0, &ORDER))
     }
 
     /// Returns self - rhs mod n.
+    #[inline(always)]
     pub const fn sub(&self, rhs: &Self) -> Self {
         Self(self.0.sub_mod(&rhs.0, &ORDER))
     }
@@ -113,6 +118,7 @@ impl Scalar {
     }
 
     /// Modulo squares the scalar.
+    #[inline(always)]
     pub fn square(&self) -> Self {
         self.mul(self)
     }
@@ -120,6 +126,7 @@ impl Scalar {
     /// Right shifts the scalar.
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
+    #[inline(always)]
     pub fn shr_vartime(&self, shift: usize) -> Scalar {
         Self(self.0.shr_vartime(shift))
     }
@@ -182,6 +189,7 @@ impl Scalar {
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
+    #[inline(always)]
     pub fn generate_biased(rng: &mut impl CryptoRngCore) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution, but the process is constant-time.
@@ -192,6 +200,7 @@ impl Scalar {
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
     // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
+    #[inline(always)]
     pub fn generate_vartime(rng: &mut impl RngCore) -> Self {
         let mut bytes = FieldBytes::default();
 
@@ -206,11 +215,13 @@ impl Scalar {
 
     /// Attempts to parse the given byte array as a scalar.
     /// Does not check the result for being in the correct range.
+    #[inline(always)]
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(U256::from_be_slice(bytes))
     }
 
     /// Raises the scalar to the power `2^k`.
+    #[inline(always)]
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
         for _j in 0..k {
@@ -224,6 +235,7 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
+    #[inline(always)]
     fn random(mut rng: impl RngCore) -> Self {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
@@ -238,15 +250,18 @@ impl Field for Scalar {
     }
 
     #[must_use]
+    #[inline(always)]
     fn square(&self) -> Self {
         Scalar::square(self)
     }
 
     #[must_use]
+    #[inline(always)]
     fn double(&self) -> Self {
         self.add(self)
     }
 
+    #[inline(always)]
     fn invert(&self) -> CtOption<Self> {
         Scalar::invert(self)
     }
@@ -254,6 +269,7 @@ impl Field for Scalar {
     /// Tonelli-Shank's algorithm for q mod 16 = 1
     /// <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
     #[allow(clippy::many_single_char_names)]
+    #[inline(always)]
     fn sqrt(&self) -> CtOption<Self> {
         // Note: `pow_vartime` is constant-time with respect to `self`
         let w = self.pow_vartime([
@@ -407,6 +423,7 @@ impl From<&Scalar> for ScalarPrimitive<Secp256k1> {
 impl FromUintUnchecked for Scalar {
     type Uint = U256;
 
+    #[inline(always)]
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self(uint)
     }
@@ -431,6 +448,7 @@ impl Invert for Scalar {
     /// variable-time operation can potentially leak secrets through
     /// sidechannels.
     #[allow(non_snake_case)]
+    #[inline(always)]
     fn invert_vartime(&self) -> CtOption<Self> {
         let mut u = *self;
         let mut v = Self::from_uint_unchecked(Secp256k1::ORDER);
@@ -479,6 +497,7 @@ impl Invert for Scalar {
 }
 
 impl IsHigh for Scalar {
+    #[inline(always)]
     fn is_high(&self) -> Choice {
         self.0.ct_gt(&FRAC_MODULUS_2)
     }
@@ -487,6 +506,7 @@ impl IsHigh for Scalar {
 impl Shr<usize> for Scalar {
     type Output = Self;
 
+    #[inline(always)]
     fn shr(self, rhs: usize) -> Self::Output {
         self.shr_vartime(rhs)
     }
@@ -495,30 +515,35 @@ impl Shr<usize> for Scalar {
 impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn shr(self, rhs: usize) -> Self::Output {
         self.shr_vartime(rhs)
     }
 }
 
 impl ShrAssign<usize> for Scalar {
+    #[inline(always)]
     fn shr_assign(&mut self, rhs: usize) {
         *self = *self >> rhs;
     }
 }
 
 impl ConditionallySelectable for Scalar {
+    #[inline(always)]
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self(U256::conditional_select(&a.0, &b.0, choice))
     }
 }
 
 impl ConstantTimeEq for Scalar {
+    #[inline(always)]
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0.ct_eq(&(other.0))
     }
 }
 
 impl PartialEq for Scalar {
+    #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
@@ -529,6 +554,7 @@ impl Eq for Scalar {}
 impl Neg for Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn neg(self) -> Scalar {
         self.negate()
     }
@@ -545,6 +571,7 @@ impl Neg for &Scalar {
 impl Add<Scalar> for Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn add(self, other: Scalar) -> Scalar {
         Scalar::add(&self, &other)
     }
@@ -553,6 +580,7 @@ impl Add<Scalar> for Scalar {
 impl Add<&Scalar> for &Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn add(self, other: &Scalar) -> Scalar {
         Scalar::add(self, other)
     }
@@ -561,6 +589,7 @@ impl Add<&Scalar> for &Scalar {
 impl Add<Scalar> for &Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn add(self, other: Scalar) -> Scalar {
         Scalar::add(self, &other)
     }
@@ -575,12 +604,14 @@ impl Add<&Scalar> for Scalar {
 }
 
 impl AddAssign<Scalar> for Scalar {
+    #[inline(always)]
     fn add_assign(&mut self, rhs: Scalar) {
         *self = Scalar::add(self, &rhs);
     }
 }
 
 impl AddAssign<&Scalar> for Scalar {
+    #[inline(always)]
     fn add_assign(&mut self, rhs: &Scalar) {
         *self = Scalar::add(self, rhs);
     }
@@ -589,6 +620,7 @@ impl AddAssign<&Scalar> for Scalar {
 impl Sub<Scalar> for Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn sub(self, other: Scalar) -> Scalar {
         Scalar::sub(&self, &other)
     }
@@ -597,6 +629,7 @@ impl Sub<Scalar> for Scalar {
 impl Sub<&Scalar> for &Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn sub(self, other: &Scalar) -> Scalar {
         Scalar::sub(self, other)
     }
@@ -605,18 +638,21 @@ impl Sub<&Scalar> for &Scalar {
 impl Sub<&Scalar> for Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn sub(self, other: &Scalar) -> Scalar {
         Scalar::sub(&self, other)
     }
 }
 
 impl SubAssign<Scalar> for Scalar {
+    #[inline(always)]
     fn sub_assign(&mut self, rhs: Scalar) {
         *self = Scalar::sub(self, &rhs);
     }
 }
 
 impl SubAssign<&Scalar> for Scalar {
+    #[inline(always)]
     fn sub_assign(&mut self, rhs: &Scalar) {
         *self = Scalar::sub(self, rhs);
     }
@@ -625,6 +661,7 @@ impl SubAssign<&Scalar> for Scalar {
 impl Mul<Scalar> for Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn mul(self, other: Scalar) -> Scalar {
         Scalar::mul(&self, &other)
     }
@@ -633,6 +670,7 @@ impl Mul<Scalar> for Scalar {
 impl Mul<&Scalar> for &Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn mul(self, other: &Scalar) -> Scalar {
         Scalar::mul(self, other)
     }
@@ -641,18 +679,21 @@ impl Mul<&Scalar> for &Scalar {
 impl Mul<&Scalar> for Scalar {
     type Output = Scalar;
 
+    #[inline(always)]
     fn mul(self, other: &Scalar) -> Scalar {
         Scalar::mul(&self, other)
     }
 }
 
 impl MulAssign<Scalar> for Scalar {
+    #[inline(always)]
     fn mul_assign(&mut self, rhs: Scalar) {
         *self = Scalar::mul(self, &rhs);
     }
 }
 
 impl MulAssign<&Scalar> for Scalar {
+    #[inline(always)]
     fn mul_assign(&mut self, rhs: &Scalar) {
         *self = Scalar::mul(self, rhs);
     }
@@ -661,6 +702,7 @@ impl MulAssign<&Scalar> for Scalar {
 impl Reduce<U256> for Scalar {
     type Bytes = FieldBytes;
 
+    #[inline(always)]
     fn reduce(w: U256) -> Self {
         let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
@@ -676,10 +718,12 @@ impl Reduce<U256> for Scalar {
 impl Reduce<U512> for Scalar {
     type Bytes = WideBytes;
 
+    #[inline(always)]
     fn reduce(w: U512) -> Self {
         WideScalar(w).reduce()
     }
 
+    #[inline(always)]
     fn reduce_bytes(bytes: &WideBytes) -> Self {
         Self::reduce(U512::from_be_byte_array(*bytes))
     }
@@ -711,24 +755,28 @@ impl ReduceNonZero<U512> for Scalar {
 }
 
 impl Sum for Scalar {
+    #[inline(always)]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
     }
 }
 
 impl<'a> Sum<&'a Scalar> for Scalar {
+    #[inline(always)]
     fn sum<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
         iter.copied().sum()
     }
 }
 
 impl Product for Scalar {
+    #[inline(always)]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
     }
 }
 
 impl<'a> Product<&'a Scalar> for Scalar {
+    #[inline(always)]
     fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
         iter.copied().product()
     }
