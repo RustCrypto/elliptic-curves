@@ -1,7 +1,7 @@
 //! secp256k1 scalar arithmetic benchmarks
 
 use criterion::{
-    criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
+    black_box, criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
 };
 use hex_literal::hex;
 use k256::{
@@ -33,16 +33,22 @@ fn bench_point_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
     let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("point-scalar mul", |b| b.iter(|| &p * &s));
+    group.bench_function("point-scalar mul", |b| {
+        b.iter(|| &black_box(p) * &black_box(s))
+    });
 }
 
 fn bench_point_lincomb<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
     let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("lincomb via mul+add", |b| b.iter(|| &p * &s + &p * &s));
+    group.bench_function("lincomb via mul+add", |b| {
+        b.iter(|| &black_box(p) * &black_box(s) + &black_box(p) * &black_box(s))
+    });
     group.bench_function("lincomb()", |b| {
-        b.iter(|| ProjectivePoint::lincomb(&p, &s, &p, &s))
+        b.iter(|| {
+            ProjectivePoint::lincomb(&black_box(p), &black_box(s), &black_box(p), &black_box(s))
+        })
     });
 }
 
@@ -50,10 +56,12 @@ fn bench_point_mul_by_generator<'a, M: Measurement>(group: &mut BenchmarkGroup<'
     let p = ProjectivePoint::GENERATOR;
     let x = test_scalar_x();
 
-    group.bench_function("mul_by_generator naive", |b| b.iter(|| &p * &x));
+    group.bench_function("mul_by_generator naive", |b| {
+        b.iter(|| &black_box(p) * &black_box(x))
+    });
 
     group.bench_function("mul_by_generator precomputed", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator(&x))
+        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(x)))
     });
 }
 
@@ -68,29 +76,29 @@ fn bench_high_level(c: &mut Criterion) {
 fn bench_scalar_sub<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("sub", |b| b.iter(|| &x - &y));
+    group.bench_function("sub", |b| b.iter(|| &black_box(x) - &black_box(y)));
 }
 
 fn bench_scalar_add<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("add", |b| b.iter(|| &x + &y));
+    group.bench_function("add", |b| b.iter(|| &black_box(x) + &black_box(y)));
 }
 
 fn bench_scalar_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("mul", |b| b.iter(|| &x * &y));
+    group.bench_function("mul", |b| b.iter(|| &black_box(x) * &black_box(y)));
 }
 
 fn bench_scalar_negate<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_scalar_x();
-    group.bench_function("negate", |b| b.iter(|| -x));
+    group.bench_function("negate", |b| b.iter(|| -black_box(x)));
 }
 
 fn bench_scalar_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_scalar_x();
-    group.bench_function("invert", |b| b.iter(|| x.invert()));
+    group.bench_function("invert", |b| b.iter(|| black_box(x).invert()));
 }
 
 fn bench_scalar(c: &mut Criterion) {
