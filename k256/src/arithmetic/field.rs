@@ -441,6 +441,7 @@ impl Mul<FieldElement> for FieldElement {
 impl Mul<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
+    #[inline(always)]
     fn mul(self, other: &FieldElement) -> FieldElement {
         FieldElement(self.0.mul(&(other.0)))
     }
@@ -489,6 +490,7 @@ impl Sum for FieldElement {
 }
 
 impl<'a> Sum<&'a FieldElement> for FieldElement {
+    #[inline(always)]
     fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
         iter.copied().sum()
     }
