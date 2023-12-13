@@ -36,14 +36,6 @@ fn bench_point_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     group.bench_function("point-scalar mul", |b| {
         b.iter(|| &black_box(p) * &black_box(s))
     });
-
-    #[inline(never)]
-    fn mul_with_diff_scalars_in_same_fn(p: &ProjectivePoint, s1: &Scalar, s2: &Scalar) -> ProjectivePoint {
-        p * s1 + p * s2 + p.double()
-    }
-    group.bench_function("point mul with different scalars in same fn", |b| {
-        b.iter(|| mul_with_diff_scalars_in_same_fn(&black_box(p), &black_box(s), &black_box(s)))
-    });
 }
 
 fn bench_point_lincomb<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
