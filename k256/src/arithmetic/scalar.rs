@@ -575,7 +575,7 @@ impl Add<&Scalar> for Scalar {
 }
 
 impl AddAssign<Scalar> for Scalar {
-    #[inline(always)]
+    #[inline]
     fn add_assign(&mut self, rhs: Scalar) {
         *self = Scalar::add(self, &rhs);
     }

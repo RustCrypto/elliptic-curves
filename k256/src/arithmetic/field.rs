@@ -490,7 +490,7 @@ impl Sum for FieldElement {
 }
 
 impl<'a> Sum<&'a FieldElement> for FieldElement {
-    #[inline(always)]
+    #[inline]
     fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
         iter.copied().sum()
     }
