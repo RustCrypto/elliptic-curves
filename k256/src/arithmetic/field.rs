@@ -63,7 +63,6 @@ impl FieldElement {
     /// # Returns
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    #[inline(always)]
     pub fn is_zero(&self) -> Choice {
         self.0.is_zero()
     }
@@ -73,7 +72,6 @@ impl FieldElement {
     /// # Returns
     ///
     /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    #[inline(always)]
     pub fn is_even(&self) -> Choice {
         !self.0.is_odd()
     }
@@ -83,14 +81,12 @@ impl FieldElement {
     /// # Returns
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    #[inline(always)]
     pub fn is_odd(&self) -> Choice {
         self.0.is_odd()
     }
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
-    #[inline(always)]
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(FieldElementImpl::from_bytes_unchecked(bytes))
     }
@@ -99,60 +95,51 @@ impl FieldElement {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    #[inline(always)]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         FieldElementImpl::from_bytes(bytes).map(Self)
     }
 
     /// Convert a `u64` to a field element.
-    #[inline(always)]
     pub const fn from_u64(w: u64) -> Self {
         Self(FieldElementImpl::from_u64(w))
     }
 
     /// Returns the SEC1 encoding of this field element.
-    #[inline(always)]
     pub fn to_bytes(self) -> FieldBytes {
         self.0.normalize().to_bytes()
     }
 
     /// Returns -self, treating it as a value of given magnitude.
     /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
-    #[inline(always)]
     pub fn negate(&self, magnitude: u32) -> Self {
         Self(self.0.negate(magnitude))
     }
 
     /// Fully normalizes the field element.
     /// Brings the magnitude to 1 and modulo reduces the value.
-    #[inline(always)]
     pub fn normalize(&self) -> Self {
         Self(self.0.normalize())
     }
 
     /// Weakly normalizes the field element.
     /// Brings the magnitude to 1, but does not guarantee the value to be less than the modulus.
-    #[inline(always)]
     pub fn normalize_weak(&self) -> Self {
         Self(self.0.normalize_weak())
     }
 
     /// Checks if the field element becomes zero if normalized.
-    #[inline(always)]
     pub fn normalizes_to_zero(&self) -> Choice {
         self.0.normalizes_to_zero()
     }
 
     /// Multiplies by a single-limb integer.
     /// Multiplies the magnitude by the same value.
-    #[inline(always)]
     pub fn mul_single(&self, rhs: u32) -> Self {
         Self(self.0.mul_single(rhs))
     }
 
     /// Returns 2*self.
     /// Doubles the magnitude.
-    #[inline(always)]
     pub fn double(&self) -> Self {
         Self(self.0.add(&(self.0)))
     }
@@ -160,7 +147,6 @@ impl FieldElement {
     /// Returns self * rhs mod p
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
-    #[inline(always)]
     pub fn mul(&self, rhs: &Self) -> Self {
         Self(self.0.mul(&(rhs.0)))
     }
@@ -169,13 +155,11 @@ impl FieldElement {
     ///
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
-    #[inline(always)]
     pub fn square(&self) -> Self {
         Self(self.0.square())
     }
 
     /// Raises the scalar to the power `2^k`
-    #[inline(always)]
     fn pow2k(&self, k: usize) -> Self {
         let mut x = *self;
         for _j in 0..k {
@@ -186,7 +170,6 @@ impl FieldElement {
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
     /// The result has magnitude 1, but is not normalized.
-    #[inline(always)]
     pub fn invert(&self) -> CtOption<Self> {
         // The binary representation of (p - 2) has 5 blocks of 1s, with lengths in
         // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
@@ -220,7 +203,6 @@ impl FieldElement {
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
     /// The result has magnitude 1, but is not normalized.
-    #[inline(always)]
     pub fn sqrt(&self) -> CtOption<Self> {
         /*
         Given that p is congruent to 3 mod 4, we can compute the square root of
@@ -267,7 +249,6 @@ impl FieldElement {
 impl Invert for FieldElement {
     type Output = CtOption<Self>;
 
-    #[inline(always)]
     fn invert(&self) -> CtOption<Self> {
         self.invert()
     }
@@ -277,7 +258,6 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    #[inline(always)]
     fn random(mut rng: impl RngCore) -> Self {
         let mut bytes = FieldBytes::default();
 
@@ -290,28 +270,23 @@ impl Field for FieldElement {
     }
 
     #[must_use]
-    #[inline(always)]
     fn square(&self) -> Self {
         self.square()
     }
 
     #[must_use]
-    #[inline(always)]
     fn double(&self) -> Self {
         self.double()
     }
 
-    #[inline(always)]
     fn invert(&self) -> CtOption<Self> {
         self.invert()
     }
 
-    #[inline(always)]
     fn sqrt(&self) -> CtOption<Self> {
         self.sqrt()
     }
 
-    #[inline(always)]
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
         ff::helpers::sqrt_ratio_generic(num, div)
     }
@@ -343,17 +318,14 @@ impl PrimeField for FieldElement {
     ]));
     const DELTA: Self = Self::from_u64(9);
 
-    #[inline(always)]
     fn from_repr(repr: Self::Repr) -> CtOption<Self> {
         Self::from_bytes(&repr)
     }
 
-    #[inline(always)]
     fn to_repr(&self) -> Self::Repr {
         self.to_bytes()
     }
 
-    #[inline(always)]
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }
@@ -367,14 +339,12 @@ impl ConditionallySelectable for FieldElement {
 }
 
 impl ConstantTimeEq for FieldElement {
-    #[inline(always)]
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0.ct_eq(&(other.0))
     }
 }
 
 impl Default for FieldElement {
-    #[inline(always)]
     fn default() -> Self {
         Self::ZERO
     }
@@ -385,14 +355,12 @@ impl DefaultIsZeroes for FieldElement {}
 impl Eq for FieldElement {}
 
 impl From<u64> for FieldElement {
-    #[inline(always)]
     fn from(k: u64) -> Self {
         Self(FieldElementImpl::from_u64(k))
     }
 }
 
 impl PartialEq for FieldElement {
-    #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
         self.0.ct_eq(&(other.0)).into()
     }
@@ -401,7 +369,6 @@ impl PartialEq for FieldElement {
 impl Add<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn add(self, other: FieldElement) -> FieldElement {
         FieldElement(self.0.add(&(other.0)))
     }
@@ -410,7 +377,6 @@ impl Add<FieldElement> for FieldElement {
 impl Add<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn add(self, other: &FieldElement) -> FieldElement {
         FieldElement(self.0.add(&(other.0)))
     }
@@ -419,21 +385,18 @@ impl Add<&FieldElement> for FieldElement {
 impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn add(self, other: &FieldElement) -> FieldElement {
         FieldElement(self.0.add(&(other.0)))
     }
 }
 
 impl AddAssign<FieldElement> for FieldElement {
-    #[inline(always)]
     fn add_assign(&mut self, other: FieldElement) {
         *self = *self + &other;
     }
 }
 
 impl AddAssign<&FieldElement> for FieldElement {
-    #[inline(always)]
     fn add_assign(&mut self, other: &FieldElement) {
         *self = *self + other;
     }
@@ -442,7 +405,6 @@ impl AddAssign<&FieldElement> for FieldElement {
 impl Sub<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn sub(self, other: FieldElement) -> FieldElement {
         self + -other
     }
@@ -451,7 +413,6 @@ impl Sub<FieldElement> for FieldElement {
 impl Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn sub(self, other: &FieldElement) -> FieldElement {
         self + -other
     }
@@ -464,7 +425,6 @@ impl SubAssign<FieldElement> for FieldElement {
 }
 
 impl SubAssign<&FieldElement> for FieldElement {
-    #[inline(always)]
     fn sub_assign(&mut self, other: &FieldElement) {
         *self = *self + -other;
     }
@@ -473,7 +433,6 @@ impl SubAssign<&FieldElement> for FieldElement {
 impl Mul<FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn mul(self, other: FieldElement) -> FieldElement {
         FieldElement(self.0.mul(&(other.0)))
     }
@@ -482,7 +441,6 @@ impl Mul<FieldElement> for FieldElement {
 impl Mul<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn mul(self, other: &FieldElement) -> FieldElement {
         FieldElement(self.0.mul(&(other.0)))
     }
@@ -491,21 +449,18 @@ impl Mul<&FieldElement> for FieldElement {
 impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn mul(self, other: &FieldElement) -> FieldElement {
         FieldElement(self.0.mul(&(other.0)))
     }
 }
 
 impl MulAssign<FieldElement> for FieldElement {
-    #[inline(always)]
     fn mul_assign(&mut self, rhs: FieldElement) {
         *self = *self * &rhs;
     }
 }
 
 impl MulAssign<&FieldElement> for FieldElement {
-    #[inline(always)]
     fn mul_assign(&mut self, rhs: &FieldElement) {
         *self = *self * rhs;
     }
@@ -514,7 +469,6 @@ impl MulAssign<&FieldElement> for FieldElement {
 impl Neg for FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn neg(self) -> FieldElement {
         self.negate(1)
     }
@@ -523,35 +477,30 @@ impl Neg for FieldElement {
 impl Neg for &FieldElement {
     type Output = FieldElement;
 
-    #[inline(always)]
     fn neg(self) -> FieldElement {
         self.negate(1)
     }
 }
 
 impl Sum for FieldElement {
-    #[inline(always)]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
     }
 }
 
 impl<'a> Sum<&'a FieldElement> for FieldElement {
-    #[inline(always)]
     fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
         iter.copied().sum()
     }
 }
 
 impl Product for FieldElement {
-    #[inline(always)]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
     }
 }
 
 impl<'a> Product<&'a FieldElement> for FieldElement {
-    #[inline(always)]
     fn product<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
         iter.copied().product()
     }

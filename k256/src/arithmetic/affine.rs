@@ -120,7 +120,6 @@ impl AffineCoordinates for AffinePoint {
 }
 
 impl ConditionallySelectable for AffinePoint {
-    #[inline(always)]
     fn conditional_select(a: &AffinePoint, b: &AffinePoint, choice: Choice) -> AffinePoint {
         AffinePoint {
             x: FieldElement::conditional_select(&a.x, &b.x, choice),
@@ -131,7 +130,6 @@ impl ConditionallySelectable for AffinePoint {
 }
 
 impl ConstantTimeEq for AffinePoint {
-    #[inline(always)]
     fn ct_eq(&self, other: &AffinePoint) -> Choice {
         (self.x.negate(1) + &other.x).normalizes_to_zero()
             & (self.y.negate(1) + &other.y).normalizes_to_zero()
@@ -148,7 +146,6 @@ impl Default for AffinePoint {
 impl DefaultIsZeroes for AffinePoint {}
 
 impl PartialEq for AffinePoint {
-    #[inline(always)]
     fn eq(&self, other: &AffinePoint) -> bool {
         self.ct_eq(other).into()
     }
@@ -159,7 +156,6 @@ impl Eq for AffinePoint {}
 impl Mul<Scalar> for AffinePoint {
     type Output = ProjectivePoint;
 
-    #[inline(always)]
     fn mul(self, scalar: Scalar) -> ProjectivePoint {
         ProjectivePoint::from(self) * scalar
     }
@@ -168,7 +164,6 @@ impl Mul<Scalar> for AffinePoint {
 impl Mul<&Scalar> for AffinePoint {
     type Output = ProjectivePoint;
 
-    #[inline(always)]
     fn mul(self, scalar: &Scalar) -> ProjectivePoint {
         ProjectivePoint::from(self) * scalar
     }
@@ -177,7 +172,6 @@ impl Mul<&Scalar> for AffinePoint {
 impl Neg for AffinePoint {
     type Output = AffinePoint;
 
-    #[inline(always)]
     fn neg(self) -> Self::Output {
         AffinePoint {
             x: self.x,
@@ -188,7 +182,6 @@ impl Neg for AffinePoint {
 }
 
 impl DecompressPoint<Secp256k1> for AffinePoint {
-    #[inline(always)]
     fn decompress(x_bytes: &FieldBytes, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_bytes(x_bytes).and_then(|x| {
             let alpha = (x * &x * &x) + &CURVE_EQUATION_B;
@@ -212,7 +205,6 @@ impl DecompressPoint<Secp256k1> for AffinePoint {
 ///
 /// [BIP 340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
 impl DecompactPoint<Secp256k1> for AffinePoint {
-    #[inline(always)]
     fn decompact(x_bytes: &FieldBytes) -> CtOption<Self> {
         Self::decompress(x_bytes, Choice::from(0))
     }
@@ -221,7 +213,6 @@ impl DecompactPoint<Secp256k1> for AffinePoint {
 impl GroupEncoding for AffinePoint {
     type Repr = CompressedPoint;
 
-    #[inline(always)]
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
         EncodedPoint::from_bytes(bytes)
             .map(|point| CtOption::new(point, Choice::from(1)))
@@ -234,13 +225,11 @@ impl GroupEncoding for AffinePoint {
             .and_then(|point| Self::from_encoded_point(&point))
     }
 
-    #[inline(always)]
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
         // No unchecked conversion possible for compressed points
         Self::from_bytes(bytes)
     }
 
-    #[inline(always)]
     fn to_bytes(&self) -> Self::Repr {
         let encoded = self.to_encoded_point(true);
         let mut result = CompressedPoint::default();
@@ -255,7 +244,6 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
-    #[inline(always)]
     fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => CtOption::new(Self::IDENTITY, 1.into()),
@@ -282,7 +270,6 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
 }
 
 impl ToEncodedPoint<Secp256k1> for AffinePoint {
-    #[inline(always)]
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
         EncodedPoint::conditional_select(
             &EncodedPoint::from_affine_coordinates(

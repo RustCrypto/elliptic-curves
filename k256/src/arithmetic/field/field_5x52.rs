@@ -24,7 +24,6 @@ impl FieldElement5x52 {
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
-    #[inline(always)]
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         let w0 = (bytes[31] as u64)
             | ((bytes[30] as u64) << 8)
@@ -72,14 +71,12 @@ impl FieldElement5x52 {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    #[inline(always)]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let res = Self::from_bytes_unchecked(bytes.as_ref());
         let overflow = res.get_overflow();
         CtOption::new(res, !overflow)
     }
 
-    #[inline(always)]
     pub const fn from_u64(val: u64) -> Self {
         let w0 = val & 0xFFFFFFFFFFFFF;
         let w1 = val >> 52;
@@ -87,7 +84,6 @@ impl FieldElement5x52 {
     }
 
     /// Returns the SEC1 encoding of this field element.
-    #[inline(always)]
     pub fn to_bytes(self) -> FieldBytes {
         let mut ret = FieldBytes::default();
         ret[0] = (self.0[4] >> 40) as u8;
@@ -126,7 +122,6 @@ impl FieldElement5x52 {
     }
 
     /// Adds `x * (2^256 - modulus)`.
-    #[inline(always)]
     fn add_modulus_correction(&self, x: u64) -> Self {
         // add (2^256 - modulus) * x to the first limb
         let t0 = self.0[0] + x * 0x1000003D1u64;
@@ -149,7 +144,6 @@ impl FieldElement5x52 {
 
     /// Subtracts the overflow in the last limb and return it with the new field element.
     /// Equivalent to subtracting a multiple of 2^256.
-    #[inline(always)]
     fn subtract_modulus_approximation(&self) -> (Self, u64) {
         let x = self.0[4] >> 48;
         let t4 = self.0[4] & 0x0FFFFFFFFFFFFu64; // equivalent to self -= 2^256 * x
@@ -157,7 +151,6 @@ impl FieldElement5x52 {
     }
 
     /// Checks if the field element is greater or equal to the modulus.
-    #[inline(always)]
     fn get_overflow(&self) -> Choice {
         let m = self.0[1] & self.0[2] & self.0[3];
         let x = (self.0[4] >> 48 != 0)
@@ -168,7 +161,6 @@ impl FieldElement5x52 {
     }
 
     /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
-    #[inline(always)]
     pub fn normalize_weak(&self) -> Self {
         // Reduce t4 at the start so there will be at most a single carry from the first pass
         let (t, x) = self.subtract_modulus_approximation();
@@ -185,7 +177,6 @@ impl FieldElement5x52 {
     /// Fully normalizes the field element.
     /// That is, first four limbs are at most 52 bit large, the last limb is at most 48 bit large,
     /// and the value is less than the modulus.
-    #[inline(always)]
     pub fn normalize(&self) -> Self {
         let res = self.normalize_weak();
 
@@ -206,7 +197,6 @@ impl FieldElement5x52 {
     }
 
     /// Checks if the field element becomes zero if normalized.
-    #[inline(always)]
     pub fn normalizes_to_zero(&self) -> Choice {
         let res = self.normalize_weak();
 
@@ -228,7 +218,6 @@ impl FieldElement5x52 {
     /// # Returns
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    #[inline(always)]
     pub fn is_zero(&self) -> Choice {
         Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3] | self.0[4]) == 0) as u8)
     }
@@ -238,7 +227,6 @@ impl FieldElement5x52 {
     /// # Returns
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    #[inline(always)]
     pub fn is_odd(&self) -> Choice {
         (self.0[0] as u8 & 1).into()
     }
@@ -252,7 +240,6 @@ impl FieldElement5x52 {
     /// Returns -self, treating it as a value of given magnitude.
     /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
     /// Raises the magnitude by 1.
-    #[inline(always)]
     pub const fn negate(&self, magnitude: u32) -> Self {
         let m = (magnitude + 1) as u64;
         let r0 = 0xFFFFEFFFFFC2Fu64 * 2 * m - self.0[0];
@@ -265,7 +252,6 @@ impl FieldElement5x52 {
 
     /// Returns self + rhs mod p.
     /// Sums the magnitudes.
-    #[inline(always)]
     pub const fn add(&self, rhs: &Self) -> Self {
         Self([
             self.0[0] + rhs.0[0],
@@ -278,7 +264,6 @@ impl FieldElement5x52 {
 
     /// Multiplies by a single-limb integer.
     /// Multiplies the magnitude by the same value.
-    #[inline(always)]
     pub const fn mul_single(&self, rhs: u32) -> Self {
         let rhs_u64 = rhs as u64;
         Self([
@@ -457,7 +442,6 @@ impl FieldElement5x52 {
     /// Returns self * rhs mod p
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
-    #[inline(always)]
     pub fn mul(&self, rhs: &Self) -> Self {
         self.mul_inner(rhs)
     }
@@ -465,7 +449,6 @@ impl FieldElement5x52 {
     /// Returns self * self
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
-    #[inline(always)]
     pub fn square(&self) -> Self {
         self.mul_inner(self)
     }
@@ -495,7 +478,6 @@ impl ConditionallySelectable for FieldElement5x52 {
 }
 
 impl ConstantTimeEq for FieldElement5x52 {
-    #[inline(always)]
     fn ct_eq(&self, other: &Self) -> Choice {
         self.0[0].ct_eq(&other.0[0])
             & self.0[1].ct_eq(&other.0[1])
@@ -506,7 +488,6 @@ impl ConstantTimeEq for FieldElement5x52 {
 }
 
 impl Zeroize for FieldElement5x52 {
-    #[inline(always)]
     fn zeroize(&mut self) {
         self.0.zeroize();
     }
