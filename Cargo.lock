@@ -40,9 +40,9 @@ checksum = "d9aa1eef3994e2ccd304a78fe3fea4a73e5792007f85f09b79bb82143ca5f82b"
 
 [[package]]
 name = "belt-hash"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4d8ee43afdfcc493dec1e51c8032546cc1c52b4d68549e6469d03ff2cf3c3d91"
+checksum = "fbc405b3b8472f6e019aedf942fdee9516a0546d12e053d3744416e8f21ddb8a"
 dependencies = [
  "belt-block",
  "digest",
