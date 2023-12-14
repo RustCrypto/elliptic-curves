@@ -71,6 +71,7 @@ impl FieldElement5x52 {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
+    #[inline]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         let res = Self::from_bytes_unchecked(bytes.as_ref());
         let overflow = res.get_overflow();
@@ -442,6 +443,7 @@ impl FieldElement5x52 {
     /// Returns self * rhs mod p
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
+    #[inline(always)]
     pub fn mul(&self, rhs: &Self) -> Self {
         self.mul_inner(rhs)
     }
