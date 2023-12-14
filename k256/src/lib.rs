@@ -5,6 +5,7 @@
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg"
 )]
+#![allow(clippy::needless_range_loop)]
 #![forbid(unsafe_code)]
 #![warn(
     clippy::mod_module_files,
@@ -26,6 +27,11 @@
 //!
 //! Please see type-specific documentation for more information.
 
+#[cfg(feature = "alloc")]
+#[allow(unused_imports)]
+#[macro_use]
+extern crate alloc;
+
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
@@ -44,7 +50,7 @@ pub mod test_vectors;
 pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{affine::AffinePoint, lincomb, projective::ProjectivePoint, scalar::Scalar};
+pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::FieldElement;

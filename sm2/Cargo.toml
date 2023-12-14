@@ -1,6 +1,6 @@
 [package]
 name = "sm2"
-version = "0.13.2"
+version = "0.13.3"
 description = """
 Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
 national standard GM/T 0003-2012 as well as ISO/IEC 14888. Includes support for
@@ -23,7 +23,7 @@ elliptic-curve = { version = "0.13", default-features = false, features = ["hazm
 primeorder = { version = "0.13.1", optional = true, path = "../primeorder" }
 rfc6979 = { version = "0.4", optional = true }
 serdect = { version = "0.2", optional = true, default-features = false }
-signature = { version = "2", optional = true }
+signature = { version = "2.2", optional = true, features = ["rand_core"] }
 sm3 = { version = "0.4", optional = true, default-features = false }
 
 [dev-dependencies]

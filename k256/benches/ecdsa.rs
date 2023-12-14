@@ -1,6 +1,6 @@
 //! secp256k1 scalar arithmetic benchmarks
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ecdsa_core::{
     elliptic_curve::group::prime::PrimeCurveAffine,
     hazmat::{SignPrimitive, VerifyPrimitive},
@@ -44,14 +44,22 @@ fn bench_ecdsa(c: &mut Criterion) {
     let z = test_scalar_z();
 
     group.bench_function("try_sign_prehashed", |b| {
-        b.iter(|| d.try_sign_prehashed(k, &z).unwrap())
+        b.iter(|| {
+            black_box(d)
+                .try_sign_prehashed(black_box(k), &black_box(z))
+                .unwrap()
+        })
     });
 
     let q = (AffinePoint::generator() * d).to_affine();
     let s = d.try_sign_prehashed(k, &z).unwrap().0;
 
     group.bench_function("verify_prehashed", |b| {
-        b.iter(|| q.verify_prehashed(&z, &s).unwrap())
+        b.iter(|| {
+            black_box(q)
+                .verify_prehashed(&black_box(z), &black_box(s))
+                .unwrap()
+        })
     });
 
     group.finish();

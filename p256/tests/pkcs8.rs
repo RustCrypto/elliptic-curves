@@ -1,6 +1,6 @@
 //! PKCS#8 tests
 
-#![cfg(feature = "pkcs8")]
+#![cfg(all(feature = "pkcs8", feature = "arithmetic"))]
 
 use hex_literal::hex;
 use p256::{

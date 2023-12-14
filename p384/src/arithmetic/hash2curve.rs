@@ -51,17 +51,13 @@ impl OsswuMap for FieldElement {
             0x3fff_ffff_ffff_ffff,
         ],
         c2: FieldElement::from_hex(
-            "019877cc1041b7555743c0ae2e3a3e61fb2aaa2e0e87ea557a563d8b598a0940d0a697a9e0b9e92cfaa314f583c9d066",
+            "2accb4a656b0249c71f0500e83da2fdd7f98e383d68b53871f872fcb9ccb80c53c0de1f8a80f7e1914e2ec69f5a626b3",
         ),
-        map_a: FieldElement::from_hex(
-            "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc",
-        ),
+        map_a: FieldElement::from_u64(3).neg(),
         map_b: FieldElement::from_hex(
             "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
         ),
-        z: FieldElement::from_hex(
-            "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffff3",
-        ),
+        z: FieldElement::from_u64(12).neg(),
     };
 }
 
@@ -100,13 +96,13 @@ impl FromOkm for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{FieldElement, NistP384, Scalar};
+    use crate::{arithmetic::field::MODULUS, FieldElement, NistP384, Scalar};
     use elliptic_curve::{
-        bigint::{ArrayEncoding, NonZero, U384, U576},
+        bigint::{ArrayEncoding, CheckedSub, NonZero, U384, U576},
         consts::U72,
         generic_array::GenericArray,
         group::cofactor::CofactorGroup,
-        hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve},
+        hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
         Curve,
@@ -114,6 +110,21 @@ mod tests {
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha384;
+
+    #[test]
+    fn params() {
+        let params = <FieldElement as OsswuMap>::PARAMS;
+
+        let c1 = MODULUS.checked_sub(&U384::from_u8(3)).unwrap()
+            / NonZero::new(U384::from_u8(4)).unwrap();
+        assert_eq!(
+            GenericArray::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
+            c1.to_be_byte_array()
+        );
+
+        let c2 = FieldElement::from_u64(12).sqrt().unwrap();
+        assert_eq!(params.c2, c2);
+    }
 
     #[test]
     fn hash_to_curve() {
@@ -233,7 +244,7 @@ mod tests {
         }
     }
 
-    /// Taken from <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-16.html#name-oprfp-384-sha-384-2>.
+    /// Taken from <https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-voprf#appendix-A.4>.
     #[test]
     fn hash_to_scalar_voprf() {
         struct TestVector {
@@ -245,22 +256,22 @@ mod tests {
 
         const TEST_VECTORS: &[TestVector] = &[
             TestVector {
-                dst: b"DeriveKeyPairVOPRF10-\x00\x00\x04",
+                dst: b"DeriveKeyPairOPRFV1-\x00-P384-SHA384",
                 key_info: b"test key",
-                seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("c0503759ddd1e31d8c7eae9304c9b1c16f83d1f6d962e3e7b789cd85fd581800e96c5c4256131aafcff9a76919abbd55"),
+                seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+                sk_sm: &hex!("dfe7ddc41a4646901184f2b432616c8ba6d452f9bcd0c4f75a5150ef2b2ed02ef40b8b92f60ae591bcabd72a6518f188"),
             },
             TestVector {
-                dst: b"DeriveKeyPairVOPRF10-\x01\x00\x04",
+                dst: b"DeriveKeyPairOPRFV1-\x01-P384-SHA384",
                 key_info: b"test key",
-                seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("514fb6fe2e66af1383840759d56f71730331280f062930ee2a2f7ea42f935acf94087355699d788abfdf09d19a5c85ac"),
+                seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+                sk_sm: &hex!("051646b9e6e7a71ae27c1e1d0b87b4381db6d3595eeeb1adb41579adbf992f4278f9016eafc944edaa2b43183581779d"),
             },
             TestVector {
-                dst: b"DeriveKeyPairVOPRF10-\x02\x00\x04",
+                dst: b"DeriveKeyPairOPRFV1-\x02-P384-SHA384",
                 key_info: b"test key",
-                seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("0fcba4a204f67d6c13f780e613915f755319aaa3cb03cd20a5a4a6c403a4812a4fff5d3223e2c309aa66b05cb7611fd4"),
+                seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
+                sk_sm: &hex!("5b2690d6954b8fbb159f19935d64133f12770c00b68422559c65431942d721ff79d47d7a75906c30b7818ec0f38b7fb2"),
             },
         ];
 

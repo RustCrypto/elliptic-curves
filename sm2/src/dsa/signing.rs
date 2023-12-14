@@ -26,7 +26,11 @@ use elliptic_curve::{
     subtle::{Choice, ConstantTimeEq},
     Curve, FieldBytesEncoding, PrimeField,
 };
-use signature::{hazmat::PrehashSigner, Error, KeypairRef, Result, Signer};
+use signature::{
+    hazmat::{PrehashSigner, RandomizedPrehashSigner},
+    rand_core::CryptoRngCore,
+    Error, KeypairRef, RandomizedSigner, Result, Signer,
+};
 use sm3::Sm3;
 
 /// SM2DSA secret key used for signing messages and producing signatures.
@@ -110,39 +114,27 @@ impl SigningKey {
 
 impl PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
-        if prehash.len() != <Sm2 as Curve>::FieldBytesSize::USIZE {
-            return Err(Error::new());
-        }
+        sign_prehash_rfc6979(&self.secret_scalar, prehash, &[])
+    }
+}
 
-        // A2: calculate e=Hv(M~)
-        let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
+impl RandomizedPrehashSigner<Signature> for SigningKey {
+    fn sign_prehash_with_rng(
+        &self,
+        rng: &mut impl CryptoRngCore,
+        prehash: &[u8],
+    ) -> Result<Signature> {
+        let mut data = FieldBytes::default();
+        rng.try_fill_bytes(&mut data)?;
+        sign_prehash_rfc6979(&self.secret_scalar, prehash, &data)
+    }
+}
 
-        // A3: pick a random number k in [1, n-1] via a random number generator
-        let k = Scalar::from_repr(rfc6979::generate_k::<Sm3, _>(
-            &self.secret_scalar.to_repr(),
-            &FieldBytesEncoding::<Sm2>::encode_field_bytes(&Sm2::ORDER),
-            &e.to_bytes(),
-            &[],
-        ))
-        .unwrap();
-
-        // A4: calculate the elliptic curve point (x1, y1)=[k]G
-        let R = ProjectivePoint::mul_by_generator(&k).to_affine();
-
-        // A5: calculate r=(e+x1) modn, return to A3 if r=0 or r+k=n
-        let r = e + Scalar::reduce_bytes(&R.x());
-        if bool::from(r.is_zero() | (r + k).ct_eq(&Scalar::ZERO)) {
-            return Err(Error::new());
-        }
-
-        // A6: calculate s=((1+dA)^(-1)*(k-r*dA)) modn, return to A3 if s=0
-        let d_plus_1_inv = Option::<Scalar>::from((*self.secret_scalar + Scalar::ONE).invert())
-            .ok_or_else(Error::new)?;
-
-        let s = d_plus_1_inv * (k - (r * *self.secret_scalar));
-
-        // A7: the digital signature of M is (r, s)
-        Signature::from_scalars(r, s)
+impl RandomizedSigner<Signature> for SigningKey {
+    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> Result<Signature> {
+        // A1: set M~=ZA || M
+        let hash = self.verifying_key.hash_msg(msg);
+        self.sign_prehash_with_rng(rng, &hash)
     }
 }
 
@@ -188,4 +180,41 @@ impl PartialEq for SigningKey {
 
 impl KeypairRef for SigningKey {
     type VerifyingKey = VerifyingKey;
+}
+
+/// Compute a signature using RFC6979 to deterministically derive `k`.
+fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> Result<Signature> {
+    if prehash.len() != <Sm2 as Curve>::FieldBytesSize::USIZE {
+        return Err(Error::new());
+    }
+
+    // A2: calculate e=Hv(M~)
+    let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
+
+    // A3: pick a random number k in [1, n-1] via a random number generator
+    let k = Scalar::from_repr(rfc6979::generate_k::<Sm3, _>(
+        &secret_scalar.to_repr(),
+        &FieldBytesEncoding::<Sm2>::encode_field_bytes(&Sm2::ORDER),
+        &e.to_bytes(),
+        data,
+    ))
+    .unwrap();
+
+    // A4: calculate the elliptic curve point (x1, y1)=[k]G
+    let R = ProjectivePoint::mul_by_generator(&k).to_affine();
+
+    // A5: calculate r=(e+x1) modn, return to A3 if r=0 or r+k=n
+    let r = e + Scalar::reduce_bytes(&R.x());
+    if bool::from(r.is_zero() | (r + k).ct_eq(&Scalar::ZERO)) {
+        return Err(Error::new());
+    }
+
+    // A6: calculate s=((1+dA)^(-1)*(k-r*dA)) modn, return to A3 if s=0
+    let d_plus_1_inv =
+        Option::<Scalar>::from((secret_scalar + &Scalar::ONE).invert()).ok_or_else(Error::new)?;
+
+    let s = d_plus_1_inv * (k - (r * secret_scalar));
+
+    // A7: the digital signature of M is (r, s)
+    Signature::from_scalars(r, s)
 }

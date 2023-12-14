@@ -10,6 +10,7 @@ use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
+use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     ff::{Field, PrimeField},
@@ -504,6 +505,14 @@ impl From<u64> for FieldElement {
 impl PartialEq for FieldElement {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl Invert for FieldElement {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 

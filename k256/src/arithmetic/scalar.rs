@@ -575,6 +575,7 @@ impl Add<&Scalar> for Scalar {
 }
 
 impl AddAssign<Scalar> for Scalar {
+    #[inline]
     fn add_assign(&mut self, rhs: Scalar) {
         *self = Scalar::add(self, &rhs);
     }
@@ -802,6 +803,11 @@ mod tests {
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
+    use rand_core::OsRng;
+
+    #[cfg(feature = "alloc")]
+    use alloc::vec::Vec;
+    use elliptic_curve::ops::BatchInvert;
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
@@ -947,6 +953,30 @@ mod tests {
             Scalar::ROOT_OF_UNITY.invert_vartime().unwrap(),
             Scalar::ROOT_OF_UNITY_INV
         );
+    }
+
+    #[test]
+    fn batch_invert_array() {
+        let k: Scalar = Scalar::random(&mut OsRng);
+        let l: Scalar = Scalar::random(&mut OsRng);
+
+        let expected = [k.invert().unwrap(), l.invert().unwrap()];
+        assert_eq!(
+            <Scalar as BatchInvert<_>>::batch_invert(&[k, l]).unwrap(),
+            expected
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn batch_invert() {
+        let k: Scalar = Scalar::random(&mut OsRng);
+        let l: Scalar = Scalar::random(&mut OsRng);
+
+        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
+        let scalars = vec![k, l];
+        let res: Vec<_> = <Scalar as BatchInvert<_>>::batch_invert(scalars.as_slice()).unwrap();
+        assert_eq!(res, expected);
     }
 
     #[test]

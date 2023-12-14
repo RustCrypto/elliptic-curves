@@ -35,9 +35,11 @@ use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
+
 use elliptic_curve::{
     bigint::Limb,
     ff::PrimeField,
+    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 use primeorder::impl_bernstein_yang_invert;
@@ -138,6 +140,14 @@ impl PrimeField for FieldElement {
         Self::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff42");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(4);
+}
+
+impl Invert for FieldElement {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
+    }
 }
 
 #[cfg(test)]

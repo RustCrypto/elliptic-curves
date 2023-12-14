@@ -21,6 +21,7 @@ use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
+use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, Integer, Limb},
     ff::PrimeField,
@@ -286,6 +287,14 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
+    }
+}
+
+impl Invert for FieldElement {
+    type Output = CtOption<Self>;
+
+    fn invert(&self) -> CtOption<Self> {
+        self.invert()
     }
 }
 

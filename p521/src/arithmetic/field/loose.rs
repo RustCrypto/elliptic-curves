@@ -1,22 +1,23 @@
 use super::{field_impl::*, FieldElement};
 use core::ops::Mul;
 
-/// "Loose" field element.
-pub(crate) struct LooseFieldElement(pub(super) fiat_p521_loose_field_element);
+/// "Loose" field element: unreduced and intended to be followed by an
+/// additional operation which will perform a reduction.
+pub struct LooseFieldElement(pub(super) fiat_p521_loose_field_element);
 
 impl LooseFieldElement {
     /// Reduce field element.
-    pub(crate) const fn carry(&self) -> FieldElement {
+    pub const fn carry(&self) -> FieldElement {
         FieldElement(fiat_p521_carry(&self.0))
     }
 
     /// Multiplies two field elements and reduces the result.
-    pub(crate) const fn mul(&self, rhs: &Self) -> FieldElement {
+    pub const fn multiply(&self, rhs: &Self) -> FieldElement {
         FieldElement(fiat_p521_carry_mul(&self.0, &rhs.0))
     }
 
     /// Squares a field element and reduces the result.
-    pub(crate) const fn square(&self) -> FieldElement {
+    pub const fn square(&self) -> FieldElement {
         FieldElement(fiat_p521_carry_square(&self.0))
     }
 }
@@ -54,7 +55,7 @@ impl Mul for LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: LooseFieldElement) -> FieldElement {
-        Self::mul(&self, &rhs)
+        Self::multiply(&self, &rhs)
     }
 }
 
@@ -63,7 +64,7 @@ impl Mul<&LooseFieldElement> for LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
-        Self::mul(&self, rhs)
+        Self::multiply(&self, rhs)
     }
 }
 
@@ -72,6 +73,6 @@ impl Mul<&LooseFieldElement> for &LooseFieldElement {
 
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
-        LooseFieldElement::mul(self, rhs)
+        LooseFieldElement::multiply(self, rhs)
     }
 }

@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.6 (2023-11-15)
+### Removed
+-  `Invert` bounds on `FieldElement` ([#985])
+
+[#985]: https://github.com/RustCrypto/elliptic-curves/pull/985
+
+## 0.13.5 (2023-11-15) [YANKED]
+### Added
+- `alloc` feature ([#982])
+
+[#982]: https://github.com/RustCrypto/elliptic-curves/pull/982
+
+## 0.13.4 (2023-11-15) [YANKED]
+### Added
+- `BatchInvert` and `BatchNormalize` impls ([#971])
+
+### Changed
+- Bump `elliptic-curve` to v0.13.7 ([#979])
+
+[#971]: https://github.com/RustCrypto/elliptic-curves/pull/971
+[#979]: https://github.com/RustCrypto/elliptic-curves/pull/979
+
 ## 0.13.3 (2023-11-02)
 ### Added
 - Inline annotations on `conditional_select` ([#942])

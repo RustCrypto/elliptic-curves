@@ -8,6 +8,10 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "alloc")]
+#[macro_use]
+extern crate alloc;
+
 pub mod point_arithmetic;
 
 mod affine;
@@ -32,6 +36,7 @@ pub trait PrimeCurveParams:
     + CurveArithmetic<ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
+    // TODO(tarcieri): add `Invert` bound
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>;
 
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
