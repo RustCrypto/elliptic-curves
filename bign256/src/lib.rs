@@ -1,3 +1,4 @@
+// #![no_std]
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
@@ -15,7 +16,7 @@
     clippy::cast_sign_loss,
     clippy::checked_conversions,
     clippy::implicit_saturating_sub,
-    clippy::integer_arithmetic,
+    clippy::arithmetic_side_effects,
     clippy::panic,
     clippy::panic_in_result_fn,
     clippy::unwrap_used,
@@ -30,10 +31,13 @@
 extern crate alloc;
 
 #[cfg(feature = "arithmetic")]
-mod arithmetic;
+pub mod arithmetic;
 
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
+
+#[cfg(feature = "dsa")]
+pub mod dsa;
 
 pub use elliptic_curve::{self, bigint::U256};
 
@@ -49,6 +53,9 @@ use elliptic_curve::{
     generic_array::GenericArray,
     FieldBytesEncoding,
 };
+
+#[cfg(feature = "dsa")]
+type Hash = belt_hash::digest::Output<belt_hash::BeltHash>;
 
 /// Order of BIGN P-256's elliptic curve group (i.e. scalar modulus) in hexadecimal.
 const ORDER_HEX: &str = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD95C8ED60DFB4DFC7E5ABF99263D6607";

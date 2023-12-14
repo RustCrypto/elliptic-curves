@@ -15,7 +15,7 @@
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss,
     clippy::cast_possible_truncation,
-    clippy::integer_arithmetic,
+    clippy::arithmetic_side_effects,
     clippy::should_implement_trait,
     clippy::suspicious_op_assign_impl,
     clippy::unused_unit,
@@ -35,10 +35,11 @@ use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
-use elliptic_curve::bigint::Limb;
-use elliptic_curve::ops::Invert;
+
 use elliptic_curve::{
+    bigint::Limb,
     ff::PrimeField,
+    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 use primeorder::impl_bernstein_yang_invert;
