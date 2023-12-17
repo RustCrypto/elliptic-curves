@@ -130,9 +130,9 @@ impl Scalar {
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_scalar_to_montgomery(&u32x18_to_u64x9(
-            w.as_words(),
-        )))
+        Self(fiat_p521_scalar_to_montgomery(
+            &fiat_p521_scalar_non_montgomery_domain_field_element(u32x18_to_u64x9(w.as_words())),
+        ))
     }
 
     /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form.
@@ -157,7 +157,9 @@ impl Scalar {
     #[inline]
     #[cfg(target_pointer_width = "32")]
     pub const fn to_canonical(self) -> U576 {
-        U576::from_words(u64x9_to_u32x18(&fiat_p521_scalar_from_montgomery(&self.0)))
+        U576::from_words(u64x9_to_u32x18(
+            &fiat_p521_scalar_from_montgomery(&self.0).0,
+        ))
     }
 
     /// Translate [`Scalar`] out of the Montgomery domain, returning a [`U576`]
@@ -291,10 +293,12 @@ impl Scalar {
     /// Note: not constant-time with respect to the `shift` parameter.
     #[cfg(target_pointer_width = "32")]
     pub const fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(u32x18_to_u64x9(
-            &U576::from_words(u64x9_to_u32x18(&self.0))
-                .shr_vartime(shift)
-                .to_words(),
+        Self(fiat_p521_scalar_montgomery_domain_field_element(
+            u32x18_to_u64x9(
+                &U576::from_words(u64x9_to_u32x18(&self.0 .0))
+                    .shr_vartime(shift)
+                    .to_words(),
+            ),
         ))
     }
 
