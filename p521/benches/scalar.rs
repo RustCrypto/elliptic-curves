@@ -61,9 +61,6 @@ fn bench_point(c: &mut Criterion) {
 
 fn bench_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("scalar operations");
-    group.sample_size(500);
-    group.measurement_time(std::time::Duration::from_secs(10));
-
     bench_scalar_sub(&mut group);
     bench_scalar_add(&mut group);
     bench_scalar_mul(&mut group);
