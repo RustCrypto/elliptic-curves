@@ -799,6 +799,7 @@ version = "0.13.3"
 dependencies = [
  "base16ct",
  "blobby",
+ "criterion",
  "ecdsa",
  "elliptic-curve",
  "hex-literal",

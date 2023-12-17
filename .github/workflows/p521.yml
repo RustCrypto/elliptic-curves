@@ -38,6 +38,20 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
 
+  benches:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.65.0 # MSRV
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo build --all-features --benches
+
   test:
     runs-on: ubuntu-latest
     strategy:

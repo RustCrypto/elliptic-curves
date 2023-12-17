@@ -34,6 +34,7 @@ hex-literal = "0.4"
 primeorder = { version = "0.13.3", features = ["dev"], path = "../primeorder" }
 proptest = "1.4"
 rand_core = { version = "0.6", features = ["getrandom"] }
+criterion = "0.5.1"
 
 [features]
 default = ["arithmetic", "ecdsa", "getrandom", "pem", "std"]
@@ -44,6 +45,7 @@ arithmetic = ["dep:primeorder"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha512"]
+expose-field = ["arithmetic"]
 getrandom = ["rand_core/getrandom"]
 hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
 jwk = ["elliptic-curve/jwk"]
@@ -57,3 +59,12 @@ voprf = ["elliptic-curve/voprf", "dep:sha2"]
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
+
+[[bench]]
+name = "field"
+harness = false
+required-features = ["expose-field"]
+
+[[bench]]
+name = "scalar"
+harness = false
