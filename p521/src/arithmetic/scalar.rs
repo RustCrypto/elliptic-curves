@@ -158,7 +158,7 @@ impl Scalar {
     #[cfg(target_pointer_width = "32")]
     pub const fn to_canonical(self) -> U576 {
         U576::from_words(u64x9_to_u32x18(
-            &fiat_p521_scalar_from_montgomery(&self.0).0,
+            fiat_p521_scalar_from_montgomery(&self.0).as_inner(),
         ))
     }
 
@@ -167,7 +167,7 @@ impl Scalar {
     #[inline]
     #[cfg(target_pointer_width = "64")]
     pub const fn to_canonical(self) -> U576 {
-        U576::from_words(fiat_p521_scalar_from_montgomery(&self.0).0)
+        U576::from_words(fiat_p521_scalar_from_montgomery(&self.0).into_inner())
     }
 
     /// Determine if this [`Scalar`] is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -295,7 +295,7 @@ impl Scalar {
     pub const fn shr_vartime(&self, shift: usize) -> Scalar {
         Self(fiat_p521_scalar_montgomery_domain_field_element(
             u32x18_to_u64x9(
-                &U576::from_words(u64x9_to_u32x18(&self.0 .0))
+                &U576::from_words(u64x9_to_u32x18(self.0.as_inner()))
                     .shr_vartime(shift)
                     .to_words(),
             ),
@@ -308,7 +308,9 @@ impl Scalar {
     #[cfg(target_pointer_width = "64")]
     pub const fn shr_vartime(&self, shift: usize) -> Scalar {
         Self(fiat_p521_scalar_montgomery_domain_field_element(
-            U576::from_words(self.0 .0).shr_vartime(shift).to_words(),
+            U576::from_words(self.0.into_inner())
+                .shr_vartime(shift)
+                .to_words(),
         ))
     }
 }
@@ -328,7 +330,7 @@ impl Default for Scalar {
 impl Eq for Scalar {}
 impl PartialEq for Scalar {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0 .0.ct_eq(&(rhs.0 .0)).into()
+        self.0.as_inner().ct_eq(rhs.0.as_inner()).into()
     }
 }
 
@@ -352,13 +354,15 @@ impl From<u128> for Scalar {
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut ret = Self::ZERO;
+        let mut ret = Self::ZERO.0.into_inner();
+        let a = a.0.as_inner();
+        let b = b.0.as_inner();
 
-        for i in 0..ret.0 .0.len() {
-            ret.0[i] = u64::conditional_select(&a.0[i], &b.0[i], choice);
+        for i in 0..ret.len() {
+            ret[i] = u64::conditional_select(&a[i], &b[i], choice);
         }
 
-        ret
+        Self(fiat_p521_scalar_montgomery_domain_field_element(ret))
     }
 }
 
