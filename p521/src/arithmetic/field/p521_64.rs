@@ -33,7 +33,7 @@ pub type fiat_p521_u2 = u8;
 pub type fiat_p521_i2 = i8;
 /// The type fiat_p521_loose_field_element is a field element with loose bounds.
 /// Bounds: [[0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0xc00000000000000], [0x0 ~> 0x600000000000000]]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct fiat_p521_loose_field_element(pub [u64; 9]);
 impl core::ops::Index<usize> for fiat_p521_loose_field_element {
     type Output = u64;
@@ -50,7 +50,7 @@ impl core::ops::IndexMut<usize> for fiat_p521_loose_field_element {
 }
 /// The type fiat_p521_tight_field_element is a field element with tight bounds.
 /// Bounds: [[0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x400000000000000], [0x0 ~> 0x200000000000000]]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct fiat_p521_tight_field_element(pub [u64; 9]);
 impl core::ops::Index<usize> for fiat_p521_tight_field_element {
     type Output = u64;
@@ -196,8 +196,8 @@ pub const fn fiat_p521_carry_mul(
     arg1: &fiat_p521_loose_field_element,
     arg2: &fiat_p521_loose_field_element,
 ) -> fiat_p521_tight_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let x1: u128 = (((arg1[8]) as u128) * (((arg2[8]) * 0x2) as u128));
     let x2: u128 = (((arg1[8]) as u128) * (((arg2[7]) * 0x2) as u128));
     let x3: u128 = (((arg1[8]) as u128) * (((arg2[6]) * 0x2) as u128));
@@ -332,7 +332,7 @@ pub const fn fiat_p521_carry_mul(
 pub const fn fiat_p521_carry_square(
     arg1: &fiat_p521_loose_field_element,
 ) -> fiat_p521_tight_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (arg1[8]);
     let x2: u64 = (x1 * 0x2);
     let x3: u64 = ((arg1[8]) * 0x2);
@@ -447,7 +447,7 @@ pub const fn fiat_p521_carry_square(
 pub const fn fiat_p521_carry(
     arg1: &fiat_p521_loose_field_element,
 ) -> fiat_p521_tight_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (arg1[0]);
     let x2: u64 = ((x1 >> 58) + (arg1[1]));
     let x3: u64 = ((x2 >> 58) + (arg1[2]));
@@ -480,8 +480,8 @@ pub const fn fiat_p521_add(
     arg1: &fiat_p521_tight_field_element,
     arg2: &fiat_p521_tight_field_element,
 ) -> fiat_p521_loose_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let x1: u64 = ((arg1[0]) + (arg2[0]));
     let x2: u64 = ((arg1[1]) + (arg2[1]));
     let x3: u64 = ((arg1[2]) + (arg2[2]));
@@ -503,8 +503,8 @@ pub const fn fiat_p521_sub(
     arg1: &fiat_p521_tight_field_element,
     arg2: &fiat_p521_tight_field_element,
 ) -> fiat_p521_loose_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let x1: u64 = ((0x7fffffffffffffe + (arg1[0])) - (arg2[0]));
     let x2: u64 = ((0x7fffffffffffffe + (arg1[1])) - (arg2[1]));
     let x3: u64 = ((0x7fffffffffffffe + (arg1[2])) - (arg2[2]));
@@ -523,7 +523,7 @@ pub const fn fiat_p521_sub(
 ///
 #[inline]
 pub const fn fiat_p521_opp(arg1: &fiat_p521_tight_field_element) -> fiat_p521_loose_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (0x7fffffffffffffe - (arg1[0]));
     let x2: u64 = (0x7fffffffffffffe - (arg1[1]));
     let x3: u64 = (0x7fffffffffffffe - (arg1[2]));
@@ -545,8 +545,8 @@ pub const fn fiat_p521_carry_add(
     arg1: &fiat_p521_tight_field_element,
     arg2: &fiat_p521_tight_field_element,
 ) -> fiat_p521_tight_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let x1: u64 = ((arg1[0]) + (arg2[0]));
     let x2: u64 = ((x1 >> 58) + ((arg1[1]) + (arg2[1])));
     let x3: u64 = ((x2 >> 58) + ((arg1[2]) + (arg2[2])));
@@ -579,8 +579,8 @@ pub const fn fiat_p521_carry_sub(
     arg1: &fiat_p521_tight_field_element,
     arg2: &fiat_p521_tight_field_element,
 ) -> fiat_p521_tight_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let x1: u64 = ((0x7fffffffffffffe + (arg1[0])) - (arg2[0]));
     let x2: u64 = ((x1 >> 58) + ((0x7fffffffffffffe + (arg1[1])) - (arg2[1])));
     let x3: u64 = ((x2 >> 58) + ((0x7fffffffffffffe + (arg1[2])) - (arg2[2])));
@@ -612,7 +612,7 @@ pub const fn fiat_p521_carry_sub(
 pub const fn fiat_p521_carry_opp(
     arg1: &fiat_p521_tight_field_element,
 ) -> fiat_p521_tight_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (0x7fffffffffffffe - (arg1[0]));
     let x2: u64 = ((((x1 >> 58) as fiat_p521_u1) as u64) + (0x7fffffffffffffe - (arg1[1])));
     let x3: u64 = ((((x2 >> 58) as fiat_p521_u1) as u64) + (0x7fffffffffffffe - (arg1[2])));
@@ -644,7 +644,7 @@ pub const fn fiat_p521_carry_opp(
 pub const fn fiat_p521_relax(
     arg1: &fiat_p521_tight_field_element,
 ) -> fiat_p521_loose_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (arg1[0]);
     let x2: u64 = (arg1[1]);
     let x3: u64 = (arg1[2]);
@@ -698,7 +698,7 @@ pub const fn fiat_p521_selectznz(arg1: fiat_p521_u1, arg2: &[u64; 9], arg3: &[u6
 ///   out1: [[0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0xff], [0x0 ~> 0x1]]
 #[inline]
 pub const fn fiat_p521_to_bytes(arg1: &fiat_p521_tight_field_element) -> [u8; 66] {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let mut x1: u64 = 0;
     let mut x2: fiat_p521_u1 = 0;
     let (x1, x2) = fiat_p521_subborrowx_u58(0x0, (arg1[0]), 0x3ffffffffffffff);
@@ -1113,4 +1113,24 @@ pub const fn fiat_p521_from_bytes(arg1: &[u8; 66]) -> fiat_p521_tight_field_elem
     let x140: u64 = (x2 + x139);
     let x141: u64 = (x1 + x140);
     (fiat_p521_tight_field_element([x74, x83, x92, x100, x108, x117, x126, x134, x141]))
+}
+impl fiat_p521_loose_field_element {
+    #[inline]
+    pub const fn as_inner(&self) -> &[u64; 9] {
+        &self.0
+    }
+    #[inline]
+    pub const fn into_inner(self) -> [u64; 9] {
+        self.0
+    }
+}
+impl fiat_p521_tight_field_element {
+    #[inline]
+    pub const fn as_inner(&self) -> &[u64; 9] {
+        &self.0
+    }
+    #[inline]
+    pub const fn into_inner(self) -> [u64; 9] {
+        self.0
+    }
 }

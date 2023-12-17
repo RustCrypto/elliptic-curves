@@ -40,7 +40,6 @@ pub type fiat_p521_scalar_i2 = i8;
 /// Bounds: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct fiat_p521_scalar_montgomery_domain_field_element(pub [u64; 9]);
-
 impl core::ops::Index<usize> for fiat_p521_scalar_montgomery_domain_field_element {
     type Output = u64;
     #[inline]
@@ -56,7 +55,7 @@ impl core::ops::IndexMut<usize> for fiat_p521_scalar_montgomery_domain_field_ele
 }
 /// The type fiat_p521_scalar_non_montgomery_domain_field_element is a field element NOT in the Montgomery domain.
 /// Bounds: [[0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff], [0x0 ~> 0xffffffffffffffff]]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct fiat_p521_scalar_non_montgomery_domain_field_element(pub [u64; 9]);
 impl core::ops::Index<usize> for fiat_p521_scalar_non_montgomery_domain_field_element {
     type Output = u64;
@@ -175,8 +174,8 @@ pub const fn fiat_p521_scalar_mul(
     arg1: &fiat_p521_scalar_montgomery_domain_field_element,
     arg2: &fiat_p521_scalar_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let x1: u64 = (arg1[1]);
     let x2: u64 = (arg1[2]);
     let x3: u64 = (arg1[3]);
@@ -1731,7 +1730,7 @@ pub const fn fiat_p521_scalar_mul(
 pub const fn fiat_p521_scalar_square(
     arg1: &fiat_p521_scalar_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (arg1[1]);
     let x2: u64 = (arg1[2]);
     let x3: u64 = (arg1[3]);
@@ -3288,8 +3287,8 @@ pub const fn fiat_p521_scalar_add(
     arg1: &fiat_p521_scalar_montgomery_domain_field_element,
     arg2: &fiat_p521_scalar_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let mut x1: u64 = 0;
     let mut x2: fiat_p521_scalar_u1 = 0;
     let (x1, x2) = fiat_p521_scalar_addcarryx_u64(0x0, (arg1[0]), (arg2[0]));
@@ -3383,8 +3382,8 @@ pub const fn fiat_p521_scalar_sub(
     arg1: &fiat_p521_scalar_montgomery_domain_field_element,
     arg2: &fiat_p521_scalar_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
-    let arg2 = &arg2.0;
+    let arg1 = arg1.as_inner();
+    let arg2 = arg2.as_inner();
     let mut x1: u64 = 0;
     let mut x2: fiat_p521_scalar_u1 = 0;
     let (x1, x2) = fiat_p521_scalar_subborrowx_u64(0x0, (arg1[0]), (arg2[0]));
@@ -3457,7 +3456,7 @@ pub const fn fiat_p521_scalar_sub(
 pub const fn fiat_p521_scalar_opp(
     arg1: &fiat_p521_scalar_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let mut x1: u64 = 0;
     let mut x2: fiat_p521_scalar_u1 = 0;
     let (x1, x2) = fiat_p521_scalar_subborrowx_u64(0x0, (0x0 as u64), (arg1[0]));
@@ -3530,7 +3529,7 @@ pub const fn fiat_p521_scalar_opp(
 pub const fn fiat_p521_scalar_from_montgomery(
     arg1: &fiat_p521_scalar_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_non_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (arg1[0]);
     let mut x2: u64 = 0;
     let mut x3: u64 = 0;
@@ -4550,7 +4549,7 @@ pub const fn fiat_p521_scalar_from_montgomery(
 pub const fn fiat_p521_scalar_to_montgomery(
     arg1: &fiat_p521_scalar_non_montgomery_domain_field_element,
 ) -> fiat_p521_scalar_montgomery_domain_field_element {
-    let arg1 = &arg1.0;
+    let arg1 = arg1.as_inner();
     let x1: u64 = (arg1[1]);
     let x2: u64 = (arg1[2]);
     let x3: u64 = (arg1[3]);
@@ -6972,4 +6971,24 @@ pub const fn fiat_p521_scalar_divstep(
         [x239, x240, x241, x242, x243, x244, x245, x246, x247],
         [x248, x249, x250, x251, x252, x253, x254, x255, x256],
     )
+}
+impl fiat_p521_scalar_montgomery_domain_field_element {
+    #[inline]
+    pub const fn as_inner(&self) -> &[u64; 9] {
+        &self.0
+    }
+    #[inline]
+    pub const fn into_inner(self) -> [u64; 9] {
+        self.0
+    }
+}
+impl fiat_p521_scalar_non_montgomery_domain_field_element {
+    #[inline]
+    pub const fn as_inner(&self) -> &[u64; 9] {
+        &self.0
+    }
+    #[inline]
+    pub const fn into_inner(self) -> [u64; 9] {
+        self.0
+    }
 }
