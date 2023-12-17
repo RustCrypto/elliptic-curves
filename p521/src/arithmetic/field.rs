@@ -399,7 +399,8 @@ impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         let mut ret = Self::ZERO;
 
-        for i in 0..ret.0.len() {
+        // TODO(masterawesome): Check if this look nicer than `.0.0` everywhere?
+        for i in 0..ret.0 .0.len() {
             ret.0[i] = u64::conditional_select(&a.0[i], &b.0[i], choice);
         }
 
