@@ -17,7 +17,7 @@ elliptic-curve = { version = "0.13", default-features = false, features = ["hazm
 
 # optional dependencies
 ecdsa = { version = "0.16", optional = true, default-features = false, features = ["der"] }
-primeorder = { version = "0.13.5", optional = true, path = "../primeorder" }
+primeorder = { version = "0.13.5", optional = true }
 sha2 = { version = "0.10", optional = true, default-features = false }
 
 [features]

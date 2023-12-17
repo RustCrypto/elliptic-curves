@@ -527,12 +527,12 @@ macro_rules! impl_bernstein_yang_invert {
         let mut f = $msat();
         let mut g = [0; $nlimbs + 1];
         let mut v = $mont_type([0; $nlimbs]);
-        let mut r = $one.0;
+        let mut r = $one.into_inner();
         let mut i = 0;
         let mut j = 0;
 
         while j < $nlimbs {
-            g[j] = a.0[j];
+            g[j] = a.as_inner()[j];
             j += 1;
         }
 
@@ -548,13 +548,13 @@ macro_rules! impl_bernstein_yang_invert {
         }
 
         if ITERATIONS % 2 != 0 {
-            let (_out1, out2, _out3, out4, _out5) = $divstep(d, &f, &g, &v.0, &r);
+            let (_out1, out2, _out3, out4, _out5) = $divstep(d, &f, &g, v.as_inner(), &r);
             v = $mont_type(out4);
             f = out2;
         }
 
         let s = ((f[f.len() - 1] >> <$word>::BITS - 1) & 1) as u8;
-        let v = $mont_type($selectznz(s, &v.0, &$neg(&v).0));
+        let v = $mont_type($selectznz(s, v.as_inner(), $neg(&v).as_inner()));
         $mul(&v, &$mont_type($divstep_precomp()))
     }};
 }
