@@ -50,7 +50,7 @@ dependencies = [
 
 [[package]]
 name = "bign256"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "belt-hash",
  "criterion",
