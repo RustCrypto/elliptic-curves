@@ -1,6 +1,6 @@
 [package]
 name = "bign256"
-version = "0.13.0"
+version = "0.13.1"
 description = """
 Pure Rust implementation of the Bign P-256 (a.k.a. bign-curve256v1)
 elliptic curve as defined in STB 34.101.45-2013, with
@@ -31,8 +31,7 @@ criterion = "0.5"
 hex-literal = "0.4"
 proptest = "1"
 rand_core = { version = "0.6", features = ["getrandom"] }
-hex = {version = "*" }
-
+hex = {version = "0.4" }
 
 [features]
 default = ["arithmetic", "pkcs8", "std", "dsa"]
