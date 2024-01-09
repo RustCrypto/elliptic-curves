@@ -130,9 +130,9 @@ impl Scalar {
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_scalar_to_montgomery(
-            &fiat_p521_scalar_non_montgomery_domain_field_element(u32x18_to_u64x9(w.as_words())),
-        ))
+        Self(fiat_p521_scalar_to_montgomery(&u32x18_to_u64x9(
+            w.as_words(),
+        )))
     }
 
     /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form.
@@ -142,9 +142,7 @@ impl Scalar {
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "64")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_scalar_to_montgomery(
-            &fiat_p521_scalar_non_montgomery_domain_field_element(*w.as_words()),
-        ))
+        Self(fiat_p521_scalar_to_montgomery(w.as_words()))
     }
 
     /// Returns the big-endian encoding of this [`Scalar`].
@@ -157,9 +155,7 @@ impl Scalar {
     #[inline]
     #[cfg(target_pointer_width = "32")]
     pub const fn to_canonical(self) -> U576 {
-        U576::from_words(u64x9_to_u32x18(
-            fiat_p521_scalar_from_montgomery(&self.0).as_inner(),
-        ))
+        U576::from_words(u64x9_to_u32x18(&fiat_p521_scalar_from_montgomery(&self.0)))
     }
 
     /// Translate [`Scalar`] out of the Montgomery domain, returning a [`U576`]
@@ -167,7 +163,7 @@ impl Scalar {
     #[inline]
     #[cfg(target_pointer_width = "64")]
     pub const fn to_canonical(self) -> U576 {
-        U576::from_words(fiat_p521_scalar_from_montgomery(&self.0).into_inner())
+        U576::from_words(fiat_p521_scalar_from_montgomery(&self.0))
     }
 
     /// Determine if this [`Scalar`] is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -238,7 +234,6 @@ impl Scalar {
             521,
             9,
             u64,
-            fiat_p521_scalar_montgomery_domain_field_element,
             fiat_p521_scalar_from_montgomery,
             fiat_p521_scalar_mul,
             fiat_p521_scalar_opp,
@@ -293,12 +288,10 @@ impl Scalar {
     /// Note: not constant-time with respect to the `shift` parameter.
     #[cfg(target_pointer_width = "32")]
     pub const fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(fiat_p521_scalar_montgomery_domain_field_element(
-            u32x18_to_u64x9(
-                &U576::from_words(u64x9_to_u32x18(self.0.as_inner()))
-                    .shr_vartime(shift)
-                    .to_words(),
-            ),
+        Self(u32x18_to_u64x9(
+            &U576::from_words(u64x9_to_u32x18(&self.0))
+                .shr_vartime(shift)
+                .to_words(),
         ))
     }
 
@@ -307,11 +300,7 @@ impl Scalar {
     /// Note: not constant-time with respect to the `shift` parameter.
     #[cfg(target_pointer_width = "64")]
     pub const fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(fiat_p521_scalar_montgomery_domain_field_element(
-            U576::from_words(self.0.into_inner())
-                .shr_vartime(shift)
-                .to_words(),
-        ))
+        Self(U576::from_words(self.0).shr_vartime(shift).to_words())
     }
 }
 
@@ -330,7 +319,7 @@ impl Default for Scalar {
 impl Eq for Scalar {}
 impl PartialEq for Scalar {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0.as_inner().ct_eq(rhs.0.as_inner()).into()
+        self.0.ct_eq(&(rhs.0)).into()
     }
 }
 
@@ -354,21 +343,19 @@ impl From<u128> for Scalar {
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut ret = Self::ZERO.0.into_inner();
-        let a = a.0.as_inner();
-        let b = b.0.as_inner();
+        let mut ret = Self::ZERO;
 
-        for i in 0..ret.len() {
-            ret[i] = u64::conditional_select(&a[i], &b[i], choice);
+        for i in 0..ret.0.len() {
+            ret.0[i] = u64::conditional_select(&a.0[i], &b.0[i], choice);
         }
 
-        Self(fiat_p521_scalar_montgomery_domain_field_element(ret))
+        ret
     }
 }
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.as_inner().ct_eq(other.0.as_inner())
+        self.0.ct_eq(&other.0)
     }
 }
 
