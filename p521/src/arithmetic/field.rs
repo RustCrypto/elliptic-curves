@@ -397,13 +397,15 @@ impl From<u128> for FieldElement {
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut ret = Self::ZERO;
+        let mut ret = Self::ZERO.0.into_inner();
+        let a = a.0.as_inner();
+        let b = b.0.as_inner();
 
-        for i in 0..ret.0.len() {
-            ret.0[i] = u64::conditional_select(&a.0[i], &b.0[i], choice);
+        for i in 0..ret.len() {
+            ret[i] = u64::conditional_select(&a[i], &b[i], choice);
         }
 
-        ret
+        Self(fiat_p521_tight_field_element(ret))
     }
 }
 
