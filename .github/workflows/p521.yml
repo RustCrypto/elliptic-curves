@@ -42,7 +42,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        rust: stable
+        rust:
+          - stable
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
