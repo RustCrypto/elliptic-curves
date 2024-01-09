@@ -40,9 +40,6 @@ pub mod test_vectors;
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
-#[cfg(feature = "expose-field")]
-pub use arithmetic::field::FieldElement;
-
 pub use elliptic_curve::{self, bigint::U576};
 
 #[cfg(feature = "pkcs8")]
