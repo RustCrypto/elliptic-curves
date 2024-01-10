@@ -287,10 +287,10 @@ impl Scalar {
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
     #[cfg(target_pointer_width = "32")]
-    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
+    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
         Self(u32x18_to_u64x9(
             &U576::from_words(u64x9_to_u32x18(&self.0))
-                .shr_vartime(shift)
+                .wrapping_shr_vartime(shift)
                 .to_words(),
         ))
     }
