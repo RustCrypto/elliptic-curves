@@ -363,11 +363,12 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-pre.1"
+source = "git+https://github.com/RustCrypto/signatures.git#2cb7693956865c8c07b93b26055a16e58eb863ba"
 dependencies = [
  "der",
  "digest",
  "elliptic-curve",
- "rfc6979 0.5.0-pre.1",
+ "rfc6979 0.5.0-pre.1 (git+https://github.com/RustCrypto/signatures.git)",
  "serdect 0.2.0",
  "signature",
  "spki",
@@ -1016,6 +1017,8 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 [[package]]
 name = "rfc6979"
 version = "0.5.0-pre.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f74fe2f5245b7dcff4f1c633a5dcc1fb54dbb0e4b1fa569ab60863806229d54f"
 dependencies = [
  "hmac",
  "subtle",
@@ -1024,8 +1027,7 @@ dependencies = [
 [[package]]
 name = "rfc6979"
 version = "0.5.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f74fe2f5245b7dcff4f1c633a5dcc1fb54dbb0e4b1fa569ab60863806229d54f"
+source = "git+https://github.com/RustCrypto/signatures.git#2cb7693956865c8c07b93b26055a16e58eb863ba"
 dependencies = [
  "hmac",
  "subtle",
