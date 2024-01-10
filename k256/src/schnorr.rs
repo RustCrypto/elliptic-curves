@@ -145,10 +145,9 @@ impl TryFrom<&[u8]> for Signature {
     fn try_from(bytes: &[u8]) -> Result<Signature> {
         let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
 
-        let r: FieldElement = Option::from(FieldElement::from_bytes(FieldBytes::from_slice(
-            r_bytes,
-        )))
-        .ok_or_else(Error::new)?;
+        let r: FieldElement =
+            Option::from(FieldElement::from_bytes(FieldBytes::from_slice(r_bytes)))
+                .ok_or_else(Error::new)?;
 
         // one of the rules for valid signatures: !is_infinite(R);
         if r.is_zero().into() {
