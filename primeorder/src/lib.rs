@@ -21,9 +21,7 @@ mod field;
 mod projective;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
-pub use elliptic_curve::{
-    self, generic_array, point::Double, Field, FieldBytes, PrimeCurve, PrimeField,
-};
+pub use elliptic_curve::{self, array, point::Double, Field, FieldBytes, PrimeCurve, PrimeField};
 
 use elliptic_curve::CurveArithmetic;
 

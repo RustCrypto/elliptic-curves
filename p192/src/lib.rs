@@ -33,9 +33,9 @@ pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
+    array::Array,
     bigint::{ArrayEncoding, U192},
     consts::{U24, U25},
-    generic_array::GenericArray,
     FieldBytesEncoding,
 };
 
@@ -69,7 +69,7 @@ impl pkcs8::AssociatedOid for NistP192 {
 }
 
 /// Compressed SEC1-encoded NIST P-192 curve point.
-pub type CompressedPoint = GenericArray<u8, U25>;
+pub type CompressedPoint = Array<u8, U25>;
 
 /// NIST P-192 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP192>;

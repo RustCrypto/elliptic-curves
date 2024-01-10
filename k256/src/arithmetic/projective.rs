@@ -798,8 +798,8 @@ mod tests {
             let affine = p.to_affine();
 
             let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
-            assert_eq!(affine.x.to_bytes(), expected_x.into());
-            assert_eq!(affine.y.to_bytes(), expected_y.into());
+            assert_eq!(affine.x.to_bytes(), expected_x);
+            assert_eq!(affine.y.to_bytes(), expected_y);
 
             p += &generator;
         }
@@ -814,8 +814,8 @@ mod tests {
             let affine = p.to_affine();
 
             let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
-            assert_eq!(affine.x.to_bytes(), expected_x.into());
-            assert_eq!(affine.y.to_bytes(), expected_y.into());
+            assert_eq!(affine.x.to_bytes(), expected_x);
+            assert_eq!(affine.y.to_bytes(), expected_y);
 
             p += &generator;
         }
@@ -838,8 +838,8 @@ mod tests {
             let affine = p.to_affine();
 
             let (expected_x, expected_y) = ADD_TEST_VECTORS[i];
-            assert_eq!(affine.x.to_bytes(), expected_x.into());
-            assert_eq!(affine.y.to_bytes(), expected_y.into());
+            assert_eq!(affine.x.to_bytes(), expected_x);
+            assert_eq!(affine.y.to_bytes(), expected_y);
 
             p = p.double();
         }
@@ -895,8 +895,8 @@ mod tests {
             )
         {
             let res = (generator * &k).to_affine();
-            assert_eq!(res.x.to_bytes(), coords.0.into());
-            assert_eq!(res.y.to_bytes(), coords.1.into());
+            assert_eq!(res.x.to_bytes(), coords.0);
+            assert_eq!(res.y.to_bytes(), coords.1);
         }
     }
 

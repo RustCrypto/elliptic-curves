@@ -1,6 +1,6 @@
 [package]
 name = "bp384"
-version = "0.6.1"
+version = "0.7.0-pre"
 description = "Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -10,15 +10,15 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
 edition = "2021"
-rust-version = "1.65"
+rust-version = "1.73"
 
 [dependencies]
-elliptic-curve = { version = "0.13", default-features = false, features = ["hazmat", "sec1"] }
+elliptic-curve = { version = "=0.14.0-pre.1", default-features = false, features = ["hazmat", "sec1"] }
 
 # optional dependencies
-ecdsa = { version = "0.16", optional = true, default-features = false, features = ["der"] }
-primeorder = { version = "0.13.5", optional = true, path = "../primeorder" }
-sha2 = { version = "0.10", optional = true, default-features = false }
+ecdsa = { version = "=0.17.0-pre.1", optional = true, default-features = false, features = ["der"] }
+primeorder = { version = "=0.14.0-pre", optional = true, path = "../primeorder" }
+sha2 = { version = "=0.11.0-pre.1", optional = true, default-features = false }
 
 [features]
 default = ["pkcs8", "std"]

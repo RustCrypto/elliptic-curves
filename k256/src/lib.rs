@@ -62,9 +62,9 @@ pub use elliptic_curve::pkcs8;
 pub use sha2;
 
 use elliptic_curve::{
+    array::Array,
     bigint::ArrayEncoding,
     consts::{U32, U33, U64},
-    generic_array::GenericArray,
     FieldBytesEncoding,
 };
 
@@ -117,7 +117,7 @@ impl pkcs8::AssociatedOid for Secp256k1 {
 }
 
 /// Compressed SEC1-encoded secp256k1 (K-256) curve point.
-pub type CompressedPoint = GenericArray<u8, U33>;
+pub type CompressedPoint = Array<u8, U33>;
 
 /// SEC1-encoded secp256k1 (K-256) curve point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
@@ -138,7 +138,7 @@ impl FieldBytesEncoding<Secp256k1> for U256 {
 }
 
 /// Bytes used by a wide reduction: twice the width of [`FieldBytes`].
-pub type WideBytes = GenericArray<u8, U64>;
+pub type WideBytes = Array<u8, U64>;
 
 /// Non-zero secp256k1 (K-256) scalar field element.
 #[cfg(feature = "arithmetic")]

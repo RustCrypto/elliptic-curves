@@ -119,8 +119,8 @@ fn identity_encoding() {
 
 #[test]
 fn noncompatible_is_none() {
-    use elliptic_curve::generic_array::GenericArray;
-    let noncompactable_secret = GenericArray::from([
+    use elliptic_curve::array::Array;
+    let noncompactable_secret = Array::from([
         175, 232, 180, 255, 91, 106, 124, 191, 224, 31, 177, 208, 236, 127, 191, 169, 201, 217, 75,
         141, 184, 175, 120, 85, 171, 8, 54, 57, 33, 177, 83, 211,
     ]);

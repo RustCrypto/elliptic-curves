@@ -30,13 +30,13 @@ pub use crate::arithmetic::scalar::Scalar;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::generic_array::{typenum::U32, GenericArray};
+use elliptic_curve::array::{typenum::U32, Array};
 
 #[cfg(feature = "wip-arithmetic-do-not-use")]
 pub(crate) use crate::arithmetic::field::FieldElement;
 
 /// Byte representation of a base/scalar field element of a given curve.
-pub type FieldBytes = GenericArray<u8, U32>;
+pub type FieldBytes = Array<u8, U32>;
 
 const ORDER_HEX: &str = "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7";
 const ORDER: U256 = U256::from_be_hex(ORDER_HEX);

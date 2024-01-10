@@ -82,7 +82,7 @@ mod tests {
         AffinePoint, EncodedPoint, SecretKey,
     };
 
-    use elliptic_curve::{generic_array::GenericArray, sec1::FromEncodedPoint};
+    use elliptic_curve::{array::Array, sec1::FromEncodedPoint};
     use hex_literal::hex;
     use sha2::Digest;
 
@@ -136,15 +136,17 @@ mod tests {
         let verifier = VerifyingKey::from_affine(
             AffinePoint::from_encoded_point(
                 &EncodedPoint::from_affine_coordinates(
-                    GenericArray::from_slice(&hex!("0400193b21f07cd059826e9453d3e96dd145041c97d49ff6b7047f86bb0b0439e909274cb9c282bfab88674c0765bc75")),
-                    GenericArray::from_slice(&hex!("f70d89c52acbc70468d2c5ae75c76d7f69b76af62dcf95e99eba5dd11adf8f42ec9a425b0c5ec98e2f234a926b82a147")),
+                    Array::from_slice(&hex!
+                    ("0400193b21f07cd059826e9453d3e96dd145041c97d49ff6b7047f86bb0b0439e909274cb9c282bfab88674c0765bc75")),
+                    Array::from_slice(&hex!
+                    ("f70d89c52acbc70468d2c5ae75c76d7f69b76af62dcf95e99eba5dd11adf8f42ec9a425b0c5ec98e2f234a926b82a147")),
                     false,
                 ),
             ).unwrap()
         ).unwrap();
         let signature = Signature::from_scalars(
-            GenericArray::clone_from_slice(&hex!("b11db00cdaf53286d4483f38cd02785948477ed7ebc2ad609054551da0ab0359978c61851788aa2ec3267946d440e878")),
-            GenericArray::clone_from_slice(&hex!("16007873c5b0604ce68112a8fee973e8e2b6e3319c683a762ff5065a076512d7c98b27e74b7887671048ac027df8cbf2")),
+            Array::clone_from_slice(&hex!("b11db00cdaf53286d4483f38cd02785948477ed7ebc2ad609054551da0ab0359978c61851788aa2ec3267946d440e878")),
+            Array::clone_from_slice(&hex!("16007873c5b0604ce68112a8fee973e8e2b6e3319c683a762ff5065a076512d7c98b27e74b7887671048ac027df8cbf2")),
         ).unwrap();
         let result = verifier.verify_prehash(
             &hex!("bbbd0a5f645d3fda10e288d172b299455f9dff00e0fbc2833e18cd017d7f3ed1"),

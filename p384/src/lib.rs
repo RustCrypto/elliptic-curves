@@ -42,9 +42,7 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{
-    bigint::ArrayEncoding, consts::U49, generic_array::GenericArray, FieldBytesEncoding,
-};
+use elliptic_curve::{array::Array, bigint::ArrayEncoding, consts::U49, FieldBytesEncoding};
 
 /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus) in hexadecimal.
 const ORDER_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973";
@@ -87,7 +85,7 @@ impl pkcs8::AssociatedOid for NistP384 {
 }
 
 /// Compressed SEC1-encoded NIST P-384 curve point.
-pub type CompressedPoint = GenericArray<u8, U49>;
+pub type CompressedPoint = Array<u8, U49>;
 
 /// NIST P-384 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;

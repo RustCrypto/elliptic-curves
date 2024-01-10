@@ -22,9 +22,8 @@ use belt_hash::{
     digest::{Digest, FixedOutput},
     BeltHash,
 };
-use crypto_bigint::{consts::U32, generic_array::GenericArray};
 use elliptic_curve::{
-    generic_array::typenum::Unsigned,
+    array::{consts::U32, typenum::Unsigned, Array},
     group::GroupEncoding,
     ops::{LinearCombination, Reduce},
     sec1::ToEncodedPoint,
@@ -122,7 +121,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         // 3. If 𝑆1 ⩾ 𝑞, return NO.
         let s1 = signature.s1();
 
-        let mut hash: GenericArray<u8, U32> = GenericArray::clone_from_slice(prehash);
+        let mut hash: Array<u8, U32> = Array::clone_from_slice(prehash);
         hash.reverse();
 
         let hw = Scalar::reduce_bytes(FieldBytes::from_slice(&hash));

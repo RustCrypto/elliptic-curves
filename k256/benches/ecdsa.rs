@@ -6,7 +6,7 @@ use ecdsa_core::{
     hazmat::{SignPrimitive, VerifyPrimitive},
 };
 use k256::{
-    elliptic_curve::{generic_array::arr, group::ff::PrimeField},
+    elliptic_curve::{array::arr, group::ff::PrimeField},
     AffinePoint, FieldBytes, Scalar,
 };
 

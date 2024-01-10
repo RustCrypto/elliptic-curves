@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn verify_constants() {
-        assert_eq!(CURVE_EQUATION_B.to_bytes(), CURVE_EQUATION_B_BYTES.into());
+        assert_eq!(CURVE_EQUATION_B.to_bytes(), CURVE_EQUATION_B_BYTES);
     }
 
     #[test]

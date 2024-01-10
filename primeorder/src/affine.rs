@@ -8,8 +8,8 @@ use core::{
     ops::{Mul, Neg},
 };
 use elliptic_curve::{
+    array::ArraySize,
     ff::{Field, PrimeField},
-    generic_array::ArrayLength,
     group::{prime::PrimeCurveAffine, GroupEncoding},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double},
     sec1::{
@@ -235,7 +235,7 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn from(affine: AffinePoint<C>) -> EncodedPoint<C> {
         affine.to_encoded_point(false)
@@ -245,10 +245,10 @@ where
 impl<C> GroupEncoding for AffinePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Repr = CompressedPoint<C>;
 
@@ -290,11 +290,12 @@ where
 impl<C> PrimeCurveAffine for AffinePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     ProjectivePoint<C>: Double,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Curve = ProjectivePoint<C>;
     type Scalar = Scalar<C>;
@@ -321,7 +322,7 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
     fn to_compact_encoded_point(&self) -> CtOption<EncodedPoint<C>> {
@@ -342,7 +343,7 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint<C> {
         EncodedPoint::<C>::conditional_select(
@@ -460,7 +461,7 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where

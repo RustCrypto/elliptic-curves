@@ -345,7 +345,7 @@ mod tests {
     mod wycheproof {
         use crate::{EncodedPoint, Secp256k1};
         use ecdsa_core::{signature::Verifier, Signature};
-        use elliptic_curve::generic_array::typenum::Unsigned;
+        use elliptic_curve::array::typenum::Unsigned;
 
         #[test]
         fn wycheproof() {
@@ -364,10 +364,10 @@ mod tests {
                     }
                     elliptic_curve::FieldBytes::<C>::clone_from_slice(&data[offset..])
                 } else {
-                    let iter = core::iter::repeat(0)
-                        .take(point_len - data.len())
-                        .chain(data.iter().cloned());
-                    elliptic_curve::FieldBytes::<C>::from_exact_iter(iter).unwrap()
+                    let mut point = elliptic_curve::FieldBytes::<C>::default();
+                    let offset = point_len - data.len();
+                    point[offset..].copy_from_slice(data);
+                    point
                 }
             }
 

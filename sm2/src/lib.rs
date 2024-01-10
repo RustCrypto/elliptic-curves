@@ -46,9 +46,9 @@ pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
+    array::{typenum::U33, Array},
     bigint::ArrayEncoding,
     consts::U32,
-    generic_array::{typenum::U33, GenericArray},
     FieldBytesEncoding,
 };
 
@@ -91,7 +91,7 @@ impl pkcs8::AssociatedOid for Sm2 {
 }
 
 /// Compressed SEC1-encoded curve point.
-pub type CompressedPoint = GenericArray<u8, U33>;
+pub type CompressedPoint = Array<u8, U33>;
 
 /// SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Sm2>;
