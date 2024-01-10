@@ -15,7 +15,6 @@
     clippy::cast_sign_loss,
     clippy::cast_possible_truncation,
     clippy::identity_op,
-    clippy::integer_arithmetic,
     clippy::too_many_arguments,
     clippy::unnecessary_cast
 )]
