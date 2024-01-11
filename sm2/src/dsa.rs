@@ -45,7 +45,6 @@ pub use self::{signing::SigningKey, verifying::VerifyingKey};
 
 use crate::{FieldBytes, NonZeroScalar, Sm2};
 use core::fmt::{self, Debug};
-use elliptic_curve::generic_array::sequence::Concat;
 use signature::{Error, Result, SignatureEncoding};
 
 #[cfg(feature = "alloc")]

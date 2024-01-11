@@ -174,8 +174,8 @@ impl Scalar {
     /// Right shifts the scalar.
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
-    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(self.0.shr_vartime(shift))
+    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
+        Self(self.0.wrapping_shr_vartime(shift))
     }
 
     /// Compute modular square.
@@ -312,7 +312,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 
@@ -320,7 +320,7 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 

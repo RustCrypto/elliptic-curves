@@ -68,7 +68,7 @@ mod verifying;
 pub use self::{signing::SigningKey, verifying::VerifyingKey};
 pub use signature::{self, rand_core::CryptoRngCore, Error};
 
-use crate::{arithmetic::FieldElement, NonZeroScalar};
+use crate::{arithmetic::FieldElement, FieldBytes, NonZeroScalar};
 use core::fmt;
 use elliptic_curve::subtle::ConstantTimeEq;
 use sha2::{Digest, Sha256};
@@ -146,7 +146,8 @@ impl TryFrom<&[u8]> for Signature {
         let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
 
         let r: FieldElement =
-            Option::from(FieldElement::from_bytes(r_bytes.into())).ok_or_else(Error::new)?;
+            Option::from(FieldElement::from_bytes(FieldBytes::from_slice(r_bytes)))
+                .ok_or_else(Error::new)?;
 
         // one of the rules for valid signatures: !is_infinite(R);
         if r.is_zero().into() {

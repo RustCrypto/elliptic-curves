@@ -120,8 +120,8 @@ impl Scalar {
     /// Right shifts the scalar.
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
-    pub fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(self.0.shr_vartime(shift))
+    pub fn shr_vartime(&self, shift: u32) -> Scalar {
+        Self(self.0.wrapping_shr_vartime(shift))
     }
 
     /// Inverts the scalar.
@@ -488,7 +488,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 
@@ -496,7 +496,7 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 
@@ -794,9 +794,9 @@ mod tests {
         FieldBytes, NonZeroScalar, WideBytes, ORDER,
     };
     use elliptic_curve::{
+        array::Array,
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
-        generic_array::GenericArray,
         ops::{Invert, Reduce},
         scalar::IsHigh,
     };
@@ -1038,7 +1038,7 @@ mod tests {
         let m = Scalar::modulus_as_biguint();
 
         fn reduce<T: Reduce<U256, Bytes = FieldBytes>>(arr: &[u8]) -> T {
-            T::reduce_bytes(GenericArray::from_slice(arr))
+            T::reduce_bytes(Array::from_slice(arr))
         }
 
         // Regular reduction

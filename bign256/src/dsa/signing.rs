@@ -16,18 +16,16 @@
 
 use super::{Signature, VerifyingKey, BELT_OID};
 use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey};
+use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    generic_array::typenum::Unsigned,
+    array::{consts::U32, typenum::Unsigned, Array},
     ops::{MulByGenerator, Reduce},
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
     Curve, Field, FieldBytesEncoding, PrimeField,
 };
 use signature::{hazmat::PrehashSigner, Error, KeypairRef, Result, Signer};
-
-use belt_hash::{BeltHash, Digest};
-use crypto_bigint::{consts::U32, generic_array::GenericArray};
 
 /// BignP256 secret key used for signing messages and producing signatures.
 ///
@@ -107,7 +105,7 @@ impl PrehashSigner<Signature> for SigningKey {
         if prehash.len() != <BignP256 as Curve>::FieldBytesSize::USIZE {
             return Err(Error::new());
         }
-        let mut h_word: GenericArray<u8, U32> = GenericArray::clone_from_slice(prehash);
+        let mut h_word: Array<u8, U32> = Array::clone_from_slice(prehash);
         h_word.reverse();
 
         let h = Scalar::reduce_bytes(&h_word);
@@ -122,7 +120,7 @@ impl PrehashSigner<Signature> for SigningKey {
         .unwrap();
 
         // 3. Set 𝑅 ← 𝑘𝐺.
-        let mut R: GenericArray<u8, _> = ProjectivePoint::mul_by_generator(&k).to_affine().x();
+        let mut R: Array<u8, _> = ProjectivePoint::mul_by_generator(&k).to_affine().x();
         R.reverse();
 
         // 4. Set 𝑆0 ← ⟨︀belt-hash(OID(ℎ) ‖ ⟨𝑅⟩2𝑙 ‖ 𝐻)⟩︀_𝑙.

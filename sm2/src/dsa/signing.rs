@@ -20,7 +20,7 @@ use crate::{
 };
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    generic_array::typenum::Unsigned,
+    array::typenum::Unsigned,
     ops::{MulByGenerator, Reduce},
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},

@@ -1,9 +1,9 @@
 use super::FieldElement;
 use crate::{AffinePoint, FieldBytes, NistP256, ProjectivePoint, Scalar};
 use elliptic_curve::{
+    array::Array,
     bigint::{ArrayEncoding, U256},
     consts::U48,
-    generic_array::GenericArray,
     hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0},
     point::DecompressPoint,
     subtle::Choice,
@@ -16,7 +16,7 @@ impl GroupDigest for NistP256 {
 impl FromOkm for FieldElement {
     type Length = U48;
 
-    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
         const F_2_192: FieldElement = FieldElement(U256::from_be_hex(
             "00000000000000030000000200000000fffffffffffffffefffffffeffffffff",
         ));
@@ -74,16 +74,16 @@ impl MapToCurve for FieldElement {
 impl FromOkm for Scalar {
     type Length = U48;
 
-    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
         const F_2_192: Scalar = Scalar(U256::from_be_hex(
             "0000000000000001000000000000000000000000000000000000000000000000",
         ));
 
-        let mut d0 = GenericArray::default();
+        let mut d0 = Array::default();
         d0[8..].copy_from_slice(&data[0..24]);
         let d0 = Scalar(U256::from_be_byte_array(d0));
 
-        let mut d1 = GenericArray::default();
+        let mut d1 = Array::default();
         d1[8..].copy_from_slice(&data[24..]);
         let d1 = Scalar(U256::from_be_byte_array(d1));
 
@@ -96,9 +96,9 @@ mod tests {
     use super::FieldElement;
     use crate::{arithmetic::field::MODULUS, NistP256, Scalar, U256};
     use elliptic_curve::{
+        array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
         consts::U48,
-        generic_array::GenericArray,
         group::cofactor::CofactorGroup,
         hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         sec1::{self, ToEncodedPoint},
@@ -115,7 +115,7 @@ mod tests {
         let c1 = MODULUS.0.checked_sub(&U256::from_u8(3)).unwrap()
             / NonZero::new(U256::from_u8(4)).unwrap();
         assert_eq!(
-            GenericArray::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
+            Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
             c1.to_be_byte_array()
         );
 
@@ -302,11 +302,11 @@ mod tests {
 
     #[test]
     fn from_okm_fuzz() {
-        let mut wide_order = GenericArray::default();
+        let mut wide_order = Array::default();
         wide_order[16..].copy_from_slice(&NistP256::ORDER.to_be_byte_array());
         let wide_order = NonZero::new(U384::from_be_byte_array(wide_order)).unwrap();
 
-        let simple_from_okm = move |data: GenericArray<u8, U48>| -> Scalar {
+        let simple_from_okm = move |data: Array<u8, U48>| -> Scalar {
             let data = U384::from_be_slice(&data);
 
             let scalar = data % wide_order;
@@ -316,7 +316,7 @@ mod tests {
         };
 
         proptest!(ProptestConfig::with_cases(1000), |(b0 in ANY, b1 in ANY, b2 in ANY, b3 in ANY, b4 in ANY, b5 in ANY)| {
-            let mut data = GenericArray::default();
+            let mut data = Array::default();
             data[..8].copy_from_slice(&b0.to_be_bytes());
             data[8..16].copy_from_slice(&b1.to_be_bytes());
             data[16..24].copy_from_slice(&b2.to_be_bytes());

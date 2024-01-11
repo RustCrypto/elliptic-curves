@@ -629,14 +629,13 @@ mod tests {
 
     #[test]
     fn to_bytes() {
-        assert_eq!(FieldElement::ZERO.to_bytes(), [0; 32].into());
+        assert_eq!(FieldElement::ZERO.to_bytes(), [0; 32]);
         assert_eq!(
             FieldElement::ONE.to_bytes(),
             [
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 1
             ]
-            .into()
         );
     }
 
@@ -644,7 +643,7 @@ mod tests {
     fn repeated_add() {
         let mut r = FieldElement::ONE;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
             r = (r + &r).normalize();
         }
     }
@@ -653,7 +652,7 @@ mod tests {
     fn repeated_double() {
         let mut r = FieldElement::ONE;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
             r = r.double().normalize();
         }
     }
@@ -663,7 +662,7 @@ mod tests {
         let mut r = FieldElement::ONE;
         let two = r + &r;
         for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.normalize().to_bytes(), DBL_TEST_VECTORS[i].into());
+            assert_eq!(r.normalize().to_bytes(), DBL_TEST_VECTORS[i]);
             r = r * &two;
         }
     }

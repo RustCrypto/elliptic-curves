@@ -1,9 +1,9 @@
 use super::FieldElement;
 use crate::{AffinePoint, NistP521, ProjectivePoint, Scalar};
 use elliptic_curve::{
+    array::Array,
     bigint::{ArrayEncoding, U576},
     consts::U98,
-    generic_array::GenericArray,
     hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0},
     ops::Reduce,
     point::DecompressPoint,
@@ -17,16 +17,16 @@ impl GroupDigest for NistP521 {
 impl FromOkm for FieldElement {
     type Length = U98;
 
-    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
         const F_2_392: FieldElement = FieldElement::from_hex(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
-        let mut d0 = GenericArray::default();
+        let mut d0 = Array::default();
         d0[23..].copy_from_slice(&data[0..49]);
         let d0 = FieldElement::from_uint_unchecked(U576::from_be_byte_array(d0));
 
-        let mut d1 = GenericArray::default();
+        let mut d1 = Array::default();
         d1[23..].copy_from_slice(&data[49..]);
         let d1 = FieldElement::from_uint_unchecked(U576::from_be_byte_array(d1));
 
@@ -80,16 +80,16 @@ impl MapToCurve for FieldElement {
 impl FromOkm for Scalar {
     type Length = U98;
 
-    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
         const F_2_392: Scalar = Scalar::from_hex(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
-        let mut d0 = GenericArray::default();
+        let mut d0 = Array::default();
         d0[23..].copy_from_slice(&data[0..49]);
         let d0 = Scalar::reduce(U576::from_be_byte_array(d0));
 
-        let mut d1 = GenericArray::default();
+        let mut d1 = Array::default();
         d1[23..].copy_from_slice(&data[49..]);
         let d1 = Scalar::reduce(U576::from_be_byte_array(d1));
 
@@ -104,9 +104,9 @@ mod tests {
         NistP521, Scalar,
     };
     use elliptic_curve::{
+        array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U576, U896},
         consts::U98,
-        generic_array::GenericArray,
         group::cofactor::CofactorGroup,
         hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         ops::Reduce,
@@ -124,7 +124,7 @@ mod tests {
         let c1 = MODULUS.checked_sub(&U576::from_u8(3)).unwrap()
             / NonZero::new(U576::from_u8(4)).unwrap();
         assert_eq!(
-            GenericArray::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
+            Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
             c1.to_be_byte_array()
         );
 
@@ -310,13 +310,13 @@ mod tests {
 
     #[test]
     fn from_okm_fuzz() {
-        let mut wide_order = GenericArray::default();
+        let mut wide_order = Array::default();
         wide_order[40..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
         // TODO: This could be reduced to `U832` when `crypto-bigint` implements `ArrayEncoding`.
         let wide_order = NonZero::new(U896::from_be_byte_array(wide_order)).unwrap();
 
-        let simple_from_okm = move |data: GenericArray<u8, U98>| -> Scalar {
-            let mut wide_data = GenericArray::default();
+        let simple_from_okm = move |data: Array<u8, U98>| -> Scalar {
+            let mut wide_data = Array::default();
             wide_data[14..].copy_from_slice(data.as_slice());
             let wide_data = U896::from_be_byte_array(wide_data);
 
@@ -343,7 +343,7 @@ mod tests {
                 b11 in num::u64::ANY,
                 b12 in num::u16::ANY,
             )| {
-                let mut data = GenericArray::default();
+                let mut data = Array::default();
                 data[..8].copy_from_slice(&b0.to_be_bytes());
                 data[8..16].copy_from_slice(&b1.to_be_bytes());
                 data[16..24].copy_from_slice(&b2.to_be_bytes());

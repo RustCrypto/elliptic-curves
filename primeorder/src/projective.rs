@@ -9,8 +9,8 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Integer},
-    generic_array::ArrayLength,
+    array::ArraySize,
+    bigint::{ArrayEncoding, Bounded},
     group::{
         self,
         cofactor::CofactorGroup,
@@ -122,7 +122,7 @@ where
         }
 
         let mut q = Self::IDENTITY;
-        let mut pos = C::Uint::BITS - 4;
+        let mut pos = C::Uint::BITS as usize - 4;
 
         loop {
             let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
@@ -154,10 +154,10 @@ impl<C> CofactorGroup for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Subgroup = Self;
 
@@ -301,10 +301,11 @@ where
 impl<C> GroupEncoding for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Repr = CompressedPoint<C>;
 
@@ -434,10 +435,10 @@ impl<C> PrimeGroup for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
 }
 
@@ -445,10 +446,10 @@ impl<C> PrimeCurve for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Affine = AffinePoint<C>;
 }
@@ -465,9 +466,9 @@ where
 impl<C> ToEncodedPoint<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArrayLength<u8>>::ArrayType: Copy,
+    FieldBytesSize<C>: ModulusSize,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint<C> {
         self.to_affine().to_encoded_point(compress)

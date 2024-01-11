@@ -36,8 +36,8 @@ use core::{
 };
 use elliptic_curve::ops::Invert;
 use elliptic_curve::{
+    array::Array,
     ff::{self, Field, PrimeField},
-    generic_array::GenericArray,
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
@@ -76,7 +76,7 @@ impl FieldElement {
             return Err(Error);
         }
 
-        Option::from(Self::from_bytes(GenericArray::from_slice(slice))).ok_or(Error)
+        Option::from(Self::from_bytes(Array::from_slice(slice))).ok_or(Error)
     }
 
     /// Decode [`FieldElement`] from [`U576`].
@@ -144,7 +144,7 @@ impl FieldElement {
     pub fn to_bytes(self) -> FieldBytes {
         let mut ret = fiat_p521_to_bytes(&self.0);
         ret.reverse();
-        GenericArray::clone_from_slice(&ret)
+        Array::clone_from_slice(&ret)
     }
 
     /// Determine if this [`FieldElement`] is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -693,7 +693,7 @@ mod tests {
     #[test]
     fn decode_invalid_field_element_returns_err() {
         let overflowing_bytes = hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-        let ct_option = FieldElement::from_bytes(overflowing_bytes.as_ref().into());
+        let ct_option = FieldElement::from_bytes(&overflowing_bytes.into());
         assert!(bool::from(ct_option.is_none()));
     }
 }

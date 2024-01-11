@@ -112,7 +112,7 @@ impl Scalar {
 
     /// Returns self * rhs mod n
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        let (lo, hi) = self.0.mul_wide(&rhs.0);
+        let (lo, hi) = self.0.split_mul(&rhs.0);
         Self(barrett_reduce(lo, hi))
     }
 
@@ -125,8 +125,8 @@ impl Scalar {
     /// Right shifts the scalar.
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
-    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(self.0.shr_vartime(shift))
+    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
+        Self(self.0.wrapping_shr_vartime(shift))
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero
@@ -419,7 +419,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 
@@ -427,7 +427,7 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 

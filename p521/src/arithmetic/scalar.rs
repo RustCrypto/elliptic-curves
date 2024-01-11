@@ -21,9 +21,9 @@ use core::{
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
+    array::Array,
     bigint::{self, Integer},
     ff::{self, Field, PrimeField},
-    generic_array::GenericArray,
     ops::{Invert, Reduce},
     rand_core::RngCore,
     scalar::{FromUintUnchecked, IsHigh},
@@ -95,7 +95,7 @@ impl Scalar {
             return Err(Error);
         }
 
-        Option::from(Self::from_bytes(GenericArray::from_slice(slice))).ok_or(Error)
+        Option::from(Self::from_bytes(Array::from_slice(slice))).ok_or(Error)
     }
 
     /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form:
@@ -287,10 +287,10 @@ impl Scalar {
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
     #[cfg(target_pointer_width = "32")]
-    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
+    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
         Self(u32x18_to_u64x9(
             &U576::from_words(u64x9_to_u32x18(&self.0))
-                .shr_vartime(shift)
+                .wrapping_shr_vartime(shift)
                 .to_words(),
         ))
     }
@@ -299,8 +299,12 @@ impl Scalar {
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
     #[cfg(target_pointer_width = "64")]
-    pub const fn shr_vartime(&self, shift: usize) -> Scalar {
-        Self(U576::from_words(self.0).shr_vartime(shift).to_words())
+    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
+        Self(
+            U576::from_words(self.0)
+                .wrapping_shr_vartime(shift)
+                .to_words(),
+        )
     }
 }
 
@@ -516,7 +520,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 
@@ -524,7 +528,7 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs)
+        self.shr_vartime(rhs as u32)
     }
 }
 

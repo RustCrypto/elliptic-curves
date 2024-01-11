@@ -141,10 +141,7 @@ macro_rules! impl_projective_arithmetic_tests {
                 .map(|(k, coords)| (<$scalar>::from(k as u64 + 1), *coords))
                 .chain($mul_vectors.iter().cloned().map(|(k, x, y)| {
                     (
-                        <$scalar>::from_repr(
-                            $crate::generic_array::GenericArray::clone_from_slice(&k),
-                        )
-                        .unwrap(),
+                        <$scalar>::from_repr($crate::array::Array::clone_from_slice(&k)).unwrap(),
                         (x, y),
                     )
                 }))

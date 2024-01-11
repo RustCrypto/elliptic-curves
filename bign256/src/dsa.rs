@@ -43,9 +43,9 @@ pub use self::{signing::SigningKey, verifying::VerifyingKey};
 
 use crate::{BignP256, FieldBytes, NonZeroScalar, Scalar};
 use core::fmt::{self, Debug};
-use crypto_bigint::{
+use elliptic_curve::{
+    array::Array,
     consts::{U32, U48},
-    generic_array::GenericArray,
 };
 use signature::{Error, Result, SignatureEncoding};
 
@@ -76,7 +76,7 @@ impl Signature {
     /// Parse an BignP256 signature from a byte array.
     pub fn from_bytes(bytes: &SignatureBytes) -> Result<Self> {
         let (s0, s1) = bytes.split_at(Self::BYTE_SIZE / 3);
-        let mut s0_bytes: GenericArray<u8, U32> = Default::default();
+        let mut s0_bytes: Array<u8, U32> = Default::default();
         s0_bytes[..16].copy_from_slice(s0);
 
         let s0 = ScalarPrimitive::from_slice(&s0_bytes).map_err(|_| Error::new())?;
@@ -106,7 +106,7 @@ impl Signature {
         s0.reverse();
         s1.reverse();
 
-        let mut s: GenericArray<u8, U48> = Default::default();
+        let mut s: Array<u8, U48> = Default::default();
         s[..Self::BYTE_SIZE / 3].copy_from_slice(s0);
         s[Self::BYTE_SIZE / 3..Self::BYTE_SIZE].copy_from_slice(&s1);
 

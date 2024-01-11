@@ -45,7 +45,7 @@ pub use elliptic_curve::{self, bigint::U576};
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{consts::U66, generic_array::GenericArray, FieldBytesEncoding};
+use elliptic_curve::{array::Array, consts::U66, FieldBytesEncoding};
 
 /// NIST P-521 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -85,7 +85,7 @@ impl pkcs8::AssociatedOid for NistP521 {
 }
 
 /// Compressed SEC1-encoded NIST P-521 curve point.
-pub type CompressedPoint = GenericArray<u8, U66>;
+pub type CompressedPoint = Array<u8, U66>;
 
 /// NIST P-521 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;

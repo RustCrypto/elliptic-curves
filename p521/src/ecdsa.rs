@@ -251,7 +251,7 @@ mod tests {
         #[test]
         fn wycheproof() {
             use blobby::Blob5Iterator;
-            use elliptic_curve::generic_array::typenum::Unsigned;
+            use elliptic_curve::array::typenum::Unsigned;
 
             // Build a field element but allow for too-short input (left pad with zeros)
             // or too-long input (check excess leftmost bytes are zeros).
@@ -271,7 +271,7 @@ mod tests {
                     let iter = core::iter::repeat(0)
                         .take(point_len - data.len())
                         .chain(data.iter().cloned());
-                    elliptic_curve::FieldBytes::<C>::from_exact_iter(iter).unwrap()
+                    elliptic_curve::FieldBytes::<C>::from_iter(iter)
                 }
             }
 

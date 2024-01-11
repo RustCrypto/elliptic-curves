@@ -49,9 +49,7 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{
-    bigint::ArrayEncoding, consts::U33, generic_array::GenericArray, FieldBytesEncoding,
-};
+use elliptic_curve::{array::Array, bigint::ArrayEncoding, consts::U33, FieldBytesEncoding};
 
 /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus) serialized
 /// as hexadecimal.
@@ -135,7 +133,7 @@ impl pkcs8::AssociatedOid for NistP256 {
 pub type BlindedScalar = elliptic_curve::scalar::BlindedScalar<NistP256>;
 
 /// Compressed SEC1-encoded NIST P-256 curve point.
-pub type CompressedPoint = GenericArray<u8, U33>;
+pub type CompressedPoint = Array<u8, U33>;
 
 /// NIST P-256 SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;

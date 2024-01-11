@@ -48,9 +48,9 @@ pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
+    array::Array,
     bigint::ArrayEncoding,
     consts::{U32, U33},
-    generic_array::GenericArray,
     FieldBytesEncoding,
 };
 
@@ -107,7 +107,7 @@ impl pkcs8::AssociatedOid for BignP256 {
 }
 
 /// Compressed SEC1-encoded BIGN P256 curve point.
-pub type CompressedPoint = GenericArray<u8, U33>;
+pub type CompressedPoint = Array<u8, U33>;
 
 /// BIGN P-256 field element serialized as bytes.
 ///

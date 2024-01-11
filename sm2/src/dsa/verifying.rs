@@ -18,7 +18,7 @@ use crate::{
     PublicKey, Scalar, Sm2,
 };
 use elliptic_curve::{
-    generic_array::typenum::Unsigned,
+    array::typenum::Unsigned,
     ops::{LinearCombination, Reduce},
     point::AffineCoordinates,
     sec1::ToEncodedPoint,

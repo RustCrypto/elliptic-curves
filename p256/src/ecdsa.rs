@@ -87,8 +87,7 @@ mod tests {
     };
     use ecdsa_core::hazmat::SignPrimitive;
     use elliptic_curve::{
-        generic_array::GenericArray, group::ff::PrimeField, rand_core::OsRng,
-        sec1::FromEncodedPoint,
+        array::Array, group::ff::PrimeField, rand_core::OsRng, sec1::FromEncodedPoint,
     };
     use hex_literal::hex;
     use sha2::Digest;
@@ -141,10 +140,10 @@ mod tests {
         // <https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/digital-signatures>
         let verifier = VerifyingKey::from_affine(
             AffinePoint::from_encoded_point(&EncodedPoint::from_affine_coordinates(
-                GenericArray::from_slice(&hex!(
+                Array::from_slice(&hex!(
                     "e0e7b99bc62d8dd67883e39ed9fa0657789c5ff556cc1fd8dd1e2a55e9e3f243"
                 )),
-                GenericArray::from_slice(&hex!(
+                Array::from_slice(&hex!(
                     "63fbfd0232b95578075c903a4dbf85ad58f8350516e1ec89b0ee1f5e1362da69"
                 )),
                 false,
@@ -153,10 +152,10 @@ mod tests {
         )
         .unwrap();
         let signature = Signature::from_scalars(
-            GenericArray::clone_from_slice(&hex!(
+            Array::clone_from_slice(&hex!(
                 "f5087878e212b703578f5c66f434883f3ef414dc23e2e8d8ab6a8d159ed5ad83"
             )),
-            GenericArray::clone_from_slice(&hex!(
+            Array::clone_from_slice(&hex!(
                 "306b4c6c20213707982dffbb30fba99b96e792163dd59dbe606e734328dd7c8a"
             )),
         )
@@ -171,10 +170,10 @@ mod tests {
     #[test]
     fn scalar_blinding() {
         let vector = &ECDSA_TEST_VECTORS[0];
-        let d = Scalar::from_repr(GenericArray::clone_from_slice(vector.d)).unwrap();
-        let k = Scalar::from_repr(GenericArray::clone_from_slice(vector.k)).unwrap();
+        let d = Scalar::from_repr(Array::clone_from_slice(vector.d)).unwrap();
+        let k = Scalar::from_repr(Array::clone_from_slice(vector.k)).unwrap();
         let k_blinded = BlindedScalar::new(k, &mut OsRng);
-        let z = GenericArray::clone_from_slice(vector.m);
+        let z = Array::clone_from_slice(vector.m);
         let sig = d.try_sign_prehashed(k_blinded, &z).unwrap().0;
 
         assert_eq!(vector.r, sig.r().to_bytes().as_slice());
