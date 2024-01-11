@@ -17,7 +17,7 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
         Group, GroupEncoding,
     },
-    ops::{BatchInvert, Invert, LinearCombination, MulByGenerator},
+    ops::{BatchInvert, LinearCombination, MulByGenerator},
     point::Double,
     rand_core::RngCore,
     sec1::{
@@ -334,21 +334,19 @@ where
         ProjectivePoint::to_affine(self)
     }
 
-    // TODO(tarcieri): re-enable when we can add `Invert` bounds on `FieldElement`
-    // #[cfg(feature = "alloc")]
-    // #[inline]
-    // fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
-    //     assert_eq!(projective.len(), affine.len());
-    //     let mut zs = vec![C::FieldElement::ONE; projective.len()];
-    //     batch_normalize_generic(projective, zs.as_mut_slice(), affine);
-    // }
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
+        let mut zs = vec![C::FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
+    }
 }
 
 impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
-    C::FieldElement: Invert<Output = CtOption<C::FieldElement>>,
 {
     type Output = [Self::AffineRepr; N];
 
@@ -366,7 +364,6 @@ impl<C> BatchNormalize<[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
-    C::FieldElement: Invert<Output = CtOption<C::FieldElement>>,
 {
     type Output = Vec<Self::AffineRepr>;
 
