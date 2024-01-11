@@ -39,7 +39,7 @@ use num_bigint::{BigUint, ToBigUint};
 const MODULUS: [Word; U256::LIMBS] = ORDER.to_words();
 
 /// Constant representing the modulus / 2
-const FRAC_MODULUS_2: U256 = ORDER.wrapping_shr_vartime(1);
+const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
 
 /// Scalars are elements in the finite field modulo n.
 ///

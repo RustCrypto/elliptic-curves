@@ -36,7 +36,7 @@ use serdect::serde::{de, ser, Deserialize, Serialize};
 pub(crate) const MODULUS: U256 = NistP256::ORDER;
 
 /// `MODULUS / 2`
-const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.wrapping_shr_vartime(1));
+const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.shr_vartime(1));
 
 /// MU = floor(2^512 / n)
 ///    = 115792089264276142090721624801893421302707618245269942344307673200490803338238
