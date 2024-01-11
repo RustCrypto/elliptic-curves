@@ -60,7 +60,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "rfc6979 0.5.0-pre.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rfc6979",
  "signature",
 ]
 
@@ -317,9 +317,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-bigint"
-version = "0.6.0-pre.9"
+version = "0.6.0-pre.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ccdf8183c2226b057661e7d89624e75108e67b28306c898581fee700ff2d992"
+checksum = "12979c1e0771d68f02c2fb93fb0ad54e597f82d608fb569db792d99ebd0bb3c5"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -362,13 +362,14 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-pre.1"
-source = "git+https://github.com/RustCrypto/signatures.git#2cb7693956865c8c07b93b26055a16e58eb863ba"
+version = "0.17.0-pre.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cae8ed6f5c6fcb637533628167d436653c3045721175741f2bf201ac6fbe3270"
 dependencies = [
  "der",
  "digest",
  "elliptic-curve",
- "rfc6979 0.5.0-pre.1 (git+https://github.com/RustCrypto/signatures.git)",
+ "rfc6979",
  "serdect 0.2.0",
  "signature",
  "spki",
@@ -382,9 +383,9 @@ checksum = "7fcaabb2fef8c910e7f4c7ce9f67a1283a1715879a7c230ca9d6d1ae31f16d91"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-pre.1"
+version = "0.14.0-pre.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27861f85de50861460eaa0787325f5bc69c763b1496e24a3ca9a2f243f180553"
+checksum = "53c5ff6cab3de51acc7aa1b7ed79e85d4ac92dc718f18899d7622cf9dc0fae94"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -1025,15 +1026,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rfc6979"
-version = "0.5.0-pre.1"
-source = "git+https://github.com/RustCrypto/signatures.git#2cb7693956865c8c07b93b26055a16e58eb863ba"
-dependencies = [
- "hmac",
- "subtle",
-]
-
-[[package]]
 name = "rustix"
 version = "0.36.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1200,7 +1192,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "rfc6979 0.5.0-pre.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rfc6979",
  "serdect 0.2.0",
  "signature",
  "sm3",
