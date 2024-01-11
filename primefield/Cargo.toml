@@ -1,0 +1,13 @@
+[package]
+name = "primefield"
+version = "0.14.0-pre"
+description = "Macros for generating prime field implementations"
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/primeorder"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/primefield"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "field", "prime"]
+edition = "2021"
+rust-version = "1.73"
