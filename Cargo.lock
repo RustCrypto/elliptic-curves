@@ -797,9 +797,11 @@ version = "0.14.0-pre"
 dependencies = [
  "base16ct",
  "blobby",
+ "criterion",
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
+ "primefield",
  "primeorder",
  "proptest",
  "rand_core",
