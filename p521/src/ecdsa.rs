@@ -37,29 +37,11 @@
 //! # }
 //! ```
 
-// TODO(tarcieri): use RFC6979 + upstream types from the `ecdsa` crate
-
-pub use ecdsa_core::signature::{self, Error, Result};
-
+pub use ecdsa_core::signature::{self, Error};
 #[cfg(feature = "ecdsa")]
 use {
-    crate::{AffinePoint, EncodedPoint, FieldBytes, NonZeroScalar, Scalar},
-    ecdsa_core::{
-        hazmat::{bits2field, sign_prehashed, SignPrimitive, VerifyPrimitive},
-        signature::{
-            hazmat::{PrehashVerifier, RandomizedPrehashSigner},
-            rand_core::CryptoRngCore,
-            RandomizedSigner, Verifier,
-        },
-    },
-    elliptic_curve::Field,
-    sha2::{Digest, Sha512},
-};
-
-#[cfg(all(feature = "ecdsa", feature = "getrandom"))]
-use {
-    ecdsa_core::signature::{hazmat::PrehashSigner, Signer},
-    rand_core::OsRng,
+    crate::{AffinePoint, Scalar},
+    ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
 };
 
 use super::NistP521;
@@ -70,166 +52,46 @@ pub type Signature = ecdsa_core::Signature<NistP521>;
 /// ECDSA/P-521 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa_core::der::Signature<NistP521>;
 
+/// ECDSA/P-521 signing key
+#[cfg(feature = "ecdsa")]
+pub type SigningKey = ecdsa_core::SigningKey<NistP521>;
+
+/// ECDSA/P-521 verification key (i.e. public key)
+#[cfg(feature = "ecdsa")]
+pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP521>;
+
+#[cfg(feature = "sha512")]
+impl ecdsa_core::hazmat::DigestPrimitive for NistP521 {
+    type Digest = sha2::Sha512;
+}
+
 #[cfg(feature = "ecdsa")]
 impl SignPrimitive<NistP521> for Scalar {}
 
 #[cfg(feature = "ecdsa")]
 impl VerifyPrimitive<NistP521> for AffinePoint {}
 
-/// ECDSA/P-521 signing key
-#[cfg(feature = "ecdsa")]
-#[derive(Clone)]
-pub struct SigningKey(ecdsa_core::SigningKey<NistP521>);
-
-#[cfg(feature = "ecdsa")]
-impl SigningKey {
-    /// Generate a cryptographically random [`SigningKey`].
-    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
-        ecdsa_core::SigningKey::<NistP521>::random(rng).into()
-    }
-
-    /// Initialize signing key from a raw scalar serialized as a byte array.
-    pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
-        ecdsa_core::SigningKey::<NistP521>::from_bytes(bytes).map(Into::into)
-    }
-
-    /// Initialize signing key from a raw scalar serialized as a byte slice.
-    pub fn from_slice(bytes: &[u8]) -> Result<Self> {
-        ecdsa_core::SigningKey::<NistP521>::from_slice(bytes).map(Into::into)
-    }
-
-    /// Serialize this [`SigningKey`] as bytes
-    pub fn to_bytes(&self) -> FieldBytes {
-        self.0.to_bytes()
-    }
-
-    /// Borrow the secret [`NonZeroScalar`] value for this key.
-    ///
-    /// # ⚠️ Warning
-    ///
-    /// This value is key material.
-    ///
-    /// Please treat it with the care it deserves!
-    pub fn as_nonzero_scalar(&self) -> &NonZeroScalar {
-        self.0.as_nonzero_scalar()
-    }
-
-    /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`].
-    #[cfg(feature = "verifying")]
-    pub fn verifying_key(&self) -> VerifyingKey {
-        VerifyingKey::from(self)
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl From<ecdsa_core::SigningKey<NistP521>> for SigningKey {
-    fn from(inner: ecdsa_core::SigningKey<NistP521>) -> SigningKey {
-        SigningKey(inner)
-    }
-}
-
-#[cfg(all(feature = "ecdsa", feature = "getrandom"))]
-impl PrehashSigner<Signature> for SigningKey {
-    fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
-        self.sign_prehash_with_rng(&mut OsRng, prehash)
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl RandomizedPrehashSigner<Signature> for SigningKey {
-    fn sign_prehash_with_rng(
-        &self,
-        rng: &mut impl CryptoRngCore,
-        prehash: &[u8],
-    ) -> Result<Signature> {
-        let z = bits2field::<NistP521>(prehash)?;
-        let k = Scalar::random(rng);
-        sign_prehashed(self.0.as_nonzero_scalar().as_ref(), k, &z).map(|sig| sig.0)
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl RandomizedSigner<Signature> for SigningKey {
-    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> Result<Signature> {
-        self.sign_prehash_with_rng(rng, &Sha512::digest(msg))
-    }
-}
-
-#[cfg(all(feature = "ecdsa", feature = "getrandom"))]
-impl Signer<Signature> for SigningKey {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
-        self.try_sign_with_rng(&mut OsRng, msg)
-    }
-}
-
-/// ECDSA/P-521 verification key (i.e. public key)
-#[cfg(feature = "ecdsa")]
-#[derive(Clone)]
-pub struct VerifyingKey(ecdsa_core::VerifyingKey<NistP521>);
-
-#[cfg(feature = "ecdsa")]
-impl VerifyingKey {
-    /// Initialize [`VerifyingKey`] from a SEC1-encoded public key.
-    pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self> {
-        ecdsa_core::VerifyingKey::<NistP521>::from_sec1_bytes(bytes).map(Into::into)
-    }
-
-    /// Initialize [`VerifyingKey`] from an affine point.
-    ///
-    /// Returns an [`Error`] if the given affine point is the additive identity
-    /// (a.k.a. point at infinity).
-    pub fn from_affine(affine: AffinePoint) -> Result<Self> {
-        ecdsa_core::VerifyingKey::<NistP521>::from_affine(affine).map(Into::into)
-    }
-
-    /// Initialize [`VerifyingKey`] from an [`EncodedPoint`].
-    pub fn from_encoded_point(public_key: &EncodedPoint) -> Result<Self> {
-        ecdsa_core::VerifyingKey::<NistP521>::from_encoded_point(public_key).map(Into::into)
-    }
-
-    /// Serialize this [`VerifyingKey`] as a SEC1 [`EncodedPoint`], optionally
-    /// applying point compression.
-    pub fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.0.to_encoded_point(compress)
-    }
-
-    /// Borrow the inner [`AffinePoint`] for this public key.
-    pub fn as_affine(&self) -> &AffinePoint {
-        self.0.as_affine()
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl From<&SigningKey> for VerifyingKey {
-    fn from(signing_key: &SigningKey) -> VerifyingKey {
-        Self::from(*signing_key.0.verifying_key())
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl From<ecdsa_core::VerifyingKey<NistP521>> for VerifyingKey {
-    fn from(inner: ecdsa_core::VerifyingKey<NistP521>) -> VerifyingKey {
-        VerifyingKey(inner)
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl PrehashVerifier<Signature> for VerifyingKey {
-    fn verify_prehash(&self, prehash: &[u8], signature: &Signature) -> Result<()> {
-        self.0.verify_prehash(prehash, signature)
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl Verifier<Signature> for VerifyingKey {
-    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<()> {
-        self.verify_prehash(&Sha512::digest(msg), signature)
-    }
-}
-
-#[cfg(all(test, feature = "ecdsa", feature = "getrandom"))]
+#[cfg(all(test, feature = "ecdsa"))]
 mod tests {
-    // TODO(tarcieri): RFC6979 support + test vectors
+    use crate::ecdsa::{signature::Signer, Signature, SigningKey};
+    use hex_literal::hex;
+
+    // Test vector from RFC 6979 Appendix 2.7 (NIST P-521 + SHA-512)
+    // <https://datatracker.ietf.org/doc/html/rfc6979#appendix-A.2.7>
+    // TODO(tarcieri): debug why this is failing
+    #[test]
+    fn rfc6979() {
+        let x = hex!("00FAD06DAA62BA3B25D2FB40133DA757205DE67F5BB0018FEE8C86E1B68C7E75CAA896EB32F1F47C70855836A6D16FCC1466F6D8FBEC67DB89EC0C08B0E996B83538");
+        let signer = SigningKey::from_bytes(&x.into()).unwrap();
+        let signature: Signature = signer.sign(b"sample");
+        assert_eq!(
+            signature.to_bytes().as_slice(),
+            &hex!(
+                "00C328FAFCBD79DD77850370C46325D987CB525569FB63C5D3BC53950E6D4C5F174E25A1EE9017B5D450606ADD152B534931D7D4E8455CC91F9B15BF05EC36E377FA"
+                "00617CCE7CF5064806C467F678D3B4080D6F1CC50AF26CA209417308281B68AF282623EAA63E5B5C0723D8B8C37FF0777B1A20F8CCB1DCCC43997F1EE0E44DA4A67A"
+            )
+        );
+    }
 
     mod sign {
         use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP521};
@@ -242,88 +104,7 @@ mod tests {
     }
 
     mod wycheproof {
-        use crate::{
-            ecdsa::{Signature, Verifier, VerifyingKey},
-            EncodedPoint, NistP521,
-        };
-
-        // TODO: use ecdsa_core::new_wycheproof_test!(wycheproof, "wycheproof", NistP521);
-        #[test]
-        fn wycheproof() {
-            use blobby::Blob5Iterator;
-            use elliptic_curve::array::typenum::Unsigned;
-
-            // Build a field element but allow for too-short input (left pad with zeros)
-            // or too-long input (check excess leftmost bytes are zeros).
-            fn element_from_padded_slice<C: elliptic_curve::Curve>(
-                data: &[u8],
-            ) -> elliptic_curve::FieldBytes<C> {
-                let point_len = C::FieldBytesSize::USIZE;
-                if data.len() >= point_len {
-                    let offset = data.len() - point_len;
-                    for v in data.iter().take(offset) {
-                        assert_eq!(*v, 0, "EcdsaVerifier: point too large");
-                    }
-                    elliptic_curve::FieldBytes::<C>::clone_from_slice(&data[offset..])
-                } else {
-                    // Provided slice is too short and needs to be padded with zeros
-                    // on the left.  Build a combined exact iterator to do this.
-                    let iter = core::iter::repeat(0)
-                        .take(point_len - data.len())
-                        .chain(data.iter().cloned());
-                    elliptic_curve::FieldBytes::<C>::from_iter(iter)
-                }
-            }
-
-            fn run_test(
-                wx: &[u8],
-                wy: &[u8],
-                msg: &[u8],
-                sig: &[u8],
-                pass: bool,
-            ) -> Option<&'static str> {
-                let x = element_from_padded_slice::<NistP521>(wx);
-                let y = element_from_padded_slice::<NistP521>(wy);
-                let q_encoded =
-                    EncodedPoint::from_affine_coordinates(&x, &y, /* compress= */ false);
-                let verifying_key = VerifyingKey::from_encoded_point(&q_encoded).unwrap();
-
-                let sig = match Signature::from_der(sig) {
-                    Ok(s) => s,
-                    Err(_) if !pass => return None,
-                    Err(_) => return Some("failed to parse signature ASN.1"),
-                };
-
-                match verifying_key.verify(msg, &sig) {
-                    Ok(_) if pass => None,
-                    Ok(_) => Some("signature verify unexpectedly succeeded"),
-                    Err(_) if !pass => None,
-                    Err(_) => Some("signature verify failed"),
-                }
-            }
-
-            let data = include_bytes!(concat!("test_vectors/data/wycheproof.blb"));
-
-            for (i, row) in Blob5Iterator::new(data).unwrap().enumerate() {
-                let [wx, wy, msg, sig, status] = row.unwrap();
-                let pass = match status[0] {
-                    0 => false,
-                    1 => true,
-                    _ => panic!("invalid value for pass flag"),
-                };
-                if let Some(desc) = run_test(wx, wy, msg, sig, pass) {
-                    panic!(
-                        "\n\
-                                 Failed test №{}: {}\n\
-                                 wx:\t{:?}\n\
-                                 wy:\t{:?}\n\
-                                 msg:\t{:?}\n\
-                                 sig:\t{:?}\n\
-                                 pass:\t{}\n",
-                        i, desc, wx, wy, msg, sig, pass,
-                    );
-                }
-            }
-        }
+        use crate::NistP521;
+        ecdsa_core::new_wycheproof_test!(wycheproof, "wycheproof", NistP521);
     }
 }
