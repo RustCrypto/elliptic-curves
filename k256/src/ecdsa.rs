@@ -191,9 +191,8 @@ impl SignPrimitive<Secp256k1> for Scalar {
     {
         let (sig, recid) = hazmat::sign_prehashed::<Secp256k1, K>(self, k, z)?;
         let is_y_odd = recid.is_y_odd() ^ bool::from(sig.s().is_high());
-        let sig_low = sig.normalize_s().unwrap_or(sig);
         let recid = RecoveryId::new(is_y_odd, recid.is_x_reduced());
-        Ok((sig_low, Some(recid)))
+        Ok((sig.normalize_s(), Some(recid)))
     }
 }
 
@@ -239,7 +238,7 @@ mod tests {
                 0xfb, 0x42, 0xef, 0x20, 0xe3, 0xc6, 0xad, 0xb2,
             ].as_slice()).unwrap();
 
-            let sig_normalized = sig_hi.normalize_s().unwrap();
+            let sig_normalized = sig_hi.normalize_s();
             assert_eq!(sig_lo, sig_normalized);
         }
 
@@ -253,7 +252,7 @@ mod tests {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             ].as_slice()).unwrap();
 
-            assert_eq!(sig.normalize_s(), None);
+            assert_eq!(sig.normalize_s(), sig);
         }
     }
 
@@ -386,7 +385,7 @@ mod tests {
                     ecdsa_core::VerifyingKey::from_encoded_point(&q_encoded).unwrap();
 
                 let sig = match Signature::<Secp256k1>::from_der(sig) {
-                    Ok(s) => s.normalize_s().unwrap_or(s),
+                    Ok(s) => s.normalize_s(),
                     Err(_) if !pass => return None,
                     Err(_) => return Some("failed to parse signature ASN.1"),
                 };
