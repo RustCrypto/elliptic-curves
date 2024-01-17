@@ -42,6 +42,7 @@
 pub use ecdsa_core::signature::{self, Error};
 
 use super::NistP256;
+use ecdsa_core::EcdsaCurve;
 
 #[cfg(feature = "ecdsa")]
 use {
@@ -54,6 +55,10 @@ pub type Signature = ecdsa_core::Signature<NistP256>;
 
 /// ECDSA/P-256 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa_core::der::Signature<NistP256>;
+
+impl EcdsaCurve for NistP256 {
+    const NORMALIZE_S: bool = false;
+}
 
 /// ECDSA/P-256 signing key
 #[cfg(feature = "ecdsa")]

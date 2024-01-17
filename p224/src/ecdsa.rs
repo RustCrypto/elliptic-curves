@@ -38,19 +38,25 @@
 //! ```
 
 pub use ecdsa_core::signature::{self, Error};
+
+use super::NistP224;
+use ecdsa_core::EcdsaCurve;
+
 #[cfg(feature = "ecdsa")]
 use {
     crate::{AffinePoint, Scalar},
     ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
 };
 
-use super::NistP224;
-
 /// ECDSA/P-224 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP224>;
 
 /// ECDSA/P-224 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa_core::der::Signature<NistP224>;
+
+impl EcdsaCurve for NistP224 {
+    const NORMALIZE_S: bool = false;
+}
 
 /// ECDSA/P-224 signing key
 #[cfg(feature = "ecdsa")]

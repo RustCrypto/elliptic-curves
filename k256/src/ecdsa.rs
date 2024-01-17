@@ -144,7 +144,7 @@
 
 pub use ecdsa_core::{
     signature::{self, Error},
-    RecoveryId,
+    EcdsaCurve, RecoveryId,
 };
 
 #[cfg(any(feature = "ecdsa", feature = "sha256"))]
@@ -164,6 +164,10 @@ pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
 /// ECDSA/secp256k1 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa_core::der::Signature<Secp256k1>;
+
+impl EcdsaCurve for Secp256k1 {
+    const NORMALIZE_S: bool = true;
+}
 
 /// ECDSA/secp256k1 signing key
 #[cfg(feature = "ecdsa")]
