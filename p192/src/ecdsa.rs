@@ -32,16 +32,22 @@
 //! [NIST Special Publication 800-131A Revision 2]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf
 
 pub use ecdsa_core::signature::{self, Error};
-#[cfg(feature = "ecdsa")]
-use {crate::AffinePoint, ecdsa_core::hazmat::VerifyPrimitive};
 
 use super::NistP192;
+use ecdsa_core::EcdsaCurve;
+
+#[cfg(feature = "ecdsa")]
+use {crate::AffinePoint, ecdsa_core::hazmat::VerifyPrimitive};
 
 /// ECDSA/P-192 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP192>;
 
 /// ECDSA/P-192 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa_core::der::Signature<NistP192>;
+
+impl EcdsaCurve for NistP192 {
+    const NORMALIZE_S: bool = false;
+}
 
 /// ECDSA/P-192 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
