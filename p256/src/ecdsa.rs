@@ -44,12 +44,6 @@ pub use ecdsa_core::signature::{self, Error};
 use super::NistP256;
 use ecdsa_core::EcdsaCurve;
 
-#[cfg(feature = "ecdsa")]
-use {
-    crate::{AffinePoint, Scalar},
-    ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-};
-
 /// ECDSA/P-256 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP256>;
 
@@ -72,13 +66,6 @@ pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
 impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
     type Digest = sha2::Sha256;
 }
-
-#[cfg(feature = "ecdsa")]
-impl SignPrimitive<NistP256> for Scalar {}
-
-#[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<NistP256> for AffinePoint {}
-
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
@@ -87,13 +74,9 @@ mod tests {
             signature::Signer,
             Signature, SigningKey, VerifyingKey,
         },
-        test_vectors::ecdsa::ECDSA_TEST_VECTORS,
-        AffinePoint, BlindedScalar, EncodedPoint, Scalar,
+        AffinePoint, EncodedPoint,
     };
-    use ecdsa_core::hazmat::SignPrimitive;
-    use elliptic_curve::{
-        array::Array, group::ff::PrimeField, rand_core::OsRng, sec1::FromEncodedPoint,
-    };
+    use elliptic_curve::{array::Array, sec1::FromEncodedPoint};
     use hex_literal::hex;
     use sha2::Digest;
 
@@ -170,19 +153,6 @@ mod tests {
             &signature,
         );
         assert!(result.is_ok());
-    }
-
-    #[test]
-    fn scalar_blinding() {
-        let vector = &ECDSA_TEST_VECTORS[0];
-        let d = Scalar::from_repr(Array::clone_from_slice(vector.d)).unwrap();
-        let k = Scalar::from_repr(Array::clone_from_slice(vector.k)).unwrap();
-        let k_blinded = BlindedScalar::new(k, &mut OsRng);
-        let z = Array::clone_from_slice(vector.m);
-        let sig = d.try_sign_prehashed(k_blinded, &z).unwrap().0;
-
-        assert_eq!(vector.r, sig.r().to_bytes().as_slice());
-        assert_eq!(vector.s, sig.s().to_bytes().as_slice());
     }
 
     mod sign {

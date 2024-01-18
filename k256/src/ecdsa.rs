@@ -58,56 +58,6 @@
 //!
 //! One common application of signature recovery with secp256k1 is Ethereum.
 //!
-//! ### Upgrading recoverable signature code from earlier versions of `k256`
-//!
-//! The v0.12 release of `k256` contains a brand new recoverable signature API
-//! from previous releases. Functionality has been upstreamed from `k256` to a
-//! generic implementation in the [`ecdsa`](`ecdsa_core`) crate.
-//!
-//! If you previously used `k256::ecdsa::recoverable::Signature`, the old
-//! functionality now uses a "detached" [`Signature`] and [`RecoveryId`].
-//! Here is where the various functionality went:
-//!
-//! - Signing now requires the use of the [`hazmat::SignPrimitive`] trait
-//!   (see examples immediately below).
-//! - Signature recovery is now implemented as methods of the [`VerifyingKey`]
-//!   type (i.e. `::recover_from_*`).
-//! - Trial recovery is now defined on the [`RecoveryId`] type
-//!   (i.e. `::trial_recovery_from_*`).
-//!
-//! ### Computing a signature with a [`RecoveryId`].
-//!
-//! This example shows how to compute a signature and its associated
-//! [`RecoveryId`] in a manner which is byte-for-byte compatible with
-//! Ethereum libraries, leveraging the [`SigningKey::sign_digest_recoverable`]
-//! API:
-//!
-#![cfg_attr(feature = "std", doc = "```")]
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! use hex_literal::hex;
-//! use k256::ecdsa::{hazmat::SignPrimitive, RecoveryId, Signature, SigningKey};
-//! use sha2::Sha256;
-//! use sha3::{Keccak256, Digest};
-//!
-//! let signing_key = SigningKey::from_bytes(&hex!(
-//!     "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318"
-//! ).into())?;
-//!
-//! let msg = hex!("e9808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca0080018080");
-//! let digest = Keccak256::new_with_prefix(msg);
-//! let (signature, recid) = signing_key.sign_digest_recoverable(digest)?;
-//!
-//! assert_eq!(
-//!     signature.to_bytes().as_slice(),
-//!     &hex!("c9cf86333bcb065d140032ecaab5d9281bde80f21b9687b3e94161de42d51895727a108a0b8d101465414033c3f705a9c7b826e596766046ee1183dbc8aeaa68")
-//! );
-//!
-//! assert_eq!(recid, RecoveryId::try_from(0u8).unwrap());
-//! # Ok(())
-//! # }
-//! ```
-//!
 //! ### Recovering a [`VerifyingKey`] from a signature
 //!
 #![cfg_attr(feature = "std", doc = "```")]
@@ -152,13 +102,6 @@ pub use ecdsa_core::hazmat;
 
 use crate::Secp256k1;
 
-#[cfg(feature = "ecdsa")]
-use {
-    crate::{AffinePoint, FieldBytes, Scalar},
-    ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-    elliptic_curve::{ops::Invert, scalar::IsHigh, subtle::CtOption},
-};
-
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
 
@@ -180,35 +123,6 @@ pub type VerifyingKey = ecdsa_core::VerifyingKey<Secp256k1>;
 #[cfg(feature = "sha256")]
 impl hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
-}
-
-#[cfg(feature = "ecdsa")]
-impl SignPrimitive<Secp256k1> for Scalar {
-    #[allow(non_snake_case, clippy::many_single_char_names)]
-    fn try_sign_prehashed<K>(
-        &self,
-        k: K,
-        z: &FieldBytes,
-    ) -> Result<(Signature, Option<RecoveryId>), Error>
-    where
-        K: AsRef<Self> + Invert<Output = CtOption<Self>>,
-    {
-        let (sig, recid) = hazmat::sign_prehashed::<Secp256k1, K>(self, k, z)?;
-        let is_y_odd = recid.is_y_odd() ^ bool::from(sig.s().is_high());
-        let recid = RecoveryId::new(is_y_odd, recid.is_x_reduced());
-        Ok((sig.normalize_s(), Some(recid)))
-    }
-}
-
-#[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<Secp256k1> for AffinePoint {
-    fn verify_prehashed(&self, z: &FieldBytes, sig: &Signature) -> Result<(), Error> {
-        if sig.s().is_high().into() {
-            return Err(Error::new());
-        }
-
-        hazmat::verify_prehashed(&self.into(), z, sig)
-    }
 }
 
 #[cfg(all(test, feature = "ecdsa", feature = "arithmetic"))]

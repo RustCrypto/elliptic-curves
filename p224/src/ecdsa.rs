@@ -42,12 +42,6 @@ pub use ecdsa_core::signature::{self, Error};
 use super::NistP224;
 use ecdsa_core::EcdsaCurve;
 
-#[cfg(feature = "ecdsa")]
-use {
-    crate::{AffinePoint, Scalar},
-    ecdsa_core::hazmat::{SignPrimitive, VerifyPrimitive},
-};
-
 /// ECDSA/P-224 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP224>;
 
@@ -70,12 +64,6 @@ pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP224>;
 impl ecdsa_core::hazmat::DigestPrimitive for NistP224 {
     type Digest = sha2::Sha224;
 }
-
-#[cfg(feature = "ecdsa")]
-impl SignPrimitive<NistP224> for Scalar {}
-
-#[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<NistP224> for AffinePoint {}
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
