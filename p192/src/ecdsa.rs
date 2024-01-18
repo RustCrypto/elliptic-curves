@@ -36,9 +36,6 @@ pub use ecdsa_core::signature::{self, Error};
 use super::NistP192;
 use ecdsa_core::EcdsaCurve;
 
-#[cfg(feature = "ecdsa")]
-use {crate::AffinePoint, ecdsa_core::hazmat::VerifyPrimitive};
-
 /// ECDSA/P-192 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<NistP192>;
 
@@ -52,9 +49,6 @@ impl EcdsaCurve for NistP192 {
 /// ECDSA/P-192 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP192>;
-
-#[cfg(feature = "ecdsa")]
-impl VerifyPrimitive<NistP192> for AffinePoint {}
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
