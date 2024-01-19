@@ -415,7 +415,15 @@ mod tests {
             Scalar(reduced_scalar)
         };
 
-        proptest!(ProptestConfig::with_cases(1000), |(b0 in ANY, b1 in ANY, b2 in ANY, b3 in ANY, b4 in ANY, b5 in ANY)| {
+        fn config() -> ProptestConfig {
+            if cfg!(all(target_os = "zkvm", target_arch = "riscv32")) {
+                ProptestConfig::with_cases(1)
+            } else {
+                ProptestConfig::with_cases(1000)
+            }
+        }
+
+        proptest!(config(), |(b0 in ANY, b1 in ANY, b2 in ANY, b3 in ANY, b4 in ANY, b5 in ANY)| {
             let mut data = GenericArray::default();
             data[..8].copy_from_slice(&b0.to_be_bytes());
             data[8..16].copy_from_slice(&b1.to_be_bytes());

@@ -84,6 +84,14 @@ impl FieldElement5x52 {
         Self([w0, w1, 0, 0, 0])
     }
 
+    pub const fn from_i64(val: i64) -> Self {
+        // Compute val_abs = |val|
+        let val_mask = val >> 63;
+        let val_abs = ((val + val_mask) ^ val_mask) as u64;
+
+        Self::from_u64(val_abs).negate(1).normalize_weak()
+    }
+
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
         let mut ret = FieldBytes::default();
@@ -123,7 +131,7 @@ impl FieldElement5x52 {
     }
 
     /// Adds `x * (2^256 - modulus)`.
-    fn add_modulus_correction(&self, x: u64) -> Self {
+    const fn add_modulus_correction(&self, x: u64) -> Self {
         // add (2^256 - modulus) * x to the first limb
         let t0 = self.0[0] + x * 0x1000003D1u64;
 
@@ -145,7 +153,7 @@ impl FieldElement5x52 {
 
     /// Subtracts the overflow in the last limb and return it with the new field element.
     /// Equivalent to subtracting a multiple of 2^256.
-    fn subtract_modulus_approximation(&self) -> (Self, u64) {
+    const fn subtract_modulus_approximation(&self) -> (Self, u64) {
         let x = self.0[4] >> 48;
         let t4 = self.0[4] & 0x0FFFFFFFFFFFFu64; // equivalent to self -= 2^256 * x
         (Self([self.0[0], self.0[1], self.0[2], self.0[3], t4]), x)
@@ -162,7 +170,7 @@ impl FieldElement5x52 {
     }
 
     /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
-    pub fn normalize_weak(&self) -> Self {
+    pub const fn normalize_weak(&self) -> Self {
         // Reduce t4 at the start so there will be at most a single carry from the first pass
         let (t, x) = self.subtract_modulus_approximation();
 

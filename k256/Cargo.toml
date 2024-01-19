@@ -31,14 +31,20 @@ signature = { version = "2", optional = true }
 
 [dev-dependencies]
 blobby = "0.3"
-criterion = "0.5"
 ecdsa-core = { version = "0.16", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "0.4"
 num-bigint = "0.4"
 num-traits = "0.2"
-proptest = "1.4"
 rand_core = { version = "0.6", features = ["getrandom"] }
 sha3 = { version = "0.10", default-features = false }
+
+[target.'cfg(not(all(target_os = "zkvm", target_arch = "riscv32")))'.dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+
+[target.'cfg(all(target_os = "zkvm", target_arch = "riscv32"))'.dev-dependencies]
+proptest = { version = "1.4", default-features = false, features = ["alloc"] }
+hex = "0.4"
 
 [features]
 default = ["arithmetic", "ecdsa", "pkcs8", "precomputed-tables", "schnorr", "std"]
