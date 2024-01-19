@@ -60,7 +60,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "rfc6979 0.5.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rfc6979",
  "signature",
 ]
 
@@ -362,13 +362,14 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-pre.3"
-source = "git+https://github.com/rustcrypto/signatures.git#3ed9867409ddb392ddc6787168ca32150a897161"
+version = "0.17.0-pre.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12cc615703dcff86386153ad5dabbf2544f2ed8fbacb881e1ea440410220660f"
 dependencies = [
  "der",
  "digest",
  "elliptic-curve",
- "rfc6979 0.5.0-pre.2 (git+https://github.com/rustcrypto/signatures.git)",
+ "rfc6979",
  "serdect 0.2.0",
  "signature",
  "spki",
@@ -873,7 +874,7 @@ version = "0.14.0-pre"
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-pre"
+version = "0.14.0-pre.0"
 dependencies = [
  "elliptic-curve",
  "serdect 0.2.0",
@@ -1025,15 +1026,6 @@ name = "rfc6979"
 version = "0.5.0-pre.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ca433f6da88ec508578cac524a1602a437964cf049ffb39f1509e8696d43e79"
-dependencies = [
- "hmac",
- "subtle",
-]
-
-[[package]]
-name = "rfc6979"
-version = "0.5.0-pre.2"
-source = "git+https://github.com/rustcrypto/signatures.git#3ed9867409ddb392ddc6787168ca32150a897161"
 dependencies = [
  "hmac",
  "subtle",
@@ -1206,7 +1198,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "rfc6979 0.5.0-pre.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rfc6979",
  "serdect 0.2.0",
  "signature",
  "sm3",
