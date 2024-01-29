@@ -535,9 +535,9 @@ dependencies = [
 
 [[package]]
 name = "hybrid-array"
-version = "0.2.0-rc.2"
+version = "0.2.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "662b1e7b4a15dc889bf687cdd5dc4291b278ad0cf546424a87721dcb54ff1d82"
+checksum = "d8856b3db5eb76328f03589feb25c7a3166bfa0ae3b38b1408d546b097fa7947"
 dependencies = [
  "typenum",
  "zeroize",
@@ -1161,8 +1161,7 @@ dependencies = [
 [[package]]
 name = "sha2"
 version = "0.11.0-pre.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e18b939d4051b69874cbdb8f55de6a14ae44b357ccb94bdbd0a2122f8f875a46"
+source = "git+https://github.com/RustCrypto/hashes.git#9130e96e88908905e2c1b6afbbd34c27f85adac6"
 dependencies = [
  "cfg-if",
  "cpufeatures",
