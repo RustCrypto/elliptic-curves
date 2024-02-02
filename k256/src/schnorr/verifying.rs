@@ -75,12 +75,10 @@ impl PrehashVerifier<Signature> for VerifyingKey {
                 .finalize(),
         );
 
-        let R = ProjectivePoint::lincomb(
-            &ProjectivePoint::GENERATOR,
-            s,
-            &self.inner.to_projective(),
-            &-e,
-        )
+        let R = ProjectivePoint::lincomb(&[
+            (ProjectivePoint::GENERATOR, **s),
+            (self.inner.to_projective(), -e),
+        ])
         .to_affine();
 
         if R.is_identity().into() || R.y.normalize().is_odd().into() || R.x.normalize() != *r {

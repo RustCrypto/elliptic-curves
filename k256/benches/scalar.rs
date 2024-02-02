@@ -51,7 +51,7 @@ fn bench_point_lincomb<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     });
     group.bench_function("lincomb()", |b| {
         b.iter(|| {
-            ProjectivePoint::lincomb(&black_box(p), &black_box(s), &black_box(p), &black_box(s))
+            ProjectivePoint::lincomb(&[(black_box(p), black_box(s)), (black_box(p), black_box(s))])
         })
     });
 }

@@ -410,11 +410,20 @@ where
     }
 }
 
-impl<C> LinearCombination for ProjectivePoint<C>
+impl<C> LinearCombination<[(Self, Scalar<C>)]> for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
 {
+    // TODO(tarcieri): optimized implementation
+}
+
+impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+{
+    // TODO(tarcieri): optimized implementation
 }
 
 impl<C> MulByGenerator for ProjectivePoint<C>
