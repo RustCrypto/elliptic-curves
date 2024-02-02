@@ -149,12 +149,10 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         }
 
         // B6: calculate the point (x1', y1')=[s']G + [t]PA
-        let x = ProjectivePoint::lincomb(
-            &ProjectivePoint::generator(),
-            &s,
-            &ProjectivePoint::from(&self.public_key),
-            &t,
-        )
+        let x = ProjectivePoint::lincomb(&[
+            (ProjectivePoint::generator(), *s),
+            (ProjectivePoint::from(&self.public_key), t),
+        ])
         .to_affine()
         .x();
 

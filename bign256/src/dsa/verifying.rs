@@ -130,12 +130,10 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         let right = s0.add(&Scalar::from_u64(2).pow([128, 0, 0, 0]));
 
         // 5. Set 𝑅 ← (︀(𝑆1 + 𝐻) mod 𝑞)︀𝐺 + (𝑆0 + 2𝑙)𝑄.
-        let r = ProjectivePoint::lincomb(
-            &ProjectivePoint::generator(),
-            &left,
-            &self.public_key.to_projective(),
-            &right,
-        );
+        let r = ProjectivePoint::lincomb(&[
+            (ProjectivePoint::generator(), left),
+            (self.public_key.to_projective(), right),
+        ]);
 
         // 6. If 𝑅 = 𝑂, return NO.
         if r.is_identity().into() {

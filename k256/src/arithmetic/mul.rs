@@ -46,9 +46,8 @@ use crate::arithmetic::{
 };
 
 use core::ops::{Mul, MulAssign};
-use elliptic_curve::ops::LinearCombinationExt as LinearCombination;
 use elliptic_curve::{
-    ops::MulByGenerator,
+    ops::{LinearCombination, MulByGenerator},
     scalar::IsHigh,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
@@ -281,7 +280,7 @@ impl<const D: usize> Default for Radix16Decomposition<D> {
 }
 
 impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for ProjectivePoint {
-    fn lincomb_ext(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
+    fn lincomb(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
         let mut tables = [(LookupTable::default(), LookupTable::default()); N];
         let mut digits = [(
             Radix16Decomposition::<33>::default(),
@@ -292,9 +291,9 @@ impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for Proje
     }
 }
 
-#[cfg(feature = "alloc")]
 impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
-    fn lincomb_ext(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
+    #[cfg(feature = "alloc")]
+    fn lincomb(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
         let mut tables =
             vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
         let mut digits = vec![
@@ -411,7 +410,7 @@ impl MulByGenerator for ProjectivePoint {
 
 #[inline(always)]
 fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    ProjectivePoint::lincomb_ext(&[(*x, *k)])
+    ProjectivePoint::lincomb(&[(*x, *k)])
 }
 
 impl Mul<Scalar> for ProjectivePoint {
@@ -454,11 +453,7 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::{
-        ops::{LinearCombination as _, MulByGenerator},
-        rand_core::OsRng,
-        Field, Group,
-    };
+    use elliptic_curve::{ops::MulByGenerator, rand_core::OsRng, Field, Group};
 
     #[test]
     fn test_lincomb() {
@@ -468,7 +463,7 @@ mod tests {
         let l = Scalar::random(&mut OsRng);
 
         let reference = &x * &k + &y * &l;
-        let test = ProjectivePoint::lincomb(&x, &k, &y, &l);
+        let test = ProjectivePoint::lincomb(&[(x, k), (y, l)]);
         assert_eq!(reference, test);
     }
 
@@ -491,7 +486,7 @@ mod tests {
         let reference = &x * &k + &y * &l;
         let points_and_scalars = vec![(x, k), (y, l)];
 
-        let test = ProjectivePoint::lincomb_ext(points_and_scalars.as_slice());
+        let test = ProjectivePoint::lincomb(points_and_scalars.as_slice());
         assert_eq!(reference, test);
     }
 }
