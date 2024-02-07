@@ -295,7 +295,7 @@ where
         // Even a single zero value will fail inversion for the entire batch.
         // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
         // and treat that case specially later-on.
-        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.ct_eq(&FieldElement::ZERO));
+        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.normalizes_to_zero());
     }
 
     // This is safe to unwrap since we assured that all elements are non-zero
@@ -307,7 +307,7 @@ where
         out[i] = AffinePoint::conditional_select(
             &points[i].to_affine_internal(zs_inverses.as_ref()[i]),
             &AffinePoint::IDENTITY,
-            points[i].z.ct_eq(&FieldElement::ZERO),
+            points[i].z.normalizes_to_zero(),
         );
     }
 }
@@ -721,17 +721,20 @@ mod tests {
         <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], &mut res);
         assert_eq!(res, expected);
 
-        let expected = [g.to_affine(), AffinePoint::IDENTITY];
+        let mut res = [AffinePoint::IDENTITY; 3];
+        let non_normalized_identity = ProjectivePoint::IDENTITY * Scalar::random(&mut OsRng);
+        let expected = [g.to_affine(), AffinePoint::IDENTITY, AffinePoint::IDENTITY];
         assert_eq!(
             <ProjectivePoint as BatchNormalize<_>>::batch_normalize(&[
                 g,
-                ProjectivePoint::IDENTITY
+                ProjectivePoint::IDENTITY,
+                non_normalized_identity,
             ]),
             expected
         );
 
         <ProjectivePoint as group::Curve>::batch_normalize(
-            &[g, ProjectivePoint::IDENTITY],
+            &[g, ProjectivePoint::IDENTITY, non_normalized_identity],
             &mut res,
         );
         assert_eq!(res, expected);
