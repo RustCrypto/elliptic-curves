@@ -295,7 +295,7 @@ where
         // Even a single zero value will fail inversion for the entire batch.
         // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
         // and treat that case specially later-on.
-        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.ct_eq(&FieldElement::ZERO));
+        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.normalizes_to_zero());
     }
 
     // This is safe to unwrap since we assured that all elements are non-zero
@@ -307,7 +307,7 @@ where
         out[i] = AffinePoint::conditional_select(
             &points[i].to_affine_internal(zs_inverses.as_ref()[i]),
             &AffinePoint::IDENTITY,
-            points[i].z.ct_eq(&FieldElement::ZERO),
+            points[i].z.normalizes_to_zero(),
         );
     }
 }
