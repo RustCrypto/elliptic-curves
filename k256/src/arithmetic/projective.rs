@@ -721,17 +721,20 @@ mod tests {
         <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], &mut res);
         assert_eq!(res, expected);
 
-        let expected = [g.to_affine(), AffinePoint::IDENTITY];
+        let mut res = [AffinePoint::IDENTITY; 3];
+        let non_normalized_identity = ProjectivePoint::IDENTITY * Scalar::random(&mut OsRng);
+        let expected = [g.to_affine(), AffinePoint::IDENTITY, AffinePoint::IDENTITY];
         assert_eq!(
             <ProjectivePoint as BatchNormalize<_>>::batch_normalize(&[
                 g,
-                ProjectivePoint::IDENTITY
+                ProjectivePoint::IDENTITY,
+                non_normalized_identity,
             ]),
             expected
         );
 
         <ProjectivePoint as group::Curve>::batch_normalize(
-            &[g, ProjectivePoint::IDENTITY],
+            &[g, ProjectivePoint::IDENTITY, non_normalized_identity],
             &mut res,
         );
         assert_eq!(res, expected);
