@@ -38,17 +38,6 @@ pub(crate) const MODULUS: U256 = NistP256::ORDER;
 /// `MODULUS / 2`
 const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.shr_vartime(1));
 
-/// MU = floor(2^512 / n)
-///    = 115792089264276142090721624801893421302707618245269942344307673200490803338238
-///    = 0x100000000fffffffffffffffeffffffff43190552df1a6c21012ffd85eedf9bfe
-pub const MU: [u64; 5] = [
-    0x012f_fd85_eedf_9bfe,
-    0x4319_0552_df1a_6c21,
-    0xffff_fffe_ffff_ffff,
-    0x0000_0000_ffff_ffff,
-    0x0000_0000_0000_0001,
-];
-
 /// Scalars are elements in the finite field modulo n.
 ///
 /// # Trait impls

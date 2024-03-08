@@ -1,10 +1,21 @@
 //! 64-bit secp256r1 scalar field algorithms.
 
-use super::{MODULUS, MU};
+use super::MODULUS;
 use crate::{
     arithmetic::util::{adc, mac, sbb},
     U256,
 };
+
+/// MU = floor(2^512 / n)
+///    = 115792089264276142090721624801893421302707618245269942344307673200490803338238
+///    = 0x100000000fffffffffffffffeffffffff43190552df1a6c21012ffd85eedf9bfe
+const MU: [u64; 5] = [
+    0x012f_fd85_eedf_9bfe,
+    0x4319_0552_df1a_6c21,
+    0xffff_fffe_ffff_ffff,
+    0x0000_0000_ffff_ffff,
+    0x0000_0000_0000_0001,
+];
 
 /// Barrett Reduction
 ///
@@ -68,31 +79,37 @@ const fn q1_times_mu_shift_five(q1: &[u64; 5]) -> [u64; 5] {
     let (w1, carry) = mac(0, q1[0], MU[1], carry);
     let (w2, carry) = mac(0, q1[0], MU[2], carry);
     let (w3, carry) = mac(0, q1[0], MU[3], carry);
-    let (w4, w5) = mac(0, q1[0], MU[4], carry);
+    // NOTE MU[4] == 1
+    // let (w4, w5) = mac(0, q1[0], MU[4], carry);
+    let (w4, w5) = adc(0, q1[0], carry);
 
     let (_w1, carry) = mac(w1, q1[1], MU[0], 0);
     let (w2, carry) = mac(w2, q1[1], MU[1], carry);
     let (w3, carry) = mac(w3, q1[1], MU[2], carry);
     let (w4, carry) = mac(w4, q1[1], MU[3], carry);
-    let (w5, w6) = mac(w5, q1[1], MU[4], carry);
+    // let (w5, w6) = mac(w5, q1[1], MU[4], carry);
+    let (w5, w6) = adc(w5, q1[1], carry);
 
     let (_w2, carry) = mac(w2, q1[2], MU[0], 0);
     let (w3, carry) = mac(w3, q1[2], MU[1], carry);
     let (w4, carry) = mac(w4, q1[2], MU[2], carry);
     let (w5, carry) = mac(w5, q1[2], MU[3], carry);
-    let (w6, w7) = mac(w6, q1[2], MU[4], carry);
+    // let (w6, w7) = mac(w6, q1[2], MU[4], carry);
+    let (w6, w7) = adc(w6, q1[2], carry);
 
     let (_w3, carry) = mac(w3, q1[3], MU[0], 0);
     let (w4, carry) = mac(w4, q1[3], MU[1], carry);
     let (w5, carry) = mac(w5, q1[3], MU[2], carry);
     let (w6, carry) = mac(w6, q1[3], MU[3], carry);
-    let (w7, w8) = mac(w7, q1[3], MU[4], carry);
+    // let (w7, w8) = mac(w7, q1[3], MU[4], carry);
+    let (w7, w8) = adc(w7, q1[3], carry);
 
     let (_w4, carry) = mac(w4, q1[4], MU[0], 0);
     let (w5, carry) = mac(w5, q1[4], MU[1], carry);
     let (w6, carry) = mac(w6, q1[4], MU[2], carry);
     let (w7, carry) = mac(w7, q1[4], MU[3], carry);
-    let (w8, w9) = mac(w8, q1[4], MU[4], carry);
+    // let (w8, w9) = mac(w8, q1[4], MU[4], carry);
+    let (w8, w9) = adc(w8, q1[4], carry);
 
     // let q2 = [_w0, _w1, _w2, _w3, _w4, w5, w6, w7, w8, w9];
     [w5, w6, w7, w8, w9]
@@ -107,7 +124,8 @@ const fn q3_times_n_keep_five(q3: &[u64; 5]) -> [u64; 5] {
     let (w1, carry) = mac(0, q3[0], modulus[1], carry);
     let (w2, carry) = mac(0, q3[0], modulus[2], carry);
     let (w3, carry) = mac(0, q3[0], modulus[3], carry);
-    let (w4, _) = mac(0, q3[0], 0, carry);
+    // let (w4, _) = mac(0, q3[0], 0, carry);
+    let (w4, _) = (carry, 0);
 
     let (w1, carry) = mac(w1, q3[1], modulus[0], 0);
     let (w2, carry) = mac(w2, q3[1], modulus[1], carry);
@@ -161,3 +179,4 @@ const fn subtract_n_if_necessary(r0: u64, r1: u64, r2: u64, r3: u64, r4: u64) ->
 
     [w0, w1, w2, w3, w4]
 }
+
