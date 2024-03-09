@@ -179,4 +179,3 @@ const fn subtract_n_if_necessary(r0: u64, r1: u64, r2: u64, r3: u64, r4: u64) ->
 
     [w0, w1, w2, w3, w4]
 }
-

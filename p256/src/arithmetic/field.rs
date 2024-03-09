@@ -117,7 +117,7 @@ impl FieldElement {
 
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(field_impl::add(self.0, rhs.0)) 
+        Self(field_impl::add(self.0, rhs.0))
     }
 
     /// Returns 2 * self.
@@ -619,6 +619,7 @@ mod tests {
         assert_eq!(four.sqrt().unwrap(), two);
     }
 
+    #[cfg(target_pointer_width = "64")]
     proptest! {
         /// This checks behaviour well within the field ranges, because it doesn't set the
         /// highest limb.

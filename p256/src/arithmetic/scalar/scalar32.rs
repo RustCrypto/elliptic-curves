@@ -96,7 +96,7 @@ const fn q1_times_mu_shift_nine(q1: &[u32; 9]) -> [u32; 9] {
     let (w3, carry) = mac(0, q1[0], MU[3], carry);
     let (w4, carry) = mac(0, q1[0], MU[4], carry);
     let (w5, carry) = mac(0, q1[0], MU[5], carry);
-    let (w6, carry) = mac(0, q1[0], MU[6], carry); 
+    let (w6, carry) = mac(0, q1[0], MU[6], carry);
     // NOTE MU[7] == 0
     // let (w7, carry) = mac(0, q1[0], MU[7], carry);
     let (w7, _carry) = (carry, 0);
@@ -216,7 +216,7 @@ const fn q3_times_n_keep_nine(q3: &[u32; 9]) -> [u32; 9] {
      * modulus[6] = 0
      * modulus[5] = 2^32 - 1
      * modulus[4] = 2^32 - 1
-    */
+     */
 
     let (w0, carry) = mac(0, q3[0], modulus[0], 0);
     let (w1, carry) = mac(0, q3[0], modulus[1], carry);
@@ -293,7 +293,6 @@ const fn sub_inner_nine(l: [u32; 9], r: [u32; 9]) -> [u32; 9] {
     let (w7, borrow) = sbb(l[7], r[7], borrow);
     let (w8, _borrow) = sbb(l[8], r[8], borrow);
 
-
     // If underflow occured in the final limb - don't care (= add b^{k+1}).
     [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 }
@@ -301,17 +300,16 @@ const fn sub_inner_nine(l: [u32; 9], r: [u32; 9]) -> [u32; 9] {
 #[inline]
 #[allow(clippy::too_many_arguments)]
 const fn subtract_n_if_necessary(
-    r0: u32, 
-    r1: u32, 
-    r2: u32, 
-    r3: u32, 
-    r4: u32, 
-    r5: u32, 
+    r0: u32,
+    r1: u32,
+    r2: u32,
+    r3: u32,
+    r4: u32,
+    r5: u32,
     r6: u32,
     r7: u32,
-    r8: u32
+    r8: u32,
 ) -> [u32; 9] {
-
     let modulus = MODULUS.as_words();
 
     let (w0, borrow) = sbb(r0, modulus[0], 0);
@@ -339,4 +337,3 @@ const fn subtract_n_if_necessary(
 
     [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 }
-

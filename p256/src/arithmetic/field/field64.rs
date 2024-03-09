@@ -19,30 +19,17 @@ pub(super) const fn add(a: U256, b: U256) -> U256 {
 
     let (result, _) = sub_inner(
         [w0, w1, w2, w3, w4],
-        [ modulus[0], modulus[1], modulus[2], modulus[3], 0, ],
+        [modulus[0], modulus[1], modulus[2], modulus[3], 0],
     );
-    U256::from_words([
-        result[0],
-        result[1],
-        result[2],
-        result[3]
-    ])
+    U256::from_words([result[0], result[1], result[2], result[3]])
 }
 
 pub(super) const fn sub(a: U256, b: U256) -> U256 {
     let a = a.as_words();
     let b = b.as_words();
 
-    let (result, _) = sub_inner(
-        [ a[0], a[1], a[2], a[3], 0 ],
-        [ b[0], b[1], b[2], b[3], 0 ],
-    );
-    U256::from_words([
-        result[0],
-        result[1],
-        result[2],
-        result[3]
-    ])
+    let (result, _) = sub_inner([a[0], a[1], a[2], a[3], 0], [b[0], b[1], b[2], b[3], 0]);
+    U256::from_words([result[0], result[1], result[2], result[3]])
 }
 
 #[inline]
@@ -53,18 +40,8 @@ pub(super) const fn to_canonical(a: U256) -> U256 {
 pub(super) fn from_bytes_wide(a: U512) -> U256 {
     let words = a.to_words();
     montgomery_reduce(
-        U256::from_words([
-            words[4],
-            words[5],
-            words[6],
-            words[7]
-        ]),
-        U256::from_words([
-            words[0],
-            words[1],
-            words[2],
-            words[3]
-        ])
+        U256::from_words([words[4], words[5], words[6], words[7]]),
+        U256::from_words([words[0], words[1], words[2], words[3]]),
     )
 }
 
@@ -83,7 +60,7 @@ pub(super) fn from_bytes_wide(a: U512) -> U256 {
 /// }
 /// ```
 ///
-/// For secp256r1, with a 64-bit arithmetic, we have the following 
+/// For secp256r1, with a 64-bit arithmetic, we have the following
 /// simplifications:
 ///
 /// - `p'` is 1, so our multiplicand is simply the first limb of the intermediate A.
@@ -124,7 +101,7 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
     let a7 = hi[3];
 
     let modulus = MODULUS.0.as_words();
-    
+
     let (a1, carry) = mac(a1, a0, modulus[1], a0);
     let (a2, carry) = adc(a2, 0, carry);
     let (a3, carry) = mac(a3, a0, modulus[3], carry);
@@ -147,15 +124,10 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
 
     // Result may be within MODULUS of the correct value
     let (result, _) = sub_inner(
-        [ a4, a5, a6, a7, a8 ],
-        [ modulus[0], modulus[1], modulus[2], modulus[3], 0 ],
+        [a4, a5, a6, a7, a8],
+        [modulus[0], modulus[1], modulus[2], modulus[3], 0],
     );
-    U256::from_words([
-        result[0],
-        result[1],
-        result[2],
-        result[3]
-    ])
+    U256::from_words([result[0], result[1], result[2], result[3]])
 }
 
 #[inline]
@@ -180,4 +152,3 @@ const fn sub_inner(l: [u64; 5], r: [u64; 5]) -> ([u64; 4], u64) {
 
     ([w0, w1, w2, w3], borrow)
 }
-
