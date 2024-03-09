@@ -503,8 +503,12 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes, U256};
+    use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
     use core::ops::Mul;
+
+    #[cfg(target_pointer_width = "64")]
+    use crate::U256;
+    #[cfg(target_pointer_width = "64")]
     use proptest::{num::u64::ANY, prelude::*};
 
     #[test]
