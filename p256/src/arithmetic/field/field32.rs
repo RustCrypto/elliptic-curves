@@ -1,46 +1,53 @@
 //! 32-bit secp256r1 field element algorithms.
 
 use super::MODULUS;
-use crate::arithmetic::util::*;
-use elliptic_curve::bigint::{U256, U512};
+use elliptic_curve::bigint::{Limb, U256, U512};
 
 pub(super) const fn add(a: U256, b: U256) -> U256 {
-    let a = a.as_words();
-    let b = b.as_words();
+    let a = a.as_limbs();
+    let b = b.as_limbs();
 
     // Bit 256 of p is set, so addition can result in nine words.
-    let (w0, carry) = adc(a[0], b[0], 0);
-    let (w1, carry) = adc(a[1], b[1], carry);
-    let (w2, carry) = adc(a[2], b[2], carry);
-    let (w3, carry) = adc(a[3], b[3], carry);
-    let (w4, carry) = adc(a[4], b[4], carry);
-    let (w5, carry) = adc(a[5], b[5], carry);
-    let (w6, carry) = adc(a[6], b[6], carry);
-    let (w7, w8) = adc(a[7], b[7], carry);
+    // let (w0, carry) = adc(a[0], b[0], 0);
+    let (w0, carry) = a[0].adc(b[0], Limb::ZERO);
+    let (w1, carry) = a[1].adc(b[1], carry);
+    let (w2, carry) = a[2].adc(b[2], carry);
+    let (w3, carry) = a[3].adc(b[3], carry);
+    let (w4, carry) = a[4].adc(b[4], carry);
+    let (w5, carry) = a[5].adc(b[5], carry);
+    let (w6, carry) = a[6].adc(b[6], carry);
+    let (w7, w8) = a[7].adc(b[7], carry);
     // Attempt to subtract the modulus, to ensure the result is in the field.
-    let modulus = MODULUS.0.as_words();
+    let modulus = MODULUS.0.as_limbs();
 
     let (result, _) = sub_inner(
         [w0, w1, w2, w3, w4, w5, w6, w7, w8],
         [
-            modulus[0], modulus[1], modulus[2], modulus[3], modulus[4], modulus[5], modulus[6],
-            modulus[7], 0,
+            modulus[0],
+            modulus[1],
+            modulus[2],
+            modulus[3],
+            modulus[4],
+            modulus[5],
+            modulus[6],
+            modulus[7],
+            Limb::ZERO,
         ],
     );
-    U256::from_words([
+    U256::new([
         result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7],
     ])
 }
 
 pub(super) const fn sub(a: U256, b: U256) -> U256 {
-    let a = a.as_words();
-    let b = b.as_words();
+    let a = a.as_limbs();
+    let b = b.as_limbs();
 
     let (result, _) = sub_inner(
-        [a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], 0],
-        [b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], 0],
+        [a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], Limb::ZERO],
+        [b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7], Limb::ZERO],
     );
-    U256::from_words([
+    U256::new([
         result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7],
     ])
 }
@@ -51,18 +58,17 @@ pub(super) const fn to_canonical(a: U256) -> U256 {
 }
 
 pub(super) fn from_bytes_wide(a: U512) -> U256 {
-    let words = a.to_words();
+    let words = a.to_limbs();
     montgomery_reduce(
-        U256::from_words([
+        U256::new([
             words[8], words[9], words[10], words[11], words[12], words[13], words[14], words[15],
         ]),
-        U256::from_words([
+        U256::new([
             words[0], words[1], words[2], words[3], words[4], words[5], words[6], words[7],
         ]),
     )
 }
 
-// TODO modify docs with 32-bit optimizations
 /// Montgomery Reduction
 ///
 /// The general algorithm is:
@@ -112,8 +118,8 @@ pub(super) fn from_bytes_wide(a: U512) -> U256 {
 #[inline]
 #[allow(clippy::too_many_arguments)]
 pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
-    let lo = lo.as_words();
-    let hi = hi.as_words();
+    let lo = lo.as_limbs();
+    let hi = hi.as_limbs();
 
     let a0 = lo[0];
     let a1 = lo[1];
@@ -132,22 +138,21 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
     let a14 = hi[6];
     let a15 = hi[7];
 
-    let modulus = MODULUS.0.as_words();
+    let modulus = MODULUS.0.as_limbs();
 
     /*
-     * TODO tmp, add explanation in docs
      * let (a0, c) = (0, a0);
      * let (a1, c) = (a1, a0);
      * let (a2, c) = (a2, a0);
      */
-    let (a3, carry) = adc(a3, 0, a0);
-    let (a4, carry) = adc(a4, 0, carry);
-    let (a5, carry) = adc(a5, 0, carry);
-    let (a6, carry) = adc(a6, a0, carry);
+    let (a3, carry) = a3.adc(Limb::ZERO, a0);
+    let (a4, carry) = a4.adc(Limb::ZERO, carry);
+    let (a5, carry) = a5.adc(Limb::ZERO, carry);
+    let (a6, carry) = a6.adc(a0, carry);
     // NOTE `modulus[7]` is 2^32 - 1, this could be optimized to `adc` and `sbb`
     // but multiplication costs 1 clock-cycle on several architectures,
     // thanks to parallelization
-    let (a7, carry) = mac(a7, a0, modulus[7], carry);
+    let (a7, carry) = a7.mac(a0, modulus[7], carry);
     /* optimization with only adc and sbb
      * let (x, _) = sbb(0, a0, 0);
      * let (y, _) = sbb(a0, 0, (a0 != 0) as u32);
@@ -155,98 +160,105 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
      * (a7, carry) = adc(a7, x, carry);
      * (carry, _) = adc(y, 0, carry);
      */
-    let (a8, carry2) = adc(a8, 0, carry);
+    let (a8, carry2) = a8.adc(Limb::ZERO, carry);
 
-    let (a4, carry) = adc(a4, 0, a1);
-    let (a5, carry) = adc(a5, 0, carry);
-    let (a6, carry) = adc(a6, 0, carry);
-    let (a7, carry) = adc(a7, a1, carry);
-    let (a8, carry) = mac(a8, a1, modulus[7], carry);
-    let (a9, carry2) = adc(a9, carry2, carry);
+    let (a4, carry) = a4.adc(Limb::ZERO, a1);
+    let (a5, carry) = a5.adc(Limb::ZERO, carry);
+    let (a6, carry) = a6.adc(Limb::ZERO, carry);
+    let (a7, carry) = a7.adc(a1, carry);
+    let (a8, carry) = a8.mac(a1, modulus[7], carry);
+    let (a9, carry2) = a9.adc(carry2, carry);
 
-    let (a5, carry) = adc(a5, 0, a2);
-    let (a6, carry) = adc(a6, 0, carry);
-    let (a7, carry) = adc(a7, 0, carry);
-    let (a8, carry) = adc(a8, a2, carry);
-    let (a9, carry) = mac(a9, a2, modulus[7], carry);
-    let (a10, carry2) = adc(a10, carry2, carry);
+    let (a5, carry) = a5.adc(Limb::ZERO, a2);
+    let (a6, carry) = a6.adc(Limb::ZERO, carry);
+    let (a7, carry) = a7.adc(Limb::ZERO, carry);
+    let (a8, carry) = a8.adc(a2, carry);
+    let (a9, carry) = a9.mac(a2, modulus[7], carry);
+    let (a10, carry2) = a10.adc(carry2, carry);
 
-    let (a6, carry) = adc(a6, 0, a3);
-    let (a7, carry) = adc(a7, 0, carry);
-    let (a8, carry) = adc(a8, 0, carry);
-    let (a9, carry) = adc(a9, a3, carry);
-    let (a10, carry) = mac(a10, a3, modulus[7], carry);
-    let (a11, carry2) = adc(a11, carry2, carry);
+    let (a6, carry) = a6.adc(Limb::ZERO, a3);
+    let (a7, carry) = a7.adc(Limb::ZERO, carry);
+    let (a8, carry) = a8.adc(Limb::ZERO, carry);
+    let (a9, carry) = a9.adc(a3, carry);
+    let (a10, carry) = a10.mac(a3, modulus[7], carry);
+    let (a11, carry2) = a11.adc(carry2, carry);
 
-    let (a7, carry) = adc(a7, 0, a4);
-    let (a8, carry) = adc(a8, 0, carry);
-    let (a9, carry) = adc(a9, 0, carry);
-    let (a10, carry) = adc(a10, a4, carry);
-    let (a11, carry) = mac(a11, a4, modulus[7], carry);
-    let (a12, carry2) = adc(a12, carry2, carry);
+    let (a7, carry) = a7.adc(Limb::ZERO, a4);
+    let (a8, carry) = a8.adc(Limb::ZERO, carry);
+    let (a9, carry) = a9.adc(Limb::ZERO, carry);
+    let (a10, carry) = a10.adc(a4, carry);
+    let (a11, carry) = a11.mac(a4, modulus[7], carry);
+    let (a12, carry2) = a12.adc(carry2, carry);
 
-    let (a8, carry) = adc(a8, 0, a5);
-    let (a9, carry) = adc(a9, 0, carry);
-    let (a10, carry) = adc(a10, 0, carry);
-    let (a11, carry) = adc(a11, a5, carry);
-    let (a12, carry) = mac(a12, a5, modulus[7], carry);
-    let (a13, carry2) = adc(a13, carry2, carry);
+    let (a8, carry) = a8.adc(Limb::ZERO, a5);
+    let (a9, carry) = a9.adc(Limb::ZERO, carry);
+    let (a10, carry) = a10.adc(Limb::ZERO, carry);
+    let (a11, carry) = a11.adc(a5, carry);
+    let (a12, carry) = a12.mac(a5, modulus[7], carry);
+    let (a13, carry2) = a13.adc(carry2, carry);
 
-    let (a9, carry) = adc(a9, 0, a6);
-    let (a10, carry) = adc(a10, 0, carry);
-    let (a11, carry) = adc(a11, 0, carry);
-    let (a12, carry) = adc(a12, a6, carry);
-    let (a13, carry) = mac(a13, a6, modulus[7], carry);
-    let (a14, carry2) = adc(a14, carry2, carry);
+    let (a9, carry) = a9.adc(Limb::ZERO, a6);
+    let (a10, carry) = a10.adc(Limb::ZERO, carry);
+    let (a11, carry) = a11.adc(Limb::ZERO, carry);
+    let (a12, carry) = a12.adc(a6, carry);
+    let (a13, carry) = a13.mac(a6, modulus[7], carry);
+    let (a14, carry2) = a14.adc(carry2, carry);
 
-    let (a10, carry) = adc(a10, 0, a7);
-    let (a11, carry) = adc(a11, 0, carry);
-    let (a12, carry) = adc(a12, 0, carry);
-    let (a13, carry) = adc(a13, a7, carry);
-    let (a14, carry) = mac(a14, a7, modulus[7], carry);
-    let (a15, a16) = adc(a15, carry2, carry);
+    let (a10, carry) = a10.adc(Limb::ZERO, a7);
+    let (a11, carry) = a11.adc(Limb::ZERO, carry);
+    let (a12, carry) = a12.adc(Limb::ZERO, carry);
+    let (a13, carry) = a13.adc(a7, carry);
+    let (a14, carry) = a14.mac(a7, modulus[7], carry);
+    let (a15, a16) = a15.adc(carry2, carry);
 
     // Result may be within MODULUS of the correct value
     let (result, _) = sub_inner(
         [a8, a9, a10, a11, a12, a13, a14, a15, a16],
         [
-            modulus[0], modulus[1], modulus[2], modulus[3], modulus[4], modulus[5], modulus[6],
-            modulus[7], 0,
+            modulus[0],
+            modulus[1],
+            modulus[2],
+            modulus[3],
+            modulus[4],
+            modulus[5],
+            modulus[6],
+            modulus[7],
+            Limb::ZERO,
         ],
     );
 
-    U256::from_words([
+    U256::new([
         result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7],
     ])
 }
 
 #[inline]
 #[allow(clippy::too_many_arguments)]
-const fn sub_inner(l: [u32; 9], r: [u32; 9]) -> ([u32; 8], u32) {
-    let (w0, borrow) = sbb(l[0], r[0], 0);
-    let (w1, borrow) = sbb(l[1], r[1], borrow);
-    let (w2, borrow) = sbb(l[2], r[2], borrow);
-    let (w3, borrow) = sbb(l[3], r[3], borrow);
-    let (w4, borrow) = sbb(l[4], r[4], borrow);
-    let (w5, borrow) = sbb(l[5], r[5], borrow);
-    let (w6, borrow) = sbb(l[6], r[6], borrow);
-    let (w7, borrow) = sbb(l[7], r[7], borrow);
-    let (_, borrow) = sbb(l[8], r[8], borrow);
+const fn sub_inner(l: [Limb; 9], r: [Limb; 9]) -> ([Limb; 8], Limb) {
+    let (w0, borrow) = l[0].sbb(r[0], Limb::ZERO);
+    let (w1, borrow) = l[1].sbb(r[1], borrow);
+    let (w2, borrow) = l[2].sbb(r[2], borrow);
+    let (w3, borrow) = l[3].sbb(r[3], borrow);
+    let (w4, borrow) = l[4].sbb(r[4], borrow);
+    let (w5, borrow) = l[5].sbb(r[5], borrow);
+    let (w6, borrow) = l[6].sbb(r[6], borrow);
+    let (w7, borrow) = l[7].sbb(r[7], borrow);
+    let (_, borrow) = l[8].sbb(r[8], borrow);
 
     // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
     // borrow = 0x000...000. Thus, we use it as a mask to conditionally add
     // the modulus.
 
-    let modulus = MODULUS.0.as_words();
+    let modulus = MODULUS.0.as_limbs();
 
-    let (w0, carry) = adc(w0, modulus[0] & borrow, 0);
-    let (w1, carry) = adc(w1, modulus[1] & borrow, carry);
-    let (w2, carry) = adc(w2, modulus[2] & borrow, carry);
-    let (w3, carry) = adc(w3, modulus[3] & borrow, carry);
-    let (w4, carry) = adc(w4, modulus[4] & borrow, carry);
-    let (w5, carry) = adc(w5, modulus[5] & borrow, carry);
-    let (w6, carry) = adc(w6, modulus[6] & borrow, carry);
-    let (w7, _) = adc(w7, modulus[7] & borrow, carry);
+    let (w0, carry) = w0.adc(modulus[0].bitand(borrow), Limb::ZERO);
+    let (w1, carry) = w1.adc(modulus[1].bitand(borrow), carry);
+    let (w2, carry) = w2.adc(modulus[2].bitand(borrow), carry);
+    let (w3, carry) = w3.adc(modulus[3].bitand(borrow), carry);
+    let (w4, carry) = w4.adc(modulus[4].bitand(borrow), carry);
+    let (w5, carry) = w5.adc(modulus[5].bitand(borrow), carry);
+    let (w6, carry) = w6.adc(modulus[6].bitand(borrow), carry);
+    let (w7, _) = w7.adc(modulus[7].bitand(borrow), carry);
 
     ([w0, w1, w2, w3, w4, w5, w6, w7], borrow)
 }

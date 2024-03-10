@@ -8,7 +8,6 @@ pub(crate) mod field;
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
 pub(crate) mod scalar;
-pub(crate) mod util;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP256;
