@@ -37,7 +37,8 @@ pub trait PrimeCurveParams:
 {
     /// Base field element type.
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>
-        + Invert<Output = CtOption<Self::FieldElement>>;
+        + Invert<Output = CtOption<Self::FieldElement>>
+        + core::fmt::Debug;
 
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
     type PointArithmetic: point_arithmetic::PointArithmetic<Self>;
