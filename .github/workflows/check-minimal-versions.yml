@@ -1,0 +1,28 @@
+# This workflow checks that the project builds and tests successfully with the
+# minimal versions of all dependencies that are compatible with the current
+# Cargo.lock file. This is useful for ensuring that the project is not
+# accidentally relying on newer versions of dependencies than it actually
+# needs.
+
+name: Check minimal versions
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        type: string
+        required: true
+jobs:
+  check-minimal-versions:
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: cargo update -Zminimal-versions
+        run: cargo +nightly update -Zdirect-minimal-versions
+      - name: cargo test
+        run: cargo test --locked --all-features --all-targets

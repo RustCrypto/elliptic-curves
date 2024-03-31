@@ -45,11 +45,11 @@ jobs:
           - 1.73.0 # MSRV
           - stable
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-    - run: cargo test
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo test
 
   doc:
     runs-on: ubuntu-latest
@@ -60,3 +60,8 @@ jobs:
         with:
           toolchain: stable
       - run: cargo doc --all-features
+
+  check-minimal-versions:
+    uses: ./.github/workflows/check-minimal-versions.yml
+    with:
+      working-directory: primefield

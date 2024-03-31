@@ -82,3 +82,8 @@ jobs:
         with:
           toolchain: stable
       - run: cargo doc --all-features
+
+  check-minimal-versions:
+    uses: ./.github/workflows/check-minimal-versions.yml
+    with:
+      working-directory: p192

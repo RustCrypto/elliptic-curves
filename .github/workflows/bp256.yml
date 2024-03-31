@@ -52,14 +52,14 @@ jobs:
           - 1.73.0 # MSRV
           - stable
     steps:
-    - uses: actions/checkout@v4
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-    - run: cargo check --all-features
-    - run: cargo test --no-default-features
-    - run: cargo test
-    - run: cargo test --all-features
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - run: cargo check --all-features
+      - run: cargo test --no-default-features
+      - run: cargo test
+      - run: cargo test --all-features
 
   doc:
     runs-on: ubuntu-latest
@@ -70,3 +70,8 @@ jobs:
         with:
           toolchain: stable
       - run: cargo doc --all-features
+
+  check-minimal-versions:
+    uses: ./.github/workflows/check-minimal-versions.yml
+    with:
+      working-directory: bp256
