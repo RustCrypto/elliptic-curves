@@ -35,6 +35,44 @@ impl VerifyingKey {
         self.as_affine().x.to_bytes()
     }
 
+    /// Compute Schnorr signature.
+    ///
+    /// # ⚠️ Warning
+    ///
+    /// This is a low-level interface intended only for unusual use cases
+    /// involving verifying pre-hashed messages, or "raw" messages where the
+    /// message is not hashed at all prior to being used to generate the
+    /// Schnorr signature.
+    ///
+    /// The preferred interfaces are the [`DigestVerifier`] or [`PrehashVerifier`] traits.
+    pub fn verify_raw(
+        &self,
+        message: &[u8],
+        signature: &Signature,
+    ) -> core::result::Result<(), Error> {
+        let (r, s) = signature.split();
+
+        let e = <Scalar as Reduce<U256>>::reduce_bytes(
+            &tagged_hash(CHALLENGE_TAG)
+                .chain_update(signature.r.to_bytes())
+                .chain_update(self.to_bytes())
+                .chain_update(message)
+                .finalize(),
+        );
+
+        let R = ProjectivePoint::lincomb(&[
+            (ProjectivePoint::GENERATOR, **s),
+            (self.inner.to_projective(), -e),
+        ])
+        .to_affine();
+
+        if R.is_identity().into() || R.y.normalize().is_odd().into() || R.x.normalize() != *r {
+            return Err(Error::new());
+        }
+
+        Ok(())
+    }
+
     /// Parse verifying key from big endian-encoded x-coordinate.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let maybe_affine_point = AffinePoint::decompact(FieldBytes::from_slice(bytes));
@@ -64,27 +102,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         prehash: &[u8],
         signature: &Signature,
     ) -> core::result::Result<(), Error> {
-        let (r, s) = signature.split();
-
-        let e = <Scalar as Reduce<U256>>::reduce_bytes(
-            &tagged_hash(CHALLENGE_TAG)
-                .chain_update(signature.r.to_bytes())
-                .chain_update(self.to_bytes())
-                .chain_update(prehash)
-                .finalize(),
-        );
-
-        let R = ProjectivePoint::lincomb(&[
-            (ProjectivePoint::GENERATOR, **s),
-            (self.inner.to_projective(), -e),
-        ])
-        .to_affine();
-
-        if R.is_identity().into() || R.y.normalize().is_odd().into() || R.x.normalize() != *r {
-            return Err(Error::new());
-        }
-
-        Ok(())
+        self.verify_raw(prehash, signature)
     }
 }
 

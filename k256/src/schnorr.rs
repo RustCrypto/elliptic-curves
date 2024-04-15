@@ -271,7 +271,7 @@ mod tests {
             assert_eq!(sk.verifying_key().to_bytes().as_slice(), &vector.public_key);
 
             let sig = sk
-                .sign_prehash_with_aux_rand(&vector.message, &vector.aux_rand)
+                .sign_raw(&vector.message, &vector.aux_rand)
                 .unwrap_or_else(|_| {
                     panic!(
                         "low-level Schnorr signing failure for index {}",
@@ -333,14 +333,12 @@ mod tests {
         ];
 
         for vector in bip340_ext_sign_vectors {
-            let sig = sk
-                .sign_prehash_with_aux_rand(&vector.msg, &aux_rand)
-                .unwrap_or_else(|_| {
-                    panic!(
-                        "low-level Schnorr signing failure for index {}",
-                        vector.index
-                    )
-                });
+            let sig = sk.sign_raw(&vector.msg, &aux_rand).unwrap_or_else(|_| {
+                panic!(
+                    "low-level Schnorr signing failure for index {}",
+                    vector.index
+                )
+            });
 
             assert_eq!(
                 vector.signature,
