@@ -170,7 +170,7 @@ where
 
 impl PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
-        self.sign_prehash_with_aux_rand(&prehash, &Default::default())
+        self.sign_prehash_with_aux_rand(prehash, &Default::default())
     }
 }
 
@@ -204,7 +204,7 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
         let mut aux_rand = [0u8; 32];
         rng.fill_bytes(&mut aux_rand);
 
-        self.sign_prehash_with_aux_rand(&prehash, &aux_rand)
+        self.sign_prehash_with_aux_rand(prehash, &aux_rand)
     }
 }
 
