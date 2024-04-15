@@ -78,7 +78,7 @@ impl SigningKey {
     /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
     pub fn sign_prehash_with_aux_rand(
         &self,
-        msg_digest: &[u8; 32],
+        msg_digest: &[u8],
         aux_rand: &[u8; 32],
     ) -> Result<Signature> {
         let mut t = tagged_hash(AUX_TAG).chain_update(aux_rand).finalize();
@@ -164,13 +164,12 @@ where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature> {
-        self.sign_prehash_with_aux_rand(&digest.finalize_fixed().into(), &Default::default())
+        self.sign_prehash_with_aux_rand(&digest.finalize_fixed(), &Default::default())
     }
 }
 
 impl PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
-        let prehash = prehash.try_into().map_err(|_| Error::new())?;
         self.sign_prehash_with_aux_rand(&prehash, &Default::default())
     }
 }
@@ -186,7 +185,7 @@ where
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
         rng.fill_bytes(&mut aux_rand);
-        self.sign_prehash_with_aux_rand(&digest.finalize_fixed().into(), &aux_rand)
+        self.sign_prehash_with_aux_rand(&digest.finalize_fixed(), &aux_rand)
     }
 }
 
@@ -202,8 +201,6 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
         rng: &mut impl CryptoRngCore,
         prehash: &[u8],
     ) -> Result<Signature> {
-        let prehash = prehash.try_into().map_err(|_| Error::new())?;
-
         let mut aux_rand = [0u8; 32];
         rng.fill_bytes(&mut aux_rand);
 

@@ -64,7 +64,6 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         prehash: &[u8],
         signature: &Signature,
     ) -> core::result::Result<(), Error> {
-        let prehash: [u8; 32] = prehash.try_into().map_err(|_| Error::new())?;
         let (r, s) = signature.split();
 
         let e = <Scalar as Reduce<U256>>::reduce_bytes(
