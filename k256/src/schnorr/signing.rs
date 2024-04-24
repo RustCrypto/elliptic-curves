@@ -70,7 +70,7 @@ impl SigningKey {
 
     /// Compute Schnorr signature.
     ///
-    /// # ⚠️ Warning
+    /// # ⚠️  Warning
     ///
     /// This is a low-level interface intended only for unusual use cases
     /// involving signing pre-hashed messages.
@@ -81,6 +81,20 @@ impl SigningKey {
         msg_digest: &[u8; 32],
         aux_rand: &[u8; 32],
     ) -> Result<Signature> {
+        self.sign_raw(&msg_digest[..], &aux_rand)
+    }
+
+    /// Compute Schnorr signature.
+    ///
+    /// # ⚠️ Warning
+    ///
+    /// This is a low-level interface intended only for unusual use cases
+    /// involving signing pre-hashed messages, or "raw" messages where the
+    /// message is not hashed at all prior to being used to generate the
+    /// Schnorr signature.
+    ///
+    /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
+    pub fn sign_raw(&self, msg: &[u8], aux_rand: &[u8; 32]) -> Result<Signature> {
         let mut t = tagged_hash(AUX_TAG).chain_update(aux_rand).finalize();
 
         for (a, b) in t.iter_mut().zip(self.secret_key.to_bytes().iter()) {
@@ -90,7 +104,7 @@ impl SigningKey {
         let rand = tagged_hash(NONCE_TAG)
             .chain_update(t)
             .chain_update(self.verifying_key.as_affine().x.to_bytes())
-            .chain_update(msg_digest)
+            .chain_update(msg)
             .finalize();
 
         let k = NonZeroScalar::try_from(&*rand)
@@ -105,7 +119,7 @@ impl SigningKey {
             &tagged_hash(CHALLENGE_TAG)
                 .chain_update(r.to_bytes())
                 .chain_update(self.verifying_key.to_bytes())
-                .chain_update(msg_digest)
+                .chain_update(msg)
                 .finalize(),
         );
 
@@ -114,7 +128,7 @@ impl SigningKey {
         let sig = Signature { r, s };
 
         #[cfg(debug_assertions)]
-        self.verifying_key.verify_prehash(msg_digest, &sig)?;
+        self.verifying_key.verify_prehash(msg, &sig)?;
 
         Ok(sig)
     }
@@ -164,14 +178,13 @@ where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
     fn try_sign_digest(&self, digest: D) -> Result<Signature> {
-        self.sign_prehash_with_aux_rand(&digest.finalize_fixed().into(), &Default::default())
+        self.sign_raw(&digest.finalize_fixed(), &Default::default())
     }
 }
 
 impl PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
-        let prehash = prehash.try_into().map_err(|_| Error::new())?;
-        self.sign_prehash_with_aux_rand(&prehash, &Default::default())
+        self.sign_raw(prehash, &Default::default())
     }
 }
 
@@ -186,7 +199,7 @@ where
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
         rng.fill_bytes(&mut aux_rand);
-        self.sign_prehash_with_aux_rand(&digest.finalize_fixed().into(), &aux_rand)
+        self.sign_raw(&digest.finalize_fixed(), &aux_rand)
     }
 }
 
@@ -202,12 +215,10 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
         rng: &mut impl CryptoRngCore,
         prehash: &[u8],
     ) -> Result<Signature> {
-        let prehash = prehash.try_into().map_err(|_| Error::new())?;
-
         let mut aux_rand = [0u8; 32];
         rng.fill_bytes(&mut aux_rand);
 
-        self.sign_prehash_with_aux_rand(&prehash, &aux_rand)
+        self.sign_raw(prehash, &aux_rand)
     }
 }
 

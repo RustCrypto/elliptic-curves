@@ -270,13 +270,74 @@ mod tests {
             assert_eq!(sk.verifying_key().to_bytes().as_slice(), &vector.public_key);
 
             let sig = sk
-                .sign_prehash_with_aux_rand(&vector.message, &vector.aux_rand)
+                .sign_raw(&vector.message, &vector.aux_rand)
                 .unwrap_or_else(|_| {
                     panic!(
                         "low-level Schnorr signing failure for index {}",
                         vector.index
                     )
                 });
+
+            assert_eq!(
+                vector.signature,
+                sig.to_bytes(),
+                "wrong signature for index {}",
+                vector.index
+            );
+        }
+    }
+
+    #[test]
+    fn bip340_ext_sign_vectors() {
+        // Test indexes 15-18 from https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv
+        //
+        // These tests all use the same key and aux
+        let sk = SigningKey::from_bytes(&hex!(
+            "0340034003400340034003400340034003400340034003400340034003400340"
+        ))
+        .unwrap();
+
+        let aux_rand = [0u8; 32];
+
+        struct Bip340ExtTest {
+            index: usize,
+            msg: alloc::vec::Vec<u8>,
+            signature: [u8; 64],
+        }
+
+        let bip340_ext_sign_vectors = [
+            Bip340ExtTest {
+                index: 15,
+                msg: vec![],
+                signature: hex!(
+                   "71535DB165ECD9FBBC046E5FFAEA61186BB6AD436732FCCC25291A55895464CF
+                    6069CE26BF03466228F19A3A62DB8A649F2D560FAC652827D1AF0574E427AB63"
+                )
+            },
+            Bip340ExtTest {
+                index: 16,
+                msg: hex!("11").to_vec(),
+                signature: hex!("08A20A0AFEF64124649232E0693C583AB1B9934AE63B4C3511F3AE1134C6A303EA3173BFEA6683BD101FA5AA5DBC1996FE7CACFC5A577D33EC14564CEC2BACBF")
+            },
+            Bip340ExtTest {
+                index: 17,
+                msg: hex!("0102030405060708090A0B0C0D0E0F1011").to_vec(),
+                signature: hex!("5130F39A4059B43BC7CAC09A19ECE52B5D8699D1A71E3C52DA9AFDB6B50AC370C4A482B77BF960F8681540E25B6771ECE1E5A37FD80E5A51897C5566A97EA5A5"),
+            },
+            Bip340ExtTest {
+                index: 18,
+                msg: vec![0x99; 100],
+                signature: hex!("403B12B0D8555A344175EA7EC746566303321E5DBFA8BE6F091635163ECA79A8585ED3E3170807E7C03B720FC54C7B23897FCBA0E9D0B4A06894CFD249F22367"),
+            },
+        ];
+
+        for vector in bip340_ext_sign_vectors {
+            let sig = sk.sign_raw(&vector.msg, &aux_rand).unwrap_or_else(|_| {
+                panic!(
+                    "low-level Schnorr signing failure for index {}",
+                    vector.index
+                )
+            });
 
             assert_eq!(
                 vector.signature,
