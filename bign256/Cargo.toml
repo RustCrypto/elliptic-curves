@@ -49,7 +49,7 @@ ecdsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:belt-hash"]
 arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
 pem = ["pkcs8", "sec1/pem"]
 pkcs8 = ["dep:pkcs8"]
-ecdh = ["arithmetic", "elliptic-curve/ecdh", "dep:digest", "dep:hkdf", "dep:hmac", "dep:belt-hash"]
+ecdh = ["arithmetic", "elliptic-curve/ecdh", "dep:digest", "dep:hkdf", "dep:hmac", "dep:belt-hash", "alloc"]
 
 [[bench]]
 name = "field"
