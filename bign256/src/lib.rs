@@ -26,6 +26,7 @@
 )]
 
 #[cfg(feature = "alloc")]
+#[allow(unused_extern_crates)]
 extern crate alloc;
 
 pub use elliptic_curve::{self, bigint::U256};
