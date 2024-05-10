@@ -3,14 +3,17 @@
 use core::str::FromStr;
 use der::SecretDocument;
 
-use elliptic_curve::{array::typenum::Unsigned, Error, zeroize::Zeroizing};
-use pkcs8::{AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier, spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier}};
+use elliptic_curve::{array::typenum::Unsigned, zeroize::Zeroizing, Error};
+use pkcs8::{
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
+    AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
+};
 
 #[cfg(feature = "arithmetic")]
-use crate::{BignP256, elliptic_curve::rand_core::CryptoRngCore, NonZeroScalar, Result};
-use crate::{ALGORITHM_OID, PublicKey, ScalarPrimitive, SecretKey};
-#[cfg(feature = "arithmetic")]
 use crate::FieldBytes;
+#[cfg(feature = "arithmetic")]
+use crate::{elliptic_curve::rand_core::CryptoRngCore, BignP256, NonZeroScalar, Result};
+use crate::{PublicKey, ScalarPrimitive, SecretKey, ALGORITHM_OID};
 
 impl SecretKey {
     const MIN_SIZE: usize = 24;

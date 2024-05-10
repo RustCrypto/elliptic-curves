@@ -54,14 +54,16 @@ fn decode_pkcs8_public_key_from_pem() {
 fn encode_pkcs8_private_key_to_der() {
     let original_secret_key = SecretKey::from_pkcs8_der(&PKCS8_PRIVATE_KEY_DER[..]).unwrap();
     let reencoded_secret_key = original_secret_key.to_pkcs8_der();
-    assert_eq!(reencoded_secret_key.unwrap().to_bytes().to_vec(), &PKCS8_PRIVATE_KEY_DER[..]);
+    assert_eq!(
+        reencoded_secret_key.unwrap().to_bytes().to_vec(),
+        &PKCS8_PRIVATE_KEY_DER[..]
+    );
 }
 
 #[test]
 #[cfg(feature = "pem")]
 fn encode_pkcs8_public_key_to_der() {
-    let original_public_key =
-        PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
+    let original_public_key = PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
     let reencoded_public_key = original_public_key.to_public_key_der().unwrap();
     assert_eq!(reencoded_public_key.as_ref(), &PKCS8_PUBLIC_KEY_DER[..]);
 }
@@ -79,8 +81,7 @@ fn encode_pkcs8_private_key_to_pem() {
 #[test]
 #[cfg(feature = "pem")]
 fn encode_pkcs8_public_key_to_pem() {
-    let original_public_key =
-        PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
+    let original_public_key = PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
     let reencoded_public_key = original_public_key.to_string();
     assert_eq!(reencoded_public_key.as_str(), PKCS8_PUBLIC_KEY_PEM);
 }

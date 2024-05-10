@@ -4,17 +4,17 @@ use core::fmt::Display;
 use core::str::FromStr;
 
 use elliptic_curve::{
-    AffinePoint,
     array::Array,
-    CurveArithmetic,
-    Error, Group, point::NonIdentity, sec1::{FromEncodedPoint, ToEncodedPoint},
+    point::NonIdentity,
+    sec1::{FromEncodedPoint, ToEncodedPoint},
+    AffinePoint, CurveArithmetic, Error, Group,
 };
 use pkcs8::{
-    AssociatedOid,
-    DecodePublicKey, EncodePublicKey, ObjectIdentifier, spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
+    AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
 };
 
-use crate::{ALGORITHM_OID, BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint, PublicKey};
+use crate::{BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint, PublicKey, ALGORITHM_OID};
 
 impl PublicKey {
     /// Convert an [`AffinePoint`] into a [`PublicKey`]
@@ -71,7 +71,7 @@ impl PublicKey {
             })
         }
     }
-    
+
     /// Get [`PublicKey`] from encoded point
     pub fn from_encoded_point(point: EncodedPoint) -> Result<Self, Error> {
         let affine = AffinePoint::<BignP256>::from_encoded_point(&point);
@@ -92,7 +92,7 @@ impl PublicKey {
         bytes[33..].reverse();
         bytes[1..].to_vec().into_boxed_slice()
     }
-    
+
     #[cfg(feature = "alloc")]
     /// Get encoded point from [`PublicKey`]
     pub fn to_encoded_point(&self) -> EncodedPoint {

@@ -15,7 +15,9 @@
 //! ```
 
 use super::{Signature, BELT_OID};
-use crate::{AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar};
+use crate::{
+    AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar,
+};
 use belt_hash::{
     digest::{Digest, FixedOutput},
     BeltHash,

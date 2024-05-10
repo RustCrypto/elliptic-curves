@@ -33,14 +33,14 @@
 // use rand_core::CryptoRngCore;
 // use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use core::borrow::Borrow;
+use crate::{AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey};
 use belt_hash::BeltHash;
+use core::borrow::Borrow;
 use elliptic_curve::point::AffineCoordinates;
+use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
 use hkdf::Hkdf;
 use hmac::SimpleHmac;
 use rand_core::CryptoRngCore;
-use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
-use crate::{AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey};
 
 /// Low-level Elliptic Curve Diffie-Hellman (ECDH) function.
 ///
@@ -65,9 +65,9 @@ use crate::{AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey};
 pub fn diffie_hellman(
     secret_key: impl Borrow<NonZeroScalar>,
     public_key: impl Borrow<AffinePoint>,
-) -> SharedSecret
-{
+) -> SharedSecret {
     let public_point = ProjectivePoint::from(*public_key.borrow());
+    #[allow(clippy::arithmetic_side_effects)]
     let secret_point = (public_point * secret_key.borrow().as_ref()).to_affine();
     SharedSecret::new(secret_point)
 }
@@ -93,13 +93,11 @@ pub fn diffie_hellman(
 ///
 /// These exchanges should be performed in the context of a protocol which
 /// takes further steps to authenticate the peers in a key exchange.
-pub struct EphemeralSecret
-{
+pub struct EphemeralSecret {
     scalar: NonZeroScalar,
 }
 
-impl EphemeralSecret
-{
+impl EphemeralSecret {
     /// Generate a cryptographically random [`EphemeralSecret`].
     pub fn random(rng: &mut impl CryptoRngCore) -> Self {
         Self {
@@ -121,15 +119,13 @@ impl EphemeralSecret
     }
 }
 
-impl From<&EphemeralSecret> for PublicKey
-{
+impl From<&EphemeralSecret> for PublicKey {
     fn from(ephemeral_secret: &EphemeralSecret) -> Self {
         ephemeral_secret.public_key()
     }
 }
 
-impl Zeroize for EphemeralSecret
-{
+impl Zeroize for EphemeralSecret {
     fn zeroize(&mut self) {
         self.scalar.zeroize()
     }
@@ -137,8 +133,7 @@ impl Zeroize for EphemeralSecret
 
 impl ZeroizeOnDrop for EphemeralSecret {}
 
-impl Drop for EphemeralSecret
-{
+impl Drop for EphemeralSecret {
     fn drop(&mut self) {
         self.zeroize();
     }
@@ -153,8 +148,7 @@ pub struct SharedSecret {
 impl SharedSecret {
     /// Create a new [`SharedSecret`] from an [`AffinePoint`] for this curve.
     #[inline]
-    fn new(point: AffinePoint) -> Self
-    {
+    fn new(point: AffinePoint) -> Self {
         Self {
             secret_bytes: point.x(),
         }
@@ -180,8 +174,7 @@ impl SharedSecret {
     /// material.
     ///
     /// [HKDF]: https://en.wikipedia.org/wiki/HKDF
-    pub fn extract(&self, salt: Option<&[u8]>) -> Hkdf<BeltHash, SimpleHmac<BeltHash>>
-    {
+    pub fn extract(&self, salt: Option<&[u8]>) -> Hkdf<BeltHash, SimpleHmac<BeltHash>> {
         Hkdf::new(salt, &self.secret_bytes)
     }
 

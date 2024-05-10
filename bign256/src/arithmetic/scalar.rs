@@ -15,7 +15,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{BignP256, FieldBytes, FieldBytesEncoding, ORDER_HEX, SecretKey, U256};
+use crate::{BignP256, FieldBytes, FieldBytesEncoding, SecretKey, ORDER_HEX, U256};
 use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},

@@ -30,12 +30,10 @@
 extern crate alloc;
 
 pub use elliptic_curve::{self, bigint::U256};
-use elliptic_curve::{
-    bigint::ArrayEncoding, consts::U32, Error, FieldBytesEncoding,
-};
+use elliptic_curve::{bigint::ArrayEncoding, consts::U32, Error, FieldBytesEncoding};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
+pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
 
 /// Bign256 result type
 pub type Result<T> = core::result::Result<T, Error>;
@@ -144,8 +142,7 @@ pub type ScalarPrimitive = elliptic_curve::ScalarPrimitive<BignP256>;
 /// Elliptic curve BignP256 public key.
 #[cfg(feature = "arithmetic")]
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PublicKey
-{
+pub struct PublicKey {
     point: elliptic_curve::AffinePoint<BignP256>,
 }
 
@@ -155,7 +152,6 @@ pub struct PublicKey
 pub struct SecretKey {
     inner: ScalarPrimitive,
 }
-
 
 /// Bit representation of a BIGN P-256 scalar field element.
 #[cfg(feature = "bits")]
