@@ -13,13 +13,13 @@ fn ecdh() {
     let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
 
     // Alice decodes Bob's serialized public key and computes a shared secret from it
-    let bob_public = PublicKey::from_sec1_bytes(bob_pk_bytes.as_ref())
+    let bob_public = PublicKey::from_encoded_point(bob_pk_bytes)
         .expect("bob's public key is invalid!"); // In real usage, don't panic, handle this!
 
     let alice_shared = alice_secret.diffie_hellman(&bob_public);
 
     // Bob decodes Alice's serialized public key and computes the same shared secret
-    let alice_public = PublicKey::from_sec1_bytes(alice_pk_bytes.as_ref())
+    let alice_public = PublicKey::from_encoded_point(alice_pk_bytes)
         .expect("alice's public key is invalid!"); // In real usage, don't panic, handle this!
 
     let bob_shared = bob_secret.diffie_hellman(&alice_public);

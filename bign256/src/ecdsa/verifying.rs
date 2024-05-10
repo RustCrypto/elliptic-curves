@@ -84,13 +84,13 @@ impl VerifyingKey {
         hasher.update(msg);
         hasher.finalize_fixed()
     }
-    
+
     /// Parse a [`VerifyingKey`] from a byte slice.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         let public_key = PublicKey::from_bytes(bytes).map_err(|_| Error::new())?;
         Self::new(public_key)
     }
-    
+
     /// Serialize the [`VerifyingKey`] as a byte array.
     #[cfg(feature = "alloc")]
     pub fn to_bytes(&self) -> Box<[u8]> {

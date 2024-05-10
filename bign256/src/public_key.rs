@@ -5,22 +5,17 @@ use core::str::FromStr;
 
 use elliptic_curve::{
     AffinePoint,
-    CurveArithmetic,
-    Error,
-    Group,
     array::Array,
-    point::NonIdentity,
-    sec1::{FromEncodedPoint, ToEncodedPoint}
+    CurveArithmetic,
+    Error, Group, point::NonIdentity, sec1::{FromEncodedPoint, ToEncodedPoint},
 };
 use pkcs8::{
     AssociatedOid,
-    DecodePublicKey,
-    EncodePublicKey,
-    ObjectIdentifier,
-    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier}
+    DecodePublicKey, EncodePublicKey, ObjectIdentifier, spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 
 use crate::{ALGORITHM_OID, BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint, PublicKey};
+
 impl PublicKey {
     /// Convert an [`AffinePoint`] into a [`PublicKey`]
     pub fn from_affine(point: AffinePoint<BignP256>) -> Result<Self, Error> {
@@ -70,9 +65,22 @@ impl PublicKey {
         let affine = AffinePoint::<BignP256>::from_encoded_point(&point);
         if affine.is_none().into() {
             Err(Error)
+        } else {
+            Ok(Self {
+                point: affine.unwrap(),
+            })
         }
-        else {
-            Ok(Self { point: affine.unwrap() })
+    }
+    
+    /// Get [`PublicKey`] from encoded point
+    pub fn from_encoded_point(point: EncodedPoint) -> Result<Self, Error> {
+        let affine = AffinePoint::<BignP256>::from_encoded_point(&point);
+        if affine.is_none().into() {
+            Err(Error)
+        } else {
+            Ok(Self {
+                point: affine.unwrap(),
+            })
         }
     }
 
@@ -83,6 +91,12 @@ impl PublicKey {
         bytes[1..32 + 1].reverse();
         bytes[33..].reverse();
         bytes[1..].to_vec().into_boxed_slice()
+    }
+    
+    #[cfg(feature = "alloc")]
+    /// Get encoded point from [`PublicKey`]
+    pub fn to_encoded_point(&self) -> EncodedPoint {
+        self.point.to_encoded_point(false)
     }
 }
 
@@ -167,6 +181,12 @@ impl EncodePublicKey for PublicKey {
     }
 }
 
+impl From<PublicKey> for EncodedPoint {
+    fn from(value: PublicKey) -> Self {
+        value.point.to_encoded_point(false)
+    }
+}
+
 #[cfg(feature = "pem")]
 impl FromStr for PublicKey {
     type Err = Error;
@@ -187,4 +207,3 @@ impl Display for PublicKey {
         )
     }
 }
-

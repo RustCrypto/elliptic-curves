@@ -3,7 +3,7 @@
 use hex_literal::hex;
 use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 
-use bign256::{BignP256, PublicKey, SecretKey};
+use bign256::{PublicKey, SecretKey};
 
 const PKCS8_PRIVATE_KEY_DER: &[u8; 65] = include_bytes!("examples/pkcs8-private.der");
 #[cfg(feature = "pem")]
