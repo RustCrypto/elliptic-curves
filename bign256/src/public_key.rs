@@ -1,7 +1,8 @@
 //! Public key types and traits
 
-use core::fmt::Display;
-use core::str::FromStr;
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, fmt};
+use core::{fmt::Display, str::FromStr};
 
 use elliptic_curve::{
     array::Array,
@@ -198,7 +199,7 @@ impl FromStr for PublicKey {
 
 #[cfg(feature = "pem")]
 impl Display for PublicKey {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}",

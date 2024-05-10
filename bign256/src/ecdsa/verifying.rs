@@ -14,6 +14,9 @@
 //! 9. Return YES.
 //! ```
 
+#[cfg(feature = "alloc")]
+use alloc::boxed::Box;
+
 use super::{Signature, BELT_OID};
 use crate::{
     AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar,

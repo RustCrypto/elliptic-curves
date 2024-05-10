@@ -1,5 +1,4 @@
-// #![no_std]
-// #![no_std]
+#![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
@@ -58,7 +57,7 @@ const ALGORITHM_OID: pkcs8::ObjectIdentifier =
     pkcs8::ObjectIdentifier::new_unwrap("1.2.112.0.2.0.34.101.45.2.1");
 
 #[cfg(feature = "ecdsa")]
-type Hash = belt_hash::digest::Output<belt_hash::BeltHash>;
+type Hash = digest::Output<belt_hash::BeltHash>;
 
 /// Order of BIGN P-256's elliptic curve group (i.e. scalar modulus) in hexadecimal.
 const ORDER_HEX: &str = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFD95C8ED60DFB4DFC7E5ABF99263D6607";

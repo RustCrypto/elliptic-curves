@@ -142,7 +142,7 @@ impl TryFrom<pkcs8::PrivateKeyInfo<'_>> for SecretKey {
 #[cfg(feature = "pem")]
 impl FromStr for SecretKey {
     type Err = Error;
-    fn from_str(s: &str) -> std::result::Result<Self, Error> {
+    fn from_str(s: &str) -> core::result::Result<Self, Error> {
         Self::from_pkcs8_pem(s).map_err(|_| Error)
     }
 }
