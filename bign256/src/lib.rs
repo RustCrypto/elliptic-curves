@@ -1,5 +1,5 @@
 // #![no_std]
-#![no_std]
+// #![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc = include_str!("../README.md")]
 #![doc(
@@ -27,8 +27,16 @@
 )]
 
 #[cfg(feature = "alloc")]
-#[allow(unused_extern_crates)]
 extern crate alloc;
+
+pub use elliptic_curve::{self, bigint::U256};
+use elliptic_curve::{bigint::ArrayEncoding, consts::U32, Error, FieldBytesEncoding};
+
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
+
+/// Bign256 result type
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[cfg(feature = "arithmetic")]
 pub mod arithmetic;
@@ -36,25 +44,20 @@ pub mod arithmetic;
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
-#[cfg(feature = "dsa")]
-pub mod dsa;
-
-pub use elliptic_curve::{self, bigint::U256};
-
+#[cfg(feature = "ecdsa")]
+pub mod ecdsa;
+#[cfg(feature = "ecdh")]
+pub mod ecdh;
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+pub mod public_key;
+#[cfg(feature = "arithmetic")]
+pub mod secret_key;
 
 #[cfg(feature = "pkcs8")]
-pub use elliptic_curve::pkcs8;
+const ALGORITHM_OID: pkcs8::ObjectIdentifier =
+    pkcs8::ObjectIdentifier::new_unwrap("1.2.112.0.2.0.34.101.45.2.1");
 
-use elliptic_curve::{
-    array::Array,
-    bigint::ArrayEncoding,
-    consts::{U32, U33},
-    FieldBytesEncoding,
-};
-
-#[cfg(feature = "dsa")]
+#[cfg(feature = "ecdsa")]
 type Hash = belt_hash::digest::Output<belt_hash::BeltHash>;
 
 /// Order of BIGN P-256's elliptic curve group (i.e. scalar modulus) in hexadecimal.
@@ -103,11 +106,8 @@ impl elliptic_curve::point::PointCompaction for BignP256 {
 #[cfg(feature = "pkcs8")]
 impl pkcs8::AssociatedOid for BignP256 {
     const OID: pkcs8::ObjectIdentifier =
-        pkcs8::ObjectIdentifier::new_unwrap("1.2.112.0.2.0.34.101.45.1");
+        pkcs8::ObjectIdentifier::new_unwrap("1.2.112.0.2.0.34.101.45.3.1");
 }
-
-/// Compressed SEC1-encoded BIGN P256 curve point.
-pub type CompressedPoint = Array<u8, U33>;
 
 /// BIGN P-256 field element serialized as bytes.
 ///
@@ -132,14 +132,26 @@ impl FieldBytesEncoding<BignP256> for U256 {
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BignP256>;
 
 /// BIGN P-256 public key.
+// #[cfg(feature = "arithmetic")]
+// pub type PublicKey = elliptic_curve::PublicKey<BignP256>;
+
+/// Generic scalar type with primitive functionality.#
 #[cfg(feature = "arithmetic")]
-pub type PublicKey = elliptic_curve::PublicKey<BignP256>;
+pub type ScalarPrimitive = elliptic_curve::ScalarPrimitive<BignP256>;
 
-/// BIGN P-256 secret key.
-pub type SecretKey = elliptic_curve::SecretKey<BignP256>;
+/// Elliptic curve BignP256 public key.
+#[cfg(feature = "arithmetic")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublicKey {
+    point: elliptic_curve::AffinePoint<BignP256>,
+}
 
-#[cfg(not(feature = "arithmetic"))]
-impl elliptic_curve::sec1::ValidatePublicKey for BignP256 {}
+/// Elliptic curve BignP256 Secret Key
+#[cfg(feature = "arithmetic")]
+#[derive(Copy, Clone, Debug)]
+pub struct SecretKey {
+    inner: ScalarPrimitive,
+}
 
 /// Bit representation of a BIGN P-256 scalar field element.
 #[cfg(feature = "bits")]

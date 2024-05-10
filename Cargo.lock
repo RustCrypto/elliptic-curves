@@ -54,13 +54,16 @@ version = "0.14.0-pre"
 dependencies = [
  "belt-hash",
  "criterion",
+ "der",
  "elliptic-curve",
  "hex",
  "hex-literal",
+ "pkcs8",
  "primeorder",
  "proptest",
  "rand_core",
  "rfc6979",
+ "sec1",
  "signature",
 ]
 
@@ -218,8 +221,6 @@ checksum = "2da6da31387c7e4ef160ffab6d5e7f00c42626fe39aea70a7b0f1773f7dd6c1b"
 [[package]]
 name = "const-oid"
 version = "0.10.0-pre.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7e3352a27098ba6b09546e5f13b15165e6a88b5c2723afecb3ea9576b27e3ea"
 
 [[package]]
 name = "cpufeatures"

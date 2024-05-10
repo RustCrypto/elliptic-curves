@@ -15,9 +15,7 @@
 //! ```
 
 use super::{Signature, BELT_OID};
-use crate::{
-    AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar,
-};
+use crate::{AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar};
 use belt_hash::{
     digest::{Digest, FixedOutput},
     BeltHash,
@@ -26,13 +24,11 @@ use elliptic_curve::{
     array::{consts::U32, typenum::Unsigned, Array},
     group::GroupEncoding,
     ops::{LinearCombination, Reduce},
-    sec1::ToEncodedPoint,
     Curve, Field, Group,
 };
 use signature::{hazmat::PrehashVerifier, Error, Result, Verifier};
 
-#[cfg(feature = "alloc")]
-use alloc::boxed::Box;
+use elliptic_curve::sec1::ToEncodedPoint;
 
 /// Bign256 public key used for verifying signatures are valid for a given
 /// message.
@@ -88,22 +84,17 @@ impl VerifyingKey {
         hasher.update(msg);
         hasher.finalize_fixed()
     }
-
-    /// Initialize [`VerifyingKey`] from a SEC1-encoded public key.
-    pub fn from_sec1_bytes(bytes: &[u8]) -> Result<Self> {
-        let public_key = PublicKey::from_sec1_bytes(bytes).map_err(|_| Error::new())?;
+    
+    /// Parse a [`VerifyingKey`] from a byte slice.
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        let public_key = PublicKey::from_bytes(bytes).map_err(|_| Error::new())?;
         Self::new(public_key)
     }
-
-    /// Convert this [`VerifyingKey`] into the
-    /// `Elliptic-Curve-Point-to-Octet-String` encoding described in
-    /// SEC 1: Elliptic Curve Cryptography (Version 2.0) section 2.3.3
-    /// (page 10).
-    ///
-    /// <http://www.secg.org/sec1-v2.pdf>
+    
+    /// Serialize the [`VerifyingKey`] as a byte array.
     #[cfg(feature = "alloc")]
-    pub fn to_sec1_bytes(&self) -> Box<[u8]> {
-        self.public_key.to_sec1_bytes()
+    pub fn to_bytes(&self) -> Box<[u8]> {
+        self.public_key.to_bytes()
     }
 }
 

@@ -17,3 +17,7 @@ members = [
 
 [profile.dev]
 opt-level = 2
+
+[patch.crates-io]
+#pkcs8 = { path = "/Users/makavity/dev/crypto/formats/pkcs8" }
+const-oid = { path = "/Users/makavity/dev/crypto/formats/const-oid"}
