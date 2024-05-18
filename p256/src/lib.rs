@@ -110,7 +110,7 @@ impl elliptic_curve::PrimeCurve for NistP256 {}
 
 impl elliptic_curve::point::PointCompression for NistP256 {
     /// NIST P-256 points are typically uncompressed.
-    const COMPRESS_POINTS: bool = false;
+    const COMPRESS_POINTS: bool = true;
 }
 
 impl elliptic_curve::point::PointCompaction for NistP256 {
