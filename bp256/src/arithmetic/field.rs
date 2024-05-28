@@ -95,7 +95,7 @@ impl FieldElement {
 
     /// Returns the big-endian encoding of this [`FieldElement`].
     pub fn to_bytes(self) -> FieldBytes {
-        self.0.to_be_byte_array()
+        self.to_canonical().to_be_byte_array()
     }
 
     /// Translate [`FieldElement`] out of the Montgomery domain, returning a
