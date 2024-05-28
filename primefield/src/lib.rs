@@ -452,6 +452,7 @@ macro_rules! impl_mont_field_element_arithmetic {
         }
 
         impl Sum for $fe {
+            #[allow(unused_qualifications)]
             fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
                 iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
             }
@@ -464,6 +465,7 @@ macro_rules! impl_mont_field_element_arithmetic {
         }
 
         impl Product for $fe {
+            #[allow(unused_qualifications)]
             fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
                 iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
             }
