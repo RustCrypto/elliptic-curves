@@ -18,7 +18,7 @@ use self::scalar_impl::*;
 use crate::{FieldBytes, NistP521, SecretKey, U576};
 use core::{
     iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
     array::Array,
@@ -43,7 +43,7 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(doc)]
-use core::ops::{Add, Mul, Sub};
+use core::ops::Sub;
 
 #[cfg(target_pointer_width = "32")]
 use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
@@ -474,7 +474,7 @@ impl Neg for Scalar {
 
 impl Sum for Scalar {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+        iter.reduce(Add::add).unwrap_or(Self::ZERO)
     }
 }
 
@@ -486,7 +486,7 @@ impl<'a> Sum<&'a Scalar> for Scalar {
 
 impl Product for Scalar {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
+        iter.reduce(Mul::mul).unwrap_or(Self::ONE)
     }
 }
 
