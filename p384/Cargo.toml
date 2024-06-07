@@ -9,7 +9,8 @@ and general purpose curve arithmetic support.
 authors = ["RustCrypto Developers", "Frank Denis <github@pureftpd.org>"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/p384"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p384"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/p384"
+repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "secp384r1"]

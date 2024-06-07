@@ -8,7 +8,8 @@ as defined in SP 800-186
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/p224"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/p224"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/p224"
+repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "secp224r1"]

@@ -10,7 +10,8 @@ curve group operations which can be used to implement arbitrary protocols
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/k256"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
+repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
