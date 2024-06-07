@@ -9,7 +9,8 @@ equation coefficients
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/primeorder"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/primeorder"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/primeorder"
+repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc"]
