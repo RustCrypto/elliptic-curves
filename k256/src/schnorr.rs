@@ -509,4 +509,12 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn try_from() {
+        // Pass an invalid signature (shorter than Self::BYTES / 2) and make sure
+        // it does not panic, but return Err
+        let invalid_signature = [111; 24];
+        assert_eq!(Signature::try_from(&invalid_signature[..]).is_err(), true);
+    }
 }
