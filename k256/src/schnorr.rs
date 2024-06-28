@@ -117,6 +117,31 @@ impl Signature {
     fn split(&self) -> (&FieldElement, &NonZeroScalar) {
         (self.r(), self.s())
     }
+
+    /// Parse a Secp256k1 signature from a byte array.
+    pub fn from_bytes(bytes: &SignatureBytes) -> Result<Self> {
+        let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
+
+        let r: FieldElement =
+            Option::from(FieldElement::from_bytes(FieldBytes::from_slice(r_bytes)))
+                .ok_or_else(Error::new)?;
+
+        // one of the rules for valid signatures: !is_infinite(R);
+        if r.is_zero().into() {
+            return Err(Error::new());
+        }
+
+        let s = NonZeroScalar::try_from(s_bytes).map_err(|_| Error::new())?;
+
+        Ok(Self { r, s })
+    }
+
+    /// Parse a Secp256k1 signature from a byte slice.
+    pub fn from_slice(bytes: &[u8]) -> Result<Self> {
+        SignatureBytes::try_from(bytes)
+            .map_err(|_| Error::new())?
+            .try_into()
+    }
 }
 
 impl Eq for Signature {}
@@ -139,24 +164,27 @@ impl PartialEq for Signature {
     }
 }
 
+impl TryFrom<SignatureBytes> for Signature {
+    type Error = Error;
+
+    fn try_from(signature: SignatureBytes) -> Result<Signature> {
+        Signature::from_bytes(&signature)
+    }
+}
+
+impl TryFrom<&SignatureBytes> for Signature {
+    type Error = Error;
+
+    fn try_from(signature: &SignatureBytes) -> Result<Signature> {
+        Signature::from_bytes(signature)
+    }
+}
+
 impl TryFrom<&[u8]> for Signature {
     type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Signature> {
-        let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
-
-        let r: FieldElement =
-            Option::from(FieldElement::from_bytes(FieldBytes::from_slice(r_bytes)))
-                .ok_or_else(Error::new)?;
-
-        // one of the rules for valid signatures: !is_infinite(R);
-        if r.is_zero().into() {
-            return Err(Error::new());
-        }
-
-        let s = NonZeroScalar::try_from(s_bytes).map_err(|_| Error::new())?;
-
-        Ok(Self { r, s })
+        Signature::from_slice(bytes)
     }
 }
 
@@ -508,5 +536,13 @@ mod tests {
                 vector.index
             );
         }
+    }
+
+    #[test]
+    fn try_from() {
+        // Pass an invalid signature (shorter than Self::BYTES / 2) and make sure
+        // it does not panic, but return Err
+        let invalid_signature = [111; 24];
+        assert_eq!(Signature::try_from(&invalid_signature[..]).is_err(), true);
     }
 }
