@@ -1,6 +1,6 @@
 [package]
 name = "k256"
-version = "0.14.0-pre"
+version = "0.14.0-pre.0"
 description = """
 secp256k1 elliptic curve library written in pure Rust with support for ECDSA
 signing/verification/public-key recovery, Taproot Schnorr signatures (BIP340),
@@ -10,7 +10,8 @@ curve group operations which can be used to implement arbitrary protocols
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/k256"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/k256"
+repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
@@ -36,7 +37,7 @@ ecdsa-core = { version = "=0.17.0-pre.5", package = "ecdsa", default-features = 
 hex-literal = "0.4"
 num-bigint = "0.4"
 num-traits = "0.2"
-proptest = "1.4"
+proptest = "1.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 sha3 = { version = "=0.11.0-pre.3", default-features = false }
 
