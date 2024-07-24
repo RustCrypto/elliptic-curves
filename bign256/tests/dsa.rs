@@ -1,23 +1,24 @@
 //! bign256 DSA Tests
 
-#![cfg(feature = "dsa")]
+#![cfg(feature = "ecdsa")]
+
+use elliptic_curve::ops::Reduce;
+use hex_literal::hex;
+use proptest::prelude::*;
 
 use bign256::{
-    dsa::{
+    ecdsa::{
         signature::{Signer, Verifier},
         Signature, SigningKey, VerifyingKey,
     },
     NonZeroScalar, Scalar, U256,
 };
-use elliptic_curve::ops::Reduce;
-use hex_literal::hex;
-use proptest::prelude::*;
 
-const PUBLIC_KEY: [u8; 65] = hex!(
-    "04
-    D07F8590A8F77BF84F1EF10C6DE44CF5DDD52B4C9DE4CE3FE0799D1750561ABD
-    909AD9B92A4DB89A4A050959DA2E0C1926281B466D68913417C8E86103A6C67A"
+const PUBLIC_KEY: [u8; 64] = hex!(
+    "BD1A5650 179D79E0 3FCEE49D 4C2BD5DD F54CE46D 0CF11E4F F87BF7A8 90857FD0"
+    "7AC6A603 61E8C817 3491686D 461B2826 190C2EDA 5909054A 9AB84D2A B9D99A90"
 );
+
 const MSG: &[u8] = b"testing";
 const SIG: [u8; 48] = hex!(
     "63F59C523FF1780851143114FFBC5C13"
@@ -26,7 +27,7 @@ const SIG: [u8; 48] = hex!(
 
 #[test]
 fn verify_test_vector() {
-    let vk = VerifyingKey::from_sec1_bytes(&PUBLIC_KEY).unwrap();
+    let vk = VerifyingKey::from_bytes(&PUBLIC_KEY).unwrap();
     let sig = Signature::try_from(&SIG).unwrap();
     assert!(vk.verify(MSG, &sig).is_ok());
 }

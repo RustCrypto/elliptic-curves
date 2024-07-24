@@ -9,21 +9,21 @@
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! use rand_core::OsRng; // requires 'getrandom` feature
 //! use bign256::{
-//!     dsa::{Signature, SigningKey, signature::Signer},
+//!     ecdsa::{Signature, SigningKey, signature::Signer},
 //!     SecretKey
 //! };
 //!
 //! // Signing
 //! let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
 //! let signing_key = SigningKey::new(&secret_key)?;
-//! let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();
+//! let verifying_key_bytes = signing_key.verifying_key().to_bytes();
 //! let message = b"test message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verifying
-//! use bign256::dsa::{VerifyingKey, signature::Verifier};
+//! use bign256::ecdsa::{VerifyingKey, signature::Verifier};
 //!
-//! let verifying_key = VerifyingKey::from_sec1_bytes(&verifying_key_bytes)?;
+//! let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes)?;
 //! verifying_key.verify(message, &signature)?;
 //! # Ok(())
 //! # }
