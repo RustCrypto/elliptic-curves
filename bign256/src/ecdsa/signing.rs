@@ -19,7 +19,7 @@ use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Sca
 use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    array::{consts::U32, typenum::Unsigned, Array},
+    array::{sizes::U32, typenum::Unsigned, Array},
     ops::{MulByGenerator, Reduce},
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
