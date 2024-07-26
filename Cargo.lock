@@ -613,6 +613,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
+ "hex",
  "hex-literal",
  "num-bigint",
  "num-traits",
