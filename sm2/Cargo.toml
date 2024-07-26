@@ -38,6 +38,7 @@ alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std", "signature?/std"]
 
 arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
+bits = ["arithmetic", "elliptic-curve/bits"]
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]
 getrandom = ["rand_core/getrandom"]
 pem = ["elliptic-curve/pem", "pkcs8"]
