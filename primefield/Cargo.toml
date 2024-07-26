@@ -1,6 +1,6 @@
 [package]
 name = "primefield"
-version = "0.14.0-pre"
+version = "0.14.0-pre.0"
 description = "Macros for generating prime field implementations"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
