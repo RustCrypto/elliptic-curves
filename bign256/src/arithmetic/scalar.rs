@@ -33,9 +33,6 @@ use primeorder::impl_bernstein_yang_invert;
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
-#[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
-
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
 
