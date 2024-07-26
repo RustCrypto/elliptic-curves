@@ -36,9 +36,6 @@ use elliptic_curve::{
 };
 use primefield::{impl_bernstein_yang_invert, impl_field_op};
 
-#[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
-
 #[cfg(feature = "serde")]
 use serdect::serde::{de, ser, Deserialize, Serialize};
 
@@ -573,19 +570,6 @@ impl PrimeField for Scalar {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-}
-
-#[cfg(feature = "bits")]
-impl PrimeFieldBits for Scalar {
-    type ReprBits = fiat_p521_scalar_montgomery_domain_field_element;
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.to_canonical().to_words().into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        NistP521::ORDER.to_words().into()
     }
 }
 

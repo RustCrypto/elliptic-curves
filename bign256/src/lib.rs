@@ -156,4 +156,4 @@ pub struct SecretKey {
 
 /// Bit representation of a BIGN P-256 scalar field element.
 #[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::ScalarBits<BignP256>;
+pub type ScalarBits = elliptic_curve::scalar::ScalarBits<BignP256>;
