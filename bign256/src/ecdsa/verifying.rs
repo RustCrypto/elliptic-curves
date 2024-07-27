@@ -26,7 +26,7 @@ use belt_hash::{
     BeltHash,
 };
 use elliptic_curve::{
-    array::{consts::U32, typenum::Unsigned, Array},
+    array::{sizes::U32, typenum::Unsigned, Array},
     group::GroupEncoding,
     ops::{LinearCombination, Reduce},
     Curve, Field, Group,
