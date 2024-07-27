@@ -294,6 +294,7 @@ mod tests {
                 msg: &[u8],
                 sig: &[u8],
                 pass: bool,
+                p1363_sig: bool,
             ) -> Option<&'static str> {
                 let x = element_from_padded_slice::<Secp256k1>(wx);
                 let y = element_from_padded_slice::<Secp256k1>(wy);
@@ -302,10 +303,18 @@ mod tests {
                 let verifying_key =
                     ecdsa_core::VerifyingKey::from_encoded_point(&q_encoded).unwrap();
 
-                let sig = match Signature::<Secp256k1>::from_der(sig) {
-                    Ok(s) => s.normalize_s(),
-                    Err(_) if !pass => return None,
-                    Err(_) => return Some("failed to parse signature ASN.1"),
+                let sig = if p1363_sig {
+                    match Signature::<Secp256k1>::from_slice(sig) {
+                        Ok(s) => s.normalize_s(),
+                        Err(_) if !pass => return None,
+                        Err(_) => return Some("failed to parse signature P1363"),
+                    }
+                } else {
+                    match Signature::<Secp256k1>::from_der(sig) {
+                        Ok(s) => s.normalize_s(),
+                        Err(_) if !pass => return None,
+                        Err(_) => return Some("failed to parse signature ASN.1"),
+                    }
                 };
 
                 match verifying_key.verify(msg, &sig) {
@@ -316,28 +325,38 @@ mod tests {
                 }
             }
 
-            let data = include_bytes!(concat!("test_vectors/data/", "wycheproof", ".blb"));
-
-            for (i, row) in Blob5Iterator::new(data).unwrap().enumerate() {
-                let [wx, wy, msg, sig, status] = row.unwrap();
-                let pass = match status[0] {
-                    0 => false,
-                    1 => true,
-                    _ => panic!("invalid value for pass flag"),
-                };
-                if let Some(desc) = run_test(wx, wy, msg, sig, pass) {
-                    panic!(
-                        "\n\
-                                 Failed test №{}: {}\n\
-                                 wx:\t{:?}\n\
-                                 wy:\t{:?}\n\
-                                 msg:\t{:?}\n\
-                                 sig:\t{:?}\n\
-                                 pass:\t{}\n",
-                        i, desc, wx, wy, msg, sig, pass,
-                    );
+            fn run(data: &[u8], p1363_sig: bool) {
+                for (i, row) in Blob5Iterator::new(data).unwrap().enumerate() {
+                    let [wx, wy, msg, sig, status] = row.unwrap();
+                    let pass = match status[0] {
+                        0 => false,
+                        1 => true,
+                        _ => panic!("invalid value for pass flag"),
+                    };
+                    if let Some(desc) = run_test(wx, wy, msg, sig, pass, p1363_sig) {
+                        panic!(
+                            "\n\
+                                     Failed test №{}: {}\n\
+                                     wx:\t{:?}\n\
+                                     wy:\t{:?}\n\
+                                     msg:\t{:?}\n\
+                                     sig:\t{:?}\n\
+                                     pass:\t{}\n",
+                            i,
+                            desc,
+                            hex::encode(wx),
+                            hex::encode(wy),
+                            hex::encode(msg),
+                            hex::encode(sig),
+                            pass,
+                        );
+                    }
                 }
             }
+            let data = include_bytes!(concat!("test_vectors/data/", "wycheproof", ".blb"));
+            run(data, false);
+            let data2 = include_bytes!(concat!("test_vectors/data/", "wycheproof-p1316", ".blb"));
+            run(data2, true);
         }
     }
 }

@@ -40,6 +40,7 @@ num-traits = "0.2"
 proptest = "1.5"
 rand_core = { version = "0.6", features = ["getrandom"] }
 sha3 = { version = "=0.11.0-pre.3", default-features = false }
+hex = "0.4.3"
 
 [features]
 default = ["arithmetic", "ecdsa", "pkcs8", "precomputed-tables", "schnorr", "std"]
