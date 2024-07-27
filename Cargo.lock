@@ -766,7 +766,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-pre.0"
+version = "0.14.0-pre.1"
 dependencies = [
  "blobby",
  "criterion",
@@ -782,7 +782,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-pre"
+version = "0.14.0-pre.1"
 dependencies = [
  "blobby",
  "criterion",
@@ -798,7 +798,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-pre"
+version = "0.14.0-pre.1"
 dependencies = [
  "base16ct",
  "blobby",
@@ -879,7 +879,7 @@ version = "0.14.0-pre.0"
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-pre.0"
+version = "0.14.0-pre.1"
 dependencies = [
  "elliptic-curve",
  "serdect 0.2.0",
