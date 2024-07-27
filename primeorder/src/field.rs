@@ -86,7 +86,7 @@ macro_rules! impl_mont_field_element {
                     return Err($crate::elliptic_curve::Error);
                 }
 
-                Option::from(Self::from_bytes(Array::from_slice(slice)))
+                Option::from(Self::from_bytes(&Array::try_from(slice).unwrap()))
                     .ok_or($crate::elliptic_curve::Error)
             }
 

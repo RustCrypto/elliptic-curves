@@ -101,6 +101,7 @@ impl SigningKey {
 //
 
 impl PrehashSigner<Signature> for SigningKey {
+    #[allow(deprecated)] // clone_from_slice
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
         if prehash.len() != <BignP256 as Curve>::FieldBytesSize::USIZE {
             return Err(Error::new());

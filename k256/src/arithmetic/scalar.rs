@@ -1038,7 +1038,7 @@ mod tests {
         let m = Scalar::modulus_as_biguint();
 
         fn reduce<T: Reduce<U256, Bytes = FieldBytes>>(arr: &[u8]) -> T {
-            T::reduce_bytes(Array::from_slice(arr))
+            T::reduce_bytes(&Array::try_from(arr).unwrap())
         }
 
         // Regular reduction

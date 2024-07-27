@@ -54,11 +54,8 @@ impl Scalar {
 
     /// Decode [`Scalar`] from a big endian byte slice.
     pub fn from_slice(slice: &[u8]) -> Result<Self> {
-        if slice.len() == 32 {
-            Option::from(Self::from_bytes(FieldBytes::from_slice(slice))).ok_or(Error)
-        } else {
-            Err(Error)
-        }
+        let field_bytes = FieldBytes::try_from(slice).map_err(|_| Error)?;
+        Self::from_bytes(&field_bytes).into_option().ok_or(Error)
     }
 
     /// Decode [`Scalar`] from [`U256`] converting it into Montgomery form:

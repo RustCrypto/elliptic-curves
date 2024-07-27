@@ -189,6 +189,7 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
     }
 
     // A2: calculate e=Hv(M~)
+    #[allow(deprecated)] // from_slice
     let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
 
     // A3: pick a random number k in [1, n-1] via a random number generator

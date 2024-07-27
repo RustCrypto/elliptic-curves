@@ -140,6 +140,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         let s = signature.s(); // NonZeroScalar checked at signature parse time
 
         // B4: calculate e'=Hv(M'~)
+        #[allow(deprecated)] // from_slice
         let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
 
         // B5: calculate t = (r' + s') modn, verification failed if t=0
