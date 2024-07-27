@@ -4,17 +4,17 @@ use criterion::{
     black_box, criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
 };
 use hex_literal::hex;
-use p521::{elliptic_curve::group::ff::PrimeField, FieldBytes, ProjectivePoint, Scalar};
+use p521::{elliptic_curve::group::ff::PrimeField, ProjectivePoint, Scalar};
 
 fn test_scalar_x() -> Scalar {
     black_box(Scalar::from_repr(
-        FieldBytes::clone_from_slice(&hex!("01d7bb864c5b5ecae019296cf9b5c63a166f5f1113942819b1933d889a96d12245777a99428f93de4fc9a18d709bf91889d7f8dddd522b4c364aeae13c983e9fae46"))
+        hex!("01d7bb864c5b5ecae019296cf9b5c63a166f5f1113942819b1933d889a96d12245777a99428f93de4fc9a18d709bf91889d7f8dddd522b4c364aeae13c983e9fae46").into()
     ).unwrap())
 }
 
 fn test_scalar_y() -> Scalar {
     black_box(Scalar::from_repr(
-        FieldBytes::clone_from_slice(&hex!("017e49b8ea8f9d1b7c0378e378a7a42e68e12cf78779ed41dcd29a090ae7e0f883b0d0f2cbc8f0473c0ad6732bea40d371a7f363bc6537d075bd1a4c23e558b0bc73"))
+        hex!("017e49b8ea8f9d1b7c0378e378a7a42e68e12cf78779ed41dcd29a090ae7e0f883b0d0f2cbc8f0473c0ad6732bea40d371a7f363bc6537d075bd1a4c23e558b0bc73").into()
     ).unwrap())
 }
 

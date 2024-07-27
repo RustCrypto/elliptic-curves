@@ -279,7 +279,8 @@ mod tests {
                     for v in data.iter().take(offset) {
                         assert_eq!(*v, 0, "EcdsaVerifier: point too large");
                     }
-                    elliptic_curve::FieldBytes::<C>::clone_from_slice(&data[offset..])
+                    elliptic_curve::FieldBytes::<C>::try_from(&data[offset..])
+                        .expect("length mismatch")
                 } else {
                     let mut point = elliptic_curve::FieldBytes::<C>::default();
                     let offset = point_len - data.len();

@@ -36,7 +36,6 @@ use core::{
 };
 use elliptic_curve::ops::Invert;
 use elliptic_curve::{
-    array::Array,
     ff::{self, Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
@@ -58,9 +57,6 @@ impl FieldElement {
     /// Multiplicative identity.
     pub const ONE: Self = Self::from_u64(1);
 
-    /// Number of bytes in the serialized representation.
-    const BYTES: usize = 66;
-
     /// Create a [`FieldElement`] from a canonical big-endian representation.
     pub fn from_bytes(repr: &FieldBytes) -> CtOption<Self> {
         let uint = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(repr);
@@ -69,11 +65,8 @@ impl FieldElement {
 
     /// Decode [`FieldElement`] from a big endian byte slice.
     pub fn from_slice(slice: &[u8]) -> elliptic_curve::Result<Self> {
-        if slice.len() != Self::BYTES {
-            return Err(Error);
-        }
-
-        Option::from(Self::from_bytes(Array::from_slice(slice))).ok_or(Error)
+        let field_bytes = FieldBytes::try_from(slice).map_err(|_| Error)?;
+        Self::from_bytes(&field_bytes).into_option().ok_or(Error)
     }
 
     /// Decode [`FieldElement`] from [`U576`].
@@ -125,7 +118,7 @@ impl FieldElement {
     pub fn to_bytes(self) -> FieldBytes {
         let mut ret = fiat_p521_to_bytes(&self.0);
         ret.reverse();
-        Array::clone_from_slice(&ret)
+        ret.into()
     }
 
     /// Determine if this [`FieldElement`] is odd in the SEC1 sense: `self mod 2 == 1`.

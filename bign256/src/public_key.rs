@@ -57,7 +57,8 @@ impl PublicKey {
 
     /// Get [`PublicKey`] from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let mut bytes = Array::clone_from_slice(bytes);
+        let mut bytes = Array::try_from(bytes).map_err(|_| Error)?;
+
         // It is because public_key in little endian
         bytes[..32].reverse();
         bytes[32..].reverse();

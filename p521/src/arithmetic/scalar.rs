@@ -21,7 +21,6 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
-    array::Array,
     bigint::{self, Integer},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce},
@@ -78,9 +77,6 @@ impl Scalar {
     /// Multiplicative identity.
     pub const ONE: Self = Self::from_u64(1);
 
-    /// Number of bytes in the serialized representation.
-    const BYTES: usize = 66;
-
     /// Create a [`Scalar`] from a canonical big-endian representation.
     pub fn from_bytes(repr: &FieldBytes) -> CtOption<Self> {
         Self::from_uint(FieldBytesEncoding::<NistP521>::decode_field_bytes(repr))
@@ -88,11 +84,8 @@ impl Scalar {
 
     /// Decode [`Scalar`] from a big endian byte slice.
     pub fn from_slice(slice: &[u8]) -> Result<Self> {
-        if slice.len() != Self::BYTES {
-            return Err(Error);
-        }
-
-        Option::from(Self::from_bytes(Array::from_slice(slice))).ok_or(Error)
+        let field_bytes = FieldBytes::try_from(slice).map_err(|_| Error)?;
+        Self::from_bytes(&field_bytes).into_option().ok_or(Error)
     }
 
     /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form:

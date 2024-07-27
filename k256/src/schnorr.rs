@@ -120,18 +120,20 @@ impl Signature {
 
     /// Parse a Secp256k1 signature from a byte array.
     pub fn from_bytes(bytes: &SignatureBytes) -> Result<Self> {
-        let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
+        let components = FieldBytes::slice_as_chunks(bytes).0;
+        let r_bytes = components[0];
+        let s_bytes = components[1];
 
-        let r: FieldElement =
-            Option::from(FieldElement::from_bytes(FieldBytes::from_slice(r_bytes)))
-                .ok_or_else(Error::new)?;
+        let r = FieldElement::from_bytes(&r_bytes)
+            .into_option()
+            .ok_or_else(Error::new)?;
 
         // one of the rules for valid signatures: !is_infinite(R);
         if r.is_zero().into() {
             return Err(Error::new());
         }
 
-        let s = NonZeroScalar::try_from(s_bytes).map_err(|_| Error::new())?;
+        let s = NonZeroScalar::try_from(s_bytes.as_slice()).map_err(|_| Error::new())?;
 
         Ok(Self { r, s })
     }

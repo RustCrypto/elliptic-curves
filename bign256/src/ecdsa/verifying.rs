@@ -107,6 +107,7 @@ impl VerifyingKey {
 // `*Verifier` trait impls
 //
 impl PrehashVerifier<Signature> for VerifyingKey {
+    #[allow(deprecated)] // clone_from_slice
     fn verify_prehash(&self, prehash: &[u8], signature: &Signature) -> Result<()> {
         // 1. If |𝑆| != 3𝑙, return NO.
         if prehash.len() != <BignP256 as Curve>::FieldBytesSize::USIZE {

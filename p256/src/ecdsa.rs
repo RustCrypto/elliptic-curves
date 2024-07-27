@@ -76,7 +76,7 @@ mod tests {
         },
         AffinePoint, EncodedPoint,
     };
-    use elliptic_curve::{array::Array, sec1::FromEncodedPoint};
+    use elliptic_curve::sec1::FromEncodedPoint;
     use hex_literal::hex;
     use sha2::Digest;
 
@@ -128,24 +128,16 @@ mod tests {
         // <https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/digital-signatures>
         let verifier = VerifyingKey::from_affine(
             AffinePoint::from_encoded_point(&EncodedPoint::from_affine_coordinates(
-                Array::from_slice(&hex!(
-                    "e0e7b99bc62d8dd67883e39ed9fa0657789c5ff556cc1fd8dd1e2a55e9e3f243"
-                )),
-                Array::from_slice(&hex!(
-                    "63fbfd0232b95578075c903a4dbf85ad58f8350516e1ec89b0ee1f5e1362da69"
-                )),
+                &hex!("e0e7b99bc62d8dd67883e39ed9fa0657789c5ff556cc1fd8dd1e2a55e9e3f243").into(),
+                &hex!("63fbfd0232b95578075c903a4dbf85ad58f8350516e1ec89b0ee1f5e1362da69").into(),
                 false,
             ))
             .unwrap(),
         )
         .unwrap();
         let signature = Signature::from_scalars(
-            Array::clone_from_slice(&hex!(
-                "f5087878e212b703578f5c66f434883f3ef414dc23e2e8d8ab6a8d159ed5ad83"
-            )),
-            Array::clone_from_slice(&hex!(
-                "306b4c6c20213707982dffbb30fba99b96e792163dd59dbe606e734328dd7c8a"
-            )),
+            hex!("f5087878e212b703578f5c66f434883f3ef414dc23e2e8d8ab6a8d159ed5ad83"),
+            hex!("306b4c6c20213707982dffbb30fba99b96e792163dd59dbe606e734328dd7c8a"),
         )
         .unwrap();
         let result = verifier.verify_prehash(
