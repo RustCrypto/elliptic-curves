@@ -89,50 +89,50 @@ pub const ADD_TEST_VECTORS: &[([u8; 32], [u8; 32])] = &[
     ),
 ];
 
+// Snippet for generation:
+// p = 2**256 - 189
+// a = 2**256 - 192
+// b = 0x77CE6C1515F3A8EDD2C13AABE4D8FBBE4CF55069978B9253B22E7D6BD69C03F1
+// Gx = 0
+// Gy = 0x6BF7FC3CFB16D69F5CE4C9A351D6835D78913966C408F6521E29CF1804516A93
+// h = 1
+//
+// # Create the finite field and the elliptic curve
+// F = GF(p)
+// E = EllipticCurve(F, [a, b])
+//
+// # Define the base point
+// G = E(Gx, Gy)
+// n = G.order()
+//
+// # Generate test vectors
+// def generate_mul_test_vectors(num_vectors):
+//     vectors = []
+//     for _ in range(num_vectors):
+//         k = ZZ.random_element(1, n)
+//         P = k * G
+//         vectors.append((k, P))
+//     return vectors
+//
+// # Number of test vectors to generate
+// num_vectors = 20
+// test_vectors = generate_mul_test_vectors(num_vectors)
+//
+// # Print the test vectors in the required format
+// for k, P in test_vectors:
+//     k_hex = f"{k:064X}"
+//     Px_hex = f"{int(P[0]):064X}"
+//     Py_hex = f"{int(P[1]):064X}"
+//     print(f'    (')
+//     print(f'        hex!("{k_hex}"),')
+//     print(f'        hex!("{Px_hex}"),')
+//     print(f'        hex!("{Py_hex}"),')
+//     print(f'    ),')
+
 /// Scalar multiplication with the generator.
 ///
 /// These are the test vectors from sagemath snippet,that are not part of [`ADD_TEST_VECTORS`].
-/// k values is from NIST-P256 test vectors`
-/// ```ignore
-/// p = 2**256 - 189
-/// a = 2**256 - 192
-/// b = 0x77CE6C1515F3A8EDD2C13AABE4D8FBBE4CF55069978B9253B22E7D6BD69C03F1
-/// Gx = 0
-/// Gy = 0x6BF7FC3CFB16D69F5CE4C9A351D6835D78913966C408F6521E29CF1804516A93
-/// h = 1
-///
-/// # Create the finite field and the elliptic curve
-/// F = GF(p)
-/// E = EllipticCurve(F, [a, b])
-///
-/// # Define the base point
-/// G = E(Gx, Gy)
-/// n = G.order()
-///
-/// # Generate test vectors
-/// def generate_mul_test_vectors(num_vectors):
-///     vectors = []
-///     for _ in range(num_vectors):
-///         k = ZZ.random_element(1, n)
-///         P = k * G
-///         vectors.append((k, P))
-///     return vectors
-///
-/// # Number of test vectors to generate
-/// num_vectors = 20
-/// test_vectors = generate_mul_test_vectors(num_vectors)
-///
-/// # Print the test vectors in the required format
-/// for k, P in test_vectors:
-///     k_hex = f"{k:064X}"
-///     Px_hex = f"{int(P[0]):064X}"
-///     Py_hex = f"{int(P[1]):064X}"
-///     print(f'    (')
-///     print(f'        hex!("{k_hex}"),')
-///     print(f'        hex!("{Px_hex}"),')
-///     print(f'        hex!("{Py_hex}"),')
-///     print(f'    ),')
-///
+/// k values is generated randomly
 pub const MUL_TEST_VECTORS: &[([u8; 32], [u8; 32], [u8; 32])] = &[
     (
         hex!("CED4907163D8C2250299A2FE6A9D4F8A676501B90D570D50999B9E17FD993DE6"),
