@@ -2,27 +2,23 @@
 
 #![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
 
-// TODO(tarcieri): these are failing
-//
-// use bign256::{
-//     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
-//     AffinePoint, ProjectivePoint, Scalar,
-// };
-// use elliptic_curve::{
-//     group::{ff::PrimeField, GroupEncoding},
-//     sec1::{self, ToEncodedPoint},
-// };
-// use primeorder::{impl_projective_arithmetic_tests, Double};
-//
-// impl_projective_arithmetic_tests!(
-//     AffinePoint,
-//     ProjectivePoint,
-//     Scalar,
-//     ADD_TEST_VECTORS,
-//     MUL_TEST_VECTORS
-// );
+use bign256::{
+    test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
+    AffinePoint, ProjectivePoint, Scalar,
+};
+use elliptic_curve::{
+    group::{ff::PrimeField, GroupEncoding},
+    sec1::{self, ToEncodedPoint},
+};
+use primeorder::{impl_projective_arithmetic_tests, Double};
 
-use bign256::{elliptic_curve::group::GroupEncoding, ProjectivePoint};
+impl_projective_arithmetic_tests!(
+    AffinePoint,
+    ProjectivePoint,
+    Scalar,
+    ADD_TEST_VECTORS,
+    MUL_TEST_VECTORS
+);
 
 #[test]
 fn projective_identity_to_bytes() {
