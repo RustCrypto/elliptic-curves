@@ -34,10 +34,10 @@ use core::{
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, SubAssign},
 };
-use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     bigint::Limb,
     ff::PrimeField,
+    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
