@@ -18,20 +18,23 @@
 //!
 //! // Encrypting
 //! let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
-//! let encrypting_key = EncryptingKey::new_with_mode(secret_key, Mode::C1C2C3);
+//! let public_key = secret_key.public_key();
+//! let encrypting_key = EncryptingKey::new_with_mode(public_key, Mode::C1C2C3);
 //! let plaintext = b"plaintext";
 //! let ciphertext = encrypting_key.encrypt(plaintext)?;
 //!
 //! use sm2::pke::DecryptingKey;
 //! // Decrypting
-//! let decrypting_key = DecryptingKey::new_with_mode(secret_key, Mode::C1C2C3);
+//! let decrypting_key = DecryptingKey::new_with_mode(secret_key.to_nonzero_scalar(), Mode::C1C2C3);
 //! assert_eq!(decrypting_key.decrypt(&ciphertext)?, plaintext);
 //!
-//! // Encrypting asn.1
-//! let ciphertext = encrypting_key.encrypt_asna1(plaintext)?;
+//! // Encrypting ASN.1 DER
+//! let ciphertext = encrypting_key.encrypt_der(plaintext)?;
 //!
-//! // Decrypting asn.1
-//! assert_eq!(decrypting_key.decrypt_asna1(&ciphertext)?, plaintext);
+//! // Decrypting ASN.1 DER
+//! assert_eq!(decrypting_key.decrypt_der(&ciphertext)?, plaintext);
+//!
+//! Ok(())
 //! # }
 //!  ```
 //!
@@ -92,15 +95,15 @@ impl<'a> EncodeValue for Cipher<'a> {
     fn value_len(&self) -> elliptic_curve::pkcs8::der::Result<Length> {
         UintRef::new(&self.x.to_be_bytes())?.encoded_len()?
             + UintRef::new(&self.y.to_be_bytes())?.encoded_len()?
-            + OctetStringRef::new(&self.digest)?.encoded_len()?
-            + OctetStringRef::new(&self.cipher)?.encoded_len()?
+            + OctetStringRef::new(self.digest)?.encoded_len()?
+            + OctetStringRef::new(self.cipher)?.encoded_len()?
     }
 
     fn encode_value(&self, writer: &mut impl Writer) -> elliptic_curve::pkcs8::der::Result<()> {
         UintRef::new(&self.x.to_be_bytes())?.encode(writer)?;
         UintRef::new(&self.y.to_be_bytes())?.encode(writer)?;
-        OctetStringRef::new(&self.digest)?.encode(writer)?;
-        OctetStringRef::new(&self.cipher)?.encode(writer)?;
+        OctetStringRef::new(self.digest)?.encode(writer)?;
+        OctetStringRef::new(self.cipher)?.encode(writer)?;
         Ok(())
     }
 }
@@ -118,8 +121,8 @@ impl<'a> DecodeValue<'a> for Cipher<'a> {
             let digest = OctetStringRef::decode(nr)?.into();
             let cipher = OctetStringRef::decode(nr)?.into();
             Ok(Cipher {
-                x: Uint::from_be_bytes(zero_byte_slice(x)?),
-                y: Uint::from_be_bytes(zero_byte_slice(y)?),
+                x: Uint::from_be_bytes(zero_pad_byte_slice(x)?),
+                y: Uint::from_be_bytes(zero_pad_byte_slice(y)?),
                 digest,
                 cipher,
             })
@@ -137,8 +140,8 @@ fn kdf(hasher: &mut dyn DynDigest, kpb: AffinePoint, c2: &mut [u8]) -> Result<()
     let encode_point = kpb.to_encoded_point(false);
 
     while offset < klen {
-        hasher.update(encode_point.x().unwrap());
-        hasher.update(encode_point.y().unwrap());
+        hasher.update(encode_point.x().ok_or(elliptic_curve::Error)?);
+        hasher.update(encode_point.y().ok_or(elliptic_curve::Error)?);
         hasher.update(&ct.to_be_bytes());
 
         hasher
@@ -161,7 +164,7 @@ fn xor(c2: &mut [u8], ha: &[u8], offset: usize, xor_len: usize) {
 }
 
 /// Converts a byte slice to a fixed-size array, padding with leading zeroes if necessary.
-pub(crate) fn zero_byte_slice<const N: usize>(
+pub(crate) fn zero_pad_byte_slice<const N: usize>(
     bytes: &[u8],
 ) -> elliptic_curve::pkcs8::der::Result<[u8; N]> {
     let num_zeroes = N

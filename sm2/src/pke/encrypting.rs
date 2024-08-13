@@ -84,8 +84,8 @@ impl EncryptingKey {
     ///
     /// This method calculates the digest using the `Sm3` hash function and performs encryption,
     /// then encodes the result in ASN.1 format.
-    pub fn encrypt_asna1(&self, msg: &[u8]) -> Result<Vec<u8>> {
-        self.encrypt_asna1_digest::<Sm3>(msg)
+    pub fn encrypt_der(&self, msg: &[u8]) -> Result<Vec<u8>> {
+        self.encrypt_der_digest::<Sm3>(msg)
     }
 
     /// Encrypts a message using a specified digest algorithm.
@@ -98,7 +98,7 @@ impl EncryptingKey {
     }
 
     /// Encrypts a message using a specified digest algorithm and returns the result in ASN.1 format.
-    pub fn encrypt_asna1_digest<D>(&self, msg: &[u8]) -> Result<Vec<u8>>
+    pub fn encrypt_der_digest<D>(&self, msg: &[u8]) -> Result<Vec<u8>>
     where
         D: 'static + Digest + DynDigest + Send + Sync,
     {
@@ -122,7 +122,7 @@ impl EncryptingKey {
             cipher,
         }
         .to_der()
-        .map_err(|e| elliptic_curve::pkcs8::Error::from(e))?)
+        .map_err(elliptic_curve::pkcs8::Error::from)?)
     }
 }
 
@@ -158,7 +158,7 @@ fn encrypt(
         }
 
         // A4: compute point [𝑘]𝑃𝐵 = (𝑥2, 𝑦2)
-        hpb = (s * &k).to_affine();
+        hpb = (s * k).to_affine();
 
         // A5: compute 𝑡 = 𝐾𝐷𝐹(𝑥2||𝑦2, 𝑘𝑙𝑒𝑛)
         // A6: compute 𝐶2 = 𝑀 ⊕ t
@@ -176,9 +176,9 @@ fn encrypt(
 
     // A7: compute 𝐶3 = 𝐻𝑎𝑠ℎ(𝑥2||𝑀||𝑦2)
     let mut c3 = vec![0; digest.output_size()];
-    digest.update(encode_point.x().unwrap());
+    digest.update(encode_point.x().ok_or(Error)?);
     digest.update(msg);
-    digest.update(encode_point.y().unwrap());
+    digest.update(encode_point.y().ok_or(Error)?);
     digest.finalize_into_reset(&mut c3).map_err(|_e| Error)?;
 
     // A8: output the ciphertext 𝐶 = 𝐶1||𝐶2||𝐶3.
@@ -188,10 +188,10 @@ fn encrypt(
     })
 }
 
-fn next_k(bit_length: u32) -> Uint<4> {
+fn next_k(bit_length: u32) -> U256 {
     loop {
         let k = U256::random_bits(&mut rand_core::OsRng, bit_length);
-        if k.is_zero().unwrap_u8() == 0 && k <= Sm2::ORDER {
+        if !<elliptic_curve::subtle::Choice as Into<bool>>::into(k.is_zero()) && k < Sm2::ORDER {
             return k;
         }
     }

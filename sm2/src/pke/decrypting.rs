@@ -98,7 +98,7 @@ impl DecryptingKey {
     }
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the default digest algorithm (`Sm3`).
-    pub fn decrypt_asna1(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
+    pub fn decrypt_der(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
         self.decrypt_asna1_digest::<Sm3>(ciphertext)
     }
 
@@ -107,17 +107,16 @@ impl DecryptingKey {
     where
         D: 'static + Digest + DynDigest + Send + Sync,
     {
-        let cipher =
-            Cipher::from_der(&ciphertext).map_err(|e| elliptic_curve::pkcs8::Error::from(e))?;
+        let cipher = Cipher::from_der(ciphertext).map_err(elliptic_curve::pkcs8::Error::from)?;
         let prefix: &[u8] = &[0x04];
         let x: [u8; 32] = cipher.x.to_be_bytes();
         let y: [u8; 32] = cipher.y.to_be_bytes();
-        let mut cipher = match self.mode {
+        let cipher = match self.mode {
             Mode::C1C2C3 => [prefix, &x, &y, cipher.cipher, cipher.digest].concat(),
             Mode::C1C3C2 => [prefix, &x, &y, cipher.digest, cipher.cipher].concat(),
         };
 
-        Ok(self.decrypt_digest::<D>(&mut cipher)?.to_vec())
+        Ok(self.decrypt_digest::<D>(&cipher)?.to_vec())
     }
 }
 
@@ -165,7 +164,7 @@ fn decrypt(
 
     // B1: get 𝐶1 from 𝐶
     let (c1, c) = cipher.split_at(c1_len as usize);
-    let encoded_c1 = EncodedPoint::from_bytes(c1).unwrap();
+    let encoded_c1 = EncodedPoint::from_bytes(c1).map_err(Error::from)?;
 
     // verify that point c1 satisfies the elliptic curve
     let mut c1_point = AffinePoint::from_encoded_point(&encoded_c1).unwrap();
@@ -195,9 +194,9 @@ fn decrypt(
     // compute 𝑢 = 𝐻𝑎𝑠ℎ(𝑥2 ∥ 𝑀′∥ 𝑦2).
     let mut u = vec![0u8; digest_size];
     let encode_point = c1_point.to_encoded_point(false);
-    hasher.update(&encode_point.x().unwrap());
-    hasher.update(&mut c2);
-    hasher.update(&encode_point.y().unwrap());
+    hasher.update(encode_point.x().ok_or(Error)?);
+    hasher.update(&c2);
+    hasher.update(encode_point.y().ok_or(Error)?);
     hasher.finalize_into_reset(&mut u).map_err(|_e| Error)?;
     let checked = u
         .iter()

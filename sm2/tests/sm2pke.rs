@@ -18,14 +18,13 @@ const ASN1_CIPHER: [u8; 116] = hex!("307202206ba17ad462a75beeb2caf8a1282687ab7e2
 
 #[test]
 fn decrypt_verify() {
-    let mut cipher = Vec::from(&CIPHER);
     assert_eq!(
         DecryptingKey::new(
             NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8])
                 .unwrap()
                 .into()
         )
-        .decrypt(&mut cipher)
+        .decrypt(&CIPHER)
         .unwrap(),
         MSG
     );
@@ -37,7 +36,7 @@ fn decrypt_asna1_verify() {
         NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8]).unwrap(),
         sm2::pke::Mode::C1C2C3,
     );
-    assert_eq!(dk.decrypt_asna1(&ASN1_CIPHER).unwrap(), MSG);
+    assert_eq!(dk.decrypt_der(&ASN1_CIPHER).unwrap(), MSG);
 }
 
 prop_compose! {
@@ -66,23 +65,23 @@ proptest! {
     #[test]
     fn encrypt_and_decrpyt_asna1(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt_asna1(MSG).unwrap();
-        prop_assert!(dk.decrypt_asna1(&cipher_bytes).is_ok());
+        let cipher_bytes = ek.encrypt_der(MSG).unwrap();
+        prop_assert!(dk.decrypt_der(&cipher_bytes).is_ok());
     }
 
     #[test]
     fn encrypt_and_decrpyt(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let mut cipher_bytes = ek.encrypt(MSG).unwrap();
-        assert_eq!(dk.decrypt(&mut cipher_bytes).unwrap(), MSG);
+        let cipher_bytes = ek.encrypt(MSG).unwrap();
+        assert_eq!(dk.decrypt(&cipher_bytes).unwrap(), MSG);
     }
 
     #[test]
     fn encrypt_and_decrpyt_mode(dk in decrypting_key_c1c2c3()) {
         let ek = dk.encrypting_key();
-        let mut cipher_bytes = ek.encrypt(MSG).unwrap();
+        let cipher_bytes = ek.encrypt(MSG).unwrap();
         assert_eq!(
-            dk.decrypt(&mut cipher_bytes)
+            dk.decrypt(&cipher_bytes)
                 .unwrap(),
             MSG
         );
