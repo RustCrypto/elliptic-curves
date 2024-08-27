@@ -191,7 +191,7 @@ fn encrypt(
 fn next_k(bit_length: u32) -> U256 {
     loop {
         let k = U256::random_bits(&mut rand_core::OsRng, bit_length);
-        if !<elliptic_curve::subtle::Choice as Into<bool>>::into(k.is_zero()) && k < Sm2::ORDER {
+        if !bool::from(k.is_zero()) && k < Sm2::ORDER {
             return k;
         }
     }

@@ -99,11 +99,11 @@ impl DecryptingKey {
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the default digest algorithm (`Sm3`).
     pub fn decrypt_der(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        self.decrypt_asna1_digest::<Sm3>(ciphertext)
+        self.decrypt_der_digest::<Sm3>(ciphertext)
     }
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the specified digest algorithm.
-    pub fn decrypt_asna1_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
+    pub fn decrypt_der_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
     where
         D: 'static + Digest + DynDigest + Send + Sync,
     {

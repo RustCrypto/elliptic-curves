@@ -31,7 +31,7 @@ fn decrypt_verify() {
 }
 
 #[test]
-fn decrypt_asna1_verify() {
+fn decrypt_der_verify() {
     let dk = DecryptingKey::new_with_mode(
         NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8]).unwrap(),
         sm2::pke::Mode::C1C2C3,
@@ -63,7 +63,7 @@ prop_compose! {
 
 proptest! {
     #[test]
-    fn encrypt_and_decrpyt_asna1(dk in decrypting_key()) {
+    fn encrypt_and_decrpyt_der(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
         let cipher_bytes = ek.encrypt_der(MSG).unwrap();
         prop_assert!(dk.decrypt_der(&cipher_bytes).is_ok());
