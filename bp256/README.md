@@ -41,7 +41,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/bp256
+[crate-image]: https://img.shields.io/crates/v/bp256
 [crate-link]: https://crates.io/crates/bp256
 [docs-image]: https://docs.rs/bp256/badge.svg
 [docs-link]: https://docs.rs/bp256/

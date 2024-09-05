@@ -72,7 +72,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/primeorder
+[crate-image]: https://img.shields.io/crates/v/primeorder
 [crate-link]: https://crates.io/crates/primeorder
 [docs-image]: https://docs.rs/primeorder/badge.svg
 [docs-link]: https://docs.rs/primeorder/

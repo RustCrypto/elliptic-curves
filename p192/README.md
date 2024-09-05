@@ -80,7 +80,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/p192
+[crate-image]: https://img.shields.io/crates/v/p192
 [crate-link]: https://crates.io/crates/p192
 [docs-image]: https://docs.rs/p192/badge.svg
 [docs-link]: https://docs.rs/p192/

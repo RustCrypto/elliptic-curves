@@ -42,7 +42,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/primefield
+[crate-image]: https://img.shields.io/crates/v/primefield
 [crate-link]: https://crates.io/crates/primefield
 [docs-image]: https://docs.rs/primefield/badge.svg
 [docs-link]: https://docs.rs/primefield/

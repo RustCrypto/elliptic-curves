@@ -64,7 +64,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://buildstats.info/crate/sm2
+[crate-image]: https://img.shields.io/crates/v/sm2
 [crate-link]: https://crates.io/crates/sm2
 [docs-image]: https://docs.rs/sm2/badge.svg
 [docs-link]: https://docs.rs/sm2/
