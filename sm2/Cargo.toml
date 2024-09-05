@@ -13,7 +13,7 @@ homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/sm2"
 repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
-keywords = ["crypto", "ecc", "shangmi", "signature"]
+keywords = ["crypto", "ecc", "shangmi", "signature", "encryption"]
 edition = "2021"
 rust-version = "1.73"
 
@@ -33,13 +33,14 @@ proptest = "1"
 rand_core = { version = "0.6", features = ["getrandom"] }
 
 [features]
-default = ["arithmetic", "dsa", "pem", "std"]
+default = ["arithmetic", "dsa", "pke", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std", "signature?/std"]
 
 arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]
+pke = ["arithmetic", "dep:sm3"]
 getrandom = ["rand_core/getrandom"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
