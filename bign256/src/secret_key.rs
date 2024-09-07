@@ -1,7 +1,7 @@
 //! Bign256 secret key.
 
 use core::str::FromStr;
-use der::SecretDocument;
+use der::{asn1::OctetStringRef, SecretDocument};
 
 use elliptic_curve::{array::typenum::Unsigned, zeroize::Zeroizing, Error};
 use pkcs8::{
@@ -129,14 +129,15 @@ impl AssociatedAlgorithmIdentifier for SecretKey {
     };
 }
 
-impl TryFrom<pkcs8::PrivateKeyInfo<'_>> for SecretKey {
+impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for SecretKey {
     type Error = pkcs8::Error;
 
-    fn try_from(private_key_info: pkcs8::PrivateKeyInfo<'_>) -> pkcs8::Result<Self> {
+    fn try_from(private_key_info: pkcs8::PrivateKeyInfoRef<'_>) -> pkcs8::Result<Self> {
         private_key_info
             .algorithm
             .assert_oids(ALGORITHM_OID, BignP256::OID)?;
-        Self::from_slice(private_key_info.private_key).map_err(|_| pkcs8::Error::KeyMalformed)
+        Self::from_slice(private_key_info.private_key.as_bytes())
+            .map_err(|_| pkcs8::Error::KeyMalformed)
     }
 }
 
@@ -156,7 +157,10 @@ impl EncodePrivateKey for SecretKey {
         };
 
         let ec_private_key = self.to_bytes();
-        let pkcs8_key = pkcs8::PrivateKeyInfo::new(algorithm_identifier, &ec_private_key);
+        let pkcs8_key = pkcs8::PrivateKeyInfoRef::new(
+            algorithm_identifier,
+            OctetStringRef::new(&ec_private_key)?,
+        );
         Ok(SecretDocument::encode_msg(&pkcs8_key)?)
     }
 }

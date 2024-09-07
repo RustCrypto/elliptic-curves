@@ -17,7 +17,7 @@ edition = "2021"
 rust-version = "1.73"
 
 [dependencies]
-elliptic-curve = { version = "=0.14.0-pre.6", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features = ["sec1"] }
 
 # optional dependencies
 ecdsa-core = { version = "=0.17.0-pre.7", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
