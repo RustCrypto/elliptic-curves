@@ -368,8 +368,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-pre.7"
-source = "git+https://github.com/RustCrypto/signatures.git#839cbdabfe3538b347ac4186eb504658cf46e6c6"
+version = "0.17.0-pre.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8fcbb0e60b9717a7dcee3a03d9d1f4513bd26e24d5f13b48bc03b144ba7bf99"
 dependencies = [
  "der",
  "digest",
@@ -1034,7 +1035,8 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 [[package]]
 name = "rfc6979"
 version = "0.5.0-pre.4"
-source = "git+https://github.com/RustCrypto/signatures.git#839cbdabfe3538b347ac4186eb504658cf46e6c6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "871ee76a3eee98b0f805e5d1caf26929f4565073c580c053a55f886fc15dea49"
 dependencies = [
  "hmac",
  "subtle",
