@@ -240,6 +240,7 @@ impl FieldElement {
         CtOption::new(res, is_root)
     }
 
+    /// Get the field modulus as a [`BigUint`].
     #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
         Self::ONE.negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
