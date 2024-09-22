@@ -376,7 +376,7 @@ dependencies = [
  "digest",
  "elliptic-curve",
  "rfc6979",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "signature",
  "spki",
 ]
@@ -407,7 +407,7 @@ dependencies = [
  "rand_core",
  "sec1",
  "serde_json",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "tap",
  "zeroize",
@@ -620,7 +620,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "rand_core",
- "serdect 0.2.0",
+ "serdect",
  "sha2",
  "sha3",
  "signature",
@@ -753,7 +753,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "sec1",
- "serdect 0.2.0",
+ "serdect",
 ]
 
 [[package]]
@@ -766,7 +766,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "rand_core",
- "serdect 0.2.0",
+ "serdect",
  "sha2",
 ]
 
@@ -782,7 +782,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect 0.2.0",
+ "serdect",
  "sha2",
 ]
 
@@ -798,7 +798,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect 0.2.0",
+ "serdect",
  "sha2",
 ]
 
@@ -816,7 +816,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect 0.2.0",
+ "serdect",
  "sha2",
 ]
 
@@ -888,7 +888,7 @@ name = "primeorder"
 version = "0.14.0-pre.1"
 dependencies = [
  "elliptic-curve",
- "serdect 0.2.0",
+ "serdect",
 ]
 
 [[package]]
@@ -1113,7 +1113,7 @@ dependencies = [
  "der",
  "hybrid-array",
  "pkcs8",
- "serdect 0.3.0-rc.0",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -1147,16 +1147,6 @@ dependencies = [
  "itoa",
  "memchr",
  "ryu",
- "serde",
-]
-
-[[package]]
-name = "serdect"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a84f14a19e9a014bb9f4512488d9829a68e04ecabffb0f9904cd1ace94598177"
-dependencies = [
- "base16ct",
  "serde",
 ]
 
@@ -1211,7 +1201,7 @@ dependencies = [
  "proptest",
  "rand_core",
  "rfc6979",
- "serdect 0.2.0",
+ "serdect",
  "signature",
  "sm3",
 ]
