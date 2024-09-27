@@ -119,7 +119,7 @@ dual licensed as above, without any additional terms or conditions.
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 [Schnorr signatures]: https://en.wikipedia.org/wiki/Schnorr_signature
-[audited by NCC Group]: https://research.nccgroup.com/2023/08/30/public-report-entropy-rust-cryptography-review/
+[audited by NCC Group]: https://www.nccgroup.com/us/research-blog/public-report-entropyrust-cryptography-review/
 [Entropy]: https://entropy.xyz/
 [BIP0062]: https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki
 [BIP0340]: https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki
