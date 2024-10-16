@@ -15,7 +15,7 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc"]
 edition = "2021"
-rust-version = "1.73"
+rust-version = "1.81"
 
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features = ["arithmetic", "sec1"] }
