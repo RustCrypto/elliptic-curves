@@ -16,7 +16,7 @@ readme = "README.md"
 categories = ["cryptography", "cryptography::cryptocurrencies", "no-std"]
 keywords = ["bitcoin", "crypto", "ecc", "ethereum", "secp256k1"]
 edition = "2021"
-rust-version = "1.73"
+rust-version = "1.81"
 
 [dependencies]
 cfg-if = "1.0"
