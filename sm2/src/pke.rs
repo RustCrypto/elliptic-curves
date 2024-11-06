@@ -43,7 +43,6 @@
 
 use core::cmp::min;
 
-
 use elliptic_curve::{
     bigint::{Encoding, Uint, U256},
     pkcs8::der::{
