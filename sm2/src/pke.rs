@@ -43,10 +43,6 @@
 
 use core::cmp::min;
 
-use crate::AffinePoint;
-
-#[cfg(feature = "alloc")]
-use alloc::vec;
 
 use elliptic_curve::{
     bigint::{Encoding, Uint, U256},
@@ -54,13 +50,13 @@ use elliptic_curve::{
         asn1::UintRef, Decode, DecodeValue, Encode, Length, Reader, Sequence, Tag, Writer,
     },
 };
-
 use elliptic_curve::{
     pkcs8::der::{asn1::OctetStringRef, EncodeValue},
-    sec1::ToEncodedPoint,
-    Result,
+    sec1::{ModulusSize, ToEncodedPoint},
+    CurveArithmetic, FieldBytesSize, Result,
 };
-use sm3::digest::DynDigest;
+use primeorder::{AffinePoint, PrimeCurveParams};
+use signature::digest::{FixedOutputReset, Output, Update};
 
 #[cfg(feature = "arithmetic")]
 mod decrypting;
@@ -131,12 +127,18 @@ impl<'a> DecodeValue<'a> for Cipher<'a> {
 }
 
 /// Performs key derivation using a hash function and elliptic curve point.
-fn kdf(hasher: &mut dyn DynDigest, kpb: AffinePoint, c2: &mut [u8]) -> Result<()> {
+fn kdf<D, C>(hasher: &mut D, kpb: AffinePoint<C>, c2: &mut [u8]) -> Result<()>
+where
+    D: Update + FixedOutputReset,
+    C: CurveArithmetic + PrimeCurveParams,
+    FieldBytesSize<C>: ModulusSize,
+    AffinePoint<C>: ToEncodedPoint<C>,
+{
     let klen = c2.len();
     let mut ct: i32 = 0x00000001;
     let mut offset = 0;
-    let digest_size = hasher.output_size();
-    let mut ha = vec![0u8; digest_size];
+    let digest_size = D::output_size();
+    let mut ha = Output::<D>::default();
     let encode_point = kpb.to_encoded_point(false);
 
     while offset < klen {
@@ -144,9 +146,7 @@ fn kdf(hasher: &mut dyn DynDigest, kpb: AffinePoint, c2: &mut [u8]) -> Result<()
         hasher.update(encode_point.y().ok_or(elliptic_curve::Error)?);
         hasher.update(&ct.to_be_bytes());
 
-        hasher
-            .finalize_into_reset(&mut ha)
-            .map_err(|_e| elliptic_curve::Error)?;
+        hasher.finalize_into_reset(&mut ha);
 
         let xor_len = min(digest_size, klen - offset);
         xor(c2, &ha, offset, xor_len);
