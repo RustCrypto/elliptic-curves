@@ -4,7 +4,7 @@ General purpose Elliptic Curve Cryptography (ECC) support, including types
 and traits for representing various elliptic curve forms, scalars, points,
 and public/secret keys composed thereof.
 
-All curves reside in the separate crates and implemented using traits from
+All curves reside in separate crates and are implemented using traits from
 the [`elliptic-curve`](https://docs.rs/elliptic-curve/) crate.
 
 Crates in this repo do not require the standard library (i.e. `no_std` capable)
