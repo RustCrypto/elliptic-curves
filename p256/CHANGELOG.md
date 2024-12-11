@@ -38,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump `primeorder` dependency to v0.13 ([#777])
 
 ### Fixed
-- Point compactabtility check ([#772])
+- Point compatibility check ([#772])
 
 [#730]: https://github.com/RustCrypto/elliptic-curves/pull/730
 [#732]: https://github.com/RustCrypto/elliptic-curves/pull/732
