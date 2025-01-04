@@ -9,7 +9,7 @@ use hex_literal::hex;
 /// (P-384, SHA-384, from `SigGen.txt` in `186-4ecdsatestvectors.zip`)
 /// <https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/digital-signatures>
 ///
-/// The `m` field contains a SHA-384 prehash of the `Msg` field in the
+/// The `m` field contains an SHA-384 prehash of the `Msg` field in the
 /// original `SigTen.txt`.
 pub const ECDSA_TEST_VECTORS: &[TestVector; 15] = &[
     TestVector {
