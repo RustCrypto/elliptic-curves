@@ -12,7 +12,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 ciborium = "0.2.2"
 rand_chacha = "0.3"
-elliptic-curve = "0.13.0"
+elliptic-curve = { version = "0.13.0", features = ["sec1"] }
 bign256 = { path = "../bign256", features = ["arithmetic", "serde"] }
 k256 = { path = "../k256", features = ["arithmetic", "serde"] }
 p192 = { path = "../p192", features = ["arithmetic", "serde"] }

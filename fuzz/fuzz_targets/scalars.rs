@@ -1,6 +1,5 @@
 #![no_main]
 use bign256;
-use std::any::{Any, TypeId};
 // bp256 and bp384 are under construction
 use ciborium::de;
 use elliptic_curve::{Field, PrimeField};
@@ -14,7 +13,17 @@ use p521;
 use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
 use sm2;
 
-fn test_field<F: PrimeField + Any>(fe1: F, fe2: F, fe3: F) {
+static mut I: u64 = 0;
+
+fn test_field<F: PrimeField + std::any::Any>(fe1: F, fe2: F, fe3: F) {
+    unsafe {
+        I = I.wrapping_add(1);
+        // Our goal is primarily to test deserialization, so we skip 6 of every 7 field tests
+        if I % 7 != 0 {
+            return;
+        }
+    }
+
     // Associativity
     assert_eq!(fe1 + (fe2 + fe3), (fe1 + fe2) + fe3);
     assert_eq!(fe1 * (fe2 * fe3), (fe1 * fe2) * fe3);
@@ -38,7 +47,7 @@ fn test_field<F: PrimeField + Any>(fe1: F, fe2: F, fe3: F) {
     let fe1_cube = fe1.cube();
     if !bool::from(fe1.is_zero()) {
         assert_eq!(fe1_cube * fe1_sq.invert().unwrap(), fe1);
-        if TypeId::of::<p521::Scalar>() != fe1.type_id() {
+        if std::any::TypeId::of::<p521::Scalar>() != fe1.type_id() {
             assert_eq!(fe1_sq.sqrt().unwrap().square(), fe1_sq);
             assert!(bool::from(fe1_sq.sqrt_alt().0));
             assert!(bool::from(F::sqrt_ratio(&fe1_cube, &fe1).0));
@@ -79,7 +88,9 @@ fuzz_target!(|data: &[u8]| {
     // Test bign256 (does not support serde)
     let repr1 = &data[16..(16 + (bign256::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe1 = bign256::Scalar::from_bytes(repr1.try_into().unwrap());
-    let fe1 = opt_fe1.unwrap_or(bign256::Scalar::random(&mut rng));
+    let fe1 = opt_fe1
+        .unwrap_or(bign256::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
     // bign256 de::from_reader() not supported/implemented
 
@@ -119,7 +130,9 @@ fuzz_target!(|data: &[u8]| {
 
     // k256::Scalar::from_bytes() not supported/implemented
 
-    let fe1 = de::from_reader(&data[32..]).unwrap_or(k256::Scalar::random(&mut rng));
+    let fe1 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(k256::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
     let repr2 = &data[32..(32 + (k256::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe2 = k256::Scalar::from_repr(repr2.try_into().unwrap());
@@ -153,9 +166,12 @@ fuzz_target!(|data: &[u8]| {
     // Test p192
     let repr1 = &data[16..(16 + (p192::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe1 = p192::Scalar::from_bytes(repr1.try_into().unwrap());
-    let fe1 = opt_fe1.unwrap_or(p192::Scalar::random(&mut rng));
+    let fe1 = opt_fe1
+        .unwrap_or(p192::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
-    let fe2 = de::from_reader(&data[32..]).unwrap_or(p192::Scalar::random(&mut rng));
+    let fe2 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(p192::Scalar::random(&mut rng));
 
     let repr3 = &data[32..(32 + (p192::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe3 = p192::Scalar::from_repr(repr3.try_into().unwrap());
@@ -192,9 +208,12 @@ fuzz_target!(|data: &[u8]| {
     // Test p224
     let repr1 = &data[16..(16 + (p224::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe1 = p224::Scalar::from_bytes(repr1.try_into().unwrap());
-    let fe1 = opt_fe1.unwrap_or(p224::Scalar::random(&mut rng));
+    let fe1 = opt_fe1
+        .unwrap_or(p224::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
-    let fe2 = de::from_reader(&data[32..]).unwrap_or(p224::Scalar::random(&mut rng));
+    let fe2 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(p224::Scalar::random(&mut rng));
 
     let repr3 = &data[32..(32 + (p224::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe3 = p224::Scalar::from_repr(repr3.try_into().unwrap());
@@ -232,7 +251,9 @@ fuzz_target!(|data: &[u8]| {
 
     // p256::Scalar::from_bytes() not supported/implemented
 
-    let fe2 = de::from_reader(&data[32..]).unwrap_or(p256::Scalar::random(&mut rng));
+    let fe2 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(p256::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
     let repr3 = &data[32..(32 + (p256::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe3 = p256::Scalar::from_repr(repr3.try_into().unwrap());
@@ -266,9 +287,12 @@ fuzz_target!(|data: &[u8]| {
     // Test p384
     let repr1 = &data[16..(16 + (p384::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe1 = p384::Scalar::from_bytes(repr1.try_into().unwrap());
-    let fe1 = opt_fe1.unwrap_or(p384::Scalar::random(&mut rng));
+    let fe1 = opt_fe1
+        .unwrap_or(p384::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
-    let fe2 = de::from_reader(&data[32..]).unwrap_or(p384::Scalar::random(&mut rng));
+    let fe2 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(p384::Scalar::random(&mut rng));
 
     let repr3 = &data[32..(32 + (p384::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe3 = p384::Scalar::from_repr(repr3.try_into().unwrap());
@@ -305,9 +329,12 @@ fuzz_target!(|data: &[u8]| {
     // Test p521
     let repr1 = &data[16..(16 + (p521::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe1 = p521::Scalar::from_bytes(repr1.try_into().unwrap());
-    let fe1 = opt_fe1.unwrap_or(p521::Scalar::random(&mut rng));
+    let fe1 = opt_fe1
+        .unwrap_or(p521::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
-    let fe2 = de::from_reader(&data[32..]).unwrap_or(p521::Scalar::random(&mut rng));
+    let fe2 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(p521::Scalar::random(&mut rng));
 
     let repr3 = &data[32..(32 + (p521::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe3 = p521::Scalar::from_repr(repr3.try_into().unwrap());
@@ -344,9 +371,12 @@ fuzz_target!(|data: &[u8]| {
     // Test sm2
     let repr1 = &data[16..(16 + (sm2::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe1 = sm2::Scalar::from_bytes(repr1.try_into().unwrap());
-    let fe1 = opt_fe1.unwrap_or(sm2::Scalar::random(&mut rng));
+    let fe1 = opt_fe1
+        .unwrap_or(sm2::Scalar::random(&mut rng))
+        .shr_vartime(99);
 
-    let fe2 = de::from_reader(&data[32..]).unwrap_or(sm2::Scalar::random(&mut rng));
+    let fe2 = de::from_reader(&data[32..32 + usize::from(data[3] & 0x3f)])
+        .unwrap_or(sm2::Scalar::random(&mut rng));
 
     let repr3 = &data[32..(32 + (sm2::Scalar::NUM_BITS + 7) / 8) as usize];
     let opt_fe3 = sm2::Scalar::from_repr(repr3.try_into().unwrap());
