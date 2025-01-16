@@ -1,20 +1,14 @@
 #![no_main]
-use bign256;
+// Targets: bign256, k256, p192, p224, p256, p384, p521, sm2
 // bp256 and bp384 are under construction
 use ciborium::de;
 use elliptic_curve::{Field, PrimeField};
-use k256;
 use libfuzzer_sys::fuzz_target;
-use p192;
-use p224;
-use p256;
-use p384;
-use p521;
 use rand_chacha::{rand_core::SeedableRng, ChaChaRng};
-use sm2;
 
 static mut I: u64 = 0;
 
+#[allow(clippy::eq_op)]
 fn test_field<F: PrimeField + std::any::Any>(fe1: F, fe2: F, fe3: F) {
     unsafe {
         I = I.wrapping_add(1);
@@ -53,10 +47,7 @@ fn test_field<F: PrimeField + std::any::Any>(fe1: F, fe2: F, fe3: F) {
             assert!(bool::from(F::sqrt_ratio(&fe1_cube, &fe1).0));
         }
     }
-    assert_eq!(
-        bool::from(fe1_sq.is_zero()),
-        bool::from(fe1_sq.is_zero_vartime())
-    );
+    assert_eq!(bool::from(fe1_sq.is_zero()), fe1_sq.is_zero_vartime());
 
     // Double, even, odd
     let fe1_double: F = fe1.double();
@@ -69,8 +60,8 @@ fn test_field<F: PrimeField + std::any::Any>(fe1: F, fe2: F, fe3: F) {
     let limb0 = u64::from_le_bytes(fe3.to_repr().as_ref()[0..8].try_into().unwrap());
     let limb1 = u64::from_le_bytes(fe3.to_repr().as_ref()[8..16].try_into().unwrap());
     let limb2 = u64::from_le_bytes(fe3.to_repr().as_ref()[16..24].try_into().unwrap());
-    let xx = fe1.pow(&[limb0, limb1, limb2, limb1.wrapping_add(limb2)]);
-    let yy = fe1.pow_vartime(&[limb0, limb1, limb2, limb1.wrapping_add(limb2)]);
+    let xx = fe1.pow([limb0, limb1, limb2, limb1.wrapping_add(limb2)]);
+    let yy = fe1.pow_vartime([limb0, limb1, limb2, limb1.wrapping_add(limb2)]);
     assert_eq!(xx, yy);
 }
 
@@ -107,7 +98,7 @@ fuzz_target!(|data: &[u8]| {
     let fe4 = opt_fe4.unwrap_or(bign256::Scalar::random(&mut rng));
 
     let repr5 = &data[96..(96 + usize::from(data[2] & 0x7f))];
-    let str5 = std::str::from_utf8(&repr5).unwrap_or("123");
+    let str5 = std::str::from_utf8(repr5).unwrap_or("123");
     let fe5 = bign256::Scalar::from_str_vartime(str5).unwrap_or(bign256::Scalar::random(&mut rng));
 
     let uint6 = bign256::elliptic_curve::bigint::U256::from_le_slice(&data[128..160]);
@@ -145,7 +136,7 @@ fuzz_target!(|data: &[u8]| {
     // k256::Scalar::from_slice() not supported/implemented
 
     let repr4 = &data[96..(96 + usize::from(data[1] & 0x7f))];
-    let str4 = std::str::from_utf8(&repr4).unwrap_or("123");
+    let str4 = std::str::from_utf8(repr4).unwrap_or("123");
     let fe4 = k256::Scalar::from_str_vartime(str4).unwrap_or(k256::Scalar::random(&mut rng));
 
     // k256::Scalar::from_uint() not supported/implemented
@@ -186,7 +177,7 @@ fuzz_target!(|data: &[u8]| {
     let fe5 = opt_fe5.unwrap_or(p192::Scalar::random(&mut rng));
 
     let repr6 = &data[96..(96 + usize::from(data[2] & 0x7f))];
-    let str6 = std::str::from_utf8(&repr6).unwrap_or("123");
+    let str6 = std::str::from_utf8(repr6).unwrap_or("123");
     let fe6 = p192::Scalar::from_str_vartime(str6).unwrap_or(p192::Scalar::random(&mut rng));
 
     let uint7 = p192::elliptic_curve::bigint::U192::from_le_slice(&data[128..152]);
@@ -228,7 +219,7 @@ fuzz_target!(|data: &[u8]| {
     let fe5 = opt_fe5.unwrap_or(p224::Scalar::random(&mut rng));
 
     let repr6 = &data[96..(96 + usize::from(data[2] & 0x7f))];
-    let str6 = std::str::from_utf8(&repr6).unwrap_or("123");
+    let str6 = std::str::from_utf8(repr6).unwrap_or("123");
     let fe6 = p224::Scalar::from_str_vartime(str6).unwrap_or(p224::Scalar::random(&mut rng));
 
     let uint7 = p224::elliptic_curve::bigint::U256::from_le_slice(&data[128..160]); // note U256 vs U224
@@ -266,7 +257,7 @@ fuzz_target!(|data: &[u8]| {
     // p256::Scalar::from_slice() not supported/implemented
 
     let repr6 = &data[96..(96 + usize::from(data[1] & 0x7f))];
-    let str6 = std::str::from_utf8(&repr6).unwrap_or("123");
+    let str6 = std::str::from_utf8(repr6).unwrap_or("123");
     let fe6 = p256::Scalar::from_str_vartime(str6).unwrap_or(p256::Scalar::random(&mut rng));
 
     // p256::Scalar::from_uint() not supported/implemented
@@ -307,7 +298,7 @@ fuzz_target!(|data: &[u8]| {
     let fe5 = opt_fe5.unwrap_or(p384::Scalar::random(&mut rng));
 
     let repr6 = &data[96..(96 + usize::from(data[2] & 0x7f))];
-    let str6 = std::str::from_utf8(&repr6).unwrap_or("123");
+    let str6 = std::str::from_utf8(repr6).unwrap_or("123");
     let fe6 = p384::Scalar::from_str_vartime(str6).unwrap_or(p384::Scalar::random(&mut rng));
 
     let uint7 = p384::elliptic_curve::bigint::U384::from_le_slice(&data[128..176]);
@@ -349,7 +340,7 @@ fuzz_target!(|data: &[u8]| {
     let fe5 = opt_fe5.unwrap_or(p521::Scalar::random(&mut rng));
 
     let repr6 = &data[96..(96 + usize::from(data[2] & 0x7f))];
-    let str6 = std::str::from_utf8(&repr6).unwrap_or("123");
+    let str6 = std::str::from_utf8(repr6).unwrap_or("123");
     let fe6 = p521::Scalar::from_str_vartime(str6).unwrap_or(p521::Scalar::random(&mut rng));
 
     let uint7 = p521::elliptic_curve::bigint::U576::from_le_slice(&data[128..200]);
@@ -391,7 +382,7 @@ fuzz_target!(|data: &[u8]| {
     let fe5 = opt_fe5.unwrap_or(sm2::Scalar::random(&mut rng));
 
     let repr6 = &data[96..(96 + usize::from(data[1] & 0x7f))];
-    let str6 = std::str::from_utf8(&repr6).unwrap_or("123");
+    let str6 = std::str::from_utf8(repr6).unwrap_or("123");
     let fe6 = sm2::Scalar::from_str_vartime(str6).unwrap_or(sm2::Scalar::random(&mut rng));
 
     let uint7 = sm2::elliptic_curve::bigint::U256::from_le_slice(&data[128..160]);

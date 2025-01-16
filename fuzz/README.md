@@ -12,8 +12,8 @@ The `scalars.rs` harness has fairly complete coverage of deserializors and arith
 $ cargo +nightly fuzz run scalars -j 4
 
 
-#722833: cov: 2025 ft: 3282 corp: 309 exec/s: 1941 oom/timeout/crash: 0/0/0 time: 106s job: 26 dft_time: 0
-#775578: cov: 2025 ft: 3282 corp: 309 exec/s: 1883 oom/timeout/crash: 0/0/0 time: 113s job: 27 dft_time: 0
+#16419246: cov: 2038 ft: 3305 corp: 292 exec/s: 1763 oom/timeout/crash: 0/0/0 time: 2350s job: 134 dft_time: 0
+#16650547: cov: 2038 ft: 3305 corp: 292 exec/s: 1700 oom/timeout/crash: 0/0/0 time: 2384s job: 135 dft_time: 0
 ~~~
 
 
