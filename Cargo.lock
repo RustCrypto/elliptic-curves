@@ -732,7 +732,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "blobby",
  "criterion",

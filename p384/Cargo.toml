@@ -1,6 +1,6 @@
 [package]
 name = "p384"
-version = "0.13.0"
+version = "0.13.1"
 description = """
 Pure Rust implementation of the NIST P-384 (a.k.a. secp384r1) elliptic curve
 as defined in SP 800-186 with support for ECDH, ECDSA signing/verification,
