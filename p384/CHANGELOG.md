@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.13.1 (2025-02-06)
+### Fixed
+- Remove unused fiat-crypto variables ([#1035])
+
+[#1035]: https://github.com/RustCrypto/elliptic-curves/pull/1035
+
 ## 0.13.0 (2023-03-03)
 ### Added
 - `PrimeField` constants/tests ([#730], [#737], [#738])
