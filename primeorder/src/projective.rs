@@ -10,7 +10,7 @@ use core::{
 };
 use elliptic_curve::{
     array::ArraySize,
-    bigint::{ArrayEncoding, Bounded},
+    bigint::ArrayEncoding,
     group::{
         self,
         cofactor::CofactorGroup,
@@ -26,7 +26,7 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    BatchNormalize, Error, FieldBytes, FieldBytesSize, PublicKey, Result, Scalar,
+    BatchNormalize, Error, FieldBytes, FieldBytesSize, PrimeField, PublicKey, Result, Scalar,
 };
 
 #[cfg(feature = "alloc")]
@@ -122,7 +122,7 @@ where
         }
 
         let mut q = Self::IDENTITY;
-        let mut pos = C::Uint::BITS as usize - 4;
+        let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
 
         loop {
             let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
