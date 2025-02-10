@@ -1,0 +1,35 @@
+[package]
+name = "fuzz-elliptic-curves"
+version = "0.0.0"
+authors = ["eschorn@integritychain.com"]
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+ciborium = "0.2.2"
+rand_chacha = "0.3"
+elliptic-curve = { version = "0.13.0", features = ["sec1"] }
+bign256 = { path = "../bign256", features = ["arithmetic", "serde"] }
+k256 = { path = "../k256", features = ["arithmetic", "serde"] }
+p192 = { path = "../p192", features = ["arithmetic", "serde"] }
+p224 = { path = "../p224", features = ["arithmetic", "serde"] }
+p256 = { path = "../p256", features = ["arithmetic", "serde"] }
+p384 = { path = "../p384", features = ["arithmetic", "serde"] }
+p521 = { path = "../p521", features = ["arithmetic", "serde"] }
+sm2 = { path = "../sm2", features = ["arithmetic", "serde"] }
+
+[[bin]]
+name = "scalars"
+path = "fuzz_targets/scalars.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "points"
+path = "fuzz_targets/points.rs"
+test = false
+doc = false
