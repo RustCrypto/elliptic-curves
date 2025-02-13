@@ -82,3 +82,8 @@ jobs:
         with:
           toolchain: stable
       - run: cargo doc --all-features
+
+  check-minimal-versions:
+    uses: RustCrypto/actions/.github/workflows/minimal-versions.yml@master
+    with:
+      working-directory: ${{ github.workflow }}
