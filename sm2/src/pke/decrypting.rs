@@ -16,9 +16,10 @@ use elliptic_curve::{
 };
 use primeorder::PrimeField;
 
-use sm3::{digest::DynDigest, Digest, Sm3};
+use signature::digest::{Digest, FixedOutputReset, Output, OutputSizeUser, Update};
+use sm3::Sm3;
 
-use super::{encrypting::EncryptingKey, kdf, vec, Cipher, Mode};
+use super::{encrypting::EncryptingKey, kdf, Cipher, Mode};
 /// Represents a decryption key used for decrypting messages using elliptic curve cryptography.
 #[derive(Clone)]
 pub struct DecryptingKey {
@@ -91,7 +92,7 @@ impl DecryptingKey {
     /// Decrypts a ciphertext in-place using the specified digest algorithm.
     pub fn decrypt_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + OutputSizeUser + Update + FixedOutputReset,
     {
         let mut digest = D::new();
         decrypt(&self.secret_scalar, self.mode, &mut digest, ciphertext)
@@ -105,7 +106,7 @@ impl DecryptingKey {
     /// Decrypts a ciphertext in-place from ASN.1 format using the specified digest algorithm.
     pub fn decrypt_der_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + OutputSizeUser + Update + FixedOutputReset,
     {
         let cipher = Cipher::from_der(ciphertext).map_err(elliptic_curve::pkcs8::Error::from)?;
         let prefix: &[u8] = &[0x04];
@@ -153,12 +154,10 @@ impl PartialEq for DecryptingKey {
     }
 }
 
-fn decrypt(
-    secret_scalar: &Scalar,
-    mode: Mode,
-    hasher: &mut dyn DynDigest,
-    cipher: &[u8],
-) -> Result<Vec<u8>> {
+fn decrypt<D>(secret_scalar: &Scalar, mode: Mode, hasher: &mut D, cipher: &[u8]) -> Result<Vec<u8>>
+where
+    D: Update + OutputSizeUser + FixedOutputReset,
+{
     let q = U256::from_be_hex(FieldElement::MODULUS);
     let c1_len = (q.bits() + 7) / 8 * 2 + 1;
 
@@ -177,7 +176,7 @@ fn decrypt(
 
     // B3: compute [𝑑𝐵]𝐶1 = (𝑥2, 𝑦2)
     c1_point = (c1_point * secret_scalar).to_affine();
-    let digest_size = hasher.output_size();
+    let digest_size = D::output_size();
     let (c2, c3) = match mode {
         Mode::C1C3C2 => {
             let (c3, c2) = c.split_at(digest_size);
@@ -192,12 +191,12 @@ fn decrypt(
     kdf(hasher, c1_point, &mut c2)?;
 
     // compute 𝑢 = 𝐻𝑎𝑠ℎ(𝑥2 ∥ 𝑀′∥ 𝑦2).
-    let mut u = vec![0u8; digest_size];
+    let mut u = Output::<D>::default();
     let encode_point = c1_point.to_encoded_point(false);
     hasher.update(encode_point.x().ok_or(Error)?);
     hasher.update(&c2);
     hasher.update(encode_point.y().ok_or(Error)?);
-    hasher.finalize_into_reset(&mut u).map_err(|_e| Error)?;
+    hasher.finalize_into_reset(&mut u);
     let checked = u
         .iter()
         .zip(c3)
