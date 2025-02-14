@@ -1,0 +1,45 @@
+[package]
+authors = ["RustCrypto Developers"]
+categories = ["cryptography"]
+description = """A pure-Rust implementation of Ed448 and Curve448 and Decaf.
+This crate also includes signing and verifying of Ed448 signatures.
+"""
+documentation = "https://docs.rs/ed448-goldilocks"
+exclude = [".gitignore", ".github/*"]
+edition = "2021"
+homepage = "https://docs.rs/ed448-goldilocks/"
+keywords = ["cryptography", "decaf", "ed448", "ed448-goldilocks"]
+license = "BSD-3-Clause"
+name = "ed448-goldilocks"
+readme = "README.md"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/ed448"
+version = "0.15.0"
+
+[dependencies]
+crypto-bigint = { version = "0.5.5", features = ["generic-array"], default-features = false }
+elliptic-curve = { version = "0.13", features = ["arithmetic", "bits", "hash2curve", "hazmat", "jwk", "pkcs8", "pem", "sec1"] }
+pkcs8 = { version = "0.10", optional = true }
+rand_core = { version = "0.6", default-features = false }
+serdect = { version = "0.3.0", optional = true }
+sha3 = { version = "0.10", default-features = false }
+crypto_signature = { version = "2.2", default-features = false, features = ["digest", "rand_core"], optional = true, package = "signature" }
+subtle = { version = "2.6", default-features = false }
+zeroize = { version = "1.8", default-features = false, optional = true }
+
+[features]
+default = ["std", "signing", "pkcs8"]
+alloc = ["serdect/alloc", "zeroize/alloc"]
+pkcs8 = ["dep:pkcs8"]
+signing = ["dep:crypto_signature", "zeroize"]
+serde = ["dep:serdect"]
+std = ["serdect/default", "zeroize/default", "crypto_signature/std"]
+zeroize = ["dep:zeroize"]
+
+[dev-dependencies]
+hex-literal = "0.4"
+hex = "0.4"
+elliptic-curve-tools = "0.1.2"
+rand_core = { version = "0.6", features = ["std"] }
+rand_chacha = "0.3"
+serde_bare = "0.5"
+serde_json = "1.0"
