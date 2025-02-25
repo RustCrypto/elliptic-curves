@@ -67,7 +67,7 @@ dependencies = [
  "digest",
  "elliptic-curve",
  "hex",
- "hex-literal",
+ "hex-literal 1.0.0",
  "hkdf",
  "hmac",
  "pkcs8",
@@ -389,7 +389,7 @@ dependencies = [
  "digest",
  "ff",
  "group",
- "hex-literal",
+ "hex-literal 0.4.1",
  "hkdf",
  "hybrid-array",
  "pem-rfc7468",
@@ -493,6 +493,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
 
 [[package]]
+name = "hex-literal"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcaaec4551594c969335c98c903c1397853d4198408ea609190f420500f6be71"
+
+[[package]]
 name = "hkdf"
 version = "0.13.0-pre.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -565,7 +571,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex",
- "hex-literal",
+ "hex-literal 1.0.0",
  "num-bigint",
  "num-traits",
  "once_cell",
@@ -673,7 +679,7 @@ version = "0.14.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 1.0.0",
  "primeorder",
  "sec1",
  "serdect",
@@ -686,7 +692,7 @@ dependencies = [
  "blobby",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 1.0.0",
  "primeorder",
  "rand_core",
  "serdect",
@@ -701,7 +707,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 1.0.0",
  "primeorder",
  "proptest",
  "rand_core",
@@ -717,7 +723,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 1.0.0",
  "primeorder",
  "proptest",
  "rand_core",
@@ -734,7 +740,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 1.0.0",
  "primefield",
  "primeorder",
  "proptest",
@@ -1098,7 +1104,7 @@ name = "sm2"
 version = "0.14.0-pre"
 dependencies = [
  "elliptic-curve",
- "hex-literal",
+ "hex-literal 1.0.0",
  "primeorder",
  "proptest",
  "rand_core",
