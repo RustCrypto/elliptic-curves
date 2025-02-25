@@ -124,7 +124,7 @@ version = "0.11.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "939c0e62efa052fb0b2db2c0f7c479ad32e364c192c3aab605a7641de265a1a7"
 dependencies = [
- "hybrid-array",
+ "hybrid-array 0.2.0-rc.11",
 ]
 
 [[package]]
@@ -317,7 +317,7 @@ version = "0.6.0-rc.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d748d1f5b807ee6d0df5a548d0130417295c3aaed1dcbbb3d6a2e7106e11fcca"
 dependencies = [
- "hybrid-array",
+ "hybrid-array 0.2.0-rc.11",
  "num-traits",
  "rand_core",
  "subtle",
@@ -330,7 +330,7 @@ version = "0.2.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0b8ce8218c97789f16356e7896b3714f26c2ee1079b79c0b7ae7064bb9089fa"
 dependencies = [
- "hybrid-array",
+ "hybrid-array 0.2.0-rc.11",
 ]
 
 [[package]]
@@ -391,7 +391,7 @@ dependencies = [
  "group",
  "hex-literal",
  "hkdf",
- "hybrid-array",
+ "hybrid-array 0.2.0-rc.11",
  "pem-rfc7468",
  "pkcs8",
  "rand_core",
@@ -518,6 +518,15 @@ checksum = "a5a41e5b0754cae5aaf7915f1df1147ba8d316fc6e019cfcc00fbaba96d5e030"
 dependencies = [
  "typenum",
  "zeroize",
+]
+
+[[package]]
+name = "hybrid-array"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dab50e193aebe510fe0e40230145820e02f48dae0cf339ea4204e6e708ff7bd"
+dependencies = [
+ "typenum",
 ]
 
 [[package]]
@@ -1007,13 +1016,13 @@ dependencies = [
 
 [[package]]
 name = "sec1"
-version = "0.8.0-rc.3"
+version = "0.8.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1988446eff153796413a73669dfaa4caa3f5ce8b25fac89e3821a39c611772e"
+checksum = "a017a4aa8f0bd51e9d0184d98042dfe9285218fec098493f47d9a8aa0f1a3f27"
 dependencies = [
  "base16ct",
  "der",
- "hybrid-array",
+ "hybrid-array 0.3.0",
  "pkcs8",
  "serdect",
  "subtle",
