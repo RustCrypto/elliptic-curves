@@ -34,7 +34,7 @@ pub mod test_vectors;
 pub use elliptic_curve::{self, bigint::U384, consts::U48};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
@@ -42,7 +42,7 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{array::Array, bigint::ArrayEncoding, consts::U49, FieldBytesEncoding};
+use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::ArrayEncoding, consts::U49};
 
 /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus) in hexadecimal.
 const ORDER_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973";

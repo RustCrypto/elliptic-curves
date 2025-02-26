@@ -22,19 +22,19 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP384, SecretKey, ORDER_HEX, U384};
+use crate::{FieldBytes, NistP384, ORDER_HEX, SecretKey, U384};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
+    Curve as _, Error, Result, ScalarPrimitive,
     bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
     ops::{Invert, Reduce},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
-    Curve as _, Error, Result, ScalarPrimitive,
 };
 use primeorder::impl_bernstein_yang_invert;
 
@@ -42,7 +42,7 @@ use primeorder::impl_bernstein_yang_invert;
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
@@ -242,7 +242,9 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972");
+    const ROOT_OF_UNITY: Self = Self::from_hex(
+        "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972",
+    );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(4);
 
