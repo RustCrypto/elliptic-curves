@@ -23,10 +23,10 @@ use core::{
 };
 use elliptic_curve::ops::Invert;
 use elliptic_curve::{
+    Error, Result,
     bigint::{ArrayEncoding, Integer, Limb},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, ConstantTimeLess, CtOption},
-    Error, Result,
 };
 
 /// Constant representing the modulus serialized as hex.
