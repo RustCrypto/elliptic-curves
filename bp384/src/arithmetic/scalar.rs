@@ -22,6 +22,7 @@ use core::{
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
+    Error, Result,
     bigint::{ArrayEncoding, Integer, Limb},
     ff::PrimeField,
     ops::{Invert, Reduce},
@@ -30,7 +31,6 @@ use elliptic_curve::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
-    Error, Result,
 };
 
 #[cfg(doc)]
@@ -336,7 +336,9 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
     const S: u32 = 2;
-    const ROOT_OF_UNITY: Self = Self::from_hex("76cdc6369fb54dde55a851fce47cc5f830bb074c85684b3ee476be128dc50cfa8602aeecf53a1982fcf3b95f8d4258ff");
+    const ROOT_OF_UNITY: Self = Self::from_hex(
+        "76cdc6369fb54dde55a851fce47cc5f830bb074c85684b3ee476be128dc50cfa8602aeecf53a1982fcf3b95f8d4258ff",
+    );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(16);
 

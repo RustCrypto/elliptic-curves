@@ -10,8 +10,8 @@ repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["brainpool", "crypto", "ecc"]
-edition = "2021"
-rust-version = "1.81"
+edition = "2024"
+rust-version = "1.85"
 
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features = ["sec1"] }
