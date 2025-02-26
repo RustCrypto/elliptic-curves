@@ -1,26 +1,26 @@
 use core::fmt::Debug;
 
 use crate::{
+    AffinePoint, ProjectivePoint, PublicKey, Scalar, Sm2,
     arithmetic::field::FieldElement,
     pke::{kdf, vec},
-    AffinePoint, ProjectivePoint, PublicKey, Scalar, Sm2,
 };
 
 #[cfg(feature = "alloc")]
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use elliptic_curve::{
-    bigint::{RandomBits, Uint, Zero, U256},
+    Curve, Error, Group, Result,
+    bigint::{RandomBits, U256, Uint, Zero},
     ops::{MulByGenerator, Reduce},
     pkcs8::der::Encode,
     rand_core,
     sec1::ToEncodedPoint,
-    Curve, Error, Group, Result,
 };
 
 use primeorder::PrimeField;
 use sm3::{
-    digest::{Digest, DynDigest},
     Sm3,
+    digest::{Digest, DynDigest},
 };
 
 use super::{Cipher, Mode};

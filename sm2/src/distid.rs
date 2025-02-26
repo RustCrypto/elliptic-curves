@@ -2,8 +2,8 @@
 
 use crate::{AffinePoint, Hash, Sm2};
 use elliptic_curve::{
-    sec1::{self, ToEncodedPoint},
     Error, Result,
+    sec1::{self, ToEncodedPoint},
 };
 use primeorder::PrimeCurveParams;
 use sm3::{Digest, Sm3};

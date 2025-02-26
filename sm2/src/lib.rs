@@ -42,16 +42,16 @@ mod distid;
 pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
-    array::{typenum::U33, Array},
+    FieldBytesEncoding,
+    array::{Array, typenum::U33},
     bigint::ArrayEncoding,
     consts::U32,
-    FieldBytesEncoding,
 };
 
 #[cfg(feature = "dsa")]
