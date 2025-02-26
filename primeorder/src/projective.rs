@@ -2,20 +2,20 @@
 
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
-use crate::{point_arithmetic::PointArithmetic, AffinePoint, Field, PrimeCurveParams};
+use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
 use core::{
     borrow::Borrow,
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    BatchNormalize, Error, FieldBytes, FieldBytesSize, PrimeField, PublicKey, Result, Scalar,
     array::ArraySize,
     bigint::ArrayEncoding,
     group::{
-        self,
+        self, Group, GroupEncoding,
         cofactor::CofactorGroup,
         prime::{PrimeCurve, PrimeGroup},
-        Group, GroupEncoding,
     },
     ops::{BatchInvert, LinearCombination, MulByGenerator},
     point::Double,
@@ -26,7 +26,6 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    BatchNormalize, Error, FieldBytes, FieldBytesSize, PrimeField, PublicKey, Result, Scalar,
 };
 
 #[cfg(feature = "alloc")]
@@ -776,7 +775,7 @@ where
     }
 }
 
-impl<'a, C> Neg for &'a ProjectivePoint<C>
+impl<C> Neg for &ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
