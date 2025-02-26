@@ -36,15 +36,17 @@ use core::{
 };
 use elliptic_curve::ops::Invert;
 use elliptic_curve::{
+    Error, FieldBytesEncoding,
     ff::{self, Field, PrimeField},
     rand_core::RngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, FieldBytesEncoding,
 };
 
 /// Field modulus: p = 2^{521} − 1
-pub(crate) const MODULUS: U576 = U576::from_be_hex("00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+pub(crate) const MODULUS: U576 = U576::from_be_hex(
+    "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+);
 
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
@@ -445,7 +447,9 @@ impl PrimeField for FieldElement {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_hex("00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe");
+    const ROOT_OF_UNITY: Self = Self::from_hex(
+        "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
+    );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
 
@@ -668,7 +672,9 @@ mod tests {
     /// Regression test for RustCrypto/elliptic-curves#965
     #[test]
     fn decode_invalid_field_element_returns_err() {
-        let overflowing_bytes = hex!("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        let overflowing_bytes = hex!(
+            "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        );
         let ct_option = FieldElement::from_bytes(&overflowing_bytes.into());
         assert!(bool::from(ct_option.is_none()));
     }
