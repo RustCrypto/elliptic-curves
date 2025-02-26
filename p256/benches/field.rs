@@ -1,7 +1,7 @@
 //! secp256r1 field element benchmarks
 
 use criterion::{
-    criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
 use p256::FieldElement;

@@ -94,15 +94,15 @@ impl FromOkm for Scalar {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use crate::{arithmetic::field::MODULUS, NistP256, Scalar, U256};
+    use crate::{NistP256, Scalar, U256, arithmetic::field::MODULUS};
     use elliptic_curve::{
+        Curve, Field,
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
         consts::U48,
         group::cofactor::CofactorGroup,
         hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         sec1::{self, ToEncodedPoint},
-        Curve, Field,
     };
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};

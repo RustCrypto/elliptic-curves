@@ -12,7 +12,7 @@ pub(crate) mod scalar;
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP256;
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
-use primeorder::{point_arithmetic, PrimeCurveParams};
+use primeorder::{PrimeCurveParams, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<NistP256>;

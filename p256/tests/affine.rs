@@ -1,9 +1,9 @@
 //! Affine arithmetic tests.
 
-#![cfg(all(feature = "arithmetic"))]
+#![cfg(feature = "arithmetic")]
 
 use elliptic_curve::{
-    group::{prime::PrimeCurveAffine, GroupEncoding},
+    group::{GroupEncoding, prime::PrimeCurveAffine},
     sec1::{FromEncodedPoint, ToCompactEncodedPoint, ToEncodedPoint},
 };
 use hex_literal::hex;
@@ -88,7 +88,7 @@ fn compact_round_trip() {
 #[test]
 fn uncompact_to_compact() {
     let pubkey = EncodedPoint::from_bytes(UNCOMPACT_BASEPOINT).unwrap();
-    assert_eq!(false, pubkey.is_compact());
+    assert!(!pubkey.is_compact());
 
     let point = AffinePoint::from_encoded_point(&pubkey).unwrap();
     let res = point.to_compact_encoded_point().unwrap();
