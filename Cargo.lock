@@ -73,7 +73,7 @@ dependencies = [
  "pkcs8",
  "primeorder",
  "proptest",
- "rand_core",
+ "rand_core 0.6.4",
  "rfc6979",
  "sec1",
  "signature",
@@ -319,7 +319,7 @@ checksum = "d748d1f5b807ee6d0df5a548d0130417295c3aaed1dcbbb3d6a2e7106e11fcca"
 dependencies = [
  "hybrid-array",
  "num-traits",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
  "zeroize",
 ]
@@ -394,7 +394,7 @@ dependencies = [
  "hybrid-array",
  "pem-rfc7468",
  "pkcs8",
- "rand_core",
+ "rand_core 0.6.4",
  "sec1",
  "serde_json",
  "serdect",
@@ -422,11 +422,10 @@ checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 [[package]]
 name = "ff"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
+source = "git+https://github.com/pinkforest/ff.git?branch=bump-rand-core#c734f7f21d6639bc6494dde538209d0770207c49"
 dependencies = [
  "bitvec",
- "rand_core",
+ "rand_core 0.9.2",
  "subtle",
 ]
 
@@ -456,11 +455,10 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
+source = "git+https://github.com/pinkforest/group.git?branch=bump-rand-0.9#06ac6fb11ced26fbf980ee65e74fced4da66ec3e"
 dependencies = [
  "ff",
- "rand_core",
+ "rand_core 0.9.2",
  "subtle",
 ]
 
@@ -570,7 +568,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "proptest",
- "rand_core",
+ "rand_core 0.6.4",
  "serdect",
  "sha2",
  "sha3",
@@ -688,7 +686,7 @@ dependencies = [
  "elliptic-curve",
  "hex-literal",
  "primeorder",
- "rand_core",
+ "rand_core 0.6.4",
  "serdect",
  "sha2",
 ]
@@ -704,7 +702,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "proptest",
- "rand_core",
+ "rand_core 0.6.4",
  "serdect",
  "sha2",
 ]
@@ -720,7 +718,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "proptest",
- "rand_core",
+ "rand_core 0.6.4",
  "serdect",
  "sha2",
 ]
@@ -738,7 +736,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core",
+ "rand_core 0.6.4",
  "serdect",
  "sha2",
 ]
@@ -802,7 +800,7 @@ version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04"
 dependencies = [
- "zerocopy",
+ "zerocopy 0.7.35",
 ]
 
 [[package]]
@@ -875,7 +873,7 @@ checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
  "rand_chacha",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -885,7 +883,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -898,12 +896,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_core"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a509b1a2ffbe92afab0e55c8fd99dea1c280e8171bd2d88682bb20bc41cbc2c"
+dependencies = [
+ "zerocopy 0.8.20",
+]
+
+[[package]]
 name = "rand_xorshift"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
 dependencies = [
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -1090,7 +1097,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "054d71959c7051b9042c26af337f05cc930575ed2604d7d3ced3158383e59734"
 dependencies = [
  "digest",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -1101,7 +1108,7 @@ dependencies = [
  "hex-literal",
  "primeorder",
  "proptest",
- "rand_core",
+ "rand_core 0.6.4",
  "rfc6979",
  "serdect",
  "signature",
@@ -1388,7 +1395,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
 dependencies = [
  "byteorder",
- "zerocopy-derive",
+ "zerocopy-derive 0.7.35",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.8.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dde3bb8c68a8f3f1ed4ac9221aad6b10cece3e60a8e2ea54a6a2dec806d0084c"
+dependencies = [
+ "zerocopy-derive 0.8.20",
 ]
 
 [[package]]
@@ -1396,6 +1412,17 @@ name = "zerocopy-derive"
 version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.8.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eea57037071898bf96a6da35fd626f4f27e9cee3ead2a6c703cf09d472b2e700"
 dependencies = [
  "proc-macro2",
  "quote",
