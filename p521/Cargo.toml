@@ -26,7 +26,7 @@ hex-literal = { version = "1", optional = true }
 primefield = { version = "=0.14.0-pre.0", optional = true, path = "../primefield" }
 primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
 rand_core = { version = "0.9", optional = true, default-features = false }
-serdect = { version = "0.3.0-rc.0", optional = true, default-features = false }
+serdect = { version = "0.3", optional = true, default-features = false }
 sha2 = { version = "=0.11.0-pre.4", optional = true, default-features = false }
 
 [dev-dependencies]
