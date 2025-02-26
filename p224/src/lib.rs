@@ -30,15 +30,15 @@ pub mod test_vectors;
 pub use elliptic_curve;
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
+    FieldBytesEncoding,
     array::Array,
     consts::{U28, U29},
-    FieldBytesEncoding,
 };
 
 #[cfg(target_pointer_width = "32")]
