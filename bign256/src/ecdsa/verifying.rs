@@ -17,21 +17,21 @@
 #[cfg(feature = "alloc")]
 use alloc::boxed::Box;
 
-use super::{Signature, BELT_OID};
+use super::{BELT_OID, Signature};
 use crate::{
     AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar,
 };
 use belt_hash::{
-    digest::{Digest, FixedOutput},
     BeltHash,
+    digest::{Digest, FixedOutput},
 };
 use elliptic_curve::{
-    array::{sizes::U32, typenum::Unsigned, Array},
+    Curve, Field, Group,
+    array::{Array, sizes::U32, typenum::Unsigned},
     group::GroupEncoding,
     ops::{LinearCombination, Reduce},
-    Curve, Field, Group,
 };
-use signature::{hazmat::PrehashVerifier, Error, Result, Verifier};
+use signature::{Error, Result, Verifier, hazmat::PrehashVerifier};
 
 use elliptic_curve::sec1::ToEncodedPoint;
 

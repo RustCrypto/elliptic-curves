@@ -3,14 +3,14 @@
 #![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
 
 use bign256::{
-    test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     AffinePoint, ProjectivePoint, Scalar,
+    test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };
 use elliptic_curve::{
-    group::{ff::PrimeField, GroupEncoding},
+    group::{GroupEncoding, ff::PrimeField},
     sec1::{self, ToEncodedPoint},
 };
-use primeorder::{impl_projective_arithmetic_tests, Double};
+use primeorder::{Double, impl_projective_arithmetic_tests};
 
 impl_projective_arithmetic_tests!(
     AffinePoint,

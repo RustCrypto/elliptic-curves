@@ -5,17 +5,17 @@ use alloc::{boxed::Box, fmt};
 use core::{fmt::Display, str::FromStr};
 
 use elliptic_curve::{
+    AffinePoint, CurveArithmetic, Error, Group,
     array::Array,
     point::NonIdentity,
     sec1::{FromEncodedPoint, ToEncodedPoint},
-    AffinePoint, CurveArithmetic, Error, Group,
 };
 use pkcs8::{
-    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
     AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 
-use crate::{BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint, PublicKey, ALGORITHM_OID};
+use crate::{ALGORITHM_OID, BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint, PublicKey};
 
 impl PublicKey {
     /// Convert an [`AffinePoint`] into a [`PublicKey`]

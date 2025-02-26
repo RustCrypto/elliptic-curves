@@ -2,7 +2,7 @@
 
 use bign256::arithmetic::FieldElement;
 use criterion::{
-    criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
 

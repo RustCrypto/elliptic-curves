@@ -14,8 +14,8 @@ repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "stb", "bign-curve256v1", "bignp256"]
-edition = "2021"
-rust-version = "1.81"
+edition = "2024"
+rust-version = "1.85"
 
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.0", features = ["sec1"] }
@@ -23,23 +23,23 @@ elliptic-curve = { version = "0.14.0-rc.0", features = ["sec1"] }
 # optional dependencies
 belt-hash = { version = "=0.2.0-pre.4", optional = true, default-features = false }
 der = { version = "0.8.0-rc.0" }
-digest = { version = "=0.11.0-pre.9", optional = true }
+digest = { version = "=0.11.0-pre.10", optional = true }
 hex-literal = { version = "0.4", optional = true }
 hkdf = { version = "=0.13.0-pre.4", optional = true }
 hmac = { version = "=0.13.0-pre.4", optional = true }
-rand_core = "0.6.4"
+rand_core = "0.9"
 rfc6979 = { version = "=0.5.0-pre.4", optional = true }
 pkcs8 = { version = "0.11.0-rc.1", optional = true }
 primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
 sec1 = { version = "0.8.0-rc.1", optional = true }
-signature = { version = "=2.3.0-pre.4", optional = true }
+signature = { version = "=2.3.0-pre.6", optional = true }
 
 [dev-dependencies]
 criterion = "0.5"
 hex-literal = "0.4"
 primeorder = { version = "=0.14.0-pre.2", features = ["dev"], path = "../primeorder" }
 proptest = "1"
-rand_core = { version = "0.6", features = ["getrandom"] }
+rand_core = { version = "0.9", features = ["os_rng"] }
 hex = { version = "0.4" }
 
 [features]

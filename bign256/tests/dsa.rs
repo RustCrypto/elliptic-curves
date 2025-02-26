@@ -7,11 +7,11 @@ use hex_literal::hex;
 use proptest::prelude::*;
 
 use bign256::{
-    ecdsa::{
-        signature::{Signer, Verifier},
-        Signature, SigningKey, VerifyingKey,
-    },
     NonZeroScalar, Scalar, U256,
+    ecdsa::{
+        Signature, SigningKey, VerifyingKey,
+        signature::{Signer, Verifier},
+    },
 };
 
 const PUBLIC_KEY: [u8; 64] = hex!(
