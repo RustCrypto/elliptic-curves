@@ -10,14 +10,14 @@
 //!
 //! ```
 //! use k256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng' feature
 //!
 //! // Alice
-//! let alice_secret = EphemeralSecret::random(&mut OsRng);
+//! let alice_secret = EphemeralSecret::random(&mut OsRng.unwrap_mut());
 //! let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
 //!
 //! // Bob
-//! let bob_secret = EphemeralSecret::random(&mut OsRng);
+//! let bob_secret = EphemeralSecret::random(&mut OsRng.unwrap_mut());
 //! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
 //!
 //! // Alice decodes Bob's serialized public key and computes a shared secret from it

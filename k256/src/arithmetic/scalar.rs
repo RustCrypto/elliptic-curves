@@ -6,30 +6,30 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, Secp256k1, WideBytes, ORDER, ORDER_HEX};
+use crate::{FieldBytes, ORDER, ORDER_HEX, Secp256k1, WideBytes};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{prelude::*, Limb, Word, U256, U512},
+    Curve, ScalarPrimitive,
+    bigint::{Limb, U256, U512, Word, prelude::*},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::{CryptoRngCore, RngCore},
+    rand_core::{CryptoRng, RngCore},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -182,7 +182,7 @@ impl Scalar {
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
-    pub fn generate_biased(rng: &mut impl CryptoRngCore) -> Self {
+    pub fn generate_biased<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution, but the process is constant-time.
         let mut buf = [0u8; 64];
@@ -192,7 +192,7 @@ impl Scalar {
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
     // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
-    pub fn generate_vartime(rng: &mut impl RngCore) -> Self {
+    pub fn generate_vartime<R: RngCore + ?Sized>(rng: &mut R) -> Self {
         let mut bytes = FieldBytes::default();
 
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
@@ -790,8 +790,8 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::Scalar;
     use crate::{
+        FieldBytes, NonZeroScalar, ORDER, WideBytes,
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
-        FieldBytes, NonZeroScalar, WideBytes, ORDER,
     };
     use elliptic_curve::{
         array::Array,
@@ -803,7 +803,7 @@ mod tests {
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
-    use rand_core::OsRng;
+    use rand_core::{OsRng, TryRngCore};
 
     #[cfg(feature = "alloc")]
     use alloc::vec::Vec;
@@ -846,13 +846,13 @@ mod tests {
     fn root_of_unity_constant() {
         // ROOT_OF_UNITY^{2^s} mod m == 1
         assert_eq!(
-            Scalar::ROOT_OF_UNITY.pow_vartime(&[1u64 << Scalar::S, 0, 0, 0]),
+            Scalar::ROOT_OF_UNITY.pow_vartime([1u64 << Scalar::S, 0, 0, 0]),
             Scalar::ONE
         );
 
         // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
         assert_eq!(
-            Scalar::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
+            Scalar::MULTIPLICATIVE_GENERATOR.pow_vartime(T),
             Scalar::ROOT_OF_UNITY
         )
     }
@@ -868,7 +868,7 @@ mod tests {
     #[test]
     fn delta_constant() {
         // DELTA^{t} mod m == 1
-        assert_eq!(Scalar::DELTA.pow_vartime(&T), Scalar::ONE);
+        assert_eq!(Scalar::DELTA.pow_vartime(T), Scalar::ONE);
     }
 
     #[test]
@@ -957,8 +957,8 @@ mod tests {
 
     #[test]
     fn batch_invert_array() {
-        let k: Scalar = Scalar::random(&mut OsRng);
-        let l: Scalar = Scalar::random(&mut OsRng);
+        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
@@ -970,8 +970,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        let k: Scalar = Scalar::random(&mut OsRng);
-        let l: Scalar = Scalar::random(&mut OsRng);
+        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let scalars = vec![k, l];
@@ -1009,7 +1009,7 @@ mod tests {
 
         let a = Scalar::from(&t - &one);
         let b = Scalar::from(&t);
-        let res = &a + &b;
+        let res = a + b;
 
         let m = Scalar::modulus_as_biguint();
         let res_ref = Scalar::from((&t + &t - &one) % &m);
@@ -1017,18 +1017,18 @@ mod tests {
         assert_eq!(res, res_ref);
     }
 
+    #[allow(clippy::op_ref)]
     #[test]
     fn generate_biased() {
-        use elliptic_curve::rand_core::OsRng;
-        let a = Scalar::generate_biased(&mut OsRng);
+        let a = Scalar::generate_biased(&mut OsRng.unwrap_mut());
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
+    #[allow(clippy::op_ref)]
     #[test]
     fn generate_vartime() {
-        use elliptic_curve::rand_core::OsRng;
-        let a = Scalar::generate_vartime(&mut OsRng);
+        let a = Scalar::generate_vartime(&mut OsRng.unwrap_mut());
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }

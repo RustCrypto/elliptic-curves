@@ -49,8 +49,8 @@ mod tests {
     #[test]
     fn generate_secret_key() {
         use crate::SecretKey;
-        use elliptic_curve::rand_core::OsRng;
-        let key = SecretKey::random(&mut OsRng);
+        use elliptic_curve::rand_core::{OsRng, TryRngCore};
+        let key = SecretKey::random(&mut OsRng.unwrap_mut());
 
         // Sanity check
         assert!(!key.to_bytes().iter().all(|b| *b == 0))

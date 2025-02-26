@@ -1,25 +1,25 @@
 //! Taproot Schnorr signing key.
 
-use super::{tagged_hash, Signature, VerifyingKey, AUX_TAG, CHALLENGE_TAG, NONCE_TAG};
+use super::{AUX_TAG, CHALLENGE_TAG, NONCE_TAG, Signature, VerifyingKey, tagged_hash};
 use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
 use elliptic_curve::{
     bigint::U256,
     ops::Reduce,
-    rand_core::CryptoRngCore,
+    rand_core::{CryptoRng, TryCryptoRng},
     subtle::ConditionallySelectable,
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
 use sha2::{Digest, Sha256};
 use signature::{
-    digest::{consts::U32, FixedOutput},
-    hazmat::{PrehashSigner, RandomizedPrehashSigner},
     DigestSigner, Error, KeypairRef, RandomizedDigestSigner, RandomizedSigner, Result, Signer,
+    digest::{FixedOutput, consts::U32},
+    hazmat::{PrehashSigner, RandomizedPrehashSigner},
 };
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(debug_assertions)]
 use signature::hazmat::PrehashVerifier;
@@ -36,7 +36,7 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
+    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
         NonZeroScalar::random(rng).into()
     }
 
@@ -176,31 +176,37 @@ impl<D> RandomizedDigestSigner<D, Signature> for SigningKey
 where
     D: Digest + FixedOutput<OutputSize = U32>,
 {
-    fn try_sign_digest_with_rng(
+    fn try_sign_digest_with_rng<R: TryCryptoRng + ?Sized>(
         &self,
-        rng: &mut impl CryptoRngCore,
+        rng: &mut R,
         digest: D,
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
-        rng.fill_bytes(&mut aux_rand);
+        rng.try_fill_bytes(&mut aux_rand)
+            .map_err(|_| Error::new())?;
         self.sign_raw(&digest.finalize_fixed(), &aux_rand)
     }
 }
 
 impl RandomizedSigner<Signature> for SigningKey {
-    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> Result<Signature> {
+    fn try_sign_with_rng<R: TryCryptoRng + ?Sized>(
+        &self,
+        rng: &mut R,
+        msg: &[u8],
+    ) -> Result<Signature> {
         self.try_sign_digest_with_rng(rng, Sha256::new_with_prefix(msg))
     }
 }
 
 impl RandomizedPrehashSigner<Signature> for SigningKey {
-    fn sign_prehash_with_rng(
+    fn sign_prehash_with_rng<R: TryCryptoRng + ?Sized>(
         &self,
-        rng: &mut impl CryptoRngCore,
+        rng: &mut R,
         prehash: &[u8],
     ) -> Result<Signature> {
         let mut aux_rand = [0u8; 32];
-        rng.fill_bytes(&mut aux_rand);
+        rng.try_fill_bytes(&mut aux_rand)
+            .map_err(|_| Error::new())?;
 
         self.sign_raw(prehash, &aux_rand)
     }

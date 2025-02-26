@@ -1,6 +1,6 @@
 //! Taproot Schnorr verifying key.
 
-use super::{tagged_hash, Signature, CHALLENGE_TAG};
+use super::{CHALLENGE_TAG, Signature, tagged_hash};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
 use elliptic_curve::{
     bigint::U256,
@@ -9,13 +9,13 @@ use elliptic_curve::{
     point::DecompactPoint,
 };
 use sha2::{
-    digest::{consts::U32, FixedOutput},
     Digest, Sha256,
+    digest::{FixedOutput, consts::U32},
 };
-use signature::{hazmat::PrehashVerifier, DigestVerifier, Error, Result, Verifier};
+use signature::{DigestVerifier, Error, Result, Verifier, hazmat::PrehashVerifier};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 /// Taproot Schnorr verifying key.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]

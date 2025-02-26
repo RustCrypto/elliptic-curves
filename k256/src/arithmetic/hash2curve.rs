@@ -1,3 +1,4 @@
+use elliptic_curve::Field;
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U48};
@@ -6,7 +7,6 @@ use elliptic_curve::hash2curve::{
     FromOkm, GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
 };
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-use elliptic_curve::Field;
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
@@ -276,12 +276,12 @@ impl CofactorGroup for ProjectivePoint {
 mod tests {
     use crate::{FieldElement, Scalar, Secp256k1, U256};
     use elliptic_curve::{
+        Curve,
         array::Array,
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
         group::cofactor::CofactorGroup,
         hash2curve::{FromOkm, GroupDigest, MapToCurve},
-        Curve,
     };
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};

@@ -1,6 +1,6 @@
 //! Wide scalar (32-bit limbs)
 
-use super::{Scalar, MODULUS};
+use super::{MODULUS, Scalar};
 use crate::ORDER;
 use elliptic_curve::{
     bigint::{Limb, U256, U512},
