@@ -29,7 +29,7 @@ signature = { version = "=2.3.0-pre.6", optional = true, features = ["rand_core"
 sm3 = { version = "=0.5.0-pre.4", optional = true, default-features = false }
 
 [dev-dependencies]
-hex-literal = "0.4"
+hex-literal = "1"
 proptest = "1"
 rand_core = { version = "0.9", features = ["os_rng"] }
 
