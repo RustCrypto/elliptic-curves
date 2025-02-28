@@ -50,6 +50,13 @@ use signature::{Error, Result, SignatureEncoding};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(feature = "pkcs8")]
+use crate::pkcs8::{
+    AlgorithmIdentifierRef, ObjectIdentifier, der::AnyRef, spki::AssociatedAlgorithmIdentifier,
+};
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use crate::pkcs8::{der, spki::SignatureBitStringEncoding};
+
 /// SM2DSA signature serialized as bytes.
 pub type SignatureBytes = [u8; Signature::BYTE_SIZE];
 
@@ -196,4 +203,30 @@ impl TryFrom<&[u8]> for Signature {
     fn try_from(bytes: &[u8]) -> Result<Signature> {
         Signature::from_slice(bytes)
     }
+}
+
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+impl SignatureBitStringEncoding for Signature {
+    fn to_bitstring(&self) -> der::Result<der::asn1::BitString> {
+        der::asn1::BitString::new(0, self.to_vec())
+    }
+}
+
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+impl AssociatedAlgorithmIdentifier for Signature {
+    type Params = AnyRef<'static>;
+
+    const ALGORITHM_IDENTIFIER: AlgorithmIdentifierRef<'static> = AlgorithmIdentifierRef {
+        // Reference: https://datatracker.ietf.org/doc/html/draft-sca-cfrg-sm3#section-8.1.3
+        // ```
+        // "1.2.156.10197.1.501" for "Digital Signature: SM2 and SM3"
+        // o  "id-dsa-sm2sm3" "{id-int dsa-sm2sm3(501)}"
+        // ```
+        //
+        // NOTE: Here [`Signature`] represent an SM2 signed object with an SM3 hash (implementation detail
+        // of [`sm2::dsa::SigningKey`] and [`sm2::dsa::VerifyingKey`], that might need to change
+        // once/if the hash function gets modular.
+        oid: ObjectIdentifier::new_unwrap("1.2.156.10197.1.501"),
+        parameters: None,
+    };
 }

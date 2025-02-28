@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## 0.14.0 (UNRELEASED)
+## Added 
+- Signature and key PKCS8 support ([#1127])
+
 ## Changed
 - Update to `elliptic-curve` v0.14 ([#1011])
 - Update to `secdect` v0.3 ([#1084])
@@ -16,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
 [#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
 [#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
-
+[#1127]: https://github.com/RustCrypto/elliptic-curves/pull/1127
 
 ## 0.13.3 (2023-11-20)
 ### Added
