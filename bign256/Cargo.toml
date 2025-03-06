@@ -21,7 +21,7 @@ rust-version = "1.85"
 elliptic-curve = { version = "0.14.0-rc.0", features = ["sec1"] }
 
 # optional dependencies
-belt-hash = { version = "=0.2.0-pre.4", optional = true, default-features = false }
+belt-hash = { version = "=0.2.0-pre.5", optional = true, default-features = false }
 der = { version = "0.8.0-rc.0" }
 digest = { version = "=0.11.0-pre.10", optional = true }
 hex-literal = { version = "1", optional = true }

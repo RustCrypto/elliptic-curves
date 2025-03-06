@@ -24,7 +24,7 @@ ecdsa-core = { version = "=0.17.0-pre.9", package = "ecdsa", optional = true, de
 hex-literal = { version = "1", optional = true }
 primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
 serdect = { version = "0.3", optional = true, default-features = false }
-sha2 = { version = "=0.11.0-pre.4", optional = true, default-features = false }
+sha2 = { version = "=0.11.0-pre.5", optional = true, default-features = false }
 
 [dev-dependencies]
 blobby = "0.3"

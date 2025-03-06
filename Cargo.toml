@@ -31,11 +31,6 @@ ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
 signature      = { git = "https://github.com/RustCrypto/traits.git" }
 
-belt-hash = { git = "https://github.com/RustCrypto/hashes.git" }
-sha2      = { git = "https://github.com/RustCrypto/hashes.git" }
-sha3      = { git = "https://github.com/RustCrypto/hashes.git" }
-sm3       = { git = "https://github.com/RustCrypto/hashes.git" }
-
 hmac = { git = "https://github.com/RustCrypto/MACs.git" }
 
 crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint.git" }
