@@ -21,7 +21,7 @@
 //! let public_key = secret_key.public_key();
 //! let encrypting_key = EncryptingKey::new_with_mode(public_key, Mode::C1C2C3);
 //! let plaintext = b"plaintext";
-//! let ciphertext = encrypting_key.encrypt(plaintext)?;
+//! let ciphertext = encrypting_key.encrypt(&mut OsRng, plaintext)?;
 //!
 //! use sm2::pke::DecryptingKey;
 //! // Decrypting
@@ -29,7 +29,7 @@
 //! assert_eq!(decrypting_key.decrypt(&ciphertext)?, plaintext);
 //!
 //! // Encrypting ASN.1 DER
-//! let ciphertext = encrypting_key.encrypt_der(plaintext)?;
+//! let ciphertext = encrypting_key.encrypt_der(&mut OsRng, plaintext)?;
 //!
 //! // Decrypting ASN.1 DER
 //! assert_eq!(decrypting_key.decrypt_der(&ciphertext)?, plaintext);

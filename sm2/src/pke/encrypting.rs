@@ -13,7 +13,7 @@ use elliptic_curve::{
     bigint::{RandomBits, U256, Uint, Zero},
     ops::{MulByGenerator, Reduce},
     pkcs8::der::Encode,
-    rand_core,
+    rand_core::TryCryptoRng,
     sec1::ToEncodedPoint,
 };
 
@@ -76,34 +76,46 @@ impl EncryptingKey {
     /// Encrypts a message using the encryption key.
     ///
     /// This method calculates the digest using the `Sm3` hash function and then performs encryption.
-    pub fn encrypt(&self, msg: &[u8]) -> Result<Vec<u8>> {
-        self.encrypt_digest::<Sm3>(msg)
+    pub fn encrypt<R: TryCryptoRng + ?Sized>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>> {
+        self.encrypt_digest::<R, Sm3>(rng, msg)
     }
 
     /// Encrypts a message and returns the result in ASN.1 format.
     ///
     /// This method calculates the digest using the `Sm3` hash function and performs encryption,
     /// then encodes the result in ASN.1 format.
-    pub fn encrypt_der(&self, msg: &[u8]) -> Result<Vec<u8>> {
-        self.encrypt_der_digest::<Sm3>(msg)
+    pub fn encrypt_der<R: TryCryptoRng + ?Sized>(
+        &self,
+        rng: &mut R,
+        msg: &[u8],
+    ) -> Result<Vec<u8>> {
+        self.encrypt_der_digest::<R, Sm3>(rng, msg)
     }
 
     /// Encrypts a message using a specified digest algorithm.
-    pub fn encrypt_digest<D>(&self, msg: &[u8]) -> Result<Vec<u8>>
+    pub fn encrypt_digest<R: TryCryptoRng + ?Sized, D>(
+        &self,
+        rng: &mut R,
+        msg: &[u8],
+    ) -> Result<Vec<u8>>
     where
         D: 'static + Digest + DynDigest + Send + Sync,
     {
         let mut digest = D::new();
-        encrypt(&self.public_key, self.mode, &mut digest, msg)
+        encrypt(rng, &self.public_key, self.mode, &mut digest, msg)
     }
 
     /// Encrypts a message using a specified digest algorithm and returns the result in ASN.1 format.
-    pub fn encrypt_der_digest<D>(&self, msg: &[u8]) -> Result<Vec<u8>>
+    pub fn encrypt_der_digest<R: TryCryptoRng + ?Sized, D>(
+        &self,
+        rng: &mut R,
+        msg: &[u8],
+    ) -> Result<Vec<u8>>
     where
         D: 'static + Digest + DynDigest + Send + Sync,
     {
         let mut digest = D::new();
-        let cipher = encrypt(&self.public_key, self.mode, &mut digest, msg)?;
+        let cipher = encrypt(rng, &self.public_key, self.mode, &mut digest, msg)?;
         let digest_size = digest.output_size();
         let (_, cipher) = cipher.split_at(1);
         let (x, cipher) = cipher.split_at(32);
@@ -133,7 +145,8 @@ impl From<PublicKey> for EncryptingKey {
 }
 
 /// Encrypts a message using the specified public key, mode, and digest algorithm.
-fn encrypt(
+fn encrypt<R: TryCryptoRng + ?Sized>(
+    rng: &mut R,
     public_key: &PublicKey,
     mode: Mode,
     digest: &mut dyn DynDigest,
@@ -145,7 +158,7 @@ fn encrypt(
     let mut hpb: AffinePoint;
     loop {
         // A1: generate a random number 𝑘 ∈ [1, 𝑛 − 1] with the random number generator
-        let k = Scalar::from_uint(next_k(N_BYTES)).unwrap();
+        let k = Scalar::from_uint(next_k(rng, N_BYTES)?).unwrap();
 
         // A2: compute point 𝐶1 = [𝑘]𝐺 = (𝑥1, 𝑦1)
         let kg = ProjectivePoint::mul_by_generator(&k).to_affine();
@@ -188,11 +201,11 @@ fn encrypt(
     })
 }
 
-fn next_k(bit_length: u32) -> U256 {
+fn next_k<R: TryCryptoRng + ?Sized>(rng: &mut R, bit_length: u32) -> Result<U256> {
     loop {
-        let k = U256::random_bits(&mut rand_core::OsRng, bit_length);
+        let k = U256::try_random_bits(rng, bit_length).map_err(|_| Error)?;
         if !bool::from(k.is_zero()) && k < Sm2::ORDER {
-            return k;
+            return Ok(k);
         }
     }
 }
