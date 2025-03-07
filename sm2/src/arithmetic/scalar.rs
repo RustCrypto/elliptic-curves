@@ -24,26 +24,26 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, SecretKey, Sm2, ORDER_HEX, U256};
+use crate::{FieldBytes, FieldBytesEncoding, ORDER_HEX, SecretKey, Sm2, U256};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
+    Curve as _, Error, Result, ScalarPrimitive,
     bigint::Limb,
     ff::PrimeField,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
-    Curve as _, Error, Result, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};

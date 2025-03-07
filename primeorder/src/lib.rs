@@ -21,11 +21,11 @@ mod field;
 mod projective;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
-pub use elliptic_curve::{self, array, point::Double, Field, FieldBytes, PrimeCurve, PrimeField};
+pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField, array, point::Double};
 
+use elliptic_curve::CurveArithmetic;
 use elliptic_curve::ops::Invert;
 use elliptic_curve::subtle::CtOption;
-use elliptic_curve::CurveArithmetic;
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.

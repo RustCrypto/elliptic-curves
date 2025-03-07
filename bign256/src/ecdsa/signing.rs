@@ -14,18 +14,18 @@
 
 #![allow(non_snake_case)]
 
-use super::{Signature, VerifyingKey, BELT_OID};
+use super::{BELT_OID, Signature, VerifyingKey};
 use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey};
 use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    array::{sizes::U32, typenum::Unsigned, Array},
+    Curve, Field, FieldBytesEncoding, PrimeField,
+    array::{Array, sizes::U32, typenum::Unsigned},
     ops::{MulByGenerator, Reduce},
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
-    Curve, Field, FieldBytesEncoding, PrimeField,
 };
-use signature::{hazmat::PrehashSigner, Error, KeypairRef, Result, Signer};
+use signature::{Error, KeypairRef, Result, Signer, hazmat::PrehashSigner};
 
 /// BignP256 secret key used for signing messages and producing signatures.
 ///

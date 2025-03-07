@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.14.0 (UNRELEASED)
+### Added
+- Support for non-32-byte BIP340 signatures ([#1041])
+
+### Fixed
+- Batch Normalization `normalizes_to_zero()` bug fix ([#1029])
+- Prevent panic when creating a Schnorr from slice ([#1056])
+
+## Changed
+- Update to `elliptic-curve` v0.14 ([#1011])
+- Update to `ecdsa` v0.17 ([#1011])
+- Update to `secdect` v0.3 ([#1084])
+- Update to `rand_core` v0.9 ([#1125])
+- Update to `hybrid-array` v0.3 ([#1125])
+- Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
+- Relax MSRV policy and allow MSRV bumps in patch releases
+
+[#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
+[#1029]: https://github.com/RustCrypto/elliptic-curves/pull/1029
+[#1041]: https://github.com/RustCrypto/elliptic-curves/pull/1041
+[#1056]: https://github.com/RustCrypto/elliptic-curves/pull/1056
+[#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
+[#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
+
+
 ## 0.13.3 (2024-01-08)
 ### Added
 - More inlines for better efficiency ([#999])

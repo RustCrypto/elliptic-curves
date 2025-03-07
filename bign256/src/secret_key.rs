@@ -1,26 +1,26 @@
 //! Bign256 secret key.
 
 use core::str::FromStr;
-use der::{asn1::OctetStringRef, SecretDocument};
+use der::{SecretDocument, asn1::OctetStringRef};
 
-use elliptic_curve::{array::typenum::Unsigned, zeroize::Zeroizing, Error};
+use elliptic_curve::{Error, array::typenum::Unsigned, zeroize::Zeroizing};
 use pkcs8::{
-    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
     AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 
 #[cfg(feature = "arithmetic")]
 use crate::FieldBytes;
+use crate::{ALGORITHM_OID, PublicKey, ScalarPrimitive, SecretKey};
 #[cfg(feature = "arithmetic")]
-use crate::{elliptic_curve::rand_core::CryptoRngCore, BignP256, NonZeroScalar, Result};
-use crate::{PublicKey, ScalarPrimitive, SecretKey, ALGORITHM_OID};
+use crate::{BignP256, NonZeroScalar, Result, elliptic_curve::rand_core::CryptoRng};
 
 impl SecretKey {
     const MIN_SIZE: usize = 24;
 
     /// Generate a random [`SecretKey`].
     #[cfg(feature = "arithmetic")]
-    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
+    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
         Self {
             inner: NonZeroScalar::random(rng).into(),
         }

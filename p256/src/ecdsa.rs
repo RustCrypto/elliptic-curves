@@ -24,10 +24,10 @@
 //! use p256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
 //! };
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::random(&mut OsRng.unwrap_mut()); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
@@ -69,12 +69,12 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        ecdsa::{
-            signature::hazmat::{PrehashSigner, PrehashVerifier},
-            signature::Signer,
-            Signature, SigningKey, VerifyingKey,
-        },
         AffinePoint, EncodedPoint,
+        ecdsa::{
+            Signature, SigningKey, VerifyingKey,
+            signature::Signer,
+            signature::hazmat::{PrehashSigner, PrehashVerifier},
+        },
     };
     use elliptic_curve::sec1::FromEncodedPoint;
     use hex_literal::hex;
@@ -148,12 +148,12 @@ mod tests {
     }
 
     mod sign {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
+        use crate::{NistP256, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_signing_test!(NistP256, ECDSA_TEST_VECTORS);
     }
 
     mod verify {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
+        use crate::{NistP256, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_verification_test!(NistP256, ECDSA_TEST_VECTORS);
     }
 

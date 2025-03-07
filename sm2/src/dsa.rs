@@ -8,14 +8,14 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand_core::OsRng; // requires 'getrandom` feature
+//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng` feature
 //! use sm2::{
 //!     dsa::{Signature, SigningKey, signature::Signer},
 //!     SecretKey
 //! };
 //!
 //! // Signing
-//! let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::random(&mut OsRng.unwrap_mut()); // serialize with `::to_bytes()`
 //! let distid = "example@rustcrypto.org"; // distinguishing identifier
 //! let signing_key = SigningKey::new(distid, &secret_key)?;
 //! let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();

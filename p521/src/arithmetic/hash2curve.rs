@@ -100,10 +100,11 @@ impl FromOkm for Scalar {
 #[cfg(test)]
 mod tests {
     use crate::{
-        arithmetic::field::{FieldElement, MODULUS},
         NistP521, Scalar,
+        arithmetic::field::{FieldElement, MODULUS},
     };
     use elliptic_curve::{
+        Curve,
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U576, U896},
         consts::U98,
@@ -111,7 +112,6 @@ mod tests {
         hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
-        Curve,
     };
     use hex_literal::hex;
     use proptest::{num, prelude::ProptestConfig, proptest};
@@ -265,19 +265,25 @@ mod tests {
                 dst: b"DeriveKeyPairOPRFV1-\x00-P521-SHA512",
                 key_info: &hex!("74657374206b6579"),
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("0153441b8faedb0340439036d6aed06d1217b34c42f17f8db4c5cc610a4a955d698a688831b16d0dc7713a1aa3611ec60703bffc7dc9c84e3ed673b3dbe1d5fccea6"),
+                sk_sm: &hex!(
+                    "0153441b8faedb0340439036d6aed06d1217b34c42f17f8db4c5cc610a4a955d698a688831b16d0dc7713a1aa3611ec60703bffc7dc9c84e3ed673b3dbe1d5fccea6"
+                ),
             },
             TestVector {
                 dst: b"DeriveKeyPairOPRFV1-\x01-P521-SHA512",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("015c7fc1b4a0b1390925bae915bd9f3d72009d44d9241b962428aad5d13f22803311e7102632a39addc61ea440810222715c9d2f61f03ea424ec9ab1fe5e31cf9238"),
+                sk_sm: &hex!(
+                    "015c7fc1b4a0b1390925bae915bd9f3d72009d44d9241b962428aad5d13f22803311e7102632a39addc61ea440810222715c9d2f61f03ea424ec9ab1fe5e31cf9238"
+                ),
             },
             TestVector {
                 dst: b"DeriveKeyPairOPRFV1-\x02-P521-SHA512",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("014893130030ce69cf714f536498a02ff6b396888f9bb507985c32928c4427d6d39de10ef509aca4240e8569e3a88debc0d392e3361bcd934cb9bdd59e339dff7b27"),
+                sk_sm: &hex!(
+                    "014893130030ce69cf714f536498a02ff6b396888f9bb507985c32928c4427d6d39de10ef509aca4240e8569e3a88debc0d392e3361bcd934cb9bdd59e339dff7b27"
+                ),
             },
         ];
 

@@ -40,7 +40,7 @@ use elliptic_curve::point::AffineCoordinates;
 use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
 use hkdf::Hkdf;
 use hmac::SimpleHmac;
-use rand_core::CryptoRngCore;
+use rand_core::CryptoRng;
 
 /// Low-level Elliptic Curve Diffie-Hellman (ECDH) function.
 ///
@@ -99,7 +99,7 @@ pub struct EphemeralSecret {
 
 impl EphemeralSecret {
     /// Generate a cryptographically random [`EphemeralSecret`].
-    pub fn random(rng: &mut impl CryptoRngCore) -> Self {
+    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
         Self {
             scalar: NonZeroScalar::random(rng),
         }

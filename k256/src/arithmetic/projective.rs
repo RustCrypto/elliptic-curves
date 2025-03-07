@@ -2,7 +2,7 @@
 
 #![allow(clippy::op_ref)]
 
-use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
+use super::{AffinePoint, CURVE_EQUATION_B_SINGLE, FieldElement, Scalar};
 use crate::{CompressedPoint, EncodedPoint, PublicKey, Secp256k1};
 use core::{
     iter::Sum,
@@ -10,16 +10,16 @@ use core::{
 };
 use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
+    BatchNormalize, Error, Result,
     group::{
+        Curve, Group, GroupEncoding,
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
-        Curve, Group, GroupEncoding,
     },
     rand_core::RngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    BatchNormalize, Error, Result,
 };
 
 #[cfg(feature = "alloc")]
@@ -635,7 +635,7 @@ impl Neg for ProjectivePoint {
     }
 }
 
-impl<'a> Neg for &'a ProjectivePoint {
+impl Neg for &ProjectivePoint {
     type Output = ProjectivePoint;
 
     fn neg(self) -> ProjectivePoint {
@@ -675,14 +675,14 @@ impl TryFrom<&ProjectivePoint> for PublicKey {
 mod tests {
     use super::{AffinePoint, ProjectivePoint};
     use crate::{
-        test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
         Scalar,
+        test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     };
+    use elliptic_curve::Field;
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
     use elliptic_curve::ops::MulByGenerator;
-    use elliptic_curve::Field;
-    use elliptic_curve::{group, BatchNormalize};
-    use rand_core::OsRng;
+    use elliptic_curve::{BatchNormalize, group};
+    use rand_core::{OsRng, TryRngCore};
 
     #[cfg(feature = "alloc")]
     use alloc::vec::Vec;
@@ -706,8 +706,8 @@ mod tests {
 
     #[test]
     fn batch_normalize_array() {
-        let k: Scalar = Scalar::random(&mut OsRng);
-        let l: Scalar = Scalar::random(&mut OsRng);
+        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 
@@ -722,7 +722,8 @@ mod tests {
         assert_eq!(res, expected);
 
         let mut res = [AffinePoint::IDENTITY; 3];
-        let non_normalized_identity = ProjectivePoint::IDENTITY * Scalar::random(&mut OsRng);
+        let non_normalized_identity =
+            ProjectivePoint::IDENTITY * Scalar::random(&mut OsRng.unwrap_mut());
         let expected = [g.to_affine(), AffinePoint::IDENTITY, AffinePoint::IDENTITY];
         assert_eq!(
             <ProjectivePoint as BatchNormalize<_>>::batch_normalize(&[
@@ -743,8 +744,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_normalize_slice() {
-        let k: Scalar = Scalar::random(&mut OsRng);
-        let l: Scalar = Scalar::random(&mut OsRng);
+        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 

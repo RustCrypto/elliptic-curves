@@ -22,10 +22,12 @@ fn decode_pkcs8_private_key_from_der() {
 #[test]
 fn decode_pkcs8_public_key_from_der() {
     let public_key = PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
-    let expected_point = hex!("\
+    let expected_point = hex!(
+        "\
     B2 D8 99 74 6C EB 2D 38 90 1C EF 42 46 39 EA 30 FD A2 72 0B E7 C1 BA 3F 04 BC 31 5D F2 41 2B A9 \
     38 0E A8 EC E0 F7 A7 BA 7E A9 65 2D BA C5 3B 82 7B D2 C2 FB 59 84 86 98 DE 2E A6 75 96 05 EB 96\
-    ");
+    "
+    );
     assert_eq!(public_key.to_bytes().as_ref(), &expected_point[..]);
 }
 

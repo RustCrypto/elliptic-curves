@@ -22,6 +22,7 @@ use core::{
     ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
+    Error, Result,
     bigint::{ArrayEncoding, Integer, Limb},
     ff::PrimeField,
     ops::{Invert, Reduce},
@@ -30,7 +31,6 @@ use elliptic_curve::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
-    Error, Result,
 };
 
 #[cfg(doc)]

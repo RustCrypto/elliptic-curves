@@ -7,10 +7,10 @@ use elliptic_curve::{
     sec1::{self, ToEncodedPoint},
 };
 use p192::{
-    test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     AffinePoint, ProjectivePoint, Scalar,
+    test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };
-use primeorder::{impl_projective_arithmetic_tests, Double};
+use primeorder::{Double, impl_projective_arithmetic_tests};
 
 impl_projective_arithmetic_tests!(
     AffinePoint,

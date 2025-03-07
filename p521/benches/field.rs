@@ -1,7 +1,7 @@
 //! secp521r1 field element benchmarks
 
 use criterion::{
-    black_box, criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, black_box, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
 use p521::FieldElement;

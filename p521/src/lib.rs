@@ -38,7 +38,7 @@ pub mod ecdsa;
 pub mod test_vectors;
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
@@ -48,7 +48,7 @@ pub use elliptic_curve::{self, bigint::U576};
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{array::Array, consts::U66, FieldBytesEncoding};
+use elliptic_curve::{FieldBytesEncoding, array::Array, consts::U66};
 
 /// NIST P-521 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -62,7 +62,9 @@ impl elliptic_curve::Curve for NistP521 {
     type Uint = U576;
 
     /// Order of NIST P-521's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U576 = U576::from_be_hex("00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409");
+    const ORDER: U576 = U576::from_be_hex(
+        "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409",
+    );
 }
 
 impl elliptic_curve::PrimeCurve for NistP521 {}

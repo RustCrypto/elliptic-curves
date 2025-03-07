@@ -14,14 +14,14 @@ repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc"]
-edition = "2021"
-rust-version = "1.81"
+edition = "2024"
+rust-version = "1.85"
 
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features = ["arithmetic", "sec1"] }
 
 # optional dependencies
-serdect = { version = "0.3.0-rc.0", optional = true, default-features = false }
+serdect = { version = "0.3", optional = true, default-features = false }
 
 [features]
 alloc = ["elliptic-curve/alloc"]

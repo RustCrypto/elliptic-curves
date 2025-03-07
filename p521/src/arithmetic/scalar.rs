@@ -21,6 +21,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
+    Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
     bigint::{self, Integer},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce},
@@ -31,12 +32,11 @@ use elliptic_curve::{
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
 };
 use primefield::{impl_bernstein_yang_invert, impl_field_op};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(doc)]
 use core::ops::Sub;
@@ -546,7 +546,9 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 3;
-    const ROOT_OF_UNITY: Self = Self::from_hex("000000000000009a0a650d44b28c17f3d708ad2fa8c4fbc7e6000d7c12dafa92fcc5673a3055276d535f79ff391dcdbcd998b7836647d3a72472b3da861ac810a7f9c7b7b63e2205");
+    const ROOT_OF_UNITY: Self = Self::from_hex(
+        "000000000000009a0a650d44b28c17f3d708ad2fa8c4fbc7e6000d7c12dafa92fcc5673a3055276d535f79ff391dcdbcd998b7836647d3a72472b3da861ac810a7f9c7b7b63e2205",
+    );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(6561);
 

@@ -80,7 +80,7 @@ macro_rules! impl_mont_field_element {
             #[doc = stringify!($fe)]
             /// `] from a big endian byte slice.
             pub fn from_slice(slice: &[u8]) -> $crate::elliptic_curve::Result<Self> {
-                use $crate::elliptic_curve::array::{typenum::Unsigned, Array};
+                use $crate::elliptic_curve::array::{Array, typenum::Unsigned};
 
                 if slice.len() != <$curve as $crate::elliptic_curve::Curve>::FieldBytesSize::USIZE {
                     return Err($crate::elliptic_curve::Error);

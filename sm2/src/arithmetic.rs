@@ -13,7 +13,7 @@ pub use self::scalar::Scalar;
 use self::field::FieldElement;
 use crate::Sm2;
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
-use primeorder::{point_arithmetic, PrimeCurveParams};
+use primeorder::{PrimeCurveParams, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<Sm2>;

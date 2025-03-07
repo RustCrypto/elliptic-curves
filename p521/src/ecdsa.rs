@@ -22,10 +22,10 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p521::ecdsa::{signature::Signer, Signature, SigningKey};
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::random(&mut OsRng.unwrap_mut()); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
@@ -67,7 +67,7 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP521 {
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
-    use crate::ecdsa::{signature::Signer, Signature, SigningKey};
+    use crate::ecdsa::{Signature, SigningKey, signature::Signer};
     use hex_literal::hex;
 
     // Test vector from RFC 6979 Appendix 2.7 (NIST P-521 + SHA-512)
@@ -75,7 +75,9 @@ mod tests {
     // TODO(tarcieri): debug why this is failing
     #[test]
     fn rfc6979() {
-        let x = hex!("00FAD06DAA62BA3B25D2FB40133DA757205DE67F5BB0018FEE8C86E1B68C7E75CAA896EB32F1F47C70855836A6D16FCC1466F6D8FBEC67DB89EC0C08B0E996B83538");
+        let x = hex!(
+            "00FAD06DAA62BA3B25D2FB40133DA757205DE67F5BB0018FEE8C86E1B68C7E75CAA896EB32F1F47C70855836A6D16FCC1466F6D8FBEC67DB89EC0C08B0E996B83538"
+        );
         let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let signature: Signature = signer.sign(b"sample");
         assert_eq!(
@@ -88,12 +90,12 @@ mod tests {
     }
 
     mod sign {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP521};
+        use crate::{NistP521, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_signing_test!(NistP521, ECDSA_TEST_VECTORS);
     }
 
     mod verify {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP521};
+        use crate::{NistP521, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_verification_test!(NistP521, ECDSA_TEST_VECTORS);
     }
 

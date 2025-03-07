@@ -515,13 +515,13 @@ mod tests {
     use elliptic_curve::ops::BatchInvert;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
-    use rand_core::OsRng;
+    use rand_core::{OsRng, TryRngCore};
 
     use super::FieldElement;
     use crate::{
+        FieldBytes,
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         test_vectors::field::DBL_TEST_VECTORS,
-        FieldBytes,
     };
 
     #[cfg(feature = "alloc")]
@@ -561,7 +561,7 @@ mod tests {
         // ROOT_OF_UNITY^{2^s} mod m == 1
         assert_eq!(
             FieldElement::ROOT_OF_UNITY
-                .pow_vartime(&[1u64 << FieldElement::S, 0, 0, 0])
+                .pow_vartime([1u64 << FieldElement::S, 0, 0, 0])
                 .normalize(),
             FieldElement::ONE
         );
@@ -569,7 +569,7 @@ mod tests {
         // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
         assert_eq!(
             FieldElement::MULTIPLICATIVE_GENERATOR
-                .pow_vartime(&T)
+                .pow_vartime(T)
                 .normalize(),
             FieldElement::ROOT_OF_UNITY
         )
@@ -587,7 +587,7 @@ mod tests {
     fn delta_constant() {
         // DELTA^{t} mod m == 1
         assert_eq!(
-            FieldElement::DELTA.pow_vartime(&T).normalize(),
+            FieldElement::DELTA.pow_vartime(T).normalize(),
             FieldElement::ONE
         );
     }
@@ -690,8 +690,8 @@ mod tests {
 
     #[test]
     fn batch_invert_array() {
-        let k: FieldElement = FieldElement::random(&mut OsRng);
-        let l: FieldElement = FieldElement::random(&mut OsRng);
+        let k: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
+        let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
@@ -703,8 +703,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        let k: FieldElement = FieldElement::random(&mut OsRng);
-        let l: FieldElement = FieldElement::random(&mut OsRng);
+        let k: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
+        let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let field_elements = vec![k, l];

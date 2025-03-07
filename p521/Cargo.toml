@@ -13,8 +13,8 @@ repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "nist", "secp521r1"]
-edition = "2021"
-rust-version = "1.81"
+edition = "2024"
+rust-version = "1.85"
 
 [dependencies]
 base16ct = "0.2"
@@ -22,20 +22,20 @@ elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features =
 
 # optional dependencies
 ecdsa-core = { version = "=0.17.0-pre.9", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
-hex-literal = { version = "0.4", optional = true }
+hex-literal = { version = "1", optional = true }
 primefield = { version = "=0.14.0-pre.0", optional = true, path = "../primefield" }
 primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
-rand_core = { version = "0.6", optional = true, default-features = false }
-serdect = { version = "0.3.0-rc.0", optional = true, default-features = false }
-sha2 = { version = "=0.11.0-pre.4", optional = true, default-features = false }
+rand_core = { version = "0.9", optional = true, default-features = false }
+serdect = { version = "0.3", optional = true, default-features = false }
+sha2 = { version = "=0.11.0-pre.5", optional = true, default-features = false }
 
 [dev-dependencies]
 blobby = "0.3"
 ecdsa-core = { version = "=0.17.0-pre.9", package = "ecdsa", default-features = false, features = ["dev"] }
-hex-literal = "0.4"
+hex-literal = "1"
 primeorder = { version = "=0.14.0-pre.2", features = ["dev"], path = "../primeorder" }
 proptest = "1.5"
-rand_core = { version = "0.6", features = ["getrandom"] }
+rand_core = { version = "0.9", features = ["os_rng"] }
 criterion = "0.5.1"
 
 [features]
@@ -48,7 +48,7 @@ digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha512"]
 expose-field = ["arithmetic"]
-getrandom = ["rand_core/getrandom"]
+getrandom = ["rand_core/os_rng"]
 hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["elliptic-curve/pem", "pkcs8"]

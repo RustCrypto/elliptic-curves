@@ -14,18 +14,18 @@
 
 use super::Signature;
 use crate::{
-    distid::hash_z, AffinePoint, DistId, EncodedPoint, FieldBytes, Hash, ProjectivePoint,
-    PublicKey, Scalar, Sm2,
+    AffinePoint, DistId, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar, Sm2,
+    distid::hash_z,
 };
 use elliptic_curve::{
+    Curve, Group,
     array::typenum::Unsigned,
     ops::{LinearCombination, Reduce},
     point::AffineCoordinates,
     sec1::ToEncodedPoint,
-    Curve, Group,
 };
-use signature::{hazmat::PrehashVerifier, Error, Result, Verifier};
-use sm3::{digest::Digest, Sm3};
+use signature::{Error, Result, Verifier, hazmat::PrehashVerifier};
+use sm3::{Sm3, digest::Digest};
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, string::String};

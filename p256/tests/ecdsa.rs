@@ -4,8 +4,8 @@
 
 use elliptic_curve::ops::Reduce;
 use p256::{
-    ecdsa::{SigningKey, VerifyingKey},
     NonZeroScalar, U256,
+    ecdsa::{SigningKey, VerifyingKey},
 };
 use proptest::prelude::*;
 

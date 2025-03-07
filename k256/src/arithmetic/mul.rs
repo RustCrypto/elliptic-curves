@@ -41,8 +41,8 @@
 compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
 
 use crate::arithmetic::{
-    scalar::{Scalar, WideScalar},
     ProjectivePoint,
+    scalar::{Scalar, WideScalar},
 };
 
 use core::ops::{Mul, MulAssign};
@@ -367,15 +367,15 @@ static GEN_LOOKUP_TABLE: Lazy<[LookupTable; 33]> = Lazy::new(precompute_gen_look
 
 #[cfg(feature = "precomputed-tables")]
 fn precompute_gen_lookup_table() -> [LookupTable; 33] {
-    let mut gen = ProjectivePoint::GENERATOR;
+    let mut generator = ProjectivePoint::GENERATOR;
     let mut res = [LookupTable::default(); 33];
 
     for i in 0..33 {
-        res[i] = LookupTable::from(&gen);
+        res[i] = LookupTable::from(&generator);
         // We are storing tables spaced by two radix steps,
         // to decrease the size of the precomputed data.
         for _ in 0..8 {
-            gen = gen.double();
+            generator = generator.double();
         }
     }
     res
@@ -453,24 +453,28 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::{ops::MulByGenerator, rand_core::OsRng, Field, Group};
+    use elliptic_curve::{
+        Field, Group,
+        ops::MulByGenerator,
+        rand_core::{OsRng, TryRngCore},
+    };
 
     #[test]
     fn test_lincomb() {
-        let x = ProjectivePoint::random(&mut OsRng);
-        let y = ProjectivePoint::random(&mut OsRng);
-        let k = Scalar::random(&mut OsRng);
-        let l = Scalar::random(&mut OsRng);
+        let x = ProjectivePoint::random(&mut OsRng.unwrap_mut());
+        let y = ProjectivePoint::random(&mut OsRng.unwrap_mut());
+        let k = Scalar::random(&mut OsRng.unwrap_mut());
+        let l = Scalar::random(&mut OsRng.unwrap_mut());
 
-        let reference = &x * &k + &y * &l;
+        let reference = x * k + y * l;
         let test = ProjectivePoint::lincomb(&[(x, k), (y, l)]);
         assert_eq!(reference, test);
     }
 
     #[test]
     fn test_mul_by_generator() {
-        let k = Scalar::random(&mut OsRng);
-        let reference = &ProjectivePoint::GENERATOR * &k;
+        let k = Scalar::random(&mut OsRng.unwrap_mut());
+        let reference = ProjectivePoint::GENERATOR * k;
         let test = ProjectivePoint::mul_by_generator(&k);
         assert_eq!(reference, test);
     }
@@ -478,12 +482,12 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn test_lincomb_slice() {
-        let x = ProjectivePoint::random(&mut OsRng);
-        let y = ProjectivePoint::random(&mut OsRng);
-        let k = Scalar::random(&mut OsRng);
-        let l = Scalar::random(&mut OsRng);
+        let x = ProjectivePoint::random(&mut OsRng.unwrap_mut());
+        let y = ProjectivePoint::random(&mut OsRng.unwrap_mut());
+        let k = Scalar::random(&mut OsRng.unwrap_mut());
+        let l = Scalar::random(&mut OsRng.unwrap_mut());
 
-        let reference = &x * &k + &y * &l;
+        let reference = x * k + y * l;
         let points_and_scalars = vec![(x, k), (y, l)];
 
         let test = ProjectivePoint::lincomb(points_and_scalars.as_slice());

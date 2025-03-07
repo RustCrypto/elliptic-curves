@@ -503,7 +503,7 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
+    use crate::{FieldBytes, test_vectors::field::DBL_TEST_VECTORS};
     use core::ops::Mul;
 
     #[cfg(target_pointer_width = "64")]
@@ -562,8 +562,8 @@ mod tests {
     #[test]
     fn repeated_add() {
         let mut r = FieldElement::ONE;
-        for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
+        for item in DBL_TEST_VECTORS {
+            assert_eq!(r.to_bytes().as_slice(), item);
             r = r + &r;
         }
     }
@@ -571,8 +571,8 @@ mod tests {
     #[test]
     fn repeated_double() {
         let mut r = FieldElement::ONE;
-        for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
+        for item in DBL_TEST_VECTORS {
+            assert_eq!(r.to_bytes().as_slice(), item);
             r = r.double();
         }
     }
@@ -581,8 +581,8 @@ mod tests {
     fn repeated_mul() {
         let mut r = FieldElement::ONE;
         let two = r + &r;
-        for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
+        for item in DBL_TEST_VECTORS {
+            assert_eq!(r.to_bytes().as_slice(), item);
             r = r * &two;
         }
     }
