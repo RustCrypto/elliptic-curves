@@ -14,7 +14,7 @@
 //! };
 //!
 //! // Signing
-//! let secret_key = SecretKey::random(&mut OsRng.unwrap_mut()); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `::to_bytes()`
 //! let signing_key = SigningKey::new(&secret_key)?;
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes();
 //! let message = b"test message";
