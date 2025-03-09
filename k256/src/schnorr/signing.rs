@@ -40,6 +40,13 @@ impl SigningKey {
         NonZeroScalar::random(rng).into()
     }
 
+    /// Generate a cryptographically random [`SigningKey`].
+    pub fn try_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        Ok(NonZeroScalar::try_from_rng(rng)?.into())
+    }
+
     /// Parse signing key from big endian-encoded bytes.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
         NonZeroScalar::try_from(bytes)

@@ -13,7 +13,10 @@ use pkcs8::{
 use crate::FieldBytes;
 use crate::{ALGORITHM_OID, PublicKey, ScalarPrimitive, SecretKey};
 #[cfg(feature = "arithmetic")]
-use crate::{BignP256, NonZeroScalar, Result, elliptic_curve::rand_core::CryptoRng};
+use crate::{
+    BignP256, NonZeroScalar, Result,
+    elliptic_curve::rand_core::{CryptoRng, TryCryptoRng},
+};
 
 impl SecretKey {
     const MIN_SIZE: usize = 24;
@@ -24,6 +27,16 @@ impl SecretKey {
         Self {
             inner: NonZeroScalar::random(rng).into(),
         }
+    }
+
+    /// Generate a random [`SecretKey`].
+    #[cfg(feature = "arithmetic")]
+    pub fn try_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        Ok(Self {
+            inner: NonZeroScalar::try_from_rng(rng)?.into(),
+        })
     }
 
     /// Borrow the inner secret [`elliptic_curve::ScalarPrimitive`] value.

@@ -389,7 +389,7 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#ea9b99a8444d1fdd98d72ff671f55e2fb2a1116b"
+source = "git+https://github.com/baloo/traits.git?branch=baloo%2Felliptic-curve%2Fsecret-key-try-from-rng#4c9c1b420bd92f38d67d564b181ec858e51c34fb"
 dependencies = [
  "base16ct",
  "base64ct",
