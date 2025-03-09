@@ -14,6 +14,15 @@ use {
     sm2::elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey},
 };
 
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use {
+    signature::{Keypair, Signer},
+    sm2::{
+        dsa::{Signature, SigningKey},
+        pkcs8::spki::{DynSignatureAlgorithmIdentifier, SignatureBitStringEncoding},
+    },
+};
+
 /// DER-encoded PKCS#8 private key
 const PKCS8_PRIVATE_KEY_DER: &[u8; 138] = include_bytes!("examples/pkcs8-private-key.der");
 
@@ -122,4 +131,22 @@ fn encode_pkcs8_public_key_to_pem() {
         sm2::PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
     let reencoded_public_key = original_public_key.to_string();
     assert_eq!(reencoded_public_key.as_str(), PKCS8_PUBLIC_KEY_PEM);
+}
+
+#[test]
+fn test_x509() {
+    fn dummy_cert_builder<S, Signature>(_signer: &S)
+    where
+        S: Signer<Signature>,
+        S: Keypair + DynSignatureAlgorithmIdentifier,
+        S::VerifyingKey: EncodePublicKey,
+        Signature: SignatureBitStringEncoding,
+    {
+        // we just want to check the trait bounds here
+    }
+
+    let secret_key = PKCS8_PRIVATE_KEY_PEM.parse::<sm2::SecretKey>().unwrap();
+    const IDENTITY: &str = "example@rustcrypto.org";
+    let signing_key = SigningKey::new(IDENTITY, &secret_key).unwrap();
+    let _signature = dummy_cert_builder::<_, Signature>(&signing_key);
 }

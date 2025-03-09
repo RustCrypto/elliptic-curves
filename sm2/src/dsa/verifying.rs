@@ -30,6 +30,14 @@ use sm3::{Sm3, digest::Digest};
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, string::String};
 
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use crate::pkcs8::{self, EncodePublicKey, spki};
+#[cfg(feature = "pkcs8")]
+use crate::pkcs8::{
+    der::AnyRef,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier},
+};
+
 /// SM2DSA public key used for verifying signatures are valid for a given
 /// message.
 ///
@@ -200,4 +208,19 @@ impl ToEncodedPoint<Sm2> for VerifyingKey {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
         self.as_affine().to_encoded_point(compress)
     }
+}
+
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+impl EncodePublicKey for VerifyingKey {
+    fn to_public_key_der(&self) -> spki::Result<pkcs8::Document> {
+        self.public_key.to_public_key_der()
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+impl SignatureAlgorithmIdentifier for VerifyingKey {
+    type Params = AnyRef<'static>;
+
+    const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
+        Signature::ALGORITHM_IDENTIFIER;
 }
