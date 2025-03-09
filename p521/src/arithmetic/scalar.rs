@@ -25,7 +25,7 @@ use elliptic_curve::{
     bigint::{self, Integer},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce},
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -368,14 +368,14 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
         // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
         loop {
-            rng.fill_bytes(&mut bytes);
+            rng.try_fill_bytes(&mut bytes)?;
             if let Some(fe) = Self::from_bytes(&bytes).into() {
-                return fe;
+                return Ok(fe);
             }
         }
     }
