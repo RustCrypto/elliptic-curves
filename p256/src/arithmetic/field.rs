@@ -15,7 +15,7 @@ use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256, U512},
     ff::{Field, PrimeField},
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -250,13 +250,13 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution.
         let mut buf = [0; 64];
-        rng.fill_bytes(&mut buf);
+        rng.try_fill_bytes(&mut buf)?;
         let buf = U512::from_be_slice(&buf);
-        Self(field_impl::from_bytes_wide(buf))
+        Ok(Self(field_impl::from_bytes_wide(buf)))
     }
 
     #[must_use]

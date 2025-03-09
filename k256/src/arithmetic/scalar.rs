@@ -16,7 +16,7 @@ use elliptic_curve::{
     bigint::{Limb, U256, U512, Word, prelude::*},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::{CryptoRng, RngCore},
+    rand_core::{CryptoRng, TryRngCore},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -192,14 +192,14 @@ impl Scalar {
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
     // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
-    pub fn generate_vartime<R: RngCore + ?Sized>(rng: &mut R) -> Self {
+    pub fn generate_vartime<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
 
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
-            rng.fill_bytes(&mut bytes);
+            rng.try_fill_bytes(&mut bytes)?;
             if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return scalar;
+                return Ok(scalar);
             }
         }
     }
@@ -224,7 +224,7 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
         //
@@ -234,7 +234,7 @@ impl Field for Scalar {
         //
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
-        Self::generate_vartime(&mut rng)
+        Self::generate_vartime(rng)
     }
 
     #[must_use]
@@ -1028,7 +1028,7 @@ mod tests {
     #[allow(clippy::op_ref)]
     #[test]
     fn generate_vartime() {
-        let a = Scalar::generate_vartime(&mut OsRng.unwrap_mut());
+        let a = Scalar::generate_vartime(&mut OsRng).unwrap();
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
