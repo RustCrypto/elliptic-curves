@@ -16,7 +16,7 @@ use elliptic_curve::{
     bigint::{Limb, U256, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -189,7 +189,7 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
 
         // Generate a uniformly random scalar using rejection sampling,
@@ -202,9 +202,9 @@ impl Field for Scalar {
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
         loop {
-            rng.fill_bytes(&mut bytes);
+            rng.try_fill_bytes(&mut bytes)?;
             if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return scalar;
+                return Ok(scalar);
             }
         }
     }
