@@ -38,7 +38,7 @@ use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     Error, FieldBytesEncoding,
     ff::{self, Field, PrimeField},
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -399,14 +399,14 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
         loop {
-            rng.fill_bytes(&mut bytes);
+            rng.try_fill_bytes(&mut bytes)?;
             if let Some(fe) = Self::from_bytes(&bytes).into() {
-                return fe;
+                return Ok(fe);
             }
         }
     }
