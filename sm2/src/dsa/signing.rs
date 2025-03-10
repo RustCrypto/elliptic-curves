@@ -33,6 +33,12 @@ use signature::{
 };
 use sm3::Sm3;
 
+#[cfg(feature = "pkcs8")]
+use crate::pkcs8::{
+    der::AnyRef,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier},
+};
+
 /// SM2DSA secret key used for signing messages and producing signatures.
 ///
 /// ## Usage
@@ -222,4 +228,12 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
 
     // A7: the digital signature of M is (r, s)
     Signature::from_scalars(r, s)
+}
+
+#[cfg(feature = "pkcs8")]
+impl SignatureAlgorithmIdentifier for SigningKey {
+    type Params = AnyRef<'static>;
+
+    const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
+        Signature::ALGORITHM_IDENTIFIER;
 }
