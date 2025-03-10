@@ -16,7 +16,7 @@ use elliptic_curve::{
     bigint::{Limb, U256, U512, Word, prelude::*},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::{CryptoRng, TryRngCore},
+    rand_core::{CryptoRng, TryCryptoRng, TryRngCore},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -191,17 +191,8 @@ impl Scalar {
     }
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
-    // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
-    pub fn generate_vartime<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        let mut bytes = FieldBytes::default();
-
-        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
-        loop {
-            rng.try_fill_bytes(&mut bytes)?;
-            if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return Ok(scalar);
-            }
-        }
+    pub fn generate_vartime<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
     }
 
     /// Attempts to parse the given byte array as a scalar.
@@ -234,7 +225,15 @@ impl Field for Scalar {
         //
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
-        Self::generate_vartime(rng)
+        let mut bytes = FieldBytes::default();
+
+        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
+        loop {
+            rng.try_fill_bytes(&mut bytes)?;
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+                return Ok(scalar);
+            }
+        }
     }
 
     #[must_use]
