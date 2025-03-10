@@ -6,30 +6,30 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, ORDER, ORDER_HEX, Secp256k1, WideBytes};
+use crate::{FieldBytes, Secp256k1, WideBytes, ORDER, ORDER_HEX};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve, ScalarPrimitive,
-    bigint::{Limb, U256, U512, Word, prelude::*},
+    bigint::{prelude::*, Limb, Word, U256, U512},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::{CryptoRng, TryRngCore},
+    rand_core::{CryptoRng, TryCryptoRng, TryRngCore},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
     zeroize::DefaultIsZeroes,
+    Curve, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{Deserialize, Serialize, de, ser};
+use serdect::serde::{de, ser, Deserialize, Serialize};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -191,17 +191,8 @@ impl Scalar {
     }
 
     /// Returns a uniformly-random scalar, generated using rejection sampling.
-    // TODO(tarcieri): make this a `CryptoRng` when `ff` allows it
-    pub fn generate_vartime<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        let mut bytes = FieldBytes::default();
-
-        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
-        loop {
-            rng.try_fill_bytes(&mut bytes)?;
-            if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return Ok(scalar);
-            }
-        }
+    pub fn generate_vartime<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
     }
 
     /// Attempts to parse the given byte array as a scalar.
@@ -234,7 +225,15 @@ impl Field for Scalar {
         //
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
-        Self::generate_vartime(rng)
+        let mut bytes = FieldBytes::default();
+
+        // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
+        loop {
+            rng.try_fill_bytes(&mut bytes)?;
+            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+                return Ok(scalar);
+            }
+        }
     }
 
     #[must_use]
@@ -790,8 +789,8 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::Scalar;
     use crate::{
-        FieldBytes, NonZeroScalar, ORDER, WideBytes,
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
+        FieldBytes, NonZeroScalar, WideBytes, ORDER,
     };
     use elliptic_curve::{
         array::Array,
