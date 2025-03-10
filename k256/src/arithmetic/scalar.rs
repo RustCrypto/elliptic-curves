@@ -6,13 +6,14 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, Secp256k1, WideBytes, ORDER, ORDER_HEX};
+use crate::{FieldBytes, ORDER, ORDER_HEX, Secp256k1, WideBytes};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{prelude::*, Limb, Word, U256, U512},
+    Curve, ScalarPrimitive,
+    bigint::{Limb, U256, U512, Word, prelude::*},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::{CryptoRng, TryCryptoRng, TryRngCore},
@@ -22,14 +23,13 @@ use elliptic_curve::{
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -789,8 +789,8 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::Scalar;
     use crate::{
+        FieldBytes, NonZeroScalar, ORDER, WideBytes,
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
-        FieldBytes, NonZeroScalar, WideBytes, ORDER,
     };
     use elliptic_curve::{
         array::Array,
