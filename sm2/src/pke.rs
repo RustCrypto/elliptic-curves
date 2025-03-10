@@ -9,15 +9,14 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng` feature
+//! use rand_core::OsRng; // requires 'os_rng` feature
 //! use sm2::{
 //!     pke::{EncryptingKey, Mode},
 //!     {SecretKey, PublicKey}
-//!
 //! };
 //!
 //! // Encrypting
-//! let secret_key = SecretKey::random(&mut OsRng.unwrap_mut()); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `::to_bytes()`
 //! let public_key = secret_key.public_key();
 //! let encrypting_key = EncryptingKey::new_with_mode(public_key, Mode::C1C2C3);
 //! let plaintext = b"plaintext";
