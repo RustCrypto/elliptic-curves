@@ -23,12 +23,16 @@ opt-level = 2
 ff = { git = "https://github.com/zkcrypto/ff.git", branch = "release-0.14.0" }
 
 # https://github.com/zkcrypto/group/pull/56
-group = { git = "https://github.com/pinkforest/group.git", branch = "bump-rand-0.9" }
+# https://github.com/zkcrypto/group/pull/57
+# https://github.com/zkcrypto/group/pull/58
+# https://github.com/zkcrypto/group/pull/59
+group = { git = "https://github.com/baloo/group.git", branch = "baloo/try_from_rng" }
 
 # https://github.com/RustCrypto/signatures/pull/913
 ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 rfc6979 = { git = "https://github.com/RustCrypto/signatures.git" }
 
+# https://github.com/RustCrypto/traits/pull/1777
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
 signature      = { git = "https://github.com/RustCrypto/traits.git" }
 

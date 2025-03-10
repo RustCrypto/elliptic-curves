@@ -383,7 +383,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#204a4e030fa98863429ccd3797e12f9e7c45dc33"
+source = "git+https://github.com/RustCrypto/traits.git#3620aba4f1e81e506b46a5f88c47f7ee3a7b87e0"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -484,7 +484,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.13.0"
-source = "git+https://github.com/pinkforest/group.git?branch=bump-rand-0.9#06ac6fb11ced26fbf980ee65e74fced4da66ec3e"
+source = "git+https://github.com/baloo/group.git?branch=baloo%2Ftry_from_rng#b0d6ea48fe55327b11ea03f9a965d9e16bb83adc"
 dependencies = [
  "ff",
  "rand_core 0.9.3",
@@ -1132,7 +1132,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "2.3.0-pre.6"
-source = "git+https://github.com/RustCrypto/traits.git#204a4e030fa98863429ccd3797e12f9e7c45dc33"
+source = "git+https://github.com/RustCrypto/traits.git#3620aba4f1e81e506b46a5f88c47f7ee3a7b87e0"
 dependencies = [
  "digest",
  "rand_core 0.9.3",

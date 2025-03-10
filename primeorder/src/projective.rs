@@ -19,7 +19,7 @@ use elliptic_curve::{
     },
     ops::{BatchInvert, LinearCombination, MulByGenerator},
     point::Double,
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     sec1::{
         CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
         UncompressedPointSize,
@@ -275,8 +275,8 @@ where
 {
     type Scalar = Scalar<C>;
 
-    fn random(mut rng: impl RngCore) -> Self {
-        Self::GENERATOR * <Scalar<C> as Field>::random(&mut rng)
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
+        Ok(Self::GENERATOR * <Scalar<C> as Field>::try_from_rng(rng)?)
     }
 
     fn identity() -> Self {
