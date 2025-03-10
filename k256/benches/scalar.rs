@@ -6,7 +6,7 @@ use criterion::{
 use hex_literal::hex;
 use k256::{
     ProjectivePoint, Scalar,
-    elliptic_curve::{group::ff::PrimeField, ops::LinearCombination, ops::MulByGenerator},
+    elliptic_curve::{Group, group::ff::PrimeField, ops::LinearCombination},
 };
 
 fn test_scalar_x() -> Scalar {

@@ -19,16 +19,8 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
-# https://github.com/zkcrypto/ff/pull/122
-ff = { git = "https://github.com/zkcrypto/ff.git", branch = "release-0.14.0" }
-
-# https://github.com/zkcrypto/group/pull/56
-# https://github.com/zkcrypto/group/pull/57
-# https://github.com/zkcrypto/group/pull/58
-# https://github.com/zkcrypto/group/pull/59
-group = { git = "https://github.com/baloo/group.git", branch = "baloo/try_from_rng" }
-
 # https://github.com/RustCrypto/signatures/pull/913
+# https://github.com/RustCrypto/signatures/pull/940
 ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 rfc6979 = { git = "https://github.com/RustCrypto/signatures.git" }
 

@@ -422,6 +422,10 @@ impl Group for ProjectivePoint {
     fn double(&self) -> Self {
         Self::double(self)
     }
+
+    fn mul_by_generator(k: &Scalar) -> Self {
+        Self::mul_by_generator(k)
+    }
 }
 
 impl GroupEncoding for ProjectivePoint {
@@ -680,7 +684,6 @@ mod tests {
     };
     use elliptic_curve::Field;
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
-    use elliptic_curve::ops::MulByGenerator;
     use elliptic_curve::{BatchNormalize, group};
     use rand_core::{OsRng, TryRngCore};
 

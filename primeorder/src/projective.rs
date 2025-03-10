@@ -17,7 +17,7 @@ use elliptic_curve::{
         cofactor::CofactorGroup,
         prime::{PrimeCurve, PrimeGroup},
     },
-    ops::{BatchInvert, LinearCombination, MulByGenerator},
+    ops::{BatchInvert, LinearCombination},
     point::Double,
     rand_core::TryRngCore,
     sec1::{
@@ -423,17 +423,6 @@ where
     C: PrimeCurveParams,
 {
     // TODO(tarcieri): optimized implementation
-}
-
-impl<C> MulByGenerator for ProjectivePoint<C>
-where
-    Self: Double,
-    C: PrimeCurveParams,
-{
-    fn mul_by_generator(scalar: &Self::Scalar) -> Self {
-        // TODO(tarcieri): precomputed basepoint tables
-        Self::generator() * scalar
-    }
 }
 
 impl<C> PrimeGroup for ProjectivePoint<C>
