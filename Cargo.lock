@@ -389,7 +389,7 @@ checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#bd209960fa1cf9d5627a6045028b857675e279bd"
+source = "git+https://github.com/baloo/traits.git?branch=baloo%2Frelax-sized-rng#26fc95b4d95a960bfa543dfbd334f48318c9b23a"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -491,7 +491,7 @@ dependencies = [
 [[package]]
 name = "group"
 version = "0.13.0"
-source = "git+https://github.com/pinkforest/group.git?branch=bump-rand-0.9#06ac6fb11ced26fbf980ee65e74fced4da66ec3e"
+source = "git+https://github.com/baloo/group.git?branch=baloo%2Ftry_from_rng#b0d6ea48fe55327b11ea03f9a965d9e16bb83adc"
 dependencies = [
  "ff",
  "rand_core 0.9.2",
