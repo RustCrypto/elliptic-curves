@@ -41,8 +41,8 @@
 compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
 
 use crate::arithmetic::{
-    scalar::{Scalar, WideScalar},
     ProjectivePoint,
+    scalar::{Scalar, WideScalar},
 };
 
 use core::ops::{Mul, MulAssign};
@@ -459,9 +459,9 @@ mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::{
+        Field, Group,
         ops::MulByGenerator,
         rand_core::{OsRng, TryRngCore},
-        Field, Group,
     };
 
     #[test]
