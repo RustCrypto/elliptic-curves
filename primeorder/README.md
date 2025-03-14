@@ -80,5 +80,5 @@ dual licensed as above, without any additional terms or conditions.
 [`p224`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p224
 [`p256`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p256
 [`p384`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
-[`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p384
+[`p521`]: https://github.com/RustCrypto/elliptic-curves/tree/master/p521
 [`sm2`]: https://github.com/RustCrypto/elliptic-curves/tree/master/sm2
