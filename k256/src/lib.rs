@@ -32,6 +32,9 @@
 #[macro_use]
 extern crate alloc;
 
+#[cfg(feature = "std")]
+extern crate std;
+
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
