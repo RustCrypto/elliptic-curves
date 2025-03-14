@@ -32,6 +32,9 @@
 #[macro_use]
 extern crate alloc;
 
+#[cfg(feature = "std")]
+extern crate std;
+
 #[cfg(feature = "arithmetic")]
 mod arithmetic;
 
@@ -62,10 +65,10 @@ pub use elliptic_curve::pkcs8;
 pub use sha2;
 
 use elliptic_curve::{
-    FieldBytesEncoding,
     array::Array,
     bigint::ArrayEncoding,
     consts::{U32, U33, U64},
+    FieldBytesEncoding,
 };
 
 /// Order of the secp256k1 elliptic curve in hexadecimal.
