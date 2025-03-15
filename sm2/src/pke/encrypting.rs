@@ -1,9 +1,7 @@
 use core::fmt::Debug;
 
 use crate::{
-    AffinePoint, ProjectivePoint, PublicKey, Scalar, Sm2,
-    arithmetic::field::FieldElement,
-    pke::{kdf, vec},
+    AffinePoint, ProjectivePoint, PublicKey, Scalar, Sm2, arithmetic::field::FieldElement, pke::kdf,
 };
 
 #[cfg(feature = "alloc")]
@@ -18,12 +16,10 @@ use elliptic_curve::{
 };
 
 use primeorder::PrimeField;
-use sm3::{
-    Sm3,
-    digest::{Digest, DynDigest},
-};
+use sm3::Sm3;
 
 use super::{Cipher, Mode};
+use signature::digest::{Digest, FixedOutputReset, Output, OutputSizeUser, Update};
 /// Represents an encryption key used for encrypting messages using elliptic curve cryptography.
 #[derive(Clone, Debug)]
 pub struct EncryptingKey {
@@ -99,7 +95,7 @@ impl EncryptingKey {
         msg: &[u8],
     ) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + Update + FixedOutputReset,
     {
         let mut digest = D::new();
         encrypt(rng, &self.public_key, self.mode, &mut digest, msg)
@@ -112,11 +108,11 @@ impl EncryptingKey {
         msg: &[u8],
     ) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Update + OutputSizeUser + Digest + FixedOutputReset,
     {
         let mut digest = D::new();
         let cipher = encrypt(rng, &self.public_key, self.mode, &mut digest, msg)?;
-        let digest_size = digest.output_size();
+        let digest_size = <D as OutputSizeUser>::output_size();
         let (_, cipher) = cipher.split_at(1);
         let (x, cipher) = cipher.split_at(32);
         let (y, cipher) = cipher.split_at(32);
@@ -145,15 +141,19 @@ impl From<PublicKey> for EncryptingKey {
 }
 
 /// Encrypts a message using the specified public key, mode, and digest algorithm.
-fn encrypt<R: TryCryptoRng + ?Sized>(
+fn encrypt<R: TryCryptoRng + ?Sized, D>(
     rng: &mut R,
     public_key: &PublicKey,
     mode: Mode,
-    digest: &mut dyn DynDigest,
+    digest: &mut D,
     msg: &[u8],
-) -> Result<Vec<u8>> {
+) -> Result<Vec<u8>>
+where
+    D: Update + FixedOutputReset,
+{
     const N_BYTES: u32 = (Sm2::ORDER.bits() + 7) / 8;
-    let mut c1 = vec![0; (N_BYTES * 2 + 1) as usize];
+    #[allow(unused_assignments)]
+    let mut c1 = Default::default();
     let mut c2 = msg.to_owned();
     let mut hpb: AffinePoint;
     loop {
@@ -180,24 +180,23 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
         // // If 𝑡 is an all-zero bit string, go to A1.
         // if all of t are 0, xor(c2) == c2
         if c2.iter().zip(msg).any(|(pre, cur)| pre != cur) {
-            let uncompress_kg = kg.to_encoded_point(false);
-            c1.copy_from_slice(uncompress_kg.as_bytes());
+            c1 = kg.to_encoded_point(false);
             break;
         }
     }
     let encode_point = hpb.to_encoded_point(false);
 
     // A7: compute 𝐶3 = 𝐻𝑎𝑠ℎ(𝑥2||𝑀||𝑦2)
-    let mut c3 = vec![0; digest.output_size()];
+    let mut c3 = Output::<D>::default();
     digest.update(encode_point.x().ok_or(Error)?);
     digest.update(msg);
     digest.update(encode_point.y().ok_or(Error)?);
-    digest.finalize_into_reset(&mut c3).map_err(|_e| Error)?;
+    digest.finalize_into_reset(&mut c3);
 
     // A8: output the ciphertext 𝐶 = 𝐶1||𝐶2||𝐶3.
     Ok(match mode {
-        Mode::C1C2C3 => [c1.as_slice(), &c2, &c3].concat(),
-        Mode::C1C3C2 => [c1.as_slice(), &c3, &c2].concat(),
+        Mode::C1C2C3 => [c1.as_bytes(), &c2, &c3].concat(),
+        Mode::C1C3C2 => [c1.as_bytes(), &c3, &c2].concat(),
     })
 }
 
