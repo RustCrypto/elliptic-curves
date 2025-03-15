@@ -52,8 +52,13 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
 };
 
-#[cfg(feature = "precomputed-tables")]
-use once_cell::sync::Lazy;
+#[cfg(all(feature = "precomputed-tables", feature = "critical-section"))]
+use once_cell::sync::Lazy as LazyLock;
+#[cfg(all(
+    feature = "precomputed-tables",
+    all(feature = "std", not(feature = "critical-section"))
+))]
+use std::sync::LazyLock;
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 #[derive(Copy, Clone, Default)]
@@ -363,7 +368,7 @@ fn lincomb(
 
 /// Lazily computed basepoint table.
 #[cfg(feature = "precomputed-tables")]
-static GEN_LOOKUP_TABLE: Lazy<[LookupTable; 33]> = Lazy::new(precompute_gen_lookup_table);
+static GEN_LOOKUP_TABLE: LazyLock<[LookupTable; 33]> = LazyLock::new(precompute_gen_lookup_table);
 
 #[cfg(feature = "precomputed-tables")]
 fn precompute_gen_lookup_table() -> [LookupTable; 33] {
