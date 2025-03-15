@@ -1,4 +1,4 @@
-use super::{field_impl::*, FieldElement};
+use super::{FieldElement, field_impl::*};
 use core::ops::Mul;
 
 /// "Loose" field element: unreduced and intended to be followed by an

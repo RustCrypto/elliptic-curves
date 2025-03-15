@@ -6,14 +6,16 @@ use elliptic_curve::ops::Reduce;
 use hex_literal::hex;
 use proptest::prelude::*;
 use sm2::{
-    dsa::{
-        signature::{Signer, Verifier},
-        Signature, SigningKey, VerifyingKey,
-    },
     NonZeroScalar, Scalar, U256,
+    dsa::{
+        Signature, SigningKey, VerifyingKey,
+        signature::{Signer, Verifier},
+    },
 };
 
-const PUBLIC_KEY: [u8; 65] = hex!("0408D77AE04C01CC4C1104360DD8AF6B6F7DF334283D7C1A6AFD5652407B87BEE5014E2A57C36C150D16324DC664E31E6432359609C4E79847A5B161C8C7364C8A");
+const PUBLIC_KEY: [u8; 65] = hex!(
+    "0408D77AE04C01CC4C1104360DD8AF6B6F7DF334283D7C1A6AFD5652407B87BEE5014E2A57C36C150D16324DC664E31E6432359609C4E79847A5B161C8C7364C8A"
+);
 const IDENTITY: &str = "example@rustcrypto.org";
 const MSG: &[u8] = b"testing";
 

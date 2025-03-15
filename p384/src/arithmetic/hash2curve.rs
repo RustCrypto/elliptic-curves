@@ -96,8 +96,9 @@ impl FromOkm for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{arithmetic::field::MODULUS, FieldElement, NistP384, Scalar};
+    use crate::{FieldElement, NistP384, Scalar, arithmetic::field::MODULUS};
     use elliptic_curve::{
+        Curve,
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384, U576},
         consts::U72,
@@ -105,7 +106,6 @@ mod tests {
         hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
-        Curve,
     };
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
@@ -259,19 +259,25 @@ mod tests {
                 dst: b"DeriveKeyPairOPRFV1-\x00-P384-SHA384",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("dfe7ddc41a4646901184f2b432616c8ba6d452f9bcd0c4f75a5150ef2b2ed02ef40b8b92f60ae591bcabd72a6518f188"),
+                sk_sm: &hex!(
+                    "dfe7ddc41a4646901184f2b432616c8ba6d452f9bcd0c4f75a5150ef2b2ed02ef40b8b92f60ae591bcabd72a6518f188"
+                ),
             },
             TestVector {
                 dst: b"DeriveKeyPairOPRFV1-\x01-P384-SHA384",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("051646b9e6e7a71ae27c1e1d0b87b4381db6d3595eeeb1adb41579adbf992f4278f9016eafc944edaa2b43183581779d"),
+                sk_sm: &hex!(
+                    "051646b9e6e7a71ae27c1e1d0b87b4381db6d3595eeeb1adb41579adbf992f4278f9016eafc944edaa2b43183581779d"
+                ),
             },
             TestVector {
                 dst: b"DeriveKeyPairOPRFV1-\x02-P384-SHA384",
                 key_info: b"test key",
                 seed: &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3"),
-                sk_sm: &hex!("5b2690d6954b8fbb159f19935d64133f12770c00b68422559c65431942d721ff79d47d7a75906c30b7818ec0f38b7fb2"),
+                sk_sm: &hex!(
+                    "5b2690d6954b8fbb159f19935d64133f12770c00b68422559c65431942d721ff79d47d7a75906c30b7818ec0f38b7fb2"
+                ),
             },
         ];
 

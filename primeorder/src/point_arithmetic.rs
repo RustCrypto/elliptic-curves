@@ -3,7 +3,7 @@
 //! Support for formulas specialized to the short Weierstrass equation's
 //! 𝒂-coefficient.
 
-use elliptic_curve::{subtle::ConditionallySelectable, Field};
+use elliptic_curve::{Field, subtle::ConditionallySelectable};
 
 use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
 

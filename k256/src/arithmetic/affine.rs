@@ -2,20 +2,20 @@
 
 #![allow(clippy::op_ref)]
 
-use super::{FieldElement, ProjectivePoint, CURVE_EQUATION_B};
+use super::{CURVE_EQUATION_B, FieldElement, ProjectivePoint};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
-    group::{prime::PrimeCurveAffine, GroupEncoding},
+    Error, Result,
+    group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, Result,
 };
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 /// secp256k1 curve point expressed in affine coordinates.
 ///
@@ -366,7 +366,7 @@ mod tests {
     use super::AffinePoint;
     use crate::EncodedPoint;
     use elliptic_curve::{
-        group::{prime::PrimeCurveAffine, GroupEncoding},
+        group::{GroupEncoding, prime::PrimeCurveAffine},
         sec1::{FromEncodedPoint, ToEncodedPoint},
     };
     use hex_literal::hex;

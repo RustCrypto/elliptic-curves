@@ -15,7 +15,7 @@ use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     bigint::{ArrayEncoding, U256, U512},
     ff::{Field, PrimeField},
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -250,13 +250,13 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution.
         let mut buf = [0; 64];
-        rng.fill_bytes(&mut buf);
+        rng.try_fill_bytes(&mut buf)?;
         let buf = U512::from_be_slice(&buf);
-        Self(field_impl::from_bytes_wide(buf))
+        Ok(Self(field_impl::from_bytes_wide(buf)))
     }
 
     #[must_use]
@@ -503,7 +503,7 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use crate::{test_vectors::field::DBL_TEST_VECTORS, FieldBytes};
+    use crate::{FieldBytes, test_vectors::field::DBL_TEST_VECTORS};
     use core::ops::Mul;
 
     #[cfg(target_pointer_width = "64")]
@@ -562,8 +562,8 @@ mod tests {
     #[test]
     fn repeated_add() {
         let mut r = FieldElement::ONE;
-        for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
+        for item in DBL_TEST_VECTORS {
+            assert_eq!(r.to_bytes().as_slice(), item);
             r = r + &r;
         }
     }
@@ -571,8 +571,8 @@ mod tests {
     #[test]
     fn repeated_double() {
         let mut r = FieldElement::ONE;
-        for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
+        for item in DBL_TEST_VECTORS {
+            assert_eq!(r.to_bytes().as_slice(), item);
             r = r.double();
         }
     }
@@ -581,8 +581,8 @@ mod tests {
     fn repeated_mul() {
         let mut r = FieldElement::ONE;
         let two = r + &r;
-        for i in 0..DBL_TEST_VECTORS.len() {
-            assert_eq!(r.to_bytes(), DBL_TEST_VECTORS[i]);
+        for item in DBL_TEST_VECTORS {
+            assert_eq!(r.to_bytes().as_slice(), item);
             r = r * &two;
         }
     }

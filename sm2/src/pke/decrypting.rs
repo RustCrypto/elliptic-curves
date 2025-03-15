@@ -1,25 +1,25 @@
 use core::fmt::{self, Debug};
 
 use crate::{
-    arithmetic::field::FieldElement, AffinePoint, EncodedPoint, FieldBytes, NonZeroScalar,
-    PublicKey, Scalar, SecretKey,
+    AffinePoint, EncodedPoint, FieldBytes, NonZeroScalar, PublicKey, Scalar, SecretKey,
+    arithmetic::field::FieldElement,
 };
 
 use alloc::{borrow::ToOwned, vec::Vec};
 use elliptic_curve::{
+    Error, Group, Result,
     bigint::U256,
     ops::Reduce,
     pkcs8::der::Decode,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConstantTimeEq},
-    Error, Group, Result,
 };
 use primeorder::PrimeField;
 
 use signature::digest::{Digest, FixedOutputReset, Output, OutputSizeUser, Update};
 use sm3::Sm3;
 
-use super::{encrypting::EncryptingKey, kdf, Cipher, Mode};
+use super::{Cipher, Mode, encrypting::EncryptingKey, kdf};
 /// Represents a decryption key used for decrypting messages using elliptic curve cryptography.
 #[derive(Clone)]
 pub struct DecryptingKey {

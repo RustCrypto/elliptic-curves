@@ -80,7 +80,7 @@ macro_rules! impl_mont_field_element {
             #[doc = stringify!($fe)]
             /// `] from a big endian byte slice.
             pub fn from_slice(slice: &[u8]) -> $crate::elliptic_curve::Result<Self> {
-                use $crate::elliptic_curve::array::{typenum::Unsigned, Array};
+                use $crate::elliptic_curve::array::{Array, typenum::Unsigned};
 
                 if slice.len() != <$curve as $crate::elliptic_curve::Curve>::FieldBytesSize::USIZE {
                     return Err($crate::elliptic_curve::Error);
@@ -347,14 +347,16 @@ macro_rules! impl_mont_field_element_arithmetic {
             const ZERO: Self = Self::ZERO;
             const ONE: Self = Self::ONE;
 
-            fn random(mut rng: impl $crate::elliptic_curve::rand_core::RngCore) -> Self {
+            fn try_from_rng<R: $crate::elliptic_curve::rand_core::TryRngCore + ?Sized>(
+                rng: &mut R,
+            ) -> core::result::Result<Self, R::Error> {
                 // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
                 let mut bytes = <$bytes>::default();
 
                 loop {
-                    rng.fill_bytes(&mut bytes);
+                    rng.try_fill_bytes(&mut bytes)?;
                     if let Some(fe) = Self::from_bytes(&bytes).into() {
-                        return fe;
+                        return Ok(fe);
                     }
                 }
             }

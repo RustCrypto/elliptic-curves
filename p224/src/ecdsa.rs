@@ -22,10 +22,10 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p224::ecdsa::{signature::Signer, Signature, SigningKey};
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
@@ -67,7 +67,7 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP224 {
 
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
-    use crate::ecdsa::{signature::Signer, Signature, SigningKey};
+    use crate::ecdsa::{Signature, SigningKey, signature::Signer};
     use hex_literal::hex;
 
     // Test vector from RFC 6979 Appendix 2.4 (NIST P-224 + SHA-224)
@@ -96,12 +96,12 @@ mod tests {
     }
 
     mod sign {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP224};
+        use crate::{NistP224, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_signing_test!(NistP224, ECDSA_TEST_VECTORS);
     }
 
     mod verify {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP224};
+        use crate::{NistP224, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_verification_test!(NistP224, ECDSA_TEST_VECTORS);
     }
 

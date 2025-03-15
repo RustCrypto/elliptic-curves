@@ -11,7 +11,6 @@ use hex_literal::hex;
 ///
 /// The `m` field contains a SHA-224 prehash of the `Msg` field in the
 /// original `SigTen.txt`.
-
 pub const ECDSA_TEST_VECTORS: &[TestVector; 15] = &[
     TestVector {
         m: &hex!("07eb2a50bf70eee87467600614a490e7600437d077ec651a27e65e67"),

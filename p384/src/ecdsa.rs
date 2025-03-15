@@ -22,10 +22,10 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p384::ecdsa::{signature::Signer, Signature, SigningKey};
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
@@ -68,12 +68,12 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP384 {
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        ecdsa::{
-            signature::hazmat::{PrehashSigner, PrehashVerifier},
-            signature::Signer,
-            Signature, SigningKey, VerifyingKey,
-        },
         AffinePoint, EncodedPoint, SecretKey,
+        ecdsa::{
+            Signature, SigningKey, VerifyingKey,
+            signature::Signer,
+            signature::hazmat::{PrehashSigner, PrehashVerifier},
+        },
     };
 
     use elliptic_curve::sec1::FromEncodedPoint;
@@ -84,7 +84,9 @@ mod tests {
     // <https://tools.ietf.org/html/rfc6979#appendix-A.2.6>
     #[test]
     fn rfc6979() {
-        let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
+        let x = hex!(
+            "6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5"
+        );
         let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let signature: Signature = signer.sign(b"sample");
         assert_eq!(
@@ -108,7 +110,9 @@ mod tests {
     // Test signing with PrehashSigner using SHA-256 whose output is smaller than P-384 field size.
     #[test]
     fn prehash_signer_signing_with_sha256() {
-        let x = hex!("6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5");
+        let x = hex!(
+            "6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5"
+        );
         let signer = SigningKey::from_bytes(&x.into()).unwrap();
         let digest = sha2::Sha256::digest(b"test");
         let signature: Signature = signer.sign_prehash(&digest).unwrap();
@@ -163,12 +167,12 @@ mod tests {
     }
 
     mod sign {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP384};
+        use crate::{NistP384, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_signing_test!(NistP384, ECDSA_TEST_VECTORS);
     }
 
     mod verify {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP384};
+        use crate::{NistP384, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_verification_test!(NistP384, ECDSA_TEST_VECTORS);
     }
 

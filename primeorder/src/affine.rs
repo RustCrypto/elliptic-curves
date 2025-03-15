@@ -8,9 +8,10 @@ use core::{
     ops::{Mul, Neg},
 };
 use elliptic_curve::{
+    Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
     array::ArraySize,
     ff::{Field, PrimeField},
-    group::{prime::PrimeCurveAffine, GroupEncoding},
+    group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double},
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
@@ -18,11 +19,10 @@ use elliptic_curve::{
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
     zeroize::DefaultIsZeroes,
-    Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
 };
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 /// Point on a Weierstrass curve in affine coordinates.
 #[derive(Clone, Copy, Debug)]

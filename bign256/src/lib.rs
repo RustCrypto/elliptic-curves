@@ -30,10 +30,10 @@
 extern crate alloc;
 
 pub use elliptic_curve::{self, bigint::U256};
-use elliptic_curve::{bigint::ArrayEncoding, consts::U32, Error, FieldBytesEncoding};
+use elliptic_curve::{Error, FieldBytesEncoding, bigint::ArrayEncoding, consts::U32};
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{scalar::Scalar, AffinePoint, ProjectivePoint};
+pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 
 /// Bign256 result type
 pub type Result<T> = core::result::Result<T, Error>;
@@ -132,7 +132,7 @@ impl FieldBytesEncoding<BignP256> for U256 {
 #[cfg(feature = "arithmetic")]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BignP256>;
 
-/// BIGN P-256 public key.
+// /// BIGN P-256 public key.
 // #[cfg(feature = "arithmetic")]
 // pub type PublicKey = elliptic_curve::PublicKey<BignP256>;
 

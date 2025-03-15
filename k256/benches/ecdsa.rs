@@ -1,13 +1,13 @@
 //! secp256k1 scalar arithmetic benchmarks
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use k256::{
+    FieldBytes, NonZeroScalar, Scalar,
     ecdsa::{
-        signature::hazmat::{PrehashSigner, PrehashVerifier},
         Signature, SigningKey,
+        signature::hazmat::{PrehashSigner, PrehashVerifier},
     },
     elliptic_curve::group::ff::PrimeField,
-    FieldBytes, NonZeroScalar, Scalar,
 };
 
 fn test_scalar_d() -> NonZeroScalar {

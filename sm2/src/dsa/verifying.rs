@@ -14,21 +14,29 @@
 
 use super::Signature;
 use crate::{
-    distid::hash_z, AffinePoint, DistId, EncodedPoint, FieldBytes, Hash, ProjectivePoint,
-    PublicKey, Scalar, Sm2,
+    AffinePoint, DistId, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar, Sm2,
+    distid::hash_z,
 };
 use elliptic_curve::{
+    Curve, Group,
     array::typenum::Unsigned,
     ops::{LinearCombination, Reduce},
     point::AffineCoordinates,
     sec1::ToEncodedPoint,
-    Curve, Group,
 };
-use signature::{hazmat::PrehashVerifier, Error, Result, Verifier};
-use sm3::{digest::Digest, Sm3};
+use signature::{Error, Result, Verifier, hazmat::PrehashVerifier};
+use sm3::{Sm3, digest::Digest};
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, string::String};
+
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use crate::pkcs8::{self, EncodePublicKey, spki};
+#[cfg(feature = "pkcs8")]
+use crate::pkcs8::{
+    der::AnyRef,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier},
+};
 
 /// SM2DSA public key used for verifying signatures are valid for a given
 /// message.
@@ -200,4 +208,19 @@ impl ToEncodedPoint<Sm2> for VerifyingKey {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
         self.as_affine().to_encoded_point(compress)
     }
+}
+
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+impl EncodePublicKey for VerifyingKey {
+    fn to_public_key_der(&self) -> spki::Result<pkcs8::Document> {
+        self.public_key.to_public_key_der()
+    }
+}
+
+#[cfg(feature = "pkcs8")]
+impl SignatureAlgorithmIdentifier for VerifyingKey {
+    type Params = AnyRef<'static>;
+
+    const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
+        Signature::ALGORITHM_IDENTIFIER;
 }

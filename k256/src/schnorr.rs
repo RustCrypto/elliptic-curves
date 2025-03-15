@@ -35,12 +35,12 @@
 //!     signature::{Signer, Verifier},
 //!     SigningKey, VerifyingKey
 //! };
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::OsRng; // requires 'os_rng' feature
 //!
 //! //
 //! // Signing
 //! //
-//! let signing_key = SigningKey::random(&mut OsRng); // serialize with `.to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `.to_bytes()`
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes(); // 32-bytes
 //!
 //! let message = b"Schnorr signatures prove knowledge of a secret in the random oracle model";
@@ -66,9 +66,9 @@ mod signing;
 mod verifying;
 
 pub use self::{signing::SigningKey, verifying::VerifyingKey};
-pub use signature::{self, rand_core::CryptoRngCore, Error};
+pub use signature::{self, Error, rand_core::CryptoRng};
 
-use crate::{arithmetic::FieldElement, FieldBytes, NonZeroScalar};
+use crate::{FieldBytes, NonZeroScalar, arithmetic::FieldElement};
 use core::fmt;
 use elliptic_curve::subtle::ConstantTimeEq;
 use sha2::{Digest, Sha256};
@@ -341,24 +341,30 @@ mod tests {
                 index: 15,
                 msg: vec![],
                 signature: hex!(
-                   "71535DB165ECD9FBBC046E5FFAEA61186BB6AD436732FCCC25291A55895464CF
+                    "71535DB165ECD9FBBC046E5FFAEA61186BB6AD436732FCCC25291A55895464CF
                     6069CE26BF03466228F19A3A62DB8A649F2D560FAC652827D1AF0574E427AB63"
-                )
+                ),
             },
             Bip340ExtTest {
                 index: 16,
                 msg: hex!("11").to_vec(),
-                signature: hex!("08A20A0AFEF64124649232E0693C583AB1B9934AE63B4C3511F3AE1134C6A303EA3173BFEA6683BD101FA5AA5DBC1996FE7CACFC5A577D33EC14564CEC2BACBF")
+                signature: hex!(
+                    "08A20A0AFEF64124649232E0693C583AB1B9934AE63B4C3511F3AE1134C6A303EA3173BFEA6683BD101FA5AA5DBC1996FE7CACFC5A577D33EC14564CEC2BACBF"
+                ),
             },
             Bip340ExtTest {
                 index: 17,
                 msg: hex!("0102030405060708090A0B0C0D0E0F1011").to_vec(),
-                signature: hex!("5130F39A4059B43BC7CAC09A19ECE52B5D8699D1A71E3C52DA9AFDB6B50AC370C4A482B77BF960F8681540E25B6771ECE1E5A37FD80E5A51897C5566A97EA5A5"),
+                signature: hex!(
+                    "5130F39A4059B43BC7CAC09A19ECE52B5D8699D1A71E3C52DA9AFDB6B50AC370C4A482B77BF960F8681540E25B6771ECE1E5A37FD80E5A51897C5566A97EA5A5"
+                ),
             },
             Bip340ExtTest {
                 index: 18,
                 msg: vec![0x99; 100],
-                signature: hex!("403B12B0D8555A344175EA7EC746566303321E5DBFA8BE6F091635163ECA79A8585ED3E3170807E7C03B720FC54C7B23897FCBA0E9D0B4A06894CFD249F22367"),
+                signature: hex!(
+                    "403B12B0D8555A344175EA7EC746566303321E5DBFA8BE6F091635163ECA79A8585ED3E3170807E7C03B720FC54C7B23897FCBA0E9D0B4A06894CFD249F22367"
+                ),
             },
         ];
 
@@ -545,6 +551,6 @@ mod tests {
         // Pass an invalid signature (shorter than Self::BYTES / 2) and make sure
         // it does not panic, but return Err
         let invalid_signature = [111; 24];
-        assert_eq!(Signature::try_from(&invalid_signature[..]).is_err(), true);
+        assert!(Signature::try_from(&invalid_signature[..]).is_err());
     }
 }

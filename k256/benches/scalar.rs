@@ -1,12 +1,12 @@
 //! secp256k1 scalar arithmetic benchmarks
 
 use criterion::{
-    black_box, criterion_group, criterion_main, measurement::Measurement, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, black_box, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
 use k256::{
-    elliptic_curve::{group::ff::PrimeField, ops::LinearCombination, ops::MulByGenerator},
     ProjectivePoint, Scalar,
+    elliptic_curve::{group::ff::PrimeField, ops::LinearCombination, ops::MulByGenerator},
 };
 
 fn test_scalar_x() -> Scalar {
@@ -33,21 +33,21 @@ fn test_scalar_y() -> Scalar {
     .unwrap()
 }
 
-fn bench_point_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| {
-        b.iter(|| &black_box(p) * &black_box(s))
+        b.iter(|| black_box(p) * black_box(s))
     });
 }
 
-fn bench_point_lincomb<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("lincomb via mul+add", |b| {
-        b.iter(|| &black_box(p) * &black_box(s) + &black_box(p) * &black_box(s))
+        b.iter(|| black_box(p) * black_box(s) + black_box(p) * black_box(s))
     });
     group.bench_function("lincomb()", |b| {
         b.iter(|| {
@@ -56,12 +56,12 @@ fn bench_point_lincomb<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     });
 }
 
-fn bench_point_mul_by_generator<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let x = test_scalar_x();
 
     group.bench_function("mul_by_generator naive", |b| {
-        b.iter(|| &black_box(p) * &black_box(x))
+        b.iter(|| black_box(p) * black_box(x))
     });
 
     group.bench_function("mul_by_generator precomputed", |b| {
@@ -77,30 +77,30 @@ fn bench_high_level(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_scalar_sub<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_scalar_sub<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("sub", |b| b.iter(|| &black_box(x) - &black_box(y)));
+    group.bench_function("sub", |b| b.iter(|| black_box(x) - black_box(y)));
 }
 
-fn bench_scalar_add<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_scalar_add<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("add", |b| b.iter(|| &black_box(x) + &black_box(y)));
+    group.bench_function("add", |b| b.iter(|| black_box(x) + black_box(y)));
 }
 
-fn bench_scalar_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_scalar_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("mul", |b| b.iter(|| &black_box(x) * &black_box(y)));
+    group.bench_function("mul", |b| b.iter(|| black_box(x) * black_box(y)));
 }
 
-fn bench_scalar_negate<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_scalar_negate<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let x = test_scalar_x();
     group.bench_function("negate", |b| b.iter(|| -black_box(x)));
 }
 
-fn bench_scalar_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+fn bench_scalar_invert<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let x = test_scalar_x();
     group.bench_function("invert", |b| b.iter(|| black_box(x).invert()));
 }

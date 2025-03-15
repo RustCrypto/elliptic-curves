@@ -20,18 +20,24 @@ use crate::{
 };
 use core::fmt::{self, Debug};
 use elliptic_curve::{
+    Curve, FieldBytesEncoding, PrimeField,
     array::typenum::Unsigned,
     ops::{MulByGenerator, Reduce},
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
-    Curve, FieldBytesEncoding, PrimeField,
 };
 use signature::{
-    hazmat::{PrehashSigner, RandomizedPrehashSigner},
-    rand_core::CryptoRngCore,
     Error, KeypairRef, RandomizedSigner, Result, Signer,
+    hazmat::{PrehashSigner, RandomizedPrehashSigner},
+    rand_core::TryCryptoRng,
 };
 use sm3::Sm3;
+
+#[cfg(feature = "pkcs8")]
+use crate::pkcs8::{
+    der::AnyRef,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier},
+};
 
 /// SM2DSA secret key used for signing messages and producing signatures.
 ///
@@ -119,19 +125,23 @@ impl PrehashSigner<Signature> for SigningKey {
 }
 
 impl RandomizedPrehashSigner<Signature> for SigningKey {
-    fn sign_prehash_with_rng(
+    fn sign_prehash_with_rng<R: TryCryptoRng + ?Sized>(
         &self,
-        rng: &mut impl CryptoRngCore,
+        rng: &mut R,
         prehash: &[u8],
     ) -> Result<Signature> {
         let mut data = FieldBytes::default();
-        rng.try_fill_bytes(&mut data)?;
+        rng.try_fill_bytes(&mut data).map_err(|_| Error::new())?;
         sign_prehash_rfc6979(&self.secret_scalar, prehash, &data)
     }
 }
 
 impl RandomizedSigner<Signature> for SigningKey {
-    fn try_sign_with_rng(&self, rng: &mut impl CryptoRngCore, msg: &[u8]) -> Result<Signature> {
+    fn try_sign_with_rng<R: TryCryptoRng + ?Sized>(
+        &self,
+        rng: &mut R,
+        msg: &[u8],
+    ) -> Result<Signature> {
         // A1: set M~=ZA || M
         let hash = self.verifying_key.hash_msg(msg);
         self.sign_prehash_with_rng(rng, &hash)
@@ -218,4 +228,12 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
 
     // A7: the digital signature of M is (r, s)
     Signature::from_scalars(r, s)
+}
+
+#[cfg(feature = "pkcs8")]
+impl SignatureAlgorithmIdentifier for SigningKey {
+    type Params = AnyRef<'static>;
+
+    const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
+        Signature::ALGORITHM_IDENTIFIER;
 }

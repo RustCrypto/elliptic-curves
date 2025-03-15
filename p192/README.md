@@ -51,18 +51,6 @@ NIST P-192 is a Weierstrass curve specified in [FIPS 186-4].
 
 Also known as secp192r1 (SECG).
 
-## Minimum Supported Rust Version
-
-Rust **1.81** or higher.
-
-Minimum supported Rust version can be changed in the future, but it will be
-done with a minor version bump.
-
-## SemVer Policy
-
-- All on-by-default features of this library are covered by SemVer
-- MSRV is considered exempt from SemVer as noted above
-
 ## License
 
 All crates licensed under either of
@@ -87,7 +75,7 @@ dual licensed as above, without any additional terms or conditions.
 [build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p192.yml/badge.svg
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p192.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.81+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 

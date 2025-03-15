@@ -10,5 +10,5 @@ repository = "https://github.com/RustCrypto/elliptic-curves"
 readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "field", "prime"]
-edition = "2021"
-rust-version = "1.81"
+edition = "2024"
+rust-version = "1.85"

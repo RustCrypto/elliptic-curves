@@ -14,9 +14,9 @@ pub use {
 
 use crate::ORDER;
 use elliptic_curve::{
+    FieldBytesEncoding,
     bigint::{ArrayEncoding, U256},
     consts::U32,
-    FieldBytesEncoding,
 };
 
 #[cfg(feature = "pkcs8")]

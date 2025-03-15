@@ -28,10 +28,10 @@
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
 //!     SecretKey,
 //! };
-//! use rand_core::OsRng; // requires 'getrandom' feature
+//! use rand_core::OsRng; // requires 'os_rng' feature
 //!
 //! // Signing
-//! let signing_key = SigningKey::random(&mut OsRng); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: The signature type must be annotated or otherwise inferable as
@@ -93,8 +93,8 @@
 //! ```
 
 pub use ecdsa_core::{
-    signature::{self, Error},
     EcdsaCurve, RecoveryId,
+    signature::{self, Error},
 };
 
 #[cfg(any(feature = "ecdsa", feature = "sha256"))]
@@ -177,8 +177,8 @@ mod tests {
     #[cfg(feature = "sha256")]
     mod recovery {
         use crate::{
-            ecdsa::{signature::DigestVerifier, RecoveryId, Signature, SigningKey, VerifyingKey},
             EncodedPoint,
+            ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey, signature::DigestVerifier},
         };
         use hex_literal::hex;
         use sha2::{Digest, Sha256};
@@ -247,7 +247,9 @@ mod tests {
             let (sig, recid) = signing_key.sign_digest_recoverable(digest.clone()).unwrap();
             assert_eq!(
                 sig.to_bytes().as_slice(),
-                &hex!("c9cf86333bcb065d140032ecaab5d9281bde80f21b9687b3e94161de42d51895727a108a0b8d101465414033c3f705a9c7b826e596766046ee1183dbc8aeaa68")
+                &hex!(
+                    "c9cf86333bcb065d140032ecaab5d9281bde80f21b9687b3e94161de42d51895727a108a0b8d101465414033c3f705a9c7b826e596766046ee1183dbc8aeaa68"
+                )
             );
             assert_eq!(recid, RecoveryId::from_byte(0).unwrap());
 
@@ -261,7 +263,7 @@ mod tests {
 
     mod wycheproof {
         use crate::{EncodedPoint, Secp256k1};
-        use ecdsa_core::{signature::Verifier, Signature};
+        use ecdsa_core::{Signature, signature::Verifier};
         use elliptic_curve::array::typenum::Unsigned;
 
         #[test]

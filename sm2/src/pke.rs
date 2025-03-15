@@ -9,19 +9,18 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand_core::OsRng; // requires 'getrandom` feature
+//! use rand_core::OsRng; // requires 'os_rng` feature
 //! use sm2::{
 //!     pke::{EncryptingKey, Mode},
 //!     {SecretKey, PublicKey}
-//!
 //! };
 //!
 //! // Encrypting
-//! let secret_key = SecretKey::random(&mut OsRng); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `::to_bytes()`
 //! let public_key = secret_key.public_key();
 //! let encrypting_key = EncryptingKey::new_with_mode(public_key, Mode::C1C2C3);
 //! let plaintext = b"plaintext";
-//! let ciphertext = encrypting_key.encrypt(plaintext)?;
+//! let ciphertext = encrypting_key.encrypt(&mut OsRng, plaintext)?;
 //!
 //! use sm2::pke::DecryptingKey;
 //! // Decrypting
@@ -29,7 +28,7 @@
 //! assert_eq!(decrypting_key.decrypt(&ciphertext)?, plaintext);
 //!
 //! // Encrypting ASN.1 DER
-//! let ciphertext = encrypting_key.encrypt_der(plaintext)?;
+//! let ciphertext = encrypting_key.encrypt_der(&mut OsRng, plaintext)?;
 //!
 //! // Decrypting ASN.1 DER
 //! assert_eq!(decrypting_key.decrypt_der(&ciphertext)?, plaintext);
@@ -44,15 +43,15 @@
 use core::cmp::min;
 
 use elliptic_curve::{
-    bigint::{Encoding, Uint, U256},
-    pkcs8::der::{
-        asn1::UintRef, Decode, DecodeValue, Encode, Length, Reader, Sequence, Tag, Writer,
-    },
+    CurveArithmetic, FieldBytesSize, Result,
+    pkcs8::der::{EncodeValue, asn1::OctetStringRef},
+    sec1::{ModulusSize, ToEncodedPoint},
 };
 use elliptic_curve::{
-    pkcs8::der::{asn1::OctetStringRef, EncodeValue},
-    sec1::{ModulusSize, ToEncodedPoint},
-    CurveArithmetic, FieldBytesSize, Result,
+    bigint::{Encoding, U256, Uint},
+    pkcs8::der::{
+        Decode, DecodeValue, Encode, Length, Reader, Sequence, Tag, Writer, asn1::UintRef,
+    },
 };
 use primeorder::{AffinePoint, PrimeCurveParams};
 use signature::digest::{FixedOutputReset, Output, Update};
@@ -86,7 +85,7 @@ pub struct Cipher<'a> {
 
 impl<'a> Sequence<'a> for Cipher<'a> {}
 
-impl<'a> EncodeValue for Cipher<'a> {
+impl EncodeValue for Cipher<'_> {
     fn value_len(&self) -> elliptic_curve::pkcs8::der::Result<Length> {
         UintRef::new(&self.x.to_be_bytes())?.encoded_len()?
             + UintRef::new(&self.y.to_be_bytes())?.encoded_len()?

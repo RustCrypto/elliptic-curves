@@ -53,7 +53,7 @@ pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP192>;
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     mod verify {
-        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP192};
+        use crate::{NistP192, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
         ecdsa_core::new_verification_test!(NistP192, ECDSA_TEST_VECTORS);
     }
 }

@@ -35,18 +35,6 @@ The SM2 cryptosystem is composed of three distinct algorithms:
 - [ ] **SM2KEP**: key exchange protocol defined in [GBT.32918.3-2016] (SM2-3)
 - [x] **SM2PKE**: public key encryption algorithm defined in [GBT.32918.4-2016] (SM2-4)
 
-## Minimum Supported Rust Version
-
-Rust **1.81** or higher.
-
-Minimum supported Rust version can be changed in the future, but it will be
-done with a minor version bump.
-
-## SemVer Policy
-
-- All on-by-default features of this library are covered by SemVer
-- MSRV is considered exempt from SemVer as noted above
-
 ## License
 
 All crates licensed under either of
@@ -71,7 +59,7 @@ dual licensed as above, without any additional terms or conditions.
 [build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/sm2.yml/badge.svg
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/sm2.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.81+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 

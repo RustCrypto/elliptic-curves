@@ -5,31 +5,31 @@
 mod scalar_impl;
 
 use self::scalar_impl::barrett_reduce;
-use crate::{FieldBytes, NistP256, SecretKey, ORDER_HEX};
+use crate::{FieldBytes, NistP256, ORDER_HEX, SecretKey};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::{prelude::*, Limb, U256},
+    Curve, ScalarPrimitive,
+    bigint::{Limb, U256, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
         CtOption,
     },
     zeroize::DefaultIsZeroes,
-    Curve, ScalarPrimitive,
 };
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{de, ser, Deserialize, Serialize};
+use serdect::serde::{Deserialize, Serialize, de, ser};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
@@ -189,7 +189,7 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
 
         // Generate a uniformly random scalar using rejection sampling,
@@ -202,9 +202,9 @@ impl Field for Scalar {
         // With an unbiased RNG, the probability of failing to complete after 4
         // iterations is vanishingly small.
         loop {
-            rng.fill_bytes(&mut bytes);
+            rng.try_fill_bytes(&mut bytes)?;
             if let Some(scalar) = Scalar::from_repr(bytes).into() {
-                return scalar;
+                return Ok(scalar);
             }
         }
     }
@@ -639,7 +639,7 @@ impl Neg for Scalar {
     }
 }
 
-impl<'a> Neg for &'a Scalar {
+impl Neg for &Scalar {
     type Output = Scalar;
 
     fn neg(self) -> Scalar {
@@ -773,17 +773,17 @@ mod tests {
     #[test]
     fn multiply() {
         let one = Scalar::ONE;
-        let two = one + &one;
-        let three = two + &one;
-        let six = three + &three;
-        assert_eq!(six, two * &three);
+        let two = one + one;
+        let three = two + one;
+        let six = three + three;
+        assert_eq!(six, two * three);
 
         let minus_two = -two;
         let minus_three = -three;
         assert_eq!(two, -minus_two);
 
-        assert_eq!(minus_three * &minus_two, minus_two * &minus_three);
-        assert_eq!(six, minus_two * &minus_three);
+        assert_eq!(minus_three * minus_two, minus_two * minus_three);
+        assert_eq!(six, minus_two * minus_three);
     }
 
     /// Tests that a Scalar can be safely converted to a SecretKey and back
