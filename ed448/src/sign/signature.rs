@@ -1,7 +1,4 @@
-use crate::{
-    CompressedEdwardsY, EdwardsPoint, Scalar, ScalarBytes, SigningError, SECRET_KEY_LENGTH,
-    SIGNATURE_LENGTH,
-};
+use crate::*;
 use elliptic_curve::Group;
 
 /// Ed448 signature as defined in [RFC8032 § 5.2.5]

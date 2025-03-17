@@ -3,6 +3,7 @@
 
 use crate::curve::edwards::extended::PointBytes;
 use crate::sign::expanded::ExpandedSecretKey;
+use crate::*;
 use crate::{
     Context, Scalar, ScalarBytes, Signature, VerifyingKey, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH,
 };
