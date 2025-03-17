@@ -504,8 +504,7 @@ impl TryFrom<DecafPointBytes> for CompressedDecaf {
 
     fn try_from(bytes: DecafPointBytes) -> Result<Self, Self::Error> {
         let pt = CompressedDecaf(bytes);
-        let _ =
-            Option::<DecafPoint>::from(pt.decompress()).ok_or_else(|| "Invalid point encoding")?;
+        let _ = Option::<DecafPoint>::from(pt.decompress()).ok_or("Invalid point encoding")?;
         Ok(pt)
     }
 }
