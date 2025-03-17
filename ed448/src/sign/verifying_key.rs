@@ -213,7 +213,7 @@ impl VerifyingKey {
         Ok(Self { compressed, point })
     }
 
-    /// Create a context for this verifying key that can be used with [`DigestVerifier`].
+    /// Create a context for this verifying key that can be used with [`crypto_signature::DigestVerifier`].
     pub fn with_context<'k, 'v>(&'k self, context: &'v [u8]) -> Context<'k, 'v, Self> {
         Context {
             key: self,
