@@ -133,6 +133,7 @@ fn encode_pkcs8_public_key_to_pem() {
     assert_eq!(reencoded_public_key.as_str(), PKCS8_PUBLIC_KEY_PEM);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn test_x509() {
     fn dummy_cert_builder<S, Signature>(_signer: &S)
@@ -148,5 +149,5 @@ fn test_x509() {
     let secret_key = PKCS8_PRIVATE_KEY_PEM.parse::<sm2::SecretKey>().unwrap();
     const IDENTITY: &str = "example@rustcrypto.org";
     let signing_key = SigningKey::new(IDENTITY, &secret_key).unwrap();
-    let _signature = dummy_cert_builder::<_, Signature>(&signing_key);
+    dummy_cert_builder::<_, Signature>(&signing_key);
 }
