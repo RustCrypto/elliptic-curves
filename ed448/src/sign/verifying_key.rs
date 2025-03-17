@@ -3,10 +3,13 @@
 
 use crate::curve::edwards::extended::PointBytes;
 use crate::sign::HASH_HEAD;
+#[cfg(feature = "pkcs8")]
+use crate::PUBLIC_KEY_LENGTH;
 use crate::{
     CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, ScalarBytes, Signature,
-    SigningError, WideScalarBytes, PUBLIC_KEY_LENGTH,
+    SigningError, WideScalarBytes,
 };
+
 use core::{
     fmt::{self, Debug, Formatter},
     hash::{Hash, Hasher},

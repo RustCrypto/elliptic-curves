@@ -3,9 +3,6 @@ use crate::curve::twedwards::extended::ExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
 
-#[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::string::{String, ToString};
-
 use elliptic_curve::{
     array::{
         typenum::{U56, U84},
@@ -464,7 +461,7 @@ impl From<&CompressedDecaf> for Vec<u8> {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Vec<u8>> for CompressedDecaf {
-    type Error = String;
+    type Error = &'static str;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_slice())
@@ -473,7 +470,7 @@ impl TryFrom<Vec<u8>> for CompressedDecaf {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<&Vec<u8>> for CompressedDecaf {
-    type Error = String;
+    type Error = &'static str;
 
     fn try_from(bytes: &Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_slice())
@@ -482,38 +479,36 @@ impl TryFrom<&Vec<u8>> for CompressedDecaf {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<&[u8]> for CompressedDecaf {
-    type Error = String;
+    type Error = &'static str;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-        let compressed = <DecafPointBytes>::try_from(bytes).map_err(|e| e.to_string())?;
+        let compressed = <DecafPointBytes>::try_from(bytes).map_err(|_| "invalid length")?;
         Self::try_from(compressed)
     }
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Box<[u8]>> for CompressedDecaf {
-    type Error = String;
+    type Error = &'static str;
 
     fn try_from(bytes: Box<[u8]>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_ref())
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<DecafPointBytes> for CompressedDecaf {
-    type Error = String;
+    type Error = &'static str;
 
     fn try_from(bytes: DecafPointBytes) -> Result<Self, Self::Error> {
         let pt = CompressedDecaf(bytes);
-        let _ = Option::<DecafPoint>::from(pt.decompress())
-            .ok_or_else(|| "Invalid point encoding".to_string())?;
+        let _ =
+            Option::<DecafPoint>::from(pt.decompress()).ok_or_else(|| "Invalid point encoding")?;
         Ok(pt)
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<&DecafPointBytes> for CompressedDecaf {
-    type Error = String;
+    type Error = &'static str;
 
     fn try_from(bytes: &DecafPointBytes) -> Result<Self, Self::Error> {
         Self::try_from(*bytes)
