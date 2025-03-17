@@ -1011,16 +1011,6 @@ mod test {
         assert_eq!(scalar, got)
     }
     #[test]
-    fn test_debug() {
-        let k = Scalar(U448::from_le_slice(&[
-            200, 0, 0, 0, 210, 0, 0, 0, 250, 0, 0, 0, 145, 0, 0, 0, 130, 0, 0, 0, 180, 0, 0, 0,
-            147, 0, 0, 0, 122, 0, 0, 0, 222, 0, 0, 0, 230, 0, 0, 0, 214, 0, 0, 0, 247, 0, 0, 0,
-            203, 0, 0, 0, 32, 0, 0, 0,
-        ]));
-        let s = k;
-        dbg!(&s.to_radix_16()[..]);
-    }
-    #[test]
     fn test_from_canonical_bytes() {
         // ff..ff should fail
         let mut bytes = ScalarBytes::from(hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
