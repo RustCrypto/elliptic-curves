@@ -13,7 +13,7 @@ license = "BSD-3-Clause"
 name = "ed448-goldilocks"
 readme = "README.md"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/ed448"
-version = "0.15.0"
+version = "0.16.0"
 
 [dependencies]
 crypto-bigint = { version = "0.5.5", features = ["generic-array"], default-features = false }
