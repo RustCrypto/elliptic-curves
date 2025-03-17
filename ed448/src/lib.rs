@@ -55,11 +55,7 @@ extern crate alloc;
 extern crate std;
 
 #[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::{
-    boxed::Box,
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{boxed::Box, vec::Vec};
 
 #[cfg(feature = "std")]
 use std::{

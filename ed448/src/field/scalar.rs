@@ -887,8 +887,8 @@ impl Scalar {
     ///
     /// `len_in_bytes = <Self::Scalar as FromOkm>::Length`
     ///
-    /// [`ExpandMsgXmd`]: crate::hash2curve::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::hash2curve::ExpandMsgXof
+    /// [`ExpandMsgXmd`]: elliptic_curve::hash2curve::ExpandMsgXmd
+    /// [`ExpandMsgXof`]: elliptic_curve::hash2curve::ExpandMsgXof
     pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
     where
         X: for<'a> ExpandMsg<'a>,
