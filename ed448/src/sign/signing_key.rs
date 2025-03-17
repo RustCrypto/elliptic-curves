@@ -199,7 +199,9 @@ impl TryFrom<&[u8]> for SigningKey {
         if value.len() != SECRET_KEY_LENGTH {
             return Err("Invalid length for a signing key");
         }
-        Ok(Self::from(ScalarBytes::from_slice(value)))
+        Ok(Self::from(
+            ScalarBytes::try_from(value).expect("Invalid length"),
+        ))
     }
 }
 
@@ -382,7 +384,8 @@ impl TryFrom<&KeypairBytes> for SigningKey {
     type Error = pkcs8::Error;
 
     fn try_from(value: &KeypairBytes) -> Result<Self, Self::Error> {
-        let signing_key = SigningKey::from(SecretKey::from_slice(value.secret_key.as_ref()));
+        let signing_key =
+            SigningKey::from(SecretKey::try_from(&value.secret_key[..]).expect("invalid length"));
 
         if let Some(public_bytes) = value.verifying_key {
             let verifying_key =
@@ -438,7 +441,7 @@ impl<'de> serdect::serde::Deserialize<'de> for SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn generate(mut rng: impl rand_core::CryptoRngCore) -> Self {
+    pub fn generate(mut rng: impl rand_core::CryptoRng) -> Self {
         let mut secret_scalar = SecretKey::default();
         rng.fill_bytes(secret_scalar.as_mut());
         assert!(!secret_scalar.iter().all(|&v| v == 0));

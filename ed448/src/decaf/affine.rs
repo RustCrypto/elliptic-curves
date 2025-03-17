@@ -37,7 +37,7 @@ impl elliptic_curve::point::AffineCoordinates for AffinePoint {
     type FieldRepr = Decaf448FieldBytes;
 
     fn x(&self) -> Self::FieldRepr {
-        Decaf448FieldBytes::clone_from_slice(&self.x())
+        Decaf448FieldBytes::from(self.x())
     }
 
     fn y_is_odd(&self) -> Choice {
@@ -58,8 +58,11 @@ impl AffinePoint {
     }
 
     /// The X coordinate
-    pub fn x(&self) -> [u8; 56] {
-        self.0.x.to_bytes()
+    pub fn x(&self) -> [u8; 57] {
+        // TODO: fix this to be 56 bytes as per
+        // https://datatracker.ietf.org/doc/draft-irtf-cfrg-ristretto255-decaf448
+        // This might require creating a separate DecafScalar
+        self.0.x.to_bytes_extended()
     }
 
     /// The Y coordinate

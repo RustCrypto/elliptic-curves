@@ -300,8 +300,8 @@ impl VerifyingKey {
             return Err(SigningError::InvalidSignatureRComponent.into());
         }
 
-        let s_bytes = ScalarBytes::from_slice(&signature.s);
-        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(s_bytes))
+        let s_bytes = ScalarBytes::try_from(&signature.s[..]).expect("signature.s is 57 bytes");
+        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(&s_bytes))
             .ok_or(SigningError::InvalidSignatureSComponent)?;
 
         if s.is_zero().into() {
