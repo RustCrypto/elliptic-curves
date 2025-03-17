@@ -49,7 +49,7 @@ impl From<SigningError> for crypto_signature::Error {
     }
 
     #[cfg(not(feature = "std"))]
-    fn from(err: SigningError) -> Self {
+    fn from(_err: SigningError) -> Self {
         crypto_signature::Error::new()
     }
 }

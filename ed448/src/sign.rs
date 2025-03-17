@@ -82,6 +82,7 @@ mod verifying_key;
 pub use context::*;
 pub use crypto_signature;
 pub use error::*;
+#[cfg(feature = "pkcs8")]
 pub use pkcs8;
 pub use signature::*;
 pub use signing_key::*;
