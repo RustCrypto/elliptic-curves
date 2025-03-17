@@ -568,7 +568,7 @@ impl EdwardsPoint {
     }
 
     /// Returns (scalar mod 4) * P in constant time
-    pub fn scalar_mod_four(&self, scalar: &Scalar) -> Self {
+    pub(crate) fn scalar_mod_four(&self, scalar: &Scalar) -> Self {
         // Compute compute (scalar mod 4)
         let s_mod_four = scalar[0] & 3;
 
@@ -1009,6 +1009,7 @@ impl zeroize::DefaultIsZeroes for EdwardsPoint {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use elliptic_curve::Field;
     use hex_literal::hex;
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
@@ -1219,5 +1220,38 @@ mod tests {
 
             assert_eq!(rhs, expected);
         }
+    }
+
+    #[test]
+    fn test_pow_add_mul() {
+        use rand_core::SeedableRng;
+
+        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
+        let x = Scalar::random(&mut rng);
+        let b = Scalar::random(&mut rng);
+
+        let g1 = EdwardsPoint::GENERATOR;
+        let g2 = EdwardsPoint::hash_with_defaults(b"test_pow_add_mul");
+
+        let expected_commitment = g1 * x + g2 * b;
+
+        let shift = Scalar::from(256u16);
+        let x_bytes = x.to_bytes_rfc_8032();
+        let mut sum = Scalar::ZERO;
+        let mut components = [EdwardsPoint::IDENTITY; 57];
+        for i in 1..57 {
+            let r = Scalar::random(&mut rng);
+            sum += r * shift.pow([i as u64]);
+            components[i] = g1 * Scalar::from(x_bytes[i]) + g2 * r;
+        }
+        components[0] = g1 * Scalar::from(x_bytes[0]) + g2 * (b - sum);
+
+        let mut computed_commitment = EdwardsPoint::IDENTITY;
+        for i in (0..57).rev() {
+            computed_commitment *= shift;
+            computed_commitment += components[i];
+        }
+
+        assert_eq!(computed_commitment, expected_commitment);
     }
 }
