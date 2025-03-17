@@ -475,7 +475,7 @@ impl SigningKey {
     }
 
     /// Create a signing context that can be used for Ed448ph with
-    /// [`DigestSigner`]
+    /// [`crypto_signature::DigestSigner`]
     pub fn with_context<'k, 'v>(&'k self, context: &'v [u8]) -> Context<'k, 'v, Self> {
         Context {
             key: self,
