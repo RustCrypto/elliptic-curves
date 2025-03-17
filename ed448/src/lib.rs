@@ -58,11 +58,7 @@ extern crate std;
 use alloc::{boxed::Box, vec::Vec};
 
 #[cfg(feature = "std")]
-use std::{
-    boxed::Box,
-    string::{String, ToString},
-    vec::Vec,
-};
+use std::{boxed::Box, vec::Vec};
 
 // Internal macros. Must come first!
 #[macro_use]
