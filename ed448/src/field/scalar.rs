@@ -7,18 +7,18 @@ use core::ops::{
 };
 use crypto_bigint::Zero;
 use elliptic_curve::{
-    bigint::{Encoding, Limb, NonZero, U448, U704, U896},
-    ff::{helpers, Field, FieldBits, PrimeFieldBits},
-    generic_array::{
+    array::{
         typenum::{U114, U57, U84, U88},
-        GenericArray,
+        Array,
     },
+    bigint::{Limb, NonZero, U448, U704, U896},
+    ff::{helpers, Field, FieldBits, PrimeFieldBits},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh, ScalarPrimitive},
     PrimeField,
 };
-use rand_core::{CryptoRng, RngCore};
+use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
 
 /// This is the scalar field
@@ -28,12 +28,13 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreate
 pub struct Scalar(pub(crate) U448);
 
 /// The number of bytes needed to represent the scalar field
-pub type ScalarBytes = GenericArray<u8, U57>;
+pub type ScalarBytes = Array<u8, U57>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
-pub type WideScalarBytes = GenericArray<u8, U114>;
+pub type WideScalarBytes = Array<u8, U114>;
 
 /// The order of the scalar field
 pub const ORDER: U448 = U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3");
+pub const NZ_ORDER: NonZero<U448> = NonZero::<U448>::new_unwrap(ORDER);
 const ORDER_MINUS_ONE: U448 = ORDER.wrapping_sub(&U448::ONE);
 const HALF_ORDER: U448 = ORDER.shr_vartime(1);
 /// The wide order of the scalar field
@@ -250,13 +251,13 @@ impl<'a> Product<&'a Scalar> for Scalar {
 }
 
 impl Field for Scalar {
-    const ONE: Self = Self::ONE;
     const ZERO: Self = Self::ZERO;
+    const ONE: Self = Self::ONE;
 
-    fn random(mut rng: impl RngCore) -> Self {
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut seed = WideScalarBytes::default();
-        rng.fill_bytes(&mut seed);
-        Scalar::from_bytes_mod_order_wide(&seed)
+        rng.try_fill_bytes(&mut seed)?;
+        Ok(Scalar::from_bytes_mod_order_wide(&seed))
     }
 
     fn square(&self) -> Self {
@@ -279,27 +280,27 @@ impl Field for Scalar {
 impl PrimeField for Scalar {
     type Repr = ScalarBytes;
 
-    const CAPACITY: u32 = Self::NUM_BITS - 1;
-    const DELTA: Self = Self(U448::from_u8(49));
-    const MODULUS: &'static str = "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3";
-    const MULTIPLICATIVE_GENERATOR: Self = Self(U448::from_u8(7));
-    const NUM_BITS: u32 = 448;
-    const ROOT_OF_UNITY: Self = Self(U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
-    const ROOT_OF_UNITY_INV: Self = Self(U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
-    const S: u32 = 1;
-    const TWO_INV: Self = Self(U448::from_be_hex("1fffffffffffffffffffffffffffffffffffffffffffffffffffffffbe6511f4e2276da4d76b1b4810b6613946e2c7aa91bc614955ac227a"));
-
     fn from_repr(repr: Self::Repr) -> CtOption<Self> {
         Self::from_canonical_bytes(&repr)
     }
-
     fn to_repr(&self) -> Self::Repr {
         self.to_bytes_rfc_8032()
     }
-
     fn is_odd(&self) -> Choice {
         Choice::from((self.0.to_words()[0] & 1) as u8)
     }
+    const MODULUS: &'static str = "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3";
+    const NUM_BITS: u32 = 448;
+    const CAPACITY: u32 = Self::NUM_BITS - 1;
+    const TWO_INV: Self = Self(U448::from_be_hex("1fffffffffffffffffffffffffffffffffffffffffffffffffffffffbe6511f4e2276da4d76b1b4810b6613946e2c7aa91bc614955ac227a"));
+    const MULTIPLICATIVE_GENERATOR: Self = Self(U448::from_u8(7));
+    const S: u32 = 1;
+
+    const ROOT_OF_UNITY: Self = Self(U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+
+    const ROOT_OF_UNITY_INV: Self = Self(U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+
+    const DELTA: Self = Self(U448::from_u8(49));
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
@@ -353,7 +354,7 @@ impl TryFrom<&[u8]> for Scalar {
         if bytes.len() != 57 {
             return Err("invalid byte length");
         }
-        let scalar_bytes = ScalarBytes::clone_from_slice(bytes);
+        let scalar_bytes = ScalarBytes::try_from(bytes).expect("invalid scalar bytes");
         Option::<Scalar>::from(Scalar::from_canonical_bytes(&scalar_bytes))
             .ok_or("scalar was not canonically encoded")
     }
@@ -396,7 +397,7 @@ impl<'de> serdect::serde::Deserialize<'de> for Scalar {
 impl zeroize::DefaultIsZeroes for Scalar {}
 
 impl core::fmt::LowerHex for Scalar {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let tmp = self.to_bytes_rfc_8032();
         for &b in tmp.iter() {
             write!(f, "{:02x}", b)?;
@@ -406,7 +407,7 @@ impl core::fmt::LowerHex for Scalar {
 }
 
 impl core::fmt::UpperHex for Scalar {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let tmp = self.to_bytes_rfc_8032();
         for &b in tmp.iter() {
             write!(f, "{:02X}", b)?;
@@ -418,9 +419,9 @@ impl core::fmt::UpperHex for Scalar {
 impl FromOkm for Scalar {
     type Length = U84;
 
-    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
-        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::from_uint(U704::from_be_hex("00000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
-        let mut tmp = GenericArray::<u8, U88>::default();
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex("00000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
+        let mut tmp = Array::<u8, U88>::default();
         tmp[4..].copy_from_slice(&data[..]);
 
         let mut num = U704::from_be_slice(&tmp[..]);
@@ -665,14 +666,14 @@ impl Scalar {
 
     /// Compute `self` * `rhs` mod ℓ
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        let wide_value = self.0.mul_wide(&rhs.0);
-        Self(U448::const_rem_wide(wide_value, &ORDER).0)
+        let wide_value = self.0.split_mul(&rhs.0);
+        Self(U448::rem_wide_vartime(wide_value, &NZ_ORDER))
     }
 
     /// Square this scalar
     pub const fn square(&self) -> Self {
         let value = self.0.square_wide();
-        Self(U448::const_rem_wide(value, &ORDER).0)
+        Self(U448::rem_wide_vartime(value, &NZ_ORDER))
     }
 
     /// Is this scalar equal to zero?
@@ -849,17 +850,15 @@ impl Scalar {
         );
         let mut top = [0u8; 56];
         top[..2].copy_from_slice(&input[112..]);
-        let upper = U448::from_le_slice(&top).mul_wide(&TOP_MULTIPLIER);
-
-        let bottom = U448::const_rem_wide(value, &ORDER).0;
-        let top = U448::const_rem_wide(upper, &ORDER).0;
+        let top = U448::from_le_slice(&top).mul_mod(&TOP_MULTIPLIER, &NZ_ORDER);
+        let bottom = U448::rem_wide_vartime(value, &NZ_ORDER);
         Self(bottom.add_mod(&top, &ORDER))
     }
 
     /// Construct a Scalar by reducing a 448-bit little-endian integer modulo the group order ℓ
     pub fn from_bytes_mod_order(input: &ScalarBytes) -> Scalar {
         let value = U448::from_le_slice(&input[..56]);
-        Self(value.const_rem(&ORDER).0)
+        Self(value.rem_vartime(&NZ_ORDER))
     }
 
     /// Return a `Scalar` chosen uniformly at random using a user-provided RNG.
@@ -894,7 +893,7 @@ impl Scalar {
     where
         X: for<'a> ExpandMsg<'a>,
     {
-        let mut random_bytes = GenericArray::<u8, U84>::default();
+        let mut random_bytes = Array::<u8, U84>::default();
         let dst = [dst];
         let mut expander =
             X::expand_message(&[msg], &dst, random_bytes.len()).expect("invalid dst");
@@ -1024,19 +1023,19 @@ mod test {
     #[test]
     fn test_from_canonical_bytes() {
         // ff..ff should fail
-        let mut bytes = ScalarBytes::clone_from_slice(&hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+        let mut bytes = ScalarBytes::from(hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
         bytes.reverse();
         let s = Scalar::from_canonical_bytes(&bytes);
         assert!(<Choice as Into<bool>>::into(s.is_none()));
 
         // n should fail
-        let mut bytes = ScalarBytes::clone_from_slice(&hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
+        let mut bytes = ScalarBytes::from(hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
         bytes.reverse();
         let s = Scalar::from_canonical_bytes(&bytes);
         assert!(<Choice as Into<bool>>::into(s.is_none()));
 
         // n-1 should work
-        let mut bytes = ScalarBytes::clone_from_slice(&hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+        let mut bytes = ScalarBytes::from(hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
         bytes.reverse();
         let s = Scalar::from_canonical_bytes(&bytes);
         match Option::<Scalar>::from(s) {
@@ -1048,27 +1047,27 @@ mod test {
     #[test]
     fn test_from_bytes_mod_order_wide() {
         // n should become 0
-        let mut bytes = WideScalarBytes::clone_from_slice(&hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
+        let mut bytes = WideScalarBytes::from(hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
         bytes.reverse();
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
         assert_eq!(s, Scalar::ZERO);
 
         // n-1 should stay the same
-        let mut bytes = WideScalarBytes::clone_from_slice(&hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+        let mut bytes = WideScalarBytes::from(hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
         bytes.reverse();
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
         assert_eq!(s, Scalar::ZERO - Scalar::ONE);
 
         // n+1 should become 1
-        let mut bytes = WideScalarBytes::clone_from_slice(&hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f4"));
+        let mut bytes = WideScalarBytes::from(hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f4"));
         bytes.reverse();
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
         assert_eq!(s, Scalar::ONE);
 
         // 2^912-1 should become 0x2939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf72c985bb24b6c520e319fb37a63e29800f160787ad1d2e11883fa931e7de81
-        let bytes = WideScalarBytes::clone_from_slice(&hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+        let bytes = WideScalarBytes::from(hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
-        let mut bytes = ScalarBytes::clone_from_slice(&hex!("002939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf72c985bb24b6c520e319fb37a63e29800f160787ad1d2e11883fa931e7de81"));
+        let mut bytes = ScalarBytes::from(hex!("002939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf72c985bb24b6c520e319fb37a63e29800f160787ad1d2e11883fa931e7de81"));
         bytes.reverse();
         let reduced = Scalar::from_canonical_bytes(&bytes).unwrap();
         assert_eq!(s, reduced);
@@ -1111,7 +1110,7 @@ mod test {
         let dst = b"edwards448_XOF:SHAKE256_ELL2_RO_";
         let res =
             Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
-        let expected = hex_literal::hex!("2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300");
-        assert_eq!(res.to_bytes_rfc_8032(), expected.into());
+        let expected: [u8; 57] = hex_literal::hex!("2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300");
+        assert_eq!(res.to_bytes_rfc_8032(), Array::from(expected));
     }
 }

@@ -3,7 +3,8 @@
 //!
 //! # Usage
 //! ```
-//! use ed448_goldilocks_plus::{EdwardsPoint, CompressedEdwardsY, Scalar, elliptic_curve::hash2curve::ExpandMsgXof, sha3::Shake256};
+//! use ed448::{EdwardsPoint, CompressedEdwardsY, Scalar, elliptic_curve::hash2curve::ExpandMsgXof, sha3::Shake256};
+//! use elliptic_curve::Field;
 //! use rand_core::OsRng;
 //!
 //! let secret_key = Scalar::TWO;
@@ -11,7 +12,7 @@
 //!
 //! assert_eq!(public_key, EdwardsPoint::GENERATOR + EdwardsPoint::GENERATOR);
 //!
-//! let secret_key = Scalar::random(&mut OsRng);
+//! let secret_key = Scalar::try_from_rng(&mut OsRng).unwrap();
 //! let public_key = EdwardsPoint::GENERATOR * &secret_key;
 //! let compressed_public_key = public_key.compress();
 //!
@@ -86,8 +87,8 @@ pub use ristretto::{CompressedRistretto, RistrettoPoint};
 pub use sign::*;
 
 use elliptic_curve::{
-    bigint::{ArrayEncoding, ByteArray, U448},
-    generic_array::typenum::U57,
+    array::typenum::U57,
+    bigint::{ArrayEncoding, U448},
     point::PointCompression,
     Curve, FieldBytesEncoding, PrimeCurve,
 };
@@ -123,8 +124,7 @@ impl PointCompression for Ed448 {
 
 impl FieldBytesEncoding<Ed448> for U448 {
     fn decode_field_bytes(field_bytes: &Ed448FieldBytes) -> Self {
-        let data = ByteArray::<U448>::from_slice(field_bytes);
-        U448::from_le_byte_array(*data)
+        U448::from_le_slice(field_bytes)
     }
 
     fn encode_field_bytes(&self) -> Ed448FieldBytes {
@@ -172,8 +172,7 @@ impl PointCompression for Decaf448 {
 
 impl FieldBytesEncoding<Decaf448> for U448 {
     fn decode_field_bytes(field_bytes: &Decaf448FieldBytes) -> Self {
-        let data = ByteArray::<U448>::from_slice(field_bytes);
-        U448::from_le_byte_array(*data)
+        U448::from_le_slice(field_bytes)
     }
 
     fn encode_field_bytes(&self) -> Decaf448FieldBytes {

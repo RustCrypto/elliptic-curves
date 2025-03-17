@@ -39,7 +39,7 @@ mod test {
     use super::*;
     use crate::curve::scalar_mul::double_and_add;
     use crate::TWISTED_EDWARDS_BASE_POINT;
-    use crypto_bigint::U448;
+    use elliptic_curve::bigint::U448;
 
     #[test]
     fn test_scalar_mul() {

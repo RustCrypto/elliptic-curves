@@ -2,11 +2,11 @@ use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use elliptic_curve::{
+    array::Array,
     bigint::{
         consts::{U84, U88},
-        Encoding, NonZero, U448, U704,
+        NonZero, U448, U704,
     },
-    generic_array::GenericArray,
     hash2curve::{FromOkm, MapToCurve},
 };
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
@@ -14,12 +14,12 @@ use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTi
 #[cfg(feature = "zeroize")]
 use zeroize::DefaultIsZeroes;
 
-use super::ResidueType;
+use super::ConstMontyType;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::{AffinePoint, EdwardsPoint};
 
 #[derive(Clone, Copy, Default)]
-pub(crate) struct FieldElement(pub(crate) ResidueType);
+pub(crate) struct FieldElement(pub(crate) ConstMontyType);
 
 impl Display for FieldElement {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -53,7 +53,7 @@ impl ConstantTimeEq for FieldElement {
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(ResidueType::conditional_select(&a.0, &b.0, choice))
+        Self(ConstMontyType::conditional_select(&a.0, &b.0, choice))
     }
 }
 
@@ -67,9 +67,9 @@ impl Eq for FieldElement {}
 impl FromOkm for FieldElement {
     type Length = U84;
 
-    fn from_okm(data: &GenericArray<u8, Self::Length>) -> Self {
-        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::from_uint(U704::from_be_hex("0000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-        let mut tmp = GenericArray::<u8, U88>::default();
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex("0000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+        let mut tmp = Array::<u8, U88>::default();
         tmp[4..].copy_from_slice(&data[..]);
 
         let mut num = U704::from_be_slice(&tmp[..]);
@@ -77,7 +77,7 @@ impl FromOkm for FieldElement {
 
         let bytes =
             <[u8; 56]>::try_from(&num.to_le_bytes()[..56]).expect("slice is the wrong length");
-        FieldElement(ResidueType::new(&U448::from_le_slice(&bytes)))
+        FieldElement(ConstMontyType::new(&U448::from_le_slice(&bytes)))
     }
 }
 
@@ -187,18 +187,18 @@ impl MapToCurve for FieldElement {
 }
 
 impl FieldElement {
-    pub const A_PLUS_TWO_OVER_FOUR: Self = Self(ResidueType::new(&U448::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000098aa")));
-    pub const DECAF_FACTOR: Self = Self(ResidueType::new(&U448::from_be_hex("22d962fbeb24f7683bf68d722fa26aa0a1f1a7b8a5b8d54b64a2d780968c14ba839a66f4fd6eded260337bf6aa20ce529642ef0f45572736")));
-    pub const EDWARDS_D: Self = Self(ResidueType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6756")));
-    pub const J: Self = Self(ResidueType::new(&U448::from_u64(156326)));
-    pub const MINUS_ONE: Self = Self(ResidueType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
-    pub const NEG_EDWARDS_D: Self = Self(ResidueType::new(&U448::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000098a9")));
-    pub const NEG_FOUR_TIMES_TWISTED_D: Self = Self(ResidueType::new(&U448::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000262a8")));
-    pub const ONE: Self = Self(ResidueType::new(&U448::ONE));
-    pub const TWISTED_D: Self = Self(ResidueType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6755")));
-    pub const TWO_TIMES_TWISTED_D: Self = Self(ResidueType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffeceab")));
-    pub const Z: Self = Self(ResidueType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
-    pub const ZERO: Self = Self(ResidueType::new(&U448::ZERO));
+    pub const A_PLUS_TWO_OVER_FOUR: Self = Self(ConstMontyType::new(&U448::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000098aa")));
+    pub const DECAF_FACTOR: Self = Self(ConstMontyType::new(&U448::from_be_hex("22d962fbeb24f7683bf68d722fa26aa0a1f1a7b8a5b8d54b64a2d780968c14ba839a66f4fd6eded260337bf6aa20ce529642ef0f45572736")));
+    pub const EDWARDS_D: Self = Self(ConstMontyType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6756")));
+    pub const J: Self = Self(ConstMontyType::new(&U448::from_u64(156326)));
+    pub const MINUS_ONE: Self = Self(ConstMontyType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
+    pub const NEG_EDWARDS_D: Self = Self(ConstMontyType::new(&U448::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000098a9")));
+    pub const NEG_FOUR_TIMES_TWISTED_D: Self = Self(ConstMontyType::new(&U448::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000262a8")));
+    pub const ONE: Self = Self(ConstMontyType::new(&U448::ONE));
+    pub const TWISTED_D: Self = Self(ConstMontyType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6755")));
+    pub const TWO_TIMES_TWISTED_D: Self = Self(ConstMontyType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffeceab")));
+    pub const Z: Self = Self(ConstMontyType::new(&U448::from_be_hex("fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffe")));
+    pub const ZERO: Self = Self(ConstMontyType::new(&U448::ZERO));
 
     pub fn is_negative(&self) -> Choice {
         let bytes = self.to_bytes();
@@ -246,8 +246,14 @@ impl FieldElement {
         bytes
     }
 
+    pub fn to_bytes_extended(self) -> [u8; 57] {
+        let mut bytes = [0u8; 57];
+        bytes[..56].copy_from_slice(&self.to_bytes());
+        bytes
+    }
+
     pub fn from_bytes(bytes: &[u8; 56]) -> Self {
-        Self(ResidueType::new(&U448::from_le_slice(bytes)))
+        Self(ConstMontyType::new(&U448::from_le_slice(bytes)))
     }
 
     pub fn double(&self) -> Self {
@@ -347,9 +353,9 @@ impl FieldElement {
 
     pub(crate) fn map_to_curve_decaf448(&self) -> TwistedExtendedPoint {
         const ONE_MINUS_TWO_D: FieldElement =
-            FieldElement(ResidueType::new(&U448::from_u64(78163)));
+            FieldElement(ConstMontyType::new(&U448::from_u64(78163)));
 
-        let r = -(self.square());
+        let r = -self.square();
         let u0 = Self::EDWARDS_D * (r - Self::ONE);
         let u1 = (u0 + Self::ONE) * (u0 - r);
 
@@ -401,7 +407,7 @@ mod tests {
         for (msg, expected_u0, expected_u1) in MSGS {
             let mut expander =
                 ExpandMsgXof::<Shake256>::expand_message(&[msg], &[DST], 84 * 2).unwrap();
-            let mut data = GenericArray::<u8, U84>::default();
+            let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
             let u0 = FieldElement::from_okm(&data);
             let mut e_u0 = *expected_u0;
@@ -429,7 +435,7 @@ mod tests {
         for (msg, expected_u0, expected_u1) in MSGS {
             let mut expander =
                 ExpandMsgXof::<Shake256>::expand_message(&[msg], &[DST], 84 * 2).unwrap();
-            let mut data = GenericArray::<u8, U84>::default();
+            let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
             let u0 = FieldElement::from_okm(&data);
             let mut e_u0 = *expected_u0;
