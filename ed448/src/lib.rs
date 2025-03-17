@@ -36,7 +36,7 @@
 //! and [`Scalar`] implements [`elliptic_curve::Field`] and [`elliptic_curve::PrimeField`] traits.
 #![deny(unused_attributes, unused_imports, unused_mut, unused_must_use)]
 #![allow(non_snake_case)]
-#![cfg_attr(all(not(feature = "alloc"), not(feature = "std")), no_std)]
+#![no_std]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![warn(
     missing_docs,
@@ -55,7 +55,18 @@ extern crate alloc;
 extern crate std;
 
 #[cfg(all(feature = "alloc", not(feature = "std")))]
-use alloc::{boxed::Box, vec::Vec};
+use alloc::{
+    boxed::Box,
+    string::{String, ToString},
+    vec::Vec,
+};
+
+#[cfg(feature = "std")]
+use std::{
+    boxed::Box,
+    string::{String, ToString},
+    vec::Vec,
+};
 
 // Internal macros. Must come first!
 #[macro_use]
