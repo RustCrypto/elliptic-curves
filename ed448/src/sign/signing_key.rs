@@ -1,12 +1,11 @@
 //! Much of this code is borrowed from Thomas Pornin's [CRRL Project](https://github.com/pornin/crrl/blob/main/src/ed448.rs)
 //! and adapted to mirror `ed25519-dalek`'s API.
 
-use crate::curve::edwards::extended::PointBytes;
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
-use crate::{
-    Context, Scalar, ScalarBytes, Signature, VerifyingKey, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH,
-};
+#[cfg(feature = "pkcs8")]
+use crate::{curve::edwards::extended::PointBytes, PUBLIC_KEY_LENGTH};
+use crate::{Context, Scalar, ScalarBytes, Signature, VerifyingKey, SECRET_KEY_LENGTH};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
 use sha3::{
