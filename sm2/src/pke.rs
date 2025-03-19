@@ -5,12 +5,12 @@
 #![cfg_attr(not(feature = "alloc"), doc = "```ignore")]
 //! use sm2::pke::{EcDecrypt, EcEncrypt, Cipher, Mode};
 //! use sm2::SecretKey;
-//! let mut rng = rand::rng();
+//! use rand_core::OsRng;
 //! // Encrypting
-//! let secret_key = SecretKey::try_from_rng(&mut rng).unwrap();
+//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap();
 //! let public_key = secret_key.public_key();
 //! let plaintext = b"plaintext";
-//! let cipher = public_key.encrypt(&mut rng, plaintext).unwrap();
+//! let cipher = public_key.encrypt(plaintext).unwrap();
 //! let ciphertext = cipher.to_vec(Mode::C1C3C2);
 //!
 //! // Decrypting

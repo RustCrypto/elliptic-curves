@@ -65,13 +65,13 @@ proptest! {
     #[test]
     #[cfg(feature="alloc")]
     fn encrypt_and_decrpyt(key in secret_key()) {
-        let cipher = key.encrypt(&mut OsRng, MSG).unwrap();
+        let cipher = key.encrypt( MSG).unwrap();
         let cipher_bytes = cipher.to_vec(Mode::C1C3C2);
         let cipher = Cipher::from_slice(&cipher_bytes, Mode::C1C3C2).unwrap();
         let text = key.decrypt(&cipher).unwrap();
         assert_eq!(text, MSG);
 
-        let cipher = key.encrypt(&mut OsRng, MSG).unwrap();
+        let cipher = key.encrypt(MSG).unwrap();
         let cipher_bytes = cipher.to_vec(Mode::C1C2C3);
         let cipher = Cipher::from_slice(&cipher_bytes, Mode::C1C2C3).unwrap();
         let text = key.decrypt(&cipher).unwrap();
@@ -82,7 +82,7 @@ proptest! {
     #[test]
     fn encrypt_and_decrpyt_no_std(key in secret_key()) {
         let mut out = vec![0; MSG.len()];
-        let cipher = key.encrypt_buf(&mut OsRng, MSG, &mut out).unwrap();
+        let cipher = key.encrypt_buf_rng(&mut OsRng, MSG, &mut out).unwrap();
         let mut deout = vec![0; MSG.len()];
         key.decrypt_into(&cipher, &mut deout).unwrap();
         assert_eq!(deout, MSG);

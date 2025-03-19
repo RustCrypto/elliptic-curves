@@ -37,13 +37,13 @@ sm3 = { version = "=0.5.0-pre.5", optional = true, default-features = false }
 hex-literal = "1"
 proptest = "1"
 rand_core = { version = "0.9", features = ["os_rng"] }
-rand = "0.9"
 
 [features]
 default = ["arithmetic", "dsa", "pke", "pem"]
 alloc = ["elliptic-curve/alloc", "signature?/alloc", "elliptic-curve/alloc"]
-std = ["alloc", "elliptic-curve/std", "signature?/std"]
+std = ["alloc", "elliptic-curve/std", "signature?/std", "os_rng"]
 
+os_rng = ["rand_core/os_rng"]
 arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]

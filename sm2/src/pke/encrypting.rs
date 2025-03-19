@@ -8,9 +8,10 @@ use elliptic_curve::{
     scalar::FromUintUnchecked,
     sec1::{ModulusSize, ToEncodedPoint},
 };
-use sm3::Sm3;
-
 use primeorder::{PrimeCurveParams, PrimeField};
+#[cfg(feature = "os_rng")]
+use rand_core::OsRng;
+use sm3::Sm3;
 
 use super::{Cipher, kdf};
 use signature::digest::{Digest, FixedOutputReset, Output};
@@ -21,14 +22,28 @@ where
     C: CurveArithmetic,
 {
     /// Encrypt into [`Cipher`] using the default digest algorithm [`Sm3`].
+    #[cfg(all(feature = "alloc", feature = "os_rng"))]
+    fn encrypt(&self, msg: &[u8]) -> Result<Cipher<'_, C, Sm3>> {
+        self.encrypt_rng::<_>(&mut OsRng, msg)
+    }
+
+    /// Encrypt into [`Cipher`] using the default digest algorithm [`Sm3`].
+    /// Use a custom RNG.
     #[cfg(feature = "alloc")]
-    fn encrypt<R: TryCryptoRng>(&self, rng: &mut R, msg: &[u8]) -> Result<Cipher<'_, C, Sm3>> {
-        self.encrypt_digest::<_, Sm3>(rng, msg)
+    fn encrypt_rng<R: TryCryptoRng>(&self, rng: &mut R, msg: &[u8]) -> Result<Cipher<'_, C, Sm3>> {
+        self.encrypt_digest_rng::<_, Sm3>(rng, msg)
     }
 
     /// Encrypt into [`Cipher`] using the specified digest algorithm.
+    #[cfg(all(feature = "alloc", feature = "os_rng"))]
+    fn encrypt_digest<D: Digest + FixedOutputReset>(&self, msg: &[u8]) -> Result<Cipher<'_, C, D>> {
+        self.encrypt_digest_rng::<_, D>(&mut OsRng, msg)
+    }
+
+    /// Encrypt into [`Cipher`] using the specified digest algorithm.   
+    /// Use a custom RNG.
     #[cfg(feature = "alloc")]
-    fn encrypt_digest<R: TryCryptoRng, D: Digest + FixedOutputReset>(
+    fn encrypt_digest_rng<R: TryCryptoRng, D: Digest + FixedOutputReset>(
         &self,
         rng: &mut R,
         msg: &[u8],
@@ -36,7 +51,7 @@ where
         let mut c1 = C::AffinePoint::default();
         let mut c2 = vec![0; msg.len()];
         let mut c3 = Output::<D>::default();
-        self.encrypt_into_digest::<R, D>(rng, msg, &mut c1, &mut c2, &mut c3)?;
+        self.encrypt_digest_rng_into::<R, D>(rng, msg, &mut c1, &mut c2, &mut c3)?;
         Ok(Cipher {
             c1,
             c2: c2.into(),
@@ -46,18 +61,37 @@ where
 
     /// Encrypt into [`Cipher`] using the default digest algorithm [`Sm3`].
     /// `c2_out_buf` is the output of c2.
-    fn encrypt_buf<'a, R: TryCryptoRng>(
+    #[cfg(feature = "os_rng")]
+    fn encrypt_buf<'a>(&self, msg: &[u8], c2_out_buf: &'a mut [u8]) -> Result<Cipher<'a, C, Sm3>> {
+        self.encrypt_buf_rng(&mut OsRng, msg, c2_out_buf)
+    }
+
+    /// Encrypt into [`Cipher`] using the default digest algorithm [`Sm3`].
+    /// `c2_out_buf` is the output of c2.   
+    /// Use a custom RNG.
+    fn encrypt_buf_rng<'a, R: TryCryptoRng>(
         &self,
         rng: &mut R,
         msg: &[u8],
         c2_out_buf: &'a mut [u8],
     ) -> Result<Cipher<'a, C, Sm3>> {
-        self.encrypt_buf_digest::<R, Sm3>(rng, msg, c2_out_buf)
+        self.encrypt_buf_digest_rng::<R, Sm3>(rng, msg, c2_out_buf)
+    }
+    /// Encrypt into [`Cipher`] using the specified digest algorithm.   
+    /// `c2_out_buf` is the output of c2.
+    #[cfg(feature = "os_rng")]
+    fn encrypt_buf_digest<'a, D: Digest + FixedOutputReset>(
+        &self,
+        msg: &[u8],
+        c2_out_buf: &'a mut [u8],
+    ) -> Result<Cipher<'a, C, D>> {
+        self.encrypt_buf_digest_rng(&mut OsRng, msg, c2_out_buf)
     }
 
     /// Encrypt into [`Cipher`] using the specified digest algorithm.   
-    /// `c2_out_buf` is the output of c2.
-    fn encrypt_buf_digest<'a, R: TryCryptoRng, D: Digest + FixedOutputReset>(
+    /// `c2_out_buf` is the output of c2.   
+    /// Use a custom RNG.
+    fn encrypt_buf_digest_rng<'a, R: TryCryptoRng, D: Digest + FixedOutputReset>(
         &self,
         rng: &mut R,
         msg: &[u8],
@@ -65,7 +99,7 @@ where
     ) -> Result<Cipher<'a, C, D>> {
         let mut c1 = C::AffinePoint::default();
         let mut c3 = Output::<D>::default();
-        let len = self.encrypt_into_digest::<R, D>(rng, msg, &mut c1, c2_out_buf, &mut c3)?;
+        let len = self.encrypt_digest_rng_into::<R, D>(rng, msg, &mut c1, c2_out_buf, &mut c3)?;
         let c2 = &c2_out_buf[..len];
 
         #[cfg(feature = "alloc")]
@@ -74,8 +108,9 @@ where
         Ok(Cipher { c1, c2, c3 })
     }
 
+    /// Implementation of encryption.      
     /// Encrypt into the specified buffer using the specified digest algorithm.
-    fn encrypt_into_digest<R: TryCryptoRng, D: Digest + FixedOutputReset>(
+    fn encrypt_digest_rng_into<R: TryCryptoRng, D: Digest + FixedOutputReset>(
         &self,
         rng: &mut R,
         msg: &[u8],
@@ -91,7 +126,7 @@ where
     C::FieldBytesSize: ModulusSize,
     C::AffinePoint: ToEncodedPoint<C>,
 {
-    fn encrypt_into_digest<R: TryCryptoRng, D: Digest + FixedOutputReset>(
+    fn encrypt_digest_rng_into<R: TryCryptoRng, D: Digest + FixedOutputReset>(
         &self,
         rng: &mut R,
         msg: &[u8],
@@ -108,7 +143,7 @@ where
     C::FieldBytesSize: ModulusSize,
     C::AffinePoint: ToEncodedPoint<C>,
 {
-    fn encrypt_into_digest<R: TryCryptoRng, D: Digest + FixedOutputReset>(
+    fn encrypt_digest_rng_into<R: TryCryptoRng, D: Digest + FixedOutputReset>(
         &self,
         rng: &mut R,
         msg: &[u8],
