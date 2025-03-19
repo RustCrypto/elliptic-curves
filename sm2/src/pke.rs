@@ -7,7 +7,7 @@
 //! use sm2::SecretKey;
 //! use rand_core::OsRng;
 //! // Encrypting
-//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap();
+//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `::to_bytes()`
 //! let public_key = secret_key.public_key();
 //! let plaintext = b"plaintext";
 //! let cipher = public_key.encrypt(plaintext).unwrap();
