@@ -20,9 +20,9 @@ use crate::{
 };
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    Curve, FieldBytesEncoding, PrimeField,
+    Curve, FieldBytesEncoding, Group, PrimeField,
     array::typenum::Unsigned,
-    ops::{MulByGenerator, Reduce},
+    ops::Reduce,
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
 };

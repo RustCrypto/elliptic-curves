@@ -19,9 +19,9 @@ use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Sca
 use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    Curve, Field, FieldBytesEncoding, PrimeField,
+    Curve, Field, FieldBytesEncoding, Group, PrimeField,
     array::{Array, sizes::U32, typenum::Unsigned},
-    ops::{MulByGenerator, Reduce},
+    ops::Reduce,
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
 };

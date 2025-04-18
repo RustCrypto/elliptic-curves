@@ -16,7 +16,7 @@ use elliptic_curve::{
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     },
-    rand_core::RngCore,
+    rand_core::TryRngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -402,8 +402,8 @@ impl Eq for ProjectivePoint {}
 impl Group for ProjectivePoint {
     type Scalar = Scalar;
 
-    fn random(mut rng: impl RngCore) -> Self {
-        Self::GENERATOR * Scalar::random(&mut rng)
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
+        Ok(Self::GENERATOR * Scalar::try_from_rng(rng)?)
     }
 
     fn identity() -> Self {
@@ -421,6 +421,10 @@ impl Group for ProjectivePoint {
     #[must_use]
     fn double(&self) -> Self {
         Self::double(self)
+    }
+
+    fn mul_by_generator(k: &Scalar) -> Self {
+        Self::mul_by_generator(k)
     }
 }
 
@@ -680,7 +684,6 @@ mod tests {
     };
     use elliptic_curve::Field;
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
-    use elliptic_curve::ops::MulByGenerator;
     use elliptic_curve::{BatchNormalize, group};
     use rand_core::{OsRng, TryRngCore};
 

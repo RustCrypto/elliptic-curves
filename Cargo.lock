@@ -363,7 +363,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-pre.9"
-source = "git+https://github.com/RustCrypto/signatures.git#8324be36081a8fdf85d3b50bd769ab59f71b0289"
+source = "git+https://github.com/RustCrypto/signatures.git#34cd7792c248e36693d617968d38c14d4ab4618a"
 dependencies = [
  "der",
  "digest",
@@ -383,7 +383,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#204a4e030fa98863429ccd3797e12f9e7c45dc33"
+source = "git+https://github.com/RustCrypto/traits.git#829328e9405143cc86b81c297b39f1a6161700c8"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -423,8 +423,9 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 
 [[package]]
 name = "ff"
-version = "0.13.1"
-source = "git+https://github.com/zkcrypto/ff.git?branch=release-0.14.0#241caff9bcedafbe279b5a4d875461f66b3f9701"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d42dd26f5790eda47c1a2158ea4120e32c35ddc9a7743c98a292accc01b54ef3"
 dependencies = [
  "bitvec",
  "ff_derive",
@@ -434,8 +435,9 @@ dependencies = [
 
 [[package]]
 name = "ff_derive"
-version = "0.13.1"
-source = "git+https://github.com/zkcrypto/ff.git?branch=release-0.14.0#241caff9bcedafbe279b5a4d875461f66b3f9701"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9266df7c7c72e5a865a447aca13bf480d7310eaa4f84de117c33e361d4da8888"
 dependencies = [
  "addchain",
  "num-bigint 0.3.3",
@@ -483,8 +485,9 @@ dependencies = [
 
 [[package]]
 name = "group"
-version = "0.13.0"
-source = "git+https://github.com/pinkforest/group.git?branch=bump-rand-0.9#06ac6fb11ced26fbf980ee65e74fced4da66ec3e"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ff6a0b2dd4b981b1ae9e3e6830ab146771f3660d31d57bafd9018805a91b0f1"
 dependencies = [
  "ff",
  "rand_core 0.9.3",
@@ -999,7 +1002,7 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 [[package]]
 name = "rfc6979"
 version = "0.5.0-pre.4"
-source = "git+https://github.com/RustCrypto/signatures.git#8324be36081a8fdf85d3b50bd769ab59f71b0289"
+source = "git+https://github.com/RustCrypto/signatures.git#34cd7792c248e36693d617968d38c14d4ab4618a"
 dependencies = [
  "hmac",
  "subtle",
@@ -1132,7 +1135,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "2.3.0-pre.6"
-source = "git+https://github.com/RustCrypto/traits.git#204a4e030fa98863429ccd3797e12f9e7c45dc33"
+source = "git+https://github.com/RustCrypto/traits.git#829328e9405143cc86b81c297b39f1a6161700c8"
 dependencies = [
  "digest",
  "rand_core 0.9.3",

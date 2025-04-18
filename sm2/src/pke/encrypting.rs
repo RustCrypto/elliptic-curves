@@ -11,7 +11,7 @@ use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use elliptic_curve::{
     Curve, Error, Group, Result,
     bigint::{RandomBits, U256, Uint, Zero},
-    ops::{MulByGenerator, Reduce},
+    ops::Reduce,
     pkcs8::der::Encode,
     rand_core::TryCryptoRng,
     sec1::ToEncodedPoint,
