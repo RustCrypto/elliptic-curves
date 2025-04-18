@@ -8,14 +8,14 @@ use p256::FieldElement;
 
 fn test_field_element_x() -> FieldElement {
     FieldElement::from_bytes(
-        &hex!("1ccbe91c075fc7f4f033bfa248db8fccd3565de94bbfb12f3c59ff46c271bf83").into(),
+        hex!("1ccbe91c075fc7f4f033bfa248db8fccd3565de94bbfb12f3c59ff46c271bf83").into(),
     )
     .unwrap()
 }
 
 fn test_field_element_y() -> FieldElement {
     FieldElement::from_bytes(
-        &hex!("ce4014c68811f9a21a1fdb2c0e6113e06db7ca93b7404e78dc7ccd5ca89a4ca9").into(),
+        hex!("ce4014c68811f9a21a1fdb2c0e6113e06db7ca93b7404e78dc7ccd5ca89a4ca9").into(),
     )
     .unwrap()
 }
