@@ -152,7 +152,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
     digest: &mut dyn DynDigest,
     msg: &[u8],
 ) -> Result<Vec<u8>> {
-    const N_BYTES: u32 = (Sm2::ORDER.bits() + 7) / 8;
+    const N_BYTES: u32 = Sm2::ORDER.bits().div_ceil(8);
     let mut c1 = vec![0; (N_BYTES * 2 + 1) as usize];
     let mut c2 = msg.to_owned();
     let mut hpb: AffinePoint;

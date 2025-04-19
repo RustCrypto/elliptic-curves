@@ -160,7 +160,7 @@ fn decrypt(
     cipher: &[u8],
 ) -> Result<Vec<u8>> {
     let q = U256::from_be_hex(FieldElement::MODULUS);
-    let c1_len = (q.bits() + 7) / 8 * 2 + 1;
+    let c1_len = q.bits().div_ceil(8) * 2 + 1;
 
     // B1: get 𝐶1 from 𝐶
     let (c1, c) = cipher.split_at(c1_len as usize);
