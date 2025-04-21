@@ -69,12 +69,12 @@ impl ecdsa_core::hazmat::DigestPrimitive for NistP256 {
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        AffinePoint, EncodedPoint,
         ecdsa::{
-            Signature, SigningKey, VerifyingKey,
-            signature::Signer,
             signature::hazmat::{PrehashSigner, PrehashVerifier},
+            signature::{DigestSigner, Signer},
+            Signature, SigningKey, VerifyingKey,
         },
+        AffinePoint, EncodedPoint,
     };
     use elliptic_curve::sec1::FromEncodedPoint;
     use hex_literal::hex;
@@ -120,6 +120,23 @@ mod tests {
         );
     }
 
+    // Test signing with DigestSigner using SHA-1 which output is shorter than P-256 field size.
+    #[test]
+    fn digest_signer_signing_with_sha1() {
+        let x = hex!("c9afa9d845ba75166b5c215767b1d6934e50c3db36e89b127b8a622b120f6721");
+        let signer = SigningKey::from_bytes(&x.into()).unwrap();
+        let mut digest = sha1::Sha1::new();
+        digest.update(b"test");
+        let signature: Signature = signer.sign_digest(digest);
+        assert_eq!(
+            signature.to_bytes().as_slice(),
+            &hex!(
+                "aba05bcacf26386cad3c3c0a87bf5e5915c8b77c1404e0b8dab246125b0588f5
+                 3427e387a5dd6c15a24276a8fe596f51de8cd0be9a3ed64374acaefd0f4e84e6"
+            )
+        );
+    }
+
     // Test verifying with PrehashVerifier using SHA-256 which output is larger than P-256 field size.
     #[test]
     fn prehash_signer_verification_with_sha384() {
@@ -148,12 +165,12 @@ mod tests {
     }
 
     mod sign {
-        use crate::{NistP256, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
         ecdsa_core::new_signing_test!(NistP256, ECDSA_TEST_VECTORS);
     }
 
     mod verify {
-        use crate::{NistP256, test_vectors::ecdsa::ECDSA_TEST_VECTORS};
+        use crate::{test_vectors::ecdsa::ECDSA_TEST_VECTORS, NistP256};
         ecdsa_core::new_verification_test!(NistP256, ECDSA_TEST_VECTORS);
     }
 
