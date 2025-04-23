@@ -9,10 +9,10 @@ use elliptic_curve::{
     point::DecompactPoint,
 };
 use sha2::{
-    Digest, Sha256,
+    Digest,
     digest::{FixedOutput, consts::U32},
 };
-use signature::{DigestVerifier, Error, Result, Verifier, hazmat::PrehashVerifier};
+use signature::{DigestVerifier, Error, Result, hazmat::PrehashVerifier};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
@@ -104,12 +104,6 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         signature: &Signature,
     ) -> core::result::Result<(), Error> {
         self.verify_raw(prehash, signature)
-    }
-}
-
-impl Verifier<Signature> for VerifyingKey {
-    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<()> {
-        self.verify_digest(Sha256::new_with_prefix(msg), signature)
     }
 }
 
