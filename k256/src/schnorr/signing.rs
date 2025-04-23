@@ -11,9 +11,9 @@ use elliptic_curve::{
     subtle::ConditionallySelectable,
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
-use sha2::{Digest, Sha256};
+use sha2::Digest;
 use signature::{
-    DigestSigner, Error, KeypairRef, RandomizedDigestSigner, RandomizedSigner, Result, Signer,
+    DigestSigner, Error, KeypairRef, RandomizedDigestSigner, Result,
     digest::{FixedOutput, consts::U32},
     hazmat::{PrehashSigner, RandomizedPrehashSigner},
 };
@@ -23,6 +23,9 @@ use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(debug_assertions)]
 use signature::hazmat::PrehashVerifier;
+
+#[cfg(doc)]
+use signature::{RandomizedSigner, Signer};
 
 /// Taproot Schnorr signing key.
 #[derive(Clone)]
@@ -195,16 +198,6 @@ where
     }
 }
 
-impl RandomizedSigner<Signature> for SigningKey {
-    fn try_sign_with_rng<R: TryCryptoRng + ?Sized>(
-        &self,
-        rng: &mut R,
-        msg: &[u8],
-    ) -> Result<Signature> {
-        self.try_sign_digest_with_rng(rng, Sha256::new_with_prefix(msg))
-    }
-}
-
 impl RandomizedPrehashSigner<Signature> for SigningKey {
     fn sign_prehash_with_rng<R: TryCryptoRng + ?Sized>(
         &self,
@@ -216,12 +209,6 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
             .map_err(|_| Error::new())?;
 
         self.sign_raw(prehash, &aux_rand)
-    }
-}
-
-impl Signer<Signature> for SigningKey {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
-        self.try_sign_digest(Sha256::new_with_prefix(msg))
     }
 }
 

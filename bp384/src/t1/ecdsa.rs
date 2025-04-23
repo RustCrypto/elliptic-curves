@@ -13,6 +13,6 @@ impl ecdsa::EcdsaCurve for BrainpoolP384t1 {
 }
 
 #[cfg(feature = "sha384")]
-impl ecdsa::hazmat::DigestPrimitive for BrainpoolP384t1 {
+impl ecdsa::DigestAlgorithm for BrainpoolP384t1 {
     type Digest = sha2::Sha384;
 }
