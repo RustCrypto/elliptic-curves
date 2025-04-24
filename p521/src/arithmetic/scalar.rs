@@ -24,7 +24,7 @@ use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
     bigint::{self, Integer},
     ff::{self, Field, PrimeField},
-    ops::{Invert, Reduce},
+    ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
@@ -581,6 +581,22 @@ impl Reduce<U576> for Scalar {
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
         let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
         Self::reduce(w)
+    }
+}
+
+impl ReduceNonZero<U576> for Scalar {
+    fn reduce_nonzero(w: U576) -> Self {
+        const ORDER_MINUS_ONE: U576 = NistP521::ORDER.wrapping_sub(&U576::ONE);
+        let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, bigint::Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
+        Self::from_uint_unchecked(
+            U576::conditional_select(&w, &r, !underflow).wrapping_add(&U576::ONE),
+        )
+    }
+
+    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
+        let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
+        Self::reduce_nonzero(w)
     }
 }
 

@@ -32,7 +32,7 @@ use elliptic_curve::{
     Curve as _, Error, Result, ScalarPrimitive,
     bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
-    ops::{Invert, Reduce},
+    ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
@@ -289,6 +289,19 @@ impl Reduce<U384> for Scalar {
     #[inline]
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
         Self::reduce(U384::from_be_byte_array(*bytes))
+    }
+}
+
+impl ReduceNonZero<U384> for Scalar {
+    fn reduce_nonzero(w: U384) -> Self {
+        const ORDER_MINUS_ONE: U384 = NistP384::ORDER.wrapping_sub(&U384::ONE);
+        let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
+        Self(U384::conditional_select(&w, &r, !underflow).wrapping_add(&U384::ONE))
+    }
+
+    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
+        Self::reduce_nonzero(U384::from_be_byte_array(*bytes))
     }
 }
 
