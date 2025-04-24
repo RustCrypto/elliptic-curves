@@ -684,8 +684,12 @@ impl<'de> Deserialize<'de> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::Scalar;
-    use elliptic_curve::PrimeField;
+    use crate::NistP521;
+
+    use super::{Scalar, U576};
+    use elliptic_curve::array::Array;
+    use elliptic_curve::ops::ReduceNonZero;
+    use elliptic_curve::{Curve, PrimeField};
     use primefield::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
@@ -704,4 +708,56 @@ mod tests {
     impl_field_identity_tests!(Scalar);
     impl_field_invert_tests!(Scalar);
     impl_primefield_tests!(Scalar, T);
+
+    #[test]
+    fn reduce_nonzero() {
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero_bytes(&Array::default())),
+            U576::ONE,
+        );
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(U576::ONE)),
+            U576::from_u8(2),
+        );
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(U576::from_u8(2))),
+            U576::from_u8(3),
+        );
+
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(NistP521::ORDER)),
+            U576::from_u8(2),
+        );
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                NistP521::ORDER.wrapping_sub(&U576::from_u8(1))
+            )),
+            U576::ONE,
+        );
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                NistP521::ORDER.wrapping_sub(&U576::from_u8(2))
+            )),
+            NistP521::ORDER.wrapping_sub(&U576::ONE),
+        );
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                NistP521::ORDER.wrapping_sub(&U576::from_u8(3))
+            )),
+            NistP521::ORDER.wrapping_sub(&U576::from_u8(2)),
+        );
+
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                NistP521::ORDER.wrapping_add(&U576::ONE)
+            )),
+            U576::from_u8(3),
+        );
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                NistP521::ORDER.wrapping_add(&U576::from_u8(2))
+            )),
+            U576::from_u8(4),
+        );
+    }
 }

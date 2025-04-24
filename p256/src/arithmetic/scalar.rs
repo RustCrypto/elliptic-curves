@@ -738,9 +738,12 @@ impl<'de> Deserialize<'de> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::Scalar;
-    use crate::{FieldBytes, SecretKey};
+    use super::{Scalar, U256};
+    use crate::{FieldBytes, NistP256, SecretKey};
+    use elliptic_curve::Curve;
+    use elliptic_curve::array::Array;
     use elliptic_curve::group::ff::{Field, PrimeField};
+    use elliptic_curve::ops::ReduceNonZero;
     use primeorder::{
         impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
         impl_primefield_tests,
@@ -813,5 +816,35 @@ mod tests {
 
         let scalar_bits = ScalarBits::from(&-Scalar::from(1u32));
         assert_eq!(minus_one, scalar_bits);
+    }
+
+    #[test]
+    fn reduce_nonzero() {
+        assert_eq!(Scalar::reduce_nonzero_bytes(&Array::default()).0, U256::ONE,);
+        assert_eq!(Scalar::reduce_nonzero(U256::ONE).0, U256::from_u8(2),);
+        assert_eq!(Scalar::reduce_nonzero(U256::from_u8(2)).0, U256::from_u8(3),);
+
+        assert_eq!(Scalar::reduce_nonzero(NistP256::ORDER).0, U256::from_u8(2),);
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(1))).0,
+            U256::ONE,
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(2))).0,
+            NistP256::ORDER.wrapping_sub(&U256::ONE),
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(3))).0,
+            NistP256::ORDER.wrapping_sub(&U256::from_u8(2)),
+        );
+
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_add(&U256::ONE)).0,
+            U256::from_u8(3),
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_add(&U256::from_u8(2))).0,
+            U256::from_u8(4),
+        );
     }
 }

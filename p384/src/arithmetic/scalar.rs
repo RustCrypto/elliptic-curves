@@ -395,9 +395,12 @@ impl<'de> Deserialize<'de> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::Scalar;
-    use crate::FieldBytes;
+    use super::{Scalar, U384};
+    use crate::{FieldBytes, NistP384};
+    use elliptic_curve::Curve;
+    use elliptic_curve::array::Array;
     use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::ops::ReduceNonZero;
     use primeorder::{
         impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
         impl_primefield_tests,
@@ -443,5 +446,35 @@ mod tests {
 
         assert_eq!(minus_three * minus_two, minus_two * minus_three);
         assert_eq!(six, minus_two * minus_three);
+    }
+
+    #[test]
+    fn reduce_nonzero() {
+        assert_eq!(Scalar::reduce_nonzero_bytes(&Array::default()).0, U384::ONE,);
+        assert_eq!(Scalar::reduce_nonzero(U384::ONE).0, U384::from_u8(2),);
+        assert_eq!(Scalar::reduce_nonzero(U384::from_u8(2)).0, U384::from_u8(3),);
+
+        assert_eq!(Scalar::reduce_nonzero(NistP384::ORDER).0, U384::from_u8(2),);
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_sub(&U384::from_u8(1))).0,
+            U384::ONE,
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_sub(&U384::from_u8(2))).0,
+            NistP384::ORDER.wrapping_sub(&U384::ONE),
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_sub(&U384::from_u8(3))).0,
+            NistP384::ORDER.wrapping_sub(&U384::from_u8(2)),
+        );
+
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_add(&U384::ONE)).0,
+            U384::from_u8(3),
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_add(&U384::from_u8(2))).0,
+            U384::from_u8(4),
+        );
     }
 }
