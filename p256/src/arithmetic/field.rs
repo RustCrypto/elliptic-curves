@@ -24,7 +24,7 @@ const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000fffffffffffff
 
 /// Constant representing the modulus
 /// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
-pub const MODULUS: FieldElement = FieldElement(U256::from_be_hex(MODULUS_HEX));
+pub const MODULUS: U256 = U256::from_be_hex(MODULUS_HEX);
 
 /// R = 2^256 mod p
 const R: FieldElement = FieldElement(U256::from_be_hex(
@@ -69,7 +69,7 @@ impl FieldElement {
     /// w * R^2 * R^-1 mod p = wR mod p
     /// ```
     pub fn from_uint(uint: U256) -> CtOption<Self> {
-        let is_some = uint.ct_lt(&MODULUS.0);
+        let is_some = uint.ct_lt(&MODULUS);
         CtOption::new(Self::from_uint_unchecked(uint), is_some)
     }
 
