@@ -112,7 +112,7 @@ mod tests {
     fn params() {
         let params = <FieldElement as OsswuMap>::PARAMS;
 
-        let c1 = MODULUS.0.checked_sub(&U256::from_u8(3)).unwrap()
+        let c1 = MODULUS.checked_sub(&U256::from_u8(3)).unwrap()
             / NonZero::new(U256::from_u8(4)).unwrap();
         assert_eq!(
             Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
