@@ -60,7 +60,7 @@ pem = ["ecdsa-core/pem", "elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core/pkcs8", "elliptic-curve/pkcs8"]
 precomputed-tables = ["arithmetic"]
 schnorr = ["arithmetic", "sha256", "signature"]
-serde = ["ecdsa-core/serde", "elliptic-curve/serde", "serdect"]
+serde = ["ecdsa-core/serde", "elliptic-curve/serde", "pkcs8", "serdect"]
 sha256 = ["digest", "sha2"]
 test-vectors = ["hex-literal"]
 
