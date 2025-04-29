@@ -60,7 +60,7 @@ impl FieldElement {
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
-        self.to_canonical().0.to_be_byte_array()
+        self.to_canonical().to_be_byte_array()
     }
 
     /// Decode [`FieldElement`] from [`U256`], converting it into Montgomery form:
@@ -137,8 +137,8 @@ impl FieldElement {
 
     /// Translate a field element out of the Montgomery domain.
     #[inline]
-    pub(crate) const fn to_canonical(self) -> Self {
-        Self(field_impl::to_canonical(self.0))
+    pub(crate) const fn to_canonical(self) -> U256 {
+        field_impl::to_canonical(self.0)
     }
 
     /// Translate a field element into the Montgomery domain.
