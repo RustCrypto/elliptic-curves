@@ -113,12 +113,15 @@ impl FieldElement {
 
         // Decode the little endian serialization into the unsaturated big integer form used by
         // the fiat-crypto synthesized code.
-        Self(fiat_p521_from_bytes(&le_bytes))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_from_bytes(&mut out, &le_bytes);
+        Self(out)
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
     pub fn to_bytes(self) -> FieldBytes {
-        let mut ret = fiat_p521_to_bytes(&self.0);
+        let mut ret = [0u8; 66];
+        fiat_p521_to_bytes(&mut ret, &self.0);
         ret.reverse();
         ret.into()
     }
@@ -151,53 +154,75 @@ impl FieldElement {
     }
 
     /// Add elements.
+    #[inline]
     pub const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
-        LooseFieldElement(fiat_p521_add(&self.0, &rhs.0))
+        let mut out = fiat_p521_loose_field_element([0; 9]);
+        fiat_p521_add(&mut out, &self.0, &rhs.0);
+        LooseFieldElement(out)
     }
 
     /// Double element (add it to itself).
+    #[inline]
     #[must_use]
     pub const fn double_loose(&self) -> LooseFieldElement {
-        Self::add_loose(self, self)
+        self.add_loose(self)
     }
 
     /// Subtract elements, returning a loose field element.
+    #[inline]
     pub const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
-        LooseFieldElement(fiat_p521_sub(&self.0, &rhs.0))
+        let mut out = fiat_p521_loose_field_element([0; 9]);
+        fiat_p521_sub(&mut out, &self.0, &rhs.0);
+        LooseFieldElement(out)
     }
 
     /// Negate element, returning a loose field element.
+    #[inline]
     pub const fn neg_loose(&self) -> LooseFieldElement {
-        LooseFieldElement(fiat_p521_opp(&self.0))
+        let mut out = fiat_p521_loose_field_element([0; 9]);
+        fiat_p521_opp(&mut out, &self.0);
+        LooseFieldElement(out)
     }
 
     /// Add two field elements.
+    #[inline]
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(fiat_p521_carry_add(&self.0, &rhs.0))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_carry_add(&mut out, &self.0, &rhs.0);
+        Self(out)
     }
 
     /// Subtract field elements.
+    #[inline]
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(fiat_p521_carry_sub(&self.0, &rhs.0))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_carry_sub(&mut out, &self.0, &rhs.0);
+        Self(out)
     }
 
     /// Negate element.
+    #[inline]
     pub const fn neg(&self) -> Self {
-        Self(fiat_p521_carry_opp(&self.0))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_carry_opp(&mut out, &self.0);
+        Self(out)
     }
 
     /// Double element (add it to itself).
+    #[inline]
     #[must_use]
     pub const fn double(&self) -> Self {
         self.add(self)
     }
 
     /// Multiply elements.
+    #[inline]
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        LooseFieldElement::multiply(&self.relax(), &rhs.relax())
+        self.relax().multiply(&rhs.relax())
     }
 
     /// Square element.
+    #[inline]
     pub const fn square(&self) -> Self {
         self.relax().square()
     }
@@ -294,8 +319,11 @@ impl FieldElement {
     }
 
     /// Relax a tight field element into a loose one.
-    pub(crate) const fn relax(&self) -> LooseFieldElement {
-        LooseFieldElement(fiat_p521_relax(&self.0))
+    #[inline]
+    pub const fn relax(&self) -> LooseFieldElement {
+        let mut out = fiat_p521_loose_field_element([0; 9]);
+        fiat_p521_relax(&mut out, &self.0);
+        LooseFieldElement(out)
     }
 }
 
@@ -336,9 +364,7 @@ impl Debug for FieldElement {
     ///
     /// This makes debugging easier.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut bytes = fiat_p521_to_bytes(&self.0);
-        bytes.reverse();
-
+        let bytes = self.to_bytes();
         let formatter = base16ct::HexDisplay(&bytes);
         f.debug_tuple("FieldElement")
             .field(&format_args!("0x{formatter:X}"))
@@ -373,22 +399,22 @@ impl From<u128> for FieldElement {
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut ret = Self::ZERO.0.into_inner();
-        let a = a.0.as_inner();
-        let b = b.0.as_inner();
+        let mut out = [0; 9];
+        let a = &a.0;
+        let b = &b.0;
 
-        for i in 0..ret.len() {
-            ret[i] = u64::conditional_select(&a[i], &b[i], choice);
+        for i in 0..out.len() {
+            out[i] = u64::conditional_select(&a[i], &b[i], choice);
         }
 
-        Self(fiat_p521_tight_field_element(ret))
+        Self(fiat_p521_tight_field_element(out))
     }
 }
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
-        let a = fiat_p521_to_bytes(&self.0);
-        let b = fiat_p521_to_bytes(&other.0);
+        let a = self.to_bytes();
+        let b = other.to_bytes();
         a.ct_eq(&b)
     }
 }

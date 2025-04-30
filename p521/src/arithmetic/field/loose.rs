@@ -7,18 +7,27 @@ pub struct LooseFieldElement(pub(super) fiat_p521_loose_field_element);
 
 impl LooseFieldElement {
     /// Reduce field element.
+    #[inline]
     pub const fn carry(&self) -> FieldElement {
-        FieldElement(fiat_p521_carry(&self.0))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_carry(&mut out, &self.0);
+        FieldElement(out)
     }
 
     /// Multiplies two field elements and reduces the result.
+    #[inline]
     pub const fn multiply(&self, rhs: &Self) -> FieldElement {
-        FieldElement(fiat_p521_carry_mul(&self.0, &rhs.0))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_carry_mul(&mut out, &self.0, &rhs.0);
+        FieldElement(out)
     }
 
     /// Squares a field element and reduces the result.
+    #[inline]
     pub const fn square(&self) -> FieldElement {
-        FieldElement(fiat_p521_carry_square(&self.0))
+        let mut out = fiat_p521_tight_field_element([0; 9]);
+        fiat_p521_carry_square(&mut out, &self.0);
+        FieldElement(out)
     }
 }
 

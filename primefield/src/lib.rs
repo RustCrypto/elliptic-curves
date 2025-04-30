@@ -396,9 +396,9 @@ macro_rules! impl_mont_field_element_arithmetic {
             }
         }
 
-        $crate::impl_field_op!($fe, Add, add, $add);
-        $crate::impl_field_op!($fe, Sub, sub, $sub);
-        $crate::impl_field_op!($fe, Mul, mul, $mul);
+        $crate::fiat_field_op!($fe, Add, add, $add);
+        $crate::fiat_field_op!($fe, Sub, sub, $sub);
+        $crate::fiat_field_op!($fe, Mul, mul, $mul);
 
         impl AddAssign<$fe> for $fe {
             #[inline]
@@ -479,17 +479,19 @@ macro_rules! impl_mont_field_element_arithmetic {
     };
 }
 
-/// Emit impls for a `core::ops` trait for all combinations of reference types,
-/// which thunk to the given function.
+/// Emit a `core::ops` trait wrapper for a `fiat-crypto` field arithmetic operation, writing the
+/// impl for all combinations of owned and reference types.
 #[macro_export]
-macro_rules! impl_field_op {
+macro_rules! fiat_field_op {
     ($fe:tt, $op:tt, $op_fn:ident, $func:ident) => {
         impl ::core::ops::$op for $fe {
             type Output = $fe;
 
             #[inline]
             fn $op_fn(self, rhs: $fe) -> $fe {
-                $fe($func(self.as_ref(), rhs.as_ref()).into())
+                let mut out = $fe::default();
+                $func(&mut out.0, self.as_ref(), rhs.as_ref());
+                out
             }
         }
 
@@ -498,7 +500,9 @@ macro_rules! impl_field_op {
 
             #[inline]
             fn $op_fn(self, rhs: &$fe) -> $fe {
-                $fe($func(self.as_ref(), rhs.as_ref()).into())
+                let mut out = $fe::default();
+                $func(&mut out.0, self.as_ref(), rhs.as_ref());
+                out
             }
         }
 
@@ -507,21 +511,26 @@ macro_rules! impl_field_op {
 
             #[inline]
             fn $op_fn(self, rhs: &$fe) -> $fe {
-                $fe($func(self.as_ref(), rhs.as_ref()).into())
+                let mut out = $fe::default();
+                $func(&mut out.0, self.as_ref(), rhs.as_ref());
+                out
             }
         }
     };
 }
 
-/// Implement Bernstein-Yang field element inversion.
+/// Emit wrapper function for a `fiat-crypto` generated implementation of the Bernstein-Yang
+/// (a.k.a. safegcd) modular inversion algorithm.
 #[macro_export]
-macro_rules! impl_bernstein_yang_invert {
+macro_rules! fiat_bernstein_yang_invert {
     (
+        $out:expr,
         $a:expr,
         $one:expr,
         $d:expr,
         $nlimbs:expr,
         $word:ty,
+        $non_mont_type: expr,
         $mont_type: expr,
         $from_mont:ident,
         $mul:ident,
@@ -530,45 +539,67 @@ macro_rules! impl_bernstein_yang_invert {
         $divstep:ident,
         $msat:ident,
         $selectznz:ident,
-    ) => {{
+    ) => {
         // See Bernstein-Yang 2019 p.366
         const ITERATIONS: usize = (49 * $d + 57) / 17;
 
-        let a = $from_mont($a);
+        let mut a = $non_mont_type([0; $nlimbs]);
+        $from_mont(&mut a, $a);
         let mut d = 1;
-        let mut f = $msat();
+        let mut f = [0; $nlimbs + 1];
+        $msat(&mut f);
         let mut g = [0; $nlimbs + 1];
-        let mut v = $mont_type([0; $nlimbs]);
-        let mut r = $one.into_inner();
+        let mut v = [0; $nlimbs];
+        let mut r = $one.0;
         let mut i = 0;
         let mut j = 0;
 
         while j < $nlimbs {
-            g[j] = a.as_inner()[j];
+            g[j] = a.0[j];
             j += 1;
         }
 
         while i < ITERATIONS - ITERATIONS % 2 {
-            let (out1, out2, out3, out4, out5) = $divstep(d, &f, &g, &v.0, &r);
-            let (out1, out2, out3, out4, out5) = $divstep(out1, &out2, &out3, &out4, &out5);
-            d = out1;
-            f = out2;
-            g = out3;
-            v = $mont_type(out4);
-            r = out5;
+            let mut out1 = 0;
+            let mut out2 = [0; $nlimbs + 1];
+            let mut out3 = [0; $nlimbs + 1];
+            let mut out4 = [0; $nlimbs];
+            let mut out5 = [0; $nlimbs];
+
+            $divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
+            $divstep(
+                &mut d, &mut f, &mut g, &mut v, &mut r, out1, &out2, &out3, &out4, &out5,
+            );
             i += 2;
         }
 
         if ITERATIONS % 2 != 0 {
-            let (_out1, out2, _out3, out4, _out5) = $divstep(d, &f, &g, v.as_inner(), &r);
-            v = $mont_type(out4);
+            let mut out1 = 0;
+            let mut out2 = [0; $nlimbs + 1];
+            let mut out3 = [0; $nlimbs + 1];
+            let mut out4 = [0; $nlimbs];
+            let mut out5 = [0; $nlimbs];
+            $divstep(
+                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
+            );
             f = out2;
+            v = out4;
         }
 
         let s = ((f[f.len() - 1] >> <$word>::BITS - 1) & 1) as u8;
-        let v = $mont_type($selectznz(s, v.as_inner(), $neg(&v).as_inner()));
-        $mul(&v, &$mont_type($divstep_precomp()))
-    }};
+        let mut neg_v = $mont_type([0; $nlimbs]);
+        $neg(&mut neg_v, &$mont_type(v));
+
+        let mut out = [0; $nlimbs];
+        $selectznz(&mut out, s, &v, &neg_v.0);
+
+        let mut precomp = $mont_type([0; $nlimbs]);
+        $divstep_precomp(&mut precomp.0);
+
+        $mul($out, &$mont_type(out), &precomp);
+    };
 }
 
 /// Implement field element identity tests.
