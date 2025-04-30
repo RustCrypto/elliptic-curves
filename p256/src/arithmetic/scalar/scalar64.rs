@@ -65,7 +65,6 @@ pub(super) const fn barrett_reduce(lo: U256, hi: U256) -> U256 {
     // Result is in range (0, 3*n - 1),
     // and 90% of the time, no subtraction will be needed.
     let r = subtract_n_if_necessary(r);
-    let r = subtract_n_if_necessary(r);
     U256::new([r[0], r[1], r[2], r[3]])
 }
 
