@@ -33,7 +33,6 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
-use primefield::{impl_bernstein_yang_invert, impl_field_op};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
@@ -120,9 +119,12 @@ impl Scalar {
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "32")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_scalar_to_montgomery(
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_to_montgomery(
+            &mut out,
             &fiat_p521_scalar_non_montgomery_domain_field_element(u32x18_to_u64x9(w.as_words())),
-        ))
+        );
+        Self(out)
     }
 
     /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form.
@@ -132,9 +134,12 @@ impl Scalar {
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "64")]
     pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        Self(fiat_p521_scalar_to_montgomery(
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_to_montgomery(
+            &mut out,
             &fiat_p521_scalar_non_montgomery_domain_field_element(*w.as_words()),
-        ))
+        );
+        Self(out)
     }
 
     /// Returns the big-endian encoding of this [`Scalar`].
@@ -147,9 +152,9 @@ impl Scalar {
     #[inline]
     #[cfg(target_pointer_width = "32")]
     pub const fn to_canonical(self) -> U576 {
-        U576::from_words(u64x9_to_u32x18(
-            fiat_p521_scalar_from_montgomery(&self.0).as_inner(),
-        ))
+        let mut out = fiat_p521_scalar_non_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_from_montgomery(&mut out, &self.0);
+        U576::from_words(u64x9_to_u32x18(&out.0))
     }
 
     /// Translate [`Scalar`] out of the Montgomery domain, returning a [`U576`]
@@ -157,7 +162,9 @@ impl Scalar {
     #[inline]
     #[cfg(target_pointer_width = "64")]
     pub const fn to_canonical(self) -> U576 {
-        U576::from_words(fiat_p521_scalar_from_montgomery(&self.0).into_inner())
+        let mut out = fiat_p521_scalar_non_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_from_montgomery(&mut out, &self.0);
+        U576::from_words(out.0)
     }
 
     /// Determine if this [`Scalar`] is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -188,29 +195,42 @@ impl Scalar {
     }
 
     /// Add elements.
+    #[inline]
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(fiat_p521_scalar_add(&self.0, &rhs.0))
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_add(&mut out, &self.0, &rhs.0);
+        Self(out)
     }
 
     /// Double element (add it to itself).
+    #[inline]
     #[must_use]
     pub const fn double(&self) -> Self {
         self.add(self)
     }
 
     /// Subtract elements.
+    #[inline]
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(fiat_p521_scalar_sub(&self.0, &rhs.0))
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_sub(&mut out, &self.0, &rhs.0);
+        Self(out)
     }
 
     /// Negate element.
+    #[inline]
     pub const fn neg(&self) -> Self {
-        Self(fiat_p521_scalar_opp(&self.0))
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_opp(&mut out, &self.0);
+        Self(out)
     }
 
     /// Multiply elements.
+    #[inline]
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        Self(fiat_p521_scalar_mul(&self.0, &rhs.0))
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_mul(&mut out, &self.0, &rhs.0);
+        Self(out)
     }
 
     /// Compute [`Scalar`] inversion: `1 / self`.
@@ -222,12 +242,16 @@ impl Scalar {
     ///
     /// Does not check that self is non-zero.
     const fn invert_unchecked(&self) -> Self {
-        let words = impl_bernstein_yang_invert!(
+        let mut out = Self::ZERO;
+
+        primefield::fiat_bernstein_yang_invert!(
+            &mut out.0,
             &self.0,
             Self::ONE.0,
             521,
             9,
             u64,
+            fiat_p521_scalar_non_montgomery_domain_field_element,
             fiat_p521_scalar_montgomery_domain_field_element,
             fiat_p521_scalar_from_montgomery,
             fiat_p521_scalar_mul,
@@ -238,13 +262,16 @@ impl Scalar {
             fiat_p521_scalar_selectznz,
         );
 
-        Self(words)
+        out
     }
 
     /// Compute modular square.
+    #[inline]
     #[must_use]
     pub const fn square(&self) -> Self {
-        Self(fiat_p521_scalar_square(&self.0))
+        let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
+        fiat_p521_scalar_square(&mut out, &self.0);
+        Self(out)
     }
 
     /// Compute modular square root.
@@ -285,7 +312,7 @@ impl Scalar {
     pub const fn shr_vartime(&self, shift: u32) -> Scalar {
         Self(fiat_p521_scalar_montgomery_domain_field_element(
             u32x18_to_u64x9(
-                &U576::from_words(u64x9_to_u32x18(self.0.as_inner()))
+                &U576::from_words(u64x9_to_u32x18(self.as_limbs()))
                     .wrapping_shr_vartime(shift)
                     .to_words(),
             ),
@@ -298,10 +325,20 @@ impl Scalar {
     #[cfg(target_pointer_width = "64")]
     pub const fn shr_vartime(&self, shift: u32) -> Scalar {
         Self(fiat_p521_scalar_montgomery_domain_field_element(
-            U576::from_words(self.0.into_inner())
+            U576::from_words(self.into_limbs())
                 .wrapping_shr_vartime(shift)
                 .to_words(),
         ))
+    }
+
+    /// Borrow the inner limbs of this scalar.
+    pub(crate) const fn as_limbs(&self) -> &[u64; 9] {
+        &self.0.0
+    }
+
+    /// Extract the inner limbs of this scalar.
+    pub(crate) const fn into_limbs(self) -> [u64; 9] {
+        self.0.0
     }
 }
 
@@ -320,7 +357,7 @@ impl Default for Scalar {
 impl Eq for Scalar {}
 impl PartialEq for Scalar {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0.as_inner().ct_eq(rhs.0.as_inner()).into()
+        self.as_limbs().ct_eq(rhs.as_limbs()).into()
     }
 }
 
@@ -344,9 +381,9 @@ impl From<u128> for Scalar {
 
 impl ConditionallySelectable for Scalar {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut ret = Self::ZERO.0.into_inner();
-        let a = a.0.as_inner();
-        let b = b.0.as_inner();
+        let mut ret = Self::ZERO.into_limbs();
+        let a = a.as_limbs();
+        let b = b.as_limbs();
 
         for i in 0..ret.len() {
             ret[i] = u64::conditional_select(&a[i], &b[i], choice);
@@ -358,7 +395,7 @@ impl ConditionallySelectable for Scalar {
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.as_inner().ct_eq(other.0.as_inner())
+        self.as_limbs().ct_eq(other.as_limbs())
     }
 }
 
@@ -407,9 +444,9 @@ impl Field for Scalar {
     }
 }
 
-impl_field_op!(Scalar, Add, add, fiat_p521_scalar_add);
-impl_field_op!(Scalar, Sub, sub, fiat_p521_scalar_sub);
-impl_field_op!(Scalar, Mul, mul, fiat_p521_scalar_mul);
+primefield::fiat_field_op!(Scalar, Add, add, fiat_p521_scalar_add);
+primefield::fiat_field_op!(Scalar, Sub, sub, fiat_p521_scalar_sub);
+primefield::fiat_field_op!(Scalar, Mul, mul, fiat_p521_scalar_mul);
 
 impl AddAssign<Scalar> for Scalar {
     #[inline]
