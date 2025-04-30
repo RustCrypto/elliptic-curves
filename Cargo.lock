@@ -319,8 +319,7 @@ checksum = "43da5946c66ffcc7745f48db692ffbb10a83bfe0afd96235c5c2a4fb23994929"
 [[package]]
 name = "crypto-bigint"
 version = "0.7.0-pre.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6957fb7344601c8271b03e9d4c7efb46f1dee86553eee20f99e54db0cf53f36e"
+source = "git+https://github.com/RustCrypto/crypto-bigint.git#b92832fbbf62192eea54a456dc4174bf4f99ac2b"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -754,6 +753,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
+ "primefield",
  "primeorder",
  "proptest",
  "rand_core 0.9.3",
@@ -844,6 +844,12 @@ dependencies = [
 [[package]]
 name = "primefield"
 version = "0.14.0-pre.0"
+dependencies = [
+ "ff",
+ "rand_core 0.9.3",
+ "subtle",
+ "zeroize",
+]
 
 [[package]]
 name = "primeorder"

@@ -242,10 +242,7 @@ impl Scalar {
     ///
     /// Does not check that self is non-zero.
     const fn invert_unchecked(&self) -> Self {
-        let mut out = Self::ZERO;
-
-        primefield::fiat_bernstein_yang_invert!(
-            &mut out.0,
+        let words = primefield::fiat_bernstein_yang_invert!(
             &self.0,
             Self::ONE.0,
             521,
@@ -259,10 +256,10 @@ impl Scalar {
             fiat_p521_scalar_divstep_precomp,
             fiat_p521_scalar_divstep,
             fiat_p521_scalar_msat,
-            fiat_p521_scalar_selectznz,
+            fiat_p521_scalar_selectznz
         );
 
-        out
+        Self(fiat_p521_scalar_montgomery_domain_field_element(words))
     }
 
     /// Compute modular square.
@@ -444,9 +441,9 @@ impl Field for Scalar {
     }
 }
 
-primefield::fiat_field_op!(Scalar, Add, add, fiat_p521_scalar_add);
-primefield::fiat_field_op!(Scalar, Sub, sub, fiat_p521_scalar_sub);
-primefield::fiat_field_op!(Scalar, Mul, mul, fiat_p521_scalar_mul);
+primefield::field_op!(Scalar, Add, add, add);
+primefield::field_op!(Scalar, Sub, sub, sub);
+primefield::field_op!(Scalar, Mul, mul, multiply);
 
 impl AddAssign<Scalar> for Scalar {
     #[inline]
@@ -727,7 +724,6 @@ mod tests {
     use elliptic_curve::array::Array;
     use elliptic_curve::ops::ReduceNonZero;
     use elliptic_curve::{Curve, PrimeField};
-    use primefield::{impl_field_identity_tests, impl_field_invert_tests, impl_primefield_tests};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 9] = [
@@ -742,9 +738,10 @@ mod tests {
         0x000000000000003f,
     ];
 
-    impl_field_identity_tests!(Scalar);
-    impl_field_invert_tests!(Scalar);
-    impl_primefield_tests!(Scalar, T);
+    primefield::test_field_constants!(Scalar, T);
+    primefield::test_field_identity!(Scalar);
+    primefield::test_field_invert!(Scalar);
+    //primefield::test_field_sqrt!(Scalar); // TODO(tarcieri): impl this
 
     #[test]
     fn reduce_nonzero() {
