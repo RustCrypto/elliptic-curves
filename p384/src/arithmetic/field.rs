@@ -25,18 +25,13 @@ mod field_impl;
 
 use self::field_impl::*;
 use crate::{FieldBytes, NistP384};
-use core::{
-    fmt::{self, Debug},
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, SubAssign},
-};
-use elliptic_curve::ops::Invert;
+use core::fmt::{self, Debug};
 use elliptic_curve::{
-    bigint::{Limb, U384},
+    bigint::U384,
     ff::PrimeField,
+    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
-use primeorder::impl_bernstein_yang_invert;
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
@@ -46,12 +41,13 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex(FieldElement::MODULUS);
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U384);
 
-primeorder::impl_mont_field_element!(
-    NistP384,
+primefield::field_element_type!(NistP384, FieldElement, FieldBytes, U384, MODULUS);
+
+primefield::fiat_field_arithmetic!(
     FieldElement,
     FieldBytes,
     U384,
-    MODULUS,
+    fiat_p384_non_montgomery_domain_field_element,
     fiat_p384_montgomery_domain_field_element,
     fiat_p384_from_montgomery,
     fiat_p384_to_montgomery,
@@ -59,37 +55,14 @@ primeorder::impl_mont_field_element!(
     fiat_p384_sub,
     fiat_p384_mul,
     fiat_p384_opp,
-    fiat_p384_square
+    fiat_p384_square,
+    fiat_p384_divstep_precomp,
+    fiat_p384_divstep,
+    fiat_p384_msat,
+    fiat_p384_selectznz
 );
 
 impl FieldElement {
-    /// Compute [`FieldElement`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Returns the multiplicative inverse of self.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        let words = impl_bernstein_yang_invert!(
-            self.0.as_words(),
-            Self::ONE.0.to_words(),
-            384,
-            U384::LIMBS,
-            Limb,
-            fiat_p384_from_montgomery,
-            fiat_p384_mul,
-            fiat_p384_opp,
-            fiat_p384_divstep_precomp,
-            fiat_p384_divstep,
-            fiat_p384_msat,
-            fiat_p384_selectznz,
-        );
-
-        Self(U384::from_words(words))
-    }
-
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
@@ -175,10 +148,6 @@ impl Invert for FieldElement {
 mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
-    use primeorder::{
-        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
-        impl_primefield_tests,
-    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -190,8 +159,8 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
-    impl_field_identity_tests!(FieldElement);
-    impl_field_invert_tests!(FieldElement);
-    impl_field_sqrt_tests!(FieldElement);
-    impl_primefield_tests!(FieldElement, T);
+    primefield::test_field_constants!(FieldElement, T);
+    primefield::test_field_identity!(FieldElement);
+    primefield::test_field_invert!(FieldElement);
+    primefield::test_field_sqrt!(FieldElement);
 }

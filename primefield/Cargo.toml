@@ -12,3 +12,9 @@ categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "field", "prime"]
 edition = "2024"
 rust-version = "1.85"
+
+[dependencies]
+ff = { version = "=0.14.0-pre.0", default-features = false }
+subtle = { version = "2.6", default-features = false }
+rand_core = { version = "0.9", default-features = false }
+zeroize = { version = "1.7", default-features = false }

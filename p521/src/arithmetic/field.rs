@@ -672,10 +672,6 @@ mod tests {
     use super::FieldElement;
     use elliptic_curve::ff::PrimeField;
     use hex_literal::hex;
-    use primefield::{
-        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
-        impl_primefield_tests,
-    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 9] = [
@@ -690,10 +686,10 @@ mod tests {
         0x00000000000000ff,
     ];
 
-    impl_field_identity_tests!(FieldElement);
-    impl_field_invert_tests!(FieldElement);
-    impl_field_sqrt_tests!(FieldElement);
-    impl_primefield_tests!(FieldElement, T);
+    primefield::test_field_constants!(FieldElement, T);
+    primefield::test_field_identity!(FieldElement);
+    primefield::test_field_invert!(FieldElement);
+    primefield::test_field_sqrt!(FieldElement);
 
     /// Regression test for RustCrypto/elliptic-curves#965
     #[test]

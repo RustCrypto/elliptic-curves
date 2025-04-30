@@ -25,5 +25,6 @@ ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 rfc6979 = { git = "https://github.com/RustCrypto/signatures.git" }
 
 # https://github.com/RustCrypto/traits/pull/1777
+crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint.git" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-signature      = { git = "https://github.com/RustCrypto/traits.git" }
+signature = { git = "https://github.com/RustCrypto/traits.git" }

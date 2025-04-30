@@ -8,6 +8,13 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+pub use ff;
+pub use rand_core;
+pub use subtle;
+pub use zeroize;
+
+mod fiat;
+
 /// Implements a field element type whose internal representation is in
 /// Montgomery form, providing a combination of trait impls and inherent impls
 /// which are `const fn` where possible.
@@ -55,21 +62,13 @@
 /// - `MulAssign`
 /// - `Neg`
 #[macro_export]
-macro_rules! impl_mont_field_element {
+macro_rules! field_element_type {
     (
         $curve:tt,
         $fe:tt,
         $bytes:ty,
         $uint:ty,
-        $modulus:expr,
-        $arr:ty,
-        $from_mont:ident,
-        $to_mont:ident,
-        $add:ident,
-        $sub:ident,
-        $mul:ident,
-        $neg:ident,
-        $square:ident
+        $modulus:expr
     ) => {
         impl $fe {
             /// Zero element.
@@ -81,23 +80,23 @@ macro_rules! impl_mont_field_element {
             /// Create a [`
             #[doc = stringify!($fe)]
             /// `] from a canonical big-endian representation.
-            pub fn from_bytes(repr: &$bytes) -> $crate::elliptic_curve::subtle::CtOption<Self> {
-                use $crate::elliptic_curve::FieldBytesEncoding;
+            pub fn from_bytes(repr: &$bytes) -> $crate::subtle::CtOption<Self> {
+                use ::elliptic_curve::FieldBytesEncoding;
                 Self::from_uint(FieldBytesEncoding::<$curve>::decode_field_bytes(repr))
             }
 
             /// Decode [`
             #[doc = stringify!($fe)]
             /// `] from a big endian byte slice.
-            pub fn from_slice(slice: &[u8]) -> $crate::elliptic_curve::Result<Self> {
-                use $crate::elliptic_curve::array::{Array, typenum::Unsigned};
+            pub fn from_slice(slice: &[u8]) -> ::elliptic_curve::Result<Self> {
+                use ::elliptic_curve::array::{Array, typenum::Unsigned};
 
-                if slice.len() != <$curve as $crate::elliptic_curve::Curve>::FieldBytesSize::USIZE {
-                    return Err($crate::elliptic_curve::Error);
+                if slice.len() != <$curve as ::elliptic_curve::Curve>::FieldBytesSize::USIZE {
+                    return Err(::elliptic_curve::Error);
                 }
 
                 Option::from(Self::from_bytes(&Array::try_from(slice).unwrap()))
-                    .ok_or($crate::elliptic_curve::Error)
+                    .ok_or(::elliptic_curve::Error)
             }
 
             /// Decode [`
@@ -110,13 +109,10 @@ macro_rules! impl_mont_field_element {
             /// ```text
             /// w * R^2 * R^-1 mod p = wR mod p
             /// ```
-            pub fn from_uint(uint: $uint) -> $crate::elliptic_curve::subtle::CtOption<Self> {
-                use $crate::elliptic_curve::subtle::ConstantTimeLess as _;
+            pub fn from_uint(uint: $uint) -> $crate::subtle::CtOption<Self> {
+                use $crate::subtle::ConstantTimeLess as _;
                 let is_some = uint.ct_lt(&$modulus);
-                $crate::elliptic_curve::subtle::CtOption::new(
-                    Self::from_uint_unchecked(uint),
-                    is_some,
-                )
+                $crate::subtle::CtOption::new(Self::from_uint_unchecked(uint), is_some)
             }
 
             /// Parse a [`
@@ -138,35 +134,12 @@ macro_rules! impl_mont_field_element {
                 Self::from_uint_unchecked(<$uint>::from_u64(w))
             }
 
-            /// Decode [`
-            #[doc = stringify!($fe)]
-            /// `] from [`
-            #[doc = stringify!($uint)]
-            /// `] converting it into Montgomery form.
-            ///
-            /// Does *not* perform a check that the field element does not overflow the order.
-            ///
-            /// Used incorrectly this can lead to invalid results!
-            pub(crate) const fn from_uint_unchecked(w: $uint) -> Self {
-                Self(<$uint>::from_words($to_mont(w.as_words())))
-            }
-
             /// Returns the big-endian encoding of this [`
             #[doc = stringify!($fe)]
             /// `].
             pub fn to_bytes(self) -> $bytes {
-                use $crate::elliptic_curve::FieldBytesEncoding;
+                use ::elliptic_curve::FieldBytesEncoding;
                 FieldBytesEncoding::<$curve>::encode_field_bytes(&self.to_canonical())
-            }
-
-            /// Translate [`
-            #[doc = stringify!($fe)]
-            /// `] out of the Montgomery domain, returning a [`
-            #[doc = stringify!($uint)]
-            /// `] in canonical form.
-            #[inline]
-            pub const fn to_canonical(self) -> $uint {
-                <$uint>::from_words($from_mont(self.0.as_words()))
             }
 
             /// Determine if this [`
@@ -176,8 +149,8 @@ macro_rules! impl_mont_field_element {
             /// # Returns
             ///
             /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-            pub fn is_odd(&self) -> Choice {
-                use $crate::elliptic_curve::bigint::Integer;
+            pub fn is_odd(&self) -> $crate::subtle::Choice {
+                use ::elliptic_curve::bigint::Integer;
                 self.to_canonical().is_odd()
             }
 
@@ -188,7 +161,7 @@ macro_rules! impl_mont_field_element {
             /// # Returns
             ///
             /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-            pub fn is_even(&self) -> Choice {
+            pub fn is_even(&self) -> $crate::subtle::Choice {
                 !self.is_odd()
             }
 
@@ -199,56 +172,15 @@ macro_rules! impl_mont_field_element {
             /// # Returns
             ///
             /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-            pub fn is_zero(&self) -> Choice {
+            pub fn is_zero(&self) -> $crate::subtle::Choice {
                 self.ct_eq(&Self::ZERO)
-            }
-
-            /// Add elements.
-            pub const fn add(&self, rhs: &Self) -> Self {
-                Self(<$uint>::from_words($add(
-                    self.0.as_words(),
-                    rhs.0.as_words(),
-                )))
-            }
-
-            /// Double element (add it to itself).
-            #[must_use]
-            pub const fn double(&self) -> Self {
-                self.add(self)
-            }
-
-            /// Subtract elements.
-            pub const fn sub(&self, rhs: &Self) -> Self {
-                Self(<$uint>::from_words($sub(
-                    self.0.as_words(),
-                    rhs.0.as_words(),
-                )))
-            }
-
-            /// Multiply elements.
-            pub const fn multiply(&self, rhs: &Self) -> Self {
-                Self(<$uint>::from_words($mul(
-                    self.0.as_words(),
-                    rhs.0.as_words(),
-                )))
-            }
-
-            /// Negate element.
-            pub const fn neg(&self) -> Self {
-                Self(<$uint>::from_words($neg(self.0.as_words())))
-            }
-
-            /// Compute modular square.
-            #[must_use]
-            pub const fn square(&self) -> Self {
-                Self(<$uint>::from_words($square(self.0.as_words())))
             }
 
             /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
             ///
             /// **This operation is variable time with respect to the exponent.**
             ///
-            /// If the exponent is fixed, this operation is effectively constant time.
+            /// If the exponent is fixed, this operation is constant time.
             pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
                 let mut res = Self::ONE;
                 let mut i = exp.len();
@@ -271,28 +203,93 @@ macro_rules! impl_mont_field_element {
             }
         }
 
-        $crate::impl_mont_field_element_arithmetic!(
-            $fe, $bytes, $uint, $arr, $add, $sub, $mul, $neg
-        );
-    };
-}
+        impl $crate::ff::Field for $fe {
+            const ZERO: Self = Self::ZERO;
+            const ONE: Self = Self::ONE;
 
-/// Add arithmetic impls to the given field element.
-#[macro_export]
-macro_rules! impl_mont_field_element_arithmetic {
-    (
-        $fe:tt,
-        $bytes:ty,
-        $uint:ty,
-        $arr:ty,
-        $add:ident,
-        $sub:ident,
-        $mul:ident,
-        $neg:ident
-    ) => {
-        impl AsRef<$arr> for $fe {
-            fn as_ref(&self) -> &$arr {
-                self.0.as_ref()
+            fn try_from_rng<R: $crate::rand_core::TryRngCore + ?Sized>(
+                rng: &mut R,
+            ) -> ::core::result::Result<Self, R::Error> {
+                let mut bytes = <$bytes>::default();
+
+                loop {
+                    rng.try_fill_bytes(&mut bytes)?;
+                    if let Some(fe) = Self::from_bytes(&bytes).into() {
+                        return Ok(fe);
+                    }
+                }
+            }
+
+            fn is_zero(&self) -> Choice {
+                Self::ZERO.ct_eq(self)
+            }
+
+            #[must_use]
+            fn square(&self) -> Self {
+                self.square()
+            }
+
+            #[must_use]
+            fn double(&self) -> Self {
+                self.double()
+            }
+
+            fn invert(&self) -> CtOption<Self> {
+                self.invert()
+            }
+
+            fn sqrt(&self) -> CtOption<Self> {
+                self.sqrt()
+            }
+
+            fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+                $crate::ff::helpers::sqrt_ratio_generic(num, div)
+            }
+        }
+
+        $crate::field_op!($fe, Add, add, add);
+        $crate::field_op!($fe, Sub, sub, sub);
+        $crate::field_op!($fe, Mul, mul, multiply);
+
+        impl ::core::ops::AddAssign<$fe> for $fe {
+            #[inline]
+            fn add_assign(&mut self, other: $fe) {
+                *self = *self + other;
+            }
+        }
+
+        impl ::core::ops::AddAssign<&$fe> for $fe {
+            #[inline]
+            fn add_assign(&mut self, other: &$fe) {
+                *self = *self + other;
+            }
+        }
+
+        impl ::core::ops::SubAssign<$fe> for $fe {
+            #[inline]
+            fn sub_assign(&mut self, other: $fe) {
+                *self = *self - other;
+            }
+        }
+
+        impl ::core::ops::SubAssign<&$fe> for $fe {
+            #[inline]
+            fn sub_assign(&mut self, other: &$fe) {
+                *self = *self - other;
+            }
+        }
+
+        impl ::core::ops::MulAssign<&$fe> for $fe {
+            #[inline]
+            fn mul_assign(&mut self, other: &$fe) {
+                *self = *self * other;
+            }
+        }
+
+        impl ::core::ops::MulAssign for $fe {
+            #[inline]
+            fn mul_assign(&mut self, other: $fe) {
+                *self = *self * other;
             }
         }
 
@@ -327,171 +324,71 @@ macro_rules! impl_mont_field_element_arithmetic {
             }
         }
 
-        impl $crate::elliptic_curve::subtle::ConditionallySelectable for $fe {
-            fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-                Self(<$uint>::conditional_select(&a.0, &b.0, choice))
-            }
-        }
-
-        impl $crate::elliptic_curve::subtle::ConstantTimeEq for $fe {
-            fn ct_eq(&self, other: &Self) -> $crate::elliptic_curve::subtle::Choice {
-                self.0.ct_eq(&other.0)
-            }
-        }
-
-        impl $crate::elliptic_curve::subtle::ConstantTimeGreater for $fe {
-            fn ct_gt(&self, other: &Self) -> $crate::elliptic_curve::subtle::Choice {
-                self.0.ct_gt(&other.0)
-            }
-        }
-
-        impl $crate::elliptic_curve::subtle::ConstantTimeLess for $fe {
-            fn ct_lt(&self, other: &Self) -> $crate::elliptic_curve::subtle::Choice {
-                self.0.ct_lt(&other.0)
-            }
-        }
-
-        impl $crate::elliptic_curve::zeroize::DefaultIsZeroes for $fe {}
-
-        impl $crate::elliptic_curve::ff::Field for $fe {
-            const ZERO: Self = Self::ZERO;
-            const ONE: Self = Self::ONE;
-
-            fn random(mut rng: impl $crate::elliptic_curve::rand_core::RngCore) -> Self {
-                // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
-                let mut bytes = <$bytes>::default();
-
-                loop {
-                    rng.fill_bytes(&mut bytes);
-                    if let Some(fe) = Self::from_bytes(&bytes).into() {
-                        return fe;
-                    }
-                }
-            }
-
-            fn is_zero(&self) -> Choice {
-                Self::ZERO.ct_eq(self)
-            }
-
-            #[must_use]
-            fn square(&self) -> Self {
-                self.square()
-            }
-
-            #[must_use]
-            fn double(&self) -> Self {
-                self.double()
-            }
-
-            fn invert(&self) -> CtOption<Self> {
-                self.invert()
-            }
-
-            fn sqrt(&self) -> CtOption<Self> {
-                self.sqrt()
-            }
-
-            fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-                $crate::elliptic_curve::ff::helpers::sqrt_ratio_generic(num, div)
-            }
-        }
-
-        $crate::fiat_field_op!($fe, Add, add, $add);
-        $crate::fiat_field_op!($fe, Sub, sub, $sub);
-        $crate::fiat_field_op!($fe, Mul, mul, $mul);
-
-        impl AddAssign<$fe> for $fe {
-            #[inline]
-            fn add_assign(&mut self, other: $fe) {
-                *self = *self + other;
-            }
-        }
-
-        impl AddAssign<&$fe> for $fe {
-            #[inline]
-            fn add_assign(&mut self, other: &$fe) {
-                *self = *self + other;
-            }
-        }
-
-        impl SubAssign<$fe> for $fe {
-            #[inline]
-            fn sub_assign(&mut self, other: $fe) {
-                *self = *self - other;
-            }
-        }
-
-        impl SubAssign<&$fe> for $fe {
-            #[inline]
-            fn sub_assign(&mut self, other: &$fe) {
-                *self = *self - other;
-            }
-        }
-
-        impl MulAssign<&$fe> for $fe {
-            #[inline]
-            fn mul_assign(&mut self, other: &$fe) {
-                *self = *self * other;
-            }
-        }
-
-        impl MulAssign for $fe {
-            #[inline]
-            fn mul_assign(&mut self, other: $fe) {
-                *self = *self * other;
-            }
-        }
-
-        impl Neg for $fe {
-            type Output = $fe;
-
-            #[inline]
-            fn neg(self) -> $fe {
-                Self($neg(self.as_ref()).into())
-            }
-        }
-
-        impl Sum for $fe {
+        impl ::core::iter::Sum for $fe {
             #[allow(unused_qualifications)]
             fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
                 iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
             }
         }
 
-        impl<'a> Sum<&'a $fe> for $fe {
+        impl<'a> ::core::iter::Sum<&'a $fe> for $fe {
             fn sum<I: Iterator<Item = &'a $fe>>(iter: I) -> Self {
                 iter.copied().sum()
             }
         }
 
-        impl Product for $fe {
+        impl ::core::iter::Product for $fe {
             #[allow(unused_qualifications)]
             fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
                 iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
             }
         }
 
-        impl<'a> Product<&'a $fe> for $fe {
+        impl<'a> ::core::iter::Product<&'a $fe> for $fe {
             fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
                 iter.copied().product()
             }
         }
+
+        impl $crate::subtle::ConditionallySelectable for $fe {
+            fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+                Self(<$uint>::conditional_select(&a.0, &b.0, choice))
+            }
+        }
+
+        impl $crate::subtle::ConstantTimeEq for $fe {
+            fn ct_eq(&self, other: &Self) -> $crate::subtle::Choice {
+                self.0.ct_eq(&other.0)
+            }
+        }
+
+        impl $crate::subtle::ConstantTimeGreater for $fe {
+            fn ct_gt(&self, other: &Self) -> $crate::subtle::Choice {
+                self.0.ct_gt(&other.0)
+            }
+        }
+
+        impl $crate::subtle::ConstantTimeLess for $fe {
+            fn ct_lt(&self, other: &Self) -> $crate::subtle::Choice {
+                self.0.ct_lt(&other.0)
+            }
+        }
+
+        impl $crate::zeroize::DefaultIsZeroes for $fe {}
     };
 }
 
-/// Emit a `core::ops` trait wrapper for a `fiat-crypto` field arithmetic operation, writing the
-/// impl for all combinations of owned and reference types.
+/// Emit a `core::ops` trait wrapper for an inherent method which is expected to be provided by a
+/// backend arithmetic implementation (e.g. `fiat-crypto`)
 #[macro_export]
-macro_rules! fiat_field_op {
-    ($fe:tt, $op:tt, $op_fn:ident, $func:ident) => {
+macro_rules! field_op {
+    ($fe:tt, $op:tt, $func:ident, $inner_func:ident) => {
         impl ::core::ops::$op for $fe {
             type Output = $fe;
 
             #[inline]
-            fn $op_fn(self, rhs: $fe) -> $fe {
-                let mut out = $fe::default();
-                $func(&mut out.0, self.as_ref(), rhs.as_ref());
-                out
+            fn $func(self, rhs: $fe) -> $fe {
+                <$fe>::$inner_func(&self, &rhs)
             }
         }
 
@@ -499,10 +396,8 @@ macro_rules! fiat_field_op {
             type Output = $fe;
 
             #[inline]
-            fn $op_fn(self, rhs: &$fe) -> $fe {
-                let mut out = $fe::default();
-                $func(&mut out.0, self.as_ref(), rhs.as_ref());
-                out
+            fn $func(self, rhs: &$fe) -> $fe {
+                <$fe>::$inner_func(&self, rhs)
             }
         }
 
@@ -510,101 +405,16 @@ macro_rules! fiat_field_op {
             type Output = $fe;
 
             #[inline]
-            fn $op_fn(self, rhs: &$fe) -> $fe {
-                let mut out = $fe::default();
-                $func(&mut out.0, self.as_ref(), rhs.as_ref());
-                out
+            fn $func(self, rhs: &$fe) -> $fe {
+                <$fe>::$inner_func(self, rhs)
             }
         }
     };
 }
 
-/// Emit wrapper function for a `fiat-crypto` generated implementation of the Bernstein-Yang
-/// (a.k.a. safegcd) modular inversion algorithm.
-#[macro_export]
-macro_rules! fiat_bernstein_yang_invert {
-    (
-        $out:expr,
-        $a:expr,
-        $one:expr,
-        $d:expr,
-        $nlimbs:expr,
-        $word:ty,
-        $non_mont_type: expr,
-        $mont_type: expr,
-        $from_mont:ident,
-        $mul:ident,
-        $neg:ident,
-        $divstep_precomp:ident,
-        $divstep:ident,
-        $msat:ident,
-        $selectznz:ident,
-    ) => {
-        // See Bernstein-Yang 2019 p.366
-        const ITERATIONS: usize = (49 * $d + 57) / 17;
-
-        let mut a = $non_mont_type([0; $nlimbs]);
-        $from_mont(&mut a, $a);
-        let mut d = 1;
-        let mut f = [0; $nlimbs + 1];
-        $msat(&mut f);
-        let mut g = [0; $nlimbs + 1];
-        let mut v = [0; $nlimbs];
-        let mut r = $one.0;
-        let mut i = 0;
-        let mut j = 0;
-
-        while j < $nlimbs {
-            g[j] = a.0[j];
-            j += 1;
-        }
-
-        while i < ITERATIONS - ITERATIONS % 2 {
-            let mut out1 = 0;
-            let mut out2 = [0; $nlimbs + 1];
-            let mut out3 = [0; $nlimbs + 1];
-            let mut out4 = [0; $nlimbs];
-            let mut out5 = [0; $nlimbs];
-
-            $divstep(
-                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
-            );
-            $divstep(
-                &mut d, &mut f, &mut g, &mut v, &mut r, out1, &out2, &out3, &out4, &out5,
-            );
-            i += 2;
-        }
-
-        if ITERATIONS % 2 != 0 {
-            let mut out1 = 0;
-            let mut out2 = [0; $nlimbs + 1];
-            let mut out3 = [0; $nlimbs + 1];
-            let mut out4 = [0; $nlimbs];
-            let mut out5 = [0; $nlimbs];
-            $divstep(
-                &mut out1, &mut out2, &mut out3, &mut out4, &mut out5, d, &f, &g, &v, &r,
-            );
-            f = out2;
-            v = out4;
-        }
-
-        let s = ((f[f.len() - 1] >> <$word>::BITS - 1) & 1) as u8;
-        let mut neg_v = $mont_type([0; $nlimbs]);
-        $neg(&mut neg_v, &$mont_type(v));
-
-        let mut out = [0; $nlimbs];
-        $selectznz(&mut out, s, &v, &neg_v.0);
-
-        let mut precomp = $mont_type([0; $nlimbs]);
-        $divstep_precomp(&mut precomp.0);
-
-        $mul($out, &$mont_type(out), &precomp);
-    };
-}
-
 /// Implement field element identity tests.
 #[macro_export]
-macro_rules! impl_field_identity_tests {
+macro_rules! test_field_identity {
     ($fe:tt) => {
         #[test]
         fn zero_is_additive_identity() {
@@ -624,7 +434,7 @@ macro_rules! impl_field_identity_tests {
 
 /// Implement field element inversion tests.
 #[macro_export]
-macro_rules! impl_field_invert_tests {
+macro_rules! test_field_invert {
     ($fe:tt) => {
         #[test]
         fn invert() {
@@ -645,7 +455,7 @@ macro_rules! impl_field_invert_tests {
 
 /// Implement field element square root tests.
 #[macro_export]
-macro_rules! impl_field_sqrt_tests {
+macro_rules! test_field_sqrt {
     ($fe:tt) => {
         #[test]
         fn sqrt() {
@@ -658,9 +468,9 @@ macro_rules! impl_field_sqrt_tests {
     };
 }
 
-/// Implement tests for the `PrimeField` trait.
+/// Implement tests for constants defined by the `PrimeField` trait.
 #[macro_export]
-macro_rules! impl_primefield_tests {
+macro_rules! test_field_constants {
     ($fe:tt, $t:expr) => {
         #[test]
         fn two_inv_constant() {
