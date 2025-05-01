@@ -25,7 +25,6 @@ mod field_impl;
 
 use self::field_impl::*;
 use crate::{FieldBytes, NistP384};
-use core::fmt::{self, Debug};
 use elliptic_curve::{
     bigint::U384,
     ff::PrimeField,
@@ -127,12 +126,6 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-}
-
-impl Debug for FieldElement {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FieldElement(0x{:X})", &self.0)
     }
 }
 
