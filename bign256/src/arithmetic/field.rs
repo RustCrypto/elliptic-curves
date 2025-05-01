@@ -34,7 +34,6 @@ use crate::{BignP256, FieldBytes, U256};
 use elliptic_curve::{
     FieldBytesEncoding,
     ff::PrimeField,
-    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
@@ -120,14 +119,6 @@ impl PrimeField for FieldElement {
         Self::from_hex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff42");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(4);
-}
-
-impl Invert for FieldElement {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
-    }
 }
 
 #[cfg(test)]
