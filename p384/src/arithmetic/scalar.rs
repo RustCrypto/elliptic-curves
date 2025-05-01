@@ -152,13 +152,6 @@ impl Scalar {
         }
         x
     }
-
-    /// Right shifts the scalar.
-    ///
-    /// Note: not constant-time with respect to the `shift` parameter.
-    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(self.0.wrapping_shr_vartime(shift))
-    }
 }
 
 impl AsRef<Scalar> for Scalar {
