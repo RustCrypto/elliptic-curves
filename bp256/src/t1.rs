@@ -13,11 +13,7 @@ pub use {
 };
 
 use crate::ORDER;
-use elliptic_curve::{
-    FieldBytesEncoding,
-    bigint::{ArrayEncoding, U256},
-    consts::U32,
-};
+use elliptic_curve::{FieldBytesEncoding, bigint::U256, consts::U32};
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8;
@@ -58,12 +54,12 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<BrainpoolP256t1>;
 pub type FieldBytes = elliptic_curve::FieldBytes<BrainpoolP256t1>;
 
 impl FieldBytesEncoding<BrainpoolP256t1> for U256 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U256::from_be_byte_array(*field_bytes)
+    fn decode_field_bytes(field_bytes: &crate::r1::FieldBytes) -> Self {
+        crate::decode_field_bytes(field_bytes)
     }
 
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
+    fn encode_field_bytes(&self) -> crate::r1::FieldBytes {
+        crate::encode_field_bytes(self)
     }
 }
 
