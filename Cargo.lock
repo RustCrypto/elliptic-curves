@@ -319,8 +319,9 @@ checksum = "43da5946c66ffcc7745f48db692ffbb10a83bfe0afd96235c5c2a4fb23994929"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.0-pre.1"
-source = "git+https://github.com/RustCrypto/crypto-bigint.git#b92832fbbf62192eea54a456dc4174bf4f99ac2b"
+version = "0.7.0-pre.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87a5061ea0870b06f7fdd5a0f7268e30c04de1932c148cca0ce5c79a88d18bed"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -364,7 +365,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-pre.9"
-source = "git+https://github.com/RustCrypto/signatures.git#8e6bb26c26ed511fda6e792a12df9c43f07370e9"
+source = "git+https://github.com/RustCrypto/signatures.git#6cce0281c22e5f9a90f1d38ce2b05e08c6f3db34"
 dependencies = [
  "der",
  "digest",
@@ -373,6 +374,7 @@ dependencies = [
  "serdect",
  "signature",
  "spki",
+ "zeroize",
 ]
 
 [[package]]
@@ -384,7 +386,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#e43a96fd2759e824189c8142341ac59ab828e3bd"
+source = "git+https://github.com/RustCrypto/traits.git#2ab0f99f7058f38a9f4740c33e9bfb9384996a2a"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -402,7 +404,6 @@ dependencies = [
  "serde_json",
  "serdect",
  "subtle",
- "tap",
  "zeroize",
 ]
 
@@ -1011,7 +1012,7 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 [[package]]
 name = "rfc6979"
 version = "0.5.0-pre.4"
-source = "git+https://github.com/RustCrypto/signatures.git#8e6bb26c26ed511fda6e792a12df9c43f07370e9"
+source = "git+https://github.com/RustCrypto/signatures.git#6cce0281c22e5f9a90f1d38ce2b05e08c6f3db34"
 dependencies = [
  "hmac",
  "subtle",
@@ -1144,7 +1145,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "3.0.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#e43a96fd2759e824189c8142341ac59ab828e3bd"
+source = "git+https://github.com/RustCrypto/traits.git#2ab0f99f7058f38a9f4740c33e9bfb9384996a2a"
 dependencies = [
  "digest",
  "rand_core 0.9.3",

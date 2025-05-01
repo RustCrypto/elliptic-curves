@@ -46,7 +46,7 @@ hex = { version = "0.4" }
 [features]
 default = ["arithmetic", "pkcs8", "std", "ecdsa", "pem", "ecdh"]
 alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
-std = ["alloc", "elliptic-curve/std", "signature?/std"]
+std = ["alloc", "elliptic-curve/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
