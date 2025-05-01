@@ -330,6 +330,31 @@ macro_rules! field_element_type {
             }
         }
 
+        impl ::core::ops::Shr<usize> for $fe {
+            type Output = Self;
+
+            #[inline]
+            fn shr(self, rhs: usize) -> Self {
+                Self::shr(&self, rhs as u32)
+            }
+        }
+
+        impl ::core::ops::Shr<usize> for &$fe {
+            type Output = Self;
+
+            #[inline]
+            fn shr(self, rhs: usize) -> Self {
+                Self::shr(self, rhs as u32)
+            }
+        }
+
+        impl ::core::ops::ShrAssign<usize> for $fe {
+            #[inline]
+            fn shr_assign(&mut self, rhs: usize) {
+                *self = Self::shr(self, rhs as u32)
+            }
+        }
+
         impl ::core::fmt::Debug for $fe {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 write!(f, "{}(0x{:X})", stringify!($fe), &self.0)
