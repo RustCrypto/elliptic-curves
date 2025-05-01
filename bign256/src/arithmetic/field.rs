@@ -43,7 +43,7 @@ pub(crate) const MODULUS: U256 =
     U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43");
 
 /// Element of the bign-256 base field used for curve coordinates.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U256);
 
 primefield::field_element_type!(BignP256, FieldElement, FieldBytes, U256, MODULUS);

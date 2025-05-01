@@ -58,7 +58,7 @@ use core::ops::{Add, Mul, Neg, Sub};
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
-#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(pub U256);
 
 primefield::field_element_type!(BignP256, Scalar, FieldBytes, U256, BignP256::ORDER);

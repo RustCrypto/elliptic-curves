@@ -23,10 +23,7 @@ mod scalar_impl;
 
 use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, ORDER_HEX, SecretKey, U384};
-use core::{
-    fmt::{self, Debug},
-    ops::{Shr, ShrAssign},
-};
+use core::ops::{Shr, ShrAssign};
 use elliptic_curve::{
     Curve as _, Error, Result, ScalarPrimitive,
     bigint::{ArrayEncoding, Limb},
@@ -336,12 +333,6 @@ impl TryFrom<U384> for Scalar {
 
     fn try_from(w: U384) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
-    }
-}
-
-impl Debug for Scalar {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 

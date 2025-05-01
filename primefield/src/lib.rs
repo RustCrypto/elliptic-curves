@@ -336,6 +336,12 @@ macro_rules! field_element_type {
             }
         }
 
+        impl ::core::fmt::Debug for $fe {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                write!(f, "{}(0x{:X})", stringify!($fe), &self.0)
+            }
+        }
+
         impl Default for $fe {
             fn default() -> Self {
                 Self::ZERO
