@@ -31,18 +31,11 @@ mod field_impl;
 
 use self::field_impl::*;
 use crate::{BignP256, FieldBytes, U256};
-use core::{
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, SubAssign},
-};
-
 use elliptic_curve::{
-    bigint::Limb,
     ff::PrimeField,
     ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
-use primeorder::impl_bernstein_yang_invert;
 
 /// Constant representing the modulus
 /// p = 2^{256} − 189
@@ -53,12 +46,13 @@ pub(crate) const MODULUS: U256 =
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(super) U256);
 
-primeorder::impl_mont_field_element!(
-    BignP256,
+primefield::field_element_type!(BignP256, FieldElement, FieldBytes, U256, MODULUS);
+
+primefield::fiat_field_arithmetic!(
     FieldElement,
     FieldBytes,
     U256,
-    MODULUS,
+    fiat_bign256_non_montgomery_domain_field_element,
     fiat_bign256_montgomery_domain_field_element,
     fiat_bign256_from_montgomery,
     fiat_bign256_to_montgomery,
@@ -66,36 +60,14 @@ primeorder::impl_mont_field_element!(
     fiat_bign256_sub,
     fiat_bign256_mul,
     fiat_bign256_opp,
-    fiat_bign256_square
+    fiat_bign256_square,
+    fiat_bign256_divstep_precomp,
+    fiat_bign256_divstep,
+    fiat_bign256_msat,
+    fiat_bign256_selectznz
 );
 
 impl FieldElement {
-    /// Compute [`FieldElement`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Returns the multiplicative inverse of self.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        let words = impl_bernstein_yang_invert!(
-            self.0.as_words(),
-            Self::ONE.0.to_words(),
-            256,
-            U256::LIMBS,
-            Limb,
-            fiat_bign256_from_montgomery,
-            fiat_bign256_mul,
-            fiat_bign256_opp,
-            fiat_bign256_divstep_precomp,
-            fiat_bign256_divstep,
-            fiat_bign256_msat,
-            fiat_bign256_selectznz,
-        );
-        Self(U256::from_words(words))
-    }
-
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
