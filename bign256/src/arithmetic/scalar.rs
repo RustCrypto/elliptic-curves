@@ -16,10 +16,7 @@ mod scalar_impl;
 
 use self::scalar_impl::*;
 use crate::{BignP256, FieldBytes, FieldBytesEncoding, ORDER_HEX, SecretKey, U256};
-use core::{
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
-};
+use core::ops::{Shr, ShrAssign};
 use elliptic_curve::{
     Curve as _, Error, Result, ScalarPrimitive,
     bigint::Limb,
@@ -28,13 +25,15 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
-use primeorder::impl_bernstein_yang_invert;
 
 #[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
+use {
+    crate::ScalarBits,
+    elliptic_curve::{bigint::Word, group::ff::PrimeFieldBits},
+};
 
 #[cfg(doc)]
-use core::ops::{Add, Mul, Sub};
+use core::ops::{Add, Mul, Neg, Sub};
 
 /// Scalars are elements in the finite field modulo `n`.
 ///
@@ -62,12 +61,13 @@ use core::ops::{Add, Mul, Sub};
 #[derive(Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct Scalar(pub U256);
 
-primeorder::impl_mont_field_element!(
-    BignP256,
+primefield::field_element_type!(BignP256, Scalar, FieldBytes, U256, BignP256::ORDER);
+
+primefield::fiat_field_arithmetic!(
     Scalar,
     FieldBytes,
     U256,
-    BignP256::ORDER,
+    fiat_bign256_scalar_non_montgomery_domain_field_element,
     fiat_bign256_scalar_montgomery_domain_field_element,
     fiat_bign256_scalar_from_montgomery,
     fiat_bign256_scalar_to_montgomery,
@@ -75,36 +75,14 @@ primeorder::impl_mont_field_element!(
     fiat_bign256_scalar_sub,
     fiat_bign256_scalar_mul,
     fiat_bign256_scalar_opp,
-    fiat_bign256_scalar_square
+    fiat_bign256_scalar_square,
+    fiat_bign256_scalar_divstep_precomp,
+    fiat_bign256_scalar_divstep,
+    fiat_bign256_scalar_msat,
+    fiat_bign256_scalar_selectznz
 );
 
 impl Scalar {
-    /// Compute [`Scalar`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Returns the multiplicative inverse of self.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        let words = impl_bernstein_yang_invert!(
-            self.0.as_words(),
-            Self::ONE.0.to_words(),
-            256,
-            U256::LIMBS,
-            Limb,
-            fiat_bign256_scalar_from_montgomery,
-            fiat_bign256_scalar_mul,
-            fiat_bign256_scalar_opp,
-            fiat_bign256_scalar_divstep_precomp,
-            fiat_bign256_scalar_divstep,
-            fiat_bign256_scalar_msat,
-            fiat_bign256_scalar_selectznz,
-        );
-        Self(U256::from_words(words))
-    }
-
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
@@ -207,7 +185,7 @@ impl PrimeField for Scalar {
 
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    type ReprBits = fiat_bign256_scalar_montgomery_domain_field_element;
+    type ReprBits = [Word; U256::LIMBS];
 
     fn to_le_bits(&self) -> ScalarBits {
         self.to_canonical().to_words().into()

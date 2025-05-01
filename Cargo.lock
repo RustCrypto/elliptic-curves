@@ -82,6 +82,7 @@ dependencies = [
  "hkdf",
  "hmac",
  "pkcs8",
+ "primefield",
  "primeorder",
  "proptest",
  "rand_core 0.9.3",
