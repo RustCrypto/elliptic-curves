@@ -43,7 +43,6 @@ mod fiat;
 /// - `pub fn sqrt`
 ///
 /// # Trait impls
-/// - `AsRef<$arr>`
 /// - `ConditionallySelectable`
 /// - `ConstantTimeEq`
 /// - `ConstantTimeGreater`
@@ -64,6 +63,7 @@ mod fiat;
 /// - `Neg`
 /// - `Shr`
 /// - `ShrAssign`
+/// - `Invert`
 #[macro_export]
 macro_rules! field_element_type {
     (
@@ -390,6 +390,14 @@ macro_rules! field_element_type {
         impl<'a> ::core::iter::Product<&'a $fe> for $fe {
             fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
                 iter.copied().product()
+            }
+        }
+
+        impl $crate::bigint::Invert for $fe {
+            type Output = CtOption<Self>;
+
+            fn invert(&self) -> CtOption<Self> {
+                self.invert()
             }
         }
 

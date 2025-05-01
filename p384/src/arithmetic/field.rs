@@ -29,7 +29,6 @@ use elliptic_curve::{
     FieldBytesEncoding,
     bigint::U384,
     ff::PrimeField,
-    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
@@ -134,14 +133,6 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-}
-
-impl Invert for FieldElement {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
     }
 }
 
