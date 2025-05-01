@@ -846,6 +846,7 @@ dependencies = [
 name = "primefield"
 version = "0.14.0-pre.0"
 dependencies = [
+ "crypto-bigint",
  "ff",
  "rand_core 0.9.3",
  "subtle",

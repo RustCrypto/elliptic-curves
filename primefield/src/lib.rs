@@ -8,6 +8,7 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+pub use bigint;
 pub use ff;
 pub use rand_core;
 pub use subtle;
@@ -66,11 +67,12 @@ mod fiat;
 #[macro_export]
 macro_rules! field_element_type {
     (
-        $curve:tt,
         $fe:tt,
         $bytes:ty,
         $uint:ty,
-        $modulus:expr
+        $modulus:expr,
+        $decode_uint:path,
+        $encode_uint:path
     ) => {
         impl $fe {
             /// Zero element.
@@ -83,22 +85,15 @@ macro_rules! field_element_type {
             #[doc = stringify!($fe)]
             /// `] from a canonical big-endian representation.
             pub fn from_bytes(repr: &$bytes) -> $crate::subtle::CtOption<Self> {
-                use ::elliptic_curve::FieldBytesEncoding;
-                Self::from_uint(FieldBytesEncoding::<$curve>::decode_field_bytes(repr))
+                Self::from_uint($decode_uint(repr))
             }
 
             /// Decode [`
             #[doc = stringify!($fe)]
             /// `] from a big endian byte slice.
-            pub fn from_slice(slice: &[u8]) -> ::elliptic_curve::Result<Self> {
-                use ::elliptic_curve::array::{Array, typenum::Unsigned};
-
-                if slice.len() != <$curve as ::elliptic_curve::Curve>::FieldBytesSize::USIZE {
-                    return Err(::elliptic_curve::Error);
-                }
-
-                Option::from(Self::from_bytes(&Array::try_from(slice).unwrap()))
-                    .ok_or(::elliptic_curve::Error)
+            pub fn from_slice(slice: &[u8]) -> Option<Self> {
+                let array = <$bytes>::try_from(slice).ok()?;
+                Self::from_bytes(&array).into()
             }
 
             /// Decode [`
@@ -140,8 +135,7 @@ macro_rules! field_element_type {
             #[doc = stringify!($fe)]
             /// `].
             pub fn to_bytes(self) -> $bytes {
-                use ::elliptic_curve::FieldBytesEncoding;
-                FieldBytesEncoding::<$curve>::encode_field_bytes(&self.to_canonical())
+                $encode_uint(&self.to_canonical())
             }
 
             /// Determine if this [`
@@ -152,7 +146,7 @@ macro_rules! field_element_type {
             ///
             /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
             pub fn is_odd(&self) -> $crate::subtle::Choice {
-                use ::elliptic_curve::bigint::Integer;
+                use $crate::bigint::Integer;
                 self.to_canonical().is_odd()
             }
 

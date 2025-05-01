@@ -26,6 +26,7 @@ mod field_impl;
 use self::field_impl::*;
 use crate::{FieldBytes, NistP384};
 use elliptic_curve::{
+    FieldBytesEncoding,
     bigint::U384,
     ff::PrimeField,
     ops::Invert,
@@ -40,7 +41,14 @@ pub(crate) const MODULUS: U384 = U384::from_be_hex(FieldElement::MODULUS);
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U384);
 
-primefield::field_element_type!(NistP384, FieldElement, FieldBytes, U384, MODULUS);
+primefield::field_element_type!(
+    FieldElement,
+    FieldBytes,
+    U384,
+    MODULUS,
+    FieldBytesEncoding::<NistP384>::decode_field_bytes,
+    FieldBytesEncoding::<NistP384>::encode_field_bytes
+);
 
 primefield::fiat_field_arithmetic!(
     FieldElement,

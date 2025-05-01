@@ -15,10 +15,10 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{BignP256, FieldBytes, FieldBytesEncoding, ORDER_HEX, SecretKey, U256};
+use crate::{BignP256, FieldBytes, ORDER_HEX, SecretKey, U256};
 use core::ops::{Shr, ShrAssign};
 use elliptic_curve::{
-    Curve as _, Error, Result, ScalarPrimitive,
+    Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
     bigint::Limb,
     ff::PrimeField,
     ops::{Invert, Reduce},
@@ -61,7 +61,14 @@ use core::ops::{Add, Mul, Neg, Sub};
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(pub U256);
 
-primefield::field_element_type!(BignP256, Scalar, FieldBytes, U256, BignP256::ORDER);
+primefield::field_element_type!(
+    Scalar,
+    FieldBytes,
+    U256,
+    BignP256::ORDER,
+    FieldBytesEncoding::<BignP256>::decode_field_bytes,
+    FieldBytesEncoding::<BignP256>::encode_field_bytes
+);
 
 primefield::fiat_field_arithmetic!(
     Scalar,

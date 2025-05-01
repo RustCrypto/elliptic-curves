@@ -134,7 +134,7 @@ impl PrehashSigner<Signature> for SigningKey {
         s0[16..].fill(0x00);
         s0.reverse();
 
-        let s0_scalar = Scalar::from_slice(&s0).map_err(|_| Error::new())?;
+        let s0_scalar = Scalar::from_slice(&s0).ok_or_else(Error::new)?;
 
         let right = s0_scalar
             .add(&Scalar::from_u64(2).pow([128, 0, 0, 0]))
