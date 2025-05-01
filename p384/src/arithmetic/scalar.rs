@@ -25,7 +25,7 @@ use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, ORDER_HEX, SecretKey, U384};
 use core::ops::{Shr, ShrAssign};
 use elliptic_curve::{
-    Curve as _, Error, Result, ScalarPrimitive,
+    Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
     bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
     ops::{Invert, Reduce, ReduceNonZero},
@@ -79,7 +79,14 @@ use core::ops::{Add, Mul, Neg, Sub};
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(U384);
 
-primefield::field_element_type!(NistP384, Scalar, FieldBytes, U384, NistP384::ORDER);
+primefield::field_element_type!(
+    Scalar,
+    FieldBytes,
+    U384,
+    NistP384::ORDER,
+    FieldBytesEncoding::<NistP384>::decode_field_bytes,
+    FieldBytesEncoding::<NistP384>::encode_field_bytes
+);
 
 primefield::fiat_field_arithmetic!(
     Scalar,

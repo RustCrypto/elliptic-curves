@@ -32,6 +32,7 @@ mod field_impl;
 use self::field_impl::*;
 use crate::{BignP256, FieldBytes, U256};
 use elliptic_curve::{
+    FieldBytesEncoding,
     ff::PrimeField,
     ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
@@ -46,7 +47,14 @@ pub(crate) const MODULUS: U256 =
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U256);
 
-primefield::field_element_type!(BignP256, FieldElement, FieldBytes, U256, MODULUS);
+primefield::field_element_type!(
+    FieldElement,
+    FieldBytes,
+    U256,
+    MODULUS,
+    FieldBytesEncoding::<BignP256>::decode_field_bytes,
+    FieldBytesEncoding::<BignP256>::encode_field_bytes
+);
 
 primefield::fiat_field_arithmetic!(
     FieldElement,

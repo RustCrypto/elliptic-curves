@@ -127,7 +127,7 @@ macro_rules! fiat_field_arithmetic {
                     &$mont_type(Self::ONE.0.to_words()),
                     <$uint>::BITS as usize,
                     <$uint>::LIMBS,
-                    ::elliptic_curve::bigint::Word, // TODO(tarcieri): source from `crypto-bigint` directly?
+                    $crate::bigint::Word,
                     $non_mont_type,
                     $mont_type,
                     $from_mont,
