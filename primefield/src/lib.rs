@@ -61,6 +61,8 @@ mod fiat;
 /// - `Mul`
 /// - `MulAssign`
 /// - `Neg`
+/// - `Shr`
+/// - `ShrAssign`
 #[macro_export]
 macro_rules! field_element_type {
     (
@@ -201,6 +203,22 @@ macro_rules! field_element_type {
 
                 res
             }
+
+            /// Right shifts the [`
+            #[doc = stringify!($fe)]
+            /// `].
+            pub const fn shr(&self, shift: u32) -> Self {
+                Self(self.0.wrapping_shr(shift))
+            }
+
+            /// Right shifts the [`
+            #[doc = stringify!($fe)]
+            /// `].
+            ///
+            /// Note: not constant-time with respect to the `shift` parameter.
+            pub const fn shr_vartime(&self, shift: u32) -> Self {
+                Self(self.0.wrapping_shr_vartime(shift))
+            }
         }
 
         impl $crate::ff::Field for $fe {
@@ -290,6 +308,31 @@ macro_rules! field_element_type {
             #[inline]
             fn mul_assign(&mut self, other: $fe) {
                 *self = *self * other;
+            }
+        }
+
+        impl ::core::ops::Shr<u32> for $fe {
+            type Output = Self;
+
+            #[inline]
+            fn shr(self, rhs: u32) -> Self {
+                Self::shr(&self, rhs)
+            }
+        }
+
+        impl ::core::ops::Shr<u32> for &$fe {
+            type Output = Self;
+
+            #[inline]
+            fn shr(self, rhs: u32) -> Self {
+                Self::shr(self, rhs)
+            }
+        }
+
+        impl ::core::ops::ShrAssign<u32> for $fe {
+            #[inline]
+            fn shr_assign(&mut self, rhs: u32) {
+                *self = Self::shr(self, rhs)
             }
         }
 
