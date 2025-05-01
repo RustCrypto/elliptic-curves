@@ -16,7 +16,6 @@ mod scalar_impl;
 
 use self::scalar_impl::*;
 use crate::{FieldBytes, ORDER, ORDER_HEX, U256};
-use core::ops::{Shr, ShrAssign};
 use elliptic_curve::{
     Error, Result,
     bigint::{ArrayEncoding, Limb},
@@ -96,28 +95,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U256 = ORDER.shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Shr<usize> for Scalar {
-    type Output = Self;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl Shr<usize> for &Scalar {
-    type Output = Scalar;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl ShrAssign<usize> for Scalar {
-    fn shr_assign(&mut self, rhs: usize) {
-        *self = *self >> rhs;
     }
 }
 
