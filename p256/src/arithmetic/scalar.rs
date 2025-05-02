@@ -744,10 +744,6 @@ mod tests {
     use elliptic_curve::array::Array;
     use elliptic_curve::group::ff::{Field, PrimeField};
     use elliptic_curve::ops::ReduceNonZero;
-    use primeorder::{
-        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
-        impl_primefield_tests,
-    };
 
     /// t = (modulus - 1) >> S
     const T: [u64; 4] = [
@@ -757,10 +753,7 @@ mod tests {
         0x0ffffffff0000000,
     ];
 
-    impl_field_identity_tests!(Scalar);
-    impl_field_invert_tests!(Scalar);
-    impl_field_sqrt_tests!(Scalar);
-    impl_primefield_tests!(Scalar, T);
+    primefield::test_primefield!(Scalar, T);
 
     #[test]
     fn from_to_bytes_roundtrip() {

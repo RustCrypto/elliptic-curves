@@ -743,6 +743,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
+ "primefield",
  "primeorder",
  "proptest",
  "rand_core 0.9.3",
