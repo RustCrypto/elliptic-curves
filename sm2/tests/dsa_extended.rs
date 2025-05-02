@@ -1,6 +1,6 @@
 #![cfg(feature = "dsa")]
 
-use elliptic_curve::{ops::Reduce, SecretKey};
+use elliptic_curve::ops::Reduce;
 use proptest::prelude::*;
 use sm2::{
     dsa::{
