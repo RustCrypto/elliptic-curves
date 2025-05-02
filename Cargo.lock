@@ -156,6 +156,7 @@ version = "0.7.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
+ "primefield",
  "primeorder",
  "sha2",
 ]
