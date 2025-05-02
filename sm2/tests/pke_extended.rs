@@ -21,10 +21,10 @@ fn test_varying_plaintext_lengths() {
     let dk = create_test_key();
     let ek = dk.encrypting_key();
     let test_plaintexts = vec![
-        vec![],          // Empty message
-        vec![1u8; 1],    // 1 byte
-        vec![2u8; 32],   // 32 bytes
-        vec![3u8; 256],  // 256 bytes
+        vec![],         // Empty message
+        vec![1u8; 1],   // 1 byte
+        vec![2u8; 32],  // 32 bytes
+        vec![3u8; 256], // 256 bytes
     ];
 
     for plaintext in test_plaintexts {
@@ -54,9 +54,9 @@ fn test_special_plaintexts() {
     let dk = create_test_key();
     let ek = dk.encrypting_key();
     let special_plaintexts = vec![
-        vec![0u8; 32],      // All zeros
-        vec![255u8; 32],    // All ones
-        b"\n\r\t".to_vec(), // Control chars
+        vec![0u8; 32],                // All zeros
+        vec![255u8; 32],              // All ones
+        b"\n\r\t".to_vec(),           // Control chars
         vec![0xF0, 0x9F, 0x98, 0x81], // UTF-8 emoji
     ];
 
@@ -70,18 +70,18 @@ fn test_special_plaintexts() {
 #[test]
 fn test_encryption_modes() {
     let plaintext = b"test message";
-    
+
     // Test C1C3C2 mode (default)
     let dk_default = create_test_key();
     let ek_default = dk_default.encrypting_key();
-    let cipher_default = ek_default.encrypt(&mut rand_core::OsRng, plaintext).unwrap();
+    let cipher_default = ek_default
+        .encrypt(&mut rand_core::OsRng, plaintext)
+        .unwrap();
     assert_eq!(plaintext[..], dk_default.decrypt(&cipher_default).unwrap());
 
     // Test C1C2C3 mode
-    let dk_c1c2c3 = DecryptingKey::new_with_mode(
-        NonZeroScalar::new(Scalar::ONE).unwrap(),
-        Mode::C1C2C3,
-    );
+    let dk_c1c2c3 =
+        DecryptingKey::new_with_mode(NonZeroScalar::new(Scalar::ONE).unwrap(), Mode::C1C2C3);
     let ek_c1c2c3 = dk_c1c2c3.encrypting_key();
     let cipher_c1c2c3 = ek_c1c2c3.encrypt(&mut rand_core::OsRng, plaintext).unwrap();
     assert_eq!(plaintext[..], dk_c1c2c3.decrypt(&cipher_c1c2c3).unwrap());
@@ -102,10 +102,10 @@ proptest! {
         // Same plaintext should decrypt correctly with different randomness
         let cipher1 = ek.encrypt(&mut rand_core::OsRng, &plaintext1).unwrap();
         let cipher2 = ek.encrypt(&mut rand_core::OsRng, &plaintext1).unwrap();
-        
+
         // Different ciphertexts for same plaintext (due to randomness)
         prop_assert_ne!(cipher1, cipher2);
-        
+
         // Both should decrypt to original plaintext
         prop_assert_eq!(dk.decrypt(&cipher1).unwrap(), plaintext1);
         prop_assert_eq!(dk.decrypt(&cipher2).unwrap(), plaintext1);
