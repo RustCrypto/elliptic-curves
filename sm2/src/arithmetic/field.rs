@@ -29,15 +29,9 @@ mod field_impl;
 
 use self::field_impl::*;
 use crate::{FieldBytes, Sm2, U256};
-use core::{
-    fmt::{self, Debug},
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, SubAssign},
-};
 use elliptic_curve::{
-    bigint::Limb,
+    FieldBytesEncoding,
     ff::PrimeField,
-    ops::Invert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
@@ -50,12 +44,20 @@ const MODULUS: U256 = U256::from_be_hex(MODULUS_HEX);
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U256);
 
-primeorder::impl_mont_field_element!(
-    Sm2,
+primefield::field_element_type!(
     FieldElement,
     FieldBytes,
     U256,
     MODULUS,
+    FieldBytesEncoding::<Sm2>::decode_field_bytes,
+    FieldBytesEncoding::<Sm2>::encode_field_bytes
+);
+
+primefield::fiat_field_arithmetic!(
+    FieldElement,
+    FieldBytes,
+    U256,
+    fiat_sm2_non_montgomery_domain_field_element,
     fiat_sm2_montgomery_domain_field_element,
     fiat_sm2_from_montgomery,
     fiat_sm2_to_montgomery,
@@ -63,43 +65,14 @@ primeorder::impl_mont_field_element!(
     fiat_sm2_sub,
     fiat_sm2_mul,
     fiat_sm2_opp,
-    fiat_sm2_square
+    fiat_sm2_square,
+    fiat_sm2_divstep_precomp,
+    fiat_sm2_divstep,
+    fiat_sm2_msat,
+    fiat_sm2_selectznz
 );
 
-impl Debug for FieldElement {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FieldElement(0x{:X})", &self.0)
-    }
-}
-
 impl FieldElement {
-    /// Compute [`FieldElement`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Returns the multiplicative inverse of self.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        let words = primeorder::impl_bernstein_yang_invert!(
-            self.0.as_words(),
-            Self::ONE.0.to_words(),
-            256,
-            U256::LIMBS,
-            Limb,
-            fiat_sm2_from_montgomery,
-            fiat_sm2_mul,
-            fiat_sm2_opp,
-            fiat_sm2_divstep_precomp,
-            fiat_sm2_divstep,
-            fiat_sm2_msat,
-            fiat_sm2_selectznz,
-        );
-
-        Self(U256::from_words(words))
-    }
-
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
@@ -142,14 +115,6 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-}
-
-impl Invert for FieldElement {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
     }
 }
 

@@ -1161,6 +1161,7 @@ version = "0.14.0-pre"
 dependencies = [
  "elliptic-curve",
  "hex-literal",
+ "primefield",
  "primeorder",
  "proptest",
  "rand_core 0.9.3",

@@ -25,11 +25,6 @@ mod scalar_impl;
 
 use self::scalar_impl::*;
 use crate::{FieldBytes, FieldBytesEncoding, ORDER_HEX, SecretKey, Sm2, U256};
-use core::{
-    fmt::{self, Debug},
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
-};
 use elliptic_curve::{
     Curve as _, Error, Result, ScalarPrimitive,
     bigint::Limb,
@@ -40,14 +35,16 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
+use {
+    crate::ScalarBits,
+    elliptic_curve::{bigint::Word, group::ff::PrimeFieldBits},
+};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(doc)]
-use core::ops::{Add, Mul, Sub};
-use elliptic_curve::ops::Invert;
+use core::ops::{Add, Mul, Neg, Sub};
 
 /// Scalars are elements in the finite field modulo `n`.
 ///
@@ -75,12 +72,20 @@ use elliptic_curve::ops::Invert;
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(U256);
 
-primeorder::impl_mont_field_element!(
-    Sm2,
+primefield::field_element_type!(
     Scalar,
     FieldBytes,
     U256,
     Sm2::ORDER,
+    FieldBytesEncoding::<Sm2>::decode_field_bytes,
+    FieldBytesEncoding::<Sm2>::encode_field_bytes
+);
+
+primefield::fiat_field_arithmetic!(
+    Scalar,
+    FieldBytes,
+    U256,
+    fiat_sm2_scalar_non_montgomery_domain_field_element,
     fiat_sm2_scalar_montgomery_domain_field_element,
     fiat_sm2_scalar_from_montgomery,
     fiat_sm2_scalar_to_montgomery,
@@ -88,37 +93,14 @@ primeorder::impl_mont_field_element!(
     fiat_sm2_scalar_sub,
     fiat_sm2_scalar_mul,
     fiat_sm2_scalar_opp,
-    fiat_sm2_scalar_square
+    fiat_sm2_scalar_square,
+    fiat_sm2_scalar_divstep_precomp,
+    fiat_sm2_scalar_divstep,
+    fiat_sm2_scalar_msat,
+    fiat_sm2_scalar_selectznz
 );
 
 impl Scalar {
-    /// Compute [`Scalar`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Compute [`Scalar`] inversion: `1 / self`.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        let words = primeorder::impl_bernstein_yang_invert!(
-            self.0.as_words(),
-            Self::ONE.0.to_words(),
-            256,
-            U256::LIMBS,
-            Limb,
-            fiat_sm2_scalar_from_montgomery,
-            fiat_sm2_scalar_mul,
-            fiat_sm2_scalar_opp,
-            fiat_sm2_scalar_divstep_precomp,
-            fiat_sm2_scalar_divstep,
-            fiat_sm2_scalar_msat,
-            fiat_sm2_scalar_selectznz,
-        );
-
-        Self(U256::from_words(words))
-    }
-
     /// Returns the square root of self mod n, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
@@ -132,24 +114,11 @@ impl Scalar {
         ]);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
-
-    /// Right shifts the scalar.
-    ///
-    /// Note: not constant-time with respect to the `shift` parameter.
-    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(self.0.wrapping_shr_vartime(shift))
-    }
 }
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {
         self
-    }
-}
-
-impl Debug for Scalar {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 
@@ -165,28 +134,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U256 = Sm2::ORDER.shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Shr<usize> for Scalar {
-    type Output = Self;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl Shr<usize> for &Scalar {
-    type Output = Scalar;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl ShrAssign<usize> for Scalar {
-    fn shr_assign(&mut self, rhs: usize) {
-        *self = *self >> rhs;
     }
 }
 
@@ -222,7 +169,7 @@ impl PrimeField for Scalar {
 
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    type ReprBits = fiat_sm2_scalar_montgomery_domain_field_element;
+    type ReprBits = [Word; U256::LIMBS];
 
     fn to_le_bits(&self) -> ScalarBits {
         self.to_canonical().to_words().into()
@@ -328,14 +275,6 @@ impl<'de> Deserialize<'de> for Scalar {
         D: de::Deserializer<'de>,
     {
         Ok(ScalarPrimitive::deserialize(deserializer)?.into())
-    }
-}
-
-impl Invert for Scalar {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
     }
 }
 
