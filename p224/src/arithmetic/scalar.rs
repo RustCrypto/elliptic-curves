@@ -87,7 +87,7 @@ primefield::field_element_type!(
     FieldBytesEncoding::<NistP224>::encode_field_bytes
 );
 
-primefield::fiat_field_arithmetic_core!(
+primefield::fiat_field_arithmetic!(
     Scalar,
     FieldBytes,
     Uint,
@@ -99,39 +99,14 @@ primefield::fiat_field_arithmetic_core!(
     fiat_p224_scalar_sub,
     fiat_p224_scalar_mul,
     fiat_p224_scalar_opp,
-    fiat_p224_scalar_square
+    fiat_p224_scalar_square,
+    fiat_p224_scalar_divstep_precomp,
+    fiat_p224_scalar_divstep,
+    fiat_p224_scalar_msat,
+    fiat_p224_scalar_selectznz
 );
 
 impl Scalar {
-    /// Compute [`Scalar`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Compute [`Scalar`] inversion: `1 / self`.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        let words = primefield::fiat_bernstein_yang_invert!(
-            &fiat_p224_scalar_montgomery_domain_field_element(self.0.to_words()),
-            &fiat_p224_scalar_montgomery_domain_field_element(Self::ONE.0.to_words()),
-            224,
-            Uint::LIMBS,
-            Limb,
-            fiat_p224_scalar_non_montgomery_domain_field_element,
-            fiat_p224_scalar_montgomery_domain_field_element,
-            fiat_p224_scalar_from_montgomery,
-            fiat_p224_scalar_mul,
-            fiat_p224_scalar_opp,
-            fiat_p224_scalar_divstep_precomp,
-            fiat_p224_scalar_divstep,
-            fiat_p224_scalar_msat,
-            fiat_p224_scalar_selectznz
-        );
-
-        Self(Uint::from_words(words))
-    }
-
     /// Atkin algorithm for q mod 8 = 5
     /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>
     /// (page 10, algorithm 3)
