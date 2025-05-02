@@ -392,6 +392,30 @@ macro_rules! field_element_type {
             }
         }
 
+        impl From<$fe> for $bytes {
+            fn from(fe: $fe) -> Self {
+                <$bytes>::from(&fe)
+            }
+        }
+
+        impl From<&$fe> for $bytes {
+            fn from(fe: &$fe) -> Self {
+                fe.to_repr()
+            }
+        }
+
+        impl From<$fe> for $uint {
+            fn from(fe: $fe) -> $uint {
+                <$uint>::from(&fe)
+            }
+        }
+
+        impl From<&$fe> for $uint {
+            fn from(fe: &$fe) -> $uint {
+                fe.to_canonical()
+            }
+        }
+
         impl ::core::iter::Sum for $fe {
             #[allow(unused_qualifications)]
             fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {

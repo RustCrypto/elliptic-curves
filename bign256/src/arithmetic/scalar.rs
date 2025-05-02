@@ -205,30 +205,6 @@ impl From<&Scalar> for ScalarPrimitive<BignP256> {
     }
 }
 
-impl From<Scalar> for FieldBytes {
-    fn from(scalar: Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<&Scalar> for FieldBytes {
-    fn from(scalar: &Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<Scalar> for U256 {
-    fn from(scalar: Scalar) -> U256 {
-        U256::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for U256 {
-    fn from(scalar: &Scalar) -> U256 {
-        scalar.to_canonical()
-    }
-}
-
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
         *secret_key.to_nonzero_scalar()
