@@ -32,6 +32,7 @@ blobby = "0.3"
 criterion = "0.5"
 ecdsa-core = { version = "=0.17.0-pre.9", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
+primefield = { version = "=0.14.0-pre.0", path = "../primefield" }
 primeorder = { version = "=0.14.0-pre.2", features = ["dev"], path = "../primeorder" }
 proptest = "1"
 rand_core = { version = "0.9", features = ["os_rng"] }
