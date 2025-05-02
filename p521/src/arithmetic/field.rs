@@ -670,7 +670,6 @@ impl Invert for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use elliptic_curve::ff::PrimeField;
     use hex_literal::hex;
 
     /// t = (modulus - 1) >> S
@@ -686,10 +685,7 @@ mod tests {
         0x00000000000000ff,
     ];
 
-    primefield::test_field_constants!(FieldElement, T);
-    primefield::test_field_identity!(FieldElement);
-    primefield::test_field_invert!(FieldElement);
-    primefield::test_field_sqrt!(FieldElement);
+    primefield::test_primefield!(FieldElement, T);
 
     /// Regression test for RustCrypto/elliptic-curves#965
     #[test]

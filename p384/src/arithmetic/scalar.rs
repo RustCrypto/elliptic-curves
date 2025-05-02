@@ -336,14 +336,7 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::{Scalar, U384};
     use crate::{FieldBytes, NistP384};
-    use elliptic_curve::Curve;
-    use elliptic_curve::array::Array;
-    use elliptic_curve::ff::PrimeField;
-    use elliptic_curve::ops::ReduceNonZero;
-    use primeorder::{
-        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
-        impl_primefield_tests,
-    };
+    use elliptic_curve::{Curve, array::Array, ff::PrimeField, ops::ReduceNonZero};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -355,10 +348,7 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
-    impl_field_identity_tests!(Scalar);
-    impl_field_invert_tests!(Scalar);
-    impl_field_sqrt_tests!(Scalar);
-    impl_primefield_tests!(Scalar, T);
+    primefield::test_primefield!(Scalar, T);
 
     #[test]
     fn from_to_bytes_roundtrip() {
