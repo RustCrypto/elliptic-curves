@@ -1,6 +1,8 @@
 //! Macros for generating wrappers for `fiat-crypto` synthesized field implementations.
 
 /// Add `fiat-crypto` synthesized arithmetic impls to the given field element.
+///
+/// This provides a complete arithmetic implementation which includes inversions.
 #[macro_export]
 macro_rules! fiat_field_arithmetic {
     (
@@ -20,6 +22,74 @@ macro_rules! fiat_field_arithmetic {
         $divstep:ident,
         $msat:ident,
         $selectznz:ident
+    ) => {
+        $crate::fiat_field_arithmetic_core!(
+            $fe,
+            $bytes,
+            $uint,
+            $non_mont_type,
+            $mont_type,
+            $from_mont,
+            $to_mont,
+            $add,
+            $sub,
+            $mul,
+            $neg,
+            $square
+        );
+
+        impl $fe {
+            /// Compute
+            #[doc = stringify!($fe)]
+            /// inversion: `1 / self`.
+            #[inline]
+            pub fn invert(&self) -> $crate::subtle::CtOption<Self> {
+                $crate::subtle::CtOption::new(self.invert_unchecked(), !self.is_zero())
+            }
+
+            /// Returns the multiplicative inverse of self.
+            ///
+            /// Does not check that self is non-zero.
+            const fn invert_unchecked(&self) -> Self {
+                let words = $crate::fiat_bernstein_yang_invert!(
+                    &$mont_type(self.0.to_words()),
+                    &$mont_type(Self::ONE.0.to_words()),
+                    <$uint>::BITS as usize,
+                    <$uint>::LIMBS,
+                    $crate::bigint::Word,
+                    $non_mont_type,
+                    $mont_type,
+                    $from_mont,
+                    $mul,
+                    $neg,
+                    $divstep_precomp,
+                    $divstep,
+                    $msat,
+                    $selectznz
+                );
+
+                Self(<$uint>::from_words(words))
+            }
+        }
+    };
+}
+
+/// Add `fiat-crypto` synthesized arithmetic impls to the given field element.
+#[macro_export]
+macro_rules! fiat_field_arithmetic_core {
+    (
+        $fe:tt,
+        $bytes:ty,
+        $uint:ty,
+        $non_mont_type: expr,
+        $mont_type: expr,
+        $from_mont:ident,
+        $to_mont:ident,
+        $add:ident,
+        $sub:ident,
+        $mul:ident,
+        $neg:ident,
+        $square:ident
     ) => {
         impl $fe {
             /// Decode [`
@@ -108,38 +178,6 @@ macro_rules! fiat_field_arithmetic {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
                 $square(&mut out, &$mont_type(self.0.to_words()));
                 Self(<$uint>::from_words(out.0))
-            }
-
-            /// Compute
-            #[doc = stringify!($fe)]
-            /// inversion: `1 / self`.
-            #[inline]
-            pub fn invert(&self) -> $crate::subtle::CtOption<Self> {
-                $crate::subtle::CtOption::new(self.invert_unchecked(), !self.is_zero())
-            }
-
-            /// Returns the multiplicative inverse of self.
-            ///
-            /// Does not check that self is non-zero.
-            const fn invert_unchecked(&self) -> Self {
-                let words = $crate::fiat_bernstein_yang_invert!(
-                    &$mont_type(self.0.to_words()),
-                    &$mont_type(Self::ONE.0.to_words()),
-                    <$uint>::BITS as usize,
-                    <$uint>::LIMBS,
-                    $crate::bigint::Word,
-                    $non_mont_type,
-                    $mont_type,
-                    $from_mont,
-                    $mul,
-                    $neg,
-                    $divstep_precomp,
-                    $divstep,
-                    $msat,
-                    $selectznz
-                );
-
-                Self(<$uint>::from_words(words))
             }
         }
 

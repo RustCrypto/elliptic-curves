@@ -26,13 +26,8 @@ mod field_impl;
 
 use self::field_impl::*;
 use crate::{FieldBytes, NistP224, Uint};
-use core::{
-    fmt::{self, Debug},
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, SubAssign},
-};
-use elliptic_curve::ops::Invert;
 use elliptic_curve::{
+    FieldBytesEncoding,
     ff::PrimeField,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
@@ -52,12 +47,20 @@ const MODULUS: Uint =
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) Uint);
 
-primeorder::impl_mont_field_element!(
-    NistP224,
+primefield::field_element_type!(
     FieldElement,
     FieldBytes,
     Uint,
     MODULUS,
+    FieldBytesEncoding::<NistP224>::decode_field_bytes,
+    FieldBytesEncoding::<NistP224>::encode_field_bytes
+);
+
+primefield::fiat_field_arithmetic_core!(
+    FieldElement,
+    FieldBytes,
+    Uint,
+    fiat_p224_non_montgomery_domain_field_element,
     fiat_p224_montgomery_domain_field_element,
     fiat_p224_from_montgomery,
     fiat_p224_to_montgomery,
@@ -324,20 +327,6 @@ impl PrimeField for FieldElement {
     #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-}
-
-impl Debug for FieldElement {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "FieldElement(0x{:X})", &self.0)
-    }
-}
-
-impl Invert for FieldElement {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
     }
 }
 

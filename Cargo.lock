@@ -727,6 +727,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
+ "primefield",
  "primeorder",
  "rand_core 0.9.3",
  "serdect",
