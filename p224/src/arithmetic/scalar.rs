@@ -236,30 +236,6 @@ impl From<&Scalar> for ScalarPrimitive<NistP224> {
     }
 }
 
-impl From<Scalar> for FieldBytes {
-    fn from(scalar: Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<&Scalar> for FieldBytes {
-    fn from(scalar: &Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<Scalar> for Uint {
-    fn from(scalar: Scalar) -> Uint {
-        Uint::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for Uint {
-    fn from(scalar: &Scalar) -> Uint {
-        scalar.to_canonical()
-    }
-}
-
 impl From<&SecretKey> for Scalar {
     fn from(secret_key: &SecretKey) -> Scalar {
         *secret_key.to_nonzero_scalar()

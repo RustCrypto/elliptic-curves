@@ -241,30 +241,6 @@ impl From<&Scalar> for ScalarPrimitive<NistP192> {
     }
 }
 
-impl From<Scalar> for FieldBytes {
-    fn from(scalar: Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<&Scalar> for FieldBytes {
-    fn from(scalar: &Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<Scalar> for U192 {
-    fn from(scalar: Scalar) -> U192 {
-        U192::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for U192 {
-    fn from(scalar: &Scalar) -> U192 {
-        scalar.to_canonical()
-    }
-}
-
 impl TryFrom<U192> for Scalar {
     type Error = Error;
 

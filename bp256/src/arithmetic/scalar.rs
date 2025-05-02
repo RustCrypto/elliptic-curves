@@ -143,30 +143,6 @@ impl Reduce<U256> for Scalar {
     }
 }
 
-impl From<Scalar> for FieldBytes {
-    fn from(scalar: Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<&Scalar> for FieldBytes {
-    fn from(scalar: &Scalar) -> Self {
-        scalar.to_repr()
-    }
-}
-
-impl From<Scalar> for U256 {
-    fn from(scalar: Scalar) -> U256 {
-        U256::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for U256 {
-    fn from(scalar: &Scalar) -> U256 {
-        scalar.to_canonical()
-    }
-}
-
 impl TryFrom<U256> for Scalar {
     type Error = Error;
 
