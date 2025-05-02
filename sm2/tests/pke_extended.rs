@@ -116,4 +116,4 @@ proptest! {
             prop_assert_ne!(dk.decrypt(&cipher1).unwrap(), dk.decrypt(&cipher3).unwrap());
         }
     }
-} 
+}
