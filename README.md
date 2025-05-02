@@ -18,8 +18,8 @@ NOTE: Most crates have field/point arithmetic implementations gated under the
 | Name      | Curve              | `arithmetic`? | Crates.io                                                                                 | Documentation                                                              | Build Status                                                                                               |
 |-----------|--------------------|---------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | [`bign256`] | bign-curve256v1  | ✅             | [![crates.io](https://img.shields.io/crates/v/bign256.svg)](https://crates.io/crates/bign256) | [![Documentation](https://docs.rs/bign256/badge.svg)](https://docs.rs/bign256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bign256/badge.svg?branch=master&event=push) |
-| [`bp256`] | brainpoolP256r1/t1 | 🚧            | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
-| [`bp384`] | brainpoolP384r1/t1 | 🚧            | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
+| [`bp256`] | brainpoolP256r1/t1 | ✅             | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
+| [`bp384`] | brainpoolP384r1/t1 | ✅             | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
 | [`k256`]  | [secp256k1]        | ✅             | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256)   | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push)  |
 | [`p192`]  | [NIST P-192]       | ✅             | [![crates.io](https://img.shields.io/crates/v/p192.svg)](https://crates.io/crates/p192)   | [![Documentation](https://docs.rs/p192/badge.svg)](https://docs.rs/p192)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p192/badge.svg?branch=master&event=push)  |
 | [`p224`]  | [NIST P-224]       | ✅             | [![crates.io](https://img.shields.io/crates/v/p224.svg)](https://crates.io/crates/p224)   | [![Documentation](https://docs.rs/p224/badge.svg)](https://docs.rs/p224)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p224/badge.svg?branch=master&event=push)  |
@@ -35,7 +35,7 @@ if you are interested in curves beyond the ones listed here.
 
 ## Minimum Supported Rust Version
 
-All crates in this repository support Rust **1.81** or higher.
+All crates in this repository support Rust **1.85** or higher.
 
 Minimum supported Rust version can be changed in the future, but it will be
 done with a minor version bump.
@@ -57,7 +57,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[rustc-image]: https://img.shields.io/badge/rustc-1.81+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 [deps-image]: https://deps.rs/repo/github/RustCrypto/elliptic-curves/status.svg
