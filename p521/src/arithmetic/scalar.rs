@@ -721,9 +721,7 @@ mod tests {
     use crate::NistP521;
 
     use super::{Scalar, U576};
-    use elliptic_curve::array::Array;
-    use elliptic_curve::ops::ReduceNonZero;
-    use elliptic_curve::{Curve, PrimeField};
+    use elliptic_curve::{Curve, array::Array, ops::ReduceNonZero};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 9] = [
@@ -738,7 +736,7 @@ mod tests {
         0x000000000000003f,
     ];
 
-    primefield::test_field_constants!(Scalar, T);
+    primefield::test_primefield_constants!(Scalar, T);
     primefield::test_field_identity!(Scalar);
     primefield::test_field_invert!(Scalar);
     //primefield::test_field_sqrt!(Scalar); // TODO(tarcieri): impl this

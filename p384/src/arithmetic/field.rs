@@ -139,7 +139,6 @@ impl PrimeField for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use elliptic_curve::ff::PrimeField;
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -151,8 +150,5 @@ mod tests {
         0x7fffffffffffffff,
     ];
 
-    primefield::test_field_constants!(FieldElement, T);
-    primefield::test_field_identity!(FieldElement);
-    primefield::test_field_invert!(FieldElement);
-    primefield::test_field_sqrt!(FieldElement);
+    primefield::test_primefield!(FieldElement, T);
 }

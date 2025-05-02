@@ -178,11 +178,6 @@ impl TryFrom<U256> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use elliptic_curve::ff::PrimeField;
-    use primeorder::{
-        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
-        impl_primefield_tests,
-    };
 
     /// t = (modulus - 1) >> S
     /// 0x54fdabedd0f754de1f3305484ec1c6b8c61cbd51dab0d37bc80f07414ba42b53
@@ -193,8 +188,5 @@ mod tests {
         0x54fdabedd0f754de,
     ];
 
-    impl_field_identity_tests!(Scalar);
-    impl_field_invert_tests!(Scalar);
-    impl_field_sqrt_tests!(Scalar);
-    impl_primefield_tests!(Scalar, T);
+    primefield::test_primefield!(Scalar, T);
 }

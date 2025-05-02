@@ -296,18 +296,10 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::Scalar;
-    use elliptic_curve::ff::PrimeField;
-    use primeorder::{
-        impl_field_identity_tests, impl_field_invert_tests, impl_field_sqrt_tests,
-        impl_primefield_tests,
-    };
 
     /// t = (modulus - 1) >> S
     /// 0xffffffffffffffffffffffff99def836146bc9b1b4d2283
     const T: [u64; 3] = [0x6146bc9b1b4d2283, 0xfffffffff99def83, 0x0fffffffffffffff];
 
-    impl_field_identity_tests!(Scalar);
-    impl_field_invert_tests!(Scalar);
-    impl_field_sqrt_tests!(Scalar);
-    impl_primefield_tests!(Scalar, T);
+    primefield::test_primefield!(Scalar, T);
 }
