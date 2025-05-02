@@ -56,7 +56,7 @@ primefield::field_element_type!(
     FieldBytesEncoding::<NistP224>::encode_field_bytes
 );
 
-primefield::fiat_field_arithmetic_core!(
+primefield::fiat_field_arithmetic!(
     FieldElement,
     FieldBytes,
     Uint,
@@ -68,45 +68,14 @@ primefield::fiat_field_arithmetic_core!(
     fiat_p224_sub,
     fiat_p224_mul,
     fiat_p224_opp,
-    fiat_p224_square
+    fiat_p224_square,
+    fiat_p224_divstep_precomp,
+    fiat_p224_divstep,
+    fiat_p224_msat,
+    fiat_p224_selectznz
 );
 
 impl FieldElement {
-    /// Compute [`FieldElement`] inversion: `1 / self`.
-    pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Returns the multiplicative inverse of self.
-    ///
-    /// Does not check that self is non-zero.
-    // TODO(tarcieri): double check this is faster than Bernstein-Yang
-    const fn invert_unchecked(&self) -> Self {
-        // Adapted from addchain: github.com/mmcloughlin/addchain
-        let z = self.square();
-        let t0 = self.multiply(&z);
-        let z = t0.square();
-        let z = self.multiply(&z);
-        let t1 = z.sqn(3);
-        let t1 = z.multiply(&t1);
-        let t2 = t1.sqn(6);
-        let t1 = t1.multiply(&t2);
-        let t1 = t1.sqn(2);
-        let t0 = t0.multiply(&t1);
-        let t1 = t0.sqn(3);
-        let z = z.multiply(&t1);
-        let t1 = z.sqn(14);
-        let t0 = t0.multiply(&t1);
-        let t1 = t0.sqn(17);
-        let z = z.multiply(&t1);
-        let t1 = z.sqn(48);
-        let z = z.multiply(&t1);
-        let t1 = z.sqn(31);
-        let t0 = t0.multiply(&t1);
-        let t0 = t0.sqn(97);
-        z.multiply(&t0)
-    }
-
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
@@ -278,17 +247,6 @@ impl FieldElement {
         }
 
         CtOption::new(x, x.square().ct_eq(self))
-    }
-
-    /// Returns self^(2^n) mod p
-    const fn sqn(&self, n: usize) -> Self {
-        let mut x = *self;
-        let mut i = 0;
-        while i < n {
-            x = x.square();
-            i += 1;
-        }
-        x
     }
 }
 
