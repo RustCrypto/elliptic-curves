@@ -22,6 +22,7 @@ elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features =
 # optional dependencies
 ecdsa-core = { version = "=0.17.0-pre.9", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
+primefield = { version = "=0.14.0-pre.0", optional = true, path = "../primefield" }
 primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
 serdect = { version = "0.3", optional = true, default-features = false }
 sha2 = { version = "=0.11.0-pre.5", optional = true, default-features = false }
@@ -38,7 +39,7 @@ default = ["arithmetic", "ecdsa", "pem", "std"]
 alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
-arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
+arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]

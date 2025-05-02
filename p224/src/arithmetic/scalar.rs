@@ -23,28 +23,26 @@ mod scalar_impl;
 
 use self::scalar_impl::*;
 use crate::{FieldBytes, FieldBytesEncoding, NistP224, ORDER_HEX, SecretKey, Uint};
-use core::{
-    fmt::{self, Debug},
-    iter::{Product, Sum},
-    ops::{AddAssign, MulAssign, Neg, Shr, ShrAssign, SubAssign},
-};
 use elliptic_curve::{
     Curve as _, Error, Result, ScalarPrimitive,
     bigint::Limb,
     ff::PrimeField,
-    ops::{Invert, Reduce},
+    ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 
 #[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
+use {
+    crate::ScalarBits,
+    elliptic_curve::{bigint::Word, group::ff::PrimeFieldBits},
+};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
 
 #[cfg(doc)]
-use core::ops::{Add, Mul, Sub};
+use core::ops::{Add, Mul, Neg, Sub};
 
 /// Scalars are elements in the finite field modulo `n`.
 ///
@@ -80,12 +78,20 @@ use core::ops::{Add, Mul, Sub};
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(Uint);
 
-primeorder::impl_mont_field_element!(
-    NistP224,
+primefield::field_element_type!(
     Scalar,
     FieldBytes,
     Uint,
     NistP224::ORDER,
+    FieldBytesEncoding::<NistP224>::decode_field_bytes,
+    FieldBytesEncoding::<NistP224>::encode_field_bytes
+);
+
+primefield::fiat_field_arithmetic_core!(
+    Scalar,
+    FieldBytes,
+    Uint,
+    fiat_p224_scalar_non_montgomery_domain_field_element,
     fiat_p224_scalar_montgomery_domain_field_element,
     fiat_p224_scalar_from_montgomery,
     fiat_p224_scalar_to_montgomery,
@@ -106,19 +112,21 @@ impl Scalar {
     ///
     /// Does not check that self is non-zero.
     const fn invert_unchecked(&self) -> Self {
-        let words = primeorder::impl_bernstein_yang_invert!(
-            self.0.as_words(),
-            Self::ONE.0.to_words(),
+        let words = primefield::fiat_bernstein_yang_invert!(
+            &fiat_p224_scalar_montgomery_domain_field_element(self.0.to_words()),
+            &fiat_p224_scalar_montgomery_domain_field_element(Self::ONE.0.to_words()),
             224,
             Uint::LIMBS,
             Limb,
+            fiat_p224_scalar_non_montgomery_domain_field_element,
+            fiat_p224_scalar_montgomery_domain_field_element,
             fiat_p224_scalar_from_montgomery,
             fiat_p224_scalar_mul,
             fiat_p224_scalar_opp,
             fiat_p224_scalar_divstep_precomp,
             fiat_p224_scalar_divstep,
             fiat_p224_scalar_msat,
-            fiat_p224_scalar_selectznz,
+            fiat_p224_scalar_selectznz
         );
 
         Self(Uint::from_words(words))
@@ -143,13 +151,6 @@ impl Scalar {
         let x = ab * (i - Self::ONE);
         CtOption::new(x, !a0.ct_eq(&-Self::ONE))
     }
-
-    /// Right shifts the scalar.
-    ///
-    /// Note: not constant-time with respect to the `shift` parameter.
-    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(self.0.wrapping_shr_vartime(shift))
-    }
 }
 
 impl AsRef<Scalar> for Scalar {
@@ -166,40 +167,10 @@ impl FromUintUnchecked for Scalar {
     }
 }
 
-impl Invert for Scalar {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
-    }
-}
-
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: Uint = NistP224::ORDER.shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Shr<usize> for Scalar {
-    type Output = Self;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl Shr<usize> for &Scalar {
-    type Output = Scalar;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl ShrAssign<usize> for Scalar {
-    fn shr_assign(&mut self, rhs: usize) {
-        *self = *self >> rhs;
     }
 }
 
@@ -239,7 +210,7 @@ impl PrimeField for Scalar {
 
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    type ReprBits = fiat_p224_scalar_montgomery_domain_field_element;
+    type ReprBits = [Word; Uint::LIMBS];
 
     fn to_le_bits(&self) -> ScalarBits {
         self.to_canonical().to_words().into()
@@ -325,12 +296,6 @@ impl TryFrom<Uint> for Scalar {
 
     fn try_from(w: Uint) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
-    }
-}
-
-impl Debug for Scalar {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Scalar(0x{:X})", &self.0)
     }
 }
 
