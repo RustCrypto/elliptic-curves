@@ -713,6 +713,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
+ "primefield",
  "primeorder",
  "sec1",
  "serdect",
