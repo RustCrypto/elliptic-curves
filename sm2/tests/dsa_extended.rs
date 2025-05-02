@@ -3,11 +3,11 @@
 use elliptic_curve::ops::Reduce;
 use proptest::prelude::*;
 use sm2::{
-    dsa::{
-        signature::{Signer, Verifier},
-        Signature, SigningKey,
-    },
     NonZeroScalar, Scalar, U256,
+    dsa::{
+        Signature, SigningKey,
+        signature::{Signer, Verifier},
+    },
 };
 
 const IDENTITY: &str = "test@rustcrypto.org";
@@ -25,7 +25,7 @@ fn create_test_signing_key() -> SigningKey {
 fn test_varying_message_lengths() {
     let sk = create_test_signing_key();
     let test_messages = vec![
-        vec![],           // Empty message
+        vec![],          // Empty message
         vec![1u8; 1],    // 1 byte
         vec![2u8; 32],   // 32 bytes
         vec![3u8; 1024], // 1KB
