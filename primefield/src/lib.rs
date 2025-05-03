@@ -74,190 +74,14 @@ macro_rules! field_element_type {
         $decode_uint:path,
         $encode_uint:path
     ) => {
-        impl $fe {
-            /// Zero element.
-            pub const ZERO: Self = Self(<$uint>::ZERO);
-
-            /// Multiplicative identity.
-            pub const ONE: Self = Self::from_uint_unchecked(<$uint>::ONE);
-
-            /// Create a [`
-            #[doc = stringify!($fe)]
-            /// `] from a canonical big-endian representation.
-            pub fn from_bytes(repr: &$bytes) -> $crate::subtle::CtOption<Self> {
-                Self::from_uint($decode_uint(repr))
-            }
-
-            /// Decode [`
-            #[doc = stringify!($fe)]
-            /// `] from a big endian byte slice.
-            pub fn from_slice(slice: &[u8]) -> Option<Self> {
-                let array = <$bytes>::try_from(slice).ok()?;
-                Self::from_bytes(&array).into()
-            }
-
-            /// Decode [`
-            #[doc = stringify!($fe)]
-            /// `]
-            /// from [`
-            #[doc = stringify!($uint)]
-            /// `] converting it into Montgomery form:
-            ///
-            /// ```text
-            /// w * R^2 * R^-1 mod p = wR mod p
-            /// ```
-            pub fn from_uint(uint: $uint) -> $crate::subtle::CtOption<Self> {
-                use $crate::subtle::ConstantTimeLess as _;
-                let is_some = uint.ct_lt(&$modulus);
-                $crate::subtle::CtOption::new(Self::from_uint_unchecked(uint), is_some)
-            }
-
-            /// Parse a [`
-            #[doc = stringify!($fe)]
-            /// `] from big endian hex-encoded bytes.
-            ///
-            /// Does *not* perform a check that the field element does not overflow the order.
-            ///
-            /// This method is primarily intended for defining internal constants.
-            #[allow(dead_code)]
-            pub(crate) const fn from_hex(hex: &str) -> Self {
-                Self::from_uint_unchecked(<$uint>::from_be_hex(hex))
-            }
-
-            /// Convert a `u64` into a [`
-            #[doc = stringify!($fe)]
-            /// `].
-            pub const fn from_u64(w: u64) -> Self {
-                Self::from_uint_unchecked(<$uint>::from_u64(w))
-            }
-
-            /// Returns the big-endian encoding of this [`
-            #[doc = stringify!($fe)]
-            /// `].
-            pub fn to_bytes(self) -> $bytes {
-                $encode_uint(&self.to_canonical())
-            }
-
-            /// Determine if this [`
-            #[doc = stringify!($fe)]
-            /// `] is odd in the SEC1 sense: `self mod 2 == 1`.
-            ///
-            /// # Returns
-            ///
-            /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-            pub fn is_odd(&self) -> $crate::subtle::Choice {
-                use $crate::bigint::Integer;
-                self.to_canonical().is_odd()
-            }
-
-            /// Determine if this [`
-            #[doc = stringify!($fe)]
-            /// `] is even in the SEC1 sense: `self mod 2 == 0`.
-            ///
-            /// # Returns
-            ///
-            /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-            pub fn is_even(&self) -> $crate::subtle::Choice {
-                !self.is_odd()
-            }
-
-            /// Determine if this [`
-            #[doc = stringify!($fe)]
-            /// `] is zero.
-            ///
-            /// # Returns
-            ///
-            /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-            pub fn is_zero(&self) -> $crate::subtle::Choice {
-                self.ct_eq(&Self::ZERO)
-            }
-
-            /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
-            ///
-            /// **This operation is variable time with respect to the exponent.**
-            ///
-            /// If the exponent is fixed, this operation is constant time.
-            pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
-                let mut res = Self::ONE;
-                let mut i = exp.len();
-
-                while i > 0 {
-                    i -= 1;
-
-                    let mut j = 64;
-                    while j > 0 {
-                        j -= 1;
-                        res = res.square();
-
-                        if ((exp[i] >> j) & 1) == 1 {
-                            res = res.multiply(self);
-                        }
-                    }
-                }
-
-                res
-            }
-
-            /// Right shifts the [`
-            #[doc = stringify!($fe)]
-            /// `].
-            pub const fn shr(&self, shift: u32) -> Self {
-                Self(self.0.wrapping_shr(shift))
-            }
-
-            /// Right shifts the [`
-            #[doc = stringify!($fe)]
-            /// `].
-            ///
-            /// Note: not constant-time with respect to the `shift` parameter.
-            pub const fn shr_vartime(&self, shift: u32) -> Self {
-                Self(self.0.wrapping_shr_vartime(shift))
-            }
-        }
-
-        impl $crate::ff::Field for $fe {
-            const ZERO: Self = Self::ZERO;
-            const ONE: Self = Self::ONE;
-
-            fn try_from_rng<R: $crate::rand_core::TryRngCore + ?Sized>(
-                rng: &mut R,
-            ) -> ::core::result::Result<Self, R::Error> {
-                let mut bytes = <$bytes>::default();
-
-                loop {
-                    rng.try_fill_bytes(&mut bytes)?;
-                    if let Some(fe) = Self::from_bytes(&bytes).into() {
-                        return Ok(fe);
-                    }
-                }
-            }
-
-            fn is_zero(&self) -> Choice {
-                Self::ZERO.ct_eq(self)
-            }
-
-            #[must_use]
-            fn square(&self) -> Self {
-                self.square()
-            }
-
-            #[must_use]
-            fn double(&self) -> Self {
-                self.double()
-            }
-
-            fn invert(&self) -> CtOption<Self> {
-                self.invert()
-            }
-
-            fn sqrt(&self) -> CtOption<Self> {
-                self.sqrt()
-            }
-
-            fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-                $crate::ff::helpers::sqrt_ratio_generic(num, div)
-            }
-        }
+        primefield::field_element_type_core!(
+            $fe,
+            $bytes,
+            $uint,
+            $modulus,
+            $decode_uint,
+            $encode_uint
+        );
 
         $crate::field_op!($fe, Add, add, add);
         $crate::field_op!($fe, Sub, sub, sub);
@@ -475,6 +299,204 @@ macro_rules! field_element_type {
         }
 
         impl $crate::zeroize::DefaultIsZeroes for $fe {}
+    };
+}
+
+/// Core field element functionality
+#[macro_export]
+macro_rules! field_element_type_core {
+    (
+        $fe:tt,
+        $bytes:ty,
+        $uint:ty,
+        $modulus:expr,
+        $decode_uint:path,
+        $encode_uint:path
+    ) => {
+        impl $fe {
+            /// Zero element.
+            pub const ZERO: Self = Self(<$uint>::ZERO);
+
+            /// Multiplicative identity.
+            pub const ONE: Self = Self::from_uint_unchecked(<$uint>::ONE);
+
+            /// Create a [`
+            #[doc = stringify!($fe)]
+            /// `] from a canonical big-endian representation.
+            pub fn from_bytes(repr: &$bytes) -> $crate::subtle::CtOption<Self> {
+                Self::from_uint($decode_uint(repr))
+            }
+
+            /// Decode [`
+            #[doc = stringify!($fe)]
+            /// `] from a big endian byte slice.
+            pub fn from_slice(slice: &[u8]) -> Option<Self> {
+                let array = <$bytes>::try_from(slice).ok()?;
+                Self::from_bytes(&array).into()
+            }
+
+            /// Decode [`
+            #[doc = stringify!($fe)]
+            /// `]
+            /// from [`
+            #[doc = stringify!($uint)]
+            /// `] converting it into Montgomery form:
+            ///
+            /// ```text
+            /// w * R^2 * R^-1 mod p = wR mod p
+            /// ```
+            pub fn from_uint(uint: $uint) -> $crate::subtle::CtOption<Self> {
+                use $crate::subtle::ConstantTimeLess as _;
+                let is_some = uint.ct_lt(&$modulus);
+                $crate::subtle::CtOption::new(Self::from_uint_unchecked(uint), is_some)
+            }
+
+            /// Parse a [`
+            #[doc = stringify!($fe)]
+            /// `] from big endian hex-encoded bytes.
+            ///
+            /// Does *not* perform a check that the field element does not overflow the order.
+            ///
+            /// This method is primarily intended for defining internal constants.
+            #[allow(dead_code)]
+            pub(crate) const fn from_hex(hex: &str) -> Self {
+                Self::from_uint_unchecked(<$uint>::from_be_hex(hex))
+            }
+
+            /// Convert a `u64` into a [`
+            #[doc = stringify!($fe)]
+            /// `].
+            pub const fn from_u64(w: u64) -> Self {
+                Self::from_uint_unchecked(<$uint>::from_u64(w))
+            }
+
+            /// Returns the big-endian encoding of this [`
+            #[doc = stringify!($fe)]
+            /// `].
+            pub fn to_bytes(self) -> $bytes {
+                $encode_uint(&self.to_canonical())
+            }
+
+            /// Determine if this [`
+            #[doc = stringify!($fe)]
+            /// `] is odd in the SEC1 sense: `self mod 2 == 1`.
+            ///
+            /// # Returns
+            ///
+            /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+            pub fn is_odd(&self) -> $crate::subtle::Choice {
+                use $crate::bigint::Integer;
+                self.to_canonical().is_odd()
+            }
+
+            /// Determine if this [`
+            #[doc = stringify!($fe)]
+            /// `] is even in the SEC1 sense: `self mod 2 == 0`.
+            ///
+            /// # Returns
+            ///
+            /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+            pub fn is_even(&self) -> $crate::subtle::Choice {
+                !self.is_odd()
+            }
+
+            /// Determine if this [`
+            #[doc = stringify!($fe)]
+            /// `] is zero.
+            ///
+            /// # Returns
+            ///
+            /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+            pub fn is_zero(&self) -> $crate::subtle::Choice {
+                self.ct_eq(&Self::ZERO)
+            }
+
+            /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
+            ///
+            /// **This operation is variable time with respect to the exponent.**
+            ///
+            /// If the exponent is fixed, this operation is constant time.
+            pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+                let mut res = Self::ONE;
+                let mut i = exp.len();
+
+                while i > 0 {
+                    i -= 1;
+
+                    let mut j = 64;
+                    while j > 0 {
+                        j -= 1;
+                        res = res.square();
+
+                        if ((exp[i] >> j) & 1) == 1 {
+                            res = res.multiply(self);
+                        }
+                    }
+                }
+
+                res
+            }
+
+            /// Right shifts the [`
+            #[doc = stringify!($fe)]
+            /// `].
+            pub const fn shr(&self, shift: u32) -> Self {
+                Self(self.0.wrapping_shr(shift))
+            }
+
+            /// Right shifts the [`
+            #[doc = stringify!($fe)]
+            /// `].
+            ///
+            /// Note: not constant-time with respect to the `shift` parameter.
+            pub const fn shr_vartime(&self, shift: u32) -> Self {
+                Self(self.0.wrapping_shr_vartime(shift))
+            }
+        }
+
+        impl $crate::ff::Field for $fe {
+            const ZERO: Self = Self::ZERO;
+            const ONE: Self = Self::ONE;
+
+            fn try_from_rng<R: $crate::rand_core::TryRngCore + ?Sized>(
+                rng: &mut R,
+            ) -> ::core::result::Result<Self, R::Error> {
+                let mut bytes = <$bytes>::default();
+
+                loop {
+                    rng.try_fill_bytes(&mut bytes)?;
+                    if let Some(fe) = Self::from_bytes(&bytes).into() {
+                        return Ok(fe);
+                    }
+                }
+            }
+
+            fn is_zero(&self) -> Choice {
+                Self::ZERO.ct_eq(self)
+            }
+
+            #[must_use]
+            fn square(&self) -> Self {
+                self.square()
+            }
+
+            #[must_use]
+            fn double(&self) -> Self {
+                self.double()
+            }
+
+            fn invert(&self) -> CtOption<Self> {
+                self.invert()
+            }
+
+            fn sqrt(&self) -> CtOption<Self> {
+                self.sqrt()
+            }
+
+            fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+                $crate::ff::helpers::sqrt_ratio_generic(num, div)
+            }
+        }
     };
 }
 

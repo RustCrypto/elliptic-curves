@@ -1,7 +1,7 @@
 //! 64-bit secp256r1 field element algorithms.
 
 use super::MODULUS;
-use elliptic_curve::bigint::{Limb, U256, U512};
+use elliptic_curve::bigint::{Limb, U256};
 
 pub(super) const fn add(a: U256, b: U256) -> U256 {
     let a = a.as_limbs();
@@ -41,14 +41,6 @@ pub(super) const fn sub(a: U256, b: U256) -> U256 {
 #[inline]
 pub(super) const fn to_canonical(a: U256) -> U256 {
     montgomery_reduce(a, U256::ZERO)
-}
-
-pub(super) fn from_bytes_wide(a: U512) -> U256 {
-    let words = a.to_limbs();
-    montgomery_reduce(
-        U256::new([words[4], words[5], words[6], words[7]]),
-        U256::new([words[0], words[1], words[2], words[3]]),
-    )
 }
 
 /// Montgomery Reduction
