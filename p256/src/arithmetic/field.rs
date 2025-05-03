@@ -6,17 +6,17 @@
 #[cfg_attr(target_pointer_width = "64", path = "field/field64.rs")]
 mod field_impl;
 
-use crate::FieldBytes;
+use crate::{FieldBytes, NistP256};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::ops::Invert;
 use elliptic_curve::{
-    bigint::{ArrayEncoding, U256, U512},
-    ff::{Field, PrimeField},
-    rand_core::TryRngCore,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
+    FieldBytesEncoding,
+    bigint::U256,
+    ff::PrimeField,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
 
@@ -25,11 +25,6 @@ const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000fffffffffffff
 /// Constant representing the modulus
 /// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 pub const MODULUS: U256 = U256::from_be_hex(MODULUS_HEX);
-
-/// R = 2^256 mod p
-const R: FieldElement = FieldElement(U256::from_be_hex(
-    "00000000fffffffeffffffffffffffffffffffff000000000000000000000001",
-));
 
 /// R^2 = 2^512 mod p
 const R2: FieldElement = FieldElement(U256::from_be_hex(
@@ -43,76 +38,23 @@ const R2: FieldElement = FieldElement(U256::from_be_hex(
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(pub(crate) U256);
 
+primefield::field_element_type_core!(
+    FieldElement,
+    FieldBytes,
+    U256,
+    MODULUS,
+    FieldBytesEncoding::<NistP256>::decode_field_bytes,
+    FieldBytesEncoding::<NistP256>::encode_field_bytes
+);
+
 impl FieldElement {
-    /// Zero element.
-    pub const ZERO: Self = FieldElement(U256::ZERO);
-
-    /// Multiplicative identity.
-    pub const ONE: Self = R;
-
-    /// Attempts to parse the given byte array as an SEC1-encoded field element.
-    ///
-    /// Returns None if the byte array does not contain a big-endian integer in the range
-    /// [0, p).
-    pub fn from_bytes(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_uint(U256::from_be_byte_array(bytes))
-    }
-
-    /// Returns the SEC1 encoding of this field element.
-    pub fn to_bytes(self) -> FieldBytes {
-        self.to_canonical().to_be_byte_array()
-    }
-
-    /// Decode [`FieldElement`] from [`U256`], converting it into Montgomery form:
-    ///
-    /// ```text
-    /// w * R^2 * R^-1 mod p = wR mod p
-    /// ```
-    pub fn from_uint(uint: U256) -> CtOption<Self> {
-        let is_some = uint.ct_lt(&MODULUS);
-        CtOption::new(Self::from_uint_unchecked(uint), is_some)
-    }
-
-    /// Convert a `u64` into a [`FieldElement`].
-    pub const fn from_u64(w: u64) -> Self {
-        Self::from_uint_unchecked(U256::from_u64(w))
-    }
-
-    /// Parse a [`FieldElement`] from big endian hex-encoded bytes.
-    ///
-    /// Does *not* perform a check that the field element does not overflow the order.
-    ///
-    /// This method is primarily intended for defining internal constants.
-    pub(crate) const fn from_hex(hex: &str) -> Self {
-        Self::from_uint_unchecked(U256::from_be_hex(hex))
-    }
-
     /// Decode [`FieldElement`] from [`U256`] converting it into Montgomery form.
     ///
-    /// Does *not* perform a check that the field element does not overflow the order.
+    /// Does *not* perform a check that the field element does not overflow the modulus.
     ///
     /// Used incorrectly this can lead to invalid results!
     pub(crate) const fn from_uint_unchecked(w: U256) -> Self {
         Self(w).to_montgomery()
-    }
-
-    /// Determine if this `FieldElement` is zero.
-    ///
-    /// # Returns
-    ///
-    /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    pub fn is_zero(&self) -> Choice {
-        self.ct_eq(&FieldElement::ZERO)
-    }
-
-    /// Determine if this `FieldElement` is odd in the SEC1 sense: `self mod 2 == 1`.
-    ///
-    /// # Returns
-    ///
-    /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
-    pub fn is_odd(&self) -> Choice {
-        let bytes = self.to_bytes();
-        (bytes[31] & 1).into()
     }
 
     /// Returns self + rhs mod p
@@ -168,24 +110,6 @@ impl FieldElement {
             i += 1;
         }
         x
-    }
-
-    /// Returns `self^by`, where `by` is a little-endian integer exponent.
-    ///
-    /// **This operation is variable time with respect to the exponent.** If the exponent
-    /// is fixed, this operation is effectively constant time.
-    pub fn pow_vartime(&self, by: &[u64; 4]) -> Self {
-        let mut res = Self::ONE;
-        for e in by.iter().rev() {
-            for i in (0..64).rev() {
-                res = res.square();
-
-                if ((*e >> i) & 1) == 1 {
-                    res = res * self;
-                }
-            }
-        }
-        res
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
@@ -246,42 +170,6 @@ impl FieldElement {
     }
 }
 
-impl Field for FieldElement {
-    const ZERO: Self = Self::ZERO;
-    const ONE: Self = Self::ONE;
-
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        // We reduce a random 512-bit value into a 256-bit field, which results in a
-        // negligible bias from the uniform distribution.
-        let mut buf = [0; 64];
-        rng.try_fill_bytes(&mut buf)?;
-        let buf = U512::from_be_slice(&buf);
-        Ok(Self(field_impl::from_bytes_wide(buf)))
-    }
-
-    #[must_use]
-    fn square(&self) -> Self {
-        self.square()
-    }
-
-    #[must_use]
-    fn double(&self) -> Self {
-        self.double()
-    }
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
-    }
-
-    fn sqrt(&self) -> CtOption<Self> {
-        self.sqrt()
-    }
-
-    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
-        elliptic_curve::ff::helpers::sqrt_ratio_generic(num, div)
-    }
-}
-
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
@@ -297,7 +185,7 @@ impl PrimeField for FieldElement {
     const DELTA: Self = Self::from_u64(36);
 
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(bytes)
+        Self::from_bytes(&bytes)
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -528,7 +416,7 @@ mod tests {
     #[test]
     fn from_bytes() {
         assert_eq!(
-            FieldElement::from_bytes(FieldBytes::default()).unwrap(),
+            FieldElement::from_bytes(&FieldBytes::default()).unwrap(),
             FieldElement::ZERO
         );
         assert_eq!(
@@ -537,13 +425,13 @@ mod tests {
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 1
                 ]
-                .into()
+                .as_ref()
             )
             .unwrap(),
             FieldElement::ONE
         );
         assert!(bool::from(
-            FieldElement::from_bytes([0xff; 32].into()).is_none()
+            FieldElement::from_bytes([0xff; 32].as_ref()).is_none()
         ));
     }
 
