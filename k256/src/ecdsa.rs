@@ -98,7 +98,7 @@ pub use ecdsa_core::{
 };
 
 #[cfg(any(feature = "ecdsa", feature = "sha256"))]
-pub use ecdsa_core::DigestAlgorithm;
+pub use ecdsa_core::hazmat;
 
 use crate::Secp256k1;
 
@@ -121,7 +121,7 @@ pub type SigningKey = ecdsa_core::SigningKey<Secp256k1>;
 pub type VerifyingKey = ecdsa_core::VerifyingKey<Secp256k1>;
 
 #[cfg(feature = "sha256")]
-impl DigestAlgorithm for Secp256k1 {
+impl hazmat::DigestPrimitive for Secp256k1 {
     type Digest = sha2::Sha256;
 }
 
