@@ -68,6 +68,7 @@ pub(super) const fn barrett_reduce(lo: U256, hi: U256) -> U256 {
     U256::new([r[0], r[1], r[2], r[3]])
 }
 
+#[inline]
 const fn q1_times_mu_shift_five(q1: &[Limb; 5]) -> [Limb; 5] {
     // Schoolbook multiplication
 
@@ -111,6 +112,7 @@ const fn q1_times_mu_shift_five(q1: &[Limb; 5]) -> [Limb; 5] {
     [w5, w6, w7, w8, w9]
 }
 
+#[inline]
 const fn q3_times_n_keep_five(q3: &[Limb; 5]) -> [Limb; 5] {
     // Schoolbook multiplication.
 
