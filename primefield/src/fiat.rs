@@ -148,15 +148,6 @@ macro_rules! fiat_field_arithmetic {
                 Self(<$uint>::from_words(words))
             }
         }
-
-        impl ::core::ops::Neg for $fe {
-            type Output = $fe;
-
-            #[inline]
-            fn neg(self) -> $fe {
-                <$fe>::neg(&self)
-            }
-        }
     };
 }
 

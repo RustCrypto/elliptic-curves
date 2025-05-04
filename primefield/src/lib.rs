@@ -129,6 +129,24 @@ macro_rules! field_element_type {
             }
         }
 
+        impl ::core::ops::Neg for $fe {
+            type Output = $fe;
+
+            #[inline]
+            fn neg(self) -> $fe {
+                <$fe>::neg(&self)
+            }
+        }
+
+        impl ::core::ops::Neg for &$fe {
+            type Output = $fe;
+
+            #[inline]
+            fn neg(self) -> $fe {
+                <$fe>::neg(self)
+            }
+        }
+
         impl ::core::ops::Shr<u32> for $fe {
             type Output = Self;
 
