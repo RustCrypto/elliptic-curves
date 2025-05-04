@@ -7,17 +7,12 @@
 mod field_impl;
 
 use crate::{FieldBytes, NistP256};
-use core::{
-    iter::{Product, Sum},
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-};
-use elliptic_curve::ops::Invert;
+use core::ops::Mul;
 use elliptic_curve::{
     FieldBytesEncoding,
     bigint::U256,
     ff::PrimeField,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
-    zeroize::DefaultIsZeroes,
+    subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff";
@@ -35,10 +30,10 @@ const R2: FieldElement = FieldElement(U256::from_be_hex(
 ///
 /// The internal representation is in little-endian order. Elements are always in
 /// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct FieldElement(pub(crate) U256);
 
-primefield::field_element_type_core!(
+primefield::field_element_type!(
     FieldElement,
     FieldBytes,
     U256,
@@ -194,197 +189,6 @@ impl PrimeField for FieldElement {
 
     fn is_odd(&self) -> Choice {
         self.is_odd()
-    }
-}
-
-impl ConditionallySelectable for FieldElement {
-    #[inline(always)]
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(U256::conditional_select(&a.0, &b.0, choice))
-    }
-}
-
-impl ConstantTimeEq for FieldElement {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
-    }
-}
-
-impl Default for FieldElement {
-    fn default() -> Self {
-        FieldElement::ZERO
-    }
-}
-
-impl DefaultIsZeroes for FieldElement {}
-
-impl Eq for FieldElement {}
-
-impl From<u64> for FieldElement {
-    fn from(n: u64) -> FieldElement {
-        Self::from_uint_unchecked(U256::from(n))
-    }
-}
-
-impl PartialEq for FieldElement {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Invert for FieldElement {
-    type Output = CtOption<Self>;
-
-    fn invert(&self) -> CtOption<Self> {
-        self.invert()
-    }
-}
-
-impl Add<FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn add(self, other: FieldElement) -> FieldElement {
-        FieldElement::add(&self, &other)
-    }
-}
-
-impl Add<&FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(&self, other)
-    }
-}
-
-impl Add<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement::add(self, other)
-    }
-}
-
-impl AddAssign<FieldElement> for FieldElement {
-    fn add_assign(&mut self, other: FieldElement) {
-        *self = FieldElement::add(self, &other);
-    }
-}
-
-impl AddAssign<&FieldElement> for FieldElement {
-    fn add_assign(&mut self, other: &FieldElement) {
-        *self = FieldElement::add(self, other);
-    }
-}
-
-impl Sub<FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, other: FieldElement) -> FieldElement {
-        FieldElement::sub(&self, &other)
-    }
-}
-
-impl Sub<&FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::sub(&self, other)
-    }
-}
-
-impl Sub<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn sub(self, other: &FieldElement) -> FieldElement {
-        FieldElement::sub(self, other)
-    }
-}
-
-impl SubAssign<FieldElement> for FieldElement {
-    fn sub_assign(&mut self, other: FieldElement) {
-        *self = FieldElement::sub(self, &other);
-    }
-}
-
-impl SubAssign<&FieldElement> for FieldElement {
-    fn sub_assign(&mut self, other: &FieldElement) {
-        *self = FieldElement::sub(self, other);
-    }
-}
-
-impl Mul<FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn mul(self, other: FieldElement) -> FieldElement {
-        FieldElement::multiply(&self, &other)
-    }
-}
-
-impl Mul<&FieldElement> for FieldElement {
-    type Output = FieldElement;
-
-    fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::multiply(&self, other)
-    }
-}
-
-impl Mul<&FieldElement> for &FieldElement {
-    type Output = FieldElement;
-
-    fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement::multiply(self, other)
-    }
-}
-
-impl MulAssign<FieldElement> for FieldElement {
-    fn mul_assign(&mut self, other: FieldElement) {
-        *self = FieldElement::multiply(self, &other);
-    }
-}
-
-impl MulAssign<&FieldElement> for FieldElement {
-    fn mul_assign(&mut self, other: &FieldElement) {
-        *self = FieldElement::multiply(self, other);
-    }
-}
-
-impl Neg for FieldElement {
-    type Output = FieldElement;
-
-    fn neg(self) -> FieldElement {
-        FieldElement::ZERO - &self
-    }
-}
-
-impl Neg for &FieldElement {
-    type Output = FieldElement;
-
-    fn neg(self) -> FieldElement {
-        FieldElement::ZERO - self
-    }
-}
-
-impl Sum for FieldElement {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(Add::add).unwrap_or(Self::ZERO)
-    }
-}
-
-impl<'a> Sum<&'a FieldElement> for FieldElement {
-    fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
-        iter.copied().sum()
-    }
-}
-
-impl Product for FieldElement {
-    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(Mul::mul).unwrap_or(Self::ONE)
-    }
-}
-
-impl<'a> Product<&'a FieldElement> for FieldElement {
-    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.copied().product()
     }
 }
 
