@@ -61,7 +61,7 @@ pub type SigningKey = ecdsa_core::SigningKey<NistP521>;
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP521>;
 
 #[cfg(feature = "sha512")]
-impl ecdsa_core::DigestAlgorithm for NistP521 {
+impl ecdsa_core::hazmat::DigestPrimitive for NistP521 {
     type Digest = sha2::Sha512;
 }
 

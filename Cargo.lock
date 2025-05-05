@@ -367,7 +367,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-pre.9"
-source = "git+https://github.com/RustCrypto/signatures.git#6cce0281c22e5f9a90f1d38ce2b05e08c6f3db34"
+source = "git+https://github.com/RustCrypto/signatures.git#d2a93b3d5a45a54c19ef29ddc009d9ad22d8b057"
 dependencies = [
  "der",
  "digest",
@@ -388,7 +388,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#622b6c0341b2ba11040affdd4688ec98f9b3c552"
+source = "git+https://github.com/RustCrypto/traits.git#ac5443909846354e11570e2968937a62f2019bed"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -1017,7 +1017,7 @@ checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
 [[package]]
 name = "rfc6979"
 version = "0.5.0-pre.4"
-source = "git+https://github.com/RustCrypto/signatures.git#6cce0281c22e5f9a90f1d38ce2b05e08c6f3db34"
+source = "git+https://github.com/RustCrypto/signatures.git#d2a93b3d5a45a54c19ef29ddc009d9ad22d8b057"
 dependencies = [
  "hmac",
  "subtle",
@@ -1150,7 +1150,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "3.0.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#622b6c0341b2ba11040affdd4688ec98f9b3c552"
+source = "git+https://github.com/RustCrypto/traits.git#ac5443909846354e11570e2968937a62f2019bed"
 dependencies = [
  "digest",
  "rand_core 0.9.3",
