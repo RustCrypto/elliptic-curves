@@ -1,4 +1,4 @@
-# [RustCrypto]: Brainpool P-384 elliptic curves
+# [RustCrypto]: Brainpool P-512 elliptic curves
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -7,7 +7,7 @@
 [![Project Chat][chat-image]][chat-link]
 [![Build Status][build-image]][build-link]
 
-Brainpool P-384 (brainpoolP384r1 and brainpoolP384t1) elliptic curve types
+Brainpool P-512 (brainpoolP512r1 and brainpoolP512t1) elliptic curve types
 implemented in terms of traits from the [`elliptic-curve`] crate.
 
 [Documentation][docs-link]
@@ -29,16 +29,16 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/bp384
-[crate-link]: https://crates.io/crates/bp384
-[docs-image]: https://docs.rs/bp384/badge.svg
-[docs-link]: https://docs.rs/bp384/
+[crate-image]: https://img.shields.io/crates/v/bp512
+[crate-link]: https://crates.io/crates/bp512
+[docs-image]: https://docs.rs/bp512/badge.svg
+[docs-link]: https://docs.rs/bp512/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
-[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow:bp384
+[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/bp512/badge.svg?branch=master&event=push
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow:bp512
 
 [//]: # (general links)
 

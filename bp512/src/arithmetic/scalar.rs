@@ -1,4 +1,4 @@
-//! brainpoolP384 scalar field elements.
+//! brainpoolP512 scalar field elements.
 //!
 //! Arithmetic implementations have been synthesized using fiat-crypto.
 //!
@@ -28,7 +28,7 @@ use elliptic_curve::{
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
 
-/// Element of the brainpoolP384's scalar field.
+/// Element of the brainpoolP512's scalar field.
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(pub(super) U512);
 
@@ -65,22 +65,23 @@ impl Scalar {
     /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>
     /// (page 10, algorithm 3)
     pub fn sqrt(&self) -> CtOption<Self> {
-        let w = &[
-            0x077106405d208cac,
-            0xf9e756d5ed6ff862,
-            0x63e2cdcd958084b4,
-            0xe2a5ee213daa8ad6,
-            0x01ebadefca1cc83b,
-            0x119723d054670da5,
-        ];
-        let t = Self::from_u64(2).pow_vartime(w);
-        let a1 = self.pow_vartime(w);
-        let a0 = (a1.square() * self).square();
-        let b = t * a1;
-        let ab = self * &b;
-        let i = Self::from_u64(2) * ab * b;
-        let x = ab * (i - Self::ONE);
-        CtOption::new(x, !a0.ct_eq(&-Self::ONE))
+        unimplemented!("bp512 sqrt scalar unimplemented")
+        // let w = &[
+        //     0x077106405d208cac,
+        //     0xf9e756d5ed6ff862,
+        //     0x63e2cdcd958084b4,
+        //     0xe2a5ee213daa8ad6,
+        //     0x01ebadefca1cc83b,
+        //     0x119723d054670da5,
+        // ];
+        // let t = Self::from_u64(2).pow_vartime(w);
+        // let a1 = self.pow_vartime(w);
+        // let a0 = (a1.square() * self).square();
+        // let b = t * a1;
+        // let ab = self * &b;
+        // let i = Self::from_u64(2) * ab * b;
+        // let x = ab * (i - Self::ONE);
+        // CtOption::new(x, !a0.ct_eq(&-Self::ONE))
     }
 }
 
@@ -114,8 +115,9 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
     const S: u32 = 2;
+    // TODO: invalid
     const ROOT_OF_UNITY: Self = Self::from_hex(
-        "76cdc6369fb54dde55a851fce47cc5f830bb074c85684b3ee476be128dc50cfa8602aeecf53a1982fcf3b95f8d4258ff",
+        "76cdc6369fb54dde55a851fce47cc5f830bb074c85684b3ee476be128dc50cfa8602aeecf53a1982fcf3b95f8d4258ff76cdc6369fb54dde55a851fce47cc5f8",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(16);

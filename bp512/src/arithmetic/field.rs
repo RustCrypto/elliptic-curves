@@ -26,7 +26,7 @@ const MODULUS_HEX: &str = "aadd9db8dbe9c48b3fd4e6ae33c9fc07cb308db3b3c9d20ed6639
 
 const MODULUS: U512 = U512::from_be_hex(MODULUS_HEX);
 
-/// Element of the brainpoolP384's base field used for curve point coordinates.
+/// Element of the brainpoolP512's base field used for curve point coordinates.
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) U512);
 
@@ -62,18 +62,19 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        // Because p ≡ 3 mod 4 for brainpoolP384's base field modulus, sqrt can
-        // be implemented with only one exponentiation via the computation of
-        // self^((p + 1) // 4) (mod p).
-        let sqrt = self.pow_vartime(&[
-            0x61d1c004cc41fb15,
-            0xeb34e9ca6407469c,
-            0x04ac76865fedc448,
-            0xc54bdc427b5515ad,
-            0x03d75bdf94399077,
-            0x232e47a0a8ce1b4a,
-        ]);
-        CtOption::new(sqrt, sqrt.square().ct_eq(self))
+        unimplemented!("bp512 sqrt field unimplemented")
+        // // Because p ≡ 3 mod 4 for brainpoolP384's base field modulus, sqrt can
+        // // be implemented with only one exponentiation via the computation of
+        // // self^((p + 1) // 4) (mod p).
+        // let sqrt = self.pow_vartime(&[
+        //     0x61d1c004cc41fb15,
+        //     0xeb34e9ca6407469c,
+        //     0x04ac76865fedc448,
+        //     0xc54bdc427b5515ad,
+        //     0x03d75bdf94399077,
+        //     0x232e47a0a8ce1b4a,
+        // ]);
+        // CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 }
 
@@ -81,13 +82,14 @@ impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
     const MODULUS: &'static str = MODULUS_HEX;
-    const NUM_BITS: u32 = 384;
-    const CAPACITY: u32 = 383;
+    const NUM_BITS: u32 = 512;
+    const CAPACITY: u32 = 511;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
+    // TODO: is p minus 1 correct?
     const ROOT_OF_UNITY: Self = Self::from_hex(
-        "aadd9db8dbe9c48b3fd4e6ae33c9fc07cb308db3b3c9d20ed6639cca703308717d4d9b009bc66842aecda12ae6a380e62881ff2f2d82c68528aa6056583a48f3",
+        "aadd9db8dbe9c48b3fd4e6ae33c9fc07cb308db3b3c9d20ed6639cca703308717d4d9b009bc66842aecda12ae6a380e62881ff2f2d82c68528aa6056583a48f2",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);

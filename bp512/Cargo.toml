@@ -23,7 +23,7 @@ primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder
 sha2 = { version = "=0.11.0-pre.5", optional = true, default-features = false }
 
 [features]
-default = ["pkcs8", "std", "arithmetic"]
+default = ["pkcs8", "std"]
 alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "ecdsa?/std", "elliptic-curve/std"]
 
