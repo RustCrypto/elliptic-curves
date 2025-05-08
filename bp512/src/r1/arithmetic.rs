@@ -1,4 +1,4 @@
-//! brainpoolP384r1 curve arithmetic implementation.
+//! brainpoolP512r1 curve arithmetic implementation.
 
 use super::BrainpoolP512r1;
 use crate::{FieldElement, Scalar};

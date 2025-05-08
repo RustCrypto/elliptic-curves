@@ -10,8 +10,8 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg_attr(target_pointer_width = "32", path = "scalar/bp384_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/bp384_scalar_64.rs")]
+#[cfg_attr(target_pointer_width = "32", path = "scalar/bp512_scalar_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/bp512_scalar_64.rs")]
 mod scalar_impl;
 
 use self::scalar_impl::*;
@@ -45,19 +45,19 @@ primefield::fiat_field_arithmetic!(
     Scalar,
     FieldBytes,
     U512,
-    fiat_bp384_scalar_non_montgomery_domain_field_element,
-    fiat_bp384_scalar_montgomery_domain_field_element,
-    fiat_bp384_scalar_from_montgomery,
-    fiat_bp384_scalar_to_montgomery,
-    fiat_bp384_scalar_add,
-    fiat_bp384_scalar_sub,
-    fiat_bp384_scalar_mul,
-    fiat_bp384_scalar_opp,
-    fiat_bp384_scalar_square,
-    fiat_bp384_scalar_divstep_precomp,
-    fiat_bp384_scalar_divstep,
-    fiat_bp384_scalar_msat,
-    fiat_bp384_scalar_selectznz
+    fiat_bp512_scalar_non_montgomery_domain_field_element,
+    fiat_bp512_scalar_montgomery_domain_field_element,
+    fiat_bp512_scalar_from_montgomery,
+    fiat_bp512_scalar_to_montgomery,
+    fiat_bp512_scalar_add,
+    fiat_bp512_scalar_sub,
+    fiat_bp512_scalar_mul,
+    fiat_bp512_scalar_opp,
+    fiat_bp512_scalar_square,
+    fiat_bp512_scalar_divstep_precomp,
+    fiat_bp512_scalar_divstep,
+    fiat_bp512_scalar_msat,
+    fiat_bp512_scalar_selectznz
 );
 
 impl Scalar {

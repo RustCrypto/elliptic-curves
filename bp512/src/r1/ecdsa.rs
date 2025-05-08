@@ -2,10 +2,10 @@
 
 pub use super::BrainpoolP512r1;
 
-/// ECDSA/brainpoolP384r1 signature (fixed-size)
+/// ECDSA/brainpoolP512r1 signature (fixed-size)
 pub type Signature = ecdsa::Signature<BrainpoolP512r1>;
 
-/// ECDSA/brainpoolP384r1 signature (ASN.1 DER encoded)
+/// ECDSA/brainpoolP512r1 signature (ASN.1 DER encoded)
 pub type DerSignature = ecdsa::der::Signature<BrainpoolP512r1>;
 
 impl ecdsa::EcdsaCurve for BrainpoolP512r1 {

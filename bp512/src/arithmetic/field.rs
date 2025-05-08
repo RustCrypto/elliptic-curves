@@ -10,8 +10,8 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg_attr(target_pointer_width = "32", path = "field/bp384_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/bp384_64.rs")]
+#[cfg_attr(target_pointer_width = "32", path = "field/bp512_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "field/bp512_64.rs")]
 mod field_impl;
 
 use self::field_impl::*;
@@ -43,19 +43,19 @@ primefield::fiat_field_arithmetic!(
     FieldElement,
     FieldBytes,
     U512,
-    fiat_bp384_non_montgomery_domain_field_element,
-    fiat_bp384_montgomery_domain_field_element,
-    fiat_bp384_from_montgomery,
-    fiat_bp384_to_montgomery,
-    fiat_bp384_add,
-    fiat_bp384_sub,
-    fiat_bp384_mul,
-    fiat_bp384_opp,
-    fiat_bp384_square,
-    fiat_bp384_divstep_precomp,
-    fiat_bp384_divstep,
-    fiat_bp384_msat,
-    fiat_bp384_selectznz
+    fiat_bp512_non_montgomery_domain_field_element,
+    fiat_bp512_montgomery_domain_field_element,
+    fiat_bp512_from_montgomery,
+    fiat_bp512_to_montgomery,
+    fiat_bp512_add,
+    fiat_bp512_sub,
+    fiat_bp512_mul,
+    fiat_bp512_opp,
+    fiat_bp512_square,
+    fiat_bp512_divstep_precomp,
+    fiat_bp512_divstep,
+    fiat_bp512_msat,
+    fiat_bp512_selectznz
 );
 
 impl FieldElement {

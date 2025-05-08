@@ -1,4 +1,4 @@
-//! brainpoolP384t1 elliptic curve: twisted variant
+//! brainpoolP512t1 elliptic curve: twisted variant
 
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
@@ -18,15 +18,15 @@ use elliptic_curve::{FieldBytesEncoding, bigint::U512, consts::U64};
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8;
 
-/// brainpoolP384t1 elliptic curve: twisted variant
+/// brainpoolP512t1 elliptic curve: twisted variant
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct BrainpoolP512t1;
 
 impl elliptic_curve::Curve for BrainpoolP512t1 {
-    /// 48-byte serialized field elements.
+    /// 64-byte serialized field elements.
     type FieldBytesSize = U64;
 
-    /// 384-bit field modulus.
+    /// 512-bit field modulus.
     type Uint = U512;
 
     /// Curve order.
@@ -63,7 +63,7 @@ impl FieldBytesEncoding<BrainpoolP512t1> for U512 {
     }
 }
 
-/// brainpoolP384t1 secret key.
+/// brainpoolP512t1 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<BrainpoolP512t1>;
 
 #[cfg(not(feature = "arithmetic"))]

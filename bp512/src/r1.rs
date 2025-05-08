@@ -1,4 +1,4 @@
-//! brainpoolP384r1 elliptic curve: verifiably pseudo-random variant
+//! brainpoolP512r1 elliptic curve: verifiably pseudo-random variant
 
 #[cfg(feature = "ecdsa")]
 pub mod ecdsa;
@@ -18,7 +18,7 @@ use elliptic_curve::{FieldBytesEncoding, bigint::U512, consts::U64};
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8;
 
-/// brainpoolP384r1 elliptic curve: verifiably pseudo-random variant
+/// brainpoolP512r1 elliptic curve: verifiably pseudo-random variant
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct BrainpoolP512r1;
 
