@@ -12,9 +12,6 @@ and can be easily used for bare-metal or WebAssembly programming.
 
 ## Crates
 
-NOTE: Most crates have field/point arithmetic implementations gated under the
-`arithmetic` cargo feature as noted in the `arithmetic` column below:
-
 | Name      | Curve              | Crates.io                                                                                 | Documentation                                                              | Build Status                                                                                               |
 |-----------|--------------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | [`bign256`] | bign-curve256v1  | [![crates.io](https://img.shields.io/crates/v/bign256.svg)](https://crates.io/crates/bign256) | [![Documentation](https://docs.rs/bign256/badge.svg)](https://docs.rs/bign256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bign256/badge.svg?branch=master&event=push) |
