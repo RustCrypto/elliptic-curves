@@ -1,0 +1,38 @@
+[package]
+name = "bp512"
+version = "0.7.0-pre"
+description = "Brainpool P-512 (brainpoolP512r1 and brainpoolP512t1) elliptic curves"
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/bp512"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/bp512"
+repository = "https://github.com/RustCrypto/elliptic-curves"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["brainpool", "crypto", "ecc"]
+edition = "2024"
+rust-version = "1.85"
+
+[dependencies]
+elliptic-curve = { version = "0.14.0-rc.0", default-features = false, features = ["sec1"] }
+
+# optional dependencies
+ecdsa = { version = "=0.17.0-pre.9", optional = true, default-features = false, features = ["der"] }
+primefield = { version = "=0.14.0-pre.0", optional = true, path = "../primefield" }
+primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
+sha2 = { version = "=0.11.0-pre.5", optional = true, default-features = false }
+
+[features]
+default = ["pkcs8", "std", "arithmetic"]
+alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
+std = ["alloc", "ecdsa?/std", "elliptic-curve/std"]
+
+pem = ["elliptic-curve/pem", "pkcs8"]
+pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
+serde = ["ecdsa/serde", "elliptic-curve/serde"]
+sha512 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+arithmetic = ["dep:primefield", "dep:primeorder"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
