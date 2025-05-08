@@ -18,8 +18,8 @@ NOTE: Most crates have field/point arithmetic implementations gated under the
 | Name      | Curve              | `arithmetic`? | Crates.io                                                                                 | Documentation                                                              | Build Status                                                                                               |
 |-----------|--------------------|---------------|-------------------------------------------------------------------------------------------|----------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|
 | [`bign256`] | bign-curve256v1  | ✅             | [![crates.io](https://img.shields.io/crates/v/bign256.svg)](https://crates.io/crates/bign256) | [![Documentation](https://docs.rs/bign256/badge.svg)](https://docs.rs/bign256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bign256/badge.svg?branch=master&event=push) |
-| [`bp256`] | brainpoolP256r1/t1 | ✅             | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
-| [`bp384`] | brainpoolP384r1/t1 | ✅             | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
+| [`bp256`] | [brainpoolP256r1]/[brainpoolP256t1] | ✅             | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
+| [`bp384`] | [brainpoolP384r1]/[brainpoolP384t1] | ✅             | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
 | [`k256`]  | [secp256k1]        | ✅             | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256)   | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push)  |
 | [`p192`]  | [NIST P-192]       | ✅             | [![crates.io](https://img.shields.io/crates/v/p192.svg)](https://crates.io/crates/p192)   | [![Documentation](https://docs.rs/p192/badge.svg)](https://docs.rs/p192)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p192/badge.svg?branch=master&event=push)  |
 | [`p224`]  | [NIST P-224]       | ✅             | [![crates.io](https://img.shields.io/crates/v/p224.svg)](https://crates.io/crates/p224)   | [![Documentation](https://docs.rs/p224/badge.svg)](https://docs.rs/p224)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p224/badge.svg?branch=master&event=push)  |
@@ -86,6 +86,10 @@ dual licensed as above, without any additional terms or conditions.
 [NIST P-521]: https://neuromancer.sk/std/nist/P-521
 [SM2]: https://neuromancer.sk/std/oscaa/SM2
 [BIGN P-256]: https://apmi.bsu.by/assets/files/std/bign-spec294.pdf
+[brainpoolP256r1]: https://neuromancer.sk/std/brainpool/brainpoolP256r1
+[brainpoolP384r1]: https://neuromancer.sk/std/brainpool/brainpoolP384r1
+[brainpoolP256t1]: https://neuromancer.sk/std/brainpool/brainpoolP256t1
+[brainpoolP384t1]: https://neuromancer.sk/std/brainpool/brainpoolP384t1
 
 [//]: # (links)
 
