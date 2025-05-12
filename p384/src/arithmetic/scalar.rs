@@ -226,7 +226,7 @@ impl Reduce<U384> for Scalar {
     type Bytes = FieldBytes;
 
     fn reduce(w: U384) -> Self {
-        let (r, underflow) = w.sbb(&NistP384::ORDER, Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&NistP384::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(U384::conditional_select(&w, &r, !underflow))
     }
@@ -240,7 +240,7 @@ impl Reduce<U384> for Scalar {
 impl ReduceNonZero<U384> for Scalar {
     fn reduce_nonzero(w: U384) -> Self {
         const ORDER_MINUS_ONE: U384 = NistP384::ORDER.wrapping_sub(&U384::ONE);
-        let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U384::conditional_select(&w, &r, !underflow).wrapping_add(&U384::ONE))
     }

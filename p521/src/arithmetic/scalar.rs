@@ -606,7 +606,7 @@ impl Reduce<U576> for Scalar {
     type Bytes = FieldBytes;
 
     fn reduce(w: U576) -> Self {
-        let (r, underflow) = w.sbb(&NistP521::ORDER, bigint::Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&NistP521::ORDER, bigint::Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(U576::conditional_select(&w, &r, !underflow))
     }
@@ -621,7 +621,7 @@ impl Reduce<U576> for Scalar {
 impl ReduceNonZero<U576> for Scalar {
     fn reduce_nonzero(w: U576) -> Self {
         const ORDER_MINUS_ONE: U576 = NistP521::ORDER.wrapping_sub(&U576::ONE);
-        let (r, underflow) = w.sbb(&ORDER_MINUS_ONE, bigint::Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, bigint::Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(
             U576::conditional_select(&w, &r, !underflow).wrapping_add(&U576::ONE),

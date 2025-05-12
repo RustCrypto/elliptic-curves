@@ -200,7 +200,7 @@ impl Reduce<Uint> for Scalar {
     type Bytes = FieldBytes;
 
     fn reduce(w: Uint) -> Self {
-        let (r, underflow) = w.sbb(&NistP224::ORDER, Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&NistP224::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(Uint::conditional_select(&w, &r, !underflow))
     }
