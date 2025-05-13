@@ -140,7 +140,7 @@ impl Reduce<U384> for Scalar {
     type Bytes = FieldBytes;
 
     fn reduce(w: U384) -> Self {
-        let (r, underflow) = w.sbb(&ORDER, Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(U384::conditional_select(&w, &r, !underflow))
     }

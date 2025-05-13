@@ -8,14 +8,14 @@ pub(super) const fn add(a: U256, b: U256) -> U256 {
     let b = b.as_limbs();
 
     // Bit 256 of p is set, so addition can result in five words.
-    let (w0, carry) = a[0].adc(b[0], Limb::ZERO);
-    let (w1, carry) = a[1].adc(b[1], carry);
-    let (w2, carry) = a[2].adc(b[2], carry);
-    let (w3, w4) = a[3].adc(b[3], carry);
-    // let (w0, carry) = adc(a[0], b[0], 0);
-    // let (w1, carry) = adc(a[1], b[1], carry);
-    // let (w2, carry) = adc(a[2], b[2], carry);
-    // let (w3, w4) = adc(a[3], b[3], carry);
+    let (w0, carry) = a[0].carrying_add(b[0], Limb::ZERO);
+    let (w1, carry) = a[1].carrying_add(b[1], carry);
+    let (w2, carry) = a[2].carrying_add(b[2], carry);
+    let (w3, w4) = a[3].carrying_add(b[3], carry);
+    // let (w0, carry) = carrying_add(a[0], b[0], 0);
+    // let (w1, carry) = carrying_add(a[1], b[1], carry);
+    // let (w2, carry) = carrying_add(a[2], b[2], carry);
+    // let (w3, w4) = carrying_add(a[3], b[3], carry);
 
     // Attempt to subtract the modulus, to ensure the result is in the field
     let modulus = MODULUS.as_limbs();
@@ -102,45 +102,45 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
 
     /*
     let (a1, carry) = mac(a1, a0, modulus[1], a0);
-    let (a2, carry) = adc(a2, 0, carry);
+    let (a2, carry) = carrying_add(a2, 0, carry);
     let (a3, carry) = mac(a3, a0, modulus[3], carry);
-    let (a4, carry2) = adc(a4, 0, carry);
+    let (a4, carry2) = carrying_add(a4, 0, carry);
 
     let (a2, carry) = mac(a2, a1, modulus[1], a1);
-    let (a3, carry) = adc(a3, 0, carry);
+    let (a3, carry) = carrying_add(a3, 0, carry);
     let (a4, carry) = mac(a4, a1, modulus[3], carry);
-    let (a5, carry2) = adc(a5, carry2, carry);
+    let (a5, carry2) = carrying_add(a5, carry2, carry);
 
     let (a3, carry) = mac(a3, a2, modulus[1], a2);
-    let (a4, carry) = adc(a4, 0, carry);
+    let (a4, carry) = carrying_add(a4, 0, carry);
     let (a5, carry) = mac(a5, a2, modulus[3], carry);
-    let (a6, carry2) = adc(a6, carry2, carry);
+    let (a6, carry2) = carrying_add(a6, carry2, carry);
 
     let (a4, carry) = mac(a4, a3, modulus[1], a3);
-    let (a5, carry) = adc(a5, 0, carry);
+    let (a5, carry) = carrying_add(a5, 0, carry);
     let (a6, carry) = mac(a6, a3, modulus[3], carry);
-    let (a7, a8) = adc(a7, carry2, carry);
+    let (a7, a8) = carrying_add(a7, carry2, carry);
     */
 
-    let (a1, carry) = a1.mac(a0, modulus[1], a0);
-    let (a2, carry) = a2.adc(Limb::ZERO, carry);
-    let (a3, carry) = a3.mac(a0, modulus[3], carry);
-    let (a4, carry2) = a4.adc(Limb::ZERO, carry);
+    let (a1, carry) = a0.carrying_mul_add(modulus[1], a1, a0);
+    let (a2, carry) = a2.carrying_add(Limb::ZERO, carry);
+    let (a3, carry) = a0.carrying_mul_add(modulus[3], a3, carry);
+    let (a4, carry2) = a4.carrying_add(Limb::ZERO, carry);
 
-    let (a2, carry) = a2.mac(a1, modulus[1], a1);
-    let (a3, carry) = a3.adc(Limb::ZERO, carry);
-    let (a4, carry) = a4.mac(a1, modulus[3], carry);
-    let (a5, carry2) = a5.adc(carry2, carry);
+    let (a2, carry) = a1.carrying_mul_add(modulus[1], a2, a1);
+    let (a3, carry) = a3.carrying_add(Limb::ZERO, carry);
+    let (a4, carry) = a1.carrying_mul_add(modulus[3], a4, carry);
+    let (a5, carry2) = a5.carrying_add(carry2, carry);
 
-    let (a3, carry) = a3.mac(a2, modulus[1], a2);
-    let (a4, carry) = a4.adc(Limb::ZERO, carry);
-    let (a5, carry) = a5.mac(a2, modulus[3], carry);
-    let (a6, carry2) = a6.adc(carry2, carry);
+    let (a3, carry) = a2.carrying_mul_add(modulus[1], a3, a2);
+    let (a4, carry) = a4.carrying_add(Limb::ZERO, carry);
+    let (a5, carry) = a2.carrying_mul_add(modulus[3], a5, carry);
+    let (a6, carry2) = a6.carrying_add(carry2, carry);
 
-    let (a4, carry) = a4.mac(a3, modulus[1], a3);
-    let (a5, carry) = a5.adc(Limb::ZERO, carry);
-    let (a6, carry) = a6.mac(a3, modulus[3], carry);
-    let (a7, a8) = a7.adc(carry2, carry);
+    let (a4, carry) = a3.carrying_mul_add(modulus[1], a4, a3);
+    let (a5, carry) = a5.carrying_add(Limb::ZERO, carry);
+    let (a6, carry) = a3.carrying_mul_add(modulus[3], a6, carry);
+    let (a7, a8) = a7.carrying_add(carry2, carry);
 
     // Result may be within MODULUS of the correct value
     let (result, _) = sub_inner(
@@ -154,18 +154,18 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
 #[allow(clippy::too_many_arguments)]
 const fn sub_inner(l: [Limb; 5], r: [Limb; 5]) -> ([Limb; 4], Limb) {
     /*
-    let (w0, borrow) = sbb(l[0], r[0], 0);
-    let (w1, borrow) = sbb(l[1], r[1], borrow);
-    let (w2, borrow) = sbb(l[2], r[2], borrow);
-    let (w3, borrow) = sbb(l[3], r[3], borrow);
-    let (_, borrow) = sbb(l[4], r[4], borrow);
+    let (w0, borrow) = borrowing_sub(l[0], r[0], 0);
+    let (w1, borrow) = borrowing_sub(l[1], r[1], borrow);
+    let (w2, borrow) = borrowing_sub(l[2], r[2], borrow);
+    let (w3, borrow) = borrowing_sub(l[3], r[3], borrow);
+    let (_, borrow) = borrowing_sub(l[4], r[4], borrow);
     */
 
-    let (w0, borrow) = l[0].sbb(r[0], Limb::ZERO);
-    let (w1, borrow) = l[1].sbb(r[1], borrow);
-    let (w2, borrow) = l[2].sbb(r[2], borrow);
-    let (w3, borrow) = l[3].sbb(r[3], borrow);
-    let (_, borrow) = l[4].sbb(r[4], borrow);
+    let (w0, borrow) = l[0].borrowing_sub(r[0], Limb::ZERO);
+    let (w1, borrow) = l[1].borrowing_sub(r[1], borrow);
+    let (w2, borrow) = l[2].borrowing_sub(r[2], borrow);
+    let (w3, borrow) = l[3].borrowing_sub(r[3], borrow);
+    let (_, borrow) = l[4].borrowing_sub(r[4], borrow);
 
     // If underflow occurred on the final limb, borrow = 0xfff...fff, otherwise
     // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
@@ -174,16 +174,16 @@ const fn sub_inner(l: [Limb; 5], r: [Limb; 5]) -> ([Limb; 4], Limb) {
     let modulus = MODULUS.as_limbs();
 
     /*
-    let (w0, carry) = adc(w0, modulus[0] & borrow, 0);
-    let (w1, carry) = adc(w1, modulus[1] & borrow, carry);
-    let (w2, carry) = adc(w2, modulus[2] & borrow, carry);
-    let (w3, _) = adc(w3, modulus[3] & borrow, carry);
+    let (w0, carry) = carrying_add(w0, modulus[0] & borrow, 0);
+    let (w1, carry) = carrying_add(w1, modulus[1] & borrow, carry);
+    let (w2, carry) = carrying_add(w2, modulus[2] & borrow, carry);
+    let (w3, _) = carrying_add(w3, modulus[3] & borrow, carry);
     */
 
-    let (w0, carry) = w0.adc(modulus[0].bitand(borrow), Limb::ZERO);
-    let (w1, carry) = w1.adc(modulus[1].bitand(borrow), carry);
-    let (w2, carry) = w2.adc(modulus[2].bitand(borrow), carry);
-    let (w3, _) = w3.adc(modulus[3].bitand(borrow), carry);
+    let (w0, carry) = w0.carrying_add(modulus[0].bitand(borrow), Limb::ZERO);
+    let (w1, carry) = w1.carrying_add(modulus[1].bitand(borrow), carry);
+    let (w2, carry) = w2.carrying_add(modulus[2].bitand(borrow), carry);
+    let (w3, _) = w3.carrying_add(modulus[3].bitand(borrow), carry);
 
     ([w0, w1, w2, w3], borrow)
 }

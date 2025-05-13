@@ -169,7 +169,7 @@ impl Reduce<U256> for Scalar {
     type Bytes = FieldBytes;
 
     fn reduce(w: U256) -> Self {
-        let (r, underflow) = w.sbb(&BignP256::ORDER, Limb::ZERO);
+        let (r, underflow) = w.borrowing_sub(&BignP256::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(U256::conditional_select(&w, &r, !underflow))
     }

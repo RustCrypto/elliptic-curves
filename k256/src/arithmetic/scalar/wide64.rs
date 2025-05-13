@@ -205,7 +205,7 @@ impl WideScalar {
 
         // Final reduction of r.
         let r = U256::from([r0, r1, r2, r3]);
-        let (r2, underflow) = r.sbb(&modulus, Limb::ZERO);
+        let (r2, underflow) = r.borrowing_sub(&modulus, Limb::ZERO);
         let high_bit = Choice::from(c as u8);
         let underflow = Choice::from((underflow.0 >> 63) as u8);
         Scalar(U256::conditional_select(&r, &r2, !underflow | high_bit))

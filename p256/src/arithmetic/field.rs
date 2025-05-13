@@ -86,7 +86,7 @@ impl FieldElement {
 
     /// Returns self * rhs mod p
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        let (lo, hi): (U256, U256) = self.0.split_mul(&rhs.0);
+        let (lo, hi): (U256, U256) = self.0.widening_mul(&rhs.0);
         Self(field_impl::montgomery_reduce(lo, hi))
     }
 
