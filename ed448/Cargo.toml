@@ -6,7 +6,7 @@ This crate also includes signing and verifying of Ed448 signatures.
 """
 documentation = "https://docs.rs/ed448-goldilocks"
 exclude = [".gitignore", ".github/*"]
-edition = "2021"
+edition = "2024"
 homepage = "https://docs.rs/ed448-goldilocks/"
 keywords = ["cryptography", "decaf", "ed448", "ed448-goldilocks"]
 license = "BSD-3-Clause"

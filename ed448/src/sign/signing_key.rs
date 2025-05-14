@@ -3,18 +3,17 @@
 
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
+use crate::{Context, SECRET_KEY_LENGTH, Scalar, ScalarBytes, Signature, VerifyingKey};
 #[cfg(feature = "pkcs8")]
-use crate::{curve::edwards::extended::PointBytes, PUBLIC_KEY_LENGTH};
-use crate::{Context, Scalar, ScalarBytes, Signature, VerifyingKey, SECRET_KEY_LENGTH};
+use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
 use sha3::{
     Digest,
     digest::{
-        consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual, ExtendableOutput, FixedOutput,
-        FixedOutputReset, HashMarker, Update, XofReader,
+        ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
+        consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
     },
-    Digest,
 };
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};

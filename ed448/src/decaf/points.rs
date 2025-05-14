@@ -4,14 +4,14 @@ use crate::field::FieldElement;
 use crate::*;
 
 use elliptic_curve::{
+    Group,
     array::{
-        typenum::{U56, U84},
         Array,
+        typenum::{U56, U84},
     },
-    group::{cofactor::CofactorGroup, prime::PrimeGroup, Curve, GroupEncoding},
+    group::{Curve, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::LinearCombination,
-    Group,
 };
 
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
