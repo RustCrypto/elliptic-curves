@@ -4,7 +4,6 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     array::Array,
     bigint::{
-        NonZero, U448, U704,
         consts::{U84, U88},
     },
     hash2curve::{FromOkm, MapToCurve},
@@ -433,8 +432,12 @@ mod tests {
         ];
 
         for (msg, expected_u0, expected_u1) in MSGS {
-            let mut expander =
-                ExpandMsgXof::<Shake256>::expand_message(&[msg], &[DST], 84 * 2).unwrap();
+            let mut expander = ExpandMsgXof::<Shake256, U84>::expand_message(
+                &[msg],
+                &[DST],
+                (84 * 2).try_into().unwrap(),
+            )
+            .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
             let u0 = FieldElement::from_okm(&data);
@@ -461,8 +464,12 @@ mod tests {
         ];
 
         for (msg, expected_u0, expected_u1) in MSGS {
-            let mut expander =
-                ExpandMsgXof::<Shake256>::expand_message(&[msg], &[DST], 84 * 2).unwrap();
+            let mut expander = ExpandMsgXof::<Shake256, U84>::expand_message(
+                &[msg],
+                &[DST],
+                (84 * 2).try_into().unwrap(),
+            )
+            .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
             let u0 = FieldElement::from_okm(&data);
