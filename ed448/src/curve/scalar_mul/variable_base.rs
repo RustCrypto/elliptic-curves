@@ -37,8 +37,8 @@ pub fn variable_base(point: &ExtendedPoint, s: &Scalar) -> ExtendedPoint {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::curve::scalar_mul::double_and_add;
     use crate::TWISTED_EDWARDS_BASE_POINT;
+    use crate::curve::scalar_mul::double_and_add;
     use elliptic_curve::bigint::U448;
 
     #[test]
@@ -46,7 +46,7 @@ mod test {
         // XXX: In the future use known multiples from Sage in bytes form?
         let twisted_point = TWISTED_EDWARDS_BASE_POINT;
         let scalar = Scalar(U448::from_be_hex(
-            "05ca185aee2e1b73def437f63c003777083f83043fe5bf1aab454c66b64629d1de8026c1307f665ead0b70151533427ce128ae786ee372b7"
+            "05ca185aee2e1b73def437f63c003777083f83043fe5bf1aab454c66b64629d1de8026c1307f665ead0b70151533427ce128ae786ee372b7",
         ));
 
         let got = variable_base(&twisted_point, &scalar);

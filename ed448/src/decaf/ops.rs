@@ -1,4 +1,4 @@
-use crate::{curve::scalar_mul::double_and_add, DecafAffinePoint, Scalar};
+use crate::{DecafAffinePoint, Scalar, curve::scalar_mul::double_and_add};
 use core::{
     borrow::Borrow,
     iter::Sum,

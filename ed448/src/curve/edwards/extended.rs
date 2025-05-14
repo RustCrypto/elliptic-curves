@@ -12,10 +12,10 @@ use crate::field::{FieldElement, Scalar};
 use crate::*;
 use elliptic_curve::{
     array::{
-        typenum::{U57, U84},
         Array,
+        typenum::{U57, U84},
     },
-    group::{cofactor::CofactorGroup, prime::PrimeGroup, Curve, Group, GroupEncoding},
+    group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm},
     ops::LinearCombination,
 };
@@ -1027,8 +1027,12 @@ mod tests {
 
     #[test]
     fn test_isogeny() {
-        let x = hex_to_field("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555");
-        let y = hex_to_field("ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed");
+        let x = hex_to_field(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555",
+        );
+        let y = hex_to_field(
+            "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
+        );
         let a = AffinePoint { x, y }.to_edwards();
         let twist_a = a.to_twisted().to_untwisted();
         assert!(twist_a == a.double().double())
@@ -1040,13 +1044,21 @@ mod tests {
         use crate::{GOLDILOCKS_BASE_POINT, TWISTED_EDWARDS_BASE_POINT};
 
         // This was the original basepoint which had order 2q;
-        let old_x = hex_to_field("4F1970C66BED0DED221D15A622BF36DA9E146570470F1767EA6DE324A3D3A46412AE1AF72AB66511433B80E18B00938E2626A82BC70CC05E");
-        let old_y = hex_to_field("693F46716EB6BC248876203756C9C7624BEA73736CA3984087789C1E05A0C2D73AD3FF1CE67C39C4FDBD132C4ED7C8AD9808795BF230FA14");
+        let old_x = hex_to_field(
+            "4F1970C66BED0DED221D15A622BF36DA9E146570470F1767EA6DE324A3D3A46412AE1AF72AB66511433B80E18B00938E2626A82BC70CC05E",
+        );
+        let old_y = hex_to_field(
+            "693F46716EB6BC248876203756C9C7624BEA73736CA3984087789C1E05A0C2D73AD3FF1CE67C39C4FDBD132C4ED7C8AD9808795BF230FA14",
+        );
         let old_bp = AffinePoint { x: old_x, y: old_y }.to_edwards();
 
         // This is the new basepoint, that is in the ed448 paper
-        let new_x = hex_to_field("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555");
-        let new_y = hex_to_field("ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed");
+        let new_x = hex_to_field(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555",
+        );
+        let new_y = hex_to_field(
+            "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
+        );
         let new_bp = AffinePoint { x: new_x, y: new_y }.to_edwards();
 
         // Doubling the old basepoint, should give us the new basepoint
@@ -1063,25 +1075,35 @@ mod tests {
 
     #[test]
     fn test_is_on_curve() {
-        let x = hex_to_field("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555");
-        let y = hex_to_field("ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed");
-        let gen = AffinePoint { x, y }.to_edwards();
-        assert_eq!(gen.is_on_curve().unwrap_u8(), 1u8);
+        let x = hex_to_field(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555",
+        );
+        let y = hex_to_field(
+            "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
+        );
+        let generated = AffinePoint { x, y }.to_edwards();
+        assert_eq!(generated.is_on_curve().unwrap_u8(), 1u8);
     }
     #[test]
     fn test_compress_decompress() {
-        let x = hex_to_field("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555");
-        let y = hex_to_field("ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed");
-        let gen = AffinePoint { x, y }.to_edwards();
+        let x = hex_to_field(
+            "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555",
+        );
+        let y = hex_to_field(
+            "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
+        );
+        let generated = AffinePoint { x, y }.to_edwards();
 
-        let decompressed_point = gen.compress().decompress();
+        let decompressed_point = generated.compress().decompress();
         assert!(<Choice as Into<bool>>::into(decompressed_point.is_some()));
 
         assert!(gen == decompressed_point.unwrap());
     }
     #[test]
     fn test_decompress_compress() {
-        let bytes = hex!("649c6a53b109897d962d033f23d01fd4e1053dddf3746d2ddce9bd66aea38ccfc3df061df03ca399eb806312ab3037c0c31523142956ada780");
+        let bytes = hex!(
+            "649c6a53b109897d962d033f23d01fd4e1053dddf3746d2ddce9bd66aea38ccfc3df061df03ca399eb806312ab3037c0c31523142956ada780"
+        );
         let compressed = CompressedEdwardsY(bytes);
         let decompressed = compressed.decompress().unwrap();
 
@@ -1091,26 +1113,52 @@ mod tests {
     }
     #[test]
     fn test_just_decompress() {
-        let bytes = hex!("649c6a53b109897d962d033f23d01fd4e1053dddf3746d2ddce9bd66aea38ccfc3df061df03ca399eb806312ab3037c0c31523142956ada780");
+        let bytes = hex!(
+            "649c6a53b109897d962d033f23d01fd4e1053dddf3746d2ddce9bd66aea38ccfc3df061df03ca399eb806312ab3037c0c31523142956ada780"
+        );
         let compressed = CompressedEdwardsY(bytes);
         let decompressed = compressed.decompress().unwrap();
 
-        assert_eq!(decompressed.X, hex_to_field("39c41cea305d737df00de8223a0d5f4d48c8e098e16e9b4b2f38ac353262e119cb5ff2afd6d02464702d9d01c9921243fc572f9c718e2527"));
-        assert_eq!(decompressed.Y, hex_to_field("a7ad5629142315c3c03730ab126380eb99a33cf01d06dfc3cf8ca3ae66bde9dc2d6d74f3dd3d05e1d41fd0233f032d967d8909b1536a9c64"));
+        assert_eq!(
+            decompressed.X,
+            hex_to_field(
+                "39c41cea305d737df00de8223a0d5f4d48c8e098e16e9b4b2f38ac353262e119cb5ff2afd6d02464702d9d01c9921243fc572f9c718e2527"
+            )
+        );
+        assert_eq!(
+            decompressed.Y,
+            hex_to_field(
+                "a7ad5629142315c3c03730ab126380eb99a33cf01d06dfc3cf8ca3ae66bde9dc2d6d74f3dd3d05e1d41fd0233f032d967d8909b1536a9c64"
+            )
+        );
 
-        let bytes = hex!("010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+        let bytes = hex!(
+            "010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        );
         let compressed = CompressedEdwardsY(bytes);
         let decompressed = compressed.decompress().unwrap();
 
-        assert_eq!(decompressed.X, hex_to_field("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"));
-        assert_eq!(decompressed.Y, hex_to_field("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"));
+        assert_eq!(
+            decompressed.X,
+            hex_to_field(
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+            )
+        );
+        assert_eq!(
+            decompressed.Y,
+            hex_to_field(
+                "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
+            )
+        );
     }
     #[test]
     fn test_is_torsion_free() {
         assert_eq!(EdwardsPoint::GENERATOR.is_torsion_free().unwrap_u8(), 1u8);
         assert_eq!(EdwardsPoint::IDENTITY.is_torsion_free().unwrap_u8(), 1u8);
 
-        let bytes = hex!("13b6714c7a5f53101bbec88f2f17cd30f42e37fae363a5474efb4197ed6005df5861ae178a0c2c16ad378b7befed0d0904b7ced35e9f674180");
+        let bytes = hex!(
+            "13b6714c7a5f53101bbec88f2f17cd30f42e37fae363a5474efb4197ed6005df5861ae178a0c2c16ad378b7befed0d0904b7ced35e9f674180"
+        );
         let compressed = CompressedEdwardsY(bytes);
         let decompressed = compressed.decompress();
         assert_eq!(decompressed.is_none().unwrap_u8(), 1u8);

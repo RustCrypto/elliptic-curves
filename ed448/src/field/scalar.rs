@@ -7,16 +7,16 @@ use core::ops::{
 };
 use crypto_bigint::Zero;
 use elliptic_curve::{
+    PrimeField,
     array::{
-        typenum::{U114, U57, U84, U88},
         Array,
+        typenum::{U57, U84, U88, U114},
     },
     bigint::{Limb, NonZero, U448, U704, U896},
-    ff::{helpers, Field, FieldBits, PrimeFieldBits},
+    ff::{Field, FieldBits, PrimeFieldBits, helpers},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh, ScalarPrimitive},
-    PrimeField,
 };
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
@@ -33,12 +33,16 @@ pub type ScalarBytes = Array<u8, U57>;
 pub type WideScalarBytes = Array<u8, U114>;
 
 /// The order of the scalar field
-pub const ORDER: U448 = U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3");
+pub const ORDER: U448 = U448::from_be_hex(
+    "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
+);
 pub const NZ_ORDER: NonZero<U448> = NonZero::<U448>::new_unwrap(ORDER);
 const ORDER_MINUS_ONE: U448 = ORDER.wrapping_sub(&U448::ONE);
 const HALF_ORDER: U448 = ORDER.shr_vartime(1);
 /// The wide order of the scalar field
-pub const WIDE_ORDER: U896 = U896::from_be_hex("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3");
+pub const WIDE_ORDER: U896 = U896::from_be_hex(
+    "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
+);
 const WIDE_ORDER_MINUS_ONE: U896 = WIDE_ORDER.wrapping_sub(&U896::ONE);
 
 /// The modulus of the scalar field as a sequence of 14 32-bit limbs
@@ -292,13 +296,19 @@ impl PrimeField for Scalar {
     const MODULUS: &'static str = "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3";
     const NUM_BITS: u32 = 448;
     const CAPACITY: u32 = Self::NUM_BITS - 1;
-    const TWO_INV: Self = Self(U448::from_be_hex("1fffffffffffffffffffffffffffffffffffffffffffffffffffffffbe6511f4e2276da4d76b1b4810b6613946e2c7aa91bc614955ac227a"));
+    const TWO_INV: Self = Self(U448::from_be_hex(
+        "1fffffffffffffffffffffffffffffffffffffffffffffffffffffffbe6511f4e2276da4d76b1b4810b6613946e2c7aa91bc614955ac227a",
+    ));
     const MULTIPLICATIVE_GENERATOR: Self = Self(U448::from_u8(7));
     const S: u32 = 1;
 
-    const ROOT_OF_UNITY: Self = Self(U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+    const ROOT_OF_UNITY: Self = Self(U448::from_be_hex(
+        "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2",
+    ));
 
-    const ROOT_OF_UNITY_INV: Self = Self(U448::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+    const ROOT_OF_UNITY_INV: Self = Self(U448::from_be_hex(
+        "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2",
+    ));
 
     const DELTA: Self = Self(U448::from_u8(49));
 }
@@ -420,7 +430,9 @@ impl FromOkm for Scalar {
     type Length = U84;
 
     fn from_okm(data: &Array<u8, Self::Length>) -> Self {
-        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex("00000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
+        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex(
+            "00000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
+        ));
         let mut tmp = Array::<u8, U88>::default();
         tmp[4..].copy_from_slice(&data[..]);
 
@@ -843,7 +855,9 @@ impl Scalar {
     /// modulo the group order ℓ.
     pub fn from_bytes_mod_order_wide(input: &WideScalarBytes) -> Scalar {
         // top multiplier = 2^896 mod ℓ
-        const TOP_MULTIPLIER: U448 = U448::from_be_hex("3402a939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf725ee4d8380d66de2388ea18597af32c4bc1b195d9e3539257049b9b60");
+        const TOP_MULTIPLIER: U448 = U448::from_be_hex(
+            "3402a939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf725ee4d8380d66de2388ea18597af32c4bc1b195d9e3539257049b9b60",
+        );
         let value = (
             U448::from_le_slice(&input[..56]),
             U448::from_le_slice(&input[56..112]),
@@ -938,15 +952,15 @@ mod test {
     #[test]
     fn test_mul() {
         let a = Scalar(U448::from_be_hex(
-            "1e63e8073b089f0747cf8cac2c3dc2732aae8688a8fa552ba8cb0ae8c0be082e74d657641d9ac30a087b8fb97f8ed27dc96a3c35ffb823a3"
+            "1e63e8073b089f0747cf8cac2c3dc2732aae8688a8fa552ba8cb0ae8c0be082e74d657641d9ac30a087b8fb97f8ed27dc96a3c35ffb823a3",
         ));
 
         let b = Scalar(U448::from_be_hex(
-            "16c5450acae1cb680a92de2d8e59b30824e8d4991adaa0e7bc343bcbd099595b188c6b1a1e30b38b17aa6d9be416b899686eb329d8bedc42"
+            "16c5450acae1cb680a92de2d8e59b30824e8d4991adaa0e7bc343bcbd099595b188c6b1a1e30b38b17aa6d9be416b899686eb329d8bedc42",
         ));
 
         let exp = Scalar(U448::from_be_hex(
-            "31e055c14ca389edfccd61b3203d424bb9036ff6f2d89c1e07bcd93174e9335f36a1492008a3a0e46abd26f5994c9c2b1f5b3197a18d010a"
+            "31e055c14ca389edfccd61b3203d424bb9036ff6f2d89c1e07bcd93174e9335f36a1492008a3a0e46abd26f5994c9c2b1f5b3197a18d010a",
         ));
 
         assert_eq!(a * b, exp)
@@ -1013,19 +1027,25 @@ mod test {
     #[test]
     fn test_from_canonical_bytes() {
         // ff..ff should fail
-        let mut bytes = ScalarBytes::from(hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+        let mut bytes = ScalarBytes::from(hex!(
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ));
         bytes.reverse();
         let s = Scalar::from_canonical_bytes(&bytes);
         assert!(<Choice as Into<bool>>::into(s.is_none()));
 
         // n should fail
-        let mut bytes = ScalarBytes::from(hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
+        let mut bytes = ScalarBytes::from(hex!(
+            "003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"
+        ));
         bytes.reverse();
         let s = Scalar::from_canonical_bytes(&bytes);
         assert!(<Choice as Into<bool>>::into(s.is_none()));
 
         // n-1 should work
-        let mut bytes = ScalarBytes::from(hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+        let mut bytes = ScalarBytes::from(hex!(
+            "003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"
+        ));
         bytes.reverse();
         let s = Scalar::from_canonical_bytes(&bytes);
         match Option::<Scalar>::from(s) {
@@ -1037,27 +1057,37 @@ mod test {
     #[test]
     fn test_from_bytes_mod_order_wide() {
         // n should become 0
-        let mut bytes = WideScalarBytes::from(hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"));
+        let mut bytes = WideScalarBytes::from(hex!(
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"
+        ));
         bytes.reverse();
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
         assert_eq!(s, Scalar::ZERO);
 
         // n-1 should stay the same
-        let mut bytes = WideScalarBytes::from(hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"));
+        let mut bytes = WideScalarBytes::from(hex!(
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"
+        ));
         bytes.reverse();
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
         assert_eq!(s, Scalar::ZERO - Scalar::ONE);
 
         // n+1 should become 1
-        let mut bytes = WideScalarBytes::from(hex!("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f4"));
+        let mut bytes = WideScalarBytes::from(hex!(
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f4"
+        ));
         bytes.reverse();
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
         assert_eq!(s, Scalar::ONE);
 
         // 2^912-1 should become 0x2939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf72c985bb24b6c520e319fb37a63e29800f160787ad1d2e11883fa931e7de81
-        let bytes = WideScalarBytes::from(hex!("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+        let bytes = WideScalarBytes::from(hex!(
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ));
         let s = Scalar::from_bytes_mod_order_wide(&bytes);
-        let mut bytes = ScalarBytes::from(hex!("002939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf72c985bb24b6c520e319fb37a63e29800f160787ad1d2e11883fa931e7de81"));
+        let mut bytes = ScalarBytes::from(hex!(
+            "002939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf72c985bb24b6c520e319fb37a63e29800f160787ad1d2e11883fa931e7de81"
+        ));
         bytes.reverse();
         let reduced = Scalar::from_canonical_bytes(&bytes).unwrap();
         assert_eq!(s, reduced);
@@ -1066,7 +1096,9 @@ mod test {
     #[test]
     fn test_to_bytes_rfc8032() {
         // n-1
-        let mut bytes: [u8; 57] = hex!("003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2");
+        let mut bytes: [u8; 57] = hex!(
+            "003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"
+        );
         bytes.reverse();
         let x = Scalar::ZERO - Scalar::ONE;
         let candidate = x.to_bytes_rfc_8032();
@@ -1100,7 +1132,9 @@ mod test {
         let dst = b"edwards448_XOF:SHAKE256_ELL2_RO_";
         let res =
             Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
-        let expected: [u8; 57] = hex_literal::hex!("2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300");
+        let expected: [u8; 57] = hex_literal::hex!(
+            "2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300"
+        );
         assert_eq!(res.to_bytes_rfc_8032(), Array::from(expected));
     }
 }

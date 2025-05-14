@@ -1,5 +1,5 @@
 use crate::*;
-use crate::{decaf::DecafPoint, Scalar};
+use crate::{Scalar, decaf::DecafPoint};
 
 pub const DECAF_BASEPOINT: DecafPoint = DecafPoint(curve::twedwards::extended::ExtendedPoint {
     X: TWISTED_EDWARDS_BASE_POINT.X,
