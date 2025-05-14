@@ -120,7 +120,7 @@ impl Index<usize> for Scalar {
 
 impl IndexMut<usize> for Scalar {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.0.as_words_mut()[index]
+        &mut self.0.as_mut_words()[index]
     }
 }
 
@@ -447,7 +447,7 @@ impl Reduce<U448> for Scalar {
     type Bytes = ScalarBytes;
 
     fn reduce(bytes: U448) -> Self {
-        let (r, underflow) = bytes.sbb(&ORDER, Limb::ZERO);
+        let (r, underflow) = bytes.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U448::conditional_select(&bytes, &r, !underflow))
     }
@@ -461,7 +461,7 @@ impl Reduce<U896> for Scalar {
     type Bytes = WideScalarBytes;
 
     fn reduce(bytes: U896) -> Self {
-        let (r, underflow) = bytes.sbb(&WIDE_ORDER, Limb::ZERO);
+        let (r, underflow) = bytes.borrowing_sub(&WIDE_ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U896::conditional_select(&bytes, &r, !underflow).split().1)
     }
@@ -473,7 +473,7 @@ impl Reduce<U896> for Scalar {
 
 impl ReduceNonZero<U448> for Scalar {
     fn reduce_nonzero(bytes: U448) -> Self {
-        let (r, underflow) = bytes.sbb(&ORDER_MINUS_ONE, Limb::ZERO);
+        let (r, underflow) = bytes.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U448::conditional_select(&bytes, &r, !underflow).wrapping_add(&U448::ONE))
     }
@@ -485,7 +485,7 @@ impl ReduceNonZero<U448> for Scalar {
 
 impl ReduceNonZero<U896> for Scalar {
     fn reduce_nonzero(bytes: U896) -> Self {
-        let (r, underflow) = bytes.sbb(&WIDE_ORDER_MINUS_ONE, Limb::ZERO);
+        let (r, underflow) = bytes.borrowing_sub(&WIDE_ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
 
         Self(
@@ -677,7 +677,7 @@ impl Scalar {
 
     /// Compute `self` * `rhs` mod ℓ
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        let wide_value = self.0.split_mul(&rhs.0);
+        let wide_value = self.0.widening_mul(&rhs.0);
         Self(U448::rem_wide_vartime(wide_value, &NZ_ORDER))
     }
 
@@ -837,7 +837,7 @@ impl Scalar {
         let candidate = Scalar::from_bytes(&bytes);
 
         // underflow means candidate < ORDER, thus canonical
-        let (_, underflow) = candidate.0.sbb(&ORDER, Limb::ZERO);
+        let (_, underflow) = candidate.0.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         CtOption::new(candidate, underflow & is_valid)
     }
