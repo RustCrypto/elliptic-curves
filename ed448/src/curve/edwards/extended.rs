@@ -12,7 +12,6 @@ use crate::field::{FieldElement, Scalar};
 use crate::*;
 use elliptic_curve::{
     array::{
-        typenum::{Unsigned, U56, U57, U84},
         Array,
     },
     group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
