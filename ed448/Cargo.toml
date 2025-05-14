@@ -18,7 +18,7 @@ version = "0.17.0-pre.0"
 
 [dependencies]
 crypto-bigint = { version = "0.6.0-rc.3", features = ["hybrid-array"], default-features = false }
-crypto_signature = { version = "2.3.0-pre.6", default-features = false, features = ["digest", "rand_core"], optional = true, package = "signature" }
+crypto_signature = { version = "=3.0.0-pre", default-features = false, features = ["digest", "rand_core"], optional = true, package = "signature" }
 elliptic-curve = { version = "0.14.0-rc.0", features = ["arithmetic", "bits", "hash2curve", "jwk", "pkcs8", "pem", "sec1"] }
 rand_core = { version = "0.9", default-features = false }
 serdect = { version = "0.3.0", optional = true }
@@ -28,11 +28,11 @@ zeroize = { version = "1.8", default-features = false, optional = true }
 
 [features]
 default = ["std", "signing", "pkcs8"]
-alloc = ["serdect/alloc", "zeroize/alloc"]
+alloc = ["serdect/alloc", "zeroize/alloc", "crypto_signature/alloc"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 signing = ["dep:crypto_signature", "zeroize"]
 serde = ["dep:serdect"]
-std = ["serdect/default", "zeroize/default", "crypto_signature/std"]
+std = ["serdect/default", "zeroize/default"]
 zeroize = ["dep:zeroize"]
 
 [dev-dependencies]
