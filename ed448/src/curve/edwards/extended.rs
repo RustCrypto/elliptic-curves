@@ -12,10 +12,10 @@ use crate::field::{FieldElement, Scalar};
 use crate::*;
 use elliptic_curve::{
     array::{
+        typenum::{Unsigned, U56, U57, U84},
         Array,
-        typenum::{U57, U84},
     },
-    group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
+    group::{cofactor::CofactorGroup, prime::PrimeGroup, Curve, Group, GroupEncoding},
     hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm},
     ops::LinearCombination,
 };
@@ -525,8 +525,6 @@ impl<const N: usize> LinearCombination<[(EdwardsPoint, Scalar); N]> for EdwardsP
 
 impl LinearCombination<[(EdwardsPoint, Scalar)]> for EdwardsPoint {}
 
-impl MulByGenerator for EdwardsPoint {}
-
 impl Curve for EdwardsPoint {
     type AffineRepr = AffinePoint;
 
@@ -749,7 +747,7 @@ impl EdwardsPoint {
     ///
     /// Hash using the default domain separation tag and hash function
     pub fn hash_with_defaults(msg: &[u8]) -> Self {
-        Self::hash::<ExpandMsgXof<sha3::Shake256>>(msg, DEFAULT_HASH_TO_CURVE_SUITE)
+        Self::hash::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DEFAULT_HASH_TO_CURVE_SUITE)
     }
 
     /// Hash a message to a point on the curve
@@ -760,10 +758,16 @@ impl EdwardsPoint {
     where
         X: for<'a> ExpandMsg<'a>,
     {
-        let mut random_bytes = Array::<u8, U84>::default();
+        type RandomLen = U84;
+        let mut random_bytes = Array::<u8, RandomLen>::default();
         let dst = [dst];
-        let mut expander =
-            X::expand_message(&[msg], &dst, random_bytes.len() * 2).expect("bad dst");
+        let mut expander = X::expand_message(
+            &[msg],
+            &dst,
+            core::num::NonZero::new(RandomLen::USIZE * 2)
+                .expect("invariant violation: random is non zero length"),
+        )
+        .expect("bad dst");
         expander.fill_bytes(&mut random_bytes);
         let u0 = FieldElement::from_okm(&random_bytes);
         expander.fill_bytes(&mut random_bytes);
@@ -780,7 +784,7 @@ impl EdwardsPoint {
     ///
     /// Encode using the default domain separation tag and hash function
     pub fn encode_with_defaults(msg: &[u8]) -> Self {
-        Self::encode::<ExpandMsgXof<sha3::Shake256>>(msg, DEFAULT_ENCODE_TO_CURVE_SUITE)
+        Self::encode::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DEFAULT_ENCODE_TO_CURVE_SUITE)
     }
 
     /// Encode a message to a point on the curve
@@ -791,9 +795,16 @@ impl EdwardsPoint {
     where
         X: for<'a> ExpandMsg<'a>,
     {
-        let mut random_bytes = Array::<u8, U84>::default();
+        type RandomLen = U84;
+        let mut random_bytes = Array::<u8, RandomLen>::default();
         let dst = [dst];
-        let mut expander = X::expand_message(&[msg], &dst, random_bytes.len()).expect("bad dst");
+        let mut expander = X::expand_message(
+            &[msg],
+            &dst,
+            core::num::NonZero::new(RandomLen::USIZE)
+                .expect("invariant violation: random is non zero length"),
+        )
+        .expect("bad dst");
         expander.fill_bytes(&mut random_bytes);
         let u0 = FieldElement::from_okm(&random_bytes);
         let mut q0 = u0.map_to_curve_elligator2();
@@ -1097,7 +1108,7 @@ mod tests {
         let decompressed_point = generated.compress().decompress();
         assert!(<Choice as Into<bool>>::into(decompressed_point.is_some()));
 
-        assert!(gen == decompressed_point.unwrap());
+        assert!(generated == decompressed_point.unwrap());
     }
     #[test]
     fn test_decompress_compress() {
@@ -1176,7 +1187,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = EdwardsPoint::hash::<ExpandMsgXof<sha3::Shake256>>(msg, DST);
+            let p = EdwardsPoint::hash::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DST);
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1213,7 +1224,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = EdwardsPoint::encode::<ExpandMsgXof<sha3::Shake256>>(msg, DST);
+            let p = EdwardsPoint::encode::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DST);
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];

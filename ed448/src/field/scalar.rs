@@ -7,16 +7,15 @@ use core::ops::{
 };
 use crypto_bigint::Zero;
 use elliptic_curve::{
-    PrimeField,
     array::{
         Array,
-        typenum::{U57, U84, U88, U114},
     },
     bigint::{Limb, NonZero, U448, U704, U896},
     ff::{Field, FieldBits, PrimeFieldBits, helpers},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh, ScalarPrimitive},
+    PrimeField,
 };
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
@@ -907,10 +906,15 @@ impl Scalar {
     where
         X: for<'a> ExpandMsg<'a>,
     {
-        let mut random_bytes = Array::<u8, U84>::default();
+        type RandomLen = U84;
+        let mut random_bytes = Array::<u8, RandomLen>::default();
         let dst = [dst];
-        let mut expander =
-            X::expand_message(&[msg], &dst, random_bytes.len()).expect("invalid dst");
+        let mut expander = X::expand_message(
+            &[msg],
+            &dst,
+            core::num::NonZero::new(RandomLen::USIZE).expect("Invariant violation"),
+        )
+        .expect("invalid dst");
         expander.fill_bytes(&mut random_bytes);
         Self::from_okm(&random_bytes)
     }
@@ -1131,7 +1135,7 @@ mod test {
         let msg = b"hello world";
         let dst = b"edwards448_XOF:SHAKE256_ELL2_RO_";
         let res =
-            Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
+            Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256, U84>>(msg, dst);
         let expected: [u8; 57] = hex_literal::hex!(
             "2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300"
         );

@@ -4,14 +4,13 @@ use crate::field::FieldElement;
 use crate::*;
 
 use elliptic_curve::{
-    Group,
     array::{
         Array,
-        typenum::{U56, U84},
     },
     group::{Curve, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::LinearCombination,
+    Group,
 };
 
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
@@ -234,8 +233,6 @@ impl CofactorGroup for DecafPoint {
 
 impl PrimeGroup for DecafPoint {}
 
-impl MulByGenerator for DecafPoint {}
-
 impl<const N: usize> LinearCombination<[(DecafPoint, Scalar); N]> for DecafPoint {}
 
 impl LinearCombination<[(DecafPoint, Scalar)]> for DecafPoint {}
@@ -361,10 +358,16 @@ impl DecafPoint {
     where
         X: for<'a> ExpandMsg<'a>,
     {
+        type RandomLen = U84;
         let dst = [dst];
-        let mut random_bytes = Array::<u8, U84>::default();
-        let mut expander =
-            X::expand_message(&[msg], &dst, random_bytes.len() * 2).expect("bad dst");
+        let mut random_bytes = Array::<u8, RandomLen>::default();
+        let mut expander = X::expand_message(
+            &[msg],
+            &dst,
+            core::num::NonZero::new(RandomLen::USIZE * 2)
+                .expect("invariant violation: random is non zero length"),
+        )
+        .expect("bad dst");
         expander.fill_bytes(&mut random_bytes);
         let u0 = FieldElement::from_okm(&random_bytes);
         expander.fill_bytes(&mut random_bytes);
@@ -758,7 +761,8 @@ mod test {
         use elliptic_curve::hash2curve::ExpandMsgXof;
 
         let msg = b"Hello, world!";
-        let point = DecafPoint::hash::<ExpandMsgXof<sha3::Shake256>>(msg, b"test_hash_to_curve");
+        let point =
+            DecafPoint::hash::<ExpandMsgXof<sha3::Shake256, U84>>(msg, b"test_hash_to_curve");
         assert_eq!(point.0.is_on_curve().unwrap_u8(), 1u8);
         assert_ne!(point, DecafPoint::IDENTITY);
         assert_ne!(point, DecafPoint::GENERATOR);
