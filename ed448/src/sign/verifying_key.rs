@@ -1,14 +1,14 @@
 //! Much of this code is borrowed from Thomas Pornin's [CRRL Project](https://github.com/pornin/crrl/blob/main/src/ed448.rs)
 //! and adapted to mirror `ed25519-dalek`'s API.
 
-#[cfg(feature = "pkcs8")]
-use crate::PUBLIC_KEY_LENGTH;
 use crate::curve::edwards::extended::PointBytes;
 use crate::sign::HASH_HEAD;
 use crate::{
     CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, ScalarBytes, Signature,
     SigningError, WideScalarBytes,
 };
+#[cfg(feature = "pkcs8")]
+use {crate::PUBLIC_KEY_LENGTH, elliptic_curve::pkcs8};
 
 use core::{
     fmt::{self, Debug, Formatter},
@@ -17,7 +17,6 @@ use core::{
 use crypto_signature::Error;
 use elliptic_curve::Group;
 use sha3::{
-    Digest, Shake256,
     digest::{ExtendableOutput, Update, XofReader},
 };
 

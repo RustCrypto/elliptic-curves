@@ -3,13 +3,11 @@
 
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
-use crate::{Context, SECRET_KEY_LENGTH, Scalar, ScalarBytes, Signature, VerifyingKey};
 #[cfg(feature = "pkcs8")]
 use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
 use sha3::{
-    Digest,
     digest::{
         ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
         consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
@@ -321,39 +319,41 @@ pub struct KeypairBytes {
 #[cfg(all(any(feature = "alloc", feature = "std"), feature = "pkcs8"))]
 impl pkcs8::EncodePrivateKey for KeypairBytes {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
-        let mut private_key = [0u8; 2 + SECRET_KEY_LENGTH];
-        private_key[0] = 0x04;
-        private_key[1] = SECRET_KEY_LENGTH as u8;
-        private_key[2..].copy_from_slice(self.secret_key.as_ref());
+        let verifying_key = self.verifying_key.as_ref();
+        let public_key = verifying_key
+            .map(|k| pkcs8::der::asn1::BitStringRef::from_bytes(k))
+            .transpose()?;
+        let private_key = pkcs8::der::asn1::OctetStringRef::new(self.secret_key.as_ref())?;
 
-        let private_key_info = pkcs8::PrivateKeyInfo {
+        let private_key_info = pkcs8::PrivateKeyInfoRef {
             algorithm: super::ALGORITHM_ID,
-            private_key: &private_key,
-            public_key: self.verifying_key.as_ref().map(|v| v.as_ref()),
+            private_key,
+            public_key,
         };
         let result = pkcs8::SecretDocument::encode_msg(&private_key_info)?;
-
-        #[cfg(feature = "zeroize")]
-        private_key.zeroize();
 
         Ok(result)
     }
 }
 
 #[cfg(feature = "pkcs8")]
-impl TryFrom<pkcs8::PrivateKeyInfo<'_>> for KeypairBytes {
+impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for KeypairBytes {
     type Error = pkcs8::Error;
 
-    fn try_from(value: pkcs8::PrivateKeyInfo<'_>) -> Result<Self, Self::Error> {
+    fn try_from(value: pkcs8::PrivateKeyInfoRef<'_>) -> Result<Self, Self::Error> {
         if value.algorithm.oid != super::ALGORITHM_OID {
             return Err(pkcs8::Error::KeyMalformed);
         }
-        if value.private_key.len() != SECRET_KEY_LENGTH {
+        if value.private_key.as_bytes().len() != SECRET_KEY_LENGTH {
             return Err(pkcs8::Error::KeyMalformed);
         }
         let mut secret_key = [0u8; SECRET_KEY_LENGTH];
-        secret_key.copy_from_slice(value.private_key);
+        secret_key.copy_from_slice(value.private_key.as_bytes());
         let verifying_key = if let Some(public_key) = value.public_key {
+            if public_key.has_unused_bits() {
+                return Err(pkcs8::Error::KeyMalformed);
+            }
+            let public_key = public_key.raw_bytes();
             if public_key.len() != PUBLIC_KEY_LENGTH {
                 return Err(pkcs8::Error::KeyMalformed);
             }
@@ -409,10 +409,10 @@ impl From<&SigningKey> for KeypairBytes {
 }
 
 #[cfg(feature = "pkcs8")]
-impl TryFrom<pkcs8::PrivateKeyInfo<'_>> for SigningKey {
+impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for SigningKey {
     type Error = pkcs8::Error;
 
-    fn try_from(value: pkcs8::PrivateKeyInfo<'_>) -> Result<Self, Self::Error> {
+    fn try_from(value: pkcs8::PrivateKeyInfoRef<'_>) -> Result<Self, Self::Error> {
         KeypairBytes::try_from(value)?.try_into()
     }
 }
