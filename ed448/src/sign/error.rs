@@ -39,16 +39,15 @@ impl Display for SigningError {
     }
 }
 
-#[cfg(feature = "std")]
 impl Error for SigningError {}
 
 impl From<SigningError> for crypto_signature::Error {
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     fn from(err: SigningError) -> Self {
         crypto_signature::Error::from_source(err)
     }
 
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "alloc"))]
     fn from(_err: SigningError) -> Self {
         crypto_signature::Error::new()
     }
