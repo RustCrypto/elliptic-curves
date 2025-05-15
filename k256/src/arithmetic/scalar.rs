@@ -236,12 +236,10 @@ impl Field for Scalar {
         }
     }
 
-    #[must_use]
     fn square(&self) -> Self {
         Scalar::square(self)
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         self.add(self)
     }

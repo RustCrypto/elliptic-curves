@@ -418,7 +418,6 @@ impl Group for ProjectivePoint {
         self.z.normalizes_to_zero()
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         Self::double(self)
     }
