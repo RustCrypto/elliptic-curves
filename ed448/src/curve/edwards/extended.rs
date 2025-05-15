@@ -1031,7 +1031,8 @@ mod tests {
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
-        let mut bytes = hex_literal::decode(&[hex.as_bytes()]);
+        let mut bytes =
+            hex_literal::decode(&[hex.as_bytes()]).expect("Output array length should be correct");
         bytes.reverse();
         FieldElement::from_bytes(&bytes)
     }
