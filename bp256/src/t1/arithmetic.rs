@@ -14,6 +14,9 @@ pub type ProjectivePoint = primeorder::ProjectivePoint<BrainpoolP256t1>;
 /// Primitive scalar type.
 pub type ScalarPrimitive = elliptic_curve::ScalarPrimitive<BrainpoolP256t1>;
 
+/// Non-zero scalar field element.
+pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BrainpoolP256t1>;
+
 impl CurveArithmetic for BrainpoolP256t1 {
     type AffinePoint = AffinePoint;
     type ProjectivePoint = ProjectivePoint;
@@ -36,6 +39,18 @@ impl PrimeCurveParams for BrainpoolP256t1 {
         FieldElement::from_hex("a3e8eb3cc1cfe7b7732213b23a656149afa142c47aafbc2b79a191562e1305f4"),
         FieldElement::from_hex("2d996c823439c56d7f7b22e14644417e69bcb6de39d027001dabe8f35b25c9be"),
     );
+}
+
+impl From<NonZeroScalar> for Scalar {
+    fn from(scalar: NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
+}
+
+impl From<&NonZeroScalar> for Scalar {
+    fn from(scalar: &NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
 }
 
 impl From<ScalarPrimitive> for Scalar {

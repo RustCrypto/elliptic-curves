@@ -6,7 +6,7 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, ORDER, ORDER_HEX, Secp256k1, WideBytes};
+use crate::{FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
@@ -376,6 +376,18 @@ impl From<u64> for Scalar {
 impl From<u128> for Scalar {
     fn from(k: u128) -> Self {
         Self(k.into())
+    }
+}
+
+impl From<NonZeroScalar> for Scalar {
+    fn from(scalar: NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
+}
+
+impl From<&NonZeroScalar> for Scalar {
+    fn from(scalar: &NonZeroScalar) -> Self {
+        *scalar.as_ref()
     }
 }
 

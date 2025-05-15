@@ -15,7 +15,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP521, SecretKey, U576};
+use crate::{FieldBytes, NistP521, NonZeroScalar, SecretKey, U576};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, SubAssign},
@@ -631,6 +631,18 @@ impl ReduceNonZero<U576> for Scalar {
     fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
         let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
         Self::reduce_nonzero(w)
+    }
+}
+
+impl From<NonZeroScalar> for Scalar {
+    fn from(scalar: NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
+}
+
+impl From<&NonZeroScalar> for Scalar {
+    fn from(scalar: &NonZeroScalar) -> Self {
+        *scalar.as_ref()
     }
 }
 

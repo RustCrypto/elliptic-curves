@@ -22,7 +22,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, NistP224, ORDER_HEX, SecretKey, Uint};
+use crate::{FieldBytes, FieldBytesEncoding, NistP224, NonZeroScalar, ORDER_HEX, SecretKey, Uint};
 use elliptic_curve::{
     Curve as _, Error, Result, ScalarPrimitive,
     bigint::Limb,
@@ -209,6 +209,18 @@ impl Reduce<Uint> for Scalar {
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
         let w = <Uint as FieldBytesEncoding<NistP224>>::decode_field_bytes(bytes);
         Self::reduce(w)
+    }
+}
+
+impl From<NonZeroScalar> for Scalar {
+    fn from(scalar: NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
+}
+
+impl From<&NonZeroScalar> for Scalar {
+    fn from(scalar: &NonZeroScalar) -> Self {
+        *scalar.as_ref()
     }
 }
 

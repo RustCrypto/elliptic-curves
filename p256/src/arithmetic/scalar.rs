@@ -5,7 +5,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::barrett_reduce;
-use crate::{FieldBytes, NistP256, ORDER_HEX, SecretKey};
+use crate::{FieldBytes, NistP256, NonZeroScalar, ORDER_HEX, SecretKey};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
@@ -471,6 +471,18 @@ impl From<Scalar> for FieldBytes {
 impl From<&Scalar> for FieldBytes {
     fn from(scalar: &Scalar) -> Self {
         scalar.to_bytes()
+    }
+}
+
+impl From<NonZeroScalar> for Scalar {
+    fn from(scalar: NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
+}
+
+impl From<&NonZeroScalar> for Scalar {
+    fn from(scalar: &NonZeroScalar) -> Self {
+        *scalar.as_ref()
     }
 }
 
