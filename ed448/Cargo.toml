@@ -36,7 +36,7 @@ std = ["serdect/default", "zeroize/default"]
 zeroize = ["dep:zeroize"]
 
 [dev-dependencies]
-hex-literal = "0.4"
+hex-literal = "1"
 hex = "0.4"
 rand_core = { version = "0.9", features = ["os_rng"] }
 rand_chacha = "0.9"
