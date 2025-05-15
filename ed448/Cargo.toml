@@ -17,7 +17,7 @@ rust-version = "1.85"
 version = "0.17.0-pre.0"
 
 [dependencies]
-crypto-bigint = { version = "0.6.0-rc.3", features = ["hybrid-array"], default-features = false }
+crypto-bigint = { version = "=0.7.0-pre.3", features = ["hybrid-array"], default-features = false }
 crypto_signature = { version = "=3.0.0-pre", default-features = false, features = ["digest", "rand_core"], optional = true, package = "signature" }
 elliptic-curve = { version = "0.14.0-rc.0", features = ["arithmetic", "bits", "hash2curve", "jwk", "pkcs8", "pem", "sec1"] }
 rand_core = { version = "0.9", default-features = false }
