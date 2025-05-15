@@ -22,7 +22,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP384, ORDER_HEX, SecretKey, U384};
+use crate::{FieldBytes, NistP384, NonZeroScalar, ORDER_HEX, SecretKey, U384};
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
     bigint::{ArrayEncoding, Limb},
@@ -247,6 +247,18 @@ impl ReduceNonZero<U384> for Scalar {
 
     fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
         Self::reduce_nonzero(U384::from_be_byte_array(*bytes))
+    }
+}
+
+impl From<NonZeroScalar> for Scalar {
+    fn from(scalar: NonZeroScalar) -> Self {
+        *scalar.as_ref()
+    }
+}
+
+impl From<&NonZeroScalar> for Scalar {
+    fn from(scalar: &NonZeroScalar) -> Self {
+        *scalar.as_ref()
     }
 }
 
