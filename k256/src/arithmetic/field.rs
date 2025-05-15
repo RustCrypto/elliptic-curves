@@ -270,12 +270,10 @@ impl Field for FieldElement {
         }
     }
 
-    #[must_use]
     fn square(&self) -> Self {
         self.square()
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         self.double()
     }
