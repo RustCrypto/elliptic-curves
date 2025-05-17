@@ -8,7 +8,7 @@ use core::ops::{Mul, Neg};
 use elliptic_curve::{
     Error, Result,
     group::{GroupEncoding, prime::PrimeCurveAffine},
-    point::{AffineCoordinates, DecompactPoint, DecompressPoint},
+    point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -308,6 +308,12 @@ impl From<AffinePoint> for EncodedPoint {
 impl From<&AffinePoint> for EncodedPoint {
     fn from(affine_point: &AffinePoint) -> EncodedPoint {
         affine_point.to_encoded_point(true)
+    }
+}
+
+impl From<NonIdentity<AffinePoint>> for AffinePoint {
+    fn from(affine_point: NonIdentity<AffinePoint>) -> Self {
+        affine_point.to_point()
     }
 }
 

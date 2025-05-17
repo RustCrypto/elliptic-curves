@@ -18,7 +18,7 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
     },
     ops::{BatchInvert, LinearCombination},
-    point::Double,
+    point::{Double, NonIdentity},
     rand_core::TryRngCore,
     sec1::{
         CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
@@ -235,6 +235,15 @@ where
 {
     fn from(p: &AffinePoint<C>) -> Self {
         Self::from(*p)
+    }
+}
+
+impl<C> From<NonIdentity<ProjectivePoint<C>>> for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn from(p: NonIdentity<ProjectivePoint<C>>) -> Self {
+        p.to_point()
     }
 }
 
