@@ -8,7 +8,6 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
     BatchNormalize, Error, Result,
     group::{
@@ -21,6 +20,7 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
+use elliptic_curve::{ops::BatchInvert, point::NonIdentity};
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
@@ -315,6 +315,12 @@ where
 impl From<&AffinePoint> for ProjectivePoint {
     fn from(p: &AffinePoint) -> Self {
         Self::from(*p)
+    }
+}
+
+impl From<NonIdentity<ProjectivePoint>> for ProjectivePoint {
+    fn from(p: NonIdentity<ProjectivePoint>) -> Self {
+        p.to_point()
     }
 }
 

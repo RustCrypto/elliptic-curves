@@ -12,7 +12,7 @@ use elliptic_curve::{
     array::ArraySize,
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
-    point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double},
+    point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
@@ -191,6 +191,15 @@ where
                 })
             }
         }
+    }
+}
+
+impl<C> From<NonIdentity<AffinePoint<C>>> for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn from(affine: NonIdentity<AffinePoint<C>>) -> Self {
+        affine.to_point()
     }
 }
 
