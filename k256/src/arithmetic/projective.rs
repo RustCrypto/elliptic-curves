@@ -664,6 +664,14 @@ impl From<&PublicKey> for ProjectivePoint {
     }
 }
 
+impl TryFrom<ProjectivePoint> for NonIdentity<ProjectivePoint> {
+    type Error = Error;
+
+    fn try_from(point: ProjectivePoint) -> Result<Self> {
+        NonIdentity::new(point).into_option().ok_or(Error)
+    }
+}
+
 impl TryFrom<ProjectivePoint> for PublicKey {
     type Error = Error;
 

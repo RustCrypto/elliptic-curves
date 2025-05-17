@@ -253,6 +253,14 @@ impl From<&Scalar> for ScalarPrimitive<NistP192> {
     }
 }
 
+impl TryFrom<Scalar> for NonZeroScalar {
+    type Error = Error;
+
+    fn try_from(scalar: Scalar) -> Result<Self> {
+        NonZeroScalar::new(scalar).into_option().ok_or(Error)
+    }
+}
+
 impl TryFrom<U192> for Scalar {
     type Error = Error;
 

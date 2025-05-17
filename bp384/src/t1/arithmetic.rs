@@ -2,7 +2,7 @@
 
 use super::BrainpoolP384t1;
 use crate::{FieldElement, Scalar};
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, Error, PrimeCurveArithmetic};
 use primeorder::{PrimeCurveParams, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -80,5 +80,13 @@ impl From<Scalar> for ScalarPrimitive {
 impl From<&Scalar> for ScalarPrimitive {
     fn from(scalar: &Scalar) -> ScalarPrimitive {
         ScalarPrimitive::new(scalar.into()).unwrap()
+    }
+}
+
+impl TryFrom<Scalar> for NonZeroScalar {
+    type Error = Error;
+
+    fn try_from(scalar: Scalar) -> Result<Self, Error> {
+        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }

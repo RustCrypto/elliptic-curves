@@ -238,6 +238,14 @@ impl From<&SecretKey> for Scalar {
     }
 }
 
+impl TryFrom<Scalar> for NonZeroScalar {
+    type Error = Error;
+
+    fn try_from(scalar: Scalar) -> Result<Self> {
+        NonZeroScalar::new(scalar).into_option().ok_or(Error)
+    }
+}
+
 impl TryFrom<U256> for Scalar {
     type Error = Error;
 

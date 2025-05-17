@@ -329,6 +329,14 @@ impl From<&PublicKey> for AffinePoint {
     }
 }
 
+impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
+    type Error = Error;
+
+    fn try_from(affine_point: AffinePoint) -> Result<Self> {
+        NonIdentity::new(affine_point).into_option().ok_or(Error)
+    }
+}
+
 impl TryFrom<AffinePoint> for PublicKey {
     type Error = Error;
 
