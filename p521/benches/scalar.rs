@@ -1,10 +1,11 @@
 //! secp521r1 scalar arithmetic benchmarks
 
 use criterion::{
-    BenchmarkGroup, Criterion, black_box, criterion_group, criterion_main, measurement::Measurement,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
 use p521::{ProjectivePoint, Scalar, elliptic_curve::group::ff::PrimeField};
+use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
     black_box(Scalar::from_repr(

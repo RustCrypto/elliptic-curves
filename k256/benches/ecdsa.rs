@@ -1,6 +1,6 @@
 //! secp256k1 scalar arithmetic benchmarks
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use k256::{
     FieldBytes, NonZeroScalar, Scalar,
     ecdsa::{
@@ -9,6 +9,7 @@ use k256::{
     },
     elliptic_curve::group::ff::PrimeField,
 };
+use std::hint::black_box;
 
 fn test_scalar_d() -> NonZeroScalar {
     NonZeroScalar::new(

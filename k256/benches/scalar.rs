@@ -1,13 +1,14 @@
 //! secp256k1 scalar arithmetic benchmarks
 
 use criterion::{
-    BenchmarkGroup, Criterion, black_box, criterion_group, criterion_main, measurement::Measurement,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
 use k256::{
     ProjectivePoint, Scalar,
     elliptic_curve::{Group, group::ff::PrimeField, ops::LinearCombination},
 };
+use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(
