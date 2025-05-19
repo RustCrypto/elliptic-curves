@@ -32,7 +32,7 @@ signature = { version = "=3.0.0-pre", optional = true }
 
 [dev-dependencies]
 blobby = "0.3"
-criterion = "0.5"
+criterion = "0.6"
 ecdsa-core = { version = "=0.17.0-pre.9", package = "ecdsa", default-features = false, features = ["dev"] }
 hex = "0.4.3"
 hex-literal = "1"

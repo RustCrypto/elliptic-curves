@@ -1,9 +1,10 @@
 //! secp256k1 field element benchmarks
 
 use criterion::{
-    BenchmarkGroup, Criterion, black_box, criterion_group, criterion_main, measurement::Measurement,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use k256::FieldElement;
+use std::hint::black_box;
 
 fn test_field_element_x() -> FieldElement {
     FieldElement::from_bytes(
