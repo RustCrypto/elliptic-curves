@@ -36,7 +36,7 @@ hex-literal = "1"
 primeorder = { version = "=0.14.0-pre.2", features = ["dev"], path = "../primeorder" }
 proptest = "1.5"
 rand_core = { version = "0.9", features = ["os_rng"] }
-criterion = "0.5.1"
+criterion = "0.6.0"
 
 [features]
 default = ["arithmetic", "ecdsa", "getrandom", "pem", "std"]
