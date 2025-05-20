@@ -367,6 +367,7 @@ where
     }
 }
 
+/// The constant-time alternative is available at [`NonIdentity::new()`].
 impl<C> TryFrom<AffinePoint<C>> for NonIdentity<AffinePoint<C>>
 where
     C: PrimeCurveParams,

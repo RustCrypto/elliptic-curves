@@ -292,6 +292,7 @@ impl From<&SecretKey> for Scalar {
     }
 }
 
+/// The constant-time alternative is available at [`NonZeroScalar::new()`].
 impl TryFrom<Scalar> for NonZeroScalar {
     type Error = Error;
 

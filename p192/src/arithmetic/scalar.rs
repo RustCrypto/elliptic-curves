@@ -253,6 +253,7 @@ impl From<&Scalar> for ScalarPrimitive<NistP192> {
     }
 }
 
+/// The constant-time alternative is available at [`NonZeroScalar::new()`].
 impl TryFrom<Scalar> for NonZeroScalar {
     type Error = Error;
 

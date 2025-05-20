@@ -329,6 +329,7 @@ impl From<&PublicKey> for AffinePoint {
     }
 }
 
+/// The constant-time alternative is available at [`NonIdentity::new()`].
 impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
     type Error = Error;
 

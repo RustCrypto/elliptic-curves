@@ -477,6 +477,7 @@ where
     }
 }
 
+/// The constant-time alternative is available at [`NonIdentity::new()`].
 impl<C> TryFrom<ProjectivePoint<C>> for NonIdentity<ProjectivePoint<C>>
 where
     C: PrimeCurveParams,

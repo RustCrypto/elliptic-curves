@@ -664,6 +664,7 @@ impl From<&PublicKey> for ProjectivePoint {
     }
 }
 
+/// The constant-time alternative is available at [`NonIdentity::new()`].
 impl TryFrom<ProjectivePoint> for NonIdentity<ProjectivePoint> {
     type Error = Error;
 

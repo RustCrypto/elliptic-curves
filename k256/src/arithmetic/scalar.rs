@@ -413,6 +413,7 @@ impl From<&Scalar> for ScalarPrimitive<Secp256k1> {
     }
 }
 
+/// The constant-time alternative is available at [`NonZeroScalar::new()`].
 impl TryFrom<Scalar> for NonZeroScalar {
     type Error = Error;
 
