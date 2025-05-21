@@ -116,9 +116,16 @@ pub type SecretKey = elliptic_curve::SecretKey<NistP521>;
 
 #[cfg(feature = "voprf")]
 impl elliptic_curve::VoprfParameters for NistP521 {
-    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-19.html#section-4.5-1>.
+    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-1>.
     const ID: &'static str = "P521-SHA512";
 
-    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.5-1.2>.
+    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.4>.
     type Hash = sha2::Sha512;
+
+    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.2.2.10>
+    /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.2.2.12>.
+    type ExpandMsg = elliptic_curve::hash2curve::ExpandMsgXmd<
+        sha2::Sha512,
+        <Self as elliptic_curve::hash2curve::GroupDigest>::K,
+    >;
 }

@@ -173,9 +173,16 @@ pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
 
 #[cfg(feature = "voprf")]
 impl elliptic_curve::VoprfParameters for NistP256 {
-    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-19.html#section-4.3>.
+    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-1>.
     const ID: &'static str = "P256-SHA256";
 
-    /// See <https://www.ietf.org/archive/id/draft-irtf-cfrg-voprf-08.html#section-4.3-1.2>.
+    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.4>.
     type Hash = sha2::Sha256;
+
+    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.10>
+    /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.12>.
+    type ExpandMsg = elliptic_curve::hash2curve::ExpandMsgXmd<
+        sha2::Sha256,
+        <Self as elliptic_curve::hash2curve::GroupDigest>::K,
+    >;
 }
