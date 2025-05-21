@@ -56,7 +56,7 @@ pkcs8 = ["ecdsa-core?/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa-core?/serde", "elliptic-curve/serde", "primeorder?/serde", "serdect"]
 sha256 = ["digest", "sha2"]
 test-vectors = ["dep:hex-literal"]
-voprf = ["elliptic-curve/voprf", "sha2"]
+voprf = ["hash2curve", "elliptic-curve/voprf", "sha2"]
 
 [package.metadata.docs.rs]
 all-features = true
