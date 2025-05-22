@@ -429,6 +429,21 @@ where
 {
     type Output = ProjectivePoint<C>;
 
+    #[inline]
+    fn mul(self, scalar: S) -> ProjectivePoint<C> {
+        ProjectivePoint::<C>::from(self) * scalar
+    }
+}
+
+impl<C, S> Mul<S> for &AffinePoint<C>
+where
+    C: PrimeCurveParams,
+    S: Borrow<Scalar<C>>,
+    ProjectivePoint<C>: Double,
+{
+    type Output = ProjectivePoint<C>;
+
+    #[inline]
     fn mul(self, scalar: S) -> ProjectivePoint<C> {
         ProjectivePoint::<C>::from(self) * scalar
     }
@@ -440,6 +455,7 @@ where
 {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self {
         AffinePoint {
             x: self.x,
@@ -455,6 +471,7 @@ where
 {
     type Output = AffinePoint<C>;
 
+    #[inline]
     fn neg(self) -> AffinePoint<C> {
         -(*self)
     }

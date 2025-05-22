@@ -106,6 +106,8 @@ primefield::fiat_field_arithmetic!(
     fiat_p224_scalar_selectznz
 );
 
+primeorder::scalar_mul_impls!(NistP224, Scalar);
+
 impl Scalar {
     /// Atkin algorithm for q mod 8 = 5
     /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>

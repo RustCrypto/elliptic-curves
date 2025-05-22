@@ -74,14 +74,7 @@ macro_rules! field_element_type {
         $decode_uint:path,
         $encode_uint:path
     ) => {
-        primefield::field_element_type_core!(
-            $fe,
-            $bytes,
-            $uint,
-            $modulus,
-            $decode_uint,
-            $encode_uint
-        );
+        $crate::field_element_type_core!($fe, $bytes, $uint, $modulus, $decode_uint, $encode_uint);
 
         $crate::field_op!($fe, Add, add, add);
         $crate::field_op!($fe, Sub, sub, sub);

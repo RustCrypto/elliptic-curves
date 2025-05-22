@@ -15,7 +15,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, ORDER, ORDER_HEX, U256};
+use crate::{BrainpoolP256r1, BrainpoolP256t1, FieldBytes, ORDER, ORDER_HEX, U256};
 use elliptic_curve::{
     Error, Result,
     bigint::{ArrayEncoding, Limb},
@@ -59,6 +59,9 @@ primefield::fiat_field_arithmetic!(
     fiat_bp256_scalar_msat,
     fiat_bp256_scalar_selectznz
 );
+
+primeorder::scalar_mul_impls!(BrainpoolP256r1, Scalar);
+primeorder::scalar_mul_impls!(BrainpoolP256t1, Scalar);
 
 impl Scalar {
     /// Returns the square root of self mod n, or `None` if no square root

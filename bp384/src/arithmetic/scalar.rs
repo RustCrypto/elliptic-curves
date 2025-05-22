@@ -15,7 +15,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, ORDER, ORDER_HEX, U384};
+use crate::{BrainpoolP384r1, BrainpoolP384t1, FieldBytes, ORDER, ORDER_HEX, U384};
 use elliptic_curve::{
     Error, Result,
     bigint::{ArrayEncoding, Limb},
@@ -59,6 +59,9 @@ primefield::fiat_field_arithmetic!(
     fiat_bp384_scalar_msat,
     fiat_bp384_scalar_selectznz
 );
+
+primeorder::scalar_mul_impls!(BrainpoolP384r1, Scalar);
+primeorder::scalar_mul_impls!(BrainpoolP384t1, Scalar);
 
 impl Scalar {
     /// Atkin algorithm for q mod 8 = 5
