@@ -664,6 +664,15 @@ impl From<&PublicKey> for ProjectivePoint {
     }
 }
 
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<ProjectivePoint> for NonIdentity<ProjectivePoint> {
+    type Error = Error;
+
+    fn try_from(point: ProjectivePoint) -> Result<Self> {
+        NonIdentity::new(point).into_option().ok_or(Error)
+    }
+}
+
 impl TryFrom<ProjectivePoint> for PublicKey {
     type Error = Error;
 

@@ -12,7 +12,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve, ScalarPrimitive,
+    Curve, Error, ScalarPrimitive,
     bigint::{Limb, U256, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -530,6 +530,15 @@ impl From<&Scalar> for U256 {
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         scalar.0.to_words().into()
+    }
+}
+
+/// The constant-time alternative is available at [`NonZeroScalar::new()`].
+impl TryFrom<Scalar> for NonZeroScalar {
+    type Error = Error;
+
+    fn try_from(scalar: Scalar) -> Result<Self, Error> {
+        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }
 

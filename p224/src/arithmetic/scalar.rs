@@ -256,6 +256,15 @@ impl From<&SecretKey> for Scalar {
     }
 }
 
+/// The constant-time alternative is available at [`NonZeroScalar::new()`].
+impl TryFrom<Scalar> for NonZeroScalar {
+    type Error = Error;
+
+    fn try_from(scalar: Scalar) -> Result<Self> {
+        NonZeroScalar::new(scalar).into_option().ok_or(Error)
+    }
+}
+
 impl TryFrom<Uint> for Scalar {
     type Error = Error;
 

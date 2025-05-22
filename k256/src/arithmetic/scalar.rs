@@ -15,7 +15,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve, ScalarPrimitive,
+    Curve, Error, ScalarPrimitive,
     bigint::{Limb, U256, U512, Word, prelude::*},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -413,6 +413,15 @@ impl From<Scalar> for ScalarPrimitive<Secp256k1> {
 impl From<&Scalar> for ScalarPrimitive<Secp256k1> {
     fn from(scalar: &Scalar) -> ScalarPrimitive<Secp256k1> {
         ScalarPrimitive::new(scalar.0).unwrap()
+    }
+}
+
+/// The constant-time alternative is available at [`NonZeroScalar::new()`].
+impl TryFrom<Scalar> for NonZeroScalar {
+    type Error = Error;
+
+    fn try_from(scalar: Scalar) -> Result<Self, Error> {
+        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }
 
