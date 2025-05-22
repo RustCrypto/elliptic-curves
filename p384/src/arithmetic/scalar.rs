@@ -106,6 +106,8 @@ primefield::fiat_field_arithmetic!(
     fiat_p384_scalar_selectznz
 );
 
+primeorder::scalar_mul_impls!(NistP384, Scalar);
+
 impl Scalar {
     /// Compute modular square root.
     pub fn sqrt(&self) -> CtOption<Self> {

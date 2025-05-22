@@ -88,6 +88,8 @@ primefield::fiat_field_arithmetic!(
     fiat_bign256_scalar_selectznz
 );
 
+primeorder::scalar_mul_impls!(BignP256, Scalar);
+
 impl Scalar {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.

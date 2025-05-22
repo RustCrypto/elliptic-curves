@@ -605,6 +605,8 @@ impl SubAssign<&Scalar> for Scalar {
     }
 }
 
+primeorder::scalar_mul_impls!(NistP256, Scalar);
+
 impl Mul<Scalar> for Scalar {
     type Output = Scalar;
 

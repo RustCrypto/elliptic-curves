@@ -6,7 +6,10 @@ mod wide;
 
 pub(crate) use self::wide::WideScalar;
 
-use crate::{FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes};
+use crate::{
+    FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes,
+    arithmetic::{AffinePoint, ProjectivePoint},
+};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
@@ -653,6 +656,78 @@ impl Mul<&Scalar> for Scalar {
 
     fn mul(self, other: &Scalar) -> Scalar {
         Scalar::mul(&self, other)
+    }
+}
+
+impl Mul<AffinePoint> for Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: AffinePoint) -> ProjectivePoint {
+        rhs * self
+    }
+}
+
+impl Mul<&AffinePoint> for Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: &AffinePoint) -> ProjectivePoint {
+        *rhs * self
+    }
+}
+
+impl Mul<AffinePoint> for &Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: AffinePoint) -> ProjectivePoint {
+        rhs * self
+    }
+}
+
+impl Mul<&AffinePoint> for &Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: &AffinePoint) -> ProjectivePoint {
+        *rhs * self
+    }
+}
+
+impl Mul<ProjectivePoint> for Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: ProjectivePoint) -> ProjectivePoint {
+        rhs * self
+    }
+}
+
+impl Mul<&ProjectivePoint> for Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: &ProjectivePoint) -> ProjectivePoint {
+        rhs * &self
+    }
+}
+
+impl Mul<ProjectivePoint> for &Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: ProjectivePoint) -> ProjectivePoint {
+        rhs * self
+    }
+}
+
+impl Mul<&ProjectivePoint> for &Scalar {
+    type Output = ProjectivePoint;
+
+    #[inline]
+    fn mul(self, rhs: &ProjectivePoint) -> ProjectivePoint {
+        rhs * self
     }
 }
 
