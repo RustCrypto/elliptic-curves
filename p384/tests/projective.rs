@@ -10,9 +10,9 @@ use p384::{
     AffinePoint, ProjectivePoint, Scalar,
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };
-use primeorder::{Double, impl_projective_arithmetic_tests};
+use primeorder::{Double, test_projective_arithmetic};
 
-impl_projective_arithmetic_tests!(
+test_projective_arithmetic!(
     AffinePoint,
     ProjectivePoint,
     Scalar,
