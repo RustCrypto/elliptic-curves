@@ -10,9 +10,9 @@ use elliptic_curve::{
     group::{GroupEncoding, ff::PrimeField},
     sec1::{self, ToEncodedPoint},
 };
-use primeorder::{Double, impl_projective_arithmetic_tests};
+use primeorder::{Double, test_projective_arithmetic};
 
-impl_projective_arithmetic_tests!(
+test_projective_arithmetic!(
     AffinePoint,
     ProjectivePoint,
     Scalar,
