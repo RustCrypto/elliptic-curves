@@ -2,7 +2,7 @@
 
 use super::BrainpoolP384t1;
 use crate::{FieldElement, Scalar};
-use elliptic_curve::{CurveArithmetic, Error, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
 use primeorder::{PrimeCurveParams, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -45,49 +45,4 @@ impl PrimeCurveParams for BrainpoolP384t1 {
             "25ab056962d30651a114afd2755ad336747f93475b7a1fca3b88f2b6a208ccfe469408584dc2b2912675bf5b9e582928",
         ),
     );
-}
-
-impl From<NonZeroScalar> for Scalar {
-    fn from(scalar: NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<&NonZeroScalar> for Scalar {
-    fn from(scalar: &NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<ScalarPrimitive> for Scalar {
-    fn from(w: ScalarPrimitive) -> Self {
-        Scalar::from(&w)
-    }
-}
-
-impl From<&ScalarPrimitive> for Scalar {
-    fn from(w: &ScalarPrimitive) -> Scalar {
-        Scalar::from_uint_unchecked(*w.as_uint())
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive {
-    fn from(scalar: Scalar) -> ScalarPrimitive {
-        ScalarPrimitive::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive {
-    fn from(scalar: &Scalar) -> ScalarPrimitive {
-        ScalarPrimitive::new(scalar.into()).unwrap()
-    }
-}
-
-/// The constant-time alternative is available at [`NonZeroScalar::new()`].
-impl TryFrom<Scalar> for NonZeroScalar {
-    type Error = Error;
-
-    fn try_from(scalar: Scalar) -> Result<Self, Error> {
-        NonZeroScalar::new(scalar).into_option().ok_or(Error)
-    }
 }

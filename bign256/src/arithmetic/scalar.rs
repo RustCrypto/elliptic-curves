@@ -15,9 +15,9 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{BignP256, FieldBytes, NonZeroScalar, ORDER_HEX, SecretKey, U256};
+use crate::{BignP256, FieldBytes, ORDER_HEX, U256};
 use elliptic_curve::{
-    Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
+    Curve as _, Error, FieldBytesEncoding, Result,
     bigint::Limb,
     ff::PrimeField,
     ops::Reduce,
@@ -88,7 +88,7 @@ primefield::fiat_field_arithmetic!(
     fiat_bign256_scalar_selectznz
 );
 
-primeorder::scalar_mul_impls!(BignP256, Scalar);
+primeorder::scalar_impls!(BignP256, Scalar);
 
 impl Scalar {
     /// Returns the square root of self mod p, or `None` if no square root
@@ -180,57 +180,6 @@ impl Reduce<U256> for Scalar {
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
         let w = <U256 as FieldBytesEncoding<BignP256>>::decode_field_bytes(bytes);
         Self::reduce(w)
-    }
-}
-
-impl From<NonZeroScalar> for Scalar {
-    fn from(scalar: NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<&NonZeroScalar> for Scalar {
-    fn from(scalar: &NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<ScalarPrimitive<BignP256>> for Scalar {
-    fn from(w: ScalarPrimitive<BignP256>) -> Self {
-        Scalar::from(&w)
-    }
-}
-
-impl From<&ScalarPrimitive<BignP256>> for Scalar {
-    fn from(w: &ScalarPrimitive<BignP256>) -> Scalar {
-        Scalar::from_uint_unchecked(*w.as_uint())
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<BignP256> {
-    fn from(scalar: Scalar) -> ScalarPrimitive<BignP256> {
-        ScalarPrimitive::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<BignP256> {
-    fn from(scalar: &Scalar) -> ScalarPrimitive<BignP256> {
-        ScalarPrimitive::new(scalar.into()).unwrap()
-    }
-}
-
-impl From<&SecretKey> for Scalar {
-    fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.to_nonzero_scalar()
-    }
-}
-
-/// The constant-time alternative is available at [`NonZeroScalar::new()`].
-impl TryFrom<Scalar> for NonZeroScalar {
-    type Error = Error;
-
-    fn try_from(scalar: Scalar) -> Result<Self> {
-        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }
 

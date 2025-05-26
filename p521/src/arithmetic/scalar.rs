@@ -15,13 +15,13 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP521, NonZeroScalar, SecretKey, U576};
+use crate::{FieldBytes, NistP521, U576};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, SubAssign},
 };
 use elliptic_curve::{
-    Curve as _, Error, FieldBytesEncoding, Result, ScalarPrimitive,
+    Curve as _, Error, FieldBytesEncoding, Result,
     bigint::{self, Integer},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -35,7 +35,10 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "serde")]
-use serdect::serde::{Deserialize, Serialize, de, ser};
+use {
+    elliptic_curve::ScalarPrimitive,
+    serdect::serde::{Deserialize, Serialize, de, ser},
+};
 
 #[cfg(doc)]
 use core::ops::Sub;
@@ -442,7 +445,7 @@ impl Field for Scalar {
 primefield::field_op!(Scalar, Add, add, add);
 primefield::field_op!(Scalar, Sub, sub, sub);
 primefield::field_op!(Scalar, Mul, mul, multiply);
-primeorder::scalar_mul_impls!(NistP521, Scalar);
+primeorder::scalar_impls!(NistP521, Scalar);
 
 impl AddAssign<Scalar> for Scalar {
     #[inline]
@@ -633,42 +636,6 @@ impl ReduceNonZero<U576> for Scalar {
     }
 }
 
-impl From<NonZeroScalar> for Scalar {
-    fn from(scalar: NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<&NonZeroScalar> for Scalar {
-    fn from(scalar: &NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<ScalarPrimitive<NistP521>> for Scalar {
-    fn from(w: ScalarPrimitive<NistP521>) -> Self {
-        Scalar::from(&w)
-    }
-}
-
-impl From<&ScalarPrimitive<NistP521>> for Scalar {
-    fn from(w: &ScalarPrimitive<NistP521>) -> Scalar {
-        Scalar::from_uint_unchecked(*w.as_uint())
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<NistP521> {
-    fn from(scalar: Scalar) -> ScalarPrimitive<NistP521> {
-        ScalarPrimitive::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<NistP521> {
-    fn from(scalar: &Scalar) -> ScalarPrimitive<NistP521> {
-        ScalarPrimitive::new(scalar.into()).unwrap()
-    }
-}
-
 impl From<Scalar> for FieldBytes {
     fn from(scalar: Scalar) -> Self {
         scalar.to_repr()
@@ -690,21 +657,6 @@ impl From<Scalar> for U576 {
 impl From<&Scalar> for U576 {
     fn from(scalar: &Scalar) -> U576 {
         scalar.to_canonical()
-    }
-}
-
-impl From<&SecretKey> for Scalar {
-    fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.to_nonzero_scalar()
-    }
-}
-
-/// The constant-time alternative is available at [`NonZeroScalar::new()`].
-impl TryFrom<Scalar> for NonZeroScalar {
-    type Error = Error;
-
-    fn try_from(scalar: Scalar) -> Result<Self> {
-        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }
 
