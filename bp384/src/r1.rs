@@ -8,7 +8,7 @@ mod arithmetic;
 
 #[cfg(feature = "arithmetic")]
 pub use {
-    self::arithmetic::{AffinePoint, ProjectivePoint},
+    self::arithmetic::{AffinePoint, NonZeroScalar, ProjectivePoint, ScalarPrimitive},
     crate::Scalar,
 };
 

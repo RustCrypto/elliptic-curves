@@ -24,9 +24,9 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, NonZeroScalar, ORDER_HEX, SecretKey, Sm2, U256};
+use crate::{FieldBytes, FieldBytesEncoding, ORDER_HEX, Sm2, U256};
 use elliptic_curve::{
-    Curve as _, Error, Result, ScalarPrimitive,
+    Curve as _, Error, Result,
     bigint::Limb,
     ff::PrimeField,
     ops::Reduce,
@@ -41,7 +41,10 @@ use {
 };
 
 #[cfg(feature = "serde")]
-use serdect::serde::{Deserialize, Serialize, de, ser};
+use {
+    elliptic_curve::ScalarPrimitive,
+    serdect::serde::{Deserialize, Serialize, de, ser},
+};
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Neg, Sub};
@@ -100,7 +103,7 @@ primefield::fiat_field_arithmetic!(
     fiat_sm2_scalar_selectznz
 );
 
-primeorder::scalar_mul_impls!(Sm2, Scalar);
+primeorder::scalar_impls!(Sm2, Scalar);
 
 impl Scalar {
     /// Returns the square root of self mod n, or `None` if no square root
@@ -195,57 +198,6 @@ impl Reduce<U256> for Scalar {
     fn reduce_bytes(bytes: &FieldBytes) -> Self {
         let w = <U256 as FieldBytesEncoding<Sm2>>::decode_field_bytes(bytes);
         Self::reduce(w)
-    }
-}
-
-impl From<NonZeroScalar> for Scalar {
-    fn from(scalar: NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<&NonZeroScalar> for Scalar {
-    fn from(scalar: &NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<ScalarPrimitive<Sm2>> for Scalar {
-    fn from(w: ScalarPrimitive<Sm2>) -> Self {
-        Scalar::from(&w)
-    }
-}
-
-impl From<&ScalarPrimitive<Sm2>> for Scalar {
-    fn from(w: &ScalarPrimitive<Sm2>) -> Scalar {
-        Scalar::from_uint_unchecked(*w.as_uint())
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<Sm2> {
-    fn from(scalar: Scalar) -> ScalarPrimitive<Sm2> {
-        ScalarPrimitive::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<Sm2> {
-    fn from(scalar: &Scalar) -> ScalarPrimitive<Sm2> {
-        ScalarPrimitive::new(scalar.into()).unwrap()
-    }
-}
-
-impl From<&SecretKey> for Scalar {
-    fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.to_nonzero_scalar()
-    }
-}
-
-/// The constant-time alternative is available at [`NonZeroScalar::new()`].
-impl TryFrom<Scalar> for NonZeroScalar {
-    type Error = Error;
-
-    fn try_from(scalar: Scalar) -> Result<Self> {
-        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }
 

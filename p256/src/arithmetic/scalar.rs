@@ -5,14 +5,14 @@
 mod scalar_impl;
 
 use self::scalar_impl::barrett_reduce;
-use crate::{FieldBytes, NistP256, NonZeroScalar, ORDER_HEX, SecretKey};
+use crate::{FieldBytes, NistP256, ORDER_HEX};
 use core::{
     fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve, Error, ScalarPrimitive,
+    Curve, Error,
     bigint::{Limb, U256, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -29,7 +29,10 @@ use elliptic_curve::{
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
-use serdect::serde::{Deserialize, Serialize, de, ser};
+use {
+    elliptic_curve::ScalarPrimitive,
+    serdect::serde::{Deserialize, Serialize, de, ser},
+};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
@@ -178,6 +181,8 @@ impl Scalar {
         !self.is_odd()
     }
 }
+
+primeorder::scalar_impls!(NistP256, Scalar);
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {
@@ -472,48 +477,6 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-impl From<NonZeroScalar> for Scalar {
-    fn from(scalar: NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<&NonZeroScalar> for Scalar {
-    fn from(scalar: &NonZeroScalar) -> Self {
-        *scalar.as_ref()
-    }
-}
-
-impl From<ScalarPrimitive<NistP256>> for Scalar {
-    fn from(scalar: ScalarPrimitive<NistP256>) -> Scalar {
-        Scalar(*scalar.as_uint())
-    }
-}
-
-impl From<&ScalarPrimitive<NistP256>> for Scalar {
-    fn from(scalar: &ScalarPrimitive<NistP256>) -> Scalar {
-        Scalar(*scalar.as_uint())
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<NistP256> {
-    fn from(scalar: Scalar) -> ScalarPrimitive<NistP256> {
-        ScalarPrimitive::from(&scalar)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<NistP256> {
-    fn from(scalar: &Scalar) -> ScalarPrimitive<NistP256> {
-        ScalarPrimitive::new(scalar.0).unwrap()
-    }
-}
-
-impl From<&SecretKey> for Scalar {
-    fn from(secret_key: &SecretKey) -> Scalar {
-        *secret_key.to_nonzero_scalar()
-    }
-}
-
 impl From<Scalar> for U256 {
     fn from(scalar: Scalar) -> U256 {
         scalar.0
@@ -530,15 +493,6 @@ impl From<&Scalar> for U256 {
 impl From<&Scalar> for ScalarBits {
     fn from(scalar: &Scalar) -> ScalarBits {
         scalar.0.to_words().into()
-    }
-}
-
-/// The constant-time alternative is available at [`NonZeroScalar::new()`].
-impl TryFrom<Scalar> for NonZeroScalar {
-    type Error = Error;
-
-    fn try_from(scalar: Scalar) -> Result<Self, Error> {
-        NonZeroScalar::new(scalar).into_option().ok_or(Error)
     }
 }
 
@@ -613,8 +567,6 @@ impl SubAssign<&Scalar> for Scalar {
         *self = Scalar::sub(self, rhs);
     }
 }
-
-primeorder::scalar_mul_impls!(NistP256, Scalar);
 
 impl Mul<Scalar> for Scalar {
     type Output = Scalar;
