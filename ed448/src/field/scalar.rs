@@ -7,15 +7,16 @@ use core::ops::{
 };
 use crypto_bigint::Zero;
 use elliptic_curve::{
+    Error, PrimeField,
     array::{
         Array,
+        typenum::{U57, U84, U88, U114, Unsigned},
     },
     bigint::{Limb, NonZero, U448, U704, U896},
     ff::{Field, FieldBits, PrimeFieldBits, helpers},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
-    scalar::{FromUintUnchecked, IsHigh, ScalarPrimitive},
-    PrimeField,
+    scalar::{FromUintUnchecked, IsHigh},
 };
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
@@ -49,6 +50,9 @@ pub const MODULUS_LIMBS: [u32; 14] = [
     0xab5844f3, 0x2378c292, 0x8dc58f55, 0x216cc272, 0xaed63690, 0xc44edb49, 0x7cca23e9, 0xffffffff,
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x3fffffff,
 ];
+
+primeorder::scalar_impls!(Ed448, Scalar);
+primeorder::scalar_impls!(Decaf448, Scalar);
 
 impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
@@ -147,7 +151,7 @@ impl AddAssign<&Scalar> for Scalar {
     }
 }
 
-impl Mul<&Scalar> for &Scalar {
+impl Mul<&Scalar> for Scalar {
     type Output = Scalar;
 
     fn mul(self, rhs: &Scalar) -> Self::Output {
@@ -155,7 +159,29 @@ impl Mul<&Scalar> for &Scalar {
     }
 }
 
-define_mul_variants!(LHS = Scalar, RHS = Scalar, Output = Scalar);
+impl Mul<Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn mul(self, rhs: Scalar) -> Self::Output {
+        self.multiply(&rhs)
+    }
+}
+
+impl Mul<Scalar> for Scalar {
+    type Output = Scalar;
+
+    fn mul(self, rhs: Scalar) -> Self::Output {
+        self.multiply(&rhs)
+    }
+}
+
+impl Mul<&Scalar> for &Scalar {
+    type Output = Scalar;
+
+    fn mul(self, rhs: &Scalar) -> Self::Output {
+        self.multiply(rhs)
+    }
+}
 
 impl MulAssign for Scalar {
     fn mul_assign(&mut self, rhs: Self) {
@@ -340,7 +366,7 @@ impl From<&Scalar> for ScalarBytes {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Vec<u8>> for Scalar {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(&bytes[..])
@@ -349,7 +375,7 @@ impl TryFrom<Vec<u8>> for Scalar {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<&Vec<u8>> for Scalar {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(bytes: &Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(&bytes[..])
@@ -357,21 +383,20 @@ impl TryFrom<&Vec<u8>> for Scalar {
 }
 
 impl TryFrom<&[u8]> for Scalar {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.len() != 57 {
-            return Err("invalid byte length");
+            return Err(Error);
         }
         let scalar_bytes = ScalarBytes::try_from(bytes).expect("invalid scalar bytes");
-        Option::<Scalar>::from(Scalar::from_canonical_bytes(&scalar_bytes))
-            .ok_or("scalar was not canonically encoded")
+        Option::<Scalar>::from(Scalar::from_canonical_bytes(&scalar_bytes)).ok_or(Error)
     }
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Box<[u8]>> for Scalar {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(bytes: Box<[u8]>) -> Result<Self, Self::Error> {
         Self::try_from(bytes.as_ref())
@@ -510,60 +535,6 @@ impl PrimeFieldBits for Scalar {
 
     fn char_le_bits() -> FieldBits<Self::ReprBits> {
         ORDER.to_words().into()
-    }
-}
-
-impl From<ScalarPrimitive<Ed448>> for Scalar {
-    fn from(scalar: ScalarPrimitive<Ed448>) -> Self {
-        Self(*scalar.as_uint())
-    }
-}
-
-impl From<&ScalarPrimitive<Ed448>> for Scalar {
-    fn from(scalar: &ScalarPrimitive<Ed448>) -> Self {
-        let uint = *scalar.as_uint();
-        uint.into()
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<Ed448> {
-    fn from(scalar: Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        Self::from_uint_unchecked(uint)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<Ed448> {
-    fn from(scalar: &Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        ScalarPrimitive::from_uint_unchecked(uint)
-    }
-}
-
-impl From<ScalarPrimitive<Decaf448>> for Scalar {
-    fn from(scalar: ScalarPrimitive<Decaf448>) -> Self {
-        Self(*scalar.as_uint())
-    }
-}
-
-impl From<&ScalarPrimitive<Decaf448>> for Scalar {
-    fn from(scalar: &ScalarPrimitive<Decaf448>) -> Self {
-        let uint = *scalar.as_uint();
-        uint.into()
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<Decaf448> {
-    fn from(scalar: Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        Self::from_uint_unchecked(uint)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<Decaf448> {
-    fn from(scalar: &Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        ScalarPrimitive::from_uint_unchecked(uint)
     }
 }
 

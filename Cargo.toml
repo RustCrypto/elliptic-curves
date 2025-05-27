@@ -20,6 +20,8 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
+primeorder = { path = "primeorder" }
+
 # https://github.com/RustCrypto/signatures/pull/913
 # https://github.com/RustCrypto/signatures/pull/940
 # https://github.com/RustCrypto/signatures/pull/955

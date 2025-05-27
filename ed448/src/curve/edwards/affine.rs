@@ -1,6 +1,8 @@
 use crate::curve::edwards::EdwardsPoint;
 use crate::field::FieldElement;
 use crate::*;
+use core::ops::Mul;
+use elliptic_curve::{Error, Result, point::NonIdentity};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 #[cfg(feature = "zeroize")]
@@ -113,5 +115,47 @@ impl AffinePoint {
     /// The Y coordinate
     pub fn y(&self) -> [u8; 56] {
         self.y.to_bytes()
+    }
+}
+
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
+    type Error = Error;
+
+    fn try_from(affine_point: AffinePoint) -> Result<Self> {
+        NonIdentity::new(affine_point).into_option().ok_or(Error)
+    }
+}
+
+impl From<NonIdentity<AffinePoint>> for AffinePoint {
+    fn from(affine: NonIdentity<AffinePoint>) -> Self {
+        affine.to_point()
+    }
+}
+
+impl Mul<Scalar> for AffinePoint {
+    type Output = EdwardsPoint;
+
+    #[inline]
+    fn mul(self, rhs: Scalar) -> EdwardsPoint {
+        self * &rhs
+    }
+}
+
+impl Mul<&Scalar> for AffinePoint {
+    type Output = EdwardsPoint;
+
+    #[inline]
+    fn mul(self, rhs: &Scalar) -> EdwardsPoint {
+        self.to_edwards() * rhs
+    }
+}
+
+impl Mul<&Scalar> for &AffinePoint {
+    type Output = EdwardsPoint;
+
+    #[inline]
+    fn mul(self, rhs: &Scalar) -> EdwardsPoint {
+        self.to_edwards() * rhs
     }
 }

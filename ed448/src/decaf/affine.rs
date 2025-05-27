@@ -1,6 +1,8 @@
 use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
 use crate::field::FieldElement;
-use crate::{Decaf448FieldBytes, DecafPoint};
+use crate::{Decaf448FieldBytes, DecafPoint, Scalar};
+use core::ops::Mul;
+use elliptic_curve::{Error, point::NonIdentity};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 #[cfg(feature = "zeroize")]
@@ -68,5 +70,56 @@ impl AffinePoint {
     /// The Y coordinate
     pub fn y(&self) -> [u8; 56] {
         self.0.y.to_bytes()
+    }
+}
+
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
+    type Error = Error;
+
+    fn try_from(affine_point: AffinePoint) -> Result<Self, Error> {
+        NonIdentity::new(affine_point).into_option().ok_or(Error)
+    }
+}
+
+impl From<NonIdentity<AffinePoint>> for AffinePoint {
+    fn from(affine: NonIdentity<AffinePoint>) -> Self {
+        affine.to_point()
+    }
+}
+
+impl Mul<Scalar> for AffinePoint {
+    type Output = DecafPoint;
+
+    #[inline]
+    fn mul(self, scalar: Scalar) -> DecafPoint {
+        &self * scalar
+    }
+}
+
+impl Mul<Scalar> for &AffinePoint {
+    type Output = DecafPoint;
+
+    #[inline]
+    fn mul(self, scalar: Scalar) -> DecafPoint {
+        self * &scalar
+    }
+}
+
+impl Mul<&Scalar> for AffinePoint {
+    type Output = DecafPoint;
+
+    #[inline]
+    fn mul(self, scalar: &Scalar) -> DecafPoint {
+        &self * scalar
+    }
+}
+
+impl Mul<&Scalar> for &AffinePoint {
+    type Output = DecafPoint;
+
+    #[inline]
+    fn mul(self, scalar: &Scalar) -> DecafPoint {
+        self.to_decaf() * scalar
     }
 }

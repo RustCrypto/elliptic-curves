@@ -17,6 +17,7 @@ use core::{
 use crypto_signature::Error;
 use elliptic_curve::Group;
 use sha3::{
+    Digest, Shake256,
     digest::{ExtendableOutput, Update, XofReader},
 };
 

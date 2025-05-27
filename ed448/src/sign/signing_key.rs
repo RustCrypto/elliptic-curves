@@ -4,14 +4,17 @@
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
 #[cfg(feature = "pkcs8")]
-use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
+use crate::{curve::edwards::extended::PointBytes, PUBLIC_KEY_LENGTH};
+use crate::{Context, Scalar, ScalarBytes, Signature, VerifyingKey, SECRET_KEY_LENGTH};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
+use rand_core::CryptoRng;
 use sha3::{
     digest::{
-        ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
-        consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
+        consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual, ExtendableOutput, FixedOutput,
+        FixedOutputReset, HashMarker, Update, XofReader,
     },
+    Digest,
 };
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};
@@ -441,7 +444,10 @@ impl<'de> serdect::serde::Deserialize<'de> for SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn generate(mut rng: impl rand_core::CryptoRng) -> Self {
+    pub fn generate<R>(rng: &mut R) -> Self
+    where
+        R: CryptoRng + ?Sized,
+    {
         let mut secret_scalar = SecretKey::default();
         rng.fill_bytes(secret_scalar.as_mut());
         assert!(!secret_scalar.iter().all(|&v| v == 0));

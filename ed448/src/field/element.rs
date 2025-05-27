@@ -4,6 +4,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::{
     array::Array,
     bigint::{
+        NonZero, U448, U704,
         consts::{U84, U88},
     },
     hash2curve::{FromOkm, MapToCurve},
@@ -389,7 +390,7 @@ impl FieldElement {
         let rhs = (r + Self::ONE) * u1;
         let (v, was_square) = Self::sqrt_ratio_i(&ONE_MINUS_TWO_D, &rhs);
 
-        let mut v_prime = self * v;
+        let mut v_prime = *self * v;
         v_prime.conditional_assign(&v, was_square);
         let mut sgn = Self::MINUS_ONE;
         sgn.conditional_negate(was_square);

@@ -4,13 +4,15 @@ use crate::field::FieldElement;
 use crate::*;
 
 use elliptic_curve::{
+    Error, Group,
     array::{
         Array,
+        typenum::{U56, U84, Unsigned},
     },
     group::{Curve, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::LinearCombination,
-    Group,
+    point::NonIdentity,
 };
 
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
@@ -227,7 +229,7 @@ impl CofactorGroup for DecafPoint {
     }
 
     fn is_torsion_free(&self) -> Choice {
-        (self * BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        (*self * &BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
     }
 }
 
@@ -602,6 +604,21 @@ impl CompressedDecaf {
     /// Get the bytes of this compressed point
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
+    }
+}
+
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<DecafPoint> for NonIdentity<DecafPoint> {
+    type Error = Error;
+
+    fn try_from(point: DecafPoint) -> Result<Self, Error> {
+        NonIdentity::new(point).into_option().ok_or(Error)
+    }
+}
+
+impl From<NonIdentity<DecafPoint>> for DecafPoint {
+    fn from(decaf: NonIdentity<DecafPoint>) -> Self {
+        decaf.to_point()
     }
 }
 

@@ -11,12 +11,15 @@ use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::{FieldElement, Scalar};
 use crate::*;
 use elliptic_curve::{
+    Error,
     array::{
         Array,
+        typenum::{U57, U84, Unsigned},
     },
     group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm},
     ops::LinearCombination,
+    point::NonIdentity,
 };
 use rand_core::TryRngCore;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -127,7 +130,7 @@ impl From<&CompressedEdwardsY> for Vec<u8> {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Vec<u8>> for CompressedEdwardsY {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(&value)
@@ -136,7 +139,7 @@ impl TryFrom<Vec<u8>> for CompressedEdwardsY {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<&Vec<u8>> for CompressedEdwardsY {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(value.as_slice())
@@ -144,17 +147,17 @@ impl TryFrom<&Vec<u8>> for CompressedEdwardsY {
 }
 
 impl TryFrom<&[u8]> for CompressedEdwardsY {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let bytes = <PointBytes>::try_from(value).map_err(|_| "Invalid length")?;
+        let bytes = <PointBytes>::try_from(value)?;
         Self::try_from(&bytes)
     }
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Box<[u8]>> for CompressedEdwardsY {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: Box<[u8]>) -> Result<Self, Self::Error> {
         Self::try_from(value.as_ref())
@@ -174,17 +177,17 @@ impl From<&CompressedEdwardsY> for PointBytes {
 }
 
 impl TryFrom<PointBytes> for CompressedEdwardsY {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: PointBytes) -> Result<Self, Self::Error> {
         let pt = CompressedEdwardsY(value);
-        let _ = Option::<EdwardsPoint>::from(pt.decompress()).ok_or("Invalid point")?;
+        let _ = Option::<EdwardsPoint>::from(pt.decompress()).ok_or(Error)?;
         Ok(pt)
     }
 }
 
 impl TryFrom<&PointBytes> for CompressedEdwardsY {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: &PointBytes) -> Result<Self, Self::Error> {
         Self::try_from(*value)
@@ -433,7 +436,7 @@ impl From<&EdwardsPoint> for Vec<u8> {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Vec<u8>> for EdwardsPoint {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(&value)
@@ -442,7 +445,7 @@ impl TryFrom<Vec<u8>> for EdwardsPoint {
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<&Vec<u8>> for EdwardsPoint {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
         Self::try_from(value.as_slice())
@@ -450,18 +453,18 @@ impl TryFrom<&Vec<u8>> for EdwardsPoint {
 }
 
 impl TryFrom<&[u8]> for EdwardsPoint {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let bytes =
-            <PointBytes>::try_from(value).map_err(|_| "Invalid length, expected 57 bytes")?;
+            <PointBytes>::try_from(value)/*.map_err(|_| "Invalid length, expected 57 bytes")*/?;
         Self::try_from(bytes)
     }
 }
 
 #[cfg(any(feature = "alloc", feature = "std"))]
 impl TryFrom<Box<[u8]>> for EdwardsPoint {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: Box<[u8]>) -> Result<Self, Self::Error> {
         Self::try_from(value.as_ref())
@@ -469,15 +472,15 @@ impl TryFrom<Box<[u8]>> for EdwardsPoint {
 }
 
 impl TryFrom<PointBytes> for EdwardsPoint {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: PointBytes) -> Result<Self, Self::Error> {
-        Option::<Self>::from(CompressedEdwardsY(value).decompress()).ok_or("Invalid point")
+        Option::<Self>::from(CompressedEdwardsY(value).decompress()).ok_or(Error)
     }
 }
 
 impl TryFrom<&PointBytes> for EdwardsPoint {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(value: &PointBytes) -> Result<Self, Self::Error> {
         Self::try_from(*value)
@@ -517,6 +520,21 @@ impl From<AffinePoint> for EdwardsPoint {
 impl From<&EdwardsPoint> for AffinePoint {
     fn from(value: &EdwardsPoint) -> Self {
         value.to_affine()
+    }
+}
+
+impl From<NonIdentity<EdwardsPoint>> for EdwardsPoint {
+    fn from(p: NonIdentity<EdwardsPoint>) -> Self {
+        p.to_point()
+    }
+}
+
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<EdwardsPoint> for NonIdentity<EdwardsPoint> {
+    type Error = Error;
+
+    fn try_from(point: EdwardsPoint) -> Result<Self, Error> {
+        NonIdentity::new(point).into_option().ok_or(Error)
     }
 }
 
@@ -739,7 +757,7 @@ impl EdwardsPoint {
     /// * `false` if `self` has a nonzero torsion component and is not
     ///    in the prime-order subgroup.
     pub fn is_torsion_free(&self) -> Choice {
-        (self * BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        (*self * BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
     }
 
     /// Hash a message to a point on the curve
@@ -978,8 +996,14 @@ impl<'b> MulAssign<&'b Scalar> for EdwardsPoint {
 
 define_mul_assign_variants!(LHS = EdwardsPoint, RHS = Scalar);
 
-define_mul_variants!(LHS = EdwardsPoint, RHS = Scalar, Output = EdwardsPoint);
-define_mul_variants!(LHS = Scalar, RHS = EdwardsPoint, Output = EdwardsPoint);
+impl Mul<&Scalar> for EdwardsPoint {
+    type Output = EdwardsPoint;
+
+    /// Scalar multiplication: compute `scalar * self`.
+    fn mul(self, scalar: &Scalar) -> EdwardsPoint {
+        self.scalar_mul(scalar)
+    }
+}
 
 impl Mul<&Scalar> for &EdwardsPoint {
     type Output = EdwardsPoint;
@@ -990,12 +1014,12 @@ impl Mul<&Scalar> for &EdwardsPoint {
     }
 }
 
-impl Mul<&EdwardsPoint> for &Scalar {
+impl Mul<Scalar> for EdwardsPoint {
     type Output = EdwardsPoint;
 
     /// Scalar multiplication: compute `scalar * self`.
-    fn mul(self, point: &EdwardsPoint) -> EdwardsPoint {
-        point * self
+    fn mul(self, scalar: Scalar) -> EdwardsPoint {
+        self.scalar_mul(&scalar)
     }
 }
 

@@ -18,17 +18,22 @@ impl Mul<&Scalar> for &DecafPoint {
     }
 }
 
-define_mul_variants!(LHS = DecafPoint, RHS = Scalar, Output = DecafPoint);
-
-impl Mul<&DecafPoint> for &Scalar {
+impl Mul<&Scalar> for DecafPoint {
     type Output = DecafPoint;
 
-    fn mul(self, point: &DecafPoint) -> DecafPoint {
-        point * self
+    fn mul(self, scalar: &Scalar) -> DecafPoint {
+        // XXX: We can do better than double and add
+        DecafPoint(double_and_add(&self.0, scalar))
     }
 }
 
-define_mul_variants!(LHS = Scalar, RHS = DecafPoint, Output = DecafPoint);
+impl Mul<Scalar> for DecafPoint {
+    type Output = DecafPoint;
+
+    fn mul(self, scalar: Scalar) -> DecafPoint {
+        self * &scalar
+    }
+}
 
 impl<'s> MulAssign<&'s Scalar> for DecafPoint {
     fn mul_assign(&mut self, scalar: &'s Scalar) {
@@ -37,7 +42,7 @@ impl<'s> MulAssign<&'s Scalar> for DecafPoint {
 }
 impl MulAssign<Scalar> for DecafPoint {
     fn mul_assign(&mut self, scalar: Scalar) {
-        *self = *self * scalar;
+        *self = *self * &scalar;
     }
 }
 
