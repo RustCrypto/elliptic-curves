@@ -2,19 +2,16 @@ use elliptic_curve::Field;
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
-use elliptic_curve::group::cofactor::CofactorGroup;
 use elliptic_curve::hash2curve::{
     FromOkm, GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
 };
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
 use super::FieldElement;
 
 impl GroupDigest for Secp256k1 {
-    type FieldElement = FieldElement;
-
     type K = U16;
 }
 
@@ -130,11 +127,12 @@ impl OsswuMap for FieldElement {
     }
 }
 
-impl MapToCurve for FieldElement {
-    type Output = ProjectivePoint;
+impl MapToCurve for Secp256k1 {
+    type CurvePoint = ProjectivePoint;
+    type FieldElement = FieldElement;
 
-    fn map_to_curve(&self) -> Self::Output {
-        let (rx, ry) = self.osswu();
+    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+        let (rx, ry) = element.osswu();
         let (qx, qy) = FieldElement::isogeny(rx, ry);
 
         AffinePoint {
@@ -143,6 +141,10 @@ impl MapToCurve for FieldElement {
             infinity: 0,
         }
         .into()
+    }
+
+    fn map_to_subgroup(point: Self::CurvePoint) -> ProjectivePoint {
+        point
     }
 }
 
@@ -258,31 +260,14 @@ impl Isogeny for FieldElement {
     };
 }
 
-impl CofactorGroup for ProjectivePoint {
-    type Subgroup = ProjectivePoint;
-
-    fn clear_cofactor(&self) -> Self::Subgroup {
-        *self
-    }
-
-    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
-        CtOption::new(self, 1.into())
-    }
-
-    fn is_torsion_free(&self) -> Choice {
-        1.into()
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{FieldElement, Scalar, Secp256k1, U256};
+    use crate::{Scalar, Secp256k1, U256, arithmetic::field::FieldElement};
     use elliptic_curve::{
         Curve,
         array::Array,
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
-        group::cofactor::CofactorGroup,
         hash2curve::{FromOkm, GroupDigest, MapToCurve},
     };
     use hex_literal::hex;
@@ -377,17 +362,17 @@ mod tests {
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
             assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
-            let q0 = u[0].map_to_curve();
+            let q0 = Secp256k1::map_to_curve(u[0]);
             let aq0 = q0.to_affine();
             assert_eq!(aq0.x.to_bytes().as_slice(), test_vector.q0_x);
             assert_eq!(aq0.y.to_bytes().as_slice(), test_vector.q0_y);
 
-            let q1 = u[1].map_to_curve();
+            let q1 = Secp256k1::map_to_curve(u[1]);
             let aq1 = q1.to_affine();
             assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
             assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
 
-            let p = q0.clear_cofactor() + q1.clear_cofactor();
+            let p = Secp256k1::add_and_map_to_subgroup(q0, q1);
             let ap = p.to_affine();
             assert_eq!(ap.x.to_bytes().as_slice(), test_vector.p_x);
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);

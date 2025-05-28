@@ -14,7 +14,6 @@ use elliptic_curve::{
     bigint::ArrayEncoding,
     group::{
         self, Group, GroupEncoding,
-        cofactor::CofactorGroup,
         prime::{PrimeCurve, PrimeGroup},
     },
     ops::{BatchInvert, LinearCombination},
@@ -146,30 +145,6 @@ where
         }
 
         q
-    }
-}
-
-impl<C> CofactorGroup for ProjectivePoint<C>
-where
-    Self: Double,
-    C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
-    FieldBytes<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
-{
-    type Subgroup = Self;
-
-    fn clear_cofactor(&self) -> Self::Subgroup {
-        *self
-    }
-
-    fn into_subgroup(self) -> CtOption<Self> {
-        CtOption::new(self, 1.into())
-    }
-
-    fn is_torsion_free(&self) -> Choice {
-        1.into()
     }
 }
 

@@ -331,7 +331,7 @@ dependencies = [
 [[package]]
 name = "crypto-common"
 version = "0.2.0-rc.2"
-source = "git+https://github.com/RustCrypto/traits.git#857f6de047cffa855e6634e4fe61d3b023aca1fd"
+source = "git+https://github.com/RustCrypto/traits.git#4de33de9409d6534501c3d390a3051618482a419"
 dependencies = [
  "hybrid-array",
 ]
@@ -350,7 +350,7 @@ dependencies = [
 [[package]]
 name = "digest"
 version = "0.11.0-pre.10"
-source = "git+https://github.com/RustCrypto/traits.git#1cae37d25c5bc6c59570d5136ccb710e1914b07a"
+source = "git+https://github.com/RustCrypto/traits.git#4de33de9409d6534501c3d390a3051618482a419"
 dependencies = [
  "block-buffer",
  "const-oid",
@@ -382,7 +382,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.1"
-source = "git+https://github.com/RustCrypto/traits.git#857f6de047cffa855e6634e4fe61d3b023aca1fd"
+source = "git+https://github.com/RustCrypto/traits.git#4de33de9409d6534501c3d390a3051618482a419"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -1132,7 +1132,7 @@ dependencies = [
 [[package]]
 name = "signature"
 version = "3.0.0-pre"
-source = "git+https://github.com/RustCrypto/traits.git#1cae37d25c5bc6c59570d5136ccb710e1914b07a"
+source = "git+https://github.com/RustCrypto/traits.git#4de33de9409d6534501c3d390a3051618482a419"
 dependencies = [
  "digest",
  "rand_core 0.9.3",
