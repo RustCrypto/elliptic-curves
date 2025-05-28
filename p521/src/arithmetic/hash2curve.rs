@@ -214,7 +214,8 @@ mod tests {
             // in parts
             let mut u = [FieldElement::default(), FieldElement::default()];
             hash2curve::hash_to_field::<
-                ExpandMsgXmd<Sha512, <NistP521 as GroupDigest>::K>,
+                ExpandMsgXmd<Sha512>,
+                <NistP521 as GroupDigest>::K,
                 FieldElement,
             >(&[test_vector.msg], &[DST], &mut u)
             .unwrap();
@@ -247,11 +248,7 @@ mod tests {
             assert_point_eq!(p, test_vector.p_x, test_vector.p_y);
 
             // complete run
-            let pt =
-                NistP521::hash_from_bytes::<ExpandMsgXmd<Sha512, <NistP521 as GroupDigest>::K>>(
-                    &[test_vector.msg],
-                    &[DST],
-                )
+            let pt = NistP521::hash_from_bytes::<ExpandMsgXmd<Sha512>>(&[test_vector.msg], &[DST])
                 .unwrap();
             assert_point_eq!(pt, test_vector.p_x, test_vector.p_y);
         }
@@ -300,17 +297,16 @@ mod tests {
                 .to_be_bytes();
 
             for counter in 0_u8..=u8::MAX {
-                let scalar =
-                    NistP521::hash_to_scalar::<ExpandMsgXmd<Sha512, <NistP521 as GroupDigest>::K>>(
-                        &[
-                            test_vector.seed,
-                            &key_info_len,
-                            test_vector.key_info,
-                            &counter.to_be_bytes(),
-                        ],
-                        &[test_vector.dst],
-                    )
-                    .unwrap();
+                let scalar = NistP521::hash_to_scalar::<ExpandMsgXmd<Sha512>>(
+                    &[
+                        test_vector.seed,
+                        &key_info_len,
+                        test_vector.key_info,
+                        &counter.to_be_bytes(),
+                    ],
+                    &[test_vector.dst],
+                )
+                .unwrap();
 
                 if !bool::from(scalar.is_zero()) {
                     assert_eq!(scalar.to_bytes().as_slice(), test_vector.sk_sm);

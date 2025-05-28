@@ -51,12 +51,12 @@ expose-field = ["arithmetic"]
 getrandom = ["rand_core/os_rng"]
 hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
 jwk = ["elliptic-curve/jwk"]
+oprf = ["hash2curve", "elliptic-curve/oprf", "dep:sha2"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core?/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa-core?/serde", "elliptic-curve/serde", "primeorder?/serde", "serdect"]
 sha512 = ["digest", "dep:sha2"]
 test-vectors = ["dep:hex-literal"]
-voprf = ["hash2curve", "elliptic-curve/voprf", "dep:sha2"]
 
 [package.metadata.docs.rs]
 all-features = true
