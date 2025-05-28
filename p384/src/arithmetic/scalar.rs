@@ -286,8 +286,14 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U384};
-    use crate::{FieldBytes, NistP384};
-    use elliptic_curve::{Curve, array::Array, ff::PrimeField, ops::ReduceNonZero};
+    use crate::{FieldBytes, NistP384, NonZeroScalar};
+    use elliptic_curve::{
+        Curve,
+        array::Array,
+        ff::PrimeField,
+        ops::{BatchInvert, ReduceNonZero},
+    };
+    use proptest::{prelude::any, prop_compose, proptest};
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -356,5 +362,31 @@ mod tests {
             Scalar::reduce_nonzero(NistP384::ORDER.wrapping_add(&U384::from_u8(2))).0,
             U384::from_u8(4),
         );
+    }
+
+    prop_compose! {
+        fn non_zero_scalar()(bytes in any::<[u8; 48]>()) -> NonZeroScalar {
+            NonZeroScalar::reduce_nonzero_bytes(&bytes.into())
+        }
+    }
+
+    // TODO: move to `primefield::test_field_invert`.
+    proptest! {
+        #[test]
+        fn batch_invert(
+            a in non_zero_scalar(),
+            b in non_zero_scalar(),
+            c in non_zero_scalar(),
+            d in non_zero_scalar(),
+            e in non_zero_scalar(),
+        ) {
+            let scalars: [Scalar; 5] = [*a, *b, *c, *d, *e];
+
+            let inverted_scalars = Scalar::batch_invert(scalars.as_slice()).unwrap();
+
+            for (scalar, inverted_scalar) in scalars.into_iter().zip(inverted_scalars) {
+                assert_eq!(inverted_scalar, scalar.invert().unwrap());
+            }
+        }
     }
 }
