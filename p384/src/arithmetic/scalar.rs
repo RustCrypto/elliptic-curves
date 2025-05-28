@@ -286,8 +286,14 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U384};
-    use crate::{FieldBytes, NistP384};
-    use elliptic_curve::{Curve, array::Array, ff::PrimeField, ops::ReduceNonZero};
+    use crate::{FieldBytes, NistP384, NonZeroScalar};
+    use elliptic_curve::{
+        Curve,
+        array::Array,
+        ff::PrimeField,
+        ops::{BatchInvert, ReduceNonZero},
+    };
+    use rand_core::OsRng;
 
     /// t = (modulus - 1) >> S
     const T: [u64; 6] = [
@@ -356,5 +362,17 @@ mod tests {
             Scalar::reduce_nonzero(NistP384::ORDER.wrapping_add(&U384::from_u8(2))).0,
             U384::from_u8(4),
         );
+    }
+
+    #[test]
+    fn batch_invert() {
+        let scalars: [Scalar; 10] =
+            core::array::from_fn(|_| NonZeroScalar::try_from_rng(&mut OsRng).unwrap().into());
+
+        let inverted_scalars = Scalar::batch_invert(scalars.as_slice()).unwrap();
+
+        for (scalar, inverted_scalar) in scalars.into_iter().zip(inverted_scalars) {
+            assert_eq!(inverted_scalar, scalar.invert().unwrap());
+        }
     }
 }
