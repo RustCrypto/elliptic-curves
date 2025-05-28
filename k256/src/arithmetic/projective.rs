@@ -261,9 +261,9 @@ impl<const N: usize> BatchNormalize<[ProjectivePoint; N]> for ProjectivePoint {
 
     #[inline]
     fn batch_normalize(points: &[Self; N]) -> [Self::AffineRepr; N] {
-        let mut zs = [FieldElement::ONE; N];
+        let zs = [FieldElement::ONE; N];
         let mut affine_points = [AffinePoint::IDENTITY; N];
-        batch_normalize_generic(points, &mut zs, &mut affine_points);
+        batch_normalize_generic(points, zs, &mut affine_points);
         affine_points
     }
 }
@@ -274,18 +274,18 @@ impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
 
     #[inline]
     fn batch_normalize(points: &[Self]) -> Vec<Self::AffineRepr> {
-        let mut zs = vec![FieldElement::ONE; points.len()];
+        let zs = vec![FieldElement::ONE; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
-        batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
+        batch_normalize_generic(points, zs, &mut affine_points);
         affine_points
     }
 }
 
-fn batch_normalize_generic<P, Z, O>(points: &P, zs: &mut Z, out: &mut O)
+fn batch_normalize_generic<P, Z, O>(points: &P, mut zs: Z, out: &mut O)
 where
     FieldElement: BatchInvert<Z>,
     P: AsRef<[ProjectivePoint]> + ?Sized,
-    Z: AsMut<[FieldElement]> + ?Sized,
+    Z: AsMut<[FieldElement]>,
     O: AsMut<[AffinePoint]> + ?Sized,
 {
     let points = points.as_ref();

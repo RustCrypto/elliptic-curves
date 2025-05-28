@@ -382,7 +382,7 @@ mod tests {
         ) {
             let scalars: [Scalar; 5] = [*a, *b, *c, *d, *e];
 
-            let inverted_scalars = Scalar::batch_invert(scalars.as_slice()).unwrap();
+            let inverted_scalars = Scalar::batch_invert(scalars).unwrap();
 
             for (scalar, inverted_scalar) in scalars.into_iter().zip(inverted_scalars) {
                 assert_eq!(inverted_scalar, scalar.invert().unwrap());

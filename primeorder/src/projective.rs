@@ -359,9 +359,9 @@ where
 
     #[inline]
     fn batch_normalize(points: &[Self; N]) -> [Self::AffineRepr; N] {
-        let mut zs = [C::FieldElement::ONE; N];
+        let zs = [C::FieldElement::ONE; N];
         let mut affine_points = [C::AffinePoint::IDENTITY; N];
-        batch_normalize_generic(points, &mut zs, &mut affine_points);
+        batch_normalize_generic(points, zs, &mut affine_points);
         affine_points
     }
 }
@@ -384,13 +384,13 @@ where
 }
 
 /// Generic implementation of batch normalization.
-fn batch_normalize_generic<C, P, Z, O>(points: &P, zs: &mut Z, out: &mut O)
+fn batch_normalize_generic<C, P, Z, O>(points: &P, mut zs: Z, out: &mut O)
 where
     C: PrimeCurveParams,
     C::FieldElement: BatchInvert<Z>,
     C::ProjectivePoint: Double,
     P: AsRef<[ProjectivePoint<C>]> + ?Sized,
-    Z: AsMut<[C::FieldElement]> + ?Sized,
+    Z: AsMut<[C::FieldElement]>,
     O: AsMut<[AffinePoint<C>]> + ?Sized,
 {
     let points = points.as_ref();
