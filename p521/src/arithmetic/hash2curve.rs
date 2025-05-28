@@ -11,8 +11,6 @@ use elliptic_curve::{
 };
 
 impl GroupDigest for NistP521 {
-    type FieldElement = FieldElement;
-
     type K = U32;
 }
 
@@ -66,16 +64,21 @@ impl OsswuMap for FieldElement {
     };
 }
 
-impl MapToCurve for FieldElement {
-    type Output = ProjectivePoint;
+impl MapToCurve for NistP521 {
+    type CurvePoint = ProjectivePoint;
+    type FieldElement = FieldElement;
 
-    fn map_to_curve(&self) -> Self::Output {
-        let (qx, qy) = self.osswu();
+    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+        let (qx, qy) = element.osswu();
 
         // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
         AffinePoint::decompress(&qx.to_bytes(), qy.is_odd())
             .unwrap()
             .into()
+    }
+
+    fn map_to_subgroup(point: Self::CurvePoint) -> ProjectivePoint {
+        point
     }
 }
 
@@ -235,10 +238,10 @@ mod tests {
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
             assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
-            let q0 = u[0].map_to_curve();
+            let q0 = NistP521::map_to_curve(u[0]);
             assert_point_eq!(q0, test_vector.q0_x, test_vector.q0_y);
 
-            let q1 = u[1].map_to_curve();
+            let q1 = NistP521::map_to_curve(u[1]);
             assert_point_eq!(q1, test_vector.q1_x, test_vector.q1_y);
 
             let p = q0.clear_cofactor() + q1.clear_cofactor();
