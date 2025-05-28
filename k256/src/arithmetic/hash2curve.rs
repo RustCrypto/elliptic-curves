@@ -2,11 +2,10 @@ use elliptic_curve::Field;
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
-use elliptic_curve::group::cofactor::CofactorGroup;
 use elliptic_curve::hash2curve::{
     FromOkm, GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
 };
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
@@ -261,22 +260,6 @@ impl Isogeny for FieldElement {
     };
 }
 
-impl CofactorGroup for ProjectivePoint {
-    type Subgroup = ProjectivePoint;
-
-    fn clear_cofactor(&self) -> Self::Subgroup {
-        *self
-    }
-
-    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
-        CtOption::new(self, 1.into())
-    }
-
-    fn is_torsion_free(&self) -> Choice {
-        1.into()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{Scalar, Secp256k1, U256, arithmetic::field::FieldElement};
@@ -285,7 +268,6 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
-        group::cofactor::CofactorGroup,
         hash2curve::{FromOkm, GroupDigest, MapToCurve},
     };
     use hex_literal::hex;
@@ -390,7 +372,7 @@ mod tests {
             assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
             assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
 
-            let p = q0.clear_cofactor() + q1.clear_cofactor();
+            let p = Secp256k1::add_and_map_to_subgroup(q0, q1);
             let ap = p.to_affine();
             assert_eq!(ap.x.to_bytes().as_slice(), test_vector.p_x);
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
