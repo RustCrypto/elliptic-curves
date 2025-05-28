@@ -522,9 +522,6 @@ mod tests {
         test_vectors::field::DBL_TEST_VECTORS,
     };
 
-    #[cfg(feature = "alloc")]
-    use alloc::vec::Vec;
-
     impl From<&BigUint> for FieldElement {
         fn from(x: &BigUint) -> Self {
             let bytes = biguint_to_bytes(x);
@@ -693,7 +690,7 @@ mod tests {
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
-            <FieldElement as BatchInvert<_>>::batch_invert(&[k, l]).unwrap(),
+            <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap(),
             expected
         );
     }
@@ -706,8 +703,7 @@ mod tests {
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let field_elements = vec![k, l];
-        let res: Vec<_> =
-            <FieldElement as BatchInvert<_>>::batch_invert(field_elements.as_slice()).unwrap();
+        let res = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
         assert_eq!(res, expected);
     }
 

@@ -898,8 +898,6 @@ mod tests {
     use proptest::prelude::*;
     use rand_core::{OsRng, TryRngCore};
 
-    #[cfg(feature = "alloc")]
-    use alloc::vec::Vec;
     use elliptic_curve::ops::BatchInvert;
 
     impl From<&BigUint> for Scalar {
@@ -1055,7 +1053,7 @@ mod tests {
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
-            <Scalar as BatchInvert<_>>::batch_invert(&[k, l]).unwrap(),
+            <Scalar as BatchInvert<_>>::batch_invert([k, l]).unwrap(),
             expected
         );
     }
@@ -1068,7 +1066,7 @@ mod tests {
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let scalars = vec![k, l];
-        let res: Vec<_> = <Scalar as BatchInvert<_>>::batch_invert(scalars.as_slice()).unwrap();
+        let res = <Scalar as BatchInvert<_>>::batch_invert(scalars).unwrap();
         assert_eq!(res, expected);
     }
 
