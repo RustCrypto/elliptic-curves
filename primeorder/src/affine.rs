@@ -132,7 +132,7 @@ where
     FieldBytes<C>: Copy,
 {
     fn decompress(x_bytes: &FieldBytes<C>, y_is_odd: Choice) -> CtOption<Self> {
-        C::FieldElement::from_repr(*x_bytes).and_then(|x| {
+        C::FieldElement::from_repr(x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
             let beta = alpha.sqrt();
 
@@ -182,8 +182,8 @@ where
                 Self::decompress(x, Choice::from(y_is_odd as u8))
             }
             sec1::Coordinates::Uncompressed { x, y } => {
-                C::FieldElement::from_repr(*y).and_then(|y| {
-                    C::FieldElement::from_repr(*x).and_then(|x| {
+                C::FieldElement::from_repr(y).and_then(|y| {
+                    C::FieldElement::from_repr(x).and_then(|x| {
                         let lhs = y * &y;
                         let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
                         CtOption::new(Self { x, y, infinity: 0 }, lhs.ct_eq(&rhs))

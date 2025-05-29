@@ -130,8 +130,8 @@ impl IsHigh for Scalar {
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
-    fn from_repr(repr: Self::Repr) -> CtOption<Self> {
-        Self::from_bytes(&repr)
+    fn from_repr(repr: &Self::Repr) -> CtOption<Self> {
+        Self::from_bytes(repr)
     }
 
     fn to_repr(&self) -> Self::Repr {

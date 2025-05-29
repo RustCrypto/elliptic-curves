@@ -179,8 +179,8 @@ impl PrimeField for FieldElement {
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(36);
 
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
+    fn from_repr(bytes: &FieldBytes) -> CtOption<Self> {
+        Self::from_bytes(bytes)
     }
 
     fn to_repr(&self) -> FieldBytes {

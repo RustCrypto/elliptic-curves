@@ -112,7 +112,7 @@ impl PrehashSigner<Signature> for SigningKey {
         let h = Scalar::reduce_bytes(&h_word);
 
         //2. Generate 𝑘 ← rand(1,..,𝑞-1)
-        let k = Scalar::from_repr(rfc6979::generate_k::<BeltHash, _>(
+        let k = Scalar::from_repr(&rfc6979::generate_k::<BeltHash, _>(
             &self.secret_scalar.to_repr(),
             &FieldBytesEncoding::<BignP256>::encode_field_bytes(&BignP256::ORDER),
             &h.to_bytes(),

@@ -208,7 +208,7 @@ impl Field for Scalar {
         // iterations is vanishingly small.
         loop {
             rng.try_fill_bytes(&mut bytes)?;
-            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+            if let Some(scalar) = Scalar::from_repr(&bytes).into() {
                 return Ok(scalar);
             }
         }
@@ -292,8 +292,8 @@ impl PrimeField for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        let inner = U256::from_be_byte_array(bytes);
+    fn from_repr(bytes: &FieldBytes) -> CtOption<Self> {
+        let inner = U256::from_be_byte_array(*bytes);
         CtOption::new(Self(inner), inner.ct_lt(&NistP256::ORDER))
     }
 
@@ -736,7 +736,7 @@ mod tests {
         let mut bytes = FieldBytes::default();
         bytes[24..].copy_from_slice(k.to_be_bytes().as_ref());
 
-        let scalar = Scalar::from_repr(bytes).unwrap();
+        let scalar = Scalar::from_repr(&bytes).unwrap();
         assert_eq!(bytes, scalar.to_bytes());
     }
 

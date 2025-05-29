@@ -8,14 +8,14 @@ use hex_literal::hex;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(
-        hex!("519b423d715f8b581f4fa8ee59f4771a5b44c8130b4e3eacca54a56dda72b464").into(),
+        &hex!("519b423d715f8b581f4fa8ee59f4771a5b44c8130b4e3eacca54a56dda72b464").into(),
     )
     .unwrap()
 }
 
 fn test_scalar_y() -> Scalar {
     Scalar::from_repr(
-        hex!("0f56db78ca460b055c500064824bed999a25aaf48ebb519ac201537b85479813").into(),
+        &hex!("0f56db78ca460b055c500064824bed999a25aaf48ebb519ac201537b85479813").into(),
     )
     .unwrap()
 }
@@ -23,7 +23,7 @@ fn test_scalar_y() -> Scalar {
 fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = test_scalar_x();
-    let s = Scalar::from_repr(m.into()).unwrap();
+    let s = Scalar::from_repr(&m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| b.iter(|| p * s));
 }
 

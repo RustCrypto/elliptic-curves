@@ -203,7 +203,7 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
     let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
 
     // A3: pick a random number k in [1, n-1] via a random number generator
-    let k = Scalar::from_repr(rfc6979::generate_k::<Sm3, _>(
+    let k = Scalar::from_repr(&rfc6979::generate_k::<Sm3, _>(
         &secret_scalar.to_repr(),
         &FieldBytesEncoding::<Sm2>::encode_field_bytes(&Sm2::ORDER),
         &e.to_bytes(),

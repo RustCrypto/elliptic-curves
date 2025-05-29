@@ -17,3 +17,11 @@ members = [
 
 [profile.dev]
 opt-level = 2
+
+[patch.crates-io]
+# https://github.com/RustCrypto/signatures/pull/972
+# https://github.com/RustCrypto/traits/pull/1869
+# https://github.com/zkcrypto/ff/pull/137
+ecdsa = { git = "https://github.com/RustCrypto/signatures.git", rev = "2adc05328a2d7fb6f62421748f8e340936d3a18d" }
+elliptic-curve = { git = "https://github.com/RustCrypto/traits.git", rev = "2ec3e144f69af5d3836d5d2b545b36105f6d69f9" }
+ff = { git = "https://github.com/zkcrypto/ff.git", rev = "8e139e2fb25ab61a5d362394af0a34b10c03d59b" }

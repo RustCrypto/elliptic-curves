@@ -94,8 +94,8 @@ impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
     #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
+    fn from_repr(bytes: &FieldBytes) -> CtOption<Self> {
+        Self::from_bytes(bytes)
     }
 
     #[inline]

@@ -273,8 +273,8 @@ impl PrimeField for FieldElement {
         Self::from_hex("00000000697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
 
     #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
+    fn from_repr(bytes: &FieldBytes) -> CtOption<Self> {
+        Self::from_bytes(bytes)
     }
 
     #[inline]
