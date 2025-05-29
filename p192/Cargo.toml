@@ -24,13 +24,13 @@ sec1 = { version = "0.8.0-rc.1", default-features = false }
 ecdsa-core = { version = "0.17.0-rc.0", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "=0.14.0-pre.1", optional = true, path = "../primefield" }
-primeorder = { version = "=0.14.0-pre.2", optional = true, path = "../primeorder" }
+primeorder = { version = "=0.14.0-pre.3", optional = true, path = "../primeorder" }
 serdect = { version = "0.3", optional = true, default-features = false }
 
 [dev-dependencies]
 ecdsa-core = { version = "0.17.0-rc.0", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "=0.14.0-pre.2", features = ["dev"], path = "../primeorder" }
+primeorder = { version = "=0.14.0-pre.3", features = ["dev"], path = "../primeorder" }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]
