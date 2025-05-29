@@ -17,26 +17,3 @@ members = [
 
 [profile.dev]
 opt-level = 2
-
-[patch.crates-io]
-belt-hash = { git = "https://github.com/RustCrypto/hashes.git" }
-sha2 = { git = "https://github.com/RustCrypto/hashes.git" }
-sha3 = { git = "https://github.com/RustCrypto/hashes.git" }
-sm3 = { git = "https://github.com/RustCrypto/hashes.git" }
-
-hkdf = { git = "https://github.com/RustCrypto/KDFs.git" }
-
-hmac = { git = "https://github.com/RustCrypto/MACs.git" }
-
-# https://github.com/RustCrypto/signatures/pull/913
-# https://github.com/RustCrypto/signatures/pull/940
-# https://github.com/RustCrypto/signatures/pull/955
-ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
-rfc6979 = { git = "https://github.com/RustCrypto/signatures.git" }
-
-# https://github.com/RustCrypto/traits/pull/1777
-# https://github.com/RustCrypto/traits/pull/1845
-digest = { git = "https://github.com/RustCrypto/traits.git" }
-elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-signature = { git = "https://github.com/RustCrypto/traits.git" }
-
