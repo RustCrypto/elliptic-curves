@@ -30,6 +30,9 @@ use elliptic_curve::{
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(feature = "serde")]
+use serdect::serde::{Deserialize, Serialize, de, ser};
+
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
 pub struct ProjectivePoint<C: PrimeCurveParams> {
@@ -780,5 +783,41 @@ where
 
     fn neg(self) -> ProjectivePoint<C> {
         ProjectivePoint::neg(self)
+    }
+}
+
+//
+// serde support
+//
+
+#[cfg(feature = "serde")]
+impl<C> Serialize for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytesSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
+{
+    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        self.to_affine().serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, C> Deserialize<'de> for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+{
+    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        AffinePoint::<C>::deserialize(deserializer).map(Self::from)
     }
 }

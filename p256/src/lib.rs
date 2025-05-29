@@ -21,6 +21,7 @@
 //! `Deserialize` are impl'd for the following types:
 //!
 //! - [`AffinePoint`]
+//! - [`ProjectivePoint`]
 //! - [`Scalar`]
 //! - [`ecdsa::VerifyingKey`]
 //!
