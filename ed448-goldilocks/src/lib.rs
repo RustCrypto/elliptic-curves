@@ -48,6 +48,8 @@ pub(crate) mod ristretto;
 #[cfg(feature = "signing")]
 pub(crate) mod sign;
 
+pub mod x448;
+
 pub(crate) use field::{GOLDILOCKS_BASE_POINT, TWISTED_EDWARDS_BASE_POINT};
 
 pub use curve::{
