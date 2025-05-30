@@ -912,7 +912,7 @@ mod tests {
                 MUL_TEST_VECTORS
                     .iter()
                     .cloned()
-                    .map(|(k, x, y)| (Scalar::from_repr(k.into()).unwrap(), (x, y))),
+                    .map(|(k, x, y)| (Scalar::from_repr(&k.into()).unwrap(), (x, y))),
             )
         {
             let res = (generator * &k).to_affine();

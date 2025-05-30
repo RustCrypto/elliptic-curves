@@ -317,8 +317,8 @@ impl PrimeField for FieldElement {
     ]));
     const DELTA: Self = Self::from_u64(9);
 
-    fn from_repr(repr: Self::Repr) -> CtOption<Self> {
-        Self::from_bytes(&repr)
+    fn from_repr(repr: &Self::Repr) -> CtOption<Self> {
+        Self::from_bytes(repr)
     }
 
     fn to_repr(&self) -> Self::Repr {

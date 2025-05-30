@@ -199,8 +199,8 @@ impl PrimeField for Scalar {
     const DELTA: Self = Self::from_u64(4);
 
     #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
+    fn from_repr(bytes: &FieldBytes) -> CtOption<Self> {
+        Self::from_bytes(bytes)
     }
 
     #[inline]
@@ -313,7 +313,7 @@ mod tests {
         let mut bytes = FieldBytes::default();
         bytes[40..].copy_from_slice(k.to_be_bytes().as_ref());
 
-        let scalar = Scalar::from_repr(bytes).unwrap();
+        let scalar = Scalar::from_repr(&bytes).unwrap();
         assert_eq!(bytes, scalar.to_bytes());
     }
 

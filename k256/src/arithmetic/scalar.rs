@@ -233,7 +233,7 @@ impl Field for Scalar {
         // TODO: pre-generate several scalars to bring the probability of non-constant-timeness down?
         loop {
             rng.try_fill_bytes(&mut bytes)?;
-            if let Some(scalar) = Scalar::from_repr(bytes).into() {
+            if let Some(scalar) = Scalar::from_repr(&bytes).into() {
                 return Ok(scalar);
             }
         }
@@ -329,8 +329,8 @@ impl PrimeField for Scalar {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        let inner = U256::from_be_byte_array(bytes);
+    fn from_repr(bytes: &FieldBytes) -> CtOption<Self> {
+        let inner = U256::from_be_byte_array(*bytes);
         CtOption::new(Self(inner), inner.ct_lt(&Secp256k1::ORDER))
     }
 
@@ -904,7 +904,7 @@ mod tests {
         fn from(x: &BigUint) -> Self {
             debug_assert!(x < &Scalar::modulus_as_biguint());
             let bytes = biguint_to_bytes(x);
-            Self::from_repr(bytes.into()).unwrap()
+            Self::from_repr(&bytes.into()).unwrap()
         }
     }
 
@@ -1221,7 +1221,7 @@ mod tests {
     proptest! {
         #[test]
         fn fuzzy_roundtrip_to_bytes(a in scalar()) {
-            let a_back = Scalar::from_repr(a.to_bytes()).unwrap();
+            let a_back = Scalar::from_repr(&a.to_bytes()).unwrap();
             assert_eq!(a, a_back);
         }
 

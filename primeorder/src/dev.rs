@@ -141,7 +141,7 @@ macro_rules! test_projective_arithmetic {
                     $mul_vectors
                         .iter()
                         .cloned()
-                        .map(|(k, x, y)| (<$scalar>::from_repr(k.into()).unwrap(), (x, y))),
+                        .map(|(k, x, y)| (<$scalar>::from_repr(&k.into()).unwrap(), (x, y))),
                 )
             {
                 let p = generator * &k;

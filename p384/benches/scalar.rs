@@ -7,13 +7,13 @@ use hex_literal::hex;
 use p384::{ProjectivePoint, Scalar, elliptic_curve::group::ff::PrimeField};
 
 fn test_scalar_x() -> Scalar {
-    Scalar::from_repr(
+    Scalar::from_repr(&
         hex!("201b432d8df14324182d6261db3e4b3f46a8284482d52e370da41e6cbdf45ec2952f5db7ccbce3bc29449f4fb080ac97").into()
     ).unwrap()
 }
 
 fn test_scalar_y() -> Scalar {
-    Scalar::from_repr(
+    Scalar::from_repr(&
         hex!("23d9f4ea6d87b7d6163d64256e3449255db14786401a51daa7847161bf56d494325ad2ac8ba928394e01061d882c3528").into()
     ).unwrap()
 }
@@ -21,7 +21,7 @@ fn test_scalar_y() -> Scalar {
 fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = test_scalar_x();
-    let s = Scalar::from_repr(m.into()).unwrap();
+    let s = Scalar::from_repr(&m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| b.iter(|| p * s));
 }
 

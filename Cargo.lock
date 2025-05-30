@@ -364,8 +364,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abbc927a7e946a78fbff19c283bc5d4f8960d9000049a7e2b0d84cb2730613c4"
+source = "git+https://github.com/RustCrypto/signatures.git?rev=2adc05328a2d7fb6f62421748f8e340936d3a18d#2adc05328a2d7fb6f62421748f8e340936d3a18d"
 dependencies = [
  "der",
  "digest",
@@ -386,8 +385,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1786d08ca7d401fcc540b2fab11ec37b224ced5a0455c451656f83d80e681ddb"
+source = "git+https://github.com/RustCrypto/traits.git?rev=2ec3e144f69af5d3836d5d2b545b36105f6d69f9#2ec3e144f69af5d3836d5d2b545b36105f6d69f9"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -427,8 +425,7 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 [[package]]
 name = "ff"
 version = "0.14.0-pre.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d42dd26f5790eda47c1a2158ea4120e32c35ddc9a7743c98a292accc01b54ef3"
+source = "git+https://github.com/zkcrypto/ff.git?rev=8e139e2fb25ab61a5d362394af0a34b10c03d59b#8e139e2fb25ab61a5d362394af0a34b10c03d59b"
 dependencies = [
  "bitvec",
  "ff_derive",
@@ -439,8 +436,7 @@ dependencies = [
 [[package]]
 name = "ff_derive"
 version = "0.14.0-pre.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9266df7c7c72e5a865a447aca13bf480d7310eaa4f84de117c33e361d4da8888"
+source = "git+https://github.com/zkcrypto/ff.git?rev=8e139e2fb25ab61a5d362394af0a34b10c03d59b#8e139e2fb25ab61a5d362394af0a34b10c03d59b"
 dependencies = [
  "addchain",
  "num-bigint 0.3.3",
