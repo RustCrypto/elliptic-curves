@@ -39,7 +39,10 @@
 //! # }
 //! ```
 
-pub use ecdsa_core::signature::{self, Error};
+pub use ecdsa_core::{
+    RecoveryId,
+    signature::{self, Error},
+};
 
 use super::NistP256;
 use ecdsa_core::EcdsaCurve;
