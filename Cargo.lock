@@ -583,7 +583,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-pre.3"
+version = "0.14.0-pre.4"
 dependencies = [
  "blobby",
  "cfg-if",
@@ -727,7 +727,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-pre.3"
+version = "0.14.0-pre.4"
 dependencies = [
  "blobby",
  "criterion",
@@ -744,7 +744,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-pre.3"
+version = "0.14.0-pre.4"
 dependencies = [
  "blobby",
  "criterion",
@@ -761,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-pre.3"
+version = "0.14.0-pre.4"
 dependencies = [
  "base16ct",
  "blobby",
@@ -841,7 +841,7 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-pre.1"
+version = "0.14.0-pre.2"
 dependencies = [
  "crypto-bigint",
  "ff",
