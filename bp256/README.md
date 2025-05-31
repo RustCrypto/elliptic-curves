@@ -2,10 +2,10 @@
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
+[![Build Status][build-image]][build-link]
 ![Apache2/MIT licensed][license-image]
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
-[![Build Status][build-image]][build-link]
 
 Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curve types
 implemented in terms of traits from the [`elliptic-curve`] crate.
@@ -29,7 +29,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/bp256
+[crate-image]: https://img.shields.io/crates/v/bp256?logo=rust
 [crate-link]: https://crates.io/crates/bp256
 [docs-image]: https://docs.rs/bp256/badge.svg
 [docs-link]: https://docs.rs/bp256/
@@ -37,10 +37,10 @@ dual licensed as above, without any additional terms or conditions.
 [rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
-[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow:bp256
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bp256.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bp256.yml
 
-[//]: # (general links)
+[//]: # (links)
 
 [RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve

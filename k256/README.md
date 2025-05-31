@@ -86,18 +86,18 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/k256
+[crate-image]: https://img.shields.io/crates/v/k256?logo=rust
 [crate-link]: https://crates.io/crates/k256
 [docs-image]: https://docs.rs/k256/badge.svg
 [docs-link]: https://docs.rs/k256/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions?query=workflow%3Ak256
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/k256.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/k256.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 
-[//]: # (general links)
+[//]: # (links)
 
 [RustCrypto]: https://github.com/RustCrypto/
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1

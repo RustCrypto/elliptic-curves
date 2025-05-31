@@ -59,7 +59,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/p256
+[crate-image]: https://img.shields.io/crates/v/p256?logo=rust
 [crate-link]: https://crates.io/crates/p256
 [docs-image]: https://docs.rs/p256/badge.svg
 [docs-link]: https://docs.rs/p256/

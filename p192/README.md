@@ -68,7 +68,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/p192
+[crate-image]: https://img.shields.io/crates/v/p192?logo=rust
 [crate-link]: https://crates.io/crates/p192
 [docs-image]: https://docs.rs/p192/badge.svg
 [docs-link]: https://docs.rs/p192/
@@ -79,7 +79,7 @@ dual licensed as above, without any additional terms or conditions.
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 
-[//]: # (general links)
+[//]: # (links)
 
 [RustCrypto]: https://github.com/rustcrypto/
 [NIST Special Publication 800-131A Revision 2]: https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf
