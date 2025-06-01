@@ -124,10 +124,10 @@ impl VerifyingKey {
     /// Compute message hash `e` according to [draft-shen-sm2-ecdsa § 5.2.1]
     ///
     /// [draft-shen-sm2-ecdsa § 5.2.1]: https://datatracker.ietf.org/doc/html/draft-shen-sm2-ecdsa-02#section-5.2.1
-    pub(crate) fn hash_msg(&self, msg: &[u8]) -> Hash {
-        Sm3::new_with_prefix(self.identity_hash)
-            .chain_update(msg)
-            .finalize()
+    pub(crate) fn hash_msg(&self, msg: &[&[u8]]) -> Hash {
+        let mut digest = Sm3::new_with_prefix(self.identity_hash);
+        msg.iter().for_each(|slice| digest.update(slice));
+        digest.finalize()
     }
 }
 
@@ -175,7 +175,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
 }
 
 impl Verifier<Signature> for VerifyingKey {
-    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<()> {
+    fn verify(&self, msg: &[&[u8]], signature: &Signature) -> Result<()> {
         // B3: set M'~=ZA || M'
         let hash = self.hash_msg(msg);
         self.verify_prehash(&hash, signature)

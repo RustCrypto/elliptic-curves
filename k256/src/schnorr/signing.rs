@@ -199,9 +199,11 @@ impl RandomizedSigner<Signature> for SigningKey {
     fn try_sign_with_rng<R: TryCryptoRng + ?Sized>(
         &self,
         rng: &mut R,
-        msg: &[u8],
+        msg: &[&[u8]],
     ) -> Result<Signature> {
-        self.try_sign_digest_with_rng(rng, Sha256::new_with_prefix(msg))
+        let mut digest = Sha256::new();
+        msg.iter().for_each(|slice| digest.update(slice));
+        self.try_sign_digest_with_rng(rng, digest)
     }
 }
 
@@ -220,8 +222,10 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
 }
 
 impl Signer<Signature> for SigningKey {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
-        self.try_sign_digest(Sha256::new_with_prefix(msg))
+    fn try_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
+        let mut digest = Sha256::new();
+        msg.iter().for_each(|slice| digest.update(slice));
+        self.try_sign_digest(digest)
     }
 }
 

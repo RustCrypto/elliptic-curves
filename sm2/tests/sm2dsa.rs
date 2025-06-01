@@ -30,7 +30,7 @@ const SIG: [u8; 64] = hex!(
 fn verify_test_vector() {
     let vk = VerifyingKey::from_sec1_bytes(IDENTITY, &PUBLIC_KEY).unwrap();
     let sig = Signature::try_from(&SIG).unwrap();
-    assert!(vk.verify(MSG, &sig).is_ok());
+    assert!(vk.verify(&[MSG], &sig).is_ok());
 }
 
 prop_compose! {
@@ -47,18 +47,18 @@ prop_compose! {
 proptest! {
     #[test]
     fn sign_and_verify(sk in signing_key()) {
-        let signature = sk.sign(MSG);
-        prop_assert!(sk.verifying_key().verify(MSG, &signature).is_ok());
+        let signature = sk.sign(&[MSG]);
+        prop_assert!(sk.verifying_key().verify(&[MSG], &signature).is_ok());
     }
 
     #[test]
     fn reject_invalid_signature(sk in signing_key(), byte in 0usize..32, bit in 0usize..8) {
-        let mut signature_bytes = sk.sign(MSG).to_bytes();
+        let mut signature_bytes = sk.sign(&[MSG]).to_bytes();
 
         // tweak signature to make it invalid
         signature_bytes[byte] ^= 1 << bit;
 
         let signature = Signature::from_bytes(&signature_bytes).unwrap();
-        prop_assert!(sk.verifying_key().verify(MSG, &signature).is_err());
+        prop_assert!(sk.verifying_key().verify(&[MSG], &signature).is_err());
     }
 }

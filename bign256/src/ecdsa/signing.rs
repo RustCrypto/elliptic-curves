@@ -150,7 +150,7 @@ impl PrehashSigner<Signature> for SigningKey {
 }
 
 impl Signer<Signature> for SigningKey {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
+    fn try_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
         // 1. Set 𝐻 ← ℎ(𝑋).
         let hash = self.verifying_key.hash_msg(msg);
         self.sign_prehash(&hash)

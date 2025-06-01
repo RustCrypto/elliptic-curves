@@ -32,8 +32,8 @@ fn test_varying_message_lengths() {
     ];
 
     for msg in test_messages {
-        let sig = sk.sign(&msg);
-        assert!(sk.verifying_key().verify(&msg, &sig).is_ok());
+        let sig = sk.sign(&[&msg]);
+        assert!(sk.verifying_key().verify(&[&msg], &sig).is_ok());
     }
 }
 
@@ -41,14 +41,14 @@ fn test_varying_message_lengths() {
 fn test_signature_tampering() {
     let sk = create_test_signing_key();
     let msg = b"test message";
-    let sig = sk.sign(msg);
+    let sig = sk.sign(&[msg]);
     let mut tampered_sig = sig.to_bytes();
 
     // Modify each byte of signature
     for i in 0..64 {
         tampered_sig[i] ^= 1;
         let invalid_sig = Signature::from_bytes(&tampered_sig).unwrap();
-        assert!(sk.verifying_key().verify(msg, &invalid_sig).is_err());
+        assert!(sk.verifying_key().verify(&[msg], &invalid_sig).is_err());
         tampered_sig[i] ^= 1; // Restore
     }
 }
@@ -63,8 +63,8 @@ fn test_special_messages() {
     ];
 
     for msg in special_msgs {
-        let sig = sk.sign(&msg);
-        assert!(sk.verifying_key().verify(&msg, &sig).is_ok());
+        let sig = sk.sign(&[&msg]);
+        assert!(sk.verifying_key().verify(&[&msg], &sig).is_ok());
     }
 }
 
@@ -75,13 +75,13 @@ proptest! {
         msg2 in any::<Vec<u8>>()
     ) {
         let sk = create_test_signing_key();
-        let sig1 = sk.sign(&msg1);
-        let sig2 = sk.sign(&msg1); // Same message
-        let sig3 = sk.sign(&msg2); // Different message
+        let sig1 = sk.sign(&[&msg1]);
+        let sig2 = sk.sign(&[&msg1]); // Same message
+        let sig3 = sk.sign(&[&msg2]); // Different message
 
         // Same message should verify with both signatures
-        prop_assert!(sk.verifying_key().verify(&msg1, &sig1).is_ok());
-        prop_assert!(sk.verifying_key().verify(&msg1, &sig2).is_ok());
+        prop_assert!(sk.verifying_key().verify(&[&msg1], &sig1).is_ok());
+        prop_assert!(sk.verifying_key().verify(&[&msg1], &sig2).is_ok());
 
         // Different messages should have different signatures
         if msg1 != msg2 {

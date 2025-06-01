@@ -37,13 +37,13 @@
 //! // Note: The signature type must be annotated or otherwise inferable as
 //! // `Signer` has many impls of the `Signer` trait (for both regular and
 //! // recoverable signature types).
-//! let signature: Signature = signing_key.sign(message);
+//! let signature: Signature = signing_key.sign(&[message]);
 //!
 //! // Verification
 //! use k256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
-//! assert!(verifying_key.verify(message, &signature).is_ok());
+//! assert!(verifying_key.verify(&[message], &signature).is_ok());
 //! # }
 //! ```
 //!
@@ -320,7 +320,7 @@ mod tests {
                     }
                 };
 
-                match verifying_key.verify(msg, &sig) {
+                match verifying_key.verify(&[msg], &sig) {
                     Ok(_) if pass => None,
                     Ok(_) => Some("signature verify unexpectedly succeeded"),
                     Err(_) if !pass => None,

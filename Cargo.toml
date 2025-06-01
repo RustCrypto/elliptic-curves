@@ -17,3 +17,7 @@ members = [
 
 [profile.dev]
 opt-level = 2
+
+[patch.crates-io]
+signature = { git = "https://github.com/RustCrypto/traits", rev = "9e3f5ec97faf6a96c0bad7756402c940db240066" }
+ecdsa = { git = "https://github.com/RustCrypto/signatures", rev = "31054ed8c2b7f1b438538c458871d0e3df078b3f" }

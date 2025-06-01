@@ -140,7 +140,7 @@ impl RandomizedSigner<Signature> for SigningKey {
     fn try_sign_with_rng<R: TryCryptoRng + ?Sized>(
         &self,
         rng: &mut R,
-        msg: &[u8],
+        msg: &[&[u8]],
     ) -> Result<Signature> {
         // A1: set M~=ZA || M
         let hash = self.verifying_key.hash_msg(msg);
@@ -149,7 +149,7 @@ impl RandomizedSigner<Signature> for SigningKey {
 }
 
 impl Signer<Signature> for SigningKey {
-    fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
+    fn try_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
         // A1: set M~=ZA || M
         let hash = self.verifying_key.hash_msg(msg);
         self.sign_prehash(&hash)

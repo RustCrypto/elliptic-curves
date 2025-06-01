@@ -20,13 +20,13 @@
 //! let signing_key = SigningKey::new(distid, &secret_key)?;
 //! let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();
 //! let message = b"test message";
-//! let signature: Signature = signing_key.sign(message);
+//! let signature: Signature = signing_key.sign(&[message]);
 //!
 //! // Verifying
 //! use sm2::dsa::{VerifyingKey, signature::Verifier};
 //!
 //! let verifying_key = VerifyingKey::from_sec1_bytes(distid, &verifying_key_bytes)?;
-//! verifying_key.verify(message, &signature)?;
+//! verifying_key.verify(&[message], &signature)?;
 //! # Ok(())
 //! # }
 //! ```

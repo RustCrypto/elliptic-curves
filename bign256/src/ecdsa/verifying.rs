@@ -84,9 +84,9 @@ impl VerifyingKey {
     /// Compute message hash `e` according to [STB 34.101.31-2020 § 7.8]
     ///
     /// [STB 34.101.31-2020 § 7.8]: https://apmi.bsu.by/assets/files/std/belt-spec371.pdf
-    pub(crate) fn hash_msg(&self, msg: &[u8]) -> Hash {
+    pub(crate) fn hash_msg(&self, msg: &[&[u8]]) -> Hash {
         let mut hasher = BeltHash::new();
-        hasher.update(msg);
+        msg.iter().for_each(|slice| hasher.update(slice));
         hasher.finalize_fixed()
     }
 
@@ -162,7 +162,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
 }
 
 impl Verifier<Signature> for VerifyingKey {
-    fn verify(&self, msg: &[u8], signature: &Signature) -> Result<()> {
+    fn verify(&self, msg: &[&[u8]], signature: &Signature) -> Result<()> {
         // 4. Set 𝐻 ← ℎ(𝑋).
         let hash = self.hash_msg(msg);
         self.verify_prehash(&hash, signature)

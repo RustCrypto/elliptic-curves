@@ -44,13 +44,13 @@
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes(); // 32-bytes
 //!
 //! let message = b"Schnorr signatures prove knowledge of a secret in the random oracle model";
-//! let signature = signing_key.sign(message); // returns `k256::schnorr::Signature`
+//! let signature = signing_key.sign(&[message]); // returns `k256::schnorr::Signature`
 //!
 //! //
 //! // Verification
 //! //
 //! let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes)?;
-//! verifying_key.verify(message, &signature)?;
+//! verifying_key.verify(&[message], &signature)?;
 //! # Ok(())
 //! # }
 //! ```

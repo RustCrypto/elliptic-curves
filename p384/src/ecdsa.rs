@@ -27,13 +27,13 @@
 //! // Signing
 //! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
-//! let signature: Signature = signing_key.sign(message);
+//! let signature: Signature = signing_key.sign(&[message]);
 //!
 //! // Verification
 //! use p384::ecdsa::{signature::Verifier, VerifyingKey};
 //!
 //! let verifying_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
-//! assert!(verifying_key.verify(message, &signature).is_ok());
+//! assert!(verifying_key.verify(&[message], &signature).is_ok());
 //! # }
 //! ```
 
@@ -88,7 +88,7 @@ mod tests {
             "6b9d3dad2e1b8c1c05b19875b6659f4de23c3b667bf297ba9aa47740787137d896d5724e4c70a825f872c9ea60d2edf5"
         );
         let signer = SigningKey::from_bytes(&x.into()).unwrap();
-        let signature: Signature = signer.sign(b"sample");
+        let signature: Signature = signer.sign(&[b"sample"]);
         assert_eq!(
             signature.to_bytes().as_slice(),
             &hex!(
@@ -97,7 +97,7 @@ mod tests {
             )
         );
 
-        let signature: Signature = signer.sign(b"test");
+        let signature: Signature = signer.sign(&[b"test"]);
         assert_eq!(
             signature.to_bytes().as_slice(),
             &hex!(
