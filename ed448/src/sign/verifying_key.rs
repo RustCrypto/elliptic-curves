@@ -17,7 +17,8 @@ use core::{
 use crypto_signature::Error;
 use elliptic_curve::Group;
 use sha3::{
-    digest::{ExtendableOutput, Update, XofReader},
+    Shake256,
+    digest::{Digest, ExtendableOutput, Update, XofReader},
 };
 
 /// Ed448 public key as defined in [RFC8032 § 5.2.5]

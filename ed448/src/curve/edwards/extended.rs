@@ -11,13 +11,13 @@ use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::{FieldElement, Scalar};
 use crate::*;
 use elliptic_curve::{
-    array::{
-        typenum::{Unsigned, U56, U57, U84},
-        Array,
-    },
-    group::{cofactor::CofactorGroup, prime::PrimeGroup, Curve, Group, GroupEncoding},
+    Error,
+    array::{Array, typenum::Unsigned},
+    consts::{U28, U84},
+    group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm},
     ops::LinearCombination,
+    point::NonIdentity,
 };
 use rand_core::TryRngCore;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
@@ -736,9 +736,9 @@ impl EdwardsPoint {
     /// # Return
     ///
     /// * `true` if `self` has zero torsion component and is in the
-    ///    prime-order subgroup;
+    ///   prime-order subgroup;
     /// * `false` if `self` has a nonzero torsion component and is not
-    ///    in the prime-order subgroup.
+    ///   in the prime-order subgroup.
     pub fn is_torsion_free(&self) -> Choice {
         (self * BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
     }
@@ -747,7 +747,7 @@ impl EdwardsPoint {
     ///
     /// Hash using the default domain separation tag and hash function
     pub fn hash_with_defaults(msg: &[u8]) -> Self {
-        Self::hash::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DEFAULT_HASH_TO_CURVE_SUITE)
+        Self::hash::<ExpandMsgXof<sha3::Shake256>>(msg, DEFAULT_HASH_TO_CURVE_SUITE)
     }
 
     /// Hash a message to a point on the curve
@@ -756,7 +756,7 @@ impl EdwardsPoint {
     /// see <https://datatracker.ietf.org/doc/rfc9380/>
     pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
     where
-        X: for<'a> ExpandMsg<'a>,
+        X: ExpandMsg<U28>,
     {
         type RandomLen = U84;
         let mut random_bytes = Array::<u8, RandomLen>::default();
@@ -784,7 +784,7 @@ impl EdwardsPoint {
     ///
     /// Encode using the default domain separation tag and hash function
     pub fn encode_with_defaults(msg: &[u8]) -> Self {
-        Self::encode::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DEFAULT_ENCODE_TO_CURVE_SUITE)
+        Self::encode::<ExpandMsgXof<sha3::Shake256>>(msg, DEFAULT_ENCODE_TO_CURVE_SUITE)
     }
 
     /// Encode a message to a point on the curve
@@ -793,7 +793,7 @@ impl EdwardsPoint {
     /// see <https://datatracker.ietf.org/doc/rfc9380/>
     pub fn encode<X>(msg: &[u8], dst: &[u8]) -> Self
     where
-        X: for<'a> ExpandMsg<'a>,
+        X: ExpandMsg<U28>,
     {
         type RandomLen = U84;
         let mut random_bytes = Array::<u8, RandomLen>::default();
@@ -811,6 +811,21 @@ impl EdwardsPoint {
         q0 = q0.isogeny();
 
         q0.to_edwards().double().double()
+    }
+}
+
+impl From<NonIdentity<EdwardsPoint>> for EdwardsPoint {
+    fn from(p: NonIdentity<EdwardsPoint>) -> Self {
+        p.to_point()
+    }
+}
+
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<EdwardsPoint> for NonIdentity<EdwardsPoint> {
+    type Error = Error;
+
+    fn try_from(point: EdwardsPoint) -> Result<Self, Error> {
+        NonIdentity::new(point).into_option().ok_or(Error)
     }
 }
 
@@ -1188,7 +1203,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = EdwardsPoint::hash::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DST);
+            let p = EdwardsPoint::hash::<ExpandMsgXof<sha3::Shake256>>(msg, DST);
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1225,7 +1240,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = EdwardsPoint::encode::<ExpandMsgXof<sha3::Shake256, U84>>(msg, DST);
+            let p = EdwardsPoint::encode::<ExpandMsgXof<sha3::Shake256>>(msg, DST);
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];

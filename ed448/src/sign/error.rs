@@ -1,7 +1,7 @@
-use core::fmt::{self, Display, Formatter};
-
-#[cfg(feature = "std")]
-use std::error::Error;
+use core::{
+    error::Error,
+    fmt::{self, Display, Formatter},
+};
 
 /// Signing errors
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

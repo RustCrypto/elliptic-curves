@@ -7,11 +7,9 @@ use crate::*;
 use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
-use sha3::{
-    digest::{
-        ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
-        consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
-    },
+use sha3::digest::{
+    Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
+    consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
 };
 use subtle::{Choice, ConstantTimeEq};
 use zeroize::{Zeroize, ZeroizeOnDrop};

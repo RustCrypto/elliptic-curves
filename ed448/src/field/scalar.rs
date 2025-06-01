@@ -7,15 +7,14 @@ use core::ops::{
 };
 use crypto_bigint::Zero;
 use elliptic_curve::{
-    array::{
-        Array,
-    },
+    PrimeField,
+    array::{Array, typenum::Unsigned},
     bigint::{Limb, NonZero, U448, U704, U896},
+    consts::{U28, U84, U88, U114},
     ff::{Field, FieldBits, PrimeFieldBits, helpers},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
-    scalar::{FromUintUnchecked, IsHigh, ScalarPrimitive},
-    PrimeField,
+    scalar::{FromUintUnchecked, IsHigh},
 };
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
@@ -49,6 +48,11 @@ pub const MODULUS_LIMBS: [u32; 14] = [
     0xab5844f3, 0x2378c292, 0x8dc58f55, 0x216cc272, 0xaed63690, 0xc44edb49, 0x7cca23e9, 0xffffffff,
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x3fffffff,
 ];
+
+#[cfg(feature = "zeroize")]
+scalar_from_impls!(Ed448, Scalar);
+#[cfg(feature = "zeroize")]
+scalar_from_impls!(Decaf448, Scalar);
 
 impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
@@ -513,60 +517,6 @@ impl PrimeFieldBits for Scalar {
     }
 }
 
-impl From<ScalarPrimitive<Ed448>> for Scalar {
-    fn from(scalar: ScalarPrimitive<Ed448>) -> Self {
-        Self(*scalar.as_uint())
-    }
-}
-
-impl From<&ScalarPrimitive<Ed448>> for Scalar {
-    fn from(scalar: &ScalarPrimitive<Ed448>) -> Self {
-        let uint = *scalar.as_uint();
-        uint.into()
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<Ed448> {
-    fn from(scalar: Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        Self::from_uint_unchecked(uint)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<Ed448> {
-    fn from(scalar: &Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        ScalarPrimitive::from_uint_unchecked(uint)
-    }
-}
-
-impl From<ScalarPrimitive<Decaf448>> for Scalar {
-    fn from(scalar: ScalarPrimitive<Decaf448>) -> Self {
-        Self(*scalar.as_uint())
-    }
-}
-
-impl From<&ScalarPrimitive<Decaf448>> for Scalar {
-    fn from(scalar: &ScalarPrimitive<Decaf448>) -> Self {
-        let uint = *scalar.as_uint();
-        uint.into()
-    }
-}
-
-impl From<Scalar> for ScalarPrimitive<Decaf448> {
-    fn from(scalar: Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        Self::from_uint_unchecked(uint)
-    }
-}
-
-impl From<&Scalar> for ScalarPrimitive<Decaf448> {
-    fn from(scalar: &Scalar) -> Self {
-        let uint: U448 = scalar.into();
-        ScalarPrimitive::from_uint_unchecked(uint)
-    }
-}
-
 impl From<U448> for Scalar {
     fn from(uint: U448) -> Self {
         <Self as Reduce<U448>>::reduce(uint)
@@ -904,7 +854,7 @@ impl Scalar {
     /// [`ExpandMsgXof`]: elliptic_curve::hash2curve::ExpandMsgXof
     pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
     where
-        X: for<'a> ExpandMsg<'a>,
+        X: ExpandMsg<U28>,
     {
         type RandomLen = U84;
         let mut random_bytes = Array::<u8, RandomLen>::default();
@@ -1135,7 +1085,7 @@ mod test {
         let msg = b"hello world";
         let dst = b"edwards448_XOF:SHAKE256_ELL2_RO_";
         let res =
-            Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256, U84>>(msg, dst);
+            Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
         let expected: [u8; 57] = hex_literal::hex!(
             "2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300"
         );

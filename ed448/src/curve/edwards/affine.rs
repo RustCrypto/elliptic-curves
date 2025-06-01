@@ -1,6 +1,8 @@
 use crate::curve::edwards::EdwardsPoint;
 use crate::field::FieldElement;
 use crate::*;
+use core::ops::Mul;
+use elliptic_curve::{Error, Result, point::NonIdentity};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 #[cfg(feature = "zeroize")]
@@ -113,5 +115,37 @@ impl AffinePoint {
     /// The Y coordinate
     pub fn y(&self) -> [u8; 56] {
         self.y.to_bytes()
+    }
+}
+
+impl From<NonIdentity<AffinePoint>> for AffinePoint {
+    fn from(affine: NonIdentity<AffinePoint>) -> Self {
+        affine.to_point()
+    }
+}
+
+impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
+    type Error = Error;
+
+    fn try_from(affine_point: AffinePoint) -> Result<Self> {
+        NonIdentity::new(affine_point).into_option().ok_or(Error)
+    }
+}
+
+impl Mul<AffinePoint> for Scalar {
+    type Output = EdwardsPoint;
+
+    #[inline]
+    fn mul(self, rhs: AffinePoint) -> EdwardsPoint {
+        self * &rhs
+    }
+}
+
+impl Mul<&AffinePoint> for Scalar {
+    type Output = EdwardsPoint;
+
+    #[inline]
+    fn mul(self, rhs: &AffinePoint) -> EdwardsPoint {
+        rhs.to_edwards() * self
     }
 }

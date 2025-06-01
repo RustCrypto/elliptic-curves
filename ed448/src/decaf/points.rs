@@ -4,13 +4,13 @@ use crate::field::FieldElement;
 use crate::*;
 
 use elliptic_curve::{
-    array::{
-        Array,
-    },
+    Error, Group,
+    array::{Array, typenum::Unsigned},
+    consts::{U32, U56, U84},
     group::{Curve, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::LinearCombination,
-    Group,
+    point::NonIdentity,
 };
 
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
@@ -356,7 +356,7 @@ impl DecafPoint {
     /// separation tag.
     pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
     where
-        X: for<'a> ExpandMsg<'a>,
+        X: ExpandMsg<U32>,
     {
         type RandomLen = U84;
         let dst = [dst];
@@ -605,6 +605,21 @@ impl CompressedDecaf {
     }
 }
 
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<DecafPoint> for NonIdentity<DecafPoint> {
+    type Error = Error;
+
+    fn try_from(point: DecafPoint) -> Result<Self, Error> {
+        NonIdentity::new(point).into_option().ok_or(Error)
+    }
+}
+
+impl From<NonIdentity<DecafPoint>> for DecafPoint {
+    fn from(decaf: NonIdentity<DecafPoint>) -> Self {
+        decaf.to_point()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -761,8 +776,7 @@ mod test {
         use elliptic_curve::hash2curve::ExpandMsgXof;
 
         let msg = b"Hello, world!";
-        let point =
-            DecafPoint::hash::<ExpandMsgXof<sha3::Shake256, U84>>(msg, b"test_hash_to_curve");
+        let point = DecafPoint::hash::<ExpandMsgXof<sha3::Shake256>>(msg, b"test_hash_to_curve");
         assert_eq!(point.0.is_on_curve().unwrap_u8(), 1u8);
         assert_ne!(point, DecafPoint::IDENTITY);
         assert_ne!(point, DecafPoint::GENERATOR);

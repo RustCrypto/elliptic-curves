@@ -1,24 +1,26 @@
 use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use crypto_bigint::NonZero;
 use elliptic_curve::{
     array::Array,
     bigint::{
+        U448, U704,
         consts::{U84, U88},
     },
-    hash2curve::{FromOkm, MapToCurve},
+    hash2curve::FromOkm,
 };
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
 
 #[cfg(feature = "zeroize")]
-use zeroize::DefaultIsZeroes;
+use {crate::Ed448, elliptic_curve::hash2curve::MapToCurve, zeroize::DefaultIsZeroes};
 
 use super::ConstMontyType;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::{AffinePoint, EdwardsPoint};
 
 #[derive(Clone, Copy, Default)]
-pub(crate) struct FieldElement(pub(crate) ConstMontyType);
+pub struct FieldElement(pub(crate) ConstMontyType);
 
 impl Display for FieldElement {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -179,11 +181,17 @@ impl Neg for FieldElement {
     }
 }
 
-impl MapToCurve for FieldElement {
-    type Output = EdwardsPoint;
+#[cfg(feature = "zeroize")]
+impl MapToCurve for Ed448 {
+    type CurvePoint = EdwardsPoint;
+    type FieldElement = FieldElement;
 
-    fn map_to_curve(&self) -> Self::Output {
-        self.map_to_curve_elligator2().to_edwards()
+    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+        element.map_to_curve_elligator2().to_edwards()
+    }
+
+    fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
+        point
     }
 }
 
@@ -416,7 +424,10 @@ impl FieldElement {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use elliptic_curve::hash2curve::{ExpandMsg, ExpandMsgXof, Expander};
+    use elliptic_curve::{
+        consts::U32,
+        hash2curve::{ExpandMsg, ExpandMsgXof, Expander},
+    };
     use hex_literal::hex;
     use sha3::Shake256;
 
@@ -432,7 +443,7 @@ mod tests {
         ];
 
         for (msg, expected_u0, expected_u1) in MSGS {
-            let mut expander = ExpandMsgXof::<Shake256, U84>::expand_message(
+            let mut expander = <ExpandMsgXof<Shake256> as ExpandMsg<U32>>::expand_message(
                 &[msg],
                 &[DST],
                 (84 * 2).try_into().unwrap(),
@@ -464,7 +475,7 @@ mod tests {
         ];
 
         for (msg, expected_u0, expected_u1) in MSGS {
-            let mut expander = ExpandMsgXof::<Shake256, U84>::expand_message(
+            let mut expander = <ExpandMsgXof<Shake256> as ExpandMsg<U32>>::expand_message(
                 &[msg],
                 &[DST],
                 (84 * 2).try_into().unwrap(),
