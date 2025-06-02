@@ -13,7 +13,8 @@ use elliptic_curve::{
 };
 use sha2::{Digest, Sha256};
 use signature::{
-    DigestSigner, Error, KeypairRef, RandomizedDigestSigner, RandomizedSigner, Result, Signer,
+    DigestSigner, Error, KeypairRef, MultipartSigner, RandomizedDigestSigner,
+    RandomizedMultipartSigner, RandomizedSigner, Result, Signer,
     digest::{FixedOutput, consts::U32},
     hazmat::{PrehashSigner, RandomizedPrehashSigner},
 };
@@ -201,7 +202,19 @@ impl RandomizedSigner<Signature> for SigningKey {
         rng: &mut R,
         msg: &[u8],
     ) -> Result<Signature> {
-        self.try_sign_digest_with_rng(rng, Sha256::new_with_prefix(msg))
+        self.try_multipart_sign_with_rng(rng, &[msg])
+    }
+}
+
+impl RandomizedMultipartSigner<Signature> for SigningKey {
+    fn try_multipart_sign_with_rng<R: TryCryptoRng + ?Sized>(
+        &self,
+        rng: &mut R,
+        msg: &[&[u8]],
+    ) -> Result<Signature> {
+        let mut digest = Sha256::new();
+        msg.iter().for_each(|slice| digest.update(slice));
+        self.try_sign_digest_with_rng(rng, digest)
     }
 }
 
@@ -221,7 +234,15 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
 
 impl Signer<Signature> for SigningKey {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
-        self.try_sign_digest(Sha256::new_with_prefix(msg))
+        self.try_multipart_sign(&[msg])
+    }
+}
+
+impl MultipartSigner<Signature> for SigningKey {
+    fn try_multipart_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
+        let mut digest = Sha256::new();
+        msg.iter().for_each(|slice| digest.update(slice));
+        self.try_sign_digest(digest)
     }
 }
 

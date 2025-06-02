@@ -12,7 +12,9 @@ use sha2::{
     Digest, Sha256,
     digest::{FixedOutput, consts::U32},
 };
-use signature::{DigestVerifier, Error, Result, Verifier, hazmat::PrehashVerifier};
+use signature::{
+    DigestVerifier, Error, MultipartVerifier, Result, Verifier, hazmat::PrehashVerifier,
+};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
@@ -109,7 +111,15 @@ impl PrehashVerifier<Signature> for VerifyingKey {
 
 impl Verifier<Signature> for VerifyingKey {
     fn verify(&self, msg: &[u8], signature: &Signature) -> Result<()> {
-        self.verify_digest(Sha256::new_with_prefix(msg), signature)
+        self.multipart_verify(&[msg], signature)
+    }
+}
+
+impl MultipartVerifier<Signature> for VerifyingKey {
+    fn multipart_verify(&self, msg: &[&[u8]], signature: &Signature) -> Result<()> {
+        let mut digest = Sha256::new();
+        msg.iter().for_each(|slice| digest.update(slice));
+        self.verify_digest(digest, signature)
     }
 }
 
