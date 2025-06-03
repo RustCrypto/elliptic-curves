@@ -378,9 +378,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ed448"
+version = "0.5.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24f3621b15eb4095d0e7c2502abd44291413b8a638f88dc08f1188993143332b"
+dependencies = [
+ "pkcs8",
+ "serde",
+ "serde_bytes",
+ "signature",
+]
+
+[[package]]
 name = "ed448-goldilocks"
 version = "0.14.0-pre.0"
 dependencies = [
+ "ed448",
  "elliptic-curve",
  "hex",
  "hex-literal",
@@ -1123,6 +1136,15 @@ name = "serde_bare"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51c55386eed0f1ae957b091dc2ca8122f287b60c79c774cbe3d5f2b69fded660"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "serde_bytes"
+version = "0.11.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8437fd221bde2d4ca316d61b90e337e9e702b3820b87d63caa9ba6c02bd06d96"
 dependencies = [
  "serde",
 ]
