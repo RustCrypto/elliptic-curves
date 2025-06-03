@@ -378,7 +378,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ed448"
+name = "ed448-goldilocks"
 version = "0.17.0-pre.0"
 dependencies = [
  "crypto-bigint",

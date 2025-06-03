@@ -9,7 +9,7 @@
 //! [`VerifyingKey`].
 //!
 //! ```
-//! use ed448::*;
+//! use ed448_goldilocks::*;
 //! use rand_core::SeedableRng;
 //! use rand_chacha::ChaChaRng;
 //!
@@ -56,7 +56,7 @@
 //! This is an example of using the SHAKE-256 algorithm to sign and verify a message
 //! which is the normal default anyway but performed explicitly.
 //! ```
-//! use ed448::*;
+//! use ed448_goldilocks::*;
 //! use sha3::{Shake256, digest::Update};
 //! use rand_chacha::ChaChaRng;
 //! use rand_core::SeedableRng;

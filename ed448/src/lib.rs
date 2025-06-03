@@ -3,7 +3,7 @@
 //!
 //! # Usage
 //! ```
-//! use ed448::{EdwardsPoint, CompressedEdwardsY, Scalar, elliptic_curve::hash2curve::ExpandMsgXof, sha3::Shake256};
+//! use ed448_goldilocks::{EdwardsPoint, CompressedEdwardsY, Scalar, elliptic_curve::hash2curve::ExpandMsgXof, sha3::Shake256};
 //! use elliptic_curve::Field;
 //! use rand_core::OsRng;
 //!

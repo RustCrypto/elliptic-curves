@@ -1,20 +1,19 @@
 [package]
+name = "ed448-goldilocks"
+version = "0.17.0-pre.0"
 authors = ["RustCrypto Developers"]
 categories = ["cryptography"]
+keywords = ["cryptography", "decaf", "ed448", "ed448-goldilocks"]
+homepage = "https://docs.rs/ed448-goldilocks/"
+repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/ed448"
+documentation = "https://docs.rs/ed448-goldilocks"
+license = "BSD-3-Clause"
+edition = "2024"
+rust-version = "1.85"
+readme = "README.md"
 description = """A pure-Rust implementation of Ed448 and Curve448 and Decaf.
 This crate also includes signing and verifying of Ed448 signatures.
 """
-documentation = "https://docs.rs/ed448-goldilocks"
-exclude = [".gitignore", ".github/*"]
-edition = "2024"
-homepage = "https://docs.rs/ed448-goldilocks/"
-keywords = ["cryptography", "decaf", "ed448", "ed448-goldilocks"]
-license = "BSD-3-Clause"
-name = "ed448"
-readme = "README.md"
-repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/ed448"
-rust-version = "1.85"
-version = "0.17.0-pre.0"
 
 [dependencies]
 crypto-bigint = { version = "=0.7.0-pre.4", features = ["hybrid-array"], default-features = false }
