@@ -2,14 +2,15 @@
 //! and adapted to mirror `ed25519-dalek`'s API.
 
 use crate::curve::edwards::extended::PointBytes;
-use crate::sign::HASH_HEAD;
+use crate::sign::{HASH_HEAD, InnerSignature};
 use crate::{
-    CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, ScalarBytes, Signature,
-    SigningError, WideScalarBytes,
+    CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, Signature, SigningError,
+    WideScalarBytes,
 };
 
-#[cfg(any(feature = "pkcs8", feature = "serde"))]
+#[cfg(feature = "serde")]
 use crate::PUBLIC_KEY_LENGTH;
+
 #[cfg(feature = "pkcs8")]
 use elliptic_curve::pkcs8;
 
@@ -91,9 +92,7 @@ where
 }
 
 #[cfg(feature = "pkcs8")]
-/// This type is primarily useful for decoding/encoding SPKI public key files (either DER or PEM)
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct PublicKeyBytes(pub [u8; PUBLIC_KEY_LENGTH]);
+pub use ed448::pkcs8::PublicKeyBytes;
 
 #[cfg(feature = "pkcs8")]
 impl TryFrom<PublicKeyBytes> for VerifyingKey {
@@ -120,37 +119,6 @@ impl From<VerifyingKey> for PublicKeyBytes {
     }
 }
 
-#[cfg(all(feature = "pkcs8", feature = "alloc"))]
-impl pkcs8::EncodePublicKey for PublicKeyBytes {
-    fn to_public_key_der(&self) -> pkcs8::spki::Result<pkcs8::Document> {
-        pkcs8::SubjectPublicKeyInfoRef {
-            algorithm: super::ALGORITHM_ID,
-            subject_public_key: pkcs8::der::asn1::BitStringRef::new(0, &self.0)?,
-        }
-        .try_into()
-    }
-}
-
-#[cfg(feature = "pkcs8")]
-impl TryFrom<pkcs8::spki::SubjectPublicKeyInfoRef<'_>> for PublicKeyBytes {
-    type Error = pkcs8::spki::Error;
-
-    fn try_from(value: pkcs8::spki::SubjectPublicKeyInfoRef<'_>) -> Result<Self, Self::Error> {
-        value.algorithm.assert_algorithm_oid(super::ALGORITHM_OID)?;
-
-        if value.algorithm.parameters.is_some() {
-            return Err(pkcs8::spki::Error::KeyMalformed);
-        }
-
-        value
-            .subject_public_key
-            .as_bytes()
-            .ok_or(pkcs8::spki::Error::KeyMalformed)?
-            .try_into()
-            .map(Self)
-            .map_err(|_| pkcs8::spki::Error::KeyMalformed)
-    }
-}
 
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl pkcs8::EncodePublicKey for VerifyingKey {
@@ -293,24 +261,19 @@ impl VerifyingKey {
         // `signature` should already be valid but check to make sure
         // Note that the scalar itself uses only 56 bytes; the extra
         // 57th byte must be 0x00.
-        if signature.s[56] != 0x00 {
+        if signature.s_bytes()[56] != 0x00 {
             return Err(SigningError::InvalidSignatureSComponent.into());
         }
         if self.point.is_identity().into() {
             return Err(SigningError::InvalidPublicKeyBytes.into());
         }
 
-        let r = Option::<EdwardsPoint>::from(signature.r.decompress())
-            .ok_or(SigningError::InvalidSignatureRComponent)?;
-        if r.is_identity().into() {
+        let inner_signature = InnerSignature::try_from(signature)?;
+        if inner_signature.r.is_identity().into() {
             return Err(SigningError::InvalidSignatureRComponent.into());
         }
 
-        let s_bytes = ScalarBytes::try_from(&signature.s[..]).expect("signature.s is 57 bytes");
-        let s = Option::<Scalar>::from(Scalar::from_canonical_bytes(&s_bytes))
-            .ok_or(SigningError::InvalidSignatureSComponent)?;
-
-        if s.is_zero().into() {
+        if inner_signature.s.is_zero().into() {
             return Err(SigningError::InvalidSignatureSComponent.into());
         }
 
@@ -322,15 +285,15 @@ impl VerifyingKey {
             .chain([phflag])
             .chain([clen])
             .chain(ctx)
-            .chain(signature.r.as_bytes())
+            .chain(signature.r_bytes())
             .chain(self.compressed.as_bytes())
             .chain(m)
             .finalize_xof();
         reader.read(&mut bytes);
         let k = Scalar::from_bytes_mod_order_wide(&bytes);
         // Check the verification equation [S]B = R + [k]A.
-        let lhs = EdwardsPoint::GENERATOR * s;
-        let rhs = r + (self.point * k);
+        let lhs = EdwardsPoint::GENERATOR * inner_signature.s;
+        let rhs = inner_signature.r + (self.point * k);
         if lhs == rhs {
             Ok(())
         } else {

@@ -148,7 +148,7 @@ impl TryFrom<&[u8]> for CompressedEdwardsY {
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let bytes = <PointBytes>::try_from(value).map_err(|_| "Invalid length")?;
-        Self::try_from(&bytes)
+        Ok(CompressedEdwardsY(bytes))
     }
 }
 
@@ -173,24 +173,6 @@ impl From<&CompressedEdwardsY> for PointBytes {
     }
 }
 
-impl TryFrom<PointBytes> for CompressedEdwardsY {
-    type Error = &'static str;
-
-    fn try_from(value: PointBytes) -> Result<Self, Self::Error> {
-        let pt = CompressedEdwardsY(value);
-        let _ = Option::<EdwardsPoint>::from(pt.decompress()).ok_or("Invalid point")?;
-        Ok(pt)
-    }
-}
-
-impl TryFrom<&PointBytes> for CompressedEdwardsY {
-    type Error = &'static str;
-
-    fn try_from(value: &PointBytes) -> Result<Self, Self::Error> {
-        Self::try_from(*value)
-    }
-}
-
 #[cfg(feature = "serde")]
 impl serdect::serde::Serialize for CompressedEdwardsY {
     fn serialize<S: serdect::serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
@@ -207,6 +189,12 @@ impl<'de> serdect::serde::Deserialize<'de> for CompressedEdwardsY {
         let mut arr = [0u8; 57];
         serdect::array::deserialize_hex_or_bin(&mut arr, d)?;
         Ok(CompressedEdwardsY(arr))
+    }
+}
+
+impl From<PointBytes> for CompressedEdwardsY {
+    fn from(point: PointBytes) -> Self {
+        Self(point)
     }
 }
 
