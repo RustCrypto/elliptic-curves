@@ -433,7 +433,7 @@ mod tests {
                 );
             } else {
                 assert_eq!(skey.sign_ctx(&ctx[..], &msg[..]).unwrap(), sig);
-                if ctx.len() == 0 {
+                if ctx.is_empty() {
                     assert_eq!(skey.sign_raw(&msg[..]), sig);
                 }
             }
@@ -451,7 +451,7 @@ mod tests {
                 assert!(pkey.verify_ctx(&sig, &ctx[..], &msg[..]).is_ok());
                 assert!(pkey.verify_ctx(&sig, &[1u8], &msg[..]).is_err());
                 assert!(pkey.verify_ctx(&sig, &ctx[..], &[0u8]).is_err());
-                if ctx.len() == 0 {
+                if ctx.is_empty() {
                     assert!(pkey.verify_raw(&sig, &msg[..]).is_ok());
                 }
             }

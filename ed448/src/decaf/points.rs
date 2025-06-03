@@ -756,7 +756,7 @@ mod test {
         let generator = DecafPoint::GENERATOR;
         for compressed_point in compressed.iter() {
             assert_eq!(&point.compress(), compressed_point);
-            point = &point + &generator;
+            point += generator;
             let decompressed_point = compressed_point.decompress();
             assert_eq!(decompressed_point.is_some().unwrap_u8(), 1u8);
         }
