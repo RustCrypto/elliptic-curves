@@ -7,6 +7,7 @@ use crate::*;
 use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
+use rand_core::CryptoRng;
 use sha3::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
     consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
@@ -439,7 +440,7 @@ impl<'de> serdect::serde::Deserialize<'de> for SigningKey {
 
 impl SigningKey {
     /// Generate a cryptographically random [`SigningKey`].
-    pub fn generate(mut rng: impl rand_core::CryptoRng) -> Self {
+    pub fn generate<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
         let mut secret_scalar = SecretKey::default();
         rng.fill_bytes(secret_scalar.as_mut());
         assert!(!secret_scalar.iter().all(|&v| v == 0));
