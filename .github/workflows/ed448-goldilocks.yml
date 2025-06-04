@@ -1,17 +1,17 @@
-name: ed448
+name: ed448-goldilocks
 
 on:
   pull_request:
     paths:
-      - ".github/workflows/ed448.yml"
-      - "ed448/**"
+      - ".github/workflows/ed448-goldilocks.yml"
+      - "ed448-goldilocks/**"
       - "Cargo.*"
   push:
     branches: master
 
 defaults:
   run:
-    working-directory: ed448
+    working-directory: ed448-goldilocks
 
 env:
   CARGO_INCREMENTAL: 0

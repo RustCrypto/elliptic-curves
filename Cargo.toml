@@ -10,7 +10,7 @@ members = [
     "p256",
     "p384",
     "p521",
-    "ed448",
+    "ed448-goldilocks",
     "primefield",
     "primeorder",
     "sm2"
