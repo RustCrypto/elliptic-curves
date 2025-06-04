@@ -2,7 +2,7 @@
 <img src="resources/bear.png" width = "400">
 </p>
 
-ed448-goldilocks-plus 
+# [RustCrypto]: Ed448-Goldilocks Elliptic Curve
 
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -89,3 +89,7 @@ conditions.
 [docs-image]: https://docs.rs/ed448-goldilocks-plus/badge.svg
 [docs-link]: https://docs.rs/ed448-goldilocks-plus/
 [license-image]: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+
+[//]: # (links)
+
+[RustCrypto]: https://github.com/RustCrypto
