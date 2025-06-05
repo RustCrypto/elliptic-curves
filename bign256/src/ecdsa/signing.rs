@@ -25,7 +25,7 @@ use elliptic_curve::{
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
 };
-use signature::{Error, KeypairRef, Result, Signer, hazmat::PrehashSigner};
+use signature::{Error, KeypairRef, MultipartSigner, Result, Signer, hazmat::PrehashSigner};
 
 /// BignP256 secret key used for signing messages and producing signatures.
 ///
@@ -151,6 +151,12 @@ impl PrehashSigner<Signature> for SigningKey {
 
 impl Signer<Signature> for SigningKey {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
+        self.try_multipart_sign(&[msg])
+    }
+}
+
+impl MultipartSigner<Signature> for SigningKey {
+    fn try_multipart_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
         // 1. Set 𝐻 ← ℎ(𝑋).
         let hash = self.verifying_key.hash_msg(msg);
         self.sign_prehash(&hash)

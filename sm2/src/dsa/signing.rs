@@ -27,7 +27,8 @@ use elliptic_curve::{
     subtle::{Choice, ConstantTimeEq},
 };
 use signature::{
-    Error, KeypairRef, RandomizedSigner, Result, Signer,
+    Error, KeypairRef, MultipartSigner, RandomizedMultipartSigner, RandomizedSigner, Result,
+    Signer,
     hazmat::{PrehashSigner, RandomizedPrehashSigner},
     rand_core::TryCryptoRng,
 };
@@ -142,6 +143,16 @@ impl RandomizedSigner<Signature> for SigningKey {
         rng: &mut R,
         msg: &[u8],
     ) -> Result<Signature> {
+        self.try_multipart_sign_with_rng(rng, &[msg])
+    }
+}
+
+impl RandomizedMultipartSigner<Signature> for SigningKey {
+    fn try_multipart_sign_with_rng<R: TryCryptoRng + ?Sized>(
+        &self,
+        rng: &mut R,
+        msg: &[&[u8]],
+    ) -> Result<Signature> {
         // A1: set M~=ZA || M
         let hash = self.verifying_key.hash_msg(msg);
         self.sign_prehash_with_rng(rng, &hash)
@@ -150,6 +161,12 @@ impl RandomizedSigner<Signature> for SigningKey {
 
 impl Signer<Signature> for SigningKey {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature> {
+        self.try_multipart_sign(&[msg])
+    }
+}
+
+impl MultipartSigner<Signature> for SigningKey {
+    fn try_multipart_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
         // A1: set M~=ZA || M
         let hash = self.verifying_key.hash_msg(msg);
         self.sign_prehash(&hash)
