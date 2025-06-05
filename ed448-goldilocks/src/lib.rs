@@ -185,9 +185,10 @@ impl FieldBytesEncoding<Decaf448> for U448 {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl elliptic_curve::CurveArithmetic for Decaf448 {
-    type AffinePoint = DecafAffinePoint;
-    type ProjectivePoint = DecafPoint;
-    type Scalar = Scalar;
-}
+// TODO(tarcieri): RustCrypto/elliptic-curves#1229
+// #[cfg(feature = "zeroize")]
+// impl elliptic_curve::CurveArithmetic for Decaf448 {
+//     type AffinePoint = DecafAffinePoint;
+//     type ProjectivePoint = DecafPoint;
+//     type Scalar = Scalar;
+// }

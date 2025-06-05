@@ -114,6 +114,14 @@ impl AffineCoordinates for AffinePoint {
         self.x.to_bytes()
     }
 
+    fn y(&self) -> FieldBytes {
+        self.y.to_bytes()
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.x.normalize().is_odd()
+    }
+
     fn y_is_odd(&self) -> Choice {
         self.y.normalize().is_odd()
     }

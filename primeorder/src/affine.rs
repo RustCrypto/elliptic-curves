@@ -87,6 +87,14 @@ where
         self.x.to_repr()
     }
 
+    fn y(&self) -> FieldBytes<C> {
+        self.y.to_repr()
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.x.is_odd()
+    }
+
     fn y_is_odd(&self) -> Choice {
         self.y.is_odd()
     }

@@ -51,6 +51,14 @@ impl elliptic_curve::point::AffineCoordinates for AffinePoint {
         Ed448FieldBytes::from(self.x.to_bytes_extended())
     }
 
+    fn y(&self) -> Self::FieldRepr {
+        Ed448FieldBytes::from(self.y.to_bytes_extended())
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.x.is_negative()
+    }
+
     fn y_is_odd(&self) -> Choice {
         self.y.is_negative()
     }

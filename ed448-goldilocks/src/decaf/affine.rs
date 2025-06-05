@@ -1,6 +1,6 @@
 use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
 use crate::field::FieldElement;
-use crate::{Decaf448FieldBytes, DecafPoint, Scalar};
+use crate::{DecafPoint, Scalar};
 use core::ops::Mul;
 use elliptic_curve::{Error, point::NonIdentity};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
@@ -35,17 +35,26 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-impl elliptic_curve::point::AffineCoordinates for AffinePoint {
-    type FieldRepr = Decaf448FieldBytes;
-
-    fn x(&self) -> Self::FieldRepr {
-        Decaf448FieldBytes::from(self.x())
-    }
-
-    fn y_is_odd(&self) -> Choice {
-        self.0.y.is_negative()
-    }
-}
+// TODO(tarcieri): RustCrypto/elliptic-curves#1229
+// impl AffineCoordinates for AffinePoint {
+//     type FieldRepr = Decaf448FieldBytes;
+//
+//     fn x(&self) -> Self::FieldRepr {
+//         Decaf448FieldBytes::from(self.x())
+//     }
+//
+//     fn y(&self) -> Self::FieldRepr {
+//         Decaf448FieldBytes::from(self.y())
+//     }
+//
+//     fn x_is_odd(&self) -> Choice {
+//         self.0.x.is_negative()
+//     }
+//
+//     fn y_is_odd(&self) -> Choice {
+//         self.0.y.is_negative()
+//     }
+// }
 
 #[cfg(feature = "zeroize")]
 impl DefaultIsZeroes for AffinePoint {}
@@ -61,7 +70,7 @@ impl AffinePoint {
 
     /// The X coordinate
     pub fn x(&self) -> [u8; 57] {
-        // TODO: fix this to be 56 bytes as per
+        // TODO(RustCrypto/elliptic-curves#1229): fix this to be 56 bytes as per
         // https://datatracker.ietf.org/doc/draft-irtf-cfrg-ristretto255-decaf448
         // This might require creating a separate DecafScalar
         self.0.x.to_bytes_extended()
