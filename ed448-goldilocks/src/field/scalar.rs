@@ -51,8 +51,10 @@ pub const MODULUS_LIMBS: [u32; 14] = [
 
 #[cfg(feature = "zeroize")]
 scalar_from_impls!(Ed448, Scalar);
-#[cfg(feature = "zeroize")]
-scalar_from_impls!(Decaf448, Scalar);
+
+// TODO(tarcieri): RustCrypto/elliptic-curves#1229
+//#[cfg(feature = "zeroize")]
+//scalar_from_impls!(Decaf448, Scalar);
 
 impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
