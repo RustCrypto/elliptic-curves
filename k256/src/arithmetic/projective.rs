@@ -281,11 +281,12 @@ impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
     }
 }
 
-fn batch_normalize_generic<P, Z, O>(points: &P, mut zs: Z, out: &mut O)
+fn batch_normalize_generic<P, Z, I, O>(points: &P, mut zs: Z, out: &mut O)
 where
-    FieldElement: BatchInvert<Z>,
+    FieldElement: BatchInvert<Z, Output = CtOption<I>>,
     P: AsRef<[ProjectivePoint]> + ?Sized,
     Z: AsMut<[FieldElement]>,
+    I: AsRef<[FieldElement]>,
     O: AsMut<[AffinePoint]> + ?Sized,
 {
     let points = points.as_ref();
@@ -299,7 +300,8 @@ where
     }
 
     // This is safe to unwrap since we assured that all elements are non-zero
-    let zs_inverses = <FieldElement as BatchInvert<Z>>::batch_invert(zs).unwrap();
+    let zs_inverses = <FieldElement as BatchInvert<Z>>::batch_invert(zs)
+        .expect("all elements should be non-zero");
 
     for i in 0..out.len() {
         // If the `z` coordinate is non-zero, we can use it to invert;
