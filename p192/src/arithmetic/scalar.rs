@@ -101,7 +101,7 @@ primefield::fiat_field_arithmetic!(
     fiat_p192_scalar_selectznz
 );
 
-primeorder::scalar_impls!(NistP192, Scalar);
+elliptic_curve::scalar_impls!(NistP192, Scalar);
 
 impl Scalar {
     /// Tonelli-Shank's algorithm for q mod 16 = 1

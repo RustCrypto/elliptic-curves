@@ -103,7 +103,7 @@ primefield::fiat_field_arithmetic!(
     fiat_sm2_scalar_selectznz
 );
 
-primeorder::scalar_impls!(Sm2, Scalar);
+elliptic_curve::scalar_impls!(Sm2, Scalar);
 
 impl Scalar {
     /// Returns the square root of self mod n, or `None` if no square root

@@ -17,7 +17,6 @@ pub mod point_arithmetic;
 mod affine;
 #[cfg(feature = "dev")]
 mod dev;
-mod macros;
 mod projective;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};

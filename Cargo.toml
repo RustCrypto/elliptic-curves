@@ -20,6 +20,6 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
-elliptic-curve = { git = "https://github.com/RustCrypto/traits.git", branch = "elliptic-curve/scalar-macros" }
+elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }

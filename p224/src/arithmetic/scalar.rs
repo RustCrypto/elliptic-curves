@@ -109,7 +109,7 @@ primefield::fiat_field_arithmetic!(
     fiat_p224_scalar_selectznz
 );
 
-primeorder::scalar_impls!(NistP224, Scalar);
+elliptic_curve::scalar_impls!(NistP224, Scalar);
 
 impl Scalar {
     /// Atkin algorithm for q mod 8 = 5

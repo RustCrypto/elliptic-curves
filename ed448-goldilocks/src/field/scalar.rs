@@ -53,7 +53,7 @@ pub const MODULUS_LIMBS: [u32; 14] = [
 ];
 
 #[cfg(feature = "zeroize")]
-scalar_from_impls!(Ed448, Scalar);
+elliptic_curve::scalar_from_impls!(Ed448, Scalar);
 
 // TODO(tarcieri): RustCrypto/elliptic-curves#1229
 //#[cfg(feature = "zeroize")]

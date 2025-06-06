@@ -109,7 +109,7 @@ primefield::fiat_field_arithmetic!(
     fiat_p384_scalar_selectznz
 );
 
-primeorder::scalar_impls!(NistP384, Scalar);
+elliptic_curve::scalar_impls!(NistP384, Scalar);
 
 impl Scalar {
     /// Compute modular square root.
