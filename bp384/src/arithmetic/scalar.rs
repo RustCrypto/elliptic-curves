@@ -60,8 +60,8 @@ primefield::fiat_field_arithmetic!(
     fiat_bp384_scalar_selectznz
 );
 
-primeorder::scalar_impls!(BrainpoolP384r1, Scalar);
-primeorder::scalar_impls!(BrainpoolP384t1, Scalar);
+elliptic_curve::scalar_impls!(BrainpoolP384r1, Scalar);
+elliptic_curve::scalar_impls!(BrainpoolP384t1, Scalar);
 
 impl Scalar {
     /// Atkin algorithm for q mod 8 = 5

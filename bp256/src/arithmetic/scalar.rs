@@ -60,8 +60,8 @@ primefield::fiat_field_arithmetic!(
     fiat_bp256_scalar_selectznz
 );
 
-primeorder::scalar_impls!(BrainpoolP256r1, Scalar);
-primeorder::scalar_impls!(BrainpoolP256t1, Scalar);
+elliptic_curve::scalar_impls!(BrainpoolP256r1, Scalar);
+elliptic_curve::scalar_impls!(BrainpoolP256t1, Scalar);
 
 impl Scalar {
     /// Returns the square root of self mod n, or `None` if no square root

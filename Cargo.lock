@@ -405,7 +405,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.4"
-source = "git+https://github.com/RustCrypto/traits.git?branch=elliptic-curve%2Fscalar-macros#48e7bfe4b16beb7fcaaceda59b370873d08d87e5"
+source = "git+https://github.com/RustCrypto/traits.git#9c9ea0635a8c9f476fdae5b17c76d626f357a72b"
 dependencies = [
  "base16ct",
  "base64ct",

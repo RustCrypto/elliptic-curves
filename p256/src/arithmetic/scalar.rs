@@ -12,7 +12,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve, Error,
+    Curve,
     bigint::{Limb, U256, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -182,7 +182,7 @@ impl Scalar {
     }
 }
 
-primeorder::scalar_impls!(NistP256, Scalar);
+elliptic_curve::scalar_impls!(NistP256, Scalar);
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {

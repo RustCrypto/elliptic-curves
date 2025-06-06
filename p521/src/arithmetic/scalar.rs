@@ -445,7 +445,7 @@ impl Field for Scalar {
 primefield::field_op!(Scalar, Add, add, add);
 primefield::field_op!(Scalar, Sub, sub, sub);
 primefield::field_op!(Scalar, Mul, mul, multiply);
-primeorder::scalar_impls!(NistP521, Scalar);
+elliptic_curve::scalar_impls!(NistP521, Scalar);
 
 impl AddAssign<Scalar> for Scalar {
     #[inline]
