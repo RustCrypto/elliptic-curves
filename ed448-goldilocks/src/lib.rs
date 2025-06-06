@@ -104,6 +104,7 @@ pub struct Ed448;
 pub type Ed448FieldBytes = elliptic_curve::FieldBytes<Ed448>;
 
 /// Scalar bits of the Ed448 scalar
+#[cfg(feature = "bits")]
 pub type Ed448ScalarBits = elliptic_curve::scalar::ScalarBits<Ed448>;
 
 /// Non-zero scalar of the Ed448 scalar
@@ -152,6 +153,7 @@ pub struct Decaf448;
 pub type Decaf448FieldBytes = elliptic_curve::FieldBytes<Decaf448>;
 
 /// Scalar bits of the Decaf448 scalar
+#[cfg(feature = "bits")]
 pub type Decaf448ScalarBits = elliptic_curve::scalar::ScalarBits<Decaf448>;
 
 /// Non-zero scalar of the Decaf448 scalar

@@ -11,13 +11,16 @@ use elliptic_curve::{
     array::{Array, typenum::Unsigned},
     bigint::{Limb, NonZero, U448, U704, U896},
     consts::{U28, U84, U88, U114},
-    ff::{Field, FieldBits, PrimeFieldBits, helpers},
+    ff::{Field, helpers},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
 };
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
+
+#[cfg(feature = "bits")]
+use elliptic_curve::ff::{FieldBits, PrimeFieldBits};
 
 /// This is the scalar field
 /// size = 4q = 2^446 - 0x8335dc163bb124b65129c96fde933d8d723a70aadc873d6d54a7bb0d
@@ -507,6 +510,7 @@ impl ReduceNonZero<U896> for Scalar {
     }
 }
 
+#[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
     type ReprBits = [crypto_bigint::Word; U448::LIMBS];
 
@@ -597,7 +601,7 @@ impl ShrAssign<usize> for Scalar {
     }
 }
 
-#[cfg(feature = "zeroize")]
+#[cfg(all(feature = "bits", feature = "zeroize"))]
 impl From<&Scalar> for Ed448ScalarBits {
     fn from(scalar: &Scalar) -> Self {
         scalar.0.to_words().into()
