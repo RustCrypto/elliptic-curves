@@ -19,6 +19,7 @@ This crate also includes signing and verifying of Ed448 signatures.
 crypto-bigint = { version = "=0.7.0-pre.4", features = ["hybrid-array"], default-features = false }
 crypto_signature = { version = "3.0.0-rc.0", default-features = false, features = ["digest", "rand_core"], optional = true, package = "signature" }
 elliptic-curve = { version = "0.14.0-rc.4", features = ["arithmetic", "hash2curve", "pkcs8", "pem"] }
+ed448 = { version = "=0.5.0-pre.0", default-features = false, optional = true }
 rand_core = { version = "0.9", default-features = false }
 serdect = { version = "0.3.0", optional = true }
 sha3 = { version = "0.11.0-rc.0", default-features = false }
@@ -27,12 +28,12 @@ zeroize = { version = "1.8", default-features = false, optional = true }
 
 [features]
 default = ["std", "signing", "pkcs8"]
-alloc = ["serdect/alloc", "zeroize/alloc", "crypto_signature/alloc", "elliptic-curve/alloc"]
+alloc = ["serdect/alloc", "zeroize/alloc", "crypto_signature/alloc", "ed448?/alloc", "elliptic-curve/alloc"]
 bits = ["elliptic-curve/bits"]
-pkcs8 = ["elliptic-curve/pkcs8"]
-signing = ["dep:crypto_signature", "zeroize"]
-serde = ["dep:serdect"]
-std = ["serdect/default", "zeroize/default"]
+pkcs8 = ["elliptic-curve/pkcs8", "ed448?/pkcs8"]
+signing = ["dep:crypto_signature", "ed448", "zeroize"]
+serde = ["dep:serdect", "ed448?/serde_bytes"]
+std = ["alloc", "serdect/default", "zeroize/default"]
 zeroize = ["dep:zeroize"]
 
 [dev-dependencies]
