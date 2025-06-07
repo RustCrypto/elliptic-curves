@@ -3,17 +3,18 @@
 
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
-#[cfg(feature = "pkcs8")]
-use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 use core::fmt::{self, Debug, Formatter};
 use crypto_signature::Error;
+use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
 use rand_core::CryptoRng;
 use sha3::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
     consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
 };
 use subtle::{Choice, ConstantTimeEq};
-use zeroize::{Zeroize, ZeroizeOnDrop};
+
+#[cfg(feature = "pkcs8")]
+use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 
 /// Ed448 secret key as defined in [RFC8032 § 5.2.5]
 ///

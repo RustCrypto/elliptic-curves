@@ -22,18 +22,16 @@ rand_core = { version = "0.9", default-features = false }
 serdect = { version = "0.3.0", optional = true }
 sha3 = { version = "0.11.0-rc.0", default-features = false }
 subtle = { version = "2.6", default-features = false }
-zeroize = { version = "1.8", default-features = false, optional = true }
 
 [features]
 default = ["std", "signing", "pkcs8"]
-alloc = ["serdect/alloc", "zeroize/alloc", "crypto_signature/alloc", "elliptic-curve/alloc"]
+alloc = ["crypto_signature/alloc", "elliptic-curve/alloc", "serdect/alloc"]
 std = ["alloc"]
 
 bits = ["elliptic-curve/bits"]
 pkcs8 = ["elliptic-curve/pkcs8"]
-signing = ["dep:crypto_signature", "zeroize"]
+signing = ["dep:crypto_signature"]
 serde = ["dep:serdect"]
-zeroize = ["dep:zeroize"]
 
 [dev-dependencies]
 hex-literal = "1"

@@ -1,22 +1,21 @@
 use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use super::ConstMontyType;
+use crate::{
+    AffinePoint, Ed448, EdwardsPoint,
+    curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
+};
 use elliptic_curve::{
     array::Array,
     bigint::{
         NonZero, U448, U704,
         consts::{U84, U88},
     },
-    hash2curve::FromOkm,
+    hash2curve::{FromOkm, MapToCurve},
+    zeroize::DefaultIsZeroes,
 };
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
-
-#[cfg(feature = "zeroize")]
-use {crate::Ed448, elliptic_curve::hash2curve::MapToCurve, zeroize::DefaultIsZeroes};
-
-use super::ConstMontyType;
-use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
-use crate::{AffinePoint, EdwardsPoint};
 
 #[derive(Clone, Copy, Default)]
 pub struct FieldElement(pub(crate) ConstMontyType);
@@ -83,7 +82,6 @@ impl FromOkm for FieldElement {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl DefaultIsZeroes for FieldElement {}
 
 impl Add<&FieldElement> for &FieldElement {
@@ -180,7 +178,6 @@ impl Neg for FieldElement {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl MapToCurve for Ed448 {
     type CurvePoint = EdwardsPoint;
     type FieldElement = FieldElement;

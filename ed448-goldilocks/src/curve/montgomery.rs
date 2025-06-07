@@ -47,8 +47,7 @@ impl Default for MontgomeryPoint {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl zeroize::DefaultIsZeroes for MontgomeryPoint {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for MontgomeryPoint {}
 
 impl fmt::Debug for MontgomeryPoint {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

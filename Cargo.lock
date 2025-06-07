@@ -392,7 +392,6 @@ dependencies = [
  "sha3",
  "signature",
  "subtle",
- "zeroize",
 ]
 
 [[package]]

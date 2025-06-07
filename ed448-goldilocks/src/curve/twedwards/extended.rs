@@ -51,8 +51,7 @@ impl Default for ExtendedPoint {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl zeroize::DefaultIsZeroes for ExtendedPoint {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for ExtendedPoint {}
 
 impl ExtendedPoint {
     /// Generator for the prime subgroup

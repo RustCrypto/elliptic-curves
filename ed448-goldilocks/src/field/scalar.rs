@@ -51,12 +51,10 @@ pub const MODULUS_LIMBS: [u32; 14] = [
     0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x3fffffff,
 ];
 
-#[cfg(feature = "zeroize")]
 elliptic_curve::scalar_from_impls!(Ed448, Scalar);
 
 // TODO(tarcieri): RustCrypto/elliptic-curves#1229
-//#[cfg(feature = "zeroize")]
-//scalar_from_impls!(Decaf448, Scalar);
+// scalar_from_impls!(Decaf448, Scalar);
 
 impl Display for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
@@ -410,8 +408,7 @@ impl<'de> serdect::serde::Deserialize<'de> for Scalar {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl zeroize::DefaultIsZeroes for Scalar {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for Scalar {}
 
 impl core::fmt::LowerHex for Scalar {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
@@ -600,7 +597,7 @@ impl ShrAssign<usize> for Scalar {
     }
 }
 
-#[cfg(all(feature = "bits", feature = "zeroize"))]
+#[cfg(feature = "bits")]
 impl From<&Scalar> for Ed448ScalarBits {
     fn from(scalar: &Scalar) -> Self {
         scalar.0.to_words().into()
