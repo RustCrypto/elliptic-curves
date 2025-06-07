@@ -5,11 +5,10 @@ use core::iter::{Product, Sum};
 use core::ops::{
     Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign,
 };
-use crypto_bigint::Zero;
 use elliptic_curve::{
     PrimeField,
     array::{Array, typenum::Unsigned},
-    bigint::{Limb, NonZero, U448, U704, U896},
+    bigint::{Limb, NonZero, U448, U704, U896, Word, Zero},
     consts::{U28, U84, U88, U114},
     ff::{Field, helpers},
     hash2curve::{ExpandMsg, Expander, FromOkm},
@@ -120,7 +119,7 @@ impl From<u128> for Scalar {
 }
 
 impl Index<usize> for Scalar {
-    type Output = crypto_bigint::Word;
+    type Output = Word;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.0.as_words()[index]
@@ -512,7 +511,7 @@ impl ReduceNonZero<U896> for Scalar {
 
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    type ReprBits = [crypto_bigint::Word; U448::LIMBS];
+    type ReprBits = [Word; U448::LIMBS];
 
     fn to_le_bits(&self) -> FieldBits<Self::ReprBits> {
         self.0.to_words().into()
