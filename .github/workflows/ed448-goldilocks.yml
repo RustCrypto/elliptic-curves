@@ -82,10 +82,11 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
+      - uses: RustCrypto/actions/cargo-hack-install@master
       - run: ${{ matrix.deps }}
-      - run: cargo check --target ${{ matrix.target }} --all-features
       - run: cargo test --release --target ${{ matrix.target }} --no-default-features
-      - run: cargo test --release --target ${{ matrix.target }}
+      - run: cargo hack test --feature-powerset --target ${{ matrix.target }} --exclude-features bits
+      - run: cargo test --release --target ${{ matrix.target }} --no-default-features --features bits
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
   cross:

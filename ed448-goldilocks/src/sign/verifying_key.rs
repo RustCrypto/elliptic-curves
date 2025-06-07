@@ -7,8 +7,11 @@ use crate::{
     CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, ScalarBytes, Signature,
     SigningError, WideScalarBytes,
 };
+
+#[cfg(any(feature = "pkcs8", feature = "serde"))]
+use crate::PUBLIC_KEY_LENGTH;
 #[cfg(feature = "pkcs8")]
-use {crate::PUBLIC_KEY_LENGTH, elliptic_curve::pkcs8};
+use elliptic_curve::pkcs8;
 
 use core::{
     fmt::{self, Debug, Formatter},
