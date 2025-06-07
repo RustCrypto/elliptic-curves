@@ -1,11 +1,10 @@
 use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crypto_bigint::NonZero;
 use elliptic_curve::{
     array::Array,
     bigint::{
-        U448, U704,
+        NonZero, U448, U704,
         consts::{U84, U88},
     },
     hash2curve::FromOkm,

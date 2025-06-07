@@ -16,7 +16,6 @@ This crate also includes signing and verifying of Ed448 signatures.
 """
 
 [dependencies]
-crypto-bigint = { version = "=0.7.0-pre.4", features = ["hybrid-array"], default-features = false }
 crypto_signature = { version = "3.0.0-rc.0", default-features = false, features = ["digest", "rand_core"], optional = true, package = "signature" }
 elliptic-curve = { version = "0.14.0-rc.5", features = ["arithmetic", "hash2curve", "pkcs8"] }
 rand_core = { version = "0.9", default-features = false }

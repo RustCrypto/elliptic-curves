@@ -381,7 +381,6 @@ dependencies = [
 name = "ed448-goldilocks"
 version = "0.14.0-pre"
 dependencies = [
- "crypto-bigint",
  "elliptic-curve",
  "hex",
  "hex-literal",
