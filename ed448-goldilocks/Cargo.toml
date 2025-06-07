@@ -1,6 +1,6 @@
 [package]
 name = "ed448-goldilocks"
-version = "0.17.0-pre.0"
+version = "0.14.0-pre"
 authors = ["RustCrypto Developers"]
 categories = ["cryptography"]
 keywords = ["cryptography", "decaf", "ed448", "ed448-goldilocks"]
