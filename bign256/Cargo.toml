@@ -18,7 +18,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.4", features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.5", features = ["sec1"] }
 
 # optional dependencies
 belt-hash = { version = "0.2.0-rc.0", optional = true, default-features = false }
