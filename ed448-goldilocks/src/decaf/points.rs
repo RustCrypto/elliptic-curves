@@ -99,21 +99,21 @@ impl From<&DecafPoint> for DecafPointBytes {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<DecafPoint> for Vec<u8> {
     fn from(compressed: DecafPoint) -> Vec<u8> {
         Self::from(&compressed)
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<&DecafPoint> for Vec<u8> {
     fn from(point: &DecafPoint) -> Vec<u8> {
         point.compress().0.to_vec()
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for DecafPoint {
     type Error = &'static str;
 
@@ -122,7 +122,7 @@ impl TryFrom<Vec<u8>> for DecafPoint {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for DecafPoint {
     type Error = &'static str;
 
@@ -131,7 +131,7 @@ impl TryFrom<&Vec<u8>> for DecafPoint {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&[u8]> for DecafPoint {
     type Error = &'static str;
 
@@ -142,7 +142,7 @@ impl TryFrom<&[u8]> for DecafPoint {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for DecafPoint {
     type Error = &'static str;
 
@@ -451,21 +451,21 @@ impl From<&CompressedDecaf> for DecafPointBytes {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<CompressedDecaf> for Vec<u8> {
     fn from(compressed: CompressedDecaf) -> Vec<u8> {
         Self::from(&compressed)
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<&CompressedDecaf> for Vec<u8> {
     fn from(compressed: &CompressedDecaf) -> Vec<u8> {
         compressed.0.to_vec()
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for CompressedDecaf {
     type Error = &'static str;
 
@@ -474,7 +474,7 @@ impl TryFrom<Vec<u8>> for CompressedDecaf {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for CompressedDecaf {
     type Error = &'static str;
 
@@ -483,7 +483,7 @@ impl TryFrom<&Vec<u8>> for CompressedDecaf {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&[u8]> for CompressedDecaf {
     type Error = &'static str;
 
@@ -493,7 +493,7 @@ impl TryFrom<&[u8]> for CompressedDecaf {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for CompressedDecaf {
     type Error = &'static str;
 

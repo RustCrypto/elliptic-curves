@@ -321,14 +321,14 @@ impl PrimeField for Scalar {
     const DELTA: Self = Self(U448::from_u8(49));
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<Scalar> for Vec<u8> {
     fn from(scalar: Scalar) -> Vec<u8> {
         Self::from(&scalar)
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<&Scalar> for Vec<u8> {
     fn from(scalar: &Scalar) -> Vec<u8> {
         scalar.to_bytes_rfc_8032().to_vec()
@@ -347,7 +347,7 @@ impl From<&Scalar> for ScalarBytes {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for Scalar {
     type Error = &'static str;
 
@@ -356,7 +356,7 @@ impl TryFrom<Vec<u8>> for Scalar {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for Scalar {
     type Error = &'static str;
 
@@ -378,7 +378,7 @@ impl TryFrom<&[u8]> for Scalar {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for Scalar {
     type Error = &'static str;
 
@@ -1065,7 +1065,7 @@ mod test {
         assert_eq!(&bytes[..], &candidate[..]);
     }
 
-    #[cfg(all(any(feature = "alloc", feature = "std"), feature = "serde"))]
+    #[cfg(all(feature = "alloc", feature = "serde"))]
     #[test]
     fn serde() {
         let res = serde_json::to_string(&Scalar::TWO_INV);
