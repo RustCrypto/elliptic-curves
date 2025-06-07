@@ -30,9 +30,9 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 
 [[package]]
 name = "anstyle"
-version = "1.0.10"
+version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55cc3b69f167a1ef2e161439aa98aed94e6028e5f9a59be9a6ffb47aef1651f9"
+checksum = "862ed96ca487e809f1c8e5a8447f6ee2cf102f846893800b20cebdf541fc6bbd"
 
 [[package]]
 name = "autocfg"
@@ -163,9 +163,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.17.0"
+version = "3.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1628fb46dfa0b37568d12e5edd512553eccf6a22a78e8bde00bb4aed84d5bdbf"
+checksum = "793db76d6187cd04dff33004d8e6c9cc4e05cd330500379d2394209271b4aeee"
 
 [[package]]
 name = "cast"
@@ -340,9 +340,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.8.0-rc.3"
+version = "0.8.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b00a9651bf9c00a38b7c383073cb22fb42f20a5f978c9f97ad5c7128cbd3c1bd"
+checksum = "0c2e6107818886eff6b71fba7a2da3dd11025ebb80f0c9b94ff961168ef629f2"
 dependencies = [
  "const-oid",
  "pem-rfc7468",
@@ -363,9 +363,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.0"
+version = "0.17.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abbc927a7e946a78fbff19c283bc5d4f8960d9000049a7e2b0d84cb2730613c4"
+checksum = "6ca18d8009d96ffc2a8b771c7432338233ffcfa05e4ca410ed77900a2a335a0b"
 dependencies = [
  "der",
  "digest",
@@ -845,9 +845,9 @@ dependencies = [
 
 [[package]]
 name = "portable-atomic"
-version = "1.11.0"
+version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "350e9b48cbc6b0e028b0473b114454c6316e57336ee184ceab6e53f72c178b3e"
+checksum = "f84267b20a16ea918e43c6a88433c2d54fa145c92a811b5b047ccbe153674483"
 
 [[package]]
 name = "ppv-lite86"
