@@ -17,7 +17,7 @@ impl Default for Signature {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for Signature {
     type Error = SigningError;
 
@@ -26,7 +26,7 @@ impl TryFrom<Vec<u8>> for Signature {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for Signature {
     type Error = SigningError;
 
@@ -49,7 +49,7 @@ impl TryFrom<&[u8]> for Signature {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for Signature {
     type Error = SigningError;
 

@@ -112,21 +112,21 @@ impl AsRef<PointBytes> for CompressedEdwardsY {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<CompressedEdwardsY> for Vec<u8> {
     fn from(value: CompressedEdwardsY) -> Self {
         Self::from(&value)
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<&CompressedEdwardsY> for Vec<u8> {
     fn from(value: &CompressedEdwardsY) -> Self {
         value.0.to_vec()
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for CompressedEdwardsY {
     type Error = &'static str;
 
@@ -135,7 +135,7 @@ impl TryFrom<Vec<u8>> for CompressedEdwardsY {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for CompressedEdwardsY {
     type Error = &'static str;
 
@@ -153,7 +153,7 @@ impl TryFrom<&[u8]> for CompressedEdwardsY {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for CompressedEdwardsY {
     type Error = &'static str;
 
@@ -418,21 +418,21 @@ impl CofactorGroup for EdwardsPoint {
 
 impl PrimeGroup for EdwardsPoint {}
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<EdwardsPoint> for Vec<u8> {
     fn from(value: EdwardsPoint) -> Self {
         Self::from(&value)
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl From<&EdwardsPoint> for Vec<u8> {
     fn from(value: &EdwardsPoint) -> Self {
         value.compress().0.to_vec()
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for EdwardsPoint {
     type Error = &'static str;
 
@@ -441,7 +441,7 @@ impl TryFrom<Vec<u8>> for EdwardsPoint {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for EdwardsPoint {
     type Error = &'static str;
 
@@ -460,7 +460,7 @@ impl TryFrom<&[u8]> for EdwardsPoint {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for EdwardsPoint {
     type Error = &'static str;
 

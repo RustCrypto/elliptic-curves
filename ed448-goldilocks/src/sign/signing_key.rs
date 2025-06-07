@@ -171,7 +171,7 @@ impl From<&SecretKey> for SigningKey {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Vec<u8>> for SigningKey {
     type Error = &'static str;
 
@@ -180,7 +180,7 @@ impl TryFrom<Vec<u8>> for SigningKey {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<&Vec<u8>> for SigningKey {
     type Error = &'static str;
 
@@ -202,7 +202,7 @@ impl TryFrom<&[u8]> for SigningKey {
     }
 }
 
-#[cfg(any(feature = "alloc", feature = "std"))]
+#[cfg(feature = "alloc")]
 impl TryFrom<Box<[u8]>> for SigningKey {
     type Error = &'static str;
 
@@ -285,14 +285,14 @@ impl crypto_signature::Verifier<Signature> for SigningKey {
     }
 }
 
-#[cfg(all(any(feature = "alloc", feature = "std"), feature = "pkcs8"))]
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl pkcs8::EncodePrivateKey for SigningKey {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
         KeypairBytes::from(self).to_pkcs8_der()
     }
 }
 
-#[cfg(all(any(feature = "alloc", feature = "std"), feature = "pkcs8"))]
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl pkcs8::spki::DynSignatureAlgorithmIdentifier for SigningKey {
     fn signature_algorithm_identifier(
         &self,
@@ -315,7 +315,7 @@ pub struct KeypairBytes {
     pub verifying_key: Option<PointBytes>,
 }
 
-#[cfg(all(any(feature = "alloc", feature = "std"), feature = "pkcs8"))]
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl pkcs8::EncodePrivateKey for KeypairBytes {
     fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
         let verifying_key = self.verifying_key.as_ref();

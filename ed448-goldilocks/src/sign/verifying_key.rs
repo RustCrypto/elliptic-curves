@@ -120,7 +120,7 @@ impl From<VerifyingKey> for PublicKeyBytes {
     }
 }
 
-#[cfg(feature = "pkcs8")]
+#[cfg(all(feature = "pkcs8", feature = "alloc"))]
 impl pkcs8::EncodePublicKey for PublicKeyBytes {
     fn to_public_key_der(&self) -> pkcs8::spki::Result<pkcs8::Document> {
         pkcs8::SubjectPublicKeyInfoRef {
@@ -152,7 +152,7 @@ impl TryFrom<pkcs8::spki::SubjectPublicKeyInfoRef<'_>> for PublicKeyBytes {
     }
 }
 
-#[cfg(all(any(feature = "alloc", feature = "std"), feature = "pkcs8"))]
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl pkcs8::EncodePublicKey for VerifyingKey {
     fn to_public_key_der(&self) -> pkcs8::spki::Result<pkcs8::Document> {
         PublicKeyBytes::from(*self).to_public_key_der()
