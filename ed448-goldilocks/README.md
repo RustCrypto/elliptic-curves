@@ -6,7 +6,10 @@
 
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
+[![Build Status][build-image]][build-link]
 ![BSD-3 Licensed][license-image]
+![Rust Version][rustc-image]
+[![Project Chat][chat-image]][chat-link]
 
 THIS CODE HAS NOT BEEN AUDITED OR REVIEWED. USE AT YOUR OWN RISK.
 
@@ -84,11 +87,16 @@ conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/ed448-goldilocks-plus.svg?logo=rust
-[crate-link]: https://crates.io/crates/ed448-goldilocks-plus
-[docs-image]: https://docs.rs/ed448-goldilocks-plus/badge.svg
-[docs-link]: https://docs.rs/ed448-goldilocks-plus/
+[crate-image]: https://img.shields.io/crates/v/ed448-goldilocks?logo=rust
+[crate-link]: https://crates.io/crates/ed448-goldilocks
+[docs-image]: https://docs.rs/ed448-goldilocks/badge.svg
+[docs-link]: https://docs.rs/ed448-goldilocks/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml
 [license-image]: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
+[chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
+[chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 
 [//]: # (links)
 
