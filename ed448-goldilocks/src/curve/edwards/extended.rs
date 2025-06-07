@@ -36,8 +36,7 @@ pub type PointBytes = [u8; 57];
 #[derive(Copy, Clone, Debug)]
 pub struct CompressedEdwardsY(pub PointBytes);
 
-#[cfg(feature = "zeroize")]
-impl zeroize::Zeroize for CompressedEdwardsY {
+impl elliptic_curve::zeroize::Zeroize for CompressedEdwardsY {
     fn zeroize(&mut self) {
         self.0.zeroize()
     }
@@ -1034,8 +1033,7 @@ impl<'de> serdect::serde::Deserialize<'de> for EdwardsPoint {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl zeroize::DefaultIsZeroes for EdwardsPoint {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for EdwardsPoint {}
 
 #[cfg(test)]
 mod tests {

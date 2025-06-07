@@ -2,11 +2,8 @@ use crate::curve::edwards::EdwardsPoint;
 use crate::field::FieldElement;
 use crate::*;
 use core::ops::Mul;
-use elliptic_curve::{Error, Result, point::NonIdentity};
+use elliptic_curve::{Error, Result, point::NonIdentity, zeroize::DefaultIsZeroes};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-
-#[cfg(feature = "zeroize")]
-use zeroize::DefaultIsZeroes;
 
 /// Affine point on untwisted curve
 #[derive(Copy, Clone, Debug)]
@@ -64,7 +61,6 @@ impl elliptic_curve::point::AffineCoordinates for AffinePoint {
     }
 }
 
-#[cfg(feature = "zeroize")]
 impl DefaultIsZeroes for AffinePoint {}
 
 impl AffinePoint {

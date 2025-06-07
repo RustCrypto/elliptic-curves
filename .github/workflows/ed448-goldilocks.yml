@@ -40,8 +40,7 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features signing
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features zeroize
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc,pkcs8,signing,serde,zeroize
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc,pkcs8,signing,serde
 
   benches:
     runs-on: ubuntu-latest
@@ -85,8 +84,7 @@ jobs:
       - uses: RustCrypto/actions/cargo-hack-install@master
       - run: ${{ matrix.deps }}
       - run: cargo test --release --target ${{ matrix.target }} --no-default-features
-      - run: cargo hack test --feature-powerset --target ${{ matrix.target }} --exclude-features bits
-      - run: cargo test --release --target ${{ matrix.target }} --no-default-features --features bits
+      - run: cargo hack test --feature-powerset --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 
   cross:

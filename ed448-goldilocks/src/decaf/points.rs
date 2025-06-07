@@ -293,8 +293,7 @@ impl From<&DecafPoint> for DecafAffinePoint {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl zeroize::DefaultIsZeroes for DecafPoint {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for DecafPoint {}
 
 impl DecafPoint {
     /// The generator point
@@ -545,8 +544,7 @@ impl<'de> serdect::serde::Deserialize<'de> for CompressedDecaf {
     }
 }
 
-#[cfg(feature = "zeroize")]
-impl zeroize::DefaultIsZeroes for CompressedDecaf {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for CompressedDecaf {}
 
 impl CompressedDecaf {
     /// The compressed generator point

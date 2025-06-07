@@ -2,11 +2,8 @@ use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
 use crate::field::FieldElement;
 use crate::{DecafPoint, Scalar};
 use core::ops::Mul;
-use elliptic_curve::{Error, point::NonIdentity};
+use elliptic_curve::{Error, point::NonIdentity, zeroize::DefaultIsZeroes};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-
-#[cfg(feature = "zeroize")]
-use zeroize::DefaultIsZeroes;
 
 /// Affine point on the twisted curve
 #[derive(Copy, Clone, Debug, Default)]
@@ -56,7 +53,6 @@ impl Eq for AffinePoint {}
 //     }
 // }
 
-#[cfg(feature = "zeroize")]
 impl DefaultIsZeroes for AffinePoint {}
 
 impl AffinePoint {

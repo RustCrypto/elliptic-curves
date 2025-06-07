@@ -1,14 +1,13 @@
-use crate::sign::{HASH_HEAD, InnerSignature};
 use crate::{
     EdwardsPoint, SECRET_KEY_LENGTH, Scalar, ScalarBytes, SecretKey, SigningError, VerifyingKey,
     WideScalarBytes,
+    sign::{HASH_HEAD, InnerSignature},
 };
-use sha3::digest::ExtendableOutputReset;
+use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
 use sha3::{
     Shake256,
-    digest::{ExtendableOutput, Update, XofReader},
+    digest::{ExtendableOutput, ExtendableOutputReset, Update, XofReader},
 };
-use zeroize::{Zeroize, ZeroizeOnDrop};
 
 #[derive(Clone)]
 pub struct ExpandedSecretKey {
