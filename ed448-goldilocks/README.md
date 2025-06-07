@@ -84,7 +84,7 @@ conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/ed448-goldilocks-plus.svg
+[crate-image]: https://img.shields.io/crates/v/ed448-goldilocks-plus.svg?logo=rust
 [crate-link]: https://crates.io/crates/ed448-goldilocks-plus
 [docs-image]: https://docs.rs/ed448-goldilocks-plus/badge.svg
 [docs-link]: https://docs.rs/ed448-goldilocks-plus/

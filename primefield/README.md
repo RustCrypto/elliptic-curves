@@ -30,7 +30,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/primefield
+[crate-image]: https://img.shields.io/crates/v/primefield?logo=rust
 [crate-link]: https://crates.io/crates/primefield
 [docs-image]: https://docs.rs/primefield/badge.svg
 [docs-link]: https://docs.rs/primefield/
