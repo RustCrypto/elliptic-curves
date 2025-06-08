@@ -13,7 +13,7 @@ use elliptic_curve::{
     array::ArraySize,
     bigint::ArrayEncoding,
     group::{
-        self, Group, GroupEncoding,
+        Curve, Group, GroupEncoding,
         prime::{PrimeCurve, PrimeGroup},
     },
     ops::{BatchInvert, LinearCombination},
@@ -308,7 +308,7 @@ where
     }
 }
 
-impl<C> group::Curve for ProjectivePoint<C>
+impl<C> Curve for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
@@ -333,10 +333,10 @@ where
     Self: Double,
     C: PrimeCurveParams,
 {
-    type Output = [Self::AffineRepr; N];
+    type Output = [<Self as Curve>::AffineRepr; N];
 
     #[inline]
-    fn batch_normalize(points: &[Self; N]) -> [Self::AffineRepr; N] {
+    fn batch_normalize(points: &[Self; N]) -> [<Self as Curve>::AffineRepr; N] {
         let zs = [C::FieldElement::ONE; N];
         let mut affine_points = [C::AffinePoint::IDENTITY; N];
         batch_normalize_generic(points, zs, &mut affine_points);
@@ -350,10 +350,10 @@ where
     Self: Double,
     C: PrimeCurveParams,
 {
-    type Output = Vec<Self::AffineRepr>;
+    type Output = Vec<<Self as Curve>::AffineRepr>;
 
     #[inline]
-    fn batch_normalize(points: &[Self]) -> Vec<Self::AffineRepr> {
+    fn batch_normalize(points: &[Self]) -> Vec<<Self as Curve>::AffineRepr> {
         let mut zs = vec![C::FieldElement::ONE; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
