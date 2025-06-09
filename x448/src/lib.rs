@@ -26,10 +26,11 @@ impl From<&Secret> for PublicKey {
 }
 
 /// A PublicKey is a point on Curve448.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct PublicKey(MontgomeryPoint);
 
 /// A Secret is a Scalar on Curve448.
-#[derive(Zeroize)]
+#[derive(Clone, Zeroize)]
 #[zeroize(drop)]
 pub struct Secret([u8; 56]);
 
@@ -85,7 +86,7 @@ impl Secret {
     // Taken from dalek-x25519
     pub fn new<T>(csprng: &mut T) -> Self
     where
-        T: RngCore + CryptoRng,
+        T: RngCore + CryptoRng + ?Sized,
     {
         let mut bytes = [0u8; 56];
 
