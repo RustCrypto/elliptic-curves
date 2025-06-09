@@ -1,9 +1,13 @@
 #![no_std]
 
-use ed448_goldilocks::MontgomeryPoint;
-use ed448_goldilocks::Scalar;
+use ed448_goldilocks::{
+    MontgomeryPoint,
+    elliptic_curve::{bigint::U448, scalar::FromUintUnchecked},
+};
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
+
+type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
 
 /// Computes a Scalar according to RFC7748
 /// given a byte array of length 56
@@ -20,16 +24,18 @@ impl From<[u8; 56]> for Secret {
 /// XXX: Waiting for upstream PR to use pre-computation
 impl From<&Secret> for PublicKey {
     fn from(secret: &Secret) -> PublicKey {
-        let point = &MontgomeryPoint::GENERATOR * &Scalar::from_bytes(&secret.0);
+        let secret = secret.as_scalar();
+        let point = &MontgomeryPoint::GENERATOR * &secret;
         PublicKey(point)
     }
 }
 
 /// A PublicKey is a point on Curve448.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct PublicKey(MontgomeryPoint);
 
 /// A Secret is a Scalar on Curve448.
-#[derive(Zeroize)]
+#[derive(Clone, Zeroize)]
 #[zeroize(drop)]
 pub struct Secret([u8; 56]);
 
@@ -85,7 +91,7 @@ impl Secret {
     // Taken from dalek-x25519
     pub fn new<T>(csprng: &mut T) -> Self
     where
-        T: RngCore + CryptoRng,
+        T: RngCore + CryptoRng + ?Sized,
     {
         let mut bytes = [0u8; 56];
 
@@ -101,8 +107,9 @@ impl Secret {
     }
 
     /// Views a Secret as a Scalar
-    fn as_scalar(&self) -> Scalar {
-        Scalar::from_bytes(&self.0)
+    fn as_scalar(&self) -> MontgomeryScalar {
+        let secret = U448::from_le_slice(&self.0);
+        MontgomeryScalar::from_uint_unchecked(secret)
     }
 
     /// Performs a Diffie-hellman key exchange between the secret key and an external public key
@@ -173,38 +180,18 @@ mod test {
 
     #[test]
     fn test_low_order() {
-        // These are also in ed448-goldilocks. We could export them, but I cannot see any use except for this test.
-        const LOW_A: MontgomeryPoint = MontgomeryPoint([
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ]);
-        const LOW_B: MontgomeryPoint = MontgomeryPoint([
-            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ]);
-        const LOW_C: MontgomeryPoint = MontgomeryPoint([
-            0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        ]);
-
         // Notice, that this is the only way to add low order points into the system
         // and this is not exposed to the user. The user will use `from_bytes` which will check for low order points.
-        let bad_key_a = PublicKey(LOW_A);
-        let checked_bad_key_a = PublicKey::from_bytes(&LOW_A.0);
+        let bad_key_a = PublicKey(MontgomeryPoint::LOW_A);
+        let checked_bad_key_a = PublicKey::from_bytes(&MontgomeryPoint::LOW_A.0);
         assert!(checked_bad_key_a.is_none());
 
-        let bad_key_b = PublicKey(LOW_B);
-        let checked_bad_key_b = PublicKey::from_bytes(&LOW_B.0);
+        let bad_key_b = PublicKey(MontgomeryPoint::LOW_B);
+        let checked_bad_key_b = PublicKey::from_bytes(&MontgomeryPoint::LOW_B.0);
         assert!(checked_bad_key_b.is_none());
 
-        let bad_key_c = PublicKey(LOW_C);
-        let checked_bad_key_c = PublicKey::from_bytes(&LOW_C.0);
+        let bad_key_c = PublicKey(MontgomeryPoint::LOW_C);
+        let checked_bad_key_c = PublicKey::from_bytes(&MontgomeryPoint::LOW_C.0);
         assert!(checked_bad_key_c.is_none());
 
         let mut rng = rand::rng();
