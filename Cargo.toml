@@ -14,7 +14,8 @@ members = [
     "p521",
     "primefield",
     "primeorder",
-    "sm2"
+    "sm2",
+    "x448"
 ]
 
 [profile.dev]
@@ -24,6 +25,7 @@ opt-level = 2
 ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
 
+ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
