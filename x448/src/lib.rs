@@ -1,7 +1,8 @@
 #![no_std]
 
-use ed448_goldilocks::MontgomeryPoint;
-use ed448_goldilocks::Scalar;
+use ed448_goldilocks::MontgomeryScalar;
+use ed448_goldilocks::MontgomeryXpoint;
+use ed448_goldilocks::elliptic_curve::{bigint::U448, scalar::FromUintUnchecked};
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
@@ -20,16 +21,18 @@ impl From<[u8; 56]> for Secret {
 /// XXX: Waiting for upstream PR to use pre-computation
 impl From<&Secret> for PublicKey {
     fn from(secret: &Secret) -> PublicKey {
-        let point = &MontgomeryPoint::GENERATOR * &Scalar::from_bytes(&secret.0);
-        PublicKey(point)
+        let secret = secret.as_scalar();
+        let point = &MontgomeryXpoint::GENERATOR * &secret;
+        PublicKey(point.to_affine())
     }
 }
 
 /// A PublicKey is a point on Curve448.
-pub struct PublicKey(MontgomeryPoint);
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub struct PublicKey(MontgomeryXpoint);
 
 /// A Secret is a Scalar on Curve448.
-#[derive(Zeroize)]
+#[derive(Clone, Zeroize)]
 #[zeroize(drop)]
 pub struct Secret([u8; 56]);
 
@@ -37,7 +40,7 @@ pub struct Secret([u8; 56]);
 /// This point is the result of a Diffie-Hellman key exchange.
 #[derive(Zeroize)]
 #[zeroize(drop)]
-pub struct SharedSecret(MontgomeryPoint);
+pub struct SharedSecret(MontgomeryXpoint);
 
 impl PublicKey {
     /// Converts a bytes slice into a Public key
@@ -62,7 +65,7 @@ impl PublicKey {
 
         // Check if the point has low order
         let arr = slice_to_array(bytes);
-        let point = MontgomeryPoint(arr);
+        let point = MontgomeryXpoint(arr);
 
         Some(PublicKey(point))
     }
@@ -85,7 +88,7 @@ impl Secret {
     // Taken from dalek-x25519
     pub fn new<T>(csprng: &mut T) -> Self
     where
-        T: RngCore + CryptoRng,
+        T: RngCore + CryptoRng + ?Sized,
     {
         let mut bytes = [0u8; 56];
 
@@ -101,8 +104,9 @@ impl Secret {
     }
 
     /// Views a Secret as a Scalar
-    fn as_scalar(&self) -> Scalar {
-        Scalar::from_bytes(&self.0)
+    fn as_scalar(&self) -> MontgomeryScalar {
+        let secret = U448::from_le_slice(&self.0);
+        MontgomeryScalar::from_uint_unchecked(secret)
     }
 
     /// Performs a Diffie-hellman key exchange between the secret key and an external public key
@@ -112,7 +116,7 @@ impl Secret {
             return None;
         }
         let shared_key = &public_key.0 * &self.as_scalar();
-        Some(SharedSecret(shared_key))
+        Some(SharedSecret(shared_key.to_affine()))
     }
 
     /// Performs a Diffie-hellman key exchange once between the secret key and an external public key
@@ -152,17 +156,17 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
     let scalar = Secret::from(scalar_bytes).as_scalar();
-    Some((&point.0 * &scalar).0)
+    Some((&point.0 * &scalar).to_affine().0)
 }
 /// An unchecked version of the x448 function defined in RFC448
 /// No checks are made on the points.
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
-    let point = MontgomeryPoint(point_bytes);
+    let point = MontgomeryXpoint(point_bytes);
     let scalar = Secret::from(scalar_bytes).as_scalar();
-    (&point * &scalar).0
+    (&point * &scalar).to_affine().0
 }
 
-pub const X448_BASEPOINT_BYTES: [u8; 56] = MontgomeryPoint::GENERATOR.0;
+pub const X448_BASEPOINT_BYTES: [u8; 56] = MontgomeryXpoint::GENERATOR.0;
 
 #[cfg(test)]
 mod test {
@@ -171,28 +175,10 @@ mod test {
     use super::*;
     use alloc::vec;
 
+    use ed448_goldilocks::{LOW_A, LOW_B, LOW_C};
+
     #[test]
     fn test_low_order() {
-        // These are also in ed448-goldilocks. We could export them, but I cannot see any use except for this test.
-        const LOW_A: MontgomeryPoint = MontgomeryPoint([
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ]);
-        const LOW_B: MontgomeryPoint = MontgomeryPoint([
-            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        ]);
-        const LOW_C: MontgomeryPoint = MontgomeryPoint([
-            0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        ]);
-
         // Notice, that this is the only way to add low order points into the system
         // and this is not exposed to the user. The user will use `from_bytes` which will check for low order points.
         let bad_key_a = PublicKey(LOW_A);
@@ -392,8 +378,8 @@ mod test {
             0xda, 0x8d, 0x52, 0x4d, 0xe3, 0xd6, 0x9b, 0xd9, 0xd9, 0xd6, 0x6b, 0x99, 0x7e, 0x37,
         ];
 
-        let mut point = MontgomeryPoint::GENERATOR.0;
-        let mut scalar = MontgomeryPoint::GENERATOR.0;
+        let mut point = MontgomeryXpoint::GENERATOR.0;
+        let mut scalar = MontgomeryXpoint::GENERATOR.0;
         let mut result = [0u8; 56];
 
         // Iterate 1 time then check value on 1st iteration
