@@ -13,12 +13,14 @@ members = [
     "p521",
     "primefield",
     "primeorder",
-    "sm2"
+    "sm2",
+    "x448"
 ]
 
 [profile.dev]
 opt-level = 2
 
 [patch.crates-io]
+ed448-goldilocks = { path = "ed448-goldilocks" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
