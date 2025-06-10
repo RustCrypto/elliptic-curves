@@ -85,7 +85,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.9.3",
+ "rand_core",
  "rfc6979",
  "sec1",
  "signature",
@@ -324,7 +324,7 @@ checksum = "edaae5fb9dac79a07260e0b2006799ff4f1d342ab243fd7d0892215113b27904"
 dependencies = [
  "hybrid-array",
  "num-traits",
- "rand_core 0.9.3",
+ "rand_core",
  "subtle",
  "zeroize",
 ]
@@ -397,8 +397,8 @@ dependencies = [
  "elliptic-curve",
  "hex",
  "hex-literal",
- "rand_chacha 0.9.0",
- "rand_core 0.9.3",
+ "rand_chacha",
+ "rand_core",
  "serde_bare",
  "serde_json",
  "serdect",
@@ -430,7 +430,7 @@ dependencies = [
  "hybrid-array",
  "pem-rfc7468",
  "pkcs8",
- "rand_core 0.9.3",
+ "rand_core",
  "sec1",
  "serde_json",
  "serdect",
@@ -462,7 +462,7 @@ checksum = "d42dd26f5790eda47c1a2158ea4120e32c35ddc9a7743c98a292accc01b54ef3"
 dependencies = [
  "bitvec",
  "ff_derive",
- "rand_core 0.9.3",
+ "rand_core",
  "subtle",
 ]
 
@@ -495,17 +495,6 @@ checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
 
 [[package]]
 name = "getrandom"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
-dependencies = [
- "cfg-if",
- "libc",
- "wasi 0.11.0+wasi-snapshot-preview1",
-]
-
-[[package]]
-name = "getrandom"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26145e563e54f2cadc477553f1ec5ee650b00862f0a58bcd12cbdc5f0ea2d2f4"
@@ -513,7 +502,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi",
- "wasi 0.14.2+wasi-0.2.4",
+ "wasi",
 ]
 
 [[package]]
@@ -523,7 +512,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ff6a0b2dd4b981b1ae9e3e6830ab146771f3660d31d57bafd9018805a91b0f1"
 dependencies = [
  "ff",
- "rand_core 0.9.3",
+ "rand_core",
  "subtle",
 ]
 
@@ -626,7 +615,7 @@ dependencies = [
  "num-traits",
  "once_cell",
  "proptest",
- "rand_core 0.9.3",
+ "rand_core",
  "serdect",
  "sha2",
  "sha3",
@@ -750,7 +739,7 @@ dependencies = [
  "hex-literal",
  "primefield",
  "primeorder",
- "rand_core 0.9.3",
+ "rand_core",
  "serdect",
  "sha2",
 ]
@@ -767,7 +756,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.9.3",
+ "rand_core",
  "serdect",
  "sha2",
 ]
@@ -784,7 +773,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.9.3",
+ "rand_core",
  "serdect",
  "sha2",
 ]
@@ -802,7 +791,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.9.3",
+ "rand_core",
  "serdect",
  "sha2",
 ]
@@ -875,7 +864,7 @@ version = "0.14.0-pre.2"
 dependencies = [
  "crypto-bigint",
  "ff",
- "rand_core 0.9.3",
+ "rand_core",
  "subtle",
  "zeroize",
 ]
@@ -899,9 +888,9 @@ dependencies = [
 
 [[package]]
 name = "proptest"
-version = "1.6.0"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14cae93065090804185d3b75f0bf93b8eeda30c7a9b4a33d3bdb3988d6229e50"
+checksum = "6fcdab19deb5195a31cf7726a210015ff1496ba1464fd42cb4f537b8b01b471f"
 dependencies = [
  "bit-set",
  "bit-vec",
@@ -909,7 +898,7 @@ dependencies = [
  "lazy_static",
  "num-traits",
  "rand",
- "rand_chacha 0.3.1",
+ "rand_chacha",
  "rand_xorshift",
  "regex-syntax",
  "rusty-fork",
@@ -946,23 +935,12 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
 name = "rand"
-version = "0.8.5"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
+checksum = "9fbfd9d094a40bf3ae768db9361049ace4c0e04a4fd6b359518bd7b73a73dd97"
 dependencies = [
- "libc",
- "rand_chacha 0.3.1",
- "rand_core 0.6.4",
-]
-
-[[package]]
-name = "rand_chacha"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
-dependencies = [
- "ppv-lite86",
- "rand_core 0.6.4",
+ "rand_chacha",
+ "rand_core",
 ]
 
 [[package]]
@@ -972,16 +950,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3022b5f1df60f26e1ffddd6c66e8aa15de382ae63b3a0c1bfc0e4d3e3f325cb"
 dependencies = [
  "ppv-lite86",
- "rand_core 0.9.3",
-]
-
-[[package]]
-name = "rand_core"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
-dependencies = [
- "getrandom 0.2.16",
+ "rand_core",
 ]
 
 [[package]]
@@ -990,16 +959,16 @@ version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "99d9a13982dcf210057a8a78572b2217b667c3beacbf3a0d8b454f6f82837d38"
 dependencies = [
- "getrandom 0.3.3",
+ "getrandom",
 ]
 
 [[package]]
 name = "rand_xorshift"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
+checksum = "513962919efc330f829edb2535844d1b912b0fbe2ca165d613e4e8788bb05a5a"
 dependencies = [
- "rand_core 0.6.4",
+ "rand_core",
 ]
 
 [[package]]
@@ -1210,7 +1179,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8852cecbd17ba45978bbbe43061ebe36a2ae376058c5c172e09f72888f8f7de"
 dependencies = [
  "digest",
- "rand_core 0.9.3",
+ "rand_core",
 ]
 
 [[package]]
@@ -1222,7 +1191,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.9.3",
+ "rand_core",
  "rfc6979",
  "serdect",
  "signature",
@@ -1289,7 +1258,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8a64e3985349f2441a1a9ef0b853f869006c3855f2cda6862a94d26ebb9d6a1"
 dependencies = [
  "fastrand",
- "getrandom 0.3.3",
+ "getrandom",
  "once_cell",
  "rustix",
  "windows-sys",
@@ -1341,12 +1310,6 @@ dependencies = [
  "same-file",
  "winapi-util",
 ]
-
-[[package]]
-name = "wasi"
-version = "0.11.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
 name = "wasi"

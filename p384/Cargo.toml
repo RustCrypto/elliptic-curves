@@ -34,7 +34,7 @@ criterion = "0.6"
 ecdsa-core = { version = "0.17.0-rc.0", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "=0.14.0-pre.4", features = ["dev"] }
-proptest = "1.5"
+proptest = "1.7"
 rand_core = { version = "0.9", features = ["os_rng"] }
 
 [features]
