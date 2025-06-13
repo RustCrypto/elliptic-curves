@@ -7,7 +7,7 @@
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
 [![Build Status][build-image]][build-link]
-![BSD-3 Licensed][license-image]
+![Apache2/MIT licensed][license-image]
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
 
@@ -115,12 +115,20 @@ Special thanks to Mike Hamburg for answering all the questions asked regarding D
 
 This library adds [hash_to_curve](https://datatracker.ietf.org/doc/rfc9380/) and serialization of structs.
 
-## Contribution
+## License
 
-Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion in the work by you, as defined in the BSD-3-Clause
-license, shall be dual licensed as above, without any additional terms or
-conditions.
+All crates licensed under either of
+
+* [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+* [MIT license](http://opensource.org/licenses/MIT)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
@@ -130,7 +138,7 @@ conditions.
 [docs-link]: https://docs.rs/ed448-goldilocks/
 [build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml/badge.svg
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml
-[license-image]: https://img.shields.io/badge/License-BSD%203--Clause-blue.svg
+[license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
