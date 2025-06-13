@@ -363,7 +363,7 @@ impl DecafPoint {
         let mut expander = X::expand_message(
             &[msg],
             &dst,
-            core::num::NonZero::new(RandomLen::USIZE * 2)
+            core::num::NonZero::new(RandomLen::U16 * 2)
                 .expect("invariant violation: random is non zero length"),
         )
         .expect("bad dst");

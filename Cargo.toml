@@ -24,4 +24,5 @@ primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
 
 # https://github.com/RustCrypto/traits/pull/1896
+# https://github.com/RustCrypto/traits/pull/1901
 elliptic-curve = { git = "https://github.com/RustCrypto/traits" }

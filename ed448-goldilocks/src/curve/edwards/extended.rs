@@ -751,7 +751,7 @@ impl EdwardsPoint {
         let mut expander = X::expand_message(
             &[msg],
             &dst,
-            core::num::NonZero::new(RandomLen::USIZE * 2)
+            core::num::NonZero::new(RandomLen::U16 * 2)
                 .expect("invariant violation: random is non zero length"),
         )
         .expect("bad dst");
@@ -788,7 +788,7 @@ impl EdwardsPoint {
         let mut expander = X::expand_message(
             &[msg],
             &dst,
-            core::num::NonZero::new(RandomLen::USIZE)
+            core::num::NonZero::new(RandomLen::U16)
                 .expect("invariant violation: random is non zero length"),
         )
         .expect("bad dst");
