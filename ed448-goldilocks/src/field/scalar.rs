@@ -24,7 +24,7 @@ use elliptic_curve::ff::{FieldBits, PrimeFieldBits};
 /// This is the scalar field
 /// size = 4q = 2^446 - 0x8335dc163bb124b65129c96fde933d8d723a70aadc873d6d54a7bb0d
 /// We can therefore use 14 saturated 32-bit limbs
-#[derive(Debug, Copy, Clone, PartialOrd, Ord)]
+#[derive(Debug, Default, Copy, Clone, PartialOrd, Ord)]
 pub struct Scalar(pub(crate) U448);
 
 /// The number of bytes needed to represent the scalar field
@@ -210,12 +210,6 @@ impl Neg for &Scalar {
 
     fn neg(self) -> Self::Output {
         Scalar::ZERO - self
-    }
-}
-
-impl Default for Scalar {
-    fn default() -> Scalar {
-        Scalar::ZERO
     }
 }
 
