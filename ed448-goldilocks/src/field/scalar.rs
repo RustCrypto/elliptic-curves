@@ -858,7 +858,7 @@ impl Scalar {
         let mut expander = X::expand_message(
             &[msg],
             &dst,
-            core::num::NonZero::new(RandomLen::USIZE).expect("Invariant violation"),
+            core::num::NonZero::new(RandomLen::U16).expect("Invariant violation"),
         )
         .expect("invalid dst");
         expander.fill_bytes(&mut random_bytes);
