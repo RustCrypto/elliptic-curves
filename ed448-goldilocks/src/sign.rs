@@ -75,18 +75,20 @@
 mod context;
 mod error;
 mod expanded;
-mod signature;
 mod signing_key;
 mod verifying_key;
 
 pub use context::*;
-pub use crypto_signature;
+pub use ed448::Signature;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 pub use error::*;
-pub use signature::*;
+pub use signature;
 pub use signing_key::*;
 pub use verifying_key::*;
+
+use crate::{CompressedEdwardsY, EdwardsPoint, Scalar};
+use elliptic_curve::array::Array;
 
 /// Length of a secret key in bytes
 pub const SECRET_KEY_LENGTH: usize = 57;
@@ -111,3 +113,37 @@ pub const ALGORITHM_ID: pkcs8::AlgorithmIdentifierRef<'static> = pkcs8::Algorith
     oid: ALGORITHM_OID,
     parameters: None,
 };
+
+impl From<InnerSignature> for Signature {
+    fn from(inner: InnerSignature) -> Self {
+        let mut s = [0u8; SECRET_KEY_LENGTH];
+        s.copy_from_slice(&inner.s.to_bytes_rfc_8032());
+        Self::from_components(inner.r.compress(), s)
+    }
+}
+
+impl TryFrom<&Signature> for InnerSignature {
+    type Error = SigningError;
+
+    fn try_from(signature: &Signature) -> Result<Self, Self::Error> {
+        let s_bytes: &Array<u8, _> = (signature.s_bytes()).into();
+        let s = Option::from(Scalar::from_canonical_bytes(s_bytes))
+            .ok_or(SigningError::InvalidSignatureSComponent)?;
+        let r = Option::from(CompressedEdwardsY::from(*signature.r_bytes()).decompress())
+            .ok_or(SigningError::InvalidSignatureRComponent)?;
+        Ok(Self { r, s })
+    }
+}
+
+pub(crate) struct InnerSignature {
+    pub(crate) r: EdwardsPoint,
+    pub(crate) s: Scalar,
+}
+
+impl TryFrom<Signature> for InnerSignature {
+    type Error = SigningError;
+
+    fn try_from(signature: Signature) -> Result<Self, Self::Error> {
+        Self::try_from(&signature)
+    }
+}
