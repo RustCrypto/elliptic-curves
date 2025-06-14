@@ -1,7 +1,3 @@
-<p align="center">
-<img src="https://raw.githubusercontent.com/RustCrypto/elliptic-curves/c797d60/ed448-goldilocks/resources/bear.png" width = "400">
-</p>
-
 # [RustCrypto]: Ed448-Goldilocks Elliptic Curve
 
 [![Crate][crate-image]][crate-link]
