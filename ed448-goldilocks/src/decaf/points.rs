@@ -4,10 +4,10 @@ use crate::field::FieldElement;
 use crate::*;
 
 use elliptic_curve::{
-    Error, Group,
+    CurveGroup, Error, Group,
     array::{Array, typenum::Unsigned},
     consts::{U32, U56, U84},
-    group::{Curve, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
+    group::{GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::LinearCombination,
     point::NonIdentity,
@@ -237,7 +237,7 @@ impl<const N: usize> LinearCombination<[(DecafPoint, Scalar); N]> for DecafPoint
 
 impl LinearCombination<[(DecafPoint, Scalar)]> for DecafPoint {}
 
-impl Curve for DecafPoint {
+impl CurveGroup for DecafPoint {
     type AffineRepr = DecafAffinePoint;
 
     fn to_affine(&self) -> Self::AffineRepr {

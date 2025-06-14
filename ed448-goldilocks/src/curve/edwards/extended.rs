@@ -11,10 +11,10 @@ use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::{FieldElement, Scalar};
 use crate::*;
 use elliptic_curve::{
-    Error,
+    CurveGroup, Error,
     array::{Array, typenum::Unsigned},
     consts::{U28, U84},
-    group::{Curve, Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
+    group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm},
     ops::LinearCombination,
     point::NonIdentity,
@@ -512,7 +512,7 @@ impl<const N: usize> LinearCombination<[(EdwardsPoint, Scalar); N]> for EdwardsP
 
 impl LinearCombination<[(EdwardsPoint, Scalar)]> for EdwardsPoint {}
 
-impl Curve for EdwardsPoint {
+impl CurveGroup for EdwardsPoint {
     type AffineRepr = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {

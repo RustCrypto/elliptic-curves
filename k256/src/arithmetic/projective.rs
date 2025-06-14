@@ -9,9 +9,9 @@ use core::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    BatchNormalize, Error, Result,
+    BatchNormalize, CurveGroup, Error, Result,
     group::{
-        Curve, Group, GroupEncoding,
+        Group, GroupEncoding,
         ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     },
@@ -257,10 +257,10 @@ impl From<AffinePoint> for ProjectivePoint {
 }
 
 impl<const N: usize> BatchNormalize<[ProjectivePoint; N]> for ProjectivePoint {
-    type Output = [<Self as Curve>::AffineRepr; N];
+    type Output = [<Self as CurveGroup>::AffineRepr; N];
 
     #[inline]
-    fn batch_normalize(points: &[Self; N]) -> [<Self as Curve>::AffineRepr; N] {
+    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::AffineRepr; N] {
         let zs = [FieldElement::ONE; N];
         let mut affine_points = [AffinePoint::IDENTITY; N];
         batch_normalize_generic(points, zs, &mut affine_points);
@@ -270,10 +270,10 @@ impl<const N: usize> BatchNormalize<[ProjectivePoint; N]> for ProjectivePoint {
 
 #[cfg(feature = "alloc")]
 impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
-    type Output = Vec<<Self as Curve>::AffineRepr>;
+    type Output = Vec<<Self as CurveGroup>::AffineRepr>;
 
     #[inline]
-    fn batch_normalize(points: &[Self]) -> Vec<<Self as Curve>::AffineRepr> {
+    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::AffineRepr> {
         let zs = vec![FieldElement::ONE; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize_generic(points, zs, &mut affine_points);
@@ -454,7 +454,7 @@ impl GroupEncoding for ProjectivePoint {
 
 impl PrimeGroup for ProjectivePoint {}
 
-impl Curve for ProjectivePoint {
+impl CurveGroup for ProjectivePoint {
     type AffineRepr = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {
@@ -698,9 +698,9 @@ mod tests {
         Scalar,
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     };
-    use elliptic_curve::Field;
+    use elliptic_curve::BatchNormalize;
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
-    use elliptic_curve::{BatchNormalize, group};
+    use elliptic_curve::{CurveGroup, Field};
     use rand_core::{OsRng, TryRngCore};
 
     #[cfg(feature = "alloc")]
@@ -737,7 +737,7 @@ mod tests {
             expected
         );
 
-        <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], &mut res);
+        <ProjectivePoint as CurveGroup>::batch_normalize(&[g, h], &mut res);
         assert_eq!(res, expected);
 
         let mut res = [AffinePoint::IDENTITY; 3];
@@ -753,7 +753,7 @@ mod tests {
             expected
         );
 
-        <ProjectivePoint as group::Curve>::batch_normalize(
+        <ProjectivePoint as CurveGroup>::batch_normalize(
             &[g, ProjectivePoint::IDENTITY, non_normalized_identity],
             &mut res,
         );
@@ -774,7 +774,7 @@ mod tests {
             <ProjectivePoint as BatchNormalize<_>>::batch_normalize(scalars.as_slice());
         assert_eq!(res, expected);
 
-        <ProjectivePoint as group::Curve>::batch_normalize(&[g, h], res.as_mut());
+        <ProjectivePoint as CurveGroup>::batch_normalize(&[g, h], res.as_mut());
         assert_eq!(res.to_vec(), expected);
 
         let expected = vec![g.to_affine(), AffinePoint::IDENTITY];
@@ -783,7 +783,7 @@ mod tests {
 
         assert_eq!(res, expected);
 
-        <ProjectivePoint as group::Curve>::batch_normalize(
+        <ProjectivePoint as CurveGroup>::batch_normalize(
             &[g, ProjectivePoint::IDENTITY],
             res.as_mut(),
         );
