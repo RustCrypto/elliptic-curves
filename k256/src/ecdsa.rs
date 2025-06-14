@@ -121,7 +121,7 @@ pub type SigningKey = ecdsa_core::SigningKey<Secp256k1>;
 pub type VerifyingKey = ecdsa_core::VerifyingKey<Secp256k1>;
 
 #[cfg(feature = "sha256")]
-impl hazmat::DigestPrimitive for Secp256k1 {
+impl hazmat::DigestAlgorithm for Secp256k1 {
     type Digest = sha2::Sha256;
 }
 
