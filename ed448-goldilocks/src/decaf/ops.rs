@@ -4,7 +4,7 @@ use core::{
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::group::Curve;
+use elliptic_curve::CurveGroup;
 
 use super::DecafPoint;
 
