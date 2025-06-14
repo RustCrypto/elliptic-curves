@@ -18,12 +18,12 @@ use core::{
     fmt::{self, Debug, Formatter},
     hash::{Hash, Hasher},
 };
-use crypto_signature::Error;
 use elliptic_curve::Group;
 use sha3::{
     Shake256,
     digest::{Digest, ExtendableOutput, Update, XofReader},
 };
+use signature::Error;
 
 /// Ed448 public key as defined in [RFC8032 § 5.2.5]
 #[derive(Copy, Clone, Default, Eq)]
@@ -56,13 +56,13 @@ impl PartialEq for VerifyingKey {
     }
 }
 
-impl crypto_signature::Verifier<Signature> for VerifyingKey {
+impl signature::Verifier<Signature> for VerifyingKey {
     fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
         self.verify_raw(signature, msg)
     }
 }
 
-impl<D> crypto_signature::DigestVerifier<D, Signature> for VerifyingKey
+impl<D> signature::DigestVerifier<D, Signature> for VerifyingKey
 where
     D: Digest,
 {
@@ -73,13 +73,13 @@ where
     }
 }
 
-impl crypto_signature::Verifier<Signature> for Context<'_, '_, VerifyingKey> {
+impl signature::Verifier<Signature> for Context<'_, '_, VerifyingKey> {
     fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
         self.key.verify_ctx(signature, self.value, msg)
     }
 }
 
-impl<D> crypto_signature::DigestVerifier<D, Signature> for Context<'_, '_, VerifyingKey>
+impl<D> signature::DigestVerifier<D, Signature> for Context<'_, '_, VerifyingKey>
 where
     D: Digest,
 {
@@ -186,7 +186,7 @@ impl VerifyingKey {
         Ok(Self { compressed, point })
     }
 
-    /// Create a context for this verifying key that can be used with [`crypto_signature::DigestVerifier`].
+    /// Create a context for this verifying key that can be used with [`signature::DigestVerifier`].
     pub fn with_context<'k, 'v>(&'k self, context: &'v [u8]) -> Context<'k, 'v, Self> {
         Context {
             key: self,

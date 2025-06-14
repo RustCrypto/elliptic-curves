@@ -4,13 +4,13 @@
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
 use core::fmt::{self, Debug, Formatter};
-use crypto_signature::Error;
 use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
 use rand_core::CryptoRng;
 use sha3::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
     consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
 };
+use signature::Error;
 use subtle::{Choice, ConstantTimeEq};
 
 #[cfg(feature = "pkcs8")]
@@ -212,7 +212,7 @@ impl TryFrom<Box<[u8]>> for SigningKey {
     }
 }
 
-impl<D> crypto_signature::DigestSigner<D, Signature> for SigningKey
+impl<D> signature::DigestSigner<D, Signature> for SigningKey
 where
     D: Digest,
 {
@@ -224,21 +224,21 @@ where
     }
 }
 
-impl crypto_signature::hazmat::PrehashSigner<Signature> for SigningKey {
+impl signature::hazmat::PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature, Error> {
         let sig = self.secret.sign_prehashed(&[], prehash)?;
         Ok(sig.into())
     }
 }
 
-impl crypto_signature::Signer<Signature> for SigningKey {
+impl signature::Signer<Signature> for SigningKey {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature, Error> {
         let sig = self.secret.sign_raw(msg)?;
         Ok(sig.into())
     }
 }
 
-impl<D> crypto_signature::DigestSigner<D, Signature> for Context<'_, '_, SigningKey>
+impl<D> signature::DigestSigner<D, Signature> for Context<'_, '_, SigningKey>
 where
     D: Digest,
 {
@@ -253,26 +253,26 @@ where
     }
 }
 
-impl crypto_signature::hazmat::PrehashSigner<Signature> for Context<'_, '_, SigningKey> {
+impl signature::hazmat::PrehashSigner<Signature> for Context<'_, '_, SigningKey> {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature, Error> {
         let sig = self.key.secret.sign_prehashed(self.value, prehash)?;
         Ok(sig.into())
     }
 }
 
-impl crypto_signature::Signer<Signature> for Context<'_, '_, SigningKey> {
+impl signature::Signer<Signature> for Context<'_, '_, SigningKey> {
     fn try_sign(&self, msg: &[u8]) -> Result<Signature, Error> {
         let sig = self.key.secret.sign_ctx(self.value, msg)?;
         Ok(sig.into())
     }
 }
 
-impl<D> crypto_signature::DigestVerifier<D, Signature> for SigningKey
+impl<D> signature::DigestVerifier<D, Signature> for SigningKey
 where
     D: Digest,
 {
     fn verify_digest(&self, msg: D, signature: &Signature) -> Result<(), Error> {
-        <VerifyingKey as crypto_signature::DigestVerifier<D, Signature>>::verify_digest(
+        <VerifyingKey as signature::DigestVerifier<D, Signature>>::verify_digest(
             &self.secret.public_key,
             msg,
             signature,
@@ -280,7 +280,7 @@ where
     }
 }
 
-impl crypto_signature::Verifier<Signature> for SigningKey {
+impl signature::Verifier<Signature> for SigningKey {
     fn verify(&self, msg: &[u8], signature: &Signature) -> Result<(), Error> {
         self.secret.public_key.verify_raw(signature, msg)
     }
@@ -474,7 +474,7 @@ impl SigningKey {
     }
 
     /// Create a signing context that can be used for Ed448ph with
-    /// [`crypto_signature::DigestSigner`]
+    /// [`signature::DigestSigner`]
     pub fn with_context<'k, 'v>(&'k self, context: &'v [u8]) -> Context<'k, 'v, Self> {
         Context {
             key: self,
