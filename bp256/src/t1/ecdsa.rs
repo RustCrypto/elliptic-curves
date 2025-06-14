@@ -13,6 +13,6 @@ impl ecdsa::EcdsaCurve for BrainpoolP256t1 {
 }
 
 #[cfg(feature = "sha256")]
-impl ecdsa::hazmat::DigestPrimitive for BrainpoolP256t1 {
+impl ecdsa::hazmat::DigestAlgorithm for BrainpoolP256t1 {
     type Digest = sha2::Sha256;
 }

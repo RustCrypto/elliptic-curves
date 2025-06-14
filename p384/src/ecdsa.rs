@@ -61,7 +61,7 @@ pub type SigningKey = ecdsa_core::SigningKey<NistP384>;
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP384>;
 
 #[cfg(feature = "sha384")]
-impl ecdsa_core::hazmat::DigestPrimitive for NistP384 {
+impl ecdsa_core::hazmat::DigestAlgorithm for NistP384 {
     type Digest = sha2::Sha384;
 }
 
