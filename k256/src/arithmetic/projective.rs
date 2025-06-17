@@ -362,7 +362,7 @@ impl ConditionallySelectable for ProjectivePoint {
 
 impl ConstantTimeEq for ProjectivePoint {
     fn ct_eq(&self, other: &Self) -> Choice {
-        // If both points are not equal to inifinity then they are in the form:
+        // If both points are not equal to infinity then they are in the form:
         //
         // lhs: (x₁z₁, y₁z₁, z₁), rhs: (x₂z₂, y₂z₂, z₂) where z₁ ≠ 0 and z₂ ≠ 0.
         // we want to know if x₁ == x₂ and y₁ == y₂
