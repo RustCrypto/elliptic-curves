@@ -278,11 +278,11 @@ impl VerifyingKey {
 
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
         let mut bytes = WideScalarBytes::default();
-        let clen = ctx.len() as u8;
+        let ctx_len = ctx.len() as u8;
         let mut reader = Shake256::default()
             .chain(HASH_HEAD)
             .chain([phflag])
-            .chain([clen])
+            .chain([ctx_len])
             .chain(ctx)
             .chain(signature.r_bytes())
             .chain(self.compressed.as_bytes())
