@@ -291,7 +291,7 @@ const fn sub_inner_nine(l: [Limb; 9], r: [Limb; 9]) -> [Limb; 9] {
     let (w7, borrow) = l[7].borrowing_sub(r[7], borrow);
     let (w8, _borrow) = l[8].borrowing_sub(r[8], borrow);
 
-    // If underflow occured in the final limb - don't care (= add b^{k+1}).
+    // If underflow occurred in the final limb - don't care (= add b^{k+1}).
     [w0, w1, w2, w3, w4, w5, w6, w7, w8]
 }
 
