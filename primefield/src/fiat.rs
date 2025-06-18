@@ -128,15 +128,10 @@ macro_rules! fiat_field_arithmetic {
             ///
             /// Does not check that self is non-zero.
             const fn invert_unchecked(&self) -> Self {
-                const BITS: usize = {
-                    let mut f = [0; <$uint>::LIMBS + 1];
-                    $msat(&mut f);
-                    $crate::bigint::Uint::from_words(f).bits_vartime() as usize
-                };
                 let words = $crate::fiat_bernstein_yang_invert!(
                     &$mont_type(self.0.to_words()),
                     &$mont_type(Self::ONE.0.to_words()),
-                    BITS,
+                    <$fe as $crate::ff::PrimeField>::NUM_BITS as usize,
                     <$uint>::LIMBS,
                     $crate::bigint::Word,
                     $non_mont_type,
