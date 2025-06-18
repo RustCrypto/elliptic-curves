@@ -131,7 +131,7 @@ macro_rules! fiat_field_arithmetic {
                 let words = $crate::fiat_bernstein_yang_invert!(
                     &$mont_type(self.0.to_words()),
                     &$mont_type(Self::ONE.0.to_words()),
-                    size_of::<$bytes>() * 8,
+                    <$fe as $crate::ff::PrimeField>::NUM_BITS as usize,
                     <$uint>::LIMBS,
                     $crate::bigint::Word,
                     $non_mont_type,
