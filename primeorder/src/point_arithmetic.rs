@@ -316,3 +316,159 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
         ProjectivePoint { x, y, z }
     }
 }
+
+/// The 𝒂-coefficient of the short Weierstrass equation is 0.
+pub struct EquationAIsZero {}
+
+impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
+    /// Implements complete addition for curves with `a = 0`
+    ///
+    /// Implements the complete addition formula from [Renes-Costello-Batina 2015]
+    /// (Algorithm 7). The comments after each line indicate which algorithm steps
+    /// are being performed.
+    ///
+    /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
+    fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+        debug_assert_eq!(
+            C::EQUATION_A,
+            C::FieldElement::ZERO,
+            "this implementation is only valid for C::EQUATION_A = 0"
+        );
+
+        let b3 = C::FieldElement::from(3) * C::EQUATION_B;
+
+        let t0 = lhs.x * rhs.x; // 1
+        let t1 = lhs.y * rhs.y; // 2
+        let t2 = lhs.z * rhs.z; // 3
+        let t3 = lhs.x + lhs.y; // 4
+        let t4 = rhs.x + rhs.y; // 5
+        let t3 = t3 * t4; // 6
+        let t4 = t0 + t1; // 7
+        let t3 = t3 - t4; // 8
+        let t4 = lhs.y + lhs.z; // 9
+        let x3 = rhs.y + rhs.z; // 10
+        let t4 = t4 * x3; // 11
+        let x3 = t1 + t2; // 12
+        let t4 = t4 - x3; // 13
+        let x3 = lhs.x + lhs.z; // 14
+        let y3 = rhs.x + rhs.z; // 15
+        let x3 = x3 * y3; // 16
+        let y3 = t0 + t2; // 17
+        let y3 = x3 - y3; // 18
+        let x3 = t0.double(); // 19
+        let t0 = x3 + t0; // 20
+        let t2 = b3 * t2; // 21
+        let z3 = t1 + t2; // 22
+        let t1 = t1 - t2; // 23
+        let y3 = b3 * y3; // 24
+        let x3 = t4 * y3; // 25
+        let t2 = t3 * t1; // 26
+        let x3 = t2 - x3; // 27
+        let y3 = y3 * t0; // 28
+        let t1 = t1 * z3; // 29
+        let y3 = t1 + y3; // 30
+        let t0 = t0 * t3; // 31
+        let z3 = z3 * t4; // 32
+        let z3 = z3 + t0; // 33
+
+        ProjectivePoint {
+            x: x3,
+            y: y3,
+            z: z3,
+        }
+    }
+
+    /// Implements complete mixed addition for curves with `a = 0`
+    ///
+    /// Implements the complete mixed addition formula from [Renes-Costello-Batina 2015]
+    /// (Algorithm 8). The comments after each line indicate which algorithm
+    /// steps are being performed.
+    ///
+    /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
+    fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C> {
+        debug_assert_eq!(
+            C::EQUATION_A,
+            C::FieldElement::ZERO,
+            "this implementation is only valid for C::EQUATION_A = 0"
+        );
+
+        let b3 = C::EQUATION_B * C::FieldElement::from(3);
+
+        let t0 = lhs.x * rhs.x; // 1
+        let t1 = lhs.y * rhs.y; // 2
+        let t3 = rhs.x + rhs.y; // 3
+        let t4 = lhs.x + lhs.y; // 4
+        let t3 = t3 * t4; // 5
+        let t4 = t0 + t1; // 6
+        let t3 = t3 - t4; // 7
+        let t4 = rhs.y * lhs.z; // 8
+        let t4 = t4 + lhs.y; // 9
+        let y3 = rhs.x * lhs.z; // 10
+        let y3 = y3 + lhs.x; // 11
+        let x3 = t0.double(); // 12
+        let t0 = x3 + t0; // 13
+        let t2 = b3 * lhs.z; // 14
+        let z3 = t1 + t2; // 15
+        let t1 = t1 - t2; // 16
+        let y3 = b3 * y3; // 17
+        let x3 = t4 * y3; // 18
+        let t2 = t3 * t1; // 19
+        let x3 = t2 - x3; // 20
+        let y3 = y3 * t0; // 21
+        let t1 = t1 * z3; // 22
+        let y3 = t1 + y3; // 23
+        let t0 = t0 * t3; // 24
+        let z3 = z3 * t4; // 25
+        let z3 = z3 + t0; // 26
+
+        let mut ret = ProjectivePoint {
+            x: x3,
+            y: y3,
+            z: z3,
+        };
+        ret.conditional_assign(lhs, rhs.is_identity());
+        ret
+    }
+
+    /// Implements point doubling for curves with `a = 0`
+    ///
+    /// Implements the exception-free point doubling formula from [Renes-Costello-Batina 2015]
+    /// (Algorithm 9). The comments after each line indicate which algorithm
+    /// steps are being performed.
+    ///
+    /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
+    fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+        debug_assert_eq!(
+            C::EQUATION_A,
+            C::FieldElement::ZERO,
+            "this implementation is only valid for C::EQUATION_A = 0"
+        );
+
+        let b3 = C::EQUATION_B * C::FieldElement::from(3);
+
+        let t0 = point.y.square(); // 1
+        let z3 = t0.double(); // 2
+        let z3 = z3.double(); // 3
+        let z3 = z3.double(); // 4
+        let t1 = point.y * point.z; // 5
+        let t2 = point.z.square(); // 6
+        let t2 = b3 * t2; // 7
+        let x3 = t2 * z3; // 8
+        let y3 = t0 + t2; // 9
+        let z3 = t1 * z3; // 10
+        let t1 = t2.double(); // 11
+        let t2 = t1 + t2; // 12
+        let t0 = t0 - t2; // 13
+        let y3 = t0 * y3; // 14
+        let y3 = x3 + y3; // 15
+        let t1 = point.x * point.y; // 16
+        let x3 = t0 * t1; // 17
+        let x3 = x3.double(); // 18
+
+        ProjectivePoint {
+            x: x3,
+            y: y3,
+            z: z3,
+        }
+    }
+}
