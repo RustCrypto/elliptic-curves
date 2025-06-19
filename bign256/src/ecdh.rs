@@ -20,7 +20,7 @@
 //! [`diffie_hellman`] function.
 //!
 //! [AKE]: https://en.wikipedia.org/wiki/Authenticated_Key_Exchange
-//! [SIGMA]: https://link.springer.com/chapter/10.1007/978-3-540-45146-4_24
+//! [SIGMA]: https://www.iacr.org/cryptodb/archive/2003/CRYPTO/1495/1495.pdf
 
 // use crate::{
 //     point::AffineCoordinates, AffinePoint, Curve, CurveArithmetic, FieldBytes, NonZeroScalar,
