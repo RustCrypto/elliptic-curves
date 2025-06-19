@@ -447,7 +447,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 0.5.4 (2020-09-27)
 ### Added
-- Impl `RecoverableSignPrimtive` on `Scalar` ([#206])
+- Impl `RecoverableSignPrimitive` on `Scalar` ([#206])
 - `recoverable::Signature::recover_verify_key_from_digest_bytes` ([#205])
 
 [#206]: https://github.com/RustCrypto/elliptic-curves/pull/206

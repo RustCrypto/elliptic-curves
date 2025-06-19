@@ -46,7 +46,7 @@
 //!
 //! # Other Features
 //! Signing and verifying also supports custom digest and prehash algorithms.
-//! Any algorith that implements [`PreHash`] and [`Digest`] can be used.
+//! Any algorithm that implements [`PreHash`] and [`Digest`] can be used.
 //! However, there are two implementations provided in this crate:
 //!
 //! - [`PreHasherXmd`] which supports any implementation of a fixed length digest like SHA3-512.

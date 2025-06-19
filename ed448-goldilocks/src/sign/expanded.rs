@@ -109,11 +109,11 @@ impl ExpandedSecretKey {
             return Err(SigningError::PrehashedContextLength);
         }
         // SHAKE256(dom4(F, C) || prefix || PH(M), 114) -> scalar r
-        let clen = ctx.len() as u8;
+        let ctx_len = ctx.len() as u8;
         let mut reader = Shake256::default()
             .chain(HASH_HEAD)
             .chain([phflag])
-            .chain([clen])
+            .chain([ctx_len])
             .chain(ctx)
             .chain(self.hash_prefix)
             .chain(m)
@@ -130,7 +130,7 @@ impl ExpandedSecretKey {
         reader = Shake256::default()
             .chain(HASH_HEAD)
             .chain([phflag])
-            .chain([clen])
+            .chain([ctx_len])
             .chain(ctx)
             .chain(compressed_r.as_bytes())
             .chain(self.public_key.compressed.as_bytes())
