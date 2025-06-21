@@ -340,9 +340,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.8.0-rc.4"
+version = "0.8.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c2e6107818886eff6b71fba7a2da3dd11025ebb80f0c9b94ff961168ef629f2"
+checksum = "9843074b9f917c0ae9144eeab6f7cb5c09fe6d4b79807a4aa7aa123d4d5eabd4"
 dependencies = [
  "const-oid",
  "pem-rfc7468",
@@ -363,9 +363,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.2"
+version = "0.17.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f386592dae0cda5d4bf90836794e096ef74f06e84ec309ad3a7e81e1053a0d2e"
+checksum = "908741ea702207ae9456173adf9aaa8fffdd3a057e55ca9c77f62a05b9ad08d1"
 dependencies = [
  "der",
  "digest",
@@ -871,7 +871,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-pre.5"
+version = "0.14.0-pre.6"
 dependencies = [
  "elliptic-curve",
  "serdect",
