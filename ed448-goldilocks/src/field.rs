@@ -8,11 +8,11 @@ use crate::curve::edwards::EdwardsPoint;
 use crate::curve::twedwards::extended::ExtendedPoint as TwExtendedPoint;
 
 use elliptic_curve::bigint::{
-    U448, impl_modulus,
+    U448, const_monty_params,
     modular::{ConstMontyForm, ConstMontyParams},
 };
 
-impl_modulus!(
+const_monty_params!(
     MODULUS,
     U448,
     "fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
