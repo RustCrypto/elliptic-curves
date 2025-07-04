@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Batch Normalization `normalizes_to_zero()` bug fix ([#1029])
 - Prevent panic when creating a Schnorr from slice ([#1056])
 
+### Removed
+- Implementation of `signature::PrehashSignature` on `schnorr::Signature` ([#1275])
+
 ## Changed
 - Update to `elliptic-curve` v0.14 ([#1011])
 - Update to `ecdsa` v0.17 ([#1011])
