@@ -12,9 +12,9 @@ use elliptic_curve::{
         NonZero, U448, U704,
         consts::{U84, U88},
     },
-    hash2curve::{FromOkm, MapToCurve},
     zeroize::DefaultIsZeroes,
 };
+use hash2curve::{FromOkm, MapToCurve};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
 
 #[derive(Clone, Copy, Default)]
@@ -420,10 +420,8 @@ impl FieldElement {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use elliptic_curve::{
-        consts::U32,
-        hash2curve::{ExpandMsg, ExpandMsgXof, Expander},
-    };
+    use elliptic_curve::consts::U32;
+    use hash2curve::{ExpandMsg, ExpandMsgXof, Expander};
     use hex_literal::hex;
     use sha3::Shake256;
 

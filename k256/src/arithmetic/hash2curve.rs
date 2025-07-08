@@ -2,10 +2,10 @@ use elliptic_curve::Field;
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
-use elliptic_curve::hash2curve::{
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use hash2curve::{
     FromOkm, GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
 };
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
@@ -268,14 +268,14 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
-        hash2curve::{FromOkm, GroupDigest, MapToCurve},
     };
+    use hash2curve::{FromOkm, GroupDigest, MapToCurve};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 
     #[test]
     fn hash_to_curve() {
-        use elliptic_curve::hash2curve::{self, ExpandMsgXmd};
+        use hash2curve::{self, ExpandMsgXmd};
         use hex_literal::hex;
         use sha2::Sha256;
 

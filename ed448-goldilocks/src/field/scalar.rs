@@ -11,10 +11,10 @@ use elliptic_curve::{
     bigint::{Limb, NonZero, U448, U704, U896, Word, Zero},
     consts::{U28, U84, U88, U114},
     ff::{Field, helpers},
-    hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
 };
+use hash2curve::{ExpandMsg, Expander, FromOkm};
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
 
@@ -841,8 +841,8 @@ impl Scalar {
     ///
     /// `len_in_bytes = <Self::Scalar as FromOkm>::Length`
     ///
-    /// [`ExpandMsgXmd`]: elliptic_curve::hash2curve::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: elliptic_curve::hash2curve::ExpandMsgXof
+    /// [`ExpandMsgXmd`]: hash2curve::ExpandMsgXmd
+    /// [`ExpandMsgXof`]: hash2curve::ExpandMsgXof
     pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
     where
         X: ExpandMsg<U28>,
@@ -1075,8 +1075,7 @@ mod test {
     fn scalar_hash() {
         let msg = b"hello world";
         let dst = b"edwards448_XOF:SHAKE256_ELL2_RO_";
-        let res =
-            Scalar::hash::<elliptic_curve::hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
+        let res = Scalar::hash::<hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
         let expected: [u8; 57] = hex_literal::hex!(
             "2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300"
         );

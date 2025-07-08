@@ -17,8 +17,9 @@ It is intended to be portable, fast, and safe.
 ## Usage
 
 ```rust
-use ed448_goldilocks::{EdwardsPoint, CompressedEdwardsY, Scalar, elliptic_curve::hash2curve::ExpandMsgXof, sha3::Shake256};
+use ed448_goldilocks::{EdwardsPoint, CompressedEdwardsY, Scalar, sha3::Shake256};
 use elliptic_curve::Field;
+use hash2curve::ExpandMsgXof;
 use rand_core::OsRng;
 
 let secret_key = Scalar::TWO;
