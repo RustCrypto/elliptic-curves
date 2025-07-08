@@ -3,7 +3,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::ConstMontyType;
 use crate::{
-    AffinePoint, Ed448, EdwardsPoint,
+    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::{
@@ -12,6 +12,7 @@ use elliptic_curve::{
         NonZero, U448, U704,
         consts::{U84, U88},
     },
+    group::cofactor::CofactorGroup,
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::{FromOkm, MapToCurve};
@@ -183,10 +184,27 @@ impl MapToCurve for Ed448 {
     type FieldElement = FieldElement;
 
     fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
-        element.map_to_curve_elligator2().to_edwards()
+        element.map_to_curve_elligator2().isogeny().to_edwards()
     }
 
     fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
+        point.clear_cofactor()
+    }
+
+    fn add_and_map_to_subgroup(lhs: EdwardsPoint, rhs: EdwardsPoint) -> EdwardsPoint {
+        (lhs + rhs).clear_cofactor()
+    }
+}
+
+impl MapToCurve for Decaf448 {
+    type CurvePoint = DecafPoint;
+    type FieldElement = FieldElement;
+
+    fn map_to_curve(element: FieldElement) -> DecafPoint {
+        DecafPoint(element.map_to_curve_decaf448())
+    }
+
+    fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
         point
     }
 }

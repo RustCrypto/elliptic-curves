@@ -5,15 +5,14 @@ use crate::*;
 
 use elliptic_curve::{
     CurveGroup, Error, Group,
-    array::{Array, typenum::Unsigned},
-    consts::{U32, U56, U84},
+    array::Array,
+    consts::U56,
     group::{GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     ops::LinearCombination,
     point::NonIdentity,
 };
 
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
-use hash2curve::{ExpandMsg, Expander, FromOkm};
 use rand_core::{CryptoRng, TryRngCore};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -346,35 +345,6 @@ impl DecafPoint {
         let mut uniform_bytes = [0u8; 112];
         rng.fill_bytes(&mut uniform_bytes);
         Self::from_uniform_bytes(&uniform_bytes)
-    }
-
-    /// Construct a `DecafPoint` using `ExpandMsg`.
-    ///
-    /// This function is similar to `hash_to_curve` in the IETF draft
-    /// where an expand_message function can be chosen and a domain
-    /// separation tag.
-    pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
-    where
-        X: ExpandMsg<U32>,
-    {
-        type RandomLen = U84;
-        let dst = [dst];
-        let mut random_bytes = Array::<u8, RandomLen>::default();
-        let mut expander = X::expand_message(
-            &[msg],
-            &dst,
-            core::num::NonZero::new(RandomLen::U16 * 2)
-                .expect("invariant violation: random is non zero length"),
-        )
-        .expect("bad dst");
-        expander.fill_bytes(&mut random_bytes);
-        let u0 = FieldElement::from_okm(&random_bytes);
-        expander.fill_bytes(&mut random_bytes);
-        let u1 = FieldElement::from_okm(&random_bytes);
-
-        let q0 = u0.map_to_curve_decaf448();
-        let q1 = u1.map_to_curve_decaf448();
-        Self(q0.add(&q1))
     }
 
     /// Construct a `DecafPoint` from 112 bytes of data.
@@ -774,7 +744,11 @@ mod test {
         use hash2curve::ExpandMsgXof;
 
         let msg = b"Hello, world!";
-        let point = DecafPoint::hash::<ExpandMsgXof<sha3::Shake256>>(msg, b"test_hash_to_curve");
+        let point = Decaf448::hash_from_bytes::<ExpandMsgXof<sha3::Shake256>>(
+            &[msg],
+            &[b"test_hash_to_curve"],
+        )
+        .unwrap();
         assert_eq!(point.0.is_on_curve().unwrap_u8(), 1u8);
         assert_ne!(point, DecafPoint::IDENTITY);
         assert_ne!(point, DecafPoint::GENERATOR);

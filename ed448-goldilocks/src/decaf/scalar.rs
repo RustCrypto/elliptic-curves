@@ -87,6 +87,7 @@ mod test {
     use super::*;
     use elliptic_curve::PrimeField;
     use elliptic_curve::array::Array;
+    use hash2curve::GroupDigest;
     use hex_literal::hex;
 
     #[test]
@@ -283,7 +284,9 @@ mod test {
     fn scalar_hash() {
         let msg = b"hello world";
         let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
-        let res = DecafScalar::hash::<hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
+        let res =
+            Decaf448::hash_to_scalar::<hash2curve::ExpandMsgXof<sha3::Shake256>>(&[msg], &[dst])
+                .unwrap();
         let expected: [u8; 56] = hex_literal::hex!(
             "55e7b59aa035db959409c6b69b817a18c8133d9ad06687665f5720672924da0a84eab7fee415ef13e7aaebdd227291ee8e156f32c507ad2e"
         );
