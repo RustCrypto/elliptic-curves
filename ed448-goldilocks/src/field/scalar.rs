@@ -698,11 +698,6 @@ impl Scalar {
         bits
     }
 
-    /// Construct a `Scalar` from a little-endian byte representation.
-    pub fn from_bytes(bytes: &[u8; 56]) -> Scalar {
-        Self(U448::from_le_slice(bytes))
-    }
-
     /// Convert this `Scalar` to a little-endian byte array.
     pub fn to_bytes(&self) -> [u8; 56] {
         let bytes = self.0.to_le_bytes();
@@ -780,7 +775,7 @@ impl Scalar {
         // Check that the 10 high bits are not set
         let is_valid = is_zero(bytes[56]) | is_zero(bytes[55] >> 6);
         let bytes: [u8; 56] = core::array::from_fn(|i| bytes[i]);
-        let candidate = Scalar::from_bytes(&bytes);
+        let candidate = Scalar(U448::from_le_slice(&bytes));
 
         // underflow means candidate < ORDER, thus canonical
         let (_, underflow) = candidate.0.borrowing_sub(&ORDER, Limb::ZERO);
@@ -971,7 +966,7 @@ mod test {
         let scalar = Scalar(U448::from_be_hex(
             "0d79f6e375d3395ed9a6c4c3c49a1433fd7c58aa38363f74e9ab2c22a22347d79988f8e01e8a309f862a9f1052fcd042b9b1ed7115598f62",
         ));
-        let got = Scalar::from_bytes(&scalar.to_bytes());
+        let got = Scalar::from_canonical_bytes(&scalar.into()).unwrap();
         assert_eq!(scalar, got)
     }
     #[test]
