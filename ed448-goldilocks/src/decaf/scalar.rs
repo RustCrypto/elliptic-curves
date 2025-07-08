@@ -1,9 +1,11 @@
 use crate::field::{CurveWithScalar, NZ_ORDER, Scalar, ScalarBytes, WideScalarBytes};
 use crate::{Decaf448, ORDER};
 
-use elliptic_curve::bigint::{Limb, U448};
-use elliptic_curve::consts::U56;
+use elliptic_curve::array::Array;
+use elliptic_curve::bigint::{Limb, NonZero, U448, U512};
+use elliptic_curve::consts::{U56, U64};
 use elliptic_curve::scalar::FromUintUnchecked;
+use hash2curve::FromOkm;
 use subtle::{Choice, CtOption};
 
 impl CurveWithScalar for Decaf448 {
@@ -61,6 +63,22 @@ pub type WideDecafScalarBytes = WideScalarBytes<Decaf448>;
 impl From<&DecafScalar> for elliptic_curve::scalar::ScalarBits<Decaf448> {
     fn from(scalar: &DecafScalar) -> Self {
         scalar.scalar.to_words().into()
+    }
+}
+
+impl FromOkm for DecafScalar {
+    type Length = U64;
+
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+        const SEMI_WIDE_MODULUS: NonZero<U512> = NonZero::<U512>::new_unwrap(U512::from_be_hex(
+            "00000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
+        ));
+
+        let mut num = U512::from_le_slice(data);
+        num %= SEMI_WIDE_MODULUS;
+        let mut words = [0; U448::LIMBS];
+        words.copy_from_slice(&num.to_words()[..U448::LIMBS]);
+        Scalar::new(U448::from_words(words))
     }
 }
 
@@ -267,7 +285,7 @@ mod test {
         let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
         let res = DecafScalar::hash::<hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
         let expected: [u8; 56] = hex_literal::hex!(
-            "fc26b5e525171661910e3520a5e81fb38f9081d98eb5e34cf9ca1b06b1f5dd80dd398b50a300a649bbaa39c0bbe0ed60a9fc894b1cb5e919"
+            "55e7b59aa035db959409c6b69b817a18c8133d9ad06687665f5720672924da0a84eab7fee415ef13e7aaebdd227291ee8e156f32c507ad2e"
         );
         assert_eq!(res.to_repr(), Array::from(expected));
     }

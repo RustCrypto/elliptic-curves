@@ -13,8 +13,8 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Limb, NonZero, U448, U704, U896, Word, Zero},
-    consts::{U2, U28, U84, U88},
+    bigint::{Limb, NonZero, U448, U896, Word, Zero},
+    consts::{U2, U28},
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
@@ -471,24 +471,6 @@ impl<C: CurveWithScalar> core::fmt::UpperHex for Scalar<C> {
     }
 }
 
-impl<C: CurveWithScalar> FromOkm for Scalar<C> {
-    type Length = U84;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
-        const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex(
-            "00000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
-        ));
-        let mut tmp = Array::<u8, U88>::default();
-        tmp[4..].copy_from_slice(&data[..]);
-
-        let mut num = U704::from_be_slice(&tmp[..]);
-        num %= SEMI_WIDE_MODULUS;
-        let mut words = [0; U448::LIMBS];
-        words.copy_from_slice(&num.to_words()[..U448::LIMBS]);
-        Scalar::new(U448::from_words(words))
-    }
-}
-
 impl<C: CurveWithScalar> Reduce<U448> for Scalar<C> {
     type Bytes = ScalarBytes<C>;
 
@@ -842,7 +824,12 @@ impl<C: CurveWithScalar> Scalar<C> {
         rng.fill_bytes(&mut scalar_bytes);
         C::from_bytes_mod_order_wide(&scalar_bytes)
     }
+}
 
+impl<C: CurveWithScalar> Scalar<C>
+where
+    Self: FromOkm,
+{
     /// Computes the hash to field routine according to Section 5
     /// <https://datatracker.ietf.org/doc/rfc9380/>
     /// and returns a scalar.
@@ -860,13 +847,12 @@ impl<C: CurveWithScalar> Scalar<C> {
     where
         X: ExpandMsg<U28>,
     {
-        type RandomLen = U84;
-        let mut random_bytes = Array::<u8, RandomLen>::default();
+        let mut random_bytes = Array::<u8, <Self as FromOkm>::Length>::default();
         let dst = [dst];
         let mut expander = X::expand_message(
             &[msg],
             &dst,
-            core::num::NonZero::new(RandomLen::U16).expect("Invariant violation"),
+            core::num::NonZero::new(<Self as FromOkm>::Length::U16).expect("Invariant violation"),
         )
         .expect("invalid dst");
         expander.fill_bytes(&mut random_bytes);
