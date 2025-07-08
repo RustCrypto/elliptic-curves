@@ -364,7 +364,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.4"
-source = "git+https://github.com/carloskiki/signatures.git#8741276c5d13fb4dcc9aeb915292f9b9fbabf1ef"
+source = "git+https://github.com/RustCrypto/signatures.git#23623f57ed26315834d6b2ab5b4901563e55105a"
 dependencies = [
  "der",
  "digest",
