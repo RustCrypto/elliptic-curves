@@ -19,7 +19,7 @@ use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
 /// Ed448 secret key as defined in [RFC8032 § 5.2.5]
 ///
 /// The private key is 57 octets (448 bits, 56 bytes) long.
-pub type SecretKey = ScalarBytes;
+pub type SecretKey = EdwardsScalarBytes;
 
 /// Signing hash trait for Ed448ph
 pub trait PreHash {
@@ -198,7 +198,7 @@ impl TryFrom<&[u8]> for SigningKey {
             return Err("Invalid length for a signing key");
         }
         Ok(Self::from(
-            ScalarBytes::try_from(value).expect("Invalid length"),
+            EdwardsScalarBytes::try_from(value).expect("Invalid length"),
         ))
     }
 }
@@ -460,11 +460,11 @@ impl SigningKey {
         &self.secret.seed
     }
 
-    /// Return the clamped [`Scalar`] for this [`SigningKey`].
+    /// Return the clamped [`EdwardsScalar`] for this [`SigningKey`].
     ///
     /// This is the scalar that is actually used for signing.
     /// Be warned, this is secret material that should be handled with care.
-    pub fn to_scalar(&self) -> Scalar {
+    pub fn to_scalar(&self) -> EdwardsScalar {
         self.secret.scalar
     }
 

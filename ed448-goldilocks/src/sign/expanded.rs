@@ -1,6 +1,6 @@
 use crate::{
-    EdwardsPoint, SECRET_KEY_LENGTH, Scalar, ScalarBytes, SecretKey, SigningError, VerifyingKey,
-    WideScalarBytes,
+    EdwardsPoint, EdwardsScalar, EdwardsScalarBytes, SECRET_KEY_LENGTH, SecretKey, SigningError,
+    VerifyingKey, WideEdwardsScalarBytes,
     sign::{HASH_HEAD, InnerSignature},
 };
 use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
@@ -12,9 +12,9 @@ use sha3::{
 #[derive(Clone)]
 pub struct ExpandedSecretKey {
     pub(crate) seed: SecretKey,
-    pub(crate) scalar: Scalar,
+    pub(crate) scalar: EdwardsScalar,
     pub(crate) public_key: VerifyingKey,
-    pub(crate) hash_prefix: ScalarBytes,
+    pub(crate) hash_prefix: EdwardsScalarBytes,
 }
 
 impl Zeroize for ExpandedSecretKey {
@@ -42,9 +42,9 @@ impl ZeroizeOnDrop for ExpandedSecretKey {}
 impl ExpandedSecretKey {
     pub fn from_seed(seed: &SecretKey) -> Self {
         let mut reader = Shake256::default().chain(seed).finalize_xof();
-        let mut bytes = WideScalarBytes::default();
+        let mut bytes = WideEdwardsScalarBytes::default();
         reader.read(&mut bytes);
-        let mut scalar_bytes = ScalarBytes::default();
+        let mut scalar_bytes = EdwardsScalarBytes::default();
         scalar_bytes.copy_from_slice(&bytes[..SECRET_KEY_LENGTH]);
 
         // The two least significant bits of the first byte are cleared
@@ -54,9 +54,9 @@ impl ExpandedSecretKey {
         scalar_bytes[56] = 0;
         scalar_bytes[55] |= 0x80;
 
-        let scalar = Scalar::from_bytes_mod_order(&scalar_bytes);
+        let scalar = EdwardsScalar::from_bytes_mod_order(&scalar_bytes);
 
-        let mut hash_prefix = ScalarBytes::default();
+        let mut hash_prefix = EdwardsScalarBytes::default();
         hash_prefix.copy_from_slice(&bytes[SECRET_KEY_LENGTH..]);
 
         let point = EdwardsPoint::GENERATOR * scalar;
@@ -118,9 +118,9 @@ impl ExpandedSecretKey {
             .chain(self.hash_prefix)
             .chain(m)
             .finalize_xof_reset();
-        let mut bytes = WideScalarBytes::default();
+        let mut bytes = WideEdwardsScalarBytes::default();
         reader.read(&mut bytes);
-        let r = Scalar::from_bytes_mod_order_wide(&bytes);
+        let r = EdwardsScalar::from_bytes_mod_order_wide(&bytes);
 
         // R = r*B
         let big_r = EdwardsPoint::GENERATOR * r;
@@ -137,7 +137,7 @@ impl ExpandedSecretKey {
             .chain(m)
             .finalize_xof();
         reader.read(&mut bytes);
-        let k = Scalar::from_bytes_mod_order_wide(&bytes);
+        let k = EdwardsScalar::from_bytes_mod_order_wide(&bytes);
         Ok(InnerSignature {
             r: big_r,
             s: r + k * self.scalar,

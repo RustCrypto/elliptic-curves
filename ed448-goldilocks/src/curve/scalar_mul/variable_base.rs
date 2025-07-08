@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
 use super::window::wnaf::LookupTable;
+use crate::EdwardsScalar;
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
-use crate::field::Scalar;
 use subtle::{Choice, ConditionallyNegatable};
 
-pub fn variable_base(point: &ExtendedPoint, s: &Scalar) -> ExtendedPoint {
+pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtendedPoint {
     let mut result = ExtensiblePoint::IDENTITY;
 
     // Recode Scalar
@@ -45,13 +45,13 @@ mod test {
     fn test_scalar_mul() {
         // XXX: In the future use known multiples from Sage in bytes form?
         let twisted_point = TWISTED_EDWARDS_BASE_POINT;
-        let scalar = Scalar(U448::from_be_hex(
+        let scalar = EdwardsScalar::new(U448::from_be_hex(
             "05ca185aee2e1b73def437f63c003777083f83043fe5bf1aab454c66b64629d1de8026c1307f665ead0b70151533427ce128ae786ee372b7",
         ));
 
         let got = variable_base(&twisted_point, &scalar);
 
-        let got2 = double_and_add(&twisted_point, &scalar);
+        let got2 = double_and_add(&twisted_point, scalar.bits());
         assert_eq!(got, got2);
 
         // Lets see if this is conserved over the isogenies
@@ -66,12 +66,12 @@ mod test {
         let x = TWISTED_EDWARDS_BASE_POINT;
 
         // Test that 1 * P = P
-        let exp = variable_base(&x, &Scalar::from(1u8));
+        let exp = variable_base(&x, &EdwardsScalar::from(1u8));
         assert!(x == exp);
         // Test that 2 * (P + P) = 4 * P
         let x_ext = x.to_extensible();
         let expected_two_x = x_ext.add_extensible(&x_ext).double();
-        let got = variable_base(&x, &Scalar::from(4u8));
+        let got = variable_base(&x, &EdwardsScalar::from(4u8));
         assert!(expected_two_x.to_extended() == got);
     }
 }

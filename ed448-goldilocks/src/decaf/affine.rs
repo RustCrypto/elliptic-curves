@@ -1,8 +1,12 @@
 use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
 use crate::field::FieldElement;
-use crate::{DecafPoint, Scalar};
+use crate::{Decaf448FieldBytes, DecafPoint, DecafScalar};
 use core::ops::Mul;
-use elliptic_curve::{Error, point::NonIdentity, zeroize::DefaultIsZeroes};
+use elliptic_curve::{
+    Error,
+    point::{AffineCoordinates, NonIdentity},
+    zeroize::DefaultIsZeroes,
+};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 /// Affine point on the twisted curve
@@ -32,26 +36,25 @@ impl PartialEq for AffinePoint {
 
 impl Eq for AffinePoint {}
 
-// TODO(tarcieri): RustCrypto/elliptic-curves#1229
-// impl AffineCoordinates for AffinePoint {
-//     type FieldRepr = Decaf448FieldBytes;
-//
-//     fn x(&self) -> Self::FieldRepr {
-//         Decaf448FieldBytes::from(self.x())
-//     }
-//
-//     fn y(&self) -> Self::FieldRepr {
-//         Decaf448FieldBytes::from(self.y())
-//     }
-//
-//     fn x_is_odd(&self) -> Choice {
-//         self.0.x.is_negative()
-//     }
-//
-//     fn y_is_odd(&self) -> Choice {
-//         self.0.y.is_negative()
-//     }
-// }
+impl AffineCoordinates for AffinePoint {
+    type FieldRepr = Decaf448FieldBytes;
+
+    fn x(&self) -> Self::FieldRepr {
+        Decaf448FieldBytes::from(self.x())
+    }
+
+    fn y(&self) -> Self::FieldRepr {
+        Decaf448FieldBytes::from(self.y())
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.0.x.is_negative()
+    }
+
+    fn y_is_odd(&self) -> Choice {
+        self.0.y.is_negative()
+    }
+}
 
 impl DefaultIsZeroes for AffinePoint {}
 
@@ -65,11 +68,8 @@ impl AffinePoint {
     }
 
     /// The X coordinate
-    pub fn x(&self) -> [u8; 57] {
-        // TODO(RustCrypto/elliptic-curves#1229): fix this to be 56 bytes as per
-        // https://datatracker.ietf.org/doc/draft-irtf-cfrg-ristretto255-decaf448
-        // This might require creating a separate DecafScalar
-        self.0.x.to_bytes_extended()
+    pub fn x(&self) -> [u8; 56] {
+        self.0.x.to_bytes()
     }
 
     /// The Y coordinate
@@ -93,45 +93,46 @@ impl From<NonIdentity<AffinePoint>> for AffinePoint {
     }
 }
 
-impl Mul<Scalar> for AffinePoint {
+impl Mul<DecafScalar> for AffinePoint {
     type Output = DecafPoint;
 
     #[inline]
-    fn mul(self, scalar: Scalar) -> DecafPoint {
+    #[expect(clippy::op_ref, reason = "false-positive")]
+    fn mul(self, scalar: DecafScalar) -> DecafPoint {
         &self * scalar
     }
 }
 
 #[allow(clippy::op_ref)] // https://github.com/rust-lang/rust-clippy/issues/12463
-impl Mul<Scalar> for &AffinePoint {
+impl Mul<DecafScalar> for &AffinePoint {
     type Output = DecafPoint;
 
     #[inline]
-    fn mul(self, scalar: Scalar) -> DecafPoint {
+    fn mul(self, scalar: DecafScalar) -> DecafPoint {
         self * &scalar
     }
 }
 
 #[allow(clippy::op_ref)] // https://github.com/rust-lang/rust-clippy/issues/12463
-impl Mul<&Scalar> for AffinePoint {
+impl Mul<&DecafScalar> for AffinePoint {
     type Output = DecafPoint;
 
     #[inline]
-    fn mul(self, scalar: &Scalar) -> DecafPoint {
+    fn mul(self, scalar: &DecafScalar) -> DecafPoint {
         &self * scalar
     }
 }
 
-impl Mul<&Scalar> for &AffinePoint {
+impl Mul<&DecafScalar> for &AffinePoint {
     type Output = DecafPoint;
 
     #[inline]
-    fn mul(self, scalar: &Scalar) -> DecafPoint {
+    fn mul(self, scalar: &DecafScalar) -> DecafPoint {
         self.to_decaf() * scalar
     }
 }
 
-impl Mul<AffinePoint> for Scalar {
+impl Mul<AffinePoint> for DecafScalar {
     type Output = DecafPoint;
 
     #[inline]
@@ -140,7 +141,7 @@ impl Mul<AffinePoint> for Scalar {
     }
 }
 
-impl Mul<&AffinePoint> for Scalar {
+impl Mul<&AffinePoint> for DecafScalar {
     type Output = DecafPoint;
 
     #[inline]

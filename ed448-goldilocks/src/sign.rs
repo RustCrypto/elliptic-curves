@@ -87,7 +87,7 @@ pub use signature;
 pub use signing_key::*;
 pub use verifying_key::*;
 
-use crate::{CompressedEdwardsY, EdwardsPoint, Scalar};
+use crate::{CompressedEdwardsY, EdwardsPoint, EdwardsScalar};
 use elliptic_curve::array::Array;
 
 /// Length of a secret key in bytes
@@ -127,7 +127,7 @@ impl TryFrom<&Signature> for InnerSignature {
 
     fn try_from(signature: &Signature) -> Result<Self, Self::Error> {
         let s_bytes: &Array<u8, _> = (signature.s_bytes()).into();
-        let s = Option::from(Scalar::from_canonical_bytes(s_bytes))
+        let s = Option::from(EdwardsScalar::from_canonical_bytes(s_bytes))
             .ok_or(SigningError::InvalidSignatureSComponent)?;
         let r = Option::from(CompressedEdwardsY::from(*signature.r_bytes()).decompress())
             .ok_or(SigningError::InvalidSignatureRComponent)?;
@@ -137,7 +137,7 @@ impl TryFrom<&Signature> for InnerSignature {
 
 pub(crate) struct InnerSignature {
     pub(crate) r: EdwardsPoint,
-    pub(crate) s: Scalar,
+    pub(crate) s: EdwardsScalar,
 }
 
 impl TryFrom<Signature> for InnerSignature {

@@ -3,12 +3,12 @@ use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::constants::BASEPOINT_ORDER;
+use crate::constants::EDWARDS_BASEPOINT_ORDER;
 use crate::curve::edwards::affine::AffinePoint;
 use crate::curve::montgomery::MontgomeryPoint; // XXX: need to fix this path
 use crate::curve::scalar_mul::variable_base;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
-use crate::field::{FieldElement, Scalar};
+use crate::field::FieldElement;
 use crate::*;
 use elliptic_curve::{
     CurveGroup, Error,
@@ -339,7 +339,7 @@ impl PartialEq for EdwardsPoint {
 impl Eq for EdwardsPoint {}
 
 impl Group for EdwardsPoint {
-    type Scalar = Scalar;
+    type Scalar = EdwardsScalar;
 
     fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
@@ -508,9 +508,9 @@ impl From<&EdwardsPoint> for AffinePoint {
     }
 }
 
-impl<const N: usize> LinearCombination<[(EdwardsPoint, Scalar); N]> for EdwardsPoint {}
+impl<const N: usize> LinearCombination<[(EdwardsPoint, EdwardsScalar); N]> for EdwardsPoint {}
 
-impl LinearCombination<[(EdwardsPoint, Scalar)]> for EdwardsPoint {}
+impl LinearCombination<[(EdwardsPoint, EdwardsScalar)]> for EdwardsPoint {}
 
 impl CurveGroup for EdwardsPoint {
     type AffineRepr = AffinePoint;
@@ -546,7 +546,7 @@ impl EdwardsPoint {
     }
 
     /// Generic scalar multiplication to compute s*P
-    pub fn scalar_mul(&self, scalar: &Scalar) -> Self {
+    pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
         // Compute floor(s/4)
         let mut scalar_div_four = *scalar;
         scalar_div_four.div_by_four();
@@ -558,7 +558,7 @@ impl EdwardsPoint {
     }
 
     /// Returns (scalar mod 4) * P in constant time
-    pub(crate) fn scalar_mod_four(&self, scalar: &Scalar) -> Self {
+    pub(crate) fn scalar_mod_four(&self, scalar: &EdwardsScalar) -> Self {
         // Compute compute (scalar mod 4)
         let s_mod_four = scalar[0] & 3;
 
@@ -727,7 +727,7 @@ impl EdwardsPoint {
     /// * `false` if `self` has a nonzero torsion component and is not
     ///   in the prime-order subgroup.
     pub fn is_torsion_free(&self) -> Choice {
-        (self * BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        (self * EDWARDS_BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
     }
 
     /// Hash a message to a point on the curve
@@ -972,28 +972,36 @@ impl Neg for EdwardsPoint {
 // Scalar multiplication
 // ------------------------------------------------------------------------
 
-impl<'b> MulAssign<&'b Scalar> for EdwardsPoint {
-    fn mul_assign(&mut self, scalar: &'b Scalar) {
+impl<'b> MulAssign<&'b EdwardsScalar> for EdwardsPoint {
+    fn mul_assign(&mut self, scalar: &'b EdwardsScalar) {
         let result = *self * scalar;
         *self = result;
     }
 }
 
-define_mul_assign_variants!(LHS = EdwardsPoint, RHS = Scalar);
+define_mul_assign_variants!(LHS = EdwardsPoint, RHS = EdwardsScalar);
 
-define_mul_variants!(LHS = EdwardsPoint, RHS = Scalar, Output = EdwardsPoint);
-define_mul_variants!(LHS = Scalar, RHS = EdwardsPoint, Output = EdwardsPoint);
+define_mul_variants!(
+    LHS = EdwardsPoint,
+    RHS = EdwardsScalar,
+    Output = EdwardsPoint
+);
+define_mul_variants!(
+    LHS = EdwardsScalar,
+    RHS = EdwardsPoint,
+    Output = EdwardsPoint
+);
 
-impl Mul<&Scalar> for &EdwardsPoint {
+impl Mul<&EdwardsScalar> for &EdwardsPoint {
     type Output = EdwardsPoint;
 
     /// Scalar multiplication: compute `scalar * self`.
-    fn mul(self, scalar: &Scalar) -> EdwardsPoint {
+    fn mul(self, scalar: &EdwardsScalar) -> EdwardsPoint {
         self.scalar_mul(scalar)
     }
 }
 
-impl Mul<&EdwardsPoint> for &Scalar {
+impl Mul<&EdwardsPoint> for &EdwardsScalar {
     type Output = EdwardsPoint;
 
     /// Scalar multiplication: compute `scalar * self`.
@@ -1295,24 +1303,24 @@ mod tests {
         use rand_core::SeedableRng;
 
         let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
-        let x = Scalar::random(&mut rng);
-        let b = Scalar::random(&mut rng);
+        let x = EdwardsScalar::random(&mut rng);
+        let b = EdwardsScalar::random(&mut rng);
 
         let g1 = EdwardsPoint::GENERATOR;
         let g2 = EdwardsPoint::hash_with_defaults(b"test_pow_add_mul");
 
         let expected_commitment = g1 * x + g2 * b;
 
-        let shift = Scalar::from(256u16);
+        let shift = EdwardsScalar::from(256u16);
         let x_bytes = x.to_bytes_rfc_8032();
-        let mut sum = Scalar::ZERO;
+        let mut sum = EdwardsScalar::ZERO;
         let mut components = [EdwardsPoint::IDENTITY; 57];
         for i in 1..57 {
-            let r = Scalar::random(&mut rng);
+            let r = EdwardsScalar::random(&mut rng);
             sum += r * shift.pow([i as u64]);
-            components[i] = g1 * Scalar::from(x_bytes[i]) + g2 * r;
+            components[i] = g1 * EdwardsScalar::from(x_bytes[i]) + g2 * r;
         }
-        components[0] = g1 * Scalar::from(x_bytes[0]) + g2 * (b - sum);
+        components[0] = g1 * EdwardsScalar::from(x_bytes[0]) + g2 * (b - sum);
 
         let mut computed_commitment = EdwardsPoint::IDENTITY;
         for i in (0..57).rev() {

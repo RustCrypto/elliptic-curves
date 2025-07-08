@@ -136,16 +136,17 @@ impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
     }
 }
 
-impl Mul<AffinePoint> for Scalar {
+impl Mul<AffinePoint> for EdwardsScalar {
     type Output = EdwardsPoint;
 
     #[inline]
+    #[expect(clippy::op_ref, reason = "false-positive")]
     fn mul(self, rhs: AffinePoint) -> EdwardsPoint {
         self * &rhs
     }
 }
 
-impl Mul<&AffinePoint> for Scalar {
+impl Mul<&AffinePoint> for EdwardsScalar {
     type Output = EdwardsPoint;
 
     #[inline]
