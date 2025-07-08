@@ -338,27 +338,6 @@ impl FieldElement {
         (inv_sqrt_x * u, zero_u | is_res)
     }
 
-    /// Computes the square root ratio of two elements
-    ///
-    /// The difference between this and `sqrt_ratio` is that
-    /// if the input is non-square, the function returns a result with
-    /// a defined relationship to the inputs.
-    pub(crate) fn sqrt_ratio_i(u: &FieldElement, v: &FieldElement) -> (FieldElement, Choice) {
-        const P_MINUS_THREE_DIV_4: U448 = U448::from_be_hex(
-            "3fffffffffffffffffffffffffffffffffffffffffffffffffffffffbfffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-        );
-        let u = u.0;
-        let v = v.0;
-
-        let r = u * (u * v).pow(&P_MINUS_THREE_DIV_4);
-        let check = v * r.square();
-        let was_square = check.ct_eq(&u);
-
-        let mut r = FieldElement(r);
-        r.conditional_negate(r.is_negative());
-        (r, was_square)
-    }
-
     pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
@@ -382,38 +361,49 @@ impl FieldElement {
         AffinePoint { x, y }
     }
 
+    // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
+    // Implementation copied from <https://sourceforge.net/p/ed448goldilocks/code/ci/e5cc6240690d3ffdfcbdb1e4e851954b789cd5d9/tree/src/per_curve/elligator.tmpl.c#l28>.
     pub(crate) fn map_to_curve_decaf448(&self) -> TwistedExtendedPoint {
         const ONE_MINUS_TWO_D: FieldElement =
             FieldElement(ConstMontyType::new(&U448::from_u64(78163)));
 
         let r = -self.square();
-        let u0 = Self::EDWARDS_D * (r - Self::ONE);
-        let u1 = (u0 + Self::ONE) * (u0 - r);
 
-        let rhs = (r + Self::ONE) * u1;
-        let (v, was_square) = Self::sqrt_ratio_i(&ONE_MINUS_TWO_D, &rhs);
+        let a = r - Self::ONE;
+        let b = a * Self::EDWARDS_D;
+        let a = b + Self::ONE;
+        let b = b - r;
+        let c = a * b;
 
-        let mut v_prime = self * v;
-        v_prime.conditional_assign(&v, was_square);
-        let mut sgn = Self::MINUS_ONE;
-        sgn.conditional_negate(was_square);
+        let a = r + Self::ONE;
+        let n = a * ONE_MINUS_TWO_D;
 
-        let s = v_prime * (r + Self::ONE);
-        let s2 = s.square();
-        let s_abs = Self::conditional_select(&s, &s.neg(), s.is_negative());
+        let a = c * n;
+        let (b, square) = a.inverse_square_root();
+        let c = Self::conditional_select(self, &Self::ONE, square);
+        let e = b * c;
 
-        let w0 = s_abs + s_abs;
-        let w1 = s2 + Self::ONE;
-        let w2 = s2 - Self::ONE;
-        let w3 = v_prime * s * (r - Self::ONE) * ONE_MINUS_TWO_D + sgn;
+        let mut a = n * e;
+        a.conditional_negate(!Choice::from(a.0.retrieve().bit(0)) ^ square);
 
-        EdwardsPoint {
-            X: w0 * w3,
-            Y: w2 * w1,
-            Z: w1 * w3,
-            T: w0 * w2,
-        }
-        .to_twisted()
+        let c = e * ONE_MINUS_TWO_D;
+        let b = c.square();
+        let e = r - Self::ONE;
+        let c = b * e;
+        let mut b = c * n;
+        b.conditional_negate(square);
+        let b = b - Self::ONE;
+
+        let c = a.square();
+        let a = a + a;
+        let e = c + Self::ONE;
+        let T = a * e;
+        let X = a * b;
+        let a = Self::ONE - c;
+        let Y = e * a;
+        let Z = a * b;
+
+        TwistedExtendedPoint { X, Y, Z, T }
     }
 }
 
