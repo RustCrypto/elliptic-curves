@@ -4,8 +4,8 @@
 use crate::curve::edwards::extended::PointBytes;
 use crate::sign::{HASH_HEAD, InnerSignature};
 use crate::{
-    CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, Signature, SigningError,
-    WideScalarBytes,
+    CompressedEdwardsY, Context, EdwardsPoint, EdwardsScalar, PreHash, Signature, SigningError,
+    WideEdwardsScalarBytes,
 };
 
 #[cfg(feature = "serde")]
@@ -277,7 +277,7 @@ impl VerifyingKey {
         }
 
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
-        let mut bytes = WideScalarBytes::default();
+        let mut bytes = WideEdwardsScalarBytes::default();
         let ctx_len = ctx.len() as u8;
         let mut reader = Shake256::default()
             .chain(HASH_HEAD)
@@ -289,7 +289,7 @@ impl VerifyingKey {
             .chain(m)
             .finalize_xof();
         reader.read(&mut bytes);
-        let k = Scalar::from_bytes_mod_order_wide(&bytes);
+        let k = EdwardsScalar::from_bytes_mod_order_wide(&bytes);
         // Check the verification equation [S]B = R + [k]A.
         let lhs = EdwardsPoint::GENERATOR * inner_signature.s;
         let rhs = inner_signature.r + (self.point * k);

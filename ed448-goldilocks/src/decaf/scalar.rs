@@ -1,0 +1,274 @@
+use crate::field::{CurveWithScalar, NZ_ORDER, Scalar, ScalarBytes, WideScalarBytes};
+use crate::{Decaf448, ORDER};
+
+use elliptic_curve::bigint::{Limb, U448};
+use elliptic_curve::consts::U56;
+use elliptic_curve::scalar::FromUintUnchecked;
+use subtle::{Choice, CtOption};
+
+impl CurveWithScalar for Decaf448 {
+    type ReprSize = U56;
+
+    fn from_bytes_mod_order_wide(input: &WideScalarBytes<Self>) -> Scalar<Self> {
+        let value = (
+            U448::from_le_slice(&input[..56]),
+            U448::from_le_slice(&input[56..112]),
+        );
+        Scalar::new(U448::rem_wide_vartime(value, &NZ_ORDER))
+    }
+
+    fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {
+        fn is_zero(b: u8) -> Choice {
+            let res = b as i8;
+            Choice::from((((res | -res) >> 7) + 1) as u8)
+        }
+
+        // Check that the 10 high bits are not set
+        let is_valid = is_zero(bytes[55] >> 6);
+        let bytes: [u8; 56] = core::array::from_fn(|i| bytes[i]);
+        let candidate = Scalar::new(U448::from_le_slice(&bytes));
+
+        // underflow means candidate < ORDER, thus canonical
+        let (_, underflow) = candidate.scalar.borrowing_sub(&ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
+        CtOption::new(candidate, underflow & is_valid)
+    }
+
+    fn to_repr(scalar: &Scalar<Self>) -> ScalarBytes<Self> {
+        scalar.to_bytes().into()
+    }
+}
+
+/// [`Decaf448`] scalar field.
+pub type DecafScalar = Scalar<Decaf448>;
+
+impl DecafScalar {
+    /// Construct a `Scalar` by reducing a 896-bit little-endian integer
+    /// modulo the group order ℓ.
+    pub fn from_bytes_mod_order_wide(input: &WideDecafScalarBytes) -> DecafScalar {
+        Decaf448::from_bytes_mod_order_wide(input)
+    }
+}
+
+elliptic_curve::scalar_from_impls!(Decaf448, DecafScalar);
+
+/// The number of bytes needed to represent the scalar field
+pub type DecafScalarBytes = ScalarBytes<Decaf448>;
+/// The number of bytes needed to represent the safely create a scalar from a random bytes
+pub type WideDecafScalarBytes = WideScalarBytes<Decaf448>;
+
+#[cfg(feature = "bits")]
+impl From<&DecafScalar> for elliptic_curve::scalar::ScalarBits<Decaf448> {
+    fn from(scalar: &DecafScalar) -> Self {
+        scalar.scalar.to_words().into()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use elliptic_curve::PrimeField;
+    use elliptic_curve::array::Array;
+    use hex_literal::hex;
+
+    #[test]
+    fn test_basic_add() {
+        let five = DecafScalar::from(5u8);
+        let six = DecafScalar::from(6u8);
+
+        assert_eq!(five + six, DecafScalar::from(11u8))
+    }
+
+    #[test]
+    fn test_basic_sub() {
+        let ten = DecafScalar::from(10u8);
+        let five = DecafScalar::from(5u8);
+        assert_eq!(ten - five, DecafScalar::from(5u8))
+    }
+
+    #[test]
+    fn test_basic_mul() {
+        let ten = DecafScalar::from(10u8);
+        let five = DecafScalar::from(5u8);
+
+        assert_eq!(ten * five, DecafScalar::from(50u8))
+    }
+
+    #[test]
+    fn test_mul() {
+        let a = DecafScalar::new(U448::from_be_hex(
+            "1e63e8073b089f0747cf8cac2c3dc2732aae8688a8fa552ba8cb0ae8c0be082e74d657641d9ac30a087b8fb97f8ed27dc96a3c35ffb823a3",
+        ));
+
+        let b = DecafScalar::new(U448::from_be_hex(
+            "16c5450acae1cb680a92de2d8e59b30824e8d4991adaa0e7bc343bcbd099595b188c6b1a1e30b38b17aa6d9be416b899686eb329d8bedc42",
+        ));
+
+        let exp = DecafScalar::new(U448::from_be_hex(
+            "31e055c14ca389edfccd61b3203d424bb9036ff6f2d89c1e07bcd93174e9335f36a1492008a3a0e46abd26f5994c9c2b1f5b3197a18d010a",
+        ));
+
+        assert_eq!(a * b, exp)
+    }
+    #[test]
+    fn test_basic_square() {
+        let a = DecafScalar::new(U448::from_be_hex(
+            "3162081604b3273b930392e5d2391f9d21cc3078f22c69514bb395e08dccc4866f08f3311370f8b83fa50692f640922b7e56a34bcf5fac3d",
+        ));
+        let expected_a_squared = DecafScalar::new(U448::from_be_hex(
+            "1c1e32fc66b21c9c42d6e8e20487193cf6d49916421b290098f30de3713006cfe8ee9d21eeef7427f82a1fe036630c74b9acc2c2ede40f04",
+        ));
+
+        assert_eq!(a.square(), expected_a_squared)
+    }
+
+    #[test]
+    fn test_sanity_check_index_mut() {
+        let mut x = DecafScalar::ONE;
+        x[0] = 2;
+        assert_eq!(x, DecafScalar::from(2u8))
+    }
+    #[test]
+    fn test_basic_halving() {
+        let eight = DecafScalar::from(8u8);
+        let four = DecafScalar::from(4u8);
+        let two = DecafScalar::from(2u8);
+        assert_eq!(eight.halve(), four);
+        assert_eq!(four.halve(), two);
+        assert_eq!(two.halve(), DecafScalar::ONE);
+    }
+
+    #[test]
+    fn test_equals() {
+        let a = DecafScalar::from(5u8);
+        let b = DecafScalar::from(5u8);
+        let c = DecafScalar::from(10u8);
+        assert_eq!(a, b);
+        assert_ne!(a, c);
+    }
+
+    #[test]
+    fn test_basic_inversion() {
+        // Test inversion from 2 to 100
+        for i in 1..=100u8 {
+            let x = DecafScalar::from(i);
+            let x_inv = x.invert();
+            assert_eq!(x_inv * x, DecafScalar::ONE)
+        }
+
+        // Inversion of zero is zero
+        let zero = DecafScalar::ZERO;
+        let expected_zero = zero.invert();
+        assert_eq!(expected_zero, zero)
+    }
+    #[test]
+    fn test_serialise() {
+        let scalar = DecafScalar::new(U448::from_be_hex(
+            "0d79f6e375d3395ed9a6c4c3c49a1433fd7c58aa38363f74e9ab2c22a22347d79988f8e01e8a309f862a9f1052fcd042b9b1ed7115598f62",
+        ));
+        let got = DecafScalar::from_canonical_bytes(&scalar.into()).unwrap();
+        assert_eq!(scalar, got)
+    }
+    #[test]
+    fn test_from_canonical_bytes() {
+        // ff..ff should fail
+        let mut bytes = DecafScalarBytes::from(hex!(
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ));
+        bytes.reverse();
+        let s = DecafScalar::from_canonical_bytes(&bytes);
+        assert!(<Choice as Into<bool>>::into(s.is_none()));
+
+        // n should fail
+        let mut bytes = DecafScalarBytes::from(hex!(
+            "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"
+        ));
+        bytes.reverse();
+        let s = DecafScalar::from_canonical_bytes(&bytes);
+        assert!(<Choice as Into<bool>>::into(s.is_none()));
+
+        // n-1 should work
+        let mut bytes = DecafScalarBytes::from(hex!(
+            "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"
+        ));
+        bytes.reverse();
+        let s = DecafScalar::from_canonical_bytes(&bytes);
+        match Option::<DecafScalar>::from(s) {
+            Some(s) => assert_eq!(s, DecafScalar::ZERO - DecafScalar::ONE),
+            None => panic!("should not return None"),
+        };
+    }
+
+    #[test]
+    fn test_from_bytes_mod_order_wide() {
+        // n should become 0
+        let mut bytes = WideDecafScalarBytes::from(hex!(
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"
+        ));
+        bytes.reverse();
+        let s = DecafScalar::from_bytes_mod_order_wide(&bytes);
+        assert_eq!(s, DecafScalar::ZERO);
+
+        // n-1 should stay the same
+        let mut bytes = WideDecafScalarBytes::from(hex!(
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f2"
+        ));
+        bytes.reverse();
+        let s = DecafScalar::from_bytes_mod_order_wide(&bytes);
+        assert_eq!(s, DecafScalar::ZERO - DecafScalar::ONE);
+
+        // n+1 should become 1
+        let mut bytes = WideDecafScalarBytes::from(hex!(
+            "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f4"
+        ));
+        bytes.reverse();
+        let s = DecafScalar::from_bytes_mod_order_wide(&bytes);
+        assert_eq!(s, DecafScalar::ONE);
+
+        // 2^896-1 should become 0x3402a939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf725ee4d8380d66de2388ea18597af32c4bc1b195d9e3539257049b9b5f
+        let bytes = WideDecafScalarBytes::from(hex!(
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ));
+        let s = DecafScalar::from_bytes_mod_order_wide(&bytes);
+        let mut bytes = DecafScalarBytes::from(hex!(
+            "3402a939f823b7292052bcb7e4d070af1a9cc14ba3c47c44ae17cf725ee4d8380d66de2388ea18597af32c4bc1b195d9e3539257049b9b5f"
+        ));
+        bytes.reverse();
+        let reduced = DecafScalar::from_canonical_bytes(&bytes).unwrap();
+        assert_eq!(s, reduced);
+    }
+
+    #[cfg(all(feature = "alloc", feature = "serde"))]
+    #[test]
+    fn serde() {
+        use elliptic_curve::PrimeField;
+
+        let res = serde_json::to_string(&DecafScalar::TWO_INV);
+        assert!(res.is_ok());
+        let sj = res.unwrap();
+
+        let res = serde_json::from_str::<DecafScalar>(&sj);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), DecafScalar::TWO_INV);
+
+        let res = serde_bare::to_vec(&DecafScalar::TWO_INV);
+        assert!(res.is_ok());
+        let sb = res.unwrap();
+        assert_eq!(sb.len(), 57);
+
+        let res = serde_bare::from_slice::<DecafScalar>(&sb);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap(), DecafScalar::TWO_INV);
+    }
+
+    #[test]
+    fn scalar_hash() {
+        let msg = b"hello world";
+        let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
+        let res = DecafScalar::hash::<hash2curve::ExpandMsgXof<sha3::Shake256>>(msg, dst);
+        let expected: [u8; 56] = hex_literal::hex!(
+            "fc26b5e525171661910e3520a5e81fb38f9081d98eb5e34cf9ca1b06b1f5dd80dd398b50a300a649bbaa39c0bbe0ed60a9fc894b1cb5e919"
+        );
+        assert_eq!(res.to_repr(), Array::from(expected));
+    }
+}

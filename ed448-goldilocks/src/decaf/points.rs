@@ -1,4 +1,4 @@
-use crate::constants::{BASEPOINT_ORDER, DECAF_BASEPOINT};
+use crate::constants::{DECAF_BASEPOINT, DECAF_BASEPOINT_ORDER};
 use crate::curve::twedwards::extended::ExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -169,7 +169,7 @@ impl TryFrom<&DecafPointBytes> for DecafPoint {
 }
 
 impl Group for DecafPoint {
-    type Scalar = Scalar;
+    type Scalar = DecafScalar;
 
     fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
@@ -227,15 +227,15 @@ impl CofactorGroup for DecafPoint {
     }
 
     fn is_torsion_free(&self) -> Choice {
-        (self * BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        (self * DECAF_BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
     }
 }
 
 impl PrimeGroup for DecafPoint {}
 
-impl<const N: usize> LinearCombination<[(DecafPoint, Scalar); N]> for DecafPoint {}
+impl<const N: usize> LinearCombination<[(DecafPoint, DecafScalar); N]> for DecafPoint {}
 
-impl LinearCombination<[(DecafPoint, Scalar)]> for DecafPoint {}
+impl LinearCombination<[(DecafPoint, DecafScalar)]> for DecafPoint {}
 
 impl CurveGroup for DecafPoint {
     type AffineRepr = DecafAffinePoint;

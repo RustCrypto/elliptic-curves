@@ -11,8 +11,9 @@
 #![allow(non_snake_case)]
 
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
+use crate::EdwardsScalar;
 use crate::curve::edwards::extended::EdwardsPoint;
-use crate::field::{FieldElement, Scalar};
+use crate::field::FieldElement;
 use core::fmt;
 use core::ops::Mul;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
@@ -75,11 +76,11 @@ pub struct ProjectiveMontgomeryPoint {
     W: FieldElement,
 }
 
-impl Mul<&Scalar> for &MontgomeryPoint {
+impl Mul<&EdwardsScalar> for &MontgomeryPoint {
     type Output = MontgomeryPoint;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, scalar: &Scalar) -> MontgomeryPoint {
+    fn mul(self, scalar: &EdwardsScalar) -> MontgomeryPoint {
         // Algorithm 8 of Costello-Smith 2017
         let affine_u = FieldElement::from_bytes(&self.0);
         let mut x0 = ProjectiveMontgomeryPoint::identity();
@@ -104,7 +105,7 @@ impl Mul<&Scalar> for &MontgomeryPoint {
     }
 }
 
-impl Mul<&MontgomeryPoint> for &Scalar {
+impl Mul<&MontgomeryPoint> for &EdwardsScalar {
     type Output = MontgomeryPoint;
 
     fn mul(self, point: &MontgomeryPoint) -> MontgomeryPoint {
@@ -221,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_montgomery_edwards() {
-        let scalar = Scalar::from(200u32);
+        let scalar = EdwardsScalar::from(200u32);
         use crate::GOLDILOCKS_BASE_POINT as bp;
 
         // Montgomery scalar mul
