@@ -173,7 +173,7 @@ impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
 
 #[cfg(feature = "oprf")]
-impl elliptic_curve::OprfParameters for NistP256 {
+impl hash2curve::OprfParameters for NistP256 {
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-1>.
     const ID: &'static [u8] = b"P256-SHA256";
 
@@ -182,5 +182,5 @@ impl elliptic_curve::OprfParameters for NistP256 {
 
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.10>
     /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.12>.
-    type ExpandMsg = elliptic_curve::hash2curve::ExpandMsgXmd<sha2::Sha256>;
+    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha256>;
 }

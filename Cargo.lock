@@ -394,6 +394,7 @@ version = "0.14.0-pre.1"
 dependencies = [
  "ed448",
  "elliptic-curve",
+ "hash2curve",
  "hex",
  "hex-literal",
  "rand_chacha",
@@ -526,6 +527,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "hash2curve"
+version = "0.14.0-rc.0"
+dependencies = [
+ "digest",
+ "elliptic-curve",
+ "ff",
+ "hex-literal",
+ "sha2",
+ "sha3",
+ "subtle",
+]
+
+[[package]]
 name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -608,6 +622,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
+ "hash2curve",
  "hex",
  "hex-literal",
  "num-bigint 0.4.6",
@@ -751,6 +766,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
+ "hash2curve",
  "hex-literal",
  "primefield",
  "primeorder",
@@ -768,6 +784,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
+ "hash2curve",
  "hex-literal",
  "primefield",
  "primeorder",
@@ -786,6 +803,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
+ "hash2curve",
  "hex-literal",
  "primefield",
  "primeorder",

@@ -16,7 +16,8 @@ This crate also includes signing and verifying of Ed448 signatures.
 """
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.8", features = ["arithmetic", "hash2curve", "pkcs8"] }
+elliptic-curve = { version = "0.14.0-rc.8", features = ["arithmetic", "pkcs8"] }
+hash2curve = { version = "0.14.0-rc.0" }
 rand_core = { version = "0.9", default-features = false }
 sha3 = { version = "0.11.0-rc.0", default-features = false }
 subtle = { version = "2.6", default-features = false }

@@ -4,11 +4,11 @@ use elliptic_curve::{
     array::Array,
     bigint::{ArrayEncoding, U576},
     consts::{U32, U98},
-    hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0},
     ops::Reduce,
     point::DecompressPoint,
     subtle::Choice,
 };
+use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP521 {
     type K = U32;
@@ -113,10 +113,10 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U576, U896},
         consts::U98,
-        hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
+    use hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;

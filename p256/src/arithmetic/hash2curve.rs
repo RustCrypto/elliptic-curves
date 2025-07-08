@@ -4,10 +4,10 @@ use elliptic_curve::{
     array::Array,
     bigint::{ArrayEncoding, U256},
     consts::{U16, U48},
-    hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0},
     point::DecompressPoint,
     subtle::Choice,
 };
+use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP256 {
     type K = U16;
@@ -105,9 +105,9 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
         consts::U48,
-        hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap},
         sec1::{self, ToEncodedPoint},
     };
+    use hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha256;

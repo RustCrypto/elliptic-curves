@@ -17,6 +17,7 @@ and can be easily used for bare-metal or WebAssembly programming.
 | [`bign256`] | bign-curve256v1  | [![crates.io](https://img.shields.io/crates/v/bign256.svg)](https://crates.io/crates/bign256) | [![Documentation](https://docs.rs/bign256/badge.svg)](https://docs.rs/bign256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bign256/badge.svg?branch=master&event=push) |
 | [`bp256`] | [brainpoolP256r1]/[brainpoolP256t1] | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
 | [`bp384`] | [brainpoolP384r1]/[brainpoolP384t1] | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
+| [`hash2curve`] |               | [![crates.io](https://img.shields.io/crates/v/hash2curve.svg)](https://crates.io/crates/hash2curve)   | [![Documentation](https://docs.rs/hash2curve/badge.svg)](https://docs.rs/hash2curve)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/hash2curve/badge.svg?branch=master&event=push)  |
 | [`k256`]  | [secp256k1]        | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256)   | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push)  |
 | [`p192`]  | [NIST P-192]       | [![crates.io](https://img.shields.io/crates/v/p192.svg)](https://crates.io/crates/p192)   | [![Documentation](https://docs.rs/p192/badge.svg)](https://docs.rs/p192)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p192/badge.svg?branch=master&event=push)  |
 | [`p224`]  | [NIST P-224]       | [![crates.io](https://img.shields.io/crates/v/p224.svg)](https://crates.io/crates/p224)   | [![Documentation](https://docs.rs/p224/badge.svg)](https://docs.rs/p224)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p224/badge.svg?branch=master&event=push)  |
@@ -63,6 +64,7 @@ dual licensed as above, without any additional terms or conditions.
 [`bign256`]: ./bign256
 [`bp256`]: ./bp256
 [`bp384`]: ./bp384
+[`hash2curve`]: ./hash2curve
 [`k256`]: ./k256
 [`p192`]: ./p192
 [`p224`]: ./p224

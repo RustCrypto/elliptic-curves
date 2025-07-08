@@ -1,0 +1,62 @@
+name: hash2curve
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/hash2curve.yml"
+      - "hash2curve/**"
+      - "Cargo.*"
+  push:
+    branches: master
+
+defaults:
+  run:
+    working-directory: hash2curve
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.85.0 # MSRV
+          - stable
+        target:
+          - thumbv7em-none-eabi
+          - wasm32-unknown-unknown
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+      - run: cargo build --target ${{ matrix.target }} --release
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.85.0 # MSRV
+          - stable
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ matrix.rust }}
+    - run: cargo test
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: RustCrypto/actions/cargo-cache@master
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - run: cargo doc

@@ -8,12 +8,12 @@ use elliptic_curve::{
     array::{Array, typenum::Unsigned},
     consts::{U32, U56, U84},
     group::{GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
-    hash2curve::{ExpandMsg, Expander, FromOkm},
     ops::LinearCombination,
     point::NonIdentity,
 };
 
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
+use hash2curve::{ExpandMsg, Expander, FromOkm};
 use rand_core::{CryptoRng, TryRngCore};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -771,7 +771,7 @@ mod test {
 
     #[test]
     fn test_hash_to_curve() {
-        use elliptic_curve::hash2curve::ExpandMsgXof;
+        use hash2curve::ExpandMsgXof;
 
         let msg = b"Hello, world!";
         let point = DecafPoint::hash::<ExpandMsgXof<sha3::Shake256>>(msg, b"test_hash_to_curve");

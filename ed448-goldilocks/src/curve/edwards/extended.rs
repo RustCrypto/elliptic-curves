@@ -15,10 +15,10 @@ use elliptic_curve::{
     array::{Array, typenum::Unsigned},
     consts::{U28, U84},
     group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
-    hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm},
     ops::LinearCombination,
     point::NonIdentity,
 };
+use hash2curve::{ExpandMsg, ExpandMsgXof, Expander, FromOkm};
 use rand_core::TryRngCore;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 

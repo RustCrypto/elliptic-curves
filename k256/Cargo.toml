@@ -21,6 +21,7 @@ rust-version = "1.85"
 [dependencies]
 cfg-if = "1.0"
 elliptic-curve = { version = "0.14.0-rc.8", default-features = false, features = ["sec1"] }
+hash2curve = { version = "0.14.0-rc.0", optional = true }
 
 # optional dependencies
 once_cell = { version = "1.21", optional = true, default-features = false }
@@ -54,7 +55,7 @@ digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha256"]
 expose-field = ["arithmetic"]
-hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
+hash2curve = ["arithmetic", "dep:hash2curve"]
 jwk = ["elliptic-curve/jwk"]
 pem = ["ecdsa-core/pem", "elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core/pkcs8", "elliptic-curve/pkcs8"]

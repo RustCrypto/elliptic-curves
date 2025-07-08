@@ -22,6 +22,7 @@ elliptic-curve = { version = "0.14.0-rc.8", default-features = false, features =
 
 # optional dependencies
 ecdsa-core = { version = "0.17.0-rc.4", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+hash2curve = { version = "0.14.0-rc.0", optional = true }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "=0.14.0-pre.3", optional = true }
 primeorder = { version = "=0.14.0-pre.6", optional = true }
@@ -49,9 +50,9 @@ digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha256"]
 expose-field = ["arithmetic"]
-hash2curve = ["arithmetic", "elliptic-curve/hash2curve"]
+hash2curve = ["arithmetic", "dep:hash2curve"]
 jwk = ["elliptic-curve/jwk"]
-oprf = ["hash2curve", "elliptic-curve/oprf", "sha2"]
+oprf = ["hash2curve", "sha2"]
 pem = ["elliptic-curve/pem", "ecdsa-core/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core?/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa-core?/serde", "elliptic-curve/serde", "primeorder?/serde", "serdect"]
