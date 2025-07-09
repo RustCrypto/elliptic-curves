@@ -4,8 +4,6 @@ use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::constants::EDWARDS_BASEPOINT_ORDER;
-use crate::curve::edwards::affine::AffinePoint;
-use crate::curve::montgomery::MontgomeryPoint; // XXX: need to fix this path
 use crate::curve::scalar_mul::variable_base;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::FieldElement;
