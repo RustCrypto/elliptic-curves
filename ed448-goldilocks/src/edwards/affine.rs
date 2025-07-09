@@ -1,4 +1,3 @@
-use crate::curve::edwards::EdwardsPoint;
 use crate::field::FieldElement;
 use crate::*;
 use core::ops::Mul;

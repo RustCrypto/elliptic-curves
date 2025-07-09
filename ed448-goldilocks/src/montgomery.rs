@@ -12,7 +12,7 @@
 
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
 use crate::EdwardsScalar;
-use crate::curve::edwards::extended::EdwardsPoint;
+use crate::edwards::extended::EdwardsPoint;
 use crate::field::FieldElement;
 use core::fmt;
 use core::ops::Mul;
