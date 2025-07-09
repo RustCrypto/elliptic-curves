@@ -14,12 +14,11 @@ use elliptic_curve::{
         typenum::{Prod, Unsigned},
     },
     bigint::{Limb, NonZero, U448, U896, Word, Zero},
-    consts::{U2, U28},
+    consts::U2,
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
 };
-use hash2curve::{ExpandMsg, Expander, FromOkm};
 use rand_core::{CryptoRng, RngCore, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
 
@@ -823,39 +822,5 @@ impl<C: CurveWithScalar> Scalar<C> {
         let mut scalar_bytes = WideScalarBytes::<C>::default();
         rng.fill_bytes(&mut scalar_bytes);
         C::from_bytes_mod_order_wide(&scalar_bytes)
-    }
-}
-
-impl<C: CurveWithScalar> Scalar<C>
-where
-    Self: FromOkm,
-{
-    /// Computes the hash to field routine according to Section 5
-    /// <https://datatracker.ietf.org/doc/rfc9380/>
-    /// and returns a scalar.
-    ///
-    /// # Errors
-    /// See implementors of [`ExpandMsg`] for errors:
-    /// - [`ExpandMsgXmd`]
-    /// - [`ExpandMsgXof`]
-    ///
-    /// `len_in_bytes = <Self::Scalar as FromOkm>::Length`
-    ///
-    /// [`ExpandMsgXmd`]: hash2curve::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: hash2curve::ExpandMsgXof
-    pub fn hash<X>(msg: &[u8], dst: &[u8]) -> Self
-    where
-        X: ExpandMsg<U28>,
-    {
-        let mut random_bytes = Array::<u8, <Self as FromOkm>::Length>::default();
-        let dst = [dst];
-        let mut expander = X::expand_message(
-            &[msg],
-            &dst,
-            core::num::NonZero::new(<Self as FromOkm>::Length::U16).expect("Invariant violation"),
-        )
-        .expect("invalid dst");
-        expander.fill_bytes(&mut random_bytes);
-        Self::from_okm(&random_bytes)
     }
 }
