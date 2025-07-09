@@ -43,22 +43,25 @@ pub use subtle;
 pub(crate) mod constants;
 pub(crate) mod curve;
 pub(crate) mod decaf;
+pub(crate) mod edwards;
 pub(crate) mod field;
+pub(crate) mod montgomery;
 pub(crate) mod ristretto;
 #[cfg(feature = "signing")]
 pub(crate) mod sign;
 
 pub(crate) use field::{GOLDILOCKS_BASE_POINT, TWISTED_EDWARDS_BASE_POINT};
 
-pub use curve::{
-    AffinePoint, CompressedEdwardsY, EdwardsPoint, EdwardsScalar, EdwardsScalarBytes,
-    MontgomeryPoint, ProjectiveMontgomeryPoint, WideEdwardsScalarBytes,
-};
 pub use decaf::{
     AffinePoint as DecafAffinePoint, CompressedDecaf, DecafPoint, DecafScalar, DecafScalarBytes,
     WideDecafScalarBytes,
 };
+pub use edwards::{
+    AffinePoint, CompressedEdwardsY, EdwardsPoint, EdwardsScalar, EdwardsScalarBytes,
+    WideEdwardsScalarBytes,
+};
 pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
+pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use ristretto::{CompressedRistretto, RistrettoPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;

@@ -7,8 +7,8 @@ pub use scalar::{
     MODULUS_LIMBS, NZ_ORDER, ORDER, Scalar, ScalarBytes, WIDE_ORDER, WideScalarBytes,
 };
 
-use crate::curve::edwards::EdwardsPoint;
 use crate::curve::twedwards::extended::ExtendedPoint as TwExtendedPoint;
+use crate::edwards::EdwardsPoint;
 
 use elliptic_curve::bigint::{
     U448, const_monty_params,

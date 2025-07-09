@@ -1,7 +1,7 @@
 //! Much of this code is borrowed from Thomas Pornin's [CRRL Project](https://github.com/pornin/crrl/blob/main/src/ed448.rs)
 //! and adapted to mirror `ed25519-dalek`'s API.
 
-use crate::curve::edwards::extended::PointBytes;
+use crate::edwards::extended::PointBytes;
 use crate::sign::{HASH_HEAD, InnerSignature};
 use crate::{
     CompressedEdwardsY, Context, EdwardsPoint, EdwardsScalar, PreHash, Signature, SigningError,
