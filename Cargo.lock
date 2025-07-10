@@ -877,7 +877,7 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-pre.3"
+version = "0.14.0-pre.4"
 dependencies = [
  "crypto-bigint",
  "ff",
@@ -888,7 +888,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-pre.6"
+version = "0.14.0-pre.7"
 dependencies = [
  "elliptic-curve",
  "serdect",
