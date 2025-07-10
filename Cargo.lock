@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-pre.8"
+version = "0.14.0-pre.9"
 dependencies = [
  "blobby",
  "cfg-if",
@@ -760,7 +760,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-pre.8"
+version = "0.14.0-pre.9"
 dependencies = [
  "blobby",
  "criterion",
@@ -778,7 +778,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-pre.8"
+version = "0.14.0-pre.9"
 dependencies = [
  "blobby",
  "criterion",
@@ -796,7 +796,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-pre.8"
+version = "0.14.0-pre.9"
 dependencies = [
  "base16ct",
  "blobby",
