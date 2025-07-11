@@ -110,6 +110,14 @@ impl AffinePoint {
         }
     }
 
+    /// Convert this point to [`MontgomeryPoint`]
+    pub fn to_montgomery(&self) -> MontgomeryPoint {
+        // u = y^2/x^2
+        let u = self.y.square() * self.x.square().invert();
+
+        MontgomeryPoint(u.to_bytes())
+    }
+
     /// The X coordinate
     pub fn x(&self) -> [u8; 56] {
         self.x.to_bytes()
