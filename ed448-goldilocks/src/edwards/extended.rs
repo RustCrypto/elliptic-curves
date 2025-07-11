@@ -528,20 +528,6 @@ impl EdwardsPoint {
         T: FieldElement::ZERO,
     };
 
-    /// Convert this point to [`MontgomeryPoint`]
-    pub fn to_montgomery(&self) -> MontgomeryPoint {
-        // u = y^2 * [(1-dy^2)/(1-y^2)]
-
-        let affine = self.to_affine();
-
-        let yy = affine.y.square();
-        let dyy = FieldElement::EDWARDS_D * yy;
-
-        let u = yy * (FieldElement::ONE - dyy) * (FieldElement::ONE - yy).invert();
-
-        MontgomeryPoint(u.to_bytes())
-    }
-
     /// Generic scalar multiplication to compute s*P
     pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
         // Compute floor(s/4)
