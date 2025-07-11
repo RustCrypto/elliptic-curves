@@ -209,12 +209,12 @@ mod tests {
 
         for test_vector in TEST_VECTORS {
             // in parts
-            let mut u = [FieldElement::default(), FieldElement::default()];
-            hash2curve::hash_to_field::<
+            let u = hash2curve::hash_to_field::<
+                2,
                 ExpandMsgXmd<Sha384>,
                 <NistP384 as GroupDigest>::K,
                 FieldElement,
-            >(&[test_vector.msg], &[DST], &mut u)
+            >(&[test_vector.msg], &[DST])
             .unwrap();
 
             /// Assert that the provided projective point matches the given test vector.
