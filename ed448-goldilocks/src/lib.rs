@@ -61,13 +61,16 @@ pub use edwards::{
     WideEdwardsScalarBytes,
 };
 pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
-pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
+pub use montgomery::{
+    ExtendedMontgomeryPoint, ExtendedProjectiveMontgomeryPoint, MontgomeryPoint, MontgomeryScalar,
+    MontgomeryScalarBytes, ProjectiveMontgomeryPoint, WideMontgomeryScalarBytes,
+};
 pub use ristretto::{CompressedRistretto, RistrettoPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
 
 use elliptic_curve::{
-    Curve, FieldBytesEncoding, PrimeCurve,
+    Curve, CurveArithmetic, FieldBytes, FieldBytesEncoding, NonZeroScalar, PrimeCurve,
     array::typenum::{U28, U56, U57},
     bigint::{ArrayEncoding, U448},
     point::PointCompression,
@@ -79,14 +82,14 @@ use hash2curve::GroupDigest;
 pub struct Ed448;
 
 /// Bytes of the Ed448 field
-pub type Ed448FieldBytes = elliptic_curve::FieldBytes<Ed448>;
+pub type Ed448FieldBytes = FieldBytes<Ed448>;
 
 /// Scalar bits of the Ed448 scalar
 #[cfg(feature = "bits")]
 pub type Ed448ScalarBits = elliptic_curve::scalar::ScalarBits<Ed448>;
 
 /// Non-zero scalar of the Ed448 scalar
-pub type Ed448NonZeroScalar = elliptic_curve::NonZeroScalar<Ed448>;
+pub type Ed448NonZeroScalar = NonZeroScalar<Ed448>;
 
 impl Curve for Ed448 {
     type FieldBytesSize = U57;
@@ -113,7 +116,7 @@ impl FieldBytesEncoding<Ed448> for U448 {
     }
 }
 
-impl elliptic_curve::CurveArithmetic for Ed448 {
+impl CurveArithmetic for Ed448 {
     type AffinePoint = AffinePoint;
     type ProjectivePoint = EdwardsPoint;
     type Scalar = EdwardsScalar;
@@ -128,14 +131,14 @@ impl GroupDigest for Ed448 {
 pub struct Decaf448;
 
 /// Bytes of the Decaf448 field
-pub type Decaf448FieldBytes = elliptic_curve::FieldBytes<Decaf448>;
+pub type Decaf448FieldBytes = FieldBytes<Decaf448>;
 
 /// Scalar bits of the Decaf448 scalar
 #[cfg(feature = "bits")]
 pub type Decaf448ScalarBits = elliptic_curve::scalar::ScalarBits<Decaf448>;
 
 /// Non-zero scalar of the Decaf448 scalar
-pub type Decaf448NonZeroScalar = elliptic_curve::NonZeroScalar<Decaf448>;
+pub type Decaf448NonZeroScalar = NonZeroScalar<Decaf448>;
 
 impl Curve for Decaf448 {
     type FieldBytesSize = U56;
@@ -162,7 +165,7 @@ impl FieldBytesEncoding<Decaf448> for U448 {
     }
 }
 
-impl elliptic_curve::CurveArithmetic for Decaf448 {
+impl CurveArithmetic for Decaf448 {
     type AffinePoint = DecafAffinePoint;
     type ProjectivePoint = DecafPoint;
     type Scalar = DecafScalar;
@@ -170,4 +173,43 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
 
 impl GroupDigest for Decaf448 {
     type K = U28;
+}
+
+/// Curve448 curve.
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Curve448;
+
+/// Bytes of the Curve448 field
+pub type Curve448FieldBytes = FieldBytes<Curve448>;
+
+/// Scalar bits of the Curve448 scalar
+#[cfg(feature = "bits")]
+pub type Curve448ScalarBits = elliptic_curve::scalar::ScalarBits<Curve448>;
+
+/// Non-zero scalar of the Ed448 scalar
+pub type Curve448NonZeroScalar = NonZeroScalar<Curve448>;
+
+impl Curve for Curve448 {
+    type FieldBytesSize = U56;
+    type Uint = U448;
+
+    const ORDER: U448 = ORDER;
+}
+
+impl PrimeCurve for Curve448 {}
+
+impl PointCompression for Curve448 {
+    const COMPRESS_POINTS: bool = true;
+}
+
+impl FieldBytesEncoding<Curve448> for U448 {
+    fn decode_field_bytes(field_bytes: &Curve448FieldBytes) -> Self {
+        U448::from_le_slice(field_bytes)
+    }
+
+    fn encode_field_bytes(&self) -> Curve448FieldBytes {
+        let mut data = Curve448FieldBytes::default();
+        data.copy_from_slice(&self.to_le_byte_array()[..]);
+        data
+    }
 }
