@@ -550,7 +550,7 @@ impl CompressedDecaf {
         let (I, ok) = (v * u1_sqr).inverse_square_root();
 
         let Dx = I * u1;
-        let Dxs = (s + s) * Dx;
+        let Dxs = s.double() * Dx;
 
         let mut X = (Dxs * I) * v;
         let k = Dxs * FieldElement::DECAF_FACTOR;

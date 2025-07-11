@@ -317,7 +317,7 @@ impl FieldElement {
     }
 
     pub fn double(&self) -> Self {
-        Self(self.0.add(&self.0))
+        Self(self.0.double())
     }
 
     /// Computes the inverse square root of a field element
@@ -426,7 +426,7 @@ impl FieldElement {
         let b = b - Self::ONE;
 
         let c = a.square();
-        let a = a + a;
+        let a = a.double();
         let e = c + Self::ONE;
         let T = a * e;
         let X = a * b;

@@ -314,7 +314,7 @@ impl<C: CurveWithScalar> Field for Scalar<C> {
     }
 
     fn double(&self) -> Self {
-        self + self
+        self.double()
     }
 
     fn invert(&self) -> CtOption<Self> {
@@ -641,7 +641,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Compute `self` + `self` mod ℓ
     pub const fn double(&self) -> Self {
-        self.addition(self)
+        Self::new(self.scalar.double_mod(&ORDER))
     }
 
     /// Compute `self` - `rhs` mod ℓ

@@ -673,7 +673,7 @@ impl EdwardsPoint {
 
         // Compute x
         let xy = x * y;
-        let x_numerator = xy + xy;
+        let x_numerator = xy.double();
         let x_denom = y.square() - (a * x.square());
         let new_x = x_numerator * x_denom.invert();
 
