@@ -118,6 +118,18 @@ impl AffinePoint {
         MontgomeryPoint(u.to_bytes())
     }
 
+    /// Convert this point to [`ExtendedMontgomeryPoint`]
+    pub fn to_extended_montgomery(&self) -> ExtendedMontgomeryPoint {
+        let x_sq = self.x.square();
+        let y_sq = self.y.square();
+
+        let u = y_sq * x_sq.invert();
+        // v = (2 - x^2 - y^2)*y/x^3)
+        let v = ((FieldElement::TWO - x_sq - y_sq) * self.y) * (x_sq * self.x).invert();
+
+        ExtendedMontgomeryPoint::new(u, v)
+    }
+
     /// The X coordinate
     pub fn x(&self) -> [u8; 56] {
         self.x.to_bytes()

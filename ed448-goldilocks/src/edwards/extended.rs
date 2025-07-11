@@ -974,6 +974,7 @@ mod tests {
     use elliptic_curve::Field;
     use hex_literal::hex;
     use rand_core::TryRngCore;
+    use sha3::Shake256;
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -1134,7 +1135,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = Ed448::hash_from_bytes::<ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST]).unwrap();
+            let p = Ed448::hash_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST]).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1171,8 +1172,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p =
-                Ed448::encode_from_bytes::<ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST]).unwrap();
+            let p = Ed448::encode_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST]).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1183,6 +1183,20 @@ mod tests {
             yy.reverse();
             assert_eq!(p.x.to_bytes(), xx);
             assert_eq!(p.y.to_bytes(), yy);
+
+            // Test Montgomery to Edwards conversion.
+            let conv_p =
+                ProjectiveMontgomeryPoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST]);
+            let conv_p1 = conv_p.to_edwards(Choice::from(0));
+            let conv_p2 = conv_p.to_edwards(Choice::from(1));
+            assert!(conv_p1.x == p.x || conv_p2.x == p.x);
+            assert!(conv_p1.y == p.y || conv_p2.y == p.y);
+
+            let conv_p =
+                ExtendedProjectiveMontgomeryPoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                    .to_edwards();
+            assert_eq!(conv_p.x, p.x);
+            assert_eq!(conv_p.y, p.y);
         }
     }
 
