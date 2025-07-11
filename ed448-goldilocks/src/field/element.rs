@@ -320,7 +320,7 @@ impl FieldElement {
     }
 
     pub fn double(&self) -> Self {
-        Self(self.0.add(&self.0))
+        Self(self.0.double())
     }
 
     /// Computes the inverse square root of a field element
