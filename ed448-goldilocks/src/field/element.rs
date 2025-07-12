@@ -15,7 +15,7 @@ use elliptic_curve::{
     group::cofactor::CofactorGroup,
     zeroize::DefaultIsZeroes,
 };
-use hash2curve::{FromOkm, MapToCurve};
+use hash2curve::{KeyInit, KeySizeUser, MapToCurve};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
 
 #[derive(Clone, Copy, Default)]
@@ -64,10 +64,12 @@ impl PartialEq for FieldElement {
 }
 impl Eq for FieldElement {}
 
-impl FromOkm for Ed448FieldElement {
-    type Length = U84;
+impl KeySizeUser for Ed448FieldElement {
+    type KeySize = U84;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for Ed448FieldElement {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex(
             "0000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         ));
@@ -85,10 +87,12 @@ impl FromOkm for Ed448FieldElement {
     }
 }
 
-impl FromOkm for Decaf448FieldElement {
-    type Length = U56;
+impl KeySizeUser for Decaf448FieldElement {
+    type KeySize = U56;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for Decaf448FieldElement {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         Self(FieldElement::from_bytes(&data.0))
     }
 }
@@ -450,7 +454,7 @@ mod tests {
     use sha3::Shake256;
 
     #[test]
-    fn from_okm_curve448() {
+    fn key_init_curve448() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-curve448_XOF:SHAKE256_ELL2_RO_";
         const MSGS: &[(&[u8], [u8; 56], [u8; 56])] = &[
             (b"", hex!("c704c7b3d3b36614cf3eedd0324fe6fe7d1402c50efd16cff89ff63f50938506280d3843478c08e24f7842f4e3ef45f6e3c4897f9d976148"), hex!("c25427dc97fff7a5ad0a78654e2c6c27b1c1127b5b53c7950cd1fd6edd2703646b25f341e73deedfebf022d1d3cecd02b93b4d585ead3ed7")),
@@ -470,7 +474,7 @@ mod tests {
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
             // TODO: This should be `Curve448FieldElement`.
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = Ed448FieldElement::new(&data).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
@@ -478,13 +482,13 @@ mod tests {
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data);
             // TODO: This should be `Curve448FieldElement`.
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = Ed448FieldElement::new(&data).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
 
     #[test]
-    fn from_okm_edwards448() {
+    fn key_init_edwards448() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-edwards448_XOF:SHAKE256_ELL2_RO_";
         const MSGS: &[(&[u8], [u8; 56], [u8; 56])] = &[
             (b"", hex!("0847c5ebf957d3370b1f98fde499fb3e659996d9fc9b5707176ade785ba72cd84b8a5597c12b1024be5f510fa5ba99642c4cec7f3f69d3e7"), hex!("f8cbd8a7ae8c8deed071f3ac4b93e7cfcb8f1eac1645d699fd6d3881cb295a5d3006d9449ed7cad412a77a1fe61e84a9e41d59ef384d6f9a")),
@@ -503,14 +507,14 @@ mod tests {
             .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = Ed448FieldElement::new(&data).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data);
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = Ed448FieldElement::new(&data).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }

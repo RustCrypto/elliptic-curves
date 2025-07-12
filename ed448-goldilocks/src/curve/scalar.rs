@@ -5,7 +5,7 @@ use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, NonZero, U448, U704};
 use elliptic_curve::consts::{U57, U84, U88};
 use elliptic_curve::scalar::FromUintUnchecked;
-use hash2curve::FromOkm;
+use hash2curve::{KeyInit, KeySizeUser};
 use subtle::{Choice, CtOption};
 
 impl CurveWithScalar for Ed448 {
@@ -82,10 +82,12 @@ impl From<&EdwardsScalar> for elliptic_curve::scalar::ScalarBits<Ed448> {
     }
 }
 
-impl FromOkm for EdwardsScalar {
-    type Length = U84;
+impl KeySizeUser for EdwardsScalar {
+    type KeySize = U84;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for EdwardsScalar {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex(
             "00000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
         ));

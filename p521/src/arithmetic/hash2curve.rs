@@ -8,16 +8,18 @@ use elliptic_curve::{
     point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, KeyInit, KeySizeUser, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP521 {
     type K = U32;
 }
 
-impl FromOkm for FieldElement {
-    type Length = U98;
+impl KeySizeUser for FieldElement {
+    type KeySize = U98;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for FieldElement {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const F_2_392: FieldElement = FieldElement::from_hex(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
@@ -82,10 +84,12 @@ impl MapToCurve for NistP521 {
     }
 }
 
-impl FromOkm for Scalar {
-    type Length = U98;
+impl KeySizeUser for Scalar {
+    type KeySize = U98;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for Scalar {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const F_2_392: Scalar = Scalar::from_hex(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
@@ -116,7 +120,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, KeyInit, GroupDigest, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
@@ -319,13 +323,13 @@ mod tests {
     }
 
     #[test]
-    fn from_okm_fuzz() {
+    fn key_init_fuzz() {
         let mut wide_order = Array::default();
         wide_order[40..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
         // TODO: This could be reduced to `U832` when `crypto-bigint` implements `ArrayEncoding`.
         let wide_order = NonZero::new(U896::from_be_byte_array(wide_order)).unwrap();
 
-        let simple_from_okm = move |data: Array<u8, U98>| -> Scalar {
+        let simple_key_init = move |data: Array<u8, U98>| -> Scalar {
             let mut wide_data = Array::default();
             wide_data[14..].copy_from_slice(data.as_slice());
             let wide_data = U896::from_be_byte_array(wide_data);
@@ -368,9 +372,9 @@ mod tests {
                 data[88..96].copy_from_slice(&b11.to_be_bytes());
                 data[96..].copy_from_slice(&b12.to_be_bytes());
 
-                let from_okm = Scalar::from_okm(&data);
-                let simple_from_okm = simple_from_okm(data);
-                assert_eq!(from_okm, simple_from_okm);
+                let key_init = Scalar::new(&data);
+                let simple_key_init = simple_key_init(data);
+                assert_eq!(key_init, simple_key_init);
             }
         );
     }

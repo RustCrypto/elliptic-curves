@@ -8,16 +8,18 @@ use elliptic_curve::{
     point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0, KeyInit, KeySizeUser};
 
 impl GroupDigest for NistP384 {
     type K = U24;
 }
 
-impl FromOkm for FieldElement {
-    type Length = U72;
+impl KeySizeUser for FieldElement {
+    type KeySize = U72;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for FieldElement {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const F_2_288: FieldElement = FieldElement::from_hex(
             "000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
         );
@@ -79,10 +81,12 @@ impl MapToCurve for NistP384 {
     }
 }
 
-impl FromOkm for Scalar {
-    type Length = U72;
+impl KeySizeUser for Scalar {
+    type KeySize = U72;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for Scalar {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const F_2_288: Scalar = Scalar::from_hex(
             "000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
         );
@@ -113,7 +117,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap, KeyInit};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha384;
@@ -316,12 +320,12 @@ mod tests {
     }
 
     #[test]
-    fn from_okm_fuzz() {
+    fn key_init_fuzz() {
         let mut wide_order = Array::default();
         wide_order[24..].copy_from_slice(&NistP384::ORDER.to_be_byte_array());
         let wide_order = NonZero::new(U576::from_be_byte_array(wide_order)).unwrap();
 
-        let simple_from_okm = move |data: Array<u8, U72>| -> Scalar {
+        let simple_key_init = move |data: Array<u8, U72>| -> Scalar {
             let data = U576::from_be_slice(&data);
 
             let scalar = data % wide_order;
@@ -342,9 +346,9 @@ mod tests {
             data[56..64].copy_from_slice(&b7.to_be_bytes());
             data[64..].copy_from_slice(&b8.to_be_bytes());
 
-            let from_okm = Scalar::from_okm(&data);
-            let simple_from_okm = simple_from_okm(data);
-            assert_eq!(from_okm, simple_from_okm);
+            let key_init = Scalar::new(&data);
+            let simple_key_init = simple_key_init(data);
+            assert_eq!(key_init, simple_key_init);
         });
     }
 }

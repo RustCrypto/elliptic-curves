@@ -4,7 +4,7 @@ use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 use hash2curve::{
-    FromOkm, GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
+    GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0, KeyInit, KeySizeUser
 };
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
@@ -15,10 +15,12 @@ impl GroupDigest for Secp256k1 {
     type K = U16;
 }
 
-impl FromOkm for FieldElement {
-    type Length = U48;
+impl KeySizeUser for FieldElement {
+    type KeySize = U48;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for FieldElement {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         // 0x0000000000000001000000000000000000000000000000000000000000000000
         const F_2_192: FieldElement = FieldElement::from_bytes_unchecked(&[
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -148,10 +150,12 @@ impl MapToCurve for Secp256k1 {
     }
 }
 
-impl FromOkm for Scalar {
-    type Length = U48;
+impl KeySizeUser for Scalar {
+    type KeySize = U48;
+}
 
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl KeyInit for Scalar {
+    fn new(data: &Array<u8, Self::KeySize>) -> Self {
         const F_2_192: Scalar = Scalar(U256::from_be_hex(
             "0000000000000001000000000000000000000000000000000000000000000000",
         ));
@@ -269,7 +273,7 @@ mod tests {
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
     };
-    use hash2curve::{FromOkm, GroupDigest, MapToCurve};
+    use hash2curve::{GroupDigest, MapToCurve, KeyInit};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 
@@ -388,12 +392,12 @@ mod tests {
     }
 
     #[test]
-    fn from_okm_fuzz() {
+    fn key_init_fuzz() {
         let mut wide_order = Array::default();
         wide_order[16..].copy_from_slice(&Secp256k1::ORDER.to_be_byte_array());
         let wide_order = NonZero::new(U384::from_be_byte_array(wide_order)).unwrap();
 
-        let simple_from_okm = move |data: Array<u8, U48>| -> Scalar {
+        let simple_key_init = move |data: Array<u8, U48>| -> Scalar {
             let data = U384::from_be_slice(&data);
 
             let scalar = data % wide_order;
@@ -411,9 +415,9 @@ mod tests {
             data[32..40].copy_from_slice(&b4.to_be_bytes());
             data[40..].copy_from_slice(&b5.to_be_bytes());
 
-            let from_okm = Scalar::from_okm(&data);
-            let simple_from_okm = simple_from_okm(data);
-            assert_eq!(from_okm, simple_from_okm);
+            let key_init = Scalar::new(&data);
+            let simple_key_init = simple_key_init(data);
+            assert_eq!(key_init, simple_key_init);
         });
     }
 }
