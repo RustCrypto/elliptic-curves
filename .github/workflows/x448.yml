@@ -1,0 +1,111 @@
+name: x448
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/x448.yml"
+      - "ed448-goldilocks/**"
+      - "x448/**"
+      - "Cargo.*"
+  push:
+    branches: master
+
+defaults:
+  run:
+    working-directory: x448
+
+env:
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-Dwarnings"
+  RUSTDOCFLAGS: "-Dwarnings"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+          - 1.85.0 # MSRV
+          - stable
+        target:
+          - thumbv7em-none-eabi
+          - wasm32-unknown-unknown
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+      - run: cargo build --target ${{ matrix.target }} --release
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # 32-bit Linux
+          - target: i686-unknown-linux-gnu
+            rust: 1.85.0 # MSRV
+            deps: sudo apt update && sudo apt install gcc-multilib
+          - target: i686-unknown-linux-gnu
+            rust: stable
+            deps: sudo apt update && sudo apt install gcc-multilib
+
+          # 64-bit Linux
+          - target: x86_64-unknown-linux-gnu
+            rust: 1.85.0 # MSRV
+          - target: x86_64-unknown-linux-gnu
+            rust: stable
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+      - uses: RustCrypto/actions/cargo-hack-install@master
+      - run: ${{ matrix.deps }}
+      - run: cargo test --release --target ${{ matrix.target }}
+
+  cross:
+    strategy:
+      matrix:
+        include:
+          # ARM32
+          - target: armv7-unknown-linux-gnueabihf
+            rust: 1.85.0 # MSRV (cross)
+          - target: armv7-unknown-linux-gnueabihf
+            rust: stable
+
+          # ARM64
+          - target: aarch64-unknown-linux-gnu
+            rust: 1.85.0 # MSRV (cross)
+          - target: aarch64-unknown-linux-gnu
+            rust: stable
+
+          # PPC32
+          - target: powerpc-unknown-linux-gnu
+            rust: 1.85.0 # MSRV (cross)
+          - target: powerpc-unknown-linux-gnu
+            rust: stable
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ${{ matrix.deps }}
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+      - uses: RustCrypto/actions/cross-install@master
+      - run: cross test --release --target ${{ matrix.target }}
+
+  doc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: RustCrypto/actions/cargo-cache@master
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - run: cargo doc
