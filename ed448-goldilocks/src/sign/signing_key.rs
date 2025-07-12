@@ -14,7 +14,7 @@ use signature::Error;
 use subtle::{Choice, ConstantTimeEq};
 
 #[cfg(feature = "pkcs8")]
-use crate::{PUBLIC_KEY_LENGTH, curve::edwards::extended::PointBytes};
+use crate::{PUBLIC_KEY_LENGTH, edwards::extended::PointBytes};
 
 /// Ed448 secret key as defined in [RFC8032 § 5.2.5]
 ///
