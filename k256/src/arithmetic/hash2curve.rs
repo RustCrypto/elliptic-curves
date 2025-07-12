@@ -4,7 +4,8 @@ use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 use hash2curve::{
-    GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0, KeyInit, KeySizeUser
+    GroupDigest, Isogeny, IsogenyCoefficients, KeyInit, KeySizeUser, MapToCurve, OsswuMap,
+    OsswuMapParams, Sgn0,
 };
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
@@ -273,7 +274,7 @@ mod tests {
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
     };
-    use hash2curve::{GroupDigest, MapToCurve, KeyInit};
+    use hash2curve::{GroupDigest, KeyInit, MapToCurve};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 

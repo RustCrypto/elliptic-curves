@@ -8,7 +8,7 @@ use elliptic_curve::{
     point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0, KeyInit, KeySizeUser};
+use hash2curve::{GroupDigest, KeyInit, KeySizeUser, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP384 {
     type K = U24;
@@ -117,7 +117,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap, KeyInit};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, KeyInit, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha384;

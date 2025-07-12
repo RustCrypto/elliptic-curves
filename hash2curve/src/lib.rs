@@ -29,10 +29,10 @@ mod map2curve;
 mod oprf;
 mod osswu;
 
+pub use digest::{KeyInit, crypto_common::KeySizeUser};
 pub use group_digest::*;
 pub use hash2field::*;
 pub use isogeny::*;
 pub use map2curve::*;
 pub use oprf::*;
 pub use osswu::*;
-pub use digest::{KeyInit, crypto_common::KeySizeUser};

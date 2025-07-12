@@ -120,7 +120,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, KeyInit, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, KeyInit, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
