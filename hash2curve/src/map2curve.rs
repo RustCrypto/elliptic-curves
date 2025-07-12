@@ -1,17 +1,16 @@
 //! Traits for mapping field elements to points on the curve.
 
+use digest::crypto_common::KeyInit;
 use elliptic_curve::{CurveArithmetic, ProjectivePoint};
-
-use super::FromOkm;
 
 /// Trait for converting field elements into a point via a mapping method like
 /// Simplified Shallue-van de Woestijne-Ulas or Elligator.
-pub trait MapToCurve: CurveArithmetic<Scalar: FromOkm> {
+pub trait MapToCurve: CurveArithmetic<Scalar: KeyInit> {
     /// The intermediate representation, an element of the curve which may or may not
     /// be in the curve subgroup.
     type CurvePoint;
     /// The field element representation for a group value with multiple elements.
-    type FieldElement: FromOkm + Default + Copy;
+    type FieldElement: KeyInit + Default + Copy;
 
     /// Map a field element into a curve point.
     fn map_to_curve(element: Self::FieldElement) -> Self::CurvePoint;
