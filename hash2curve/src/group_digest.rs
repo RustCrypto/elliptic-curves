@@ -28,7 +28,7 @@ pub trait GroupDigest: MapToCurve {
     ///   - [`ExpandMsgXmd`]
     ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`
+    /// `len_in_bytes = <Self::FieldElement as KeySizeUser>::KeySize * 2`
     ///
     /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
     /// [`ExpandMsgXof`]: crate::ExpandMsgXof
@@ -59,7 +59,7 @@ pub trait GroupDigest: MapToCurve {
     ///   - [`ExpandMsgXmd`]
     ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::FieldElement as FromOkm>::Length`
+    /// `len_in_bytes = <Self::FieldElement as KeySizeUser>::KeySize`
     ///
     /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
     /// [`ExpandMsgXof`]: crate::ExpandMsgXof
@@ -83,7 +83,7 @@ pub trait GroupDigest: MapToCurve {
     ///   - [`ExpandMsgXmd`]
     ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::Scalar as FromOkm>::Length`
+    /// `len_in_bytes = <Self::Scalar as KeySizeUser>::KeySize`
     ///
     /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
     /// [`ExpandMsgXof`]: crate::ExpandMsgXof
