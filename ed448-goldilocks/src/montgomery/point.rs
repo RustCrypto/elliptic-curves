@@ -1,11 +1,16 @@
 use crate::field::ConstMontyType;
 use crate::field::FieldElement;
+use crate::field::FieldElementU84;
 use crate::{AffinePoint, MontgomeryScalar};
 use core::fmt::{self, Debug, Formatter};
 use core::ops::Mul;
+use elliptic_curve::array::Array;
 use elliptic_curve::bigint::U448;
 use elliptic_curve::consts::U28;
+use elliptic_curve::consts::U84;
 use elliptic_curve::zeroize::DefaultIsZeroes;
+use hash2curve::Expander;
+use hash2curve::FromOkm;
 use hash2curve::{ExpandMsg, ExpandMsgXof};
 use sha3::Shake256;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
@@ -219,7 +224,7 @@ fn differential_add_and_double(
 }
 
 impl ProjectiveMontgomeryPoint {
-    pub(super) fn new(U: FieldElement, W: FieldElement) -> Self {
+    pub(crate) fn new(U: FieldElement, W: FieldElement) -> Self {
         Self { U, W }
     }
 
@@ -277,10 +282,21 @@ impl ProjectiveMontgomeryPoint {
     where
         X: ExpandMsg<U28>,
     {
-        ExtendedProjectiveMontgomeryPoint::hash_raw::<X>(msg, dst)
-            .to_projective()
-            .double()
-            .double()
+        let mut expander =
+            X::expand_message(msg, dst, (84 * 2).try_into().expect("should never fail"))
+                .expect("should never fail with the given `ExpandMsg` and `dst`");
+        let mut data = Array::<u8, U84>::default();
+        expander.fill_bytes(&mut data);
+        let u0 = FieldElementU84::from_okm(&data).0;
+        expander.fill_bytes(&mut data);
+        let u1 = FieldElementU84::from_okm(&data).0;
+
+        let (qx, qy) = u0.map_to_curve_elligator2();
+        let q0 = ExtendedProjectiveMontgomeryPoint::new(qx, qy, FieldElement::ONE);
+        let (qx, qy) = u1.map_to_curve_elligator2();
+        let q1 = ExtendedProjectiveMontgomeryPoint::new(qx, qy, FieldElement::ONE);
+
+        (q0 + q1).to_projective().double().double()
     }
 
     /// Encode a message to a point on the curve
@@ -299,10 +315,13 @@ impl ProjectiveMontgomeryPoint {
     where
         X: ExpandMsg<U28>,
     {
-        ExtendedProjectiveMontgomeryPoint::encode_raw::<X>(msg, dst)
-            .to_projective()
-            .double()
-            .double()
+        let mut expander = X::expand_message(msg, dst, 84.try_into().expect("should never fail"))
+            .expect("should never fail with the given `ExpandMsg` and `dst`");
+        let mut data = Array::<u8, U84>::default();
+        expander.fill_bytes(&mut data);
+        let u = FieldElementU84::from_okm(&data).0;
+
+        u.map_to_curve_elligator2_x().double().double()
     }
 
     /// Convert the point to affine form

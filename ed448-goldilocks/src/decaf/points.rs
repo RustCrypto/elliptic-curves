@@ -369,7 +369,7 @@ impl DecafPoint {
         let u1 = FieldElement::from_bytes(&hi);
         let q0 = u0.map_to_curve_decaf448();
         let q1 = u1.map_to_curve_decaf448();
-        Self(q0.add(&q1))
+        q0.add(&q1)
     }
 }
 

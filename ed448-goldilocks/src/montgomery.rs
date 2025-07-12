@@ -9,6 +9,7 @@
 // - Kevaundray Wedderburn <kevtheappdev@gmail.com>
 
 mod extended;
+mod ops;
 mod point;
 mod scalar;
 

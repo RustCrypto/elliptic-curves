@@ -1192,9 +1192,9 @@ mod tests {
             assert!(conv_p1.x == p.x || conv_p2.x == p.x);
             assert!(conv_p1.y == p.y || conv_p2.y == p.y);
 
-            let conv_p =
-                ExtendedProjectiveMontgomeryPoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
-                    .to_edwards();
+            let conv_p = Curve448::encode_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                .unwrap()
+                .to_edwards();
             assert_eq!(conv_p.x, p.x);
             assert_eq!(conv_p.y, p.y);
         }

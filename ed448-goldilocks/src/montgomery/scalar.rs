@@ -4,6 +4,7 @@ use crate::{Curve448, ORDER};
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, U448};
 use elliptic_curve::consts::{U56, U84};
+use elliptic_curve::scalar::FromUintUnchecked;
 use hash2curve::FromOkm;
 use subtle::{Choice, CtOption};
 
@@ -51,21 +52,19 @@ impl MontgomeryScalar {
     }
 }
 
-// TODO: Enable after implement `CurveArithmetic`.
-//elliptic_curve::scalar_from_impls!(Curve448, MontgomeryScalar);
+elliptic_curve::scalar_from_impls!(Curve448, MontgomeryScalar);
 
 /// The number of bytes needed to represent the scalar field
 pub type MontgomeryScalarBytes = ScalarBytes<Curve448>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
 pub type WideMontgomeryScalarBytes = WideScalarBytes<Curve448>;
 
-// TODO: Enable after implement `CurveArithmetic`.
-// #[cfg(feature = "bits")]
-// impl From<&MontgomeryScalar> for elliptic_curve::scalar::ScalarBits<Curve448> {
-//     fn from(scalar: &MontgomeryScalar) -> Self {
-//         scalar.scalar.to_words().into()
-//     }
-// }
+#[cfg(feature = "bits")]
+impl From<&MontgomeryScalar> for elliptic_curve::scalar::ScalarBits<Curve448> {
+    fn from(scalar: &MontgomeryScalar) -> Self {
+        scalar.scalar.to_words().into()
+    }
+}
 
 impl FromOkm for MontgomeryScalar {
     type Length = U84;
@@ -77,8 +76,14 @@ impl FromOkm for MontgomeryScalar {
 
 #[cfg(test)]
 mod test {
+    use crate::montgomery::DEFAULT_HASH_TO_CURVE_SUITE;
+
     use super::*;
+    use elliptic_curve::PrimeField;
+    use hash2curve::ExpandMsgXof;
+    use hash2curve::GroupDigest;
     use hex_literal::hex;
+    use sha3::Shake256;
 
     #[test]
     fn test_basic_add() {
@@ -270,15 +275,17 @@ mod test {
         assert_eq!(res.unwrap(), MontgomeryScalar::TWO_INV);
     }
 
-    // TODO: Enable after implement `GroupDigest`.
-    // #[test]
-    // fn scalar_hash() {
-    //     let msg = b"hello world";
-    //     let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
-    //     let res = Decaf448::hash_to_scalar::<ExpandMsgXof<Shake256>>(&[msg], &[dst]).unwrap();
-    //     let expected: [u8; 56] = hex_literal::hex!(
-    //         "55e7b59aa035db959409c6b69b817a18c8133d9ad06687665f5720672924da0a84eab7fee415ef13e7aaebdd227291ee8e156f32c507ad2e"
-    //     );
-    //     assert_eq!(res.to_repr(), Array::from(expected));
-    // }
+    #[test]
+    fn scalar_hash() {
+        let msg = b"hello world";
+        let res = Curve448::hash_to_scalar::<ExpandMsgXof<Shake256>>(
+            &[msg],
+            &[DEFAULT_HASH_TO_CURVE_SUITE],
+        )
+        .unwrap();
+        let expected: [u8; 56] = hex_literal::hex!(
+            "287e2dd03a61fe8c38304326442016e9dab1b12c9fd7fe2e4cff4170fc7893f06746c27c35fe6fe43d350aab1d63baef8e3c99a25ab43e1e"
+        );
+        assert_eq!(res.to_repr(), Array::from(expected));
+    }
 }

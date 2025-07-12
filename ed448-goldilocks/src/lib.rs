@@ -186,7 +186,7 @@ pub type Curve448FieldBytes = FieldBytes<Curve448>;
 #[cfg(feature = "bits")]
 pub type Curve448ScalarBits = elliptic_curve::scalar::ScalarBits<Curve448>;
 
-/// Non-zero scalar of the Ed448 scalar
+/// Non-zero scalar of the Curve448 scalar
 pub type Curve448NonZeroScalar = NonZeroScalar<Curve448>;
 
 impl Curve for Curve448 {
@@ -212,4 +212,14 @@ impl FieldBytesEncoding<Curve448> for U448 {
         data.copy_from_slice(&self.to_le_byte_array()[..]);
         data
     }
+}
+
+impl CurveArithmetic for Curve448 {
+    type AffinePoint = ExtendedMontgomeryPoint;
+    type ProjectivePoint = ExtendedProjectiveMontgomeryPoint;
+    type Scalar = MontgomeryScalar;
+}
+
+impl GroupDigest for Curve448 {
+    type K = U28;
 }

@@ -2,8 +2,10 @@ use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::ConstMontyType;
+use crate::ProjectiveMontgomeryPoint;
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
+    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint,
+    ExtendedProjectiveMontgomeryPoint, ORDER,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::{
@@ -16,7 +18,10 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::{FromOkm, MapToCurve};
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
+use subtle::{
+    Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess,
+    CtOption,
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct FieldElement(pub(crate) ConstMontyType);
@@ -218,11 +223,34 @@ impl MapToCurve for Decaf448 {
     type FieldElement = FieldElementU56;
 
     fn map_to_curve(element: FieldElementU56) -> DecafPoint {
-        DecafPoint(element.0.map_to_curve_decaf448())
+        element.0.map_to_curve_decaf448()
     }
 
     fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
         point
+    }
+}
+
+impl MapToCurve for Curve448 {
+    type CurvePoint = ExtendedProjectiveMontgomeryPoint;
+    type FieldElement = FieldElementU84;
+
+    fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
+        let (x, y) = element.0.map_to_curve_elligator2();
+        ExtendedProjectiveMontgomeryPoint::new(x, y, FieldElement::ONE)
+    }
+
+    fn map_to_subgroup(
+        point: ExtendedProjectiveMontgomeryPoint,
+    ) -> ExtendedProjectiveMontgomeryPoint {
+        point.clear_cofactor()
+    }
+
+    fn add_and_map_to_subgroup(
+        lhs: ExtendedProjectiveMontgomeryPoint,
+        rhs: ExtendedProjectiveMontgomeryPoint,
+    ) -> ExtendedProjectiveMontgomeryPoint {
+        (lhs + rhs).clear_cofactor()
     }
 }
 
@@ -321,6 +349,12 @@ impl FieldElement {
         Self(ConstMontyType::new(&U448::from_le_slice(bytes)))
     }
 
+    pub fn from_repr(bytes: &[u8; 56]) -> CtOption<Self> {
+        let integer = U448::from_le_slice(bytes);
+        let is_some = integer.ct_lt(&ORDER);
+        CtOption::new(Self(ConstMontyType::from_montgomery(integer)), is_some)
+    }
+
     pub fn double(&self) -> Self {
         Self(self.0.double())
     }
@@ -374,6 +408,7 @@ impl FieldElement {
         (inv_sqrt_x * u, zero_u | is_res)
     }
 
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
     pub(crate) fn map_to_curve_elligator2(&self) -> (FieldElement, FieldElement) {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
@@ -397,9 +432,29 @@ impl FieldElement {
         (x, y)
     }
 
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    // Without y-coordinate.
+    pub(crate) fn map_to_curve_elligator2_x(&self) -> ProjectiveMontgomeryPoint {
+        let mut t1 = self.square(); // 1.   t1 = u^2
+        t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
+        let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
+        t1.conditional_assign(&Self::ZERO, e1); // 4.   t1 = CMOV(t1, 0, e1)     // if t1 == -1, set t1 = 0
+        let mut x1 = t1 + Self::ONE; // 5.   x1 = t1 + 1
+        x1 = x1.invert(); // 6.   x1 = inv0(x1)
+        x1 *= -Self::J; // 7.   x1 = -A * x1             // x1 = -A / (1 + Z * u^2)
+        let mut gx1 = x1 + Self::J; // 8.  gx1 = x1 + A
+        gx1 *= x1; // 9.  gx1 = gx1 * x1
+        gx1 += Self::ONE; // 10. gx1 = gx1 + B
+        gx1 *= x1; // 11. gx1 = gx1 * x1            // gx1 = x1^3 + A * x1^2 + B * x1
+        let x2 = -x1 - Self::J; // 12.  x2 = -x1 - A
+        let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
+        let x = Self::conditional_select(&x2, &x1, e2); // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
+        ProjectiveMontgomeryPoint::new(x, FieldElement::ONE)
+    }
+
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
     // Implementation copied from <https://sourceforge.net/p/ed448goldilocks/code/ci/e5cc6240690d3ffdfcbdb1e4e851954b789cd5d9/tree/src/per_curve/elligator.tmpl.c#l28>.
-    pub(crate) fn map_to_curve_decaf448(&self) -> TwistedExtendedPoint {
+    pub(crate) fn map_to_curve_decaf448(&self) -> DecafPoint {
         const ONE_MINUS_TWO_D: FieldElement =
             FieldElement(ConstMontyType::new(&U448::from_u64(78163)));
 
@@ -439,7 +494,7 @@ impl FieldElement {
         let Y = e * a;
         let Z = a * b;
 
-        TwistedExtendedPoint { X, Y, Z, T }
+        DecafPoint(TwistedExtendedPoint { X, Y, Z, T })
     }
 }
 

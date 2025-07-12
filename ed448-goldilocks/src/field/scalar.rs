@@ -26,7 +26,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreate
 use elliptic_curve::ff::{FieldBits, PrimeFieldBits};
 
 /// Shared scalar for [`Ed448`] and [`Decaf448`].
-/// Use [`EdwardsScalar`] and [`DecafScalar`] directly.
+/// Use [`EdwardsScalar`], [`DecafScalar`] and [`MontgomeryScalar`] directly.
 ///
 /// This is the scalar field
 /// size = 4q = 2^446 - 0x8335dc163bb124b65129c96fde933d8d723a70aadc873d6d54a7bb0d
