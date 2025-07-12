@@ -6,13 +6,10 @@ mod expand_msg;
 
 use core::num::NonZeroU16;
 
-use digest::crypto_common::{KeySizeUser, KeyInit};
+use digest::crypto_common::{KeyInit, KeySizeUser};
 pub use expand_msg::{xmd::*, xof::*, *};
 
-use elliptic_curve::array::{
-    Array,
-    typenum::Unsigned,
-};
+use elliptic_curve::array::{Array, typenum::Unsigned};
 use elliptic_curve::{Error, Result};
 
 /// Convert an arbitrary byte sequence into a field element.
