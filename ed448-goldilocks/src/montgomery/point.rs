@@ -166,7 +166,11 @@ impl ProjectiveMontgomeryPoint {
 
     /// Convert the point to its form without the y-coordinate
     pub fn to_projective_x(&self) -> ProjectiveMontgomeryXpoint {
-        ProjectiveMontgomeryXpoint::new(self.U, self.W)
+        ProjectiveMontgomeryXpoint::conditional_select(
+            &ProjectiveMontgomeryXpoint::new(self.U, self.W),
+            &ProjectiveMontgomeryXpoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 
     /// Convert the point to affine form without the y-coordinate
@@ -382,6 +386,22 @@ mod tests {
             .to_affine();
 
         assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
+    }
+
+    #[test]
+    fn test_montgomery_x() {
+        let x_identity = ProjectiveMontgomeryXpoint::IDENTITY;
+        let identity = ProjectiveMontgomeryPoint::IDENTITY;
+
+        assert_eq!(identity.to_projective_x(), x_identity);
+    }
+
+    #[test]
+    fn test_montgomery_affine_x() {
+        let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
+        let identity = ProjectiveMontgomeryPoint::IDENTITY.to_affine();
+
+        assert_eq!(identity.to_affine_x(), x_identity);
     }
 
     #[test]

@@ -41,7 +41,7 @@ const LOW_C: MontgomeryXpoint = MontgomeryXpoint([
 ]);
 
 /// A point in Montgomery form
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq)]
 pub struct MontgomeryXpoint(pub [u8; 56]);
 
 impl Default for MontgomeryXpoint {
@@ -69,10 +69,9 @@ impl PartialEq for MontgomeryXpoint {
         self.ct_eq(other).into()
     }
 }
-impl Eq for MontgomeryXpoint {}
 
 /// A Projective point in Montgomery form
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq)]
 pub struct ProjectiveMontgomeryXpoint {
     U: FieldElement,
     W: FieldElement,
@@ -143,12 +142,24 @@ impl MontgomeryXpoint {
     }
 }
 
+impl ConstantTimeEq for ProjectiveMontgomeryXpoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.U.ct_eq(&other.U) & self.W.ct_eq(&other.W)
+    }
+}
+
 impl ConditionallySelectable for ProjectiveMontgomeryXpoint {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self {
             U: FieldElement::conditional_select(&a.U, &b.U, choice),
             W: FieldElement::conditional_select(&a.W, &b.W, choice),
         }
+    }
+}
+
+impl PartialEq for ProjectiveMontgomeryXpoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
@@ -341,7 +352,11 @@ impl ProjectiveMontgomeryXpoint {
 
     /// Convert the point to its form including the y-coordinate
     pub fn to_extended(&self, sign: Choice) -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint::new(self.U, self.y(sign), self.W)
+        ProjectiveMontgomeryPoint::conditional_select(
+            &ProjectiveMontgomeryPoint::new(self.U, self.y(sign), self.W),
+            &ProjectiveMontgomeryPoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 }
 
@@ -349,6 +364,7 @@ impl ProjectiveMontgomeryXpoint {
 mod tests {
     use super::*;
     use crate::EdwardsPoint;
+    use elliptic_curve::CurveGroup;
     use hex_literal::hex;
     use sha3::Shake256;
 
@@ -364,6 +380,22 @@ mod tests {
             .to_affine();
 
         assert_eq!(goldilocks_point.to_montgomery_x(), montgomery_res);
+    }
+
+    #[test]
+    fn test_montgomery_extended() {
+        let x_identity = ProjectiveMontgomeryXpoint::IDENTITY;
+        let identity = ProjectiveMontgomeryPoint::IDENTITY;
+
+        assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
+    }
+
+    #[test]
+    fn test_montgomery_extended_affine() {
+        let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
+        let identity = ProjectiveMontgomeryPoint::IDENTITY.to_affine();
+
+        assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
     }
 
     #[test]
