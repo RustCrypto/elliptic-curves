@@ -1186,7 +1186,8 @@ mod tests {
 
             // Test Montgomery to Edwards conversion.
             let conv_p =
-                ProjectiveMontgomeryXpoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST]);
+                ProjectiveMontgomeryXpoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                    .to_affine();
             let conv_p1 = conv_p.to_edwards(Choice::from(0));
             let conv_p2 = conv_p.to_edwards(Choice::from(1));
             assert!(conv_p1.x == p.x || conv_p2.x == p.x);
@@ -1194,6 +1195,7 @@ mod tests {
 
             let conv_p = Curve448::encode_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
                 .unwrap()
+                .to_affine()
                 .to_edwards();
             assert_eq!(conv_p.x, p.x);
             assert_eq!(conv_p.y, p.y);

@@ -111,6 +111,7 @@ impl AffinePoint {
     }
 
     /// Convert this point to [`MontgomeryXpoint`]
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
     pub fn to_montgomery_x(&self) -> MontgomeryXpoint {
         // u = y^2/x^2
         let u = self.y.square() * self.x.square().invert();
@@ -119,10 +120,12 @@ impl AffinePoint {
     }
 
     /// Convert this point to [`MontgomeryPoint`]
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
     pub fn to_montgomery(&self) -> MontgomeryPoint {
         let x_sq = self.x.square();
         let y_sq = self.y.square();
 
+        // u = y^2/x^2
         let u = y_sq * x_sq.invert();
         // v = (2 - x^2 - y^2)*y/x^3)
         let v = ((FieldElement::TWO - x_sq - y_sq) * self.y) * (x_sq * self.x).invert();

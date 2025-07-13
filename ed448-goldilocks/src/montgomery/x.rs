@@ -240,6 +240,7 @@ impl ProjectiveMontgomeryXpoint {
         W: FieldElement::ONE,
     };
 
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-1
     fn y(&self, sign: Choice) -> FieldElement {
         // v^2 = u^3 + A*u^2 + u
         let u_sq = self.U.square();
@@ -341,11 +342,6 @@ impl ProjectiveMontgomeryXpoint {
     /// Convert the point to its form including the y-coordinate
     pub fn to_extended(&self, sign: Choice) -> ProjectiveMontgomeryPoint {
         ProjectiveMontgomeryPoint::new(self.U, self.y(sign), self.W)
-    }
-
-    /// Convert this point to an [`AffinePoint`]
-    pub fn to_edwards(&self, sign: Choice) -> AffinePoint {
-        self.to_affine().to_edwards(sign)
     }
 }
 

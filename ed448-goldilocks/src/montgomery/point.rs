@@ -174,11 +174,6 @@ impl ProjectiveMontgomeryPoint {
         self.to_projective_x().to_affine()
     }
 
-    /// Convert this point to an [`AffinePoint`]
-    pub fn to_edwards(&self) -> AffinePoint {
-        self.to_affine().to_edwards()
-    }
-
     /// Hash a message to a point on the curve
     ///
     /// Hash using the default domain separation tag and hash function.
