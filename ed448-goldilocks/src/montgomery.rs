@@ -8,14 +8,14 @@
 // - Henry de Valence <hdevalence@hdevalence.ca>
 // - Kevaundray Wedderburn <kevtheappdev@gmail.com>
 
-mod extended;
 mod ops;
 mod point;
 mod scalar;
+mod x;
 
-pub use extended::{ExtendedMontgomeryPoint, ExtendedProjectiveMontgomeryPoint};
 pub use point::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use scalar::{MontgomeryScalar, MontgomeryScalarBytes, WideMontgomeryScalarBytes};
+pub use x::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};
 
 /// The default hash to curve domain separation tag
 const DEFAULT_HASH_TO_CURVE_SUITE: &[u8] = b"curve448_XOF:SHAKE256_ELL2_RO_";

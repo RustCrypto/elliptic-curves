@@ -110,16 +110,16 @@ impl AffinePoint {
         }
     }
 
-    /// Convert this point to [`MontgomeryPoint`]
-    pub fn to_montgomery(&self) -> MontgomeryPoint {
+    /// Convert this point to [`MontgomeryXpoint`]
+    pub fn to_montgomery_x(&self) -> MontgomeryXpoint {
         // u = y^2/x^2
         let u = self.y.square() * self.x.square().invert();
 
-        MontgomeryPoint(u.to_bytes())
+        MontgomeryXpoint(u.to_bytes())
     }
 
-    /// Convert this point to [`ExtendedMontgomeryPoint`]
-    pub fn to_extended_montgomery(&self) -> ExtendedMontgomeryPoint {
+    /// Convert this point to [`MontgomeryPoint`]
+    pub fn to_montgomery(&self) -> MontgomeryPoint {
         let x_sq = self.x.square();
         let y_sq = self.y.square();
 
@@ -127,7 +127,7 @@ impl AffinePoint {
         // v = (2 - x^2 - y^2)*y/x^3)
         let v = ((FieldElement::TWO - x_sq - y_sq) * self.y) * (x_sq * self.x).invert();
 
-        ExtendedMontgomeryPoint::new(u, v)
+        MontgomeryPoint::new(u, v)
     }
 
     /// The X coordinate

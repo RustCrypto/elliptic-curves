@@ -1,68 +1,87 @@
+use crate::constants::MONTGOMERY_BASEPOINT_ORDER;
 use crate::field::ConstMontyType;
 use crate::field::FieldElement;
-use crate::field::FieldElementU84;
-use crate::{AffinePoint, MontgomeryScalar};
-use core::fmt::{self, Debug, Formatter};
-use core::ops::Mul;
-use elliptic_curve::array::Array;
-use elliptic_curve::bigint::U448;
-use elliptic_curve::consts::U28;
-use elliptic_curve::consts::U84;
-use elliptic_curve::zeroize::DefaultIsZeroes;
-use hash2curve::Expander;
-use hash2curve::FromOkm;
-use hash2curve::{ExpandMsg, ExpandMsgXof};
+use crate::{AffinePoint, Curve448, Curve448FieldBytes, MontgomeryScalar};
+use elliptic_curve::{
+    CurveGroup, Error, Group,
+    array::Array,
+    bigint::U448,
+    consts::U57,
+    group::{GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
+    ops::LinearCombination,
+    point::{AffineCoordinates, NonIdentity},
+    zeroize::DefaultIsZeroes,
+};
+use hash2curve::{ExpandMsgXof, GroupDigest};
+use rand_core::TryRngCore;
 use sha3::Shake256;
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 use super::{
-    DEFAULT_ENCODE_TO_CURVE_SUITE, DEFAULT_HASH_TO_CURVE_SUITE, ExtendedMontgomeryPoint,
-    ExtendedProjectiveMontgomeryPoint,
+    DEFAULT_ENCODE_TO_CURVE_SUITE, DEFAULT_HASH_TO_CURVE_SUITE, MontgomeryXpoint,
+    ProjectiveMontgomeryXpoint,
 };
 
-// Low order points on Curve448 and it's twist
-const LOW_A: MontgomeryPoint = MontgomeryPoint([
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-]);
-const LOW_B: MontgomeryPoint = MontgomeryPoint([
-    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-]);
-const LOW_C: MontgomeryPoint = MontgomeryPoint([
-    0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-]);
+/// A point in Montgomery form including the y-coordinate.
+#[derive(Copy, Clone, Debug, Default)]
+pub struct MontgomeryPoint {
+    x: FieldElement,
+    y: FieldElement,
+}
 
-/// A point in Montgomery form
-#[derive(Copy, Clone)]
-pub struct MontgomeryPoint(pub [u8; 56]);
+impl MontgomeryPoint {
+    pub(crate) fn new(x: FieldElement, y: FieldElement) -> Self {
+        Self { x, y }
+    }
 
-impl Default for MontgomeryPoint {
-    fn default() -> MontgomeryPoint {
-        Self([0u8; 56])
+    /// Convert this point to an [`AffinePoint`]
+    // https://www.rfc-editor.org/rfc/rfc7748#section-4.2
+    pub fn to_edwards(&self) -> AffinePoint {
+        let u = self.x;
+        let v = self.y;
+
+        let u_sq = self.x.square();
+        let u_sq_minus_1 = u_sq - FieldElement::ONE;
+        let u_sq_minus_1_sq = u_sq_minus_1.square();
+        let v_sq_2 = v.square().double();
+        let v_sq_4 = v_sq_2.double();
+
+        let xn = v.double().double() * u_sq_minus_1;
+        let xd = u_sq_minus_1_sq + v_sq_4;
+
+        let yn = -u * (u_sq_minus_1_sq - v_sq_4);
+        let yd = u * u_sq_minus_1_sq - v_sq_2 * (u_sq + FieldElement::ONE);
+
+        let d = (xd * yd).invert();
+
+        let x = xn * yd * d;
+        let y = yn * xd * d;
+
+        AffinePoint { x, y }
+    }
+
+    /// Convert the point to its form without the y-coordinate
+    pub fn to_affine_x(&self) -> MontgomeryXpoint {
+        MontgomeryXpoint(self.x.to_bytes())
     }
 }
 
-impl DefaultIsZeroes for MontgomeryPoint {}
-
-impl Debug for MontgomeryPoint {
-    fn fmt(&self, formatter: &mut Formatter) -> fmt::Result {
-        self.0[..].fmt(formatter)
+impl ConditionallySelectable for MontgomeryPoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self {
+            x: FieldElement::conditional_select(&a.x, &b.x, choice),
+            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+        }
     }
 }
 
 impl ConstantTimeEq for MontgomeryPoint {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
     }
 }
+
+impl DefaultIsZeroes for MontgomeryPoint {}
 
 impl PartialEq for MontgomeryPoint {
     fn eq(&self, other: &Self) -> bool {
@@ -71,75 +90,114 @@ impl PartialEq for MontgomeryPoint {
 }
 impl Eq for MontgomeryPoint {}
 
-/// A Projective point in Montgomery form
-#[derive(Copy, Clone, Debug)]
+impl AffineCoordinates for MontgomeryPoint {
+    type FieldRepr = Curve448FieldBytes;
+
+    fn x(&self) -> Self::FieldRepr {
+        self.x.to_bytes().into()
+    }
+
+    fn y(&self) -> Self::FieldRepr {
+        self.y.to_bytes().into()
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.x.is_negative()
+    }
+
+    fn y_is_odd(&self) -> Choice {
+        self.y.is_negative()
+    }
+}
+
+impl From<ProjectiveMontgomeryPoint> for MontgomeryPoint {
+    fn from(value: ProjectiveMontgomeryPoint) -> Self {
+        value.to_affine()
+    }
+}
+
+impl From<NonIdentity<MontgomeryPoint>> for MontgomeryPoint {
+    fn from(affine: NonIdentity<MontgomeryPoint>) -> Self {
+        affine.to_point()
+    }
+}
+
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<MontgomeryPoint> for NonIdentity<MontgomeryPoint> {
+    type Error = Error;
+
+    fn try_from(affine_point: MontgomeryPoint) -> Result<Self, Error> {
+        NonIdentity::new(affine_point).into_option().ok_or(Error)
+    }
+}
+
+/// A Projective point in Montgomery form including the y-coordinate.
+#[derive(Copy, Clone, Debug, Eq)]
 pub struct ProjectiveMontgomeryPoint {
-    U: FieldElement,
-    W: FieldElement,
+    pub(super) U: FieldElement,
+    pub(super) V: FieldElement,
+    pub(super) W: FieldElement,
 }
 
-impl Mul<&MontgomeryScalar> for &MontgomeryPoint {
-    type Output = MontgomeryPoint;
+impl ProjectiveMontgomeryPoint {
+    /// The identity element of the group: the point at infinity.
+    pub const IDENTITY: Self = Self {
+        U: FieldElement::ZERO,
+        V: FieldElement::ONE,
+        W: FieldElement::ZERO,
+    };
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, scalar: &MontgomeryScalar) -> MontgomeryPoint {
-        (&self.to_projective() * scalar).to_affine()
-    }
-}
+    /// The generator point
+    pub const GENERATOR: Self = Self {
+        U: FieldElement(ConstMontyType::new(&U448::from_u64(5))),
+        V: FieldElement(ConstMontyType::new(&U448::from_be_hex(
+            "7d235d1295f5b1f66c98ab6e58326fcecbae5d34f55545d060f75dc28df3f6edb8027e2346430d211312c4b150677af76fd7223d457b5b1a",
+        ))),
+        W: FieldElement::ONE,
+    };
 
-impl Mul<&MontgomeryPoint> for &MontgomeryScalar {
-    type Output = MontgomeryPoint;
-
-    fn mul(self, point: &MontgomeryPoint) -> MontgomeryPoint {
-        point * self
-    }
-}
-
-impl MontgomeryPoint {
-    /// Returns the generator specified in RFC7748
-    pub const GENERATOR: Self = Self([
-        0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]);
-
-    /// Returns true if the point is one of the low order points
-    pub fn is_low_order(&self) -> bool {
-        (*self == LOW_A) || (*self == LOW_B) || (*self == LOW_C)
+    pub(crate) fn new(U: FieldElement, V: FieldElement, W: FieldElement) -> Self {
+        Self { U, V, W }
     }
 
-    /// View the point as a byte slice
-    pub fn as_bytes(&self) -> &[u8; 56] {
-        &self.0
+    fn double(&self) -> Self {
+        self + self
     }
 
-    /// Compute the Y-coordinate
-    pub fn y(&self, sign: Choice) -> [u8; 56] {
-        self.to_projective().y(sign).to_bytes()
+    /// Convert the point to its form without the y-coordinate
+    pub fn to_projective_x(&self) -> ProjectiveMontgomeryXpoint {
+        ProjectiveMontgomeryXpoint::new(self.U, self.W)
     }
 
-    /// Convert the point to its form including the y-coordinate
-    pub fn to_projective(&self) -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint {
-            U: FieldElement::from_bytes(&self.0),
-            W: FieldElement::ONE,
-        }
-    }
-
-    /// Convert the point to projective form including the y-coordinate
-    pub fn to_extended_projective(&self, sign: Choice) -> ExtendedProjectiveMontgomeryPoint {
-        self.to_projective().to_extended(sign)
-    }
-
-    /// Convert the point to a ProjectiveMontgomeryPoint
-    pub fn to_extended(&self, sign: Choice) -> ExtendedMontgomeryPoint {
-        self.to_projective().to_extended_affine(sign)
+    /// Convert the point to affine form without the y-coordinate
+    pub fn to_affine_x(&self) -> MontgomeryXpoint {
+        self.to_projective_x().to_affine()
     }
 
     /// Convert this point to an [`AffinePoint`]
-    pub fn to_edwards(&self, sign: Choice) -> AffinePoint {
-        self.to_extended(sign).to_edwards()
+    pub fn to_edwards(&self) -> AffinePoint {
+        self.to_affine().to_edwards()
+    }
+
+    /// Hash a message to a point on the curve
+    ///
+    /// Hash using the default domain separation tag and hash function.
+    /// For more control see [`GroupDigest::hash_from_bytes()`].
+    pub fn hash_with_defaults(msg: &[u8]) -> Self {
+        Curve448::hash_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DEFAULT_HASH_TO_CURVE_SUITE])
+            .expect("should never fail with the given `ExpandMsg` and `dst`")
+    }
+
+    /// Encode a message to a point on the curve
+    ///
+    /// Encode using the default domain separation tag and hash function.
+    /// For more control see [`GroupDigest::encode_from_bytes()`].
+    pub fn encode_with_defaults(msg: &[u8]) -> Self {
+        Curve448::encode_from_bytes::<ExpandMsgXof<Shake256>>(
+            &[msg],
+            &[DEFAULT_ENCODE_TO_CURVE_SUITE],
+        )
+        .expect("should never fail with the given `ExpandMsg` and `dst`")
     }
 }
 
@@ -147,205 +205,167 @@ impl ConditionallySelectable for ProjectiveMontgomeryPoint {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self {
             U: FieldElement::conditional_select(&a.U, &b.U, choice),
+            V: FieldElement::conditional_select(&a.V, &b.V, choice),
             W: FieldElement::conditional_select(&a.W, &b.W, choice),
         }
     }
 }
 
-impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryPoint {
-    type Output = ProjectiveMontgomeryPoint;
+impl ConstantTimeEq for ProjectiveMontgomeryPoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.U.ct_eq(&other.U) & self.V.ct_eq(&other.V) & self.W.ct_eq(&other.W)
+    }
+}
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryPoint {
-        // Algorithm 8 of Costello-Smith 2017
-        let mut x0 = ProjectiveMontgomeryPoint::IDENTITY;
-        let mut x1 = *self;
+impl Default for ProjectiveMontgomeryPoint {
+    fn default() -> Self {
+        Self::IDENTITY
+    }
+}
 
-        let bits = scalar.bits();
-        let mut swap = 0;
-        for s in (0..448).rev() {
-            let bit = bits[s] as u8;
-            let choice: u8 = swap ^ bit;
+impl DefaultIsZeroes for ProjectiveMontgomeryPoint {}
 
-            ProjectiveMontgomeryPoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
-            differential_add_and_double(&mut x0, &mut x1, &self.U);
+impl<const N: usize> LinearCombination<[(ProjectiveMontgomeryPoint, MontgomeryScalar); N]>
+    for ProjectiveMontgomeryPoint
+{
+}
 
-            swap = bit;
+impl LinearCombination<[(ProjectiveMontgomeryPoint, MontgomeryScalar)]>
+    for ProjectiveMontgomeryPoint
+{
+}
+
+impl PartialEq for ProjectiveMontgomeryPoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl CofactorGroup for ProjectiveMontgomeryPoint {
+    type Subgroup = ProjectiveMontgomeryPoint;
+
+    fn clear_cofactor(&self) -> Self::Subgroup {
+        self.double().double()
+    }
+
+    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
+        CtOption::new(self.clear_cofactor(), self.is_torsion_free())
+    }
+
+    fn is_torsion_free(&self) -> Choice {
+        (self * MONTGOMERY_BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+    }
+}
+
+impl Group for ProjectiveMontgomeryPoint {
+    type Scalar = MontgomeryScalar;
+
+    fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
+    where
+        R: TryRngCore + ?Sized,
+    {
+        let mut uniform_bytes = [0u8; 112];
+        rng.try_fill_bytes(&mut uniform_bytes)?;
+        Ok(Self::hash_with_defaults(&uniform_bytes))
+    }
+
+    fn identity() -> Self {
+        Self::IDENTITY
+    }
+
+    fn generator() -> Self {
+        Self::GENERATOR
+    }
+
+    fn is_identity(&self) -> Choice {
+        self.ct_eq(&Self::IDENTITY)
+    }
+
+    fn double(&self) -> Self {
+        self.double()
+    }
+}
+
+impl CurveGroup for ProjectiveMontgomeryPoint {
+    type AffineRepr = MontgomeryPoint;
+
+    fn to_affine(&self) -> Self::AffineRepr {
+        let W_inv = self.W.invert();
+        let x = self.U * W_inv;
+        let y = self.V * W_inv;
+
+        MontgomeryPoint { x, y }
+    }
+}
+
+impl GroupEncoding for ProjectiveMontgomeryPoint {
+    type Repr = Array<u8, U57>;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        // Safe to unwrap here as the underlying data structure is an array
+        let (tag, bytes) = bytes.split_first().expect("slice is non-empty");
+
+        let mut x_bytes: [u8; 56] = [0; 56];
+        x_bytes.copy_from_slice(bytes);
+
+        let (sign, valid) = match *tag {
+            0x02 => (Choice::from(0), Choice::from(1)),
+            0x03 => (Choice::from(1), Choice::from(1)),
+            _ => (Choice::from(0), Choice::from(0)),
+        };
+
+        FieldElement::from_repr(&x_bytes).and_then(|x| {
+            CtOption::new(
+                ProjectiveMontgomeryXpoint::new(x, FieldElement::ONE).to_extended(sign),
+                valid,
+            )
+        })
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        let affine = self.to_affine();
+        let mut compressed_bytes = Array::default();
+
+        compressed_bytes[0] = if affine.y.is_negative().unwrap_u8() == 1 {
+            0x03
+        } else {
+            0x02
+        };
+
+        compressed_bytes[1..].copy_from_slice(&affine.x.to_bytes()[..]);
+        compressed_bytes
+    }
+}
+
+impl PrimeGroup for ProjectiveMontgomeryPoint {}
+
+impl From<MontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn from(value: MontgomeryPoint) -> Self {
+        ProjectiveMontgomeryPoint {
+            U: value.x,
+            V: value.y,
+            W: FieldElement::ONE,
         }
-
-        x0
     }
 }
 
-impl Mul<&ProjectiveMontgomeryPoint> for &MontgomeryScalar {
-    type Output = ProjectiveMontgomeryPoint;
-
-    fn mul(self, point: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
-        point * self
+impl From<NonIdentity<ProjectiveMontgomeryPoint>> for ProjectiveMontgomeryPoint {
+    fn from(affine: NonIdentity<ProjectiveMontgomeryPoint>) -> Self {
+        affine.to_point()
     }
 }
 
-fn differential_add_and_double(
-    P: &mut ProjectiveMontgomeryPoint,
-    Q: &mut ProjectiveMontgomeryPoint,
-    affine_PmQ: &FieldElement,
-) {
-    let t0 = P.U + P.W;
-    let t1 = P.U - P.W;
-    let t2 = Q.U + Q.W;
-    let t3 = Q.U - Q.W;
+/// The constant-time alternative is available at [`NonIdentity::new()`].
+impl TryFrom<ProjectiveMontgomeryPoint> for NonIdentity<ProjectiveMontgomeryPoint> {
+    type Error = Error;
 
-    let t4 = t0.square(); // (U_P + W_P)^2 = U_P^2 + 2 U_P W_P + W_P^2
-    let t5 = t1.square(); // (U_P - W_P)^2 = U_P^2 - 2 U_P W_P + W_P^2
-
-    let t6 = t4 - t5; // 4 U_P W_P
-
-    let t7 = t0 * t3; // (U_P + W_P) (U_Q - W_Q) = U_P U_Q + W_P U_Q - U_P W_Q - W_P W_Q
-    let t8 = t1 * t2; // (U_P - W_P) (U_Q + W_Q) = U_P U_Q - W_P U_Q + U_P W_Q - W_P W_Q
-
-    let t9 = t7 + t8; // 2 (U_P U_Q - W_P W_Q)
-    let t10 = t7 - t8; // 2 (W_P U_Q - U_P W_Q)
-
-    let t11 = t9.square(); // 4 (U_P U_Q - W_P W_Q)^2
-    let t12 = t10.square(); // 4 (W_P U_Q - U_P W_Q)^2
-    let t13 = FieldElement::A_PLUS_TWO_OVER_FOUR * t6; // (A + 2) U_P U_Q
-
-    let t14 = t4 * t5; // ((U_P + W_P)(U_P - W_P))^2 = (U_P^2 - W_P^2)^2
-    let t15 = t13 + t5; // (U_P - W_P)^2 + (A + 2) U_P W_P
-
-    let t16 = t6 * t15; // 4 (U_P W_P) ((U_P - W_P)^2 + (A + 2) U_P W_P)
-    let t17 = *affine_PmQ * t12; // U_D * 4 (W_P U_Q - U_P W_Q)^2
-    let t18 = t11; // W_D * 4 (U_P U_Q - W_P W_Q)^2
-
-    P.U = t14; // U_{P'} = (U_P + W_P)^2 (U_P - W_P)^2
-    P.W = t16; // W_{P'} = (4 U_P W_P) ((U_P - W_P)^2 + ((A + 2)/4) 4 U_P W_P)
-    Q.U = t18; // U_{Q'} = W_D * 4 (U_P U_Q - W_P W_Q)^2
-    Q.W = t17; // W_{Q'} = U_D * 4 (W_P U_Q - U_P W_Q)^2
-}
-
-impl ProjectiveMontgomeryPoint {
-    pub(crate) fn new(U: FieldElement, W: FieldElement) -> Self {
-        Self { U, W }
-    }
-
-    /// The identity element of the group: the point at infinity.
-    pub const IDENTITY: Self = Self {
-        U: FieldElement::ONE,
-        W: FieldElement::ZERO,
-    };
-
-    /// The generator point
-    pub const GENERATOR: Self = Self {
-        U: FieldElement(ConstMontyType::new(&U448::from_u64(5))),
-        W: FieldElement::ONE,
-    };
-
-    fn y(&self, sign: Choice) -> FieldElement {
-        // v^2 = u^3 + A*u^2 + u
-        let u_sq = self.U.square();
-        let v_sq = u_sq * self.U + FieldElement::J * u_sq + self.U;
-
-        let mut v = v_sq.sqrt();
-        v.conditional_negate(v.is_negative() ^ sign);
-        v
-    }
-
-    /// Double this point
-    // https://eprint.iacr.org/2020/1338.pdf (2.2)
-    pub fn double(&self) -> Self {
-        const C: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(39082)));
-
-        let v1 = (self.U + self.W).square();
-        let v2 = (self.U - self.W).square();
-        let U = v1 * v2;
-        let v3 = v1 - v2;
-        let v4 = C * v3;
-        let v5 = v2 + v4;
-        let W = v3 * v5;
-
-        Self { U, W }
-    }
-
-    /// Hash a message to a point on the curve
-    ///
-    /// Hash using the default domain separation tag and hash function.
-    /// For more control see [`Self::hash()`].
-    pub fn hash_with_defaults(msg: &[u8]) -> Self {
-        Self::hash::<ExpandMsgXof<Shake256>>(&[msg], &[DEFAULT_HASH_TO_CURVE_SUITE])
-    }
-
-    /// Hash a message to a point on the curve
-    ///
-    /// Implements hash to curve according
-    /// see <https://datatracker.ietf.org/doc/rfc9380/>
-    pub fn hash<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Self
-    where
-        X: ExpandMsg<U28>,
-    {
-        let mut expander =
-            X::expand_message(msg, dst, (84 * 2).try_into().expect("should never fail"))
-                .expect("should never fail with the given `ExpandMsg` and `dst`");
-        let mut data = Array::<u8, U84>::default();
-        expander.fill_bytes(&mut data);
-        let u0 = FieldElementU84::from_okm(&data).0;
-        expander.fill_bytes(&mut data);
-        let u1 = FieldElementU84::from_okm(&data).0;
-
-        let (qx, qy) = u0.map_to_curve_elligator2();
-        let q0 = ExtendedProjectiveMontgomeryPoint::new(qx, qy, FieldElement::ONE);
-        let (qx, qy) = u1.map_to_curve_elligator2();
-        let q1 = ExtendedProjectiveMontgomeryPoint::new(qx, qy, FieldElement::ONE);
-
-        (q0 + q1).to_projective().double().double()
-    }
-
-    /// Encode a message to a point on the curve
-    ///
-    /// Encode using the default domain separation tag and hash function.
-    /// For more control see [`Self::encode()`].
-    pub fn encode_with_defaults(msg: &[u8]) -> Self {
-        Self::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DEFAULT_ENCODE_TO_CURVE_SUITE])
-    }
-
-    /// Encode a message to a point on the curve
-    ///
-    /// Implements encode to curve according
-    /// see <https://datatracker.ietf.org/doc/rfc9380/>
-    pub fn encode<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Self
-    where
-        X: ExpandMsg<U28>,
-    {
-        let mut expander = X::expand_message(msg, dst, 84.try_into().expect("should never fail"))
-            .expect("should never fail with the given `ExpandMsg` and `dst`");
-        let mut data = Array::<u8, U84>::default();
-        expander.fill_bytes(&mut data);
-        let u = FieldElementU84::from_okm(&data).0;
-
-        u.map_to_curve_elligator2_x().double().double()
-    }
-
-    /// Convert the point to affine form
-    pub fn to_affine(&self) -> MontgomeryPoint {
-        let x = self.U * self.W.invert();
-        MontgomeryPoint(x.to_bytes())
-    }
-
-    /// Convert the point to affine form including the y-coordinate
-    pub fn to_extended_affine(&self, sign: Choice) -> ExtendedMontgomeryPoint {
-        let x = self.U * self.W.invert();
-        let y = self.y(sign);
-
-        ExtendedMontgomeryPoint::new(x, y)
-    }
-
-    /// Convert the point to its form including the y-coordinate
-    pub fn to_extended(&self, sign: Choice) -> ExtendedProjectiveMontgomeryPoint {
-        ExtendedProjectiveMontgomeryPoint::new(self.U, self.y(sign), self.W)
-    }
-
-    /// Convert this point to an [`AffinePoint`]
-    pub fn to_edwards(&self, sign: Choice) -> AffinePoint {
-        self.to_affine().to_edwards(sign)
+    fn try_from(point: ProjectiveMontgomeryPoint) -> Result<Self, Error> {
+        NonIdentity::new(point).into_option().ok_or(Error)
     }
 }
 
@@ -354,14 +374,13 @@ mod tests {
     use super::*;
     use crate::EdwardsPoint;
     use hex_literal::hex;
-    use sha3::Shake256;
 
     #[test]
     fn test_montgomery_edwards() {
         let scalar = MontgomeryScalar::from(200u32);
 
         // Montgomery scalar mul
-        let montgomery_res = (&ProjectiveMontgomeryPoint::GENERATOR * &scalar).to_affine();
+        let montgomery_res = (ProjectiveMontgomeryPoint::GENERATOR * scalar).to_affine();
         // Goldilocks scalar mul
         let goldilocks_point = EdwardsPoint::GENERATOR
             .scalar_mul(&scalar.to_scalar())
@@ -382,7 +401,8 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = ProjectiveMontgomeryPoint::hash::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+            let p = Curve448::hash_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                .unwrap()
                 .to_affine();
             let mut xx = [0u8; 56];
             xx.copy_from_slice(&x[..]);
@@ -390,8 +410,8 @@ mod tests {
             let mut yy = [0u8; 56];
             yy.copy_from_slice(&y[..]);
             yy.reverse();
-            assert_eq!(p.0, xx);
-            assert!(p.y(Choice::from(0)) == yy || p.y(Choice::from(1)) == yy);
+            assert_eq!(p.x(), xx);
+            assert_eq!(p.y(), yy);
         }
     }
 
@@ -407,7 +427,8 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = ProjectiveMontgomeryPoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+            let p = Curve448::encode_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                .unwrap()
                 .to_affine();
             let mut xx = [0u8; 56];
             xx.copy_from_slice(&x[..]);
@@ -415,8 +436,8 @@ mod tests {
             let mut yy = [0u8; 56];
             yy.copy_from_slice(&y[..]);
             yy.reverse();
-            assert_eq!(p.0, xx);
-            assert!(p.y(Choice::from(0)) == yy || p.y(Choice::from(1)) == yy);
+            assert_eq!(p.x(), xx);
+            assert_eq!(p.y(), yy);
         }
     }
 }

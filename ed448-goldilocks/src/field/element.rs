@@ -2,11 +2,10 @@ use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::ConstMontyType;
-use crate::ProjectiveMontgomeryPoint;
+use crate::ProjectiveMontgomeryXpoint;
 use crate::{
-    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint,
-    ExtendedProjectiveMontgomeryPoint, ORDER,
-    curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
+    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, ORDER,
+    ProjectiveMontgomeryPoint, curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::{
     array::Array,
@@ -232,24 +231,22 @@ impl MapToCurve for Decaf448 {
 }
 
 impl MapToCurve for Curve448 {
-    type CurvePoint = ExtendedProjectiveMontgomeryPoint;
+    type CurvePoint = ProjectiveMontgomeryPoint;
     type FieldElement = FieldElementU84;
 
     fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
         let (x, y) = element.0.map_to_curve_elligator2();
-        ExtendedProjectiveMontgomeryPoint::new(x, y, FieldElement::ONE)
+        ProjectiveMontgomeryPoint::new(x, y, FieldElement::ONE)
     }
 
-    fn map_to_subgroup(
-        point: ExtendedProjectiveMontgomeryPoint,
-    ) -> ExtendedProjectiveMontgomeryPoint {
+    fn map_to_subgroup(point: ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         point.clear_cofactor()
     }
 
     fn add_and_map_to_subgroup(
-        lhs: ExtendedProjectiveMontgomeryPoint,
-        rhs: ExtendedProjectiveMontgomeryPoint,
-    ) -> ExtendedProjectiveMontgomeryPoint {
+        lhs: ProjectiveMontgomeryPoint,
+        rhs: ProjectiveMontgomeryPoint,
+    ) -> ProjectiveMontgomeryPoint {
         (lhs + rhs).clear_cofactor()
     }
 }
@@ -434,7 +431,7 @@ impl FieldElement {
 
     // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
     // Without y-coordinate.
-    pub(crate) fn map_to_curve_elligator2_x(&self) -> ProjectiveMontgomeryPoint {
+    pub(crate) fn map_to_curve_elligator2_x(&self) -> ProjectiveMontgomeryXpoint {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
         let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
@@ -449,7 +446,7 @@ impl FieldElement {
         let x2 = -x1 - Self::J; // 12.  x2 = -x1 - A
         let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
         let x = Self::conditional_select(&x2, &x1, e2); // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
-        ProjectiveMontgomeryPoint::new(x, FieldElement::ONE)
+        ProjectiveMontgomeryXpoint::new(x, FieldElement::ONE)
     }
 
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.

@@ -6,13 +6,13 @@ use elliptic_curve::CurveGroup;
 use elliptic_curve::bigint::U448;
 use subtle::{Choice, ConditionallySelectable};
 
-use super::{ExtendedMontgomeryPoint, ExtendedProjectiveMontgomeryPoint, MontgomeryScalar};
+use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
 
-impl Add<&ExtendedProjectiveMontgomeryPoint> for &ExtendedProjectiveMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Add<&ProjectiveMontgomeryPoint> for &ProjectiveMontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
     // Copied from https://github.com/armfazh/redox-ecc/blob/5a8c09c5ef9fe6a8d2c749d05eca011c6d661599/src/montgomery/point.rs#L80-L104.
-    fn add(self, rhs: &ExtendedProjectiveMontgomeryPoint) -> Self::Output {
+    fn add(self, rhs: &ProjectiveMontgomeryPoint) -> Self::Output {
         const S: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(3)));
 
         let (x1, y1, z1) = (self.U, self.V, self.W);
@@ -34,7 +34,7 @@ impl Add<&ExtendedProjectiveMontgomeryPoint> for &ExtendedProjectiveMontgomeryPo
         let y3 = tt * ww - vv * ss;
         let z3 = vv * uu - rr * ww;
 
-        ExtendedProjectiveMontgomeryPoint {
+        ProjectiveMontgomeryPoint {
             U: x3,
             V: y3,
             W: z3,
@@ -43,78 +43,72 @@ impl Add<&ExtendedProjectiveMontgomeryPoint> for &ExtendedProjectiveMontgomeryPo
 }
 
 define_add_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    LHS = ProjectiveMontgomeryPoint,
+    RHS = ProjectiveMontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl Add<&ExtendedMontgomeryPoint> for &ExtendedProjectiveMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Add<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn add(self, other: &ExtendedMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
+    fn add(self, other: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
         *self + *other
     }
 }
 
 define_add_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    LHS = ProjectiveMontgomeryPoint,
+    RHS = MontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl Add<&ExtendedProjectiveMontgomeryPoint> for &ExtendedMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Add<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn add(self, other: &ExtendedProjectiveMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
+    fn add(self, other: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         *other + *self
     }
 }
 
 define_add_variants!(
-    LHS = ExtendedMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    LHS = MontgomeryPoint,
+    RHS = ProjectiveMontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl<'b> AddAssign<&'b ExtendedProjectiveMontgomeryPoint> for ExtendedProjectiveMontgomeryPoint {
+impl<'b> AddAssign<&'b ProjectiveMontgomeryPoint> for ProjectiveMontgomeryPoint {
     fn add_assign(&mut self, rhs: &'b Self) {
         *self = *self + rhs;
     }
 }
 
 define_add_assign_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint
+    LHS = ProjectiveMontgomeryPoint,
+    RHS = ProjectiveMontgomeryPoint
 );
 
-impl AddAssign<&ExtendedMontgomeryPoint> for ExtendedProjectiveMontgomeryPoint {
-    fn add_assign(&mut self, rhs: &ExtendedMontgomeryPoint) {
+impl AddAssign<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn add_assign(&mut self, rhs: &MontgomeryPoint) {
         *self += Self::from(*rhs);
     }
 }
 
-define_add_assign_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedMontgomeryPoint
-);
+define_add_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = MontgomeryPoint);
 
-impl AddAssign<&ExtendedProjectiveMontgomeryPoint> for ExtendedMontgomeryPoint {
-    fn add_assign(&mut self, rhs: &ExtendedProjectiveMontgomeryPoint) {
-        *self = (ExtendedProjectiveMontgomeryPoint::from(*self) + rhs).to_affine();
+impl AddAssign<&ProjectiveMontgomeryPoint> for MontgomeryPoint {
+    fn add_assign(&mut self, rhs: &ProjectiveMontgomeryPoint) {
+        *self = (ProjectiveMontgomeryPoint::from(*self) + rhs).to_affine();
     }
 }
 
-define_add_assign_variants!(
-    LHS = ExtendedMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint
-);
+define_add_assign_variants!(LHS = MontgomeryPoint, RHS = ProjectiveMontgomeryPoint);
 
-impl Mul<&MontgomeryScalar> for &ExtendedProjectiveMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, scalar: &MontgomeryScalar) -> ExtendedProjectiveMontgomeryPoint {
-        let mut p = ExtendedProjectiveMontgomeryPoint::IDENTITY;
+    fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryPoint {
+        let mut p = ProjectiveMontgomeryPoint::IDENTITY;
         let bits = scalar.bits();
 
         for s in (0..448).rev() {
@@ -127,57 +121,54 @@ impl Mul<&MontgomeryScalar> for &ExtendedProjectiveMontgomeryPoint {
 }
 
 define_mul_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
+    LHS = ProjectiveMontgomeryPoint,
     RHS = MontgomeryScalar,
-    Output = ExtendedProjectiveMontgomeryPoint
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl Mul<&ExtendedMontgomeryPoint> for &MontgomeryScalar {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Mul<&MontgomeryPoint> for &MontgomeryScalar {
+    type Output = ProjectiveMontgomeryPoint;
 
     #[inline]
-    fn mul(self, point: &ExtendedMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
-        ExtendedProjectiveMontgomeryPoint::from(*point) * self
+    fn mul(self, point: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        ProjectiveMontgomeryPoint::from(*point) * self
     }
 }
 
 define_mul_variants!(
     LHS = MontgomeryScalar,
-    RHS = ExtendedMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    RHS = MontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl Mul<&ExtendedProjectiveMontgomeryPoint> for &MontgomeryScalar {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Mul<&ProjectiveMontgomeryPoint> for &MontgomeryScalar {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn mul(self, point: &ExtendedProjectiveMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
+    fn mul(self, point: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         point * self
     }
 }
 
 define_mul_variants!(
     LHS = MontgomeryScalar,
-    RHS = ExtendedProjectiveMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    RHS = ProjectiveMontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl<'b> MulAssign<&'b MontgomeryScalar> for ExtendedProjectiveMontgomeryPoint {
+impl<'b> MulAssign<&'b MontgomeryScalar> for ProjectiveMontgomeryPoint {
     fn mul_assign(&mut self, scalar: &'b MontgomeryScalar) {
         let result = *self * scalar;
         *self = result;
     }
 }
 
-define_mul_assign_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = MontgomeryScalar
-);
+define_mul_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = MontgomeryScalar);
 
-impl Neg for &ExtendedProjectiveMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Neg for &ProjectiveMontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn neg(self) -> ExtendedProjectiveMontgomeryPoint {
-        ExtendedProjectiveMontgomeryPoint {
+    fn neg(self) -> ProjectiveMontgomeryPoint {
+        ProjectiveMontgomeryPoint {
             U: self.U,
             V: -self.V,
             W: self.W,
@@ -185,7 +176,7 @@ impl Neg for &ExtendedProjectiveMontgomeryPoint {
     }
 }
 
-impl Neg for ExtendedProjectiveMontgomeryPoint {
+impl Neg for ProjectiveMontgomeryPoint {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -193,82 +184,76 @@ impl Neg for ExtendedProjectiveMontgomeryPoint {
     }
 }
 
-impl Sub<&ExtendedProjectiveMontgomeryPoint> for &ExtendedProjectiveMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Sub<&ProjectiveMontgomeryPoint> for &ProjectiveMontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn sub(self, other: &ExtendedProjectiveMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
+    fn sub(self, other: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         self.add(&other.neg())
     }
 }
 
 define_sub_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    LHS = ProjectiveMontgomeryPoint,
+    RHS = ProjectiveMontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl Sub<&ExtendedMontgomeryPoint> for &ExtendedProjectiveMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Sub<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn sub(self, other: &ExtendedMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
-        *self - ExtendedProjectiveMontgomeryPoint::from(*other)
+    fn sub(self, other: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        *self - ProjectiveMontgomeryPoint::from(*other)
     }
 }
 
 define_sub_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    LHS = ProjectiveMontgomeryPoint,
+    RHS = MontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl Sub<&ExtendedProjectiveMontgomeryPoint> for &ExtendedMontgomeryPoint {
-    type Output = ExtendedProjectiveMontgomeryPoint;
+impl Sub<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
+    type Output = ProjectiveMontgomeryPoint;
 
-    fn sub(self, other: &ExtendedProjectiveMontgomeryPoint) -> ExtendedProjectiveMontgomeryPoint {
+    fn sub(self, other: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         *self - other
     }
 }
 
 define_sub_variants!(
-    LHS = ExtendedMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint,
-    Output = ExtendedProjectiveMontgomeryPoint
+    LHS = MontgomeryPoint,
+    RHS = ProjectiveMontgomeryPoint,
+    Output = ProjectiveMontgomeryPoint
 );
 
-impl<'b> SubAssign<&'b Self> for ExtendedProjectiveMontgomeryPoint {
+impl<'b> SubAssign<&'b Self> for ProjectiveMontgomeryPoint {
     fn sub_assign(&mut self, _rhs: &'b Self) {
         *self = *self - _rhs;
     }
 }
 
 define_sub_assign_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint
+    LHS = ProjectiveMontgomeryPoint,
+    RHS = ProjectiveMontgomeryPoint
 );
 
-impl SubAssign<&ExtendedMontgomeryPoint> for ExtendedProjectiveMontgomeryPoint {
-    fn sub_assign(&mut self, rhs: &ExtendedMontgomeryPoint) {
-        *self -= ExtendedProjectiveMontgomeryPoint::from(*rhs);
+impl SubAssign<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn sub_assign(&mut self, rhs: &MontgomeryPoint) {
+        *self -= ProjectiveMontgomeryPoint::from(*rhs);
     }
 }
 
-define_sub_assign_variants!(
-    LHS = ExtendedProjectiveMontgomeryPoint,
-    RHS = ExtendedMontgomeryPoint
-);
+define_sub_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = MontgomeryPoint);
 
-impl SubAssign<&ExtendedProjectiveMontgomeryPoint> for ExtendedMontgomeryPoint {
-    fn sub_assign(&mut self, rhs: &ExtendedProjectiveMontgomeryPoint) {
-        *self = (ExtendedProjectiveMontgomeryPoint::from(*self) - rhs).to_affine();
+impl SubAssign<&ProjectiveMontgomeryPoint> for MontgomeryPoint {
+    fn sub_assign(&mut self, rhs: &ProjectiveMontgomeryPoint) {
+        *self = (ProjectiveMontgomeryPoint::from(*self) - rhs).to_affine();
     }
 }
 
-define_sub_assign_variants!(
-    LHS = ExtendedMontgomeryPoint,
-    RHS = ExtendedProjectiveMontgomeryPoint
-);
+define_sub_assign_variants!(LHS = MontgomeryPoint, RHS = ProjectiveMontgomeryPoint);
 
-impl<T> Sum<T> for ExtendedProjectiveMontgomeryPoint
+impl<T> Sum<T> for ProjectiveMontgomeryPoint
 where
     T: Borrow<Self>,
 {
