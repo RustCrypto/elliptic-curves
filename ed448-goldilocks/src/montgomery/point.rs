@@ -25,8 +25,8 @@ use super::{
 /// A point in Montgomery form including the y-coordinate.
 #[derive(Copy, Clone, Debug, Default)]
 pub struct MontgomeryPoint {
-    x: FieldElement,
-    y: FieldElement,
+    pub(super) x: FieldElement,
+    pub(super) y: FieldElement,
 }
 
 impl MontgomeryPoint {
@@ -160,10 +160,6 @@ impl ProjectiveMontgomeryPoint {
         Self { U, V, W }
     }
 
-    fn double(&self) -> Self {
-        self + self
-    }
-
     /// Convert the point to its form without the y-coordinate
     pub fn to_projective_x(&self) -> ProjectiveMontgomeryXpoint {
         ProjectiveMontgomeryXpoint::conditional_select(
@@ -280,8 +276,47 @@ impl Group for ProjectiveMontgomeryPoint {
         self.ct_eq(&Self::IDENTITY)
     }
 
+    // See Complete Addition Law for Montgomery Curves - Algorithm 3.
+    // Slightly corrected from the derivation in the same paper.
     fn double(&self) -> Self {
-        self.double()
+        const A_MINUS_1: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(156325)));
+
+        let (x, y, z) = (self.U, self.V, self.W);
+
+        let t0 = x.square();
+        let t1 = y.square();
+        let t2 = z.square();
+        let t3 = (x + y).square();
+        let t4 = (y + z).square();
+        let t5 = (x + z).square();
+        let t6 = t1 + t2;
+        let t7 = (t0 - t2).double();
+        let t8 = A_MINUS_1 * t0;
+        let t9 = t0 - t1;
+        let t10 = FieldElement::J * (t5 - t2) + t0 + t9;
+        let t11 = t5 + t8;
+        let t13 = t6.double(); // corrected - replaces t12
+
+        let S_MINUS_U = t3 - t6;
+        let S_PLUS_U = -S_MINUS_U + t7;
+        let R_MINUS_T = t4 - t11;
+        let R_PLUS_T = t4 - t13 + t11; // corrected
+        let W_MINUS_S = t11 - t9;
+        let W_PLUS_S = W_MINUS_S + t7;
+        let T_MINUS_V = t11 - t10 - t13 + t8; // corrected
+        let T_PLUS_V = t5 + t10;
+        let U_MINUS_W = S_PLUS_U - W_PLUS_S;
+        let R_PLUS_V = R_MINUS_T + T_PLUS_V;
+
+        let C = R_PLUS_T * S_MINUS_U;
+        let D = R_MINUS_T * S_PLUS_U;
+        let E = T_PLUS_V * W_MINUS_S;
+        let F = T_MINUS_V * W_PLUS_S;
+        let X = C + D;
+        let Y = E + F;
+        let Z = U_MINUS_W.double() * R_PLUS_V + C - D + E - F;
+
+        Self { U: X, V: Y, W: Z }
     }
 }
 

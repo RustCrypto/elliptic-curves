@@ -1,9 +1,8 @@
-use crate::field::{ConstMontyType, FieldElement};
+use crate::field::FieldElement;
 use core::borrow::Borrow;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::CurveGroup;
-use elliptic_curve::bigint::U448;
 use subtle::{Choice, ConditionallySelectable};
 
 use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
@@ -11,34 +10,38 @@ use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
 impl Add<&ProjectiveMontgomeryPoint> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
-    // Copied from https://github.com/armfazh/redox-ecc/blob/5a8c09c5ef9fe6a8d2c749d05eca011c6d661599/src/montgomery/point.rs#L80-L104.
+    // See Complete Addition Law for Montgomery Curves - Algorithm 1.
+    // With "Trade-Off Technique".
     fn add(self, rhs: &ProjectiveMontgomeryPoint) -> Self::Output {
-        const S: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(3)));
-
         let (x1, y1, z1) = (self.U, self.V, self.W);
         let (x2, y2, z2) = (rhs.U, rhs.V, rhs.W);
-        let (a_ec, s_ec) = (FieldElement::J, S);
-        let (t0, t1, t2) = (x1 * x2, y1 * y2, z1 * z2);
-        let (t3, t4) = (x1 * y2, x2 * y1);
-        let (t5, t6) = (y1 * z2, y2 * z1);
-        let (t7, t8) = (x1 * z2, x2 * z1);
-        let t9 = t7 + t8;
-        let ta = t9 + (t0 * a_ec);
-        let rr = t5 + t6;
-        let tt = ta - t1;
-        let vv = t9 * a_ec + t0.double() + t0 + t2;
-        let ss = (t3 - t4) * s_ec + t0 - t2;
-        let uu = (t7 - t8) * s_ec - t3 - t4;
-        let ww = (t5 - t6) * s_ec + ta + t1;
-        let x3 = rr * ss - tt * uu;
-        let y3 = tt * ww - vv * ss;
-        let z3 = vv * uu - rr * ww;
 
-        ProjectiveMontgomeryPoint {
-            U: x3,
-            V: y3,
-            W: z3,
-        }
+        let t0 = x1 * x2;
+        let t1 = y1 * y2;
+        let t2 = z1 * z2;
+        let t3 = x1 * y2;
+        let t4 = x2 * y1;
+        let t5 = y1 * z2;
+        let t6 = y2 * z1;
+        let t7 = x1 * z2;
+        let t8 = x2 * z1;
+        let t9 = t7 + t8;
+        let t10 = t9 + FieldElement::J * t0;
+        let R = t5 + t6;
+        let T = t10 - t1;
+        let V = FieldElement::J * t9 + t0.triple() + t2;
+        let S = (t3 - t4).triple() + t0 - t2;
+        let U = (t7 - t8).triple() - t3 - t4;
+        let W = (t5 - t6).triple() + t10 + t1;
+        let C = (R + T) * (S - U);
+        let D = (R - T) * (S + U);
+        let E = (T + V) * (W - S);
+        let F = (T - V) * (W + S);
+        let X = C + D;
+        let Y = E + F;
+        let Z = (U - W).double() * (R + V) + C - D + E - F;
+
+        ProjectiveMontgomeryPoint { U: X, V: Y, W: Z }
     }
 }
 
@@ -51,8 +54,38 @@ define_add_variants!(
 impl Add<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
-    fn add(self, other: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
-        *self + *other
+    // See Complete Addition Law for Montgomery Curves - Algorithm 1.
+    // With "Trade-Off Technique".
+    fn add(self, rhs: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        let (x1, y1, z1) = (self.U, self.V, self.W);
+        let (x2, y2) = (rhs.x, rhs.y);
+
+        let t0 = x1 * x2;
+        let t1 = y1 * y2;
+        let t2 = z1;
+        let t3 = x1 * y2;
+        let t4 = x2 * y1;
+        let t5 = y1;
+        let t6 = y2 * z1;
+        let t7 = x1;
+        let t8 = x2 * z1;
+        let t9 = t7 + t8;
+        let t10 = t9 + FieldElement::J * t0;
+        let R = t5 + t6;
+        let T = t10 - t1;
+        let V = FieldElement::J * t9 + t0.triple() + t2;
+        let S = (t3 - t4).triple() + t0 - t2;
+        let U = (t7 - t8).triple() - t3 - t4;
+        let W = (t5 - t6).triple() + t10 + t1;
+        let C = (R + T) * (S - U);
+        let D = (R - T) * (S + U);
+        let E = (T + V) * (W - S);
+        let F = (T - V) * (W + S);
+        let X = C + D;
+        let Y = E + F;
+        let Z = (U - W).double() * (R + V) + C - D + E - F;
+
+        ProjectiveMontgomeryPoint { U: X, V: Y, W: Z }
     }
 }
 
@@ -66,7 +99,7 @@ impl Add<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
     fn add(self, other: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
-        *other + *self
+        other + self
     }
 }
 
@@ -111,9 +144,9 @@ impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryPoint {
         let mut p = ProjectiveMontgomeryPoint::IDENTITY;
         let bits = scalar.bits();
 
-        for s in (0..448).rev() {
+        for index in (0..448).rev() {
             p = p + p;
-            p.conditional_assign(&(p + self), Choice::from(bits[s] as u8));
+            p.conditional_assign(&(p + self), Choice::from(bits[index] as u8));
         }
 
         p
@@ -262,5 +295,22 @@ where
         I: Iterator<Item = T>,
     {
         iter.fold(Self::IDENTITY, |acc, item| acc + item.borrow())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use elliptic_curve::Group;
+    use rand_core::OsRng;
+
+    use super::*;
+
+    #[test]
+    fn mixed_addition() {
+        let p1 = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
+        let p2 = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
+        let p3 = p1 + p2;
+
+        assert_eq!(p3.to_affine(), (p1.to_affine() + p2).to_affine());
     }
 }

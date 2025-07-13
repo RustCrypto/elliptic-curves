@@ -356,6 +356,10 @@ impl FieldElement {
         Self(self.0.double())
     }
 
+    pub fn triple(&self) -> Self {
+        self.double() + self
+    }
+
     /// Computes the inverse square root of a field element
     /// Returns the result and a boolean to indicate whether self
     /// was a Quadratic residue
