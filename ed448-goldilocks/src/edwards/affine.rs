@@ -122,13 +122,19 @@ impl AffinePoint {
     /// Convert this point to [`MontgomeryPoint`]
     // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
     pub fn to_montgomery(&self) -> MontgomeryPoint {
-        let x_sq = self.x.square();
-        let y_sq = self.y.square();
-
         // u = y^2/x^2
-        let u = y_sq * x_sq.invert();
         // v = (2 - x^2 - y^2)*y/x^3)
-        let v = ((FieldElement::TWO - x_sq - y_sq) * self.y) * (x_sq * self.x).invert();
+
+        // Optimized to one inversion:
+        // x_inv = x^-1
+        // t = y * x_inv
+        // u = t^2
+        // v = (2x_inv^2 - 1 - u) * t
+        let x_inv = self.x.invert();
+        let t = self.y * x_inv;
+
+        let u = t.square();
+        let v = (x_inv.square().double() - FieldElement::ONE - u) * t;
 
         MontgomeryPoint::conditional_select(
             &MontgomeryPoint::new(u, v),
