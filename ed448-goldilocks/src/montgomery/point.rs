@@ -30,6 +30,12 @@ pub struct MontgomeryPoint {
 }
 
 impl MontgomeryPoint {
+    /// The identity element of the group: the point at infinity.
+    pub const IDENTITY: Self = Self {
+        x: FieldElement::ZERO,
+        y: FieldElement::ONE,
+    };
+
     pub(crate) fn new(x: FieldElement, y: FieldElement) -> Self {
         Self { x, y }
     }
@@ -57,7 +63,11 @@ impl MontgomeryPoint {
         let x = xn * yd * d;
         let y = yn * xd * d;
 
-        AffinePoint { x, y }
+        AffinePoint::conditional_select(
+            &AffinePoint { x, y },
+            &AffinePoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 
     /// Convert the point to its form without the y-coordinate
@@ -410,7 +420,7 @@ mod tests {
     use hex_literal::hex;
 
     #[test]
-    fn test_montgomery_edwards() {
+    fn to_edwards() {
         let scalar = MontgomeryScalar::from(200u32);
 
         // Montgomery scalar mul
@@ -424,7 +434,23 @@ mod tests {
     }
 
     #[test]
-    fn test_montgomery_x() {
+    fn identity_to_edwards() {
+        let edwards = AffinePoint::IDENTITY;
+        let montgomery = MontgomeryPoint::IDENTITY;
+
+        assert_eq!(montgomery.to_edwards(), edwards);
+    }
+
+    #[test]
+    fn identity_from_montgomery() {
+        let edwards = AffinePoint::IDENTITY;
+        let montgomery = MontgomeryPoint::IDENTITY;
+
+        assert_eq!(edwards.to_montgomery(), montgomery);
+    }
+
+    #[test]
+    fn to_montgomery_x() {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY;
         let identity = ProjectiveMontgomeryPoint::IDENTITY;
 
@@ -432,7 +458,7 @@ mod tests {
     }
 
     #[test]
-    fn test_montgomery_affine_x() {
+    fn to_montgomery_affine_x() {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
         let identity = ProjectiveMontgomeryPoint::IDENTITY.to_affine();
 

@@ -130,7 +130,11 @@ impl AffinePoint {
         // v = (2 - x^2 - y^2)*y/x^3)
         let v = ((FieldElement::TWO - x_sq - y_sq) * self.y) * (x_sq * self.x).invert();
 
-        MontgomeryPoint::new(u, v)
+        MontgomeryPoint::conditional_select(
+            &MontgomeryPoint::new(u, v),
+            &MontgomeryPoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 
     /// The X coordinate

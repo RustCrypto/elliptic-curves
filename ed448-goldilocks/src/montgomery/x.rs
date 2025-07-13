@@ -369,7 +369,7 @@ mod tests {
     use sha3::Shake256;
 
     #[test]
-    fn test_montgomery_edwards() {
+    fn to_edwards() {
         let scalar = MontgomeryScalar::from(200u32);
 
         // Montgomery scalar mul
@@ -383,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn test_montgomery_extended() {
+    fn to_montgomery_extended_x() {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY;
         let identity = ProjectiveMontgomeryPoint::IDENTITY;
 
@@ -391,7 +391,7 @@ mod tests {
     }
 
     #[test]
-    fn test_montgomery_extended_affine() {
+    fn to_montgomery_extended_affine() {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
         let identity = ProjectiveMontgomeryPoint::IDENTITY.to_affine();
 
