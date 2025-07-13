@@ -1,6 +1,7 @@
 //! Traits for handling hash to curve.
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
+use digest::consts::{U1, U2};
 use elliptic_curve::array::typenum::Unsigned;
 use elliptic_curve::{ProjectivePoint, Result};
 
@@ -36,8 +37,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::K>,
     {
-        let mut u = [Self::FieldElement::default(), Self::FieldElement::default()];
-        hash_to_field::<X, _, _>(msg, dst, &mut u)?;
+        let u = hash_to_field::<X, _, Self::FieldElement, U2>(msg, dst)?;
         let q0 = Self::map_to_curve(u[0]);
         let q1 = Self::map_to_curve(u[1]);
         Ok(Self::add_and_map_to_subgroup(q0, q1))
@@ -67,8 +67,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::K>,
     {
-        let mut u = [Self::FieldElement::default()];
-        hash_to_field::<X, _, _>(msg, dst, &mut u)?;
+        let u = hash_to_field::<X, _, Self::FieldElement, U1>(msg, dst)?;
         let q0 = Self::map_to_curve(u[0]);
         Ok(Self::map_to_subgroup(q0))
     }
@@ -91,8 +90,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::K>,
     {
-        let mut u = [Self::Scalar::default()];
-        hash_to_field::<X, _, _>(msg, dst, &mut u)?;
+        let u = hash_to_field::<X, _, Self::Scalar, U1>(msg, dst)?;
         Ok(u[0])
     }
 }
