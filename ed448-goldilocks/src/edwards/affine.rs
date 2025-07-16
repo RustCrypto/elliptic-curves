@@ -114,7 +114,7 @@ impl AffinePoint {
     // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
     pub fn to_montgomery_x(&self) -> MontgomeryXpoint {
         // u = y^2/x^2
-        let u = self.y.square() * self.x.square().invert();
+        let u = (self.y * self.x.invert()).square();
 
         MontgomeryXpoint(u.to_bytes())
     }
@@ -123,7 +123,7 @@ impl AffinePoint {
     // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
     pub fn to_montgomery(&self) -> MontgomeryPoint {
         // u = y^2/x^2
-        // v = (2 - x^2 - y^2)*y/x^3)
+        // v = (2 - x^2 - y^2)*y/x^3
 
         // Optimized to one inversion:
         // x_inv = x^-1
