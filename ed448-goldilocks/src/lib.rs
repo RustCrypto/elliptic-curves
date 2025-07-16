@@ -61,7 +61,7 @@ pub use edwards::{
     WideEdwardsScalarBytes,
 };
 pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
-pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
+pub use montgomery::{LOW_A, LOW_B, LOW_C, MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use ristretto::{CompressedRistretto, RistrettoPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
