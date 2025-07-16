@@ -1,9 +1,10 @@
-use crate::field::FieldElement;
+use crate::ProjectiveMontgomeryXpoint;
+use crate::field::{ConstMontyType, FieldElement};
 use core::borrow::Borrow;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::CurveGroup;
-use subtle::{Choice, ConditionallySelectable};
+use elliptic_curve::bigint::U448;
 
 use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
 
@@ -54,7 +55,7 @@ define_add_variants!(
 impl Add<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
-    // See Complete Addition Law for Montgomery Curves - Algorithm 1.
+    // See Complete Addition Law for Montgomery Curves - Algorithm 2.
     // With "Trade-Off Technique".
     fn add(self, rhs: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
         let (x1, y1, z1) = (self.U, self.V, self.W);
@@ -139,17 +140,9 @@ define_add_assign_variants!(LHS = MontgomeryPoint, RHS = ProjectiveMontgomeryPoi
 impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
+    #[inline]
     fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryPoint {
-        let mut p = ProjectiveMontgomeryPoint::IDENTITY;
-        let bits = scalar.bits();
-
-        for index in (0..448).rev() {
-            p = p + p;
-            p.conditional_assign(&(p + self), Choice::from(bits[index] as u8));
-        }
-
-        p
+        scalar * self.to_affine()
     }
 }
 
@@ -162,9 +155,38 @@ define_mul_variants!(
 impl Mul<&MontgomeryPoint> for &MontgomeryScalar {
     type Output = ProjectiveMontgomeryPoint;
 
-    #[inline]
-    fn mul(self, point: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint::from(*point) * self
+    // Montgomery curves and their arithmetic - Algorithm 6
+    // https://eprint.iacr.org/2017/212.pdf
+    fn mul(self, rhs: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        pub const A2: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(312652)));
+
+        let MontgomeryPoint { x: xP, y: yP } = rhs;
+        let (
+            ProjectiveMontgomeryXpoint { U: xQ, W: zQ },
+            ProjectiveMontgomeryXpoint { U: xD, W: zD },
+        ) = rhs.to_affine_x().mul_internal(self);
+
+        let v1 = xP * zQ;
+        let v2 = xQ + v1;
+        let v3 = xQ - v1;
+        let v3 = v3.square();
+        let v3 = v3 * xD;
+        let v1 = A2 * zQ;
+        let v2 = v2 + v1;
+        let v4 = xP * xQ;
+        let v4 = v4 + zQ;
+        let v2 = v2 * v4;
+        let v1 = v1 * zQ;
+        let v2 = v2 - v1;
+        let v2 = v2 * zD;
+        let y = v2 - v3;
+        let v1 = FieldElement::TWO * yP;
+        let v1 = v1 * zQ;
+        let v1 = v1 * zD;
+        let x = v1 * xQ;
+        let z = v1 * zQ;
+
+        ProjectiveMontgomeryPoint { U: x, V: y, W: z }
     }
 }
 

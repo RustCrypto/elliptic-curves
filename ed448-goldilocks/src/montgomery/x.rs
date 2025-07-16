@@ -73,8 +73,8 @@ impl PartialEq for MontgomeryXpoint {
 /// A Projective point in Montgomery form
 #[derive(Copy, Clone, Debug, Eq)]
 pub struct ProjectiveMontgomeryXpoint {
-    U: FieldElement,
-    W: FieldElement,
+    pub(super) U: FieldElement,
+    pub(super) W: FieldElement,
 }
 
 impl Mul<&MontgomeryScalar> for &MontgomeryXpoint {
@@ -82,7 +82,7 @@ impl Mul<&MontgomeryScalar> for &MontgomeryXpoint {
 
     #[allow(clippy::suspicious_arithmetic_impl)]
     fn mul(self, scalar: &MontgomeryScalar) -> MontgomeryXpoint {
-        (&self.to_projective() * scalar).to_affine()
+        self.mul_internal(scalar).0.to_affine()
     }
 }
 
@@ -116,6 +116,30 @@ impl MontgomeryXpoint {
     /// Compute the Y-coordinate
     pub fn y(&self, sign: Choice) -> [u8; 56] {
         self.to_projective().y(sign).to_bytes()
+    }
+
+    pub(super) fn mul_internal(
+        &self,
+        scalar: &MontgomeryScalar,
+    ) -> (ProjectiveMontgomeryXpoint, ProjectiveMontgomeryXpoint) {
+        // Algorithm 8 of Costello-Smith 2017
+        let mut x0 = ProjectiveMontgomeryXpoint::IDENTITY;
+        let mut x1 = self.to_projective();
+        let diff = x1.U;
+
+        let bits = scalar.bits();
+        let mut swap = 0;
+        for s in (0..448).rev() {
+            let bit = bits[s] as u8;
+            let choice: u8 = swap ^ bit;
+
+            ProjectiveMontgomeryXpoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
+            differential_add_and_double(&mut x0, &mut x1, &diff);
+
+            swap = bit;
+        }
+
+        (x0, x1)
     }
 
     /// Convert the point to its form including the y-coordinate
@@ -166,25 +190,8 @@ impl PartialEq for ProjectiveMontgomeryXpoint {
 impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryXpoint {
     type Output = ProjectiveMontgomeryXpoint;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
     fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryXpoint {
-        // Algorithm 8 of Costello-Smith 2017
-        let mut x0 = ProjectiveMontgomeryXpoint::IDENTITY;
-        let mut x1 = *self;
-
-        let bits = scalar.bits();
-        let mut swap = 0;
-        for s in (0..448).rev() {
-            let bit = bits[s] as u8;
-            let choice: u8 = swap ^ bit;
-
-            ProjectiveMontgomeryXpoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
-            differential_add_and_double(&mut x0, &mut x1, &self.U);
-
-            swap = bit;
-        }
-
-        x0
+        self.to_affine().mul_internal(scalar).0
     }
 }
 
@@ -196,6 +203,8 @@ impl Mul<&ProjectiveMontgomeryXpoint> for &MontgomeryScalar {
     }
 }
 
+// (1987 Montgomery) Speeding the Pollard and elliptic curve methods of factorization
+// fifth and sixth displays, plus common-subexpression elimination, plus assumption Z1=1
 fn differential_add_and_double(
     P: &mut ProjectiveMontgomeryXpoint,
     Q: &mut ProjectiveMontgomeryXpoint,
@@ -371,11 +380,11 @@ mod tests {
         let scalar = MontgomeryScalar::from(200u32);
 
         // Montgomery scalar mul
-        let montgomery_res = (&ProjectiveMontgomeryXpoint::GENERATOR * &scalar).to_affine();
+        let montgomery_res =
+            (&(&ProjectiveMontgomeryXpoint::GENERATOR * &scalar) * &scalar).to_affine();
         // Goldilocks scalar mul
-        let goldilocks_point = EdwardsPoint::GENERATOR
-            .scalar_mul(&scalar.to_scalar())
-            .to_affine();
+        let goldilocks_point =
+            (EdwardsPoint::GENERATOR * scalar.to_scalar() * scalar.to_scalar()).to_affine();
 
         assert_eq!(goldilocks_point.to_montgomery_x(), montgomery_res);
     }

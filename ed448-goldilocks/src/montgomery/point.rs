@@ -424,11 +424,10 @@ mod tests {
         let scalar = MontgomeryScalar::from(200u32);
 
         // Montgomery scalar mul
-        let montgomery_res = (ProjectiveMontgomeryPoint::GENERATOR * scalar).to_affine();
+        let montgomery_res = (ProjectiveMontgomeryPoint::GENERATOR * scalar * scalar).to_affine();
         // Goldilocks scalar mul
-        let goldilocks_point = EdwardsPoint::GENERATOR
-            .scalar_mul(&scalar.to_scalar())
-            .to_affine();
+        let goldilocks_point =
+            (EdwardsPoint::GENERATOR * scalar.to_scalar() * scalar.to_scalar()).to_affine();
 
         assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
     }
