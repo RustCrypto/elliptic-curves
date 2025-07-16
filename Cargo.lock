@@ -363,8 +363,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.4"
-source = "git+https://github.com/RustCrypto/signatures.git#23623f57ed26315834d6b2ab5b4901563e55105a"
+version = "0.17.0-rc.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "112839e868b3376c2066506d42331023165d687a7ed38b2ed77f28763d9a7742"
 dependencies = [
  "der",
  "digest",
@@ -1190,9 +1191,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "3.0.0-rc.1"
+version = "3.0.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8852cecbd17ba45978bbbe43061ebe36a2ae376058c5c172e09f72888f8f7de"
+checksum = "4835c3b5ecb10171941a4998a95a3a76ecac1c5ae8e6954f2ad030acd1c7e8ab"
 dependencies = [
  "digest",
  "rand_core",
