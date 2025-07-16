@@ -265,13 +265,11 @@ impl ProjectiveMontgomeryXpoint {
     /// Double this point
     // https://eprint.iacr.org/2020/1338.pdf (2.2)
     pub fn double(&self) -> Self {
-        const C: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(39082)));
-
         let v1 = (self.U + self.W).square();
         let v2 = (self.U - self.W).square();
         let U = v1 * v2;
         let v3 = v1 - v2;
-        let v4 = C * v3;
+        let v4 = FieldElement::A_PLUS_TWO_OVER_FOUR * v3;
         let v5 = v2 + v4;
         let W = v3 * v5;
 
