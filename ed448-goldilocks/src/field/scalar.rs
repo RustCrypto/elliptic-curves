@@ -41,13 +41,18 @@ pub type ScalarBytes<C> = Array<u8, <C as CurveWithScalar>::ReprSize>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
 pub type WideScalarBytes<C> = Array<u8, Prod<<C as CurveWithScalar>::ReprSize, U2>>;
 
+/// Representation of a curve scalar for either Ed448 or Decaf448
 pub trait CurveWithScalar: 'static + CurveArithmetic + Send + Sync {
+    /// The size of the scalar for the given curve
     type ReprSize: ArraySize<ArrayType<u8>: Copy> + Mul<U2, Output: ArraySize<ArrayType<u8>: Copy>>;
 
+    /// Create a scalar from the wide representation
     fn from_bytes_mod_order_wide(input: &WideScalarBytes<Self>) -> Scalar<Self>;
 
+    /// Create a scalar from its serialization
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> CtOption<Scalar<Self>>;
 
+    /// Return the serialization for a given scalar
     fn to_repr(scalar: &Scalar<Self>) -> ScalarBytes<Self>;
 }
 
