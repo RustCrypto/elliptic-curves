@@ -1,5 +1,6 @@
 use elliptic_curve::bigint::{Limb, U448};
 use elliptic_curve::consts::U56;
+use elliptic_curve::scalar::FromUintUnchecked;
 use subtle::{Choice, CtOption};
 
 use crate::field::{CurveWithScalar, ScalarBytes, WideScalarBytes};
@@ -49,10 +50,19 @@ impl MontgomeryScalar {
     }
 }
 
+elliptic_curve::scalar_impls!(Curve448, MontgomeryScalar);
+
 /// The number of bytes needed to represent the scalar field
 pub type MontgomeryScalarBytes = ScalarBytes<Curve448>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
 pub type WideMontgomeryScalarBytes = WideScalarBytes<Curve448>;
+
+#[cfg(feature = "bits")]
+impl From<&MontgomeryScalar> for elliptic_curve::scalar::ScalarBits<Curve448> {
+    fn from(scalar: &MontgomeryScalar) -> Self {
+        scalar.scalar.to_words().into()
+    }
+}
 
 #[cfg(test)]
 mod test {
