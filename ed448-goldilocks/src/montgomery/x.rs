@@ -62,7 +62,7 @@ impl PartialEq for MontgomeryXpoint {
 impl Eq for MontgomeryXpoint {}
 
 /// A Projective point in Montgomery form
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq)]
 pub struct ProjectiveMontgomeryXpoint {
     U: FieldElement,
     W: FieldElement,
@@ -140,6 +140,12 @@ impl MontgomeryXpoint {
     }
 }
 
+impl ConstantTimeEq for ProjectiveMontgomeryXpoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        (self.U * other.W).ct_eq(&(other.U * self.W))
+    }
+}
+
 impl ConditionallySelectable for ProjectiveMontgomeryXpoint {
     fn conditional_select(
         a: &ProjectiveMontgomeryXpoint,
@@ -150,6 +156,12 @@ impl ConditionallySelectable for ProjectiveMontgomeryXpoint {
             U: FieldElement::conditional_select(&a.U, &b.U, choice),
             W: FieldElement::conditional_select(&a.W, &b.W, choice),
         }
+    }
+}
+
+impl PartialEq for ProjectiveMontgomeryXpoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
     }
 }
 
