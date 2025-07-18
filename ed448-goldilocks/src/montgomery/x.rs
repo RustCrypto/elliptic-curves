@@ -4,7 +4,7 @@ use crate::edwards::extended::EdwardsPoint;
 use crate::field::FieldElement;
 use core::fmt;
 use core::ops::Mul;
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
 
 impl MontgomeryXpoint {
     /// First low order point on Curve448 and it's twist
@@ -129,6 +129,23 @@ impl MontgomeryXpoint {
     /// View the point as a byte slice
     pub fn as_bytes(&self) -> &[u8; 56] {
         &self.0
+    }
+
+    /// Compute the Y-coordinate
+    pub fn y(&self, sign: Choice) -> [u8; 56] {
+        self.y_internal(sign).to_bytes()
+    }
+
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-1.
+    pub(super) fn y_internal(&self, sign: Choice) -> FieldElement {
+        // v^2 = u^3 + A*u^2 + u
+        let u = FieldElement::from_bytes(&self.0);
+        let uu = u.square();
+        let vv = uu * u + FieldElement::J * uu + u;
+
+        let mut v = vv.sqrt();
+        v.conditional_negate(v.is_negative() ^ sign);
+        v
     }
 
     /// Convert the point to a ProjectiveMontgomeryPoint
