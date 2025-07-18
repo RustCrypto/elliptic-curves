@@ -418,7 +418,7 @@ impl FieldElement {
         let e = b * c;
 
         let mut a = n * e;
-        a.conditional_negate(!Choice::from(a.0.retrieve().bit(0)) ^ square);
+        a.conditional_negate(!a.is_negative() ^ square);
 
         let c = e * ONE_MINUS_TWO_D;
         let b = c.square();
