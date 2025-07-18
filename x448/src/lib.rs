@@ -1,7 +1,7 @@
 #![no_std]
 
 use ed448_goldilocks::{
-    MontgomeryXpoint,
+    MontgomeryScalar, MontgomeryXpoint,
     elliptic_curve::{
         array::{Array, typenum::U56},
         bigint::U448,
@@ -11,15 +11,13 @@ use ed448_goldilocks::{
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
-type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
-
 /// Given an [`EphemeralSecret`] Key, compute the corresponding public key
 /// using the generator specified in RFC7748
 impl From<&EphemeralSecret> for PublicKey {
     fn from(secret: &EphemeralSecret) -> PublicKey {
         let secret = secret.as_scalar();
         let point = &MontgomeryXpoint::GENERATOR * &secret;
-        PublicKey(point)
+        PublicKey(point.to_affine())
     }
 }
 
@@ -112,7 +110,7 @@ impl EphemeralSecret {
         // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
         // created.
         let shared_key = &public_key.0 * &self.as_scalar();
-        SharedSecret(shared_key)
+        SharedSecret(shared_key.to_affine())
     }
 
     /// Converts a secret into a byte array
@@ -136,14 +134,14 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
     let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
-    Some((&point.0 * &scalar).0)
+    Some((&point.0 * &scalar).to_affine().0)
 }
 /// An unchecked version of the x448 function defined in RFC448
 /// No checks are made on the points.
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
     let point = MontgomeryXpoint(point_bytes);
     let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
-    (&point * &scalar).0
+    (&point * &scalar).to_affine().0
 }
 
 pub const X448_BASEPOINT_BYTES: [u8; 56] = MontgomeryXpoint::GENERATOR.0;
