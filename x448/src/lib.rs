@@ -1,7 +1,7 @@
 #![no_std]
 
 use ed448_goldilocks::{
-    MontgomeryXpoint,
+    MontgomeryScalar, MontgomeryXpoint,
     elliptic_curve::{
         array::{Array, typenum::U56},
         bigint::U448,
@@ -10,8 +10,6 @@ use ed448_goldilocks::{
 };
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
-
-type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
 
 /// Given an [`EphemeralSecret`] Key, compute the corresponding public key
 /// using the generator specified in RFC7748

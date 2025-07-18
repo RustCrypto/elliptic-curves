@@ -11,7 +11,9 @@
 #![allow(non_snake_case)]
 
 mod point;
+mod scalar;
 mod x;
 
 pub use point::{MontgomeryPoint, ProjectiveMontgomeryPoint};
+pub use scalar::{MontgomeryScalar, MontgomeryScalarBytes, WideMontgomeryScalarBytes};
 pub use x::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};
