@@ -75,7 +75,7 @@ impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
     fn mul(self, scalar: &EdwardsScalar) -> ProjectiveMontgomeryXpoint {
         // Algorithm 8 of Costello-Smith 2017
         let affine_u = FieldElement::from_bytes(&self.0);
-        let mut x0 = ProjectiveMontgomeryXpoint::identity();
+        let mut x0 = ProjectiveMontgomeryXpoint::IDENTITY;
         let mut x1 = ProjectiveMontgomeryXpoint {
             U: affine_u,
             W: FieldElement::ONE,
@@ -238,12 +238,10 @@ fn differential_add_and_double(
 
 impl ProjectiveMontgomeryXpoint {
     /// The identity element of the group: the point at infinity.
-    pub fn identity() -> ProjectiveMontgomeryXpoint {
-        ProjectiveMontgomeryXpoint {
-            U: FieldElement::ONE,
-            W: FieldElement::ZERO,
-        }
-    }
+    pub const IDENTITY: Self = Self {
+        U: FieldElement::ONE,
+        W: FieldElement::ZERO,
+    };
 
     /// Convert the point to affine form
     pub fn to_affine(&self) -> MontgomeryXpoint {
