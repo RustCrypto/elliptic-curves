@@ -1,9 +1,10 @@
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
 use crate::EdwardsScalar;
 use crate::edwards::extended::EdwardsPoint;
-use crate::field::FieldElement;
+use crate::field::{ConstMontyType, FieldElement};
 use core::fmt;
 use core::ops::Mul;
+use elliptic_curve::bigint::U448;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
 
 impl MontgomeryXpoint {
@@ -243,6 +244,12 @@ impl ProjectiveMontgomeryXpoint {
         W: FieldElement::ZERO,
     };
 
+    /// The generator point
+    pub const GENERATOR: Self = Self {
+        U: FieldElement(ConstMontyType::new(&U448::from_u64(5))),
+        W: FieldElement::ONE,
+    };
+
     /// Convert the point to affine form
     pub fn to_affine(&self) -> MontgomeryXpoint {
         let x = self.U * self.W.invert();
@@ -258,14 +265,12 @@ mod tests {
     #[test]
     fn test_montgomery_edwards() {
         let scalar = EdwardsScalar::from(200u32);
-        use crate::GOLDILOCKS_BASE_POINT as bp;
 
         // Montgomery scalar mul
-        let montgomery_bp = bp.to_montgomery_x();
-        let montgomery_res = &(&montgomery_bp * &scalar) * &scalar;
+        let montgomery_res = &(&ProjectiveMontgomeryXpoint::GENERATOR * &scalar) * &scalar;
 
         // Goldilocks scalar mul
-        let goldilocks_point = bp.scalar_mul(&scalar).scalar_mul(&scalar);
+        let goldilocks_point = EdwardsPoint::GENERATOR * scalar * scalar;
         assert_eq!(
             goldilocks_point.to_montgomery_x(),
             montgomery_res.to_affine()
