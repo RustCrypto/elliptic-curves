@@ -306,6 +306,7 @@ mod tests {
 
     use super::*;
     use crate::EdwardsPoint;
+    use elliptic_curve::CurveGroup;
 
     #[test]
     fn test_montgomery_edwards() {
@@ -333,7 +334,7 @@ mod tests {
     #[test]
     fn to_extended_affine() {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
-        let identity = MontgomeryPoint::from(ProjectiveMontgomeryPoint::IDENTITY);
+        let identity = ProjectiveMontgomeryPoint::IDENTITY.to_affine();
 
         assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
     }
