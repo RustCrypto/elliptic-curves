@@ -69,10 +69,10 @@ pub struct ProjectiveMontgomeryXpoint {
 }
 
 impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
-    type Output = MontgomeryXpoint;
+    type Output = ProjectiveMontgomeryXpoint;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, scalar: &EdwardsScalar) -> MontgomeryXpoint {
+    fn mul(self, scalar: &EdwardsScalar) -> ProjectiveMontgomeryXpoint {
         // Algorithm 8 of Costello-Smith 2017
         let affine_u = FieldElement::from_bytes(&self.0);
         let mut x0 = ProjectiveMontgomeryXpoint::identity();
@@ -93,14 +93,14 @@ impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
             swap = bit;
         }
 
-        x0.to_affine()
+        x0
     }
 }
 
 impl Mul<&MontgomeryXpoint> for &EdwardsScalar {
-    type Output = MontgomeryXpoint;
+    type Output = ProjectiveMontgomeryXpoint;
 
-    fn mul(self, point: &MontgomeryXpoint) -> MontgomeryXpoint {
+    fn mul(self, point: &MontgomeryXpoint) -> ProjectiveMontgomeryXpoint {
         point * self
     }
 }
@@ -162,6 +162,22 @@ impl ConditionallySelectable for ProjectiveMontgomeryXpoint {
 impl PartialEq for ProjectiveMontgomeryXpoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl Mul<&EdwardsScalar> for &ProjectiveMontgomeryXpoint {
+    type Output = ProjectiveMontgomeryXpoint;
+
+    fn mul(self, scalar: &EdwardsScalar) -> ProjectiveMontgomeryXpoint {
+        &self.to_affine() * scalar
+    }
+}
+
+impl Mul<&ProjectiveMontgomeryXpoint> for &EdwardsScalar {
+    type Output = ProjectiveMontgomeryXpoint;
+
+    fn mul(self, point: &ProjectiveMontgomeryXpoint) -> ProjectiveMontgomeryXpoint {
+        point * self
     }
 }
 
@@ -231,10 +247,13 @@ mod tests {
 
         // Montgomery scalar mul
         let montgomery_bp = bp.to_montgomery_x();
-        let montgomery_res = &montgomery_bp * &scalar;
+        let montgomery_res = &(&montgomery_bp * &scalar) * &scalar;
 
         // Goldilocks scalar mul
-        let goldilocks_point = bp.scalar_mul(&scalar);
-        assert_eq!(goldilocks_point.to_montgomery_x(), montgomery_res);
+        let goldilocks_point = bp.scalar_mul(&scalar).scalar_mul(&scalar);
+        assert_eq!(
+            goldilocks_point.to_montgomery_x(),
+            montgomery_res.to_affine()
+        );
     }
 }
