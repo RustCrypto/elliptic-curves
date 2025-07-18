@@ -10,6 +10,7 @@
 
 #![allow(non_snake_case)]
 
+mod ops;
 mod point;
 mod scalar;
 mod x;
