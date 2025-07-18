@@ -353,12 +353,12 @@ mod tests {
 
         for test_vector in TEST_VECTORS {
             // in parts
-            let mut u = [FieldElement::default(), FieldElement::default()];
-            hash2curve::hash_to_field::<
+            let u = hash2curve::hash_to_field::<
+                2,
                 ExpandMsgXmd<Sha256>,
                 <Secp256k1 as GroupDigest>::K,
                 FieldElement,
-            >(&[test_vector.msg], &[DST], &mut u)
+            >(&[test_vector.msg], &[DST])
             .unwrap();
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
             assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
