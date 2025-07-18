@@ -199,6 +199,8 @@ impl Mul<&ProjectiveMontgomeryXpoint> for &EdwardsScalar {
     }
 }
 
+// (1987 Montgomery) Speeding the Pollard and elliptic curve methods of factorization
+// fifth and sixth displays, plus common-subexpression elimination, plus assumption Z1=1
 fn differential_add_and_double(
     P: &mut ProjectiveMontgomeryXpoint,
     Q: &mut ProjectiveMontgomeryXpoint,
