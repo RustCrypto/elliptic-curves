@@ -53,10 +53,10 @@ mod test {
             // XXX: Would be great if subtle had a From<u32> for Choice. But maybe that is not it's purpose?
             for bit in s_bits.into_iter().rev() {
                 result = result.double();
-
-                let mut p = ExtendedPoint::IDENTITY;
-                p.conditional_assign(point, Choice::from(bit as u8));
-                result = result.to_extended().add_extended(&p);
+                result.conditional_assign(
+                    &result.to_extended().add_extended(point),
+                    Choice::from(u8::from(bit)),
+                );
             }
 
             result

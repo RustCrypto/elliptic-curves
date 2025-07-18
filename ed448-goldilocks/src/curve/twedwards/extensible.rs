@@ -4,7 +4,7 @@
 use crate::curve::twedwards::{affine::AffinePoint, extended::ExtendedPoint};
 use crate::edwards::EdwardsPoint as EdwardsExtendedPoint;
 use crate::field::FieldElement;
-use subtle::{Choice, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 /// This is the representation that we will do most of the group operations on.
 // In affine (x,y) is the extensible point (X, Y, Z, T1, T2)
@@ -20,6 +20,17 @@ pub struct ExtensiblePoint {
     pub(crate) T2: FieldElement,
 }
 
+impl ConditionallySelectable for ExtensiblePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self {
+            X: FieldElement::conditional_select(&a.X, &b.X, choice),
+            Y: FieldElement::conditional_select(&a.Y, &b.Y, choice),
+            Z: FieldElement::conditional_select(&a.Z, &b.Z, choice),
+            T1: FieldElement::conditional_select(&a.T1, &b.T1, choice),
+            T2: FieldElement::conditional_select(&a.T2, &b.T2, choice),
+        }
+    }
+}
 impl ConstantTimeEq for ExtensiblePoint {
     fn ct_eq(&self, other: &Self) -> Choice {
         let XZ = self.X * other.Z;
