@@ -4,7 +4,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::{ConstMontyType, MODULUS};
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
+    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::ops::Reduce;
@@ -196,7 +196,7 @@ impl MapToCurve for Ed448 {
     type Length = U84;
 
     fn map_to_curve(element: FieldElement) -> EdwardsPoint {
-        element.map_to_curve_elligator2().isogeny().to_edwards()
+        AffinePoint::from(element.map_to_curve_elligator2_curve448()).to_edwards()
     }
 }
 
@@ -440,7 +440,7 @@ impl FieldElement {
         Self(self.0.div_by_2())
     }
 
-    pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
+    pub(crate) fn map_to_curve_elligator2_curve448(&self) -> MontgomeryPoint {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
         let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
@@ -460,7 +460,7 @@ impl FieldElement {
         let mut y = y2.sqrt(); // 17.   y = sqrt(y2)
         let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
         y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
-        AffinePoint { x, y }
+        MontgomeryPoint::new(x, y)
     }
 
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.

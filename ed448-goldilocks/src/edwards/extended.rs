@@ -325,6 +325,28 @@ impl EdwardsPoint {
         MontgomeryXpoint(u.to_bytes())
     }
 
+    /// Convert this point to [`MontgomeryPoint`]
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
+    pub fn to_montgomery(&self) -> MontgomeryPoint {
+        // u = y^2/x^2
+        // v = (2 - x^2 - y^2)*y/x^3
+
+        let affine = self.to_affine();
+
+        // TODO: optimize to a single inversion.
+        let xx = affine.x.square();
+        let yy = affine.y.square();
+
+        let u = yy * xx.invert();
+        let v = (FieldElement::TWO - xx - yy) * affine.y * (xx * affine.x).invert();
+
+        MontgomeryPoint::conditional_select(
+            &MontgomeryPoint::new(u, v),
+            &MontgomeryPoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
+    }
+
     /// Generic scalar multiplication to compute s*P
     pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
         // Compute floor(s/4)
