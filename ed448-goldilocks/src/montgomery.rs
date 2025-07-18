@@ -18,23 +18,23 @@ use core::fmt;
 use core::ops::Mul;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
-impl MontgomeryPoint {
+impl MontgomeryXpoint {
     /// First low order point on Curve448 and it's twist
-    pub const LOW_A: MontgomeryPoint = MontgomeryPoint([
+    pub const LOW_A: MontgomeryXpoint = MontgomeryXpoint([
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ]);
     /// Second low order point on Curve448 and it's twist
-    pub const LOW_B: MontgomeryPoint = MontgomeryPoint([
+    pub const LOW_B: MontgomeryXpoint = MontgomeryXpoint([
         0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ]);
     /// Third low order point on Curve448 and it's twist
-    pub const LOW_C: MontgomeryPoint = MontgomeryPoint([
+    pub const LOW_C: MontgomeryXpoint = MontgomeryXpoint([
         0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
@@ -44,51 +44,51 @@ impl MontgomeryPoint {
 
 /// A point in Montgomery form
 #[derive(Copy, Clone)]
-pub struct MontgomeryPoint(pub [u8; 56]);
+pub struct MontgomeryXpoint(pub [u8; 56]);
 
-impl Default for MontgomeryPoint {
-    fn default() -> MontgomeryPoint {
+impl Default for MontgomeryXpoint {
+    fn default() -> MontgomeryXpoint {
         Self([0u8; 56])
     }
 }
 
-impl elliptic_curve::zeroize::DefaultIsZeroes for MontgomeryPoint {}
+impl elliptic_curve::zeroize::DefaultIsZeroes for MontgomeryXpoint {}
 
-impl fmt::Debug for MontgomeryPoint {
+impl fmt::Debug for MontgomeryXpoint {
     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
         self.0[..].fmt(formatter)
     }
 }
 
-impl ConstantTimeEq for MontgomeryPoint {
-    fn ct_eq(&self, other: &MontgomeryPoint) -> Choice {
+impl ConstantTimeEq for MontgomeryXpoint {
+    fn ct_eq(&self, other: &MontgomeryXpoint) -> Choice {
         self.0.ct_eq(&other.0)
     }
 }
 
-impl PartialEq for MontgomeryPoint {
-    fn eq(&self, other: &MontgomeryPoint) -> bool {
+impl PartialEq for MontgomeryXpoint {
+    fn eq(&self, other: &MontgomeryXpoint) -> bool {
         self.ct_eq(other).into()
     }
 }
-impl Eq for MontgomeryPoint {}
+impl Eq for MontgomeryXpoint {}
 
 /// A Projective point in Montgomery form
 #[derive(Copy, Clone, Debug)]
-pub struct ProjectiveMontgomeryPoint {
+pub struct ProjectiveMontgomeryXpoint {
     U: FieldElement,
     W: FieldElement,
 }
 
-impl Mul<&EdwardsScalar> for &MontgomeryPoint {
-    type Output = MontgomeryPoint;
+impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
+    type Output = MontgomeryXpoint;
 
     #[allow(clippy::suspicious_arithmetic_impl)]
-    fn mul(self, scalar: &EdwardsScalar) -> MontgomeryPoint {
+    fn mul(self, scalar: &EdwardsScalar) -> MontgomeryXpoint {
         // Algorithm 8 of Costello-Smith 2017
         let affine_u = FieldElement::from_bytes(&self.0);
-        let mut x0 = ProjectiveMontgomeryPoint::identity();
-        let mut x1 = ProjectiveMontgomeryPoint {
+        let mut x0 = ProjectiveMontgomeryXpoint::identity();
+        let mut x1 = ProjectiveMontgomeryXpoint {
             U: affine_u,
             W: FieldElement::ONE,
         };
@@ -99,7 +99,7 @@ impl Mul<&EdwardsScalar> for &MontgomeryPoint {
             let bit = bits[s] as u8;
             let choice: u8 = swap ^ bit;
 
-            ProjectiveMontgomeryPoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
+            ProjectiveMontgomeryXpoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
             differential_add_and_double(&mut x0, &mut x1, &affine_u);
 
             swap = bit;
@@ -109,15 +109,15 @@ impl Mul<&EdwardsScalar> for &MontgomeryPoint {
     }
 }
 
-impl Mul<&MontgomeryPoint> for &EdwardsScalar {
-    type Output = MontgomeryPoint;
+impl Mul<&MontgomeryXpoint> for &EdwardsScalar {
+    type Output = MontgomeryXpoint;
 
-    fn mul(self, point: &MontgomeryPoint) -> MontgomeryPoint {
+    fn mul(self, point: &MontgomeryXpoint) -> MontgomeryXpoint {
         point * self
     }
 }
 
-impl MontgomeryPoint {
+impl MontgomeryXpoint {
     /// Returns the generator specified in RFC7748
     pub const GENERATOR: Self = Self([
         0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -144,21 +144,21 @@ impl MontgomeryPoint {
     }
 
     /// Convert the point to a ProjectiveMontgomeryPoint
-    pub fn to_projective(&self) -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint {
+    pub fn to_projective(&self) -> ProjectiveMontgomeryXpoint {
+        ProjectiveMontgomeryXpoint {
             U: FieldElement::from_bytes(&self.0),
             W: FieldElement::ONE,
         }
     }
 }
 
-impl ConditionallySelectable for ProjectiveMontgomeryPoint {
+impl ConditionallySelectable for ProjectiveMontgomeryXpoint {
     fn conditional_select(
-        a: &ProjectiveMontgomeryPoint,
-        b: &ProjectiveMontgomeryPoint,
+        a: &ProjectiveMontgomeryXpoint,
+        b: &ProjectiveMontgomeryXpoint,
         choice: Choice,
-    ) -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint {
+    ) -> ProjectiveMontgomeryXpoint {
+        ProjectiveMontgomeryXpoint {
             U: FieldElement::conditional_select(&a.U, &b.U, choice),
             W: FieldElement::conditional_select(&a.W, &b.W, choice),
         }
@@ -166,8 +166,8 @@ impl ConditionallySelectable for ProjectiveMontgomeryPoint {
 }
 
 fn differential_add_and_double(
-    P: &mut ProjectiveMontgomeryPoint,
-    Q: &mut ProjectiveMontgomeryPoint,
+    P: &mut ProjectiveMontgomeryXpoint,
+    Q: &mut ProjectiveMontgomeryXpoint,
     affine_PmQ: &FieldElement,
 ) {
     let t0 = P.U + P.W;
@@ -203,19 +203,19 @@ fn differential_add_and_double(
     Q.W = t17; // W_{Q'} = U_D * 4 (W_P U_Q - U_P W_Q)^2
 }
 
-impl ProjectiveMontgomeryPoint {
+impl ProjectiveMontgomeryXpoint {
     /// The identity element of the group: the point at infinity.
-    pub fn identity() -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint {
+    pub fn identity() -> ProjectiveMontgomeryXpoint {
+        ProjectiveMontgomeryXpoint {
             U: FieldElement::ONE,
             W: FieldElement::ZERO,
         }
     }
 
     /// Convert the point to affine form
-    pub fn to_affine(&self) -> MontgomeryPoint {
+    pub fn to_affine(&self) -> MontgomeryXpoint {
         let x = self.U * self.W.invert();
-        MontgomeryPoint(x.to_bytes())
+        MontgomeryXpoint(x.to_bytes())
     }
 }
 
@@ -230,11 +230,11 @@ mod tests {
         use crate::GOLDILOCKS_BASE_POINT as bp;
 
         // Montgomery scalar mul
-        let montgomery_bp = bp.to_montgomery();
+        let montgomery_bp = bp.to_montgomery_x();
         let montgomery_res = &montgomery_bp * &scalar;
 
         // Goldilocks scalar mul
         let goldilocks_point = bp.scalar_mul(&scalar);
-        assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
+        assert_eq!(goldilocks_point.to_montgomery_x(), montgomery_res);
     }
 }
