@@ -1,7 +1,7 @@
 use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use super::ConstMontyType;
+use super::{ConstMontyType, MODULUS};
 use crate::{
     AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
@@ -11,12 +11,16 @@ use elliptic_curve::{
     bigint::{
         Integer, NonZero, U448, U704,
         consts::{U56, U84, U88},
+        modular::ConstMontyParams,
     },
     group::cofactor::CofactorGroup,
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::{FromOkm, MapToCurve};
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
+use subtle::{
+    Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess,
+    CtOption,
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct FieldElement(pub(crate) ConstMontyType);
@@ -314,6 +318,12 @@ impl FieldElement {
 
     pub fn from_bytes(bytes: &[u8; 56]) -> Self {
         Self(ConstMontyType::new(&U448::from_le_slice(bytes)))
+    }
+
+    pub fn from_repr(bytes: &[u8; 56]) -> CtOption<Self> {
+        let integer = U448::from_le_slice(bytes);
+        let is_some = integer.ct_lt(MODULUS::PARAMS.modulus());
+        CtOption::new(Self(ConstMontyType::new(&integer)), is_some)
     }
 
     pub fn double(&self) -> Self {
