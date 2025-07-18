@@ -60,7 +60,7 @@ pub use edwards::{
     AffinePoint, CompressedEdwardsY, EdwardsPoint, EdwardsScalar, EdwardsScalarBytes,
     WideEdwardsScalarBytes,
 };
-pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
+pub use field::{CurveWithScalar, MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
 pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use ristretto::{CompressedRistretto, RistrettoPoint};
 #[cfg(feature = "signing")]
