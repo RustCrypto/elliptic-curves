@@ -8,7 +8,7 @@ use core::ops::{
     Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign,
 };
 use elliptic_curve::{
-    CurveArithmetic, PrimeField,
+    PrimeField,
     array::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
@@ -41,7 +41,7 @@ pub type ScalarBytes<C> = Array<u8, <C as CurveWithScalar>::ReprSize>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
 pub type WideScalarBytes<C> = Array<u8, Prod<<C as CurveWithScalar>::ReprSize, U2>>;
 
-pub trait CurveWithScalar: 'static + CurveArithmetic + Send + Sync {
+pub trait CurveWithScalar: 'static + Sized + Send + Sync {
     type ReprSize: ArraySize<ArrayType<u8>: Copy> + Mul<U2, Output: ArraySize<ArrayType<u8>: Copy>>;
 
     fn from_bytes_mod_order_wide(input: &WideScalarBytes<Self>) -> Scalar<Self>;
