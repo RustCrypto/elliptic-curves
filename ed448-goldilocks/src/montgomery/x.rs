@@ -1,8 +1,7 @@
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
 use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
 use crate::AffinePoint;
-use crate::field::ConstMontyType;
-use crate::field::FieldElement;
+use crate::field::{ConstMontyType, FieldElement};
 use core::fmt;
 use core::ops::Mul;
 use elliptic_curve::bigint::U448;
@@ -303,6 +302,7 @@ mod tests {
 
     use super::*;
     use crate::EdwardsPoint;
+    use elliptic_curve::CurveGroup;
 
     #[test]
     fn test_montgomery_edwards() {
