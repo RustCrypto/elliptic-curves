@@ -1,6 +1,6 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use ed448_goldilocks::{
-    Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
+    Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryXpoint,
 };
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
@@ -129,7 +129,7 @@ pub fn x448(c: &mut Criterion) {
     group.bench_function("scalar multiplication", |b| {
         b.iter_batched(
             || {
-                let mut point = MontgomeryPoint::default();
+                let mut point = MontgomeryXpoint::default();
                 OsRng.try_fill_bytes(&mut point.0).unwrap();
                 let scalar = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
                 (point, scalar)
