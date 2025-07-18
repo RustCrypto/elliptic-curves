@@ -1,6 +1,5 @@
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
-use super::{MontgomeryPoint, ProjectiveMontgomeryPoint};
-use crate::EdwardsScalar;
+use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
 use crate::edwards::extended::EdwardsPoint;
 use crate::field::{ConstMontyType, FieldElement};
 use core::fmt;
@@ -70,15 +69,15 @@ pub struct ProjectiveMontgomeryXpoint {
     pub(super) W: FieldElement,
 }
 
-impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
+impl Mul<&MontgomeryScalar> for &MontgomeryXpoint {
     type Output = ProjectiveMontgomeryXpoint;
 
-    fn mul(self, scalar: &EdwardsScalar) -> ProjectiveMontgomeryXpoint {
+    fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryXpoint {
         self.mul_internal(scalar).0
     }
 }
 
-impl Mul<&MontgomeryXpoint> for &EdwardsScalar {
+impl Mul<&MontgomeryXpoint> for &MontgomeryScalar {
     type Output = ProjectiveMontgomeryXpoint;
 
     fn mul(self, point: &MontgomeryXpoint) -> ProjectiveMontgomeryXpoint {
@@ -130,7 +129,7 @@ impl MontgomeryXpoint {
 
     pub(super) fn mul_internal(
         &self,
-        scalar: &EdwardsScalar,
+        scalar: &MontgomeryScalar,
     ) -> (ProjectiveMontgomeryXpoint, ProjectiveMontgomeryXpoint) {
         // Algorithm 8 of Costello-Smith 2017
         let mut x0 = ProjectiveMontgomeryXpoint::IDENTITY;
@@ -199,15 +198,15 @@ impl PartialEq for ProjectiveMontgomeryXpoint {
     }
 }
 
-impl Mul<&EdwardsScalar> for &ProjectiveMontgomeryXpoint {
+impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryXpoint {
     type Output = ProjectiveMontgomeryXpoint;
 
-    fn mul(self, scalar: &EdwardsScalar) -> ProjectiveMontgomeryXpoint {
+    fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryXpoint {
         &self.to_affine() * scalar
     }
 }
 
-impl Mul<&ProjectiveMontgomeryXpoint> for &EdwardsScalar {
+impl Mul<&ProjectiveMontgomeryXpoint> for &MontgomeryScalar {
     type Output = ProjectiveMontgomeryXpoint;
 
     fn mul(self, point: &ProjectiveMontgomeryXpoint) -> ProjectiveMontgomeryXpoint {
@@ -324,13 +323,13 @@ mod tests {
 
     #[test]
     fn test_montgomery_edwards() {
-        let scalar = EdwardsScalar::from(200u32);
+        let scalar = MontgomeryScalar::from(200u32);
 
         // Montgomery scalar mul
         let montgomery_res = &(&ProjectiveMontgomeryXpoint::GENERATOR * &scalar) * &scalar;
 
         // Goldilocks scalar mul
-        let goldilocks_point = EdwardsPoint::GENERATOR * scalar * scalar;
+        let goldilocks_point = EdwardsPoint::GENERATOR * scalar.to_scalar() * scalar.to_scalar();
         assert_eq!(
             goldilocks_point.to_montgomery_x(),
             montgomery_res.to_affine()
