@@ -3,6 +3,7 @@ use crate::field::{ConstMontyType, FieldElement};
 use core::borrow::Borrow;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use elliptic_curve::CurveGroup;
 use elliptic_curve::bigint::U448;
 
 use super::{MontgomeryPoint, MontgomeryScalar, MontgomeryXpoint, ProjectiveMontgomeryPoint};
@@ -141,7 +142,7 @@ impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryPoint {
 
     #[inline]
     fn mul(self, scalar: &MontgomeryScalar) -> ProjectiveMontgomeryPoint {
-        MontgomeryPoint::from(self) * scalar
+        self.to_affine() * scalar
     }
 }
 
@@ -320,9 +321,6 @@ mod test {
             * MontgomeryScalar::try_from_rng(&mut OsRng).unwrap();
         let p3 = p1 + p2;
 
-        assert_eq!(
-            MontgomeryPoint::from(p3),
-            (MontgomeryPoint::from(p1) + p2).into()
-        );
+        assert_eq!(p3.to_affine(), (p1.to_affine() + p2).into());
     }
 }
