@@ -36,10 +36,9 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::K>,
     {
-        let mut u = [Self::FieldElement::default(), Self::FieldElement::default()];
-        hash_to_field::<X, _, _>(msg, dst, &mut u)?;
-        let q0 = Self::map_to_curve(u[0]);
-        let q1 = Self::map_to_curve(u[1]);
+        let [u0, u1] = hash_to_field::<2, X, _, Self::FieldElement>(msg, dst)?;
+        let q0 = Self::map_to_curve(u0);
+        let q1 = Self::map_to_curve(u1);
         Ok(Self::add_and_map_to_subgroup(q0, q1))
     }
 
@@ -67,9 +66,8 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::K>,
     {
-        let mut u = [Self::FieldElement::default()];
-        hash_to_field::<X, _, _>(msg, dst, &mut u)?;
-        let q0 = Self::map_to_curve(u[0]);
+        let [u] = hash_to_field::<1, X, _, Self::FieldElement>(msg, dst)?;
+        let q0 = Self::map_to_curve(u);
         Ok(Self::map_to_subgroup(q0))
     }
 
@@ -91,8 +89,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::K>,
     {
-        let mut u = [Self::Scalar::default()];
-        hash_to_field::<X, _, _>(msg, dst, &mut u)?;
-        Ok(u[0])
+        let [u] = hash_to_field::<1, X, _, Self::Scalar>(msg, dst)?;
+        Ok(u)
     }
 }
