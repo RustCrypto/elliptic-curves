@@ -1,6 +1,6 @@
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
 use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
-use crate::edwards::extended::EdwardsPoint;
+use crate::AffinePoint;
 use crate::field::ConstMontyType;
 use crate::field::FieldElement;
 use core::fmt;
@@ -92,13 +92,6 @@ impl MontgomeryXpoint {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     ]);
 
-    /// Convert this point to an [`EdwardsPoint`]
-    pub fn to_edwards(&self, _sign: u8) -> Option<EdwardsPoint> {
-        // We use the 4-isogeny to map to the Ed448.
-        // This is different to Curve25519, where we use a birational map.
-        todo!()
-    }
-
     /// Returns true if the point is one of the low order points
     pub fn is_low_order(&self) -> bool {
         (*self == LOW_A) || (*self == LOW_B) || (*self == LOW_C)
@@ -154,6 +147,11 @@ impl MontgomeryXpoint {
     /// Convert the point to its form including the y-coordinate
     pub fn to_extended(&self, sign: Choice) -> MontgomeryPoint {
         self.to_projective().to_extended_affine(sign)
+    }
+
+    /// Convert this point to an [`AffinePoint`]
+    pub fn to_edwards(&self, sign: Choice) -> AffinePoint {
+        self.to_extended(sign).to_edwards()
     }
 }
 
@@ -305,6 +303,7 @@ impl ProjectiveMontgomeryXpoint {
 mod tests {
 
     use super::*;
+    use crate::EdwardsPoint;
 
     #[test]
     fn test_montgomery_edwards() {

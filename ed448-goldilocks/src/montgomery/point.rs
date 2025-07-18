@@ -4,6 +4,7 @@ use subtle::ConditionallySelectable;
 use subtle::ConstantTimeEq;
 
 use super::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};
+use crate::AffinePoint;
 use crate::field::ConstMontyType;
 use crate::field::FieldElement;
 
@@ -23,6 +24,36 @@ impl MontgomeryPoint {
 
     pub(crate) fn new(x: FieldElement, y: FieldElement) -> Self {
         Self { x, y }
+    }
+
+    /// Convert this point to an [`AffinePoint`]
+    // https://www.rfc-editor.org/rfc/rfc7748#section-4.2
+    pub fn to_edwards(&self) -> AffinePoint {
+        let u = self.x;
+        let v = self.y;
+
+        let u_sq = self.x.square();
+        let u_sq_minus_1 = u_sq - FieldElement::ONE;
+        let u_sq_minus_1_sq = u_sq_minus_1.square();
+        let v_sq_2 = v.square().double();
+        let v_sq_4 = v_sq_2.double();
+
+        let xn = v.double().double() * u_sq_minus_1;
+        let xd = u_sq_minus_1_sq + v_sq_4;
+
+        let yn = -u * (u_sq_minus_1_sq - v_sq_4);
+        let yd = u * u_sq_minus_1_sq - v_sq_2 * (u_sq + FieldElement::ONE);
+
+        let d = (xd * yd).invert();
+
+        let x = xn * yd * d;
+        let y = yn * xd * d;
+
+        AffinePoint::conditional_select(
+            &AffinePoint { x, y },
+            &AffinePoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 
     /// Convert the point to its form without the y-coordinate
@@ -155,6 +186,35 @@ impl From<MontgomeryPoint> for ProjectiveMontgomeryPoint {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{EdwardsPoint, MontgomeryScalar};
+
+    #[test]
+    fn to_edwards() {
+        let scalar = MontgomeryScalar::from(200u32);
+
+        // Montgomery scalar mul
+        let montgomery_res = ProjectiveMontgomeryPoint::GENERATOR * scalar * scalar;
+        // Goldilocks scalar mul
+        let goldilocks_point = EdwardsPoint::GENERATOR * scalar.to_scalar() * scalar.to_scalar();
+
+        assert_eq!(goldilocks_point.to_montgomery(), montgomery_res.to_affine());
+    }
+
+    #[test]
+    fn identity_to_edwards() {
+        let edwards = AffinePoint::IDENTITY;
+        let montgomery = MontgomeryPoint::IDENTITY;
+
+        assert_eq!(montgomery.to_edwards(), edwards);
+    }
+
+    #[test]
+    fn identity_from_montgomery() {
+        let edwards = EdwardsPoint::IDENTITY;
+        let montgomery = MontgomeryPoint::IDENTITY;
+
+        assert_eq!(edwards.to_montgomery(), montgomery);
+    }
 
     #[test]
     fn to_projective_x() {
