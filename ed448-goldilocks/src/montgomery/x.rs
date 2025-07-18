@@ -72,29 +72,8 @@ pub struct ProjectiveMontgomeryXpoint {
 impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
     type Output = ProjectiveMontgomeryXpoint;
 
-    #[allow(clippy::suspicious_arithmetic_impl)]
     fn mul(self, scalar: &EdwardsScalar) -> ProjectiveMontgomeryXpoint {
-        // Algorithm 8 of Costello-Smith 2017
-        let affine_u = FieldElement::from_bytes(&self.0);
-        let mut x0 = ProjectiveMontgomeryXpoint::IDENTITY;
-        let mut x1 = ProjectiveMontgomeryXpoint {
-            U: affine_u,
-            W: FieldElement::ONE,
-        };
-
-        let bits = scalar.bits();
-        let mut swap = 0;
-        for s in (0..448).rev() {
-            let bit = bits[s] as u8;
-            let choice: u8 = swap ^ bit;
-
-            ProjectiveMontgomeryXpoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
-            differential_add_and_double(&mut x0, &mut x1, &affine_u);
-
-            swap = bit;
-        }
-
-        x0
+        self.mul_internal(scalar).0
     }
 }
 
@@ -147,6 +126,30 @@ impl MontgomeryXpoint {
         let mut v = vv.sqrt();
         v.conditional_negate(v.is_negative() ^ sign);
         v
+    }
+
+    pub(super) fn mul_internal(
+        &self,
+        scalar: &EdwardsScalar,
+    ) -> (ProjectiveMontgomeryXpoint, ProjectiveMontgomeryXpoint) {
+        // Algorithm 8 of Costello-Smith 2017
+        let mut x0 = ProjectiveMontgomeryXpoint::IDENTITY;
+        let mut x1 = self.to_projective();
+        let diff = x1.U;
+
+        let bits = scalar.bits();
+        let mut swap = 0;
+        for s in (0..448).rev() {
+            let bit = bits[s] as u8;
+            let choice: u8 = swap ^ bit;
+
+            ProjectiveMontgomeryXpoint::conditional_swap(&mut x0, &mut x1, Choice::from(choice));
+            differential_add_and_double(&mut x0, &mut x1, &diff);
+
+            swap = bit;
+        }
+
+        (x0, x1)
     }
 
     /// Convert the point to a ProjectiveMontgomeryPoint
