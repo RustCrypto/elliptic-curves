@@ -10,6 +10,8 @@
 
 #![allow(non_snake_case)]
 
+mod point;
 mod x;
 
+pub use point::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use x::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};

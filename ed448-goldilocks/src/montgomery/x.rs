@@ -1,4 +1,5 @@
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
+use super::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 use crate::EdwardsScalar;
 use crate::edwards::extended::EdwardsPoint;
 use crate::field::{ConstMontyType, FieldElement};
@@ -65,8 +66,8 @@ impl Eq for MontgomeryXpoint {}
 /// A Projective point in Montgomery form
 #[derive(Copy, Clone, Debug, Eq)]
 pub struct ProjectiveMontgomeryXpoint {
-    U: FieldElement,
-    W: FieldElement,
+    pub(super) U: FieldElement,
+    pub(super) W: FieldElement,
 }
 
 impl Mul<&EdwardsScalar> for &MontgomeryXpoint {
@@ -113,13 +114,12 @@ impl MontgomeryXpoint {
 
     /// Compute the Y-coordinate
     pub fn y(&self, sign: Choice) -> [u8; 56] {
-        self.y_internal(sign).to_bytes()
+        Self::y_internal(&FieldElement::from_bytes(&self.0), sign).to_bytes()
     }
 
     // See https://www.rfc-editor.org/rfc/rfc7748#section-1.
-    pub(super) fn y_internal(&self, sign: Choice) -> FieldElement {
+    pub(super) fn y_internal(u: &FieldElement, sign: Choice) -> FieldElement {
         // v^2 = u^3 + A*u^2 + u
-        let u = FieldElement::from_bytes(&self.0);
         let uu = u.square();
         let vv = uu * u + FieldElement::J * uu + u;
 
@@ -158,6 +158,19 @@ impl MontgomeryXpoint {
             U: FieldElement::from_bytes(&self.0),
             W: FieldElement::ONE,
         }
+    }
+
+    /// Convert the point to projective form including the y-coordinate
+    pub fn to_extended_projective(&self, sign: Choice) -> ProjectiveMontgomeryPoint {
+        self.to_projective().to_extended(sign)
+    }
+
+    /// Convert the point to its form including the y-coordinate
+    pub fn to_extended(&self, sign: Choice) -> MontgomeryPoint {
+        let x = FieldElement::from_bytes(&self.0);
+        let y = Self::y_internal(&x, sign);
+
+        MontgomeryPoint::new(x, y)
     }
 }
 
@@ -255,6 +268,17 @@ impl ProjectiveMontgomeryXpoint {
         W: FieldElement::ONE,
     };
 
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-1.
+    fn y(&self, sign: Choice) -> FieldElement {
+        // v^2 = u^3 + A*u^2 + u
+        let u_sq = self.U.square();
+        let v_sq = u_sq * self.U + FieldElement::J * u_sq + self.U;
+
+        let mut v = v_sq.sqrt();
+        v.conditional_negate(v.is_negative() ^ sign);
+        v
+    }
+
     /// Double this point
     // https://eprint.iacr.org/2020/1338.pdf (2.2)
     pub fn double(&self) -> Self {
@@ -273,6 +297,23 @@ impl ProjectiveMontgomeryXpoint {
     pub fn to_affine(&self) -> MontgomeryXpoint {
         let x = self.U * self.W.invert();
         MontgomeryXpoint(x.to_bytes())
+    }
+
+    /// Convert the point to affine form including the y-coordinate
+    pub fn to_extended_affine(&self, sign: Choice) -> MontgomeryPoint {
+        let x = self.U * self.W.invert();
+        let y = self.y(sign);
+
+        MontgomeryPoint::new(x, y)
+    }
+
+    /// Convert the point to its form including the y-coordinate
+    pub fn to_extended(&self, sign: Choice) -> ProjectiveMontgomeryPoint {
+        ProjectiveMontgomeryPoint::conditional_select(
+            &ProjectiveMontgomeryPoint::new(self.U, self.y(sign), self.W),
+            &ProjectiveMontgomeryPoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 }
 
@@ -294,5 +335,21 @@ mod tests {
             goldilocks_point.to_montgomery_x(),
             montgomery_res.to_affine()
         );
+    }
+
+    #[test]
+    fn to_extended() {
+        let x_identity = ProjectiveMontgomeryXpoint::IDENTITY;
+        let identity = ProjectiveMontgomeryPoint::IDENTITY;
+
+        assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
+    }
+
+    #[test]
+    fn to_extended_affine() {
+        let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
+        let identity = MontgomeryPoint::from(ProjectiveMontgomeryPoint::IDENTITY);
+
+        assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
     }
 }
