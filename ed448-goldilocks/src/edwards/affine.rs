@@ -163,6 +163,18 @@ impl AffinePoint {
         }
     }
 
+    /// Convert this point to [`MontgomeryPoint`]
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
+    pub fn to_montgomery(&self) -> MontgomeryPoint {
+        // u = y^2/x^2
+
+        // Simplified to:
+        // u = (y/x)^2
+        let u = (self.y * self.x.invert()).square();
+
+        MontgomeryPoint(u.to_bytes())
+    }
+
     /// The X coordinate
     pub fn x(&self) -> [u8; 56] {
         self.x.to_bytes()
