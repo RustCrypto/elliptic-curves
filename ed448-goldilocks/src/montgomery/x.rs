@@ -255,6 +255,20 @@ impl ProjectiveMontgomeryXpoint {
         W: FieldElement::ONE,
     };
 
+    /// Double this point
+    // https://eprint.iacr.org/2020/1338.pdf (2.2)
+    pub fn double(&self) -> Self {
+        let v1 = (self.U + self.W).square();
+        let v2 = (self.U - self.W).square();
+        let U = v1 * v2;
+        let v3 = v1 - v2;
+        let v4 = FieldElement::A_PLUS_TWO_OVER_FOUR * v3;
+        let v5 = v2 + v4;
+        let W = v3 * v5;
+
+        Self { U, W }
+    }
+
     /// Convert the point to affine form
     pub fn to_affine(&self) -> MontgomeryXpoint {
         let x = self.U * self.W.invert();
