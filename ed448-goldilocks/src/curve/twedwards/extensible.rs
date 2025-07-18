@@ -4,7 +4,7 @@
 use super::affine::AffinePoint;
 use super::extended::ExtendedPoint;
 use crate::field::FieldElement;
-use subtle::{Choice, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 /// This is the representation that we will do most of the group operations on.
 // In affine (x,y) is the extensible point (X, Y, Z, T1, T2)
@@ -29,6 +29,17 @@ impl ConstantTimeEq for ExtensiblePoint {
         let ZY = self.Z * other.Y;
 
         XZ.ct_eq(&ZX) & YZ.ct_eq(&ZY)
+    }
+}
+impl ConditionallySelectable for ExtensiblePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self {
+            X: FieldElement::conditional_select(&a.X, &b.X, choice),
+            Y: FieldElement::conditional_select(&a.Y, &b.Y, choice),
+            Z: FieldElement::conditional_select(&a.Z, &b.Z, choice),
+            T1: FieldElement::conditional_select(&a.T1, &b.T1, choice),
+            T2: FieldElement::conditional_select(&a.T2, &b.T2, choice),
+        }
     }
 }
 impl PartialEq for ExtensiblePoint {
