@@ -61,7 +61,9 @@ pub use edwards::{
     WideEdwardsScalarBytes,
 };
 pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
-pub use montgomery::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};
+pub use montgomery::{
+    MontgomeryPoint, MontgomeryXpoint, ProjectiveMontgomeryPoint, ProjectiveMontgomeryXpoint,
+};
 pub use ristretto::{CompressedRistretto, RistrettoPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
@@ -171,3 +173,7 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
 impl GroupDigest for Decaf448 {
     type K = U28;
 }
+
+/// Curve448 curve.
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Curve448;
