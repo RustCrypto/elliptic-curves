@@ -3,6 +3,7 @@ use crate::field::{ConstMontyType, FieldElement};
 use core::borrow::Borrow;
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use elliptic_curve::CurveGroup;
 use elliptic_curve::bigint::U448;
 
 use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
