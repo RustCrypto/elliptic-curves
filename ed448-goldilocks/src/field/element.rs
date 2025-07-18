@@ -246,6 +246,7 @@ impl FieldElement {
         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000262a8",
     )));
     pub const ONE: Self = Self(ConstMontyType::new(&U448::ONE));
+    pub const TWO: Self = Self(ConstMontyType::new(&U448::from_u64(2)));
     pub const TWISTED_D: Self = Self(ConstMontyType::new(&U448::from_be_hex(
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6755",
     )));
@@ -317,6 +318,10 @@ impl FieldElement {
 
     pub fn double(&self) -> Self {
         Self(self.0.double())
+    }
+
+    pub fn triple(&self) -> Self {
+        self.double() + self
     }
 
     /// Computes the inverse square root of a field element
