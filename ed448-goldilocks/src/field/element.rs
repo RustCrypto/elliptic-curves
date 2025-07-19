@@ -537,7 +537,6 @@ mod tests {
             .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data).unwrap();
-            // TODO: This should be `Curve448FieldElement`.
             let u0 = FieldElement::reduce(&data);
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
@@ -545,7 +544,6 @@ mod tests {
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data).unwrap();
-            // TODO: This should be `Curve448FieldElement`.
             let u1 = FieldElement::reduce(&data);
             assert_eq!(u1.to_bytes(), e_u1);
         }

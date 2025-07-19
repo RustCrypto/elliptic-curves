@@ -1,5 +1,7 @@
+use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, U448};
-use elliptic_curve::consts::U56;
+use elliptic_curve::consts::{U56, U84};
+use elliptic_curve::ops::Reduce;
 use elliptic_curve::scalar::FromUintUnchecked;
 use subtle::{Choice, CtOption};
 
@@ -61,6 +63,12 @@ pub type WideMontgomeryScalarBytes = WideScalarBytes<Curve448>;
 impl From<&MontgomeryScalar> for elliptic_curve::scalar::ScalarBits<Curve448> {
     fn from(scalar: &MontgomeryScalar) -> Self {
         scalar.scalar.to_words().into()
+    }
+}
+
+impl Reduce<Array<u8, U84>> for MontgomeryScalar {
+    fn reduce(value: &Array<u8, U84>) -> Self {
+        Self::from_okm_u84(value)
     }
 }
 
