@@ -3,8 +3,8 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::{ConstMontyType, MODULUS};
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint,
-    curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
+    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint,
+    ProjectiveMontgomeryPoint, curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::{
     array::Array,
@@ -226,6 +226,26 @@ impl MapToCurve for Decaf448 {
 
     fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
         point
+    }
+}
+
+impl MapToCurve for Curve448 {
+    type CurvePoint = ProjectiveMontgomeryPoint;
+    type FieldElement = FieldElementU84;
+
+    fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
+        element.0.map_to_curve_elligator2_curve448().into()
+    }
+
+    fn map_to_subgroup(point: ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        point.clear_cofactor()
+    }
+
+    fn add_and_map_to_subgroup(
+        lhs: ProjectiveMontgomeryPoint,
+        rhs: ProjectiveMontgomeryPoint,
+    ) -> ProjectiveMontgomeryPoint {
+        (lhs + rhs).clear_cofactor()
     }
 }
 
