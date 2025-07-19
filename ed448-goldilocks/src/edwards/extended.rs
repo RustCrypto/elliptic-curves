@@ -597,41 +597,41 @@ impl EdwardsPoint {
     }
 
     /// Add two points
-    //https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf (3.1)
-    // These formulas are unified, so for now we can use it for doubling. Will refactor later for speed
+    // (3.1) https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
     pub fn add(&self, other: &EdwardsPoint) -> Self {
-        let aXX = self.X * other.X; // aX1X2
-        let dTT = FieldElement::EDWARDS_D * self.T * other.T; // dT1T2
-        let ZZ = self.Z * other.Z; // Z1Z2
-        let YY = self.Y * other.Y;
-
-        let X = {
-            let x_1 = (self.X * other.Y) + (self.Y * other.X);
-            let x_2 = ZZ - dTT;
-            x_1 * x_2
-        };
-        let Y = {
-            let y_1 = YY - aXX;
-            let y_2 = ZZ + dTT;
-            y_1 * y_2
-        };
-
-        let T = {
-            let t_1 = YY - aXX;
-            let t_2 = (self.X * other.Y) + (self.Y * other.X);
-            t_1 * t_2
-        };
-
-        let Z = { (ZZ - dTT) * (ZZ + dTT) };
-
-        EdwardsPoint { X, Y, Z, T }
+        let A = self.X * other.X;
+        let B = self.Y * other.Y;
+        let C = self.T * other.T * FieldElement::EDWARDS_D;
+        let D = self.Z * other.Z;
+        let E = (self.X + self.Y) * (other.X + other.Y) - A - B;
+        let F = D - C;
+        let G = D + C;
+        let H = B - A;
+        Self {
+            X: E * F,
+            Y: G * H,
+            Z: F * G,
+            T: E * H,
+        }
     }
 
     /// Double this point
-    // XXX: See comment on addition, the formula is unified, so this will do for now
-    //https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf (3.1)
+    // (3.3) https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
     pub fn double(&self) -> Self {
-        self.add(self)
+        let A = self.X.square();
+        let B = self.Y.square();
+        let C = self.Z.square().double();
+        let D = A;
+        let E = (self.X + self.Y).square() - A - B;
+        let G = D + B;
+        let F = G - C;
+        let H = D - B;
+        Self {
+            X: E * F,
+            Y: G * H,
+            Z: F * G,
+            T: E * H,
+        }
     }
 
     /// Check if this point is on the curve
