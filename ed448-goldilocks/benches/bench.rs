@@ -1,7 +1,7 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use ed448_goldilocks::{
     Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryScalar,
-    MontgomeryXpoint,
+    MontgomeryXpoint, ProjectiveMontgomeryXpoint,
 };
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
@@ -136,6 +136,18 @@ pub fn x448(c: &mut Criterion) {
                 (point, scalar)
             },
             |(point, scalar)| &point * &scalar,
+            BatchSize::SmallInput,
+        )
+    });
+
+    group.bench_function("encode_to_curve", |b| {
+        b.iter_batched(
+            || {
+                let mut msg = [0; 64];
+                OsRng.try_fill_bytes(&mut msg).unwrap();
+                msg
+            },
+            |msg| ProjectiveMontgomeryXpoint::encode_with_defaults(&msg, b"test DST"),
             BatchSize::SmallInput,
         )
     });
