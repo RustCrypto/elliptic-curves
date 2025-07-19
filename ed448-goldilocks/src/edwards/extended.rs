@@ -3,9 +3,6 @@ use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::constants::EDWARDS_BASEPOINT_ORDER;
-use crate::curve::edwards::affine::AffinePoint;
-use crate::curve::montgomery::MontgomeryPoint; // XXX: need to fix this path
 use crate::curve::scalar_mul::variable_base;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::FieldElement;
@@ -44,7 +41,7 @@ impl elliptic_curve::zeroize::Zeroize for CompressedEdwardsY {
 impl Display for CompressedEdwardsY {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         for b in &self.0[..] {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -53,7 +50,7 @@ impl Display for CompressedEdwardsY {
 impl LowerHex for CompressedEdwardsY {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         for b in &self.0[..] {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -62,7 +59,7 @@ impl LowerHex for CompressedEdwardsY {
 impl UpperHex for CompressedEdwardsY {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         for b in &self.0[..] {
-            write!(f, "{:02X}", b)?;
+            write!(f, "{b:02X}")?;
         }
         Ok(())
     }
@@ -675,7 +672,7 @@ impl EdwardsPoint {
 
         // Compute x
         let xy = x * y;
-        let x_numerator = xy + xy;
+        let x_numerator = xy.double();
         let x_denom = y.square() - (a * x.square());
         let new_x = x_numerator * x_denom.invert();
 
@@ -726,7 +723,7 @@ impl EdwardsPoint {
     /// * `false` if `self` has a nonzero torsion component and is not
     ///   in the prime-order subgroup.
     pub fn is_torsion_free(&self) -> Choice {
-        (self * EDWARDS_BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        (self * EdwardsScalar::new(ORDER)).ct_eq(&Self::IDENTITY)
     }
 
     /// Hash a message to a point on the curve
@@ -939,11 +936,6 @@ define_mul_variants!(
     RHS = EdwardsScalar,
     Output = EdwardsPoint
 );
-define_mul_variants!(
-    LHS = EdwardsScalar,
-    RHS = EdwardsPoint,
-    Output = EdwardsPoint
-);
 
 impl Mul<&EdwardsScalar> for &EdwardsPoint {
     type Output = EdwardsPoint;
@@ -951,15 +943,6 @@ impl Mul<&EdwardsScalar> for &EdwardsPoint {
     /// Scalar multiplication: compute `scalar * self`.
     fn mul(self, scalar: &EdwardsScalar) -> EdwardsPoint {
         self.scalar_mul(scalar)
-    }
-}
-
-impl Mul<&EdwardsPoint> for &EdwardsScalar {
-    type Output = EdwardsPoint;
-
-    /// Scalar multiplication: compute `scalar * self`.
-    fn mul(self, point: &EdwardsPoint) -> EdwardsPoint {
-        point * self
     }
 }
 

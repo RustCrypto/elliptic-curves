@@ -21,7 +21,7 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
-ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
+elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
