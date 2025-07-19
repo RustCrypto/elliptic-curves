@@ -16,24 +16,11 @@ macro_rules! test_primefield_constants {
         use $crate::ff::PrimeField as _;
 
         /// t = (modulus - 1) >> S
-        const T: $uint = $uint::from_be_hex($fe::MODULUS)
-            .wrapping_sub(&$uint::ONE)
-            .wrapping_shr($fe::S);
-
-        /// Helper function to compute the args to `pow_vartime`.
         #[cfg(target_pointer_width = "32")]
-        fn pow_args(n: &$uint) -> [u64; $uint::LIMBS.div_ceil(2)] {
-            let words = n.as_words();
-            core::array::from_fn(|i| {
-                let hi = words.get((2 * i) + 1).copied().unwrap_or_default();
-                let lo = words[2 * i];
-                (hi as u64) << 32 | (lo as u64)
-            })
-        }
+        const T: [u64; $uint::LIMBS.div_ceil(2)] =
+            $crate::compute_t(&$uint::from_be_hex($fe::MODULUS));
         #[cfg(target_pointer_width = "64")]
-        fn pow_args(n: &$uint) -> [u64; $uint::LIMBS] {
-            *n.as_words()
-        }
+        const T: [u64; $uint::LIMBS] = $crate::compute_t(&$uint::from_be_hex($fe::MODULUS));
 
         #[test]
         fn two_inv_constant() {
@@ -58,7 +45,7 @@ macro_rules! test_primefield_constants {
 
             // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
             assert_eq!(
-                $fe::MULTIPLICATIVE_GENERATOR.pow_vartime(&pow_args(&T)),
+                $fe::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
                 $fe::ROOT_OF_UNITY
             )
         }
@@ -71,7 +58,7 @@ macro_rules! test_primefield_constants {
         #[test]
         fn delta_constant() {
             // DELTA^{t} mod m == 1
-            assert_eq!($fe::DELTA.pow_vartime(&pow_args(&T)), $fe::ONE);
+            assert_eq!($fe::DELTA.pow_vartime(&T), $fe::ONE);
         }
     };
 }

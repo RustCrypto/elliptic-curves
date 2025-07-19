@@ -8,14 +8,28 @@
 #![warn(missing_docs, rust_2018_idioms, unused_qualifications)]
 #![doc = include_str!("../README.md")]
 
+mod dev;
+mod fiat;
+mod monty;
+
+pub use crate::monty::{MontyFieldElement, MontyFieldParams, compute_t};
+pub use array::typenum::consts;
 pub use bigint;
+pub use bigint::hybrid_array as array;
 pub use ff;
 pub use rand_core;
 pub use subtle;
 pub use zeroize;
 
-mod dev;
-mod fiat;
+/// Byte order used when encoding/decoding field elements as bytestrings.
+#[derive(Debug)]
+pub enum ByteOrder {
+    /// Big endian.
+    BigEndian,
+
+    /// Little endian.
+    LittleEndian,
+}
 
 /// Implements a field element type whose internal representation is in
 /// Montgomery form, providing a combination of trait impls and inherent impls
@@ -221,12 +235,10 @@ macro_rules! field_element_type {
                 Self::ZERO.ct_eq(self)
             }
 
-            #[must_use]
             fn square(&self) -> Self {
                 self.square()
             }
 
-            #[must_use]
             fn double(&self) -> Self {
                 self.double()
             }
