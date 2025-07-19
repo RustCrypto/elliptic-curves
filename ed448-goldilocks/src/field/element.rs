@@ -277,12 +277,9 @@ impl FieldElement {
 
     /// Squares a field element  `n` times
     fn square_n<const N: u32>(&self) -> FieldElement {
-        let mut result = self.square();
+        let mut result = *self;
 
-        // Decrease value by 1 since we just did a squaring
-        let n = N - 1;
-
-        for _ in 0..n {
+        for _ in 0..N {
             result = result.square();
         }
 
