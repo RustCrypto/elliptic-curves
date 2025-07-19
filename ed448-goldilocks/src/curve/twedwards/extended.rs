@@ -1,9 +1,9 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use crate::curve::edwards::EdwardsPoint as EdwardsExtendedPoint;
 use crate::curve::twedwards::affine::AffinePoint;
 use crate::curve::twedwards::extensible::ExtensiblePoint;
+use crate::edwards::EdwardsPoint as EdwardsExtendedPoint;
 use crate::field::FieldElement;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
@@ -115,7 +115,7 @@ impl ExtendedPoint {
 
         // Compute x
         let xy = x * y;
-        let x_numerator = xy + xy;
+        let x_numerator = xy.double();
         let x_denom = y.square() - (a * x.square());
         let new_x = x_numerator * x_denom.invert();
 

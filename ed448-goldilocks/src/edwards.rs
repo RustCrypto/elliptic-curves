@@ -8,8 +8,10 @@
 /// This isogeny strategy does not clear the cofactor on the Goldilocks curve unless the Scalar is a multiple of 4.
 /// or the point is known to be in the q-torsion subgroup.
 /// Hence, one will need to multiply by the cofactor to ensure it is cleared when using the Goldilocks curve.
-/// If this is a problem, one can use a different isogeny strategy (Decaf/Ristretto)
+/// If this is a problem, one can use a different isogeny strategy (Decaf)
 pub(crate) mod affine;
 pub(crate) mod extended;
+mod scalar;
 pub use affine::AffinePoint;
 pub use extended::{CompressedEdwardsY, EdwardsPoint};
+pub use scalar::{EdwardsScalar, EdwardsScalarBytes, WideEdwardsScalarBytes};

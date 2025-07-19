@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/p256.yml"
       - "p256/**"
+      - "hash2curve/**"
       - "Cargo.*"
   push:
     branches: master

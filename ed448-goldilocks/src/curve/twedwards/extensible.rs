@@ -52,7 +52,7 @@ impl ExtensiblePoint {
     pub fn double(&self) -> ExtensiblePoint {
         let A = self.X.square();
         let B = self.Y.square();
-        let C = self.Z.square() + self.Z.square();
+        let C = self.Z.square().double();
         let D = -A;
         let E = (self.X + self.Y).square() - A - B;
         let G = D + B;

@@ -1,4 +1,4 @@
-use crate::constants::{DECAF_BASEPOINT, DECAF_BASEPOINT_ORDER};
+use crate::constants::DECAF_BASEPOINT;
 use crate::curve::twedwards::extended::ExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -226,7 +226,7 @@ impl CofactorGroup for DecafPoint {
     }
 
     fn is_torsion_free(&self) -> Choice {
-        (self * DECAF_BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        Choice::from(1)
     }
 }
 
@@ -550,7 +550,7 @@ impl CompressedDecaf {
         let (I, ok) = (v * u1_sqr).inverse_square_root();
 
         let Dx = I * u1;
-        let Dxs = (s + s) * Dx;
+        let Dxs = s.double() * Dx;
 
         let mut X = (Dxs * I) * v;
         let k = Dxs * FieldElement::DECAF_FACTOR;
@@ -594,7 +594,7 @@ mod test {
     use crate::TWISTED_EDWARDS_BASE_POINT;
 
     #[test]
-    fn test_edwards_ristretto_operations() {
+    fn test_edwards_decaf_operations() {
         // Basic test that if P1 + P2 = P3
         // Then Decaf(P1) + Decaf(P2) = Decaf(P3)
 

@@ -1,4 +1,3 @@
-use crate::curve::edwards::EdwardsPoint;
 use crate::field::FieldElement;
 use crate::*;
 use core::ops::Mul;
@@ -136,21 +135,17 @@ impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
     }
 }
 
-impl Mul<AffinePoint> for EdwardsScalar {
+impl Mul<&EdwardsScalar> for &AffinePoint {
     type Output = EdwardsPoint;
 
     #[inline]
-    #[expect(clippy::op_ref, reason = "false-positive")]
-    fn mul(self, rhs: AffinePoint) -> EdwardsPoint {
-        self * &rhs
+    fn mul(self, scalar: &EdwardsScalar) -> Self::Output {
+        self.to_edwards() * scalar
     }
 }
 
-impl Mul<&AffinePoint> for EdwardsScalar {
-    type Output = EdwardsPoint;
-
-    #[inline]
-    fn mul(self, rhs: &AffinePoint) -> EdwardsPoint {
-        rhs.to_edwards() * self
-    }
-}
+define_mul_variants!(
+    LHS = AffinePoint,
+    RHS = EdwardsScalar,
+    Output = EdwardsPoint
+);

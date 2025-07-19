@@ -9,7 +9,7 @@ use crate::{
 use elliptic_curve::{
     array::Array,
     bigint::{
-        NonZero, U448, U704,
+        Integer, NonZero, U448, U704,
         consts::{U56, U84, U88},
     },
     group::cofactor::CofactorGroup,
@@ -258,8 +258,7 @@ impl FieldElement {
     pub const ZERO: Self = Self(ConstMontyType::new(&U448::ZERO));
 
     pub fn is_negative(&self) -> Choice {
-        let bytes = self.to_bytes();
-        (bytes[0] & 1).into()
+        self.0.retrieve().is_odd()
     }
 
     /// Inverts a field element
@@ -276,13 +275,10 @@ impl FieldElement {
     }
 
     /// Squares a field element  `n` times
-    fn square_n(&self, mut n: u32) -> FieldElement {
-        let mut result = self.square();
+    fn square_n<const N: u32>(&self) -> FieldElement {
+        let mut result = *self;
 
-        // Decrease value by 1 since we just did a squaring
-        n -= 1;
-
-        for _ in 0..n {
+        for _ in 0..N {
             result = result.square();
         }
 
@@ -320,7 +316,7 @@ impl FieldElement {
     }
 
     pub fn double(&self) -> Self {
-        Self(self.0.add(&self.0))
+        Self(self.0.double())
     }
 
     /// Computes the inverse square root of a field element
@@ -333,25 +329,25 @@ impl FieldElement {
         l2 = l1 * self;
         l1 = l2.square();
         l2 = l1 * self;
-        l1 = l2.square_n(3);
+        l1 = l2.square_n::<3>();
         l0 = l2 * l1;
-        l1 = l0.square_n(3);
+        l1 = l0.square_n::<3>();
         l0 = l2 * l1;
-        l2 = l0.square_n(9);
+        l2 = l0.square_n::<9>();
         l1 = l0 * l2;
-        l0 = l1 * l1;
+        l0 = l1.square();
         l2 = l0 * self;
-        l0 = l2.square_n(18);
+        l0 = l2.square_n::<18>();
         l2 = l1 * l0;
-        l0 = l2.square_n(37);
+        l0 = l2.square_n::<37>();
         l1 = l2 * l0;
-        l0 = l1.square_n(37);
+        l0 = l1.square_n::<37>();
         l1 = l2 * l0;
-        l0 = l1.square_n(111);
+        l0 = l1.square_n::<111>();
         l2 = l1 * l0;
         l0 = l2.square();
         l1 = l0 * self;
-        l0 = l1.square_n(223);
+        l0 = l1.square_n::<223>();
         l1 = l2 * l0;
         l2 = l1.square();
         l0 = l2 * self;
@@ -418,7 +414,7 @@ impl FieldElement {
         let e = b * c;
 
         let mut a = n * e;
-        a.conditional_negate(!Choice::from(a.0.retrieve().bit(0)) ^ square);
+        a.conditional_negate(!a.is_negative() ^ square);
 
         let c = e * ONE_MINUS_TWO_D;
         let b = c.square();
@@ -429,7 +425,7 @@ impl FieldElement {
         let b = b - Self::ONE;
 
         let c = a.square();
-        let a = a + a;
+        let a = a.double();
         let e = c + Self::ONE;
         let T = a * e;
         let X = a * b;

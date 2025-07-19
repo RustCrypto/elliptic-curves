@@ -52,7 +52,7 @@ impl DecafScalar {
     }
 }
 
-elliptic_curve::scalar_from_impls!(Decaf448, DecafScalar);
+elliptic_curve::scalar_impls!(Decaf448, DecafScalar);
 
 /// The number of bytes needed to represent the scalar field
 pub type DecafScalarBytes = ScalarBytes<Decaf448>;

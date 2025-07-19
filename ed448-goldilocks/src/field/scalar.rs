@@ -94,7 +94,7 @@ impl<C: CurveWithScalar> Display for Scalar<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let bytes = self.to_repr();
         for b in &bytes {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -314,7 +314,7 @@ impl<C: CurveWithScalar> Field for Scalar<C> {
     }
 
     fn double(&self) -> Self {
-        self + self
+        self.double()
     }
 
     fn invert(&self) -> CtOption<Self> {
@@ -454,7 +454,7 @@ impl<C: CurveWithScalar> core::fmt::LowerHex for Scalar<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let tmp = C::to_repr(self);
         for &b in tmp.iter() {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -464,7 +464,7 @@ impl<C: CurveWithScalar> core::fmt::UpperHex for Scalar<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let tmp = C::to_repr(self);
         for &b in tmp.iter() {
-            write!(f, "{:02X}", b)?;
+            write!(f, "{b:02X}")?;
         }
         Ok(())
     }
@@ -641,7 +641,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Compute `self` + `self` mod ℓ
     pub const fn double(&self) -> Self {
-        self.addition(self)
+        Self::new(self.scalar.double_mod(&ORDER))
     }
 
     /// Compute `self` - `rhs` mod ℓ
@@ -728,9 +728,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Convert this `Scalar` to a little-endian byte array.
     pub fn to_bytes(&self) -> [u8; 56] {
-        let bytes = self.scalar.to_le_bytes();
-        let output: [u8; 56] = core::array::from_fn(|i| bytes[i]);
-        output
+        self.scalar.to_le_byte_array().0
     }
 
     /// Invert this scalar

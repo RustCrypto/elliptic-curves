@@ -5,6 +5,7 @@ on:
     paths:
       - ".github/workflows/p384.yml"
       - "p384/**"
+      - "hash2curve/**"
       - "Cargo.*"
   push:
     branches: master
