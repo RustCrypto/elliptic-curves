@@ -276,11 +276,11 @@ impl FieldElement {
     }
 
     /// Squares a field element  `n` times
-    fn square_n(&self, mut n: u32) -> FieldElement {
+    fn square_n<const N: u32>(&self) -> FieldElement {
         let mut result = self.square();
 
         // Decrease value by 1 since we just did a squaring
-        n -= 1;
+        let n = N - 1;
 
         for _ in 0..n {
             result = result.square();
@@ -333,25 +333,25 @@ impl FieldElement {
         l2 = l1 * self;
         l1 = l2.square();
         l2 = l1 * self;
-        l1 = l2.square_n(3);
+        l1 = l2.square_n::<3>();
         l0 = l2 * l1;
-        l1 = l0.square_n(3);
+        l1 = l0.square_n::<3>();
         l0 = l2 * l1;
-        l2 = l0.square_n(9);
+        l2 = l0.square_n::<9>();
         l1 = l0 * l2;
         l0 = l1 * l1;
         l2 = l0 * self;
-        l0 = l2.square_n(18);
+        l0 = l2.square_n::<18>();
         l2 = l1 * l0;
-        l0 = l2.square_n(37);
+        l0 = l2.square_n::<37>();
         l1 = l2 * l0;
-        l0 = l1.square_n(37);
+        l0 = l1.square_n::<37>();
         l1 = l2 * l0;
-        l0 = l1.square_n(111);
+        l0 = l1.square_n::<111>();
         l2 = l1 * l0;
         l0 = l2.square();
         l1 = l0 * self;
-        l0 = l1.square_n(223);
+        l0 = l1.square_n::<223>();
         l1 = l2 * l0;
         l2 = l1.square();
         l0 = l2 * self;
