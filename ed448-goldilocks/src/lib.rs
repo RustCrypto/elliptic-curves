@@ -215,3 +215,7 @@ impl CurveArithmetic for Curve448 {
     type ProjectivePoint = ProjectiveMontgomeryPoint;
     type Scalar = MontgomeryScalar;
 }
+
+impl GroupDigest for Curve448 {
+    type SecurityLevel = U28;
+}

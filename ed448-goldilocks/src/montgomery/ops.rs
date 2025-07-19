@@ -308,17 +308,15 @@ where
 
 #[cfg(test)]
 mod test {
-    use elliptic_curve::Field;
+    use elliptic_curve::Group;
     use rand_core::OsRng;
 
     use super::*;
 
     #[test]
     fn mixed_addition() {
-        let p1 = ProjectiveMontgomeryPoint::GENERATOR
-            * MontgomeryScalar::try_from_rng(&mut OsRng).unwrap();
-        let p2 = ProjectiveMontgomeryPoint::GENERATOR
-            * MontgomeryScalar::try_from_rng(&mut OsRng).unwrap();
+        let p1 = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
+        let p2 = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
         let p3 = p1 + p2;
 
         assert_eq!(p3.to_affine(), (p1.to_affine() + p2).into());

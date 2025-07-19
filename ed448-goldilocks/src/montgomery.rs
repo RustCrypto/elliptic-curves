@@ -18,3 +18,8 @@ mod x;
 pub use point::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use scalar::{MontgomeryScalar, MontgomeryScalarBytes, WideMontgomeryScalarBytes};
 pub use x::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};
+
+/// The default hash to curve domain separation tag
+const DEFAULT_HASH_TO_CURVE_SUITE: &[u8] = b"curve448_XOF:SHAKE256_ELL2_RO_";
+/// The default encode to curve domain separation tag
+const DEFAULT_ENCODE_TO_CURVE_SUITE: &[u8] = b"curve448_XOF:SHAKE256_ELL2_NU_";
