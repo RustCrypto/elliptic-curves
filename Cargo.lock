@@ -1192,6 +1192,7 @@ dependencies = [
 name = "sm2"
 version = "0.14.0-pre"
 dependencies = [
+ "der",
  "elliptic-curve",
  "hex-literal",
  "primefield",
