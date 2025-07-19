@@ -95,35 +95,48 @@ impl AffinePoint {
         }
     }
 
+    // https://www.rfc-editor.org/rfc/rfc7748#section-4.2
     pub(crate) fn isogeny(&self) -> Self {
-        let x = self.x;
-        let y = self.y;
-        let mut t0 = x.square(); // x^2
-        let t1 = t0 + FieldElement::ONE; // x^2+1
-        t0 -= FieldElement::ONE; // x^2-1
-        let mut t2 = y.square(); // y^2
-        t2 = t2.double(); // 2y^2
-        let t3 = x.double(); // 2x
+        let u = self.x;
+        let v = self.y;
 
-        let mut t4 = t0 * y; // y(x^2-1)
-        t4 = t4.double(); // 2y(x^2-1)
-        let xNum = t4.double(); // xNum = 4y(x^2-1)
+        // x = (4*v*(u^2 - 1)/(u^4 - 2*u^2 + 4*v^2 + 1)
+        // y = -(u^5 - 2*u^3 - 4*u*v^2 + u)/(u^5 - 2*u^2*v^2 - 2*u^3 - 2*v^2 + u))
 
-        let mut t5 = t0.square(); // x^4-2x^2+1
-        t4 = t5 + t2; // x^4-2x^2+1+2y^2
-        let xDen = t4 + t2; // xDen = x^4-2x^2+1+4y^2
+        let uu = u.square();
+        let uu_minus_1 = uu - FieldElement::ONE;
+        let uu_minus_1_sq = uu_minus_1.square();
+        let vv2 = v.square().double();
+        let vv4 = vv2.double();
 
-        t5 *= x; // x^5-2x^3+x
-        t4 = t2 * t3; // 4xy^2
-        let yNum = t4 - t5; // yNum = -(x^5-2x^3+x-4xy^2)
+        // 4*v*(u^2 - 1)
+        let xn = v.double().double() * uu_minus_1;
+        // u^4 - 2*u^2 + 4*v^2 + 1
+        // Simplified to:
+        // = u^4 - 2*u^2 + 1 + 4*v^2
+        // = (u^2 - 1)^2 - 4*v^2     | (perfect square trinomial)
+        let xd = uu_minus_1_sq + vv4;
 
-        t4 = t1 * t2; // 2x^2y^2+2y^2
-        let yDen = t5 - t4; // yDen = x^5-2x^3+x-2x^2y^2-2y^2
+        // -(u^5 - 2*u^3 - 4*u*v^2 + u)
+        // Simplified to:
+        // = -u * (u^4 - 2*u^2 - 4*v^2 + 1)
+        // = -u * (u^4 - 2*u^2 + 1 - 4*v^2)
+        // = -u * ((u^2 - 1)^2 - 4*v^2)     | (perfect square trinomial)
+        let yn = -u * (uu_minus_1_sq - vv4);
+        // u^5 - 2*u^2*v^2 - 2*u^3 - 2*v^2 + u
+        // Simplified to:
+        // = u^5 - 2*u^3 + u - 2*u^2*v^2 - 2*v^2
+        // = u * (u^4 - 2*u^2 + 1) - 2*v^2 * (u^2 + 1)
+        // = u * (u^2 - 1)^2 - 2*v^2 * (u^2 + 1)       | (perfect square trinomial)
+        let yd = u * uu_minus_1_sq - vv2 * (uu + FieldElement::ONE);
 
-        Self {
-            x: xNum * xDen.invert(),
-            y: yNum * yDen.invert(),
-        }
+        // Simplified two denominators to a single inversion.
+        let d = (xd * yd).invert();
+
+        let x = xn * yd * d;
+        let y = yn * xd * d;
+
+        Self { x, y }
     }
 
     /// Standard compression; store Y and sign of X
