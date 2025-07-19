@@ -148,5 +148,5 @@ fn test_x509() {
     let secret_key = PKCS8_PRIVATE_KEY_PEM.parse::<sm2::SecretKey>().unwrap();
     const IDENTITY: &str = "example@rustcrypto.org";
     let signing_key = SigningKey::new(IDENTITY, &secret_key).unwrap();
-    let _signature = dummy_cert_builder::<_, Signature>(&signing_key);
+    dummy_cert_builder::<_, Signature>(&signing_key);
 }

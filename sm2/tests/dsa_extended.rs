@@ -18,7 +18,7 @@ fn create_test_signing_key() -> SigningKey {
     let test_key = [42u8; 32];
     let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&test_key.into());
     let scalar = NonZeroScalar::new(scalar).unwrap();
-    SigningKey::from_nonzero_scalar(IDENTITY.into(), scalar).unwrap()
+    SigningKey::from_nonzero_scalar(IDENTITY, scalar).unwrap()
 }
 
 #[test]
