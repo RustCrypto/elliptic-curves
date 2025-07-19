@@ -473,6 +473,25 @@ impl FieldElement {
         MontgomeryPoint::new(x, y)
     }
 
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    // Without y-coordinate.
+    pub(crate) fn map_to_curve_elligator2_curve448_x(&self) -> FieldElement {
+        let mut t1 = self.square(); // 1.   t1 = u^2
+        t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
+        let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
+        t1.conditional_assign(&Self::ZERO, e1); // 4.   t1 = CMOV(t1, 0, e1)     // if t1 == -1, set t1 = 0
+        let mut x1 = t1 + Self::ONE; // 5.   x1 = t1 + 1
+        x1 = x1.invert(); // 6.   x1 = inv0(x1)
+        x1 *= -Self::J; // 7.   x1 = -A * x1             // x1 = -A / (1 + Z * u^2)
+        let mut gx1 = x1 + Self::J; // 8.  gx1 = x1 + A
+        gx1 *= x1; // 9.  gx1 = gx1 * x1
+        gx1 += Self::ONE; // 10. gx1 = gx1 + B
+        gx1 *= x1; // 11. gx1 = gx1 * x1            // gx1 = x1^3 + A * x1^2 + B * x1
+        let x2 = -x1 - Self::J; // 12.  x2 = -x1 - A
+        let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
+        Self::conditional_select(&x2, &x1, e2) // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
+    }
+
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
     // Implementation copied from <https://sourceforge.net/p/ed448goldilocks/code/ci/e5cc6240690d3ffdfcbdb1e4e851954b789cd5d9/tree/src/per_curve/elligator.tmpl.c#l28>.
     pub(crate) fn map_to_curve_decaf448(&self) -> TwistedExtendedPoint {
