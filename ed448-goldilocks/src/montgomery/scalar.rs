@@ -77,7 +77,12 @@ impl FromOkm for MontgomeryScalar {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::montgomery::DEFAULT_HASH_TO_CURVE_SUITE;
+    use elliptic_curve::PrimeField;
+    use hash2curve::ExpandMsgXof;
+    use hash2curve::GroupDigest;
     use hex_literal::hex;
+    use sha3::Shake256;
 
     #[test]
     fn test_basic_add() {
@@ -267,5 +272,19 @@ mod test {
         let res = serde_bare::from_slice::<MontgomeryScalar>(&sb);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), MontgomeryScalar::TWO_INV);
+    }
+
+    #[test]
+    fn scalar_hash() {
+        let msg = b"hello world";
+        let res = Curve448::hash_to_scalar::<ExpandMsgXof<Shake256>>(
+            &[msg],
+            &[DEFAULT_HASH_TO_CURVE_SUITE],
+        )
+        .unwrap();
+        let expected: [u8; 56] = hex_literal::hex!(
+            "287e2dd03a61fe8c38304326442016e9dab1b12c9fd7fe2e4cff4170fc7893f06746c27c35fe6fe43d350aab1d63baef8e3c99a25ab43e1e"
+        );
+        assert_eq!(res.to_repr(), Array::from(expected));
     }
 }
