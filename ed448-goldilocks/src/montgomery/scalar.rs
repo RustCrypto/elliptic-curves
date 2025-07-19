@@ -75,7 +75,10 @@ impl Reduce<Array<u8, U84>> for MontgomeryScalar {
 #[cfg(test)]
 mod test {
     use super::*;
+    use elliptic_curve::PrimeField;
+    use hash2curve::ExpandMsgXof;
     use hex_literal::hex;
+    use sha3::Shake256;
 
     #[test]
     fn test_basic_add() {
@@ -265,5 +268,19 @@ mod test {
         let res = serde_bare::from_slice::<MontgomeryScalar>(&sb);
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), MontgomeryScalar::TWO_INV);
+    }
+
+    #[test]
+    fn scalar_hash() {
+        let msg = b"hello world";
+        let res = hash2curve::hash_to_scalar::<Curve448, ExpandMsgXof<Shake256>, U84>(
+            &[msg],
+            &[b"test DST"],
+        )
+        .unwrap();
+        let expected: [u8; 56] = hex_literal::hex!(
+            "1db46e2f81d60ff23cc532d371e0c0aa3956746ca7d57c0089da8e313f5fdc770a846ea9932cc2f0a6aa59bfb94af97a402f0317add21c10"
+        );
+        assert_eq!(res.to_repr(), Array::from(expected));
     }
 }

@@ -4,8 +4,8 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::{ConstMontyType, MODULUS};
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint,
-    curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
+    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint,
+    ProjectiveMontgomeryPoint, curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::{
@@ -269,6 +269,16 @@ impl Field for FieldElement {
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
         let (result, is_square) = Self::sqrt_ratio(num, div);
         (is_square, result)
+    }
+}
+
+impl MapToCurve for Curve448 {
+    type SecurityLevel = U28;
+    type FieldElement = FieldElement;
+    type Length = U84;
+
+    fn map_to_curve(element: FieldElement) -> ProjectiveMontgomeryPoint {
+        element.map_to_curve_elligator2_curve448().into()
     }
 }
 

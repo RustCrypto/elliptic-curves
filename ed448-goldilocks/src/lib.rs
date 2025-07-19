@@ -222,3 +222,10 @@ impl CurveArithmetic for Curve448 {
     type ProjectivePoint = ProjectiveMontgomeryPoint;
     type Scalar = MontgomeryScalar;
 }
+
+impl GroupDigest for Curve448 {
+    const HASH_TO_CURVE_ID: &[u8] = b"curve448_XOF:SHAKE256_ELL2_RO_";
+    const ENCODE_TO_CURVE_ID: &[u8] = b"curve448_XOF:SHAKE256_ELL2_NU_";
+
+    type ExpandMsg = ExpandMsgXof<Shake256>;
+}
