@@ -594,7 +594,7 @@ mod test {
     use crate::TWISTED_EDWARDS_BASE_POINT;
 
     #[test]
-    fn test_edwards_ristretto_operations() {
+    fn test_edwards_decaf_operations() {
         // Basic test that if P1 + P2 = P3
         // Then Decaf(P1) + Decaf(P2) = Decaf(P3)
 
