@@ -150,7 +150,7 @@ impl Debug for Signature {
         write!(f, "sm2::dsa::Signature(")?;
 
         for byte in self.to_bytes() {
-            write!(f, "{:02X}", byte)?;
+            write!(f, "{byte:02X}")?;
         }
 
         write!(f, ")")

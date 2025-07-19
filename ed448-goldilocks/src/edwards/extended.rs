@@ -42,7 +42,7 @@ impl elliptic_curve::zeroize::Zeroize for CompressedEdwardsY {
 impl Display for CompressedEdwardsY {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         for b in &self.0[..] {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -51,7 +51,7 @@ impl Display for CompressedEdwardsY {
 impl LowerHex for CompressedEdwardsY {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         for b in &self.0[..] {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -60,7 +60,7 @@ impl LowerHex for CompressedEdwardsY {
 impl UpperHex for CompressedEdwardsY {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         for b in &self.0[..] {
-            write!(f, "{:02X}", b)?;
+            write!(f, "{b:02X}")?;
         }
         Ok(())
     }

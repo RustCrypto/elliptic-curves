@@ -94,7 +94,7 @@ impl<C: CurveWithScalar> Display for Scalar<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         let bytes = self.to_repr();
         for b in &bytes {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -454,7 +454,7 @@ impl<C: CurveWithScalar> core::fmt::LowerHex for Scalar<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let tmp = C::to_repr(self);
         for &b in tmp.iter() {
-            write!(f, "{:02x}", b)?;
+            write!(f, "{b:02x}")?;
         }
         Ok(())
     }
@@ -464,7 +464,7 @@ impl<C: CurveWithScalar> core::fmt::UpperHex for Scalar<C> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         let tmp = C::to_repr(self);
         for &b in tmp.iter() {
-            write!(f, "{:02X}", b)?;
+            write!(f, "{b:02X}")?;
         }
         Ok(())
     }
