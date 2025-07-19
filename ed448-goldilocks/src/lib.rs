@@ -189,7 +189,7 @@ impl Curve for Curve448 {
     type FieldBytesSize = U56;
     type Uint = U448;
 
-    const ORDER: NonZero<U448> = ORDER;
+    const ORDER: Odd<U448> = ORDER;
 }
 
 impl PrimeCurve for Curve448 {}
