@@ -1,6 +1,8 @@
+use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, U448};
-use elliptic_curve::consts::U56;
+use elliptic_curve::consts::{U56, U84};
 use elliptic_curve::scalar::FromUintUnchecked;
+use hash2curve::FromOkm;
 use subtle::{Choice, CtOption};
 
 use crate::field::{CurveWithScalar, NZ_ORDER, ScalarBytes, WideScalarBytes};
@@ -61,6 +63,14 @@ pub type WideMontgomeryScalarBytes = WideScalarBytes<Curve448>;
 impl From<&MontgomeryScalar> for elliptic_curve::scalar::ScalarBits<Curve448> {
     fn from(scalar: &MontgomeryScalar) -> Self {
         scalar.scalar.to_words().into()
+    }
+}
+
+impl FromOkm for MontgomeryScalar {
+    type Length = U84;
+
+    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+        Self::from_okm_u84(data)
     }
 }
 
