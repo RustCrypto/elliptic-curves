@@ -669,36 +669,29 @@ impl EdwardsPoint {
         AffinePoint { x, y }
     }
 
-    /// Edwards_Isogeny is derived from the doubling formula
-    /// XXX: There is a duplicate method in the twisted edwards module to compute the dual isogeny
-    /// XXX: Not much point trying to make it generic I think. So what we can do is optimise each respective isogeny method for a=1 or a = -1 (currently, I just made it really slow and simple)
-    fn edwards_isogeny(&self, a: FieldElement) -> TwistedExtendedPoint {
-        // Convert to affine now, then derive extended version later
-        let affine = self.to_affine();
-        let x = affine.x;
-        let y = affine.y;
-
-        // Compute x
-        let xy = x * y;
-        let x_numerator = xy.double();
-        let x_denom = y.square() - (a * x.square());
-        let new_x = x_numerator * x_denom.invert();
-
-        // Compute y
-        let y_numerator = y.square() + (a * x.square());
-        let y_denom = (FieldElement::ONE + FieldElement::ONE) - y.square() - (a * x.square());
-        let new_y = y_numerator * y_denom.invert();
+    // Copied from https://github.com/otrv4/libgoldilocks/blob/d07cb5b423995bae1155702aa949846c95d855c1/src/goldilocks.c#L980-L994.
+    pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
+        let c = self.X.square();
+        let a = self.Y.square();
+        let d = c + a;
+        let t = self.Y + self.X;
+        let b = t.square();
+        let b = b - d;
+        let t = a - c;
+        let x = self.Z.square();
+        let z = x.double();
+        let a = z - d;
+        let new_x = a * b;
+        let new_z = t * a;
+        let new_y = t * d;
+        let new_t = b * d;
 
         TwistedExtendedPoint {
             X: new_x,
             Y: new_y,
-            Z: FieldElement::ONE,
-            T: new_x * new_y,
+            Z: new_z,
+            T: new_t,
         }
-    }
-
-    pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
-        self.edwards_isogeny(FieldElement::ONE)
     }
 
     /// Compute the negation of this point's `x`-coordinate.

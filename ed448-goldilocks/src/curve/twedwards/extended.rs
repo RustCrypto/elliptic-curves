@@ -104,25 +104,33 @@ impl ExtendedPoint {
         AffinePoint { x, y }
     }
 
-    /// Edwards_Isogeny is derived from the doubling formula
-    /// XXX: There is a duplicate method in the twisted edwards module to compute the dual isogeny
-    /// XXX: Not much point trying to make it generic I think. So what we can do is optimise each respective isogeny method for a=1 or a = -1 (currently, I just made it really slow and simple)
-    fn edwards_isogeny(&self, a: FieldElement) -> EdwardsExtendedPoint {
+    /// Uses a 2-isogeny to map the point to the Ed448-Goldilocks
+    // (2. Algorithm 2) https://eprint.iacr.org/2008/522.pdf
+    pub fn to_untwisted(self) -> EdwardsExtendedPoint {
+        // x = 2xy / (y^2 + a*x^2)
+        // y = (y^2 - a*x^2) / (2 - y^2 - a*x^2)
+
         // Convert to affine now, then derive extended version later
         let affine = self.to_affine();
         let x = affine.x;
         let y = affine.y;
 
+        let yy = y.square();
+        let xx = x.square();
+        let axx = -xx;
+        let yy_plus_axx = yy + axx;
+
         // Compute x
-        let xy = x * y;
-        let x_numerator = xy.double();
-        let x_denom = y.square() - (a * x.square());
-        let new_x = x_numerator * x_denom.invert();
+        let x_numerator = (x * y).double();
+        let x_denom = yy - axx;
 
         // Compute y
-        let y_numerator = y.square() + (a * x.square());
-        let y_denom = (FieldElement::ONE + FieldElement::ONE) - y.square() - (a * x.square());
-        let new_y = y_numerator * y_denom.invert();
+        let y_numerator = yy_plus_axx;
+        let y_denom = FieldElement::TWO - yy_plus_axx;
+
+        let common_denom = (x_denom * y_denom).invert();
+        let new_x = x_numerator * y_denom * common_denom;
+        let new_y = y_numerator * x_denom * common_denom;
 
         EdwardsExtendedPoint {
             X: new_x,
@@ -130,11 +138,6 @@ impl ExtendedPoint {
             Z: FieldElement::ONE,
             T: new_x * new_y,
         }
-    }
-
-    /// Uses a 2-isogeny to map the point to the Ed448-Goldilocks
-    pub fn to_untwisted(self) -> EdwardsExtendedPoint {
-        self.edwards_isogeny(FieldElement::MINUS_ONE)
     }
 
     /// Checks if the point is on the curve
