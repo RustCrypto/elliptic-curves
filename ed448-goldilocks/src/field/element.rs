@@ -2,9 +2,10 @@ use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::ConstMontyType;
+use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
-    curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
+    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, ORDER,
+    ProjectiveMontgomeryPoint,
 };
 use elliptic_curve::{
     array::Array,
@@ -16,7 +17,10 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::{FromOkm, MapToCurve};
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
+use subtle::{
+    Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess,
+    CtOption,
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct FieldElement(pub(crate) ConstMontyType);
@@ -64,7 +68,7 @@ impl PartialEq for FieldElement {
 }
 impl Eq for FieldElement {}
 
-impl FromOkm for Ed448FieldElement {
+impl FromOkm for FieldElementU84 {
     type Length = U84;
 
     fn from_okm(data: &Array<u8, Self::Length>) -> Self {
@@ -85,7 +89,7 @@ impl FromOkm for Ed448FieldElement {
     }
 }
 
-impl FromOkm for Decaf448FieldElement {
+impl FromOkm for FieldElementU56 {
     type Length = U56;
 
     fn from_okm(data: &Array<u8, Self::Length>) -> Self {
@@ -190,14 +194,15 @@ impl Neg for FieldElement {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct Ed448FieldElement(FieldElement);
+pub struct FieldElementU84(pub(crate) FieldElement);
 
 impl MapToCurve for Ed448 {
     type CurvePoint = EdwardsPoint;
-    type FieldElement = Ed448FieldElement;
+    type FieldElement = FieldElementU84;
 
-    fn map_to_curve(element: Ed448FieldElement) -> Self::CurvePoint {
-        element.0.map_to_curve_elligator2().isogeny().to_edwards()
+    fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
+        let (x, y) = element.0.map_to_curve_elligator2();
+        AffinePoint { x, y }.isogeny().to_edwards()
     }
 
     fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
@@ -210,18 +215,39 @@ impl MapToCurve for Ed448 {
 }
 
 #[derive(Clone, Copy, Default, Debug)]
-pub struct Decaf448FieldElement(FieldElement);
+pub struct FieldElementU56(pub(crate) FieldElement);
 
 impl MapToCurve for Decaf448 {
     type CurvePoint = DecafPoint;
-    type FieldElement = Decaf448FieldElement;
+    type FieldElement = FieldElementU56;
 
-    fn map_to_curve(element: Decaf448FieldElement) -> DecafPoint {
+    fn map_to_curve(element: FieldElementU56) -> DecafPoint {
         DecafPoint(element.0.map_to_curve_decaf448())
     }
 
     fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
         point
+    }
+}
+
+impl MapToCurve for Curve448 {
+    type CurvePoint = ProjectiveMontgomeryPoint;
+    type FieldElement = FieldElementU84;
+
+    fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
+        let (x, y) = element.0.map_to_curve_elligator2();
+        ProjectiveMontgomeryPoint::new(x, y, FieldElement::ONE)
+    }
+
+    fn map_to_subgroup(point: ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        point.clear_cofactor()
+    }
+
+    fn add_and_map_to_subgroup(
+        lhs: ProjectiveMontgomeryPoint,
+        rhs: ProjectiveMontgomeryPoint,
+    ) -> ProjectiveMontgomeryPoint {
+        (lhs + rhs).clear_cofactor()
     }
 }
 
@@ -246,6 +272,7 @@ impl FieldElement {
         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000262a8",
     )));
     pub const ONE: Self = Self(ConstMontyType::new(&U448::ONE));
+    pub const TWO: Self = Self(ConstMontyType::new(&U448::from_u64(2)));
     pub const TWISTED_D: Self = Self(ConstMontyType::new(&U448::from_be_hex(
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6755",
     )));
@@ -319,8 +346,18 @@ impl FieldElement {
         Self(ConstMontyType::new(&U448::from_le_slice(bytes)))
     }
 
+    pub fn from_repr(bytes: &[u8; 56]) -> CtOption<Self> {
+        let integer = U448::from_le_slice(bytes);
+        let is_some = integer.ct_lt(&ORDER);
+        CtOption::new(Self(ConstMontyType::from_montgomery(integer)), is_some)
+    }
+
     pub fn double(&self) -> Self {
-        Self(self.0.add(&self.0))
+        Self(self.0.double())
+    }
+
+    pub fn triple(&self) -> Self {
+        self.double() + self
     }
 
     /// Computes the inverse square root of a field element
@@ -372,7 +409,8 @@ impl FieldElement {
         (inv_sqrt_x * u, zero_u | is_res)
     }
 
-    pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    pub(crate) fn map_to_curve_elligator2(&self) -> (FieldElement, FieldElement) {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
         let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
@@ -392,7 +430,26 @@ impl FieldElement {
         let mut y = y2.sqrt(); // 17.   y = sqrt(y2)
         let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
         y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
-        AffinePoint { x, y }
+        (x, y)
+    }
+
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    // Without y-coordinate.
+    pub(crate) fn map_to_curve_elligator2_x(&self) -> FieldElement {
+        let mut t1 = self.square(); // 1.   t1 = u^2
+        t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
+        let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
+        t1.conditional_assign(&Self::ZERO, e1); // 4.   t1 = CMOV(t1, 0, e1)     // if t1 == -1, set t1 = 0
+        let mut x1 = t1 + Self::ONE; // 5.   x1 = t1 + 1
+        x1 = x1.invert(); // 6.   x1 = inv0(x1)
+        x1 *= -Self::J; // 7.   x1 = -A * x1             // x1 = -A / (1 + Z * u^2)
+        let mut gx1 = x1 + Self::J; // 8.  gx1 = x1 + A
+        gx1 *= x1; // 9.  gx1 = gx1 * x1
+        gx1 += Self::ONE; // 10. gx1 = gx1 + B
+        gx1 *= x1; // 11. gx1 = gx1 * x1            // gx1 = x1^3 + A * x1^2 + B * x1
+        let x2 = -x1 - Self::J; // 12.  x2 = -x1 - A
+        let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
+        Self::conditional_select(&x2, &x1, e2) // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
     }
 
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
@@ -418,7 +475,7 @@ impl FieldElement {
         let e = b * c;
 
         let mut a = n * e;
-        a.conditional_negate(!Choice::from(a.0.retrieve().bit(0)) ^ square);
+        a.conditional_negate(!a.is_negative() ^ square);
 
         let c = e * ONE_MINUS_TWO_D;
         let b = c.square();
@@ -469,16 +526,14 @@ mod tests {
             .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
-            // TODO: This should be `Curve448FieldElement`.
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = FieldElementU84::from_okm(&data).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data);
-            // TODO: This should be `Curve448FieldElement`.
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = FieldElementU84::from_okm(&data).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
@@ -503,14 +558,14 @@ mod tests {
             .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data);
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = FieldElementU84::from_okm(&data).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data);
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = FieldElementU84::from_okm(&data).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
