@@ -3,7 +3,10 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::ConstMontyType;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
-use crate::{AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint, ORDER};
+use crate::{
+    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, ORDER,
+    ProjectiveMontgomeryPoint,
+};
 use elliptic_curve::{
     array::Array,
     bigint::{
@@ -198,7 +201,8 @@ impl MapToCurve for Ed448 {
     type FieldElement = FieldElementU84;
 
     fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
-        element.0.map_to_curve_elligator2().isogeny().to_edwards()
+        let (x, y) = element.0.map_to_curve_elligator2();
+        AffinePoint { x, y }.isogeny().to_edwards()
     }
 
     fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
@@ -223,6 +227,27 @@ impl MapToCurve for Decaf448 {
 
     fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
         point
+    }
+}
+
+impl MapToCurve for Curve448 {
+    type CurvePoint = ProjectiveMontgomeryPoint;
+    type FieldElement = FieldElementU84;
+
+    fn map_to_curve(element: FieldElementU84) -> Self::CurvePoint {
+        let (x, y) = element.0.map_to_curve_elligator2();
+        ProjectiveMontgomeryPoint::new(x, y, FieldElement::ONE)
+    }
+
+    fn map_to_subgroup(point: ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
+        point.clear_cofactor()
+    }
+
+    fn add_and_map_to_subgroup(
+        lhs: ProjectiveMontgomeryPoint,
+        rhs: ProjectiveMontgomeryPoint,
+    ) -> ProjectiveMontgomeryPoint {
+        (lhs + rhs).clear_cofactor()
     }
 }
 
@@ -384,7 +409,8 @@ impl FieldElement {
         (inv_sqrt_x * u, zero_u | is_res)
     }
 
-    pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    pub(crate) fn map_to_curve_elligator2(&self) -> (FieldElement, FieldElement) {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
         let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
@@ -404,7 +430,7 @@ impl FieldElement {
         let mut y = y2.sqrt(); // 17.   y = sqrt(y2)
         let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
         y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
-        AffinePoint { x, y }
+        (x, y)
     }
 
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
