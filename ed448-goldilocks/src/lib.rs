@@ -46,7 +46,6 @@ pub(crate) mod decaf;
 pub(crate) mod edwards;
 pub(crate) mod field;
 pub(crate) mod montgomery;
-pub(crate) mod ristretto;
 #[cfg(feature = "signing")]
 pub(crate) mod sign;
 
@@ -62,7 +61,6 @@ pub use edwards::{
 };
 pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
 pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
-pub use ristretto::{CompressedRistretto, RistrettoPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
 

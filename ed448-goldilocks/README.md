@@ -11,7 +11,7 @@ THIS CODE HAS NOT BEEN AUDITED OR REVIEWED. USE AT YOUR OWN RISK.
 
 ## About
 
-This crate provides a pure Rust implementation of Curve448, Edwards, Decaf, and Ristretto.
+This crate provides a pure Rust implementation of Curve448, Edwards, and Decaf.
 It is intended to be portable, fast, and safe.
 
 ## Usage
