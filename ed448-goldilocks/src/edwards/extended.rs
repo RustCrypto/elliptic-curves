@@ -937,11 +937,6 @@ define_mul_variants!(
     RHS = EdwardsScalar,
     Output = EdwardsPoint
 );
-define_mul_variants!(
-    LHS = EdwardsScalar,
-    RHS = EdwardsPoint,
-    Output = EdwardsPoint
-);
 
 impl Mul<&EdwardsScalar> for &EdwardsPoint {
     type Output = EdwardsPoint;
@@ -949,15 +944,6 @@ impl Mul<&EdwardsScalar> for &EdwardsPoint {
     /// Scalar multiplication: compute `scalar * self`.
     fn mul(self, scalar: &EdwardsScalar) -> EdwardsPoint {
         self.scalar_mul(scalar)
-    }
-}
-
-impl Mul<&EdwardsPoint> for &EdwardsScalar {
-    type Output = EdwardsPoint;
-
-    /// Scalar multiplication: compute `scalar * self`.
-    fn mul(self, point: &EdwardsPoint) -> EdwardsPoint {
-        point * self
     }
 }
 
