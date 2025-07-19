@@ -78,11 +78,11 @@ impl ExtendedPoint {
     /// Returns an extensible point
     /// (3.1) https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
     pub fn add_extended(&self, other: &ExtendedPoint) -> ExtensiblePoint {
-        let A = self.X * other.X;
-        let B = self.Y * other.Y;
-        let C = self.T * other.T * FieldElement::TWISTED_D;
-        let D = self.Z * other.Z;
-        let E = (self.X + self.Y) * (other.X + other.Y) - A - B;
+        let A = (self.Y - self.X) * (other.Y - other.X);
+        let B = (self.Y + self.X) * (other.Y + other.X);
+        let C = FieldElement::TWO_TIMES_TWISTED_D * self.T * other.T;
+        let D = (self.Z * other.Z).double();
+        let E = B - A;
         let F = D - C;
         let G = D + C;
         let H = B + A;
