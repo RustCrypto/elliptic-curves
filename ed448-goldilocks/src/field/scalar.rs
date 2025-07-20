@@ -314,7 +314,7 @@ impl<C: CurveWithScalar> Field for Scalar<C> {
     }
 
     fn double(&self) -> Self {
-        self + self
+        self.double()
     }
 
     fn invert(&self) -> CtOption<Self> {
@@ -641,7 +641,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Compute `self` + `self` mod ℓ
     pub const fn double(&self) -> Self {
-        self.addition(self)
+        Self::new(self.scalar.double_mod(&ORDER))
     }
 
     /// Compute `self` - `rhs` mod ℓ
@@ -728,9 +728,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Convert this `Scalar` to a little-endian byte array.
     pub fn to_bytes(&self) -> [u8; 56] {
-        let bytes = self.scalar.to_le_bytes();
-        let output: [u8; 56] = core::array::from_fn(|i| bytes[i]);
-        output
+        self.scalar.to_le_byte_array().0
     }
 
     /// Invert this scalar
