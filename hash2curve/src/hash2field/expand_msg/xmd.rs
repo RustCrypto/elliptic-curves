@@ -108,18 +108,14 @@ where
     HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
 {
-    fn fill_bytes(&mut self, okm: &mut [u8]) -> Result<usize, Error> {
+    fn fill_bytes(&mut self, mut okm: &mut [u8]) -> Result<usize, Error> {
+        if self.remaining == 0 {
+            return Err(Error);
+        }
+
         let mut read_bytes = 0;
 
-        for b in okm {
-            if self.remaining == 0 {
-                if read_bytes == 0 {
-                    return Err(Error);
-                } else {
-                    return Ok(read_bytes);
-                }
-            }
-
+        while self.remaining != 0 {
             if self.offset == self.b_vals.len() {
                 self.index += 1;
                 self.offset = 0;
@@ -138,10 +134,27 @@ where
                 self.b_vals = b_vals.finalize_fixed();
             }
 
-            *b = self.b_vals[self.offset];
-            self.offset += 1;
-            self.remaining -= 1;
-            read_bytes += 1;
+            let bytes_to_read = self
+                .remaining
+                .min(okm.len().try_into().unwrap_or(u16::MAX))
+                .min(
+                    (self.b_vals.len() - self.offset)
+                        .try_into()
+                        .unwrap_or(u16::MAX),
+                );
+
+            if bytes_to_read == 0 {
+                return Ok(read_bytes);
+            }
+
+            okm[..bytes_to_read.into()].copy_from_slice(
+                &self.b_vals[self.offset..self.offset + usize::from(bytes_to_read)],
+            );
+            okm = &mut okm[bytes_to_read.into()..];
+
+            self.offset += usize::from(bytes_to_read);
+            self.remaining -= bytes_to_read;
+            read_bytes += usize::from(bytes_to_read);
         }
 
         Ok(read_bytes)
