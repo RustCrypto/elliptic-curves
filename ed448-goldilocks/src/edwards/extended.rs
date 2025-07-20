@@ -3,7 +3,6 @@ use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::constants::EDWARDS_BASEPOINT_ORDER;
 use crate::curve::scalar_mul::variable_base;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::FieldElement;
@@ -724,7 +723,7 @@ impl EdwardsPoint {
     /// * `false` if `self` has a nonzero torsion component and is not
     ///   in the prime-order subgroup.
     pub fn is_torsion_free(&self) -> Choice {
-        (self * EDWARDS_BASEPOINT_ORDER).ct_eq(&Self::IDENTITY)
+        (self * EdwardsScalar::new(ORDER)).ct_eq(&Self::IDENTITY)
     }
 
     /// Hash a message to a point on the curve
