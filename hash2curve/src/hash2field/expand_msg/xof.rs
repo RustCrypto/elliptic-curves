@@ -3,6 +3,7 @@
 use super::{Domain, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
 use digest::{CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader};
+use elliptic_curve::Error;
 use elliptic_curve::array::{
     ArraySize,
     typenum::{IsGreaterOrEqual, Prod, True, U2},
@@ -76,14 +77,15 @@ impl<HashT> Expander for ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
 {
-    fn fill_bytes(&mut self, okm: &mut [u8]) {
+    fn fill_bytes(&mut self, okm: &mut [u8]) -> Result<usize, Error> {
         if self.remaining == 0 {
-            return;
+            return Err(Error);
         }
 
         let bytes_to_read = self.remaining.min(okm.len().try_into().unwrap_or(u16::MAX));
         self.reader.read(&mut okm[..bytes_to_read.into()]);
         self.remaining -= bytes_to_read;
+        Ok(bytes_to_read.into())
     }
 }
 
@@ -165,7 +167,7 @@ mod test {
             .unwrap();
 
             let mut uniform_bytes = Array::<u8, L>::default();
-            expander.fill_bytes(&mut uniform_bytes);
+            expander.fill_bytes(&mut uniform_bytes).unwrap();
 
             assert_eq!(uniform_bytes.as_slice(), self.uniform_bytes);
         }

@@ -536,7 +536,7 @@ mod tests {
             )
             .unwrap();
             let mut data = Array::<u8, U84>::default();
-            expander.fill_bytes(&mut data);
+            expander.fill_bytes(&mut data).unwrap();
             // TODO: This should be `Curve448FieldElement`.
             let u0 = Ed448FieldElement::from_okm(&data).0;
             let mut e_u0 = *expected_u0;
@@ -544,7 +544,7 @@ mod tests {
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
-            expander.fill_bytes(&mut data);
+            expander.fill_bytes(&mut data).unwrap();
             // TODO: This should be `Curve448FieldElement`.
             let u1 = Ed448FieldElement::from_okm(&data).0;
             assert_eq!(u1.to_bytes(), e_u1);
@@ -570,14 +570,14 @@ mod tests {
             )
             .unwrap();
             let mut data = Array::<u8, U84>::default();
-            expander.fill_bytes(&mut data);
+            expander.fill_bytes(&mut data).unwrap();
             let u0 = Ed448FieldElement::from_okm(&data).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
-            expander.fill_bytes(&mut data);
+            expander.fill_bytes(&mut data).unwrap();
             let u1 = Ed448FieldElement::from_okm(&data).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
