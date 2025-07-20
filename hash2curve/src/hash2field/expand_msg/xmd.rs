@@ -97,9 +97,7 @@ where
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
-        if (self.index as u16 - 1) * HashT::OutputSize::U16 + self.offset as u16
-            == self.length
-        {
+        if (self.index as u16 - 1) * HashT::OutputSize::U16 + self.offset as u16 == self.length {
             return None;
         } else if self.offset != self.b_vals.len() {
             let byte = self.b_vals[self.offset];
