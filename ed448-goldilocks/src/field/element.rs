@@ -335,7 +335,7 @@ impl FieldElement {
         l0 = l2 * l1;
         l2 = l0.square_n::<9>();
         l1 = l0 * l2;
-        l0 = l1 * l1;
+        l0 = l1.square();
         l2 = l0 * self;
         l0 = l2.square_n::<18>();
         l2 = l1 * l0;
