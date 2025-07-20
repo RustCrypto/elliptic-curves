@@ -9,7 +9,7 @@ use crate::{
 use elliptic_curve::{
     array::Array,
     bigint::{
-        NonZero, U448, U704,
+        Integer, NonZero, U448, U704,
         consts::{U56, U84, U88},
     },
     group::cofactor::CofactorGroup,
@@ -258,8 +258,7 @@ impl FieldElement {
     pub const ZERO: Self = Self(ConstMontyType::new(&U448::ZERO));
 
     pub fn is_negative(&self) -> Choice {
-        let bytes = self.to_bytes();
-        (bytes[0] & 1).into()
+        self.0.retrieve().is_odd()
     }
 
     /// Inverts a field element
