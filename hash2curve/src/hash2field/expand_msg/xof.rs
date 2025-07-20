@@ -1,7 +1,7 @@
 //! `expand_message_xof` for the `ExpandMsg` trait
 
 use super::{Domain, ExpandMsg};
-use core::{fmt, num::NonZero, ops::Mul};
+use core::{fmt, num::NonZero, ops::Mul, array};
 use digest::XofReader;
 use digest::{
     CollisionResistance, ExtendableOutput, HashMarker, Update, typenum::IsGreaterOrEqual,

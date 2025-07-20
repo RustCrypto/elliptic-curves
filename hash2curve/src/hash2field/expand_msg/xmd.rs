@@ -31,7 +31,7 @@ where
     domain: Domain<'a, HashT::OutputSize>,
     index: u8,
     offset: usize,
-    length: u16,
+    remaining: u16,
 }
 
 impl<'dst, HashT, K> ExpandMsg<'dst, K> for ExpandMsgXmd<'dst, HashT>
@@ -84,7 +84,7 @@ where
             domain,
             index: 1,
             offset: 0,
-            length: len_in_bytes.get(),
+            remaining: len_in_bytes.get(),
         })
     }
 }
