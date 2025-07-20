@@ -80,9 +80,9 @@ where
             return None;
         }
         self.length -= 1;
-        let mut buf = [0u8; 1];
-        self.reader.read(&mut buf);
-        Some(buf[0])
+        let mut byte = 0;
+        self.reader.read(array::from_mut(&mut byte));
+        Some(byte)
     }
 }
 
