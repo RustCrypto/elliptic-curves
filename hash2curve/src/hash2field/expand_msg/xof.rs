@@ -22,6 +22,7 @@ where
     HashT: Default + ExtendableOutput + Update + HashMarker,
 {
     reader: <HashT as ExtendableOutput>::Reader,
+    remaining: u16,
 }
 
 impl<HashT> fmt::Debug for ExpandMsgXof<HashT>
@@ -66,7 +67,10 @@ where
         domain.update_hash(&mut reader);
         reader.update(&[domain.len()]);
         let reader = reader.finalize_xof();
-        Ok(Self { reader })
+        Ok(Self {
+            reader,
+            remaining: len_in_bytes,
+        })
     }
 }
 
@@ -75,7 +79,13 @@ where
     HashT: Default + ExtendableOutput + Update + HashMarker,
 {
     fn fill_bytes(&mut self, okm: &mut [u8]) {
-        self.reader.read(okm);
+        if self.remaining == 0 {
+            return;
+        }
+
+        let bytes_to_read = self.remaining.min(okm.len().try_into().unwrap_or(u16::MAX));
+        self.reader.read(&mut okm[..bytes_to_read.into()]);
+        self.remaining -= bytes_to_read;
     }
 }
 
