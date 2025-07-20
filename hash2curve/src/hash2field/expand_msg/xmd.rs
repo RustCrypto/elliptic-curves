@@ -108,10 +108,16 @@ where
     HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
 {
-    fn fill_bytes(&mut self, okm: &mut [u8]) {
+    fn fill_bytes(&mut self, okm: &mut [u8]) -> Result<usize> {
+        let mut read_bytes = 0;
+
         for b in okm {
             if self.remaining == 0 {
-                return;
+                if read_bytes == 0 {
+                    return Err(Error);
+                } else {
+                    return Ok(read_bytes);
+                }
             }
 
             if self.offset == self.b_vals.len() {
@@ -135,7 +141,10 @@ where
             *b = self.b_vals[self.offset];
             self.offset += 1;
             self.remaining -= 1;
+            read_bytes += 1;
         }
+
+        Ok(read_bytes)
     }
 }
 
@@ -210,7 +219,7 @@ mod test {
             )?;
 
             let mut uniform_bytes = Array::<u8, L>::default();
-            expander.fill_bytes(&mut uniform_bytes);
+            expander.fill_bytes(&mut uniform_bytes).unwrap();
 
             assert_eq!(uniform_bytes.as_slice(), self.uniform_bytes);
             Ok(())
