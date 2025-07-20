@@ -470,10 +470,9 @@ mod tests {
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
-            data = Array::<u8, U84>::from_iter(expander);
 
             // TODO: This should be `Curve448FieldElement`.
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = Ed448FieldElement::from_okm(&expander.collect()).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
@@ -496,15 +495,13 @@ mod tests {
                 (84 * 2).try_into().unwrap(),
             )
             .unwrap();
-            let mut data = Array::<u8, U84>::from_iter(expander.by_ref().take(84));
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = Ed448FieldElement::from_okm(&expander.by_ref().take(84).collect()).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
-            data = Array::<u8, U84>::from_iter(expander.by_ref());
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = Ed448FieldElement::from_okm(&expander.collect()).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }

@@ -196,7 +196,7 @@ mod test {
                 NonZero::new(L::U16).ok_or(Error)?,
             )?;
 
-            let uniform_bytes = Array::<u8, L>::from_iter(expander);
+            let uniform_bytes: Array<u8, L> = expander.collect();
             assert_eq!(uniform_bytes.as_slice(), self.uniform_bytes);
             Ok(())
         }
