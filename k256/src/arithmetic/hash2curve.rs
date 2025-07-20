@@ -355,7 +355,7 @@ mod tests {
             // in parts
             let u = hash2curve::hash_to_field::<
                 2,
-                ExpandMsgXmd<Sha256>,
+                ExpandMsgXmd<'_, Sha256>,
                 <Secp256k1 as GroupDigest>::K,
                 FieldElement,
             >(&[test_vector.msg], &[DST])
@@ -379,8 +379,9 @@ mod tests {
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
 
             // complete run
-            let pt = Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], &[DST])
-                .unwrap();
+            let pt =
+                Secp256k1::hash_from_bytes::<ExpandMsgXmd<'_, Sha256>>(&[test_vector.msg], &[DST])
+                    .unwrap();
             let apt = pt.to_affine();
             assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
             assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);
