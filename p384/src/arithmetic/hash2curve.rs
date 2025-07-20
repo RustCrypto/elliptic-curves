@@ -211,7 +211,7 @@ mod tests {
             // in parts
             let u = hash2curve::hash_to_field::<
                 2,
-                ExpandMsgXmd<Sha384>,
+                ExpandMsgXmd<'_, Sha384>,
                 <NistP384 as GroupDigest>::K,
                 FieldElement,
             >(&[test_vector.msg], &[DST])
@@ -245,8 +245,9 @@ mod tests {
             assert_point_eq!(p, test_vector.p_x, test_vector.p_y);
 
             // complete run
-            let pt = NistP384::hash_from_bytes::<ExpandMsgXmd<Sha384>>(&[test_vector.msg], &[DST])
-                .unwrap();
+            let pt =
+                NistP384::hash_from_bytes::<ExpandMsgXmd<'_, Sha384>>(&[test_vector.msg], &[DST])
+                    .unwrap();
             assert_point_eq!(pt, test_vector.p_x, test_vector.p_y);
         }
     }
@@ -294,7 +295,7 @@ mod tests {
                 .to_be_bytes();
 
             for counter in 0_u8..=u8::MAX {
-                let scalar = NistP384::hash_to_scalar::<ExpandMsgXmd<Sha384>>(
+                let scalar = NistP384::hash_to_scalar::<ExpandMsgXmd<'_, Sha384>>(
                     &[
                         test_vector.seed,
                         &key_info_len,
