@@ -197,6 +197,31 @@ mod test {
     use hex_literal::hex;
     use sha2::Sha256;
 
+    #[test]
+    fn edge_cases() {
+        fn generate() -> ExpanderXmd<'static, Sha256> {
+            <ExpandMsgXmd<Sha256> as ExpandMsg<U4>>::expand_message(
+                &[b"test message"],
+                &[b"test DST"],
+                NonZero::new(64).unwrap(),
+            )
+            .unwrap()
+        }
+
+        assert_eq!(generate().fill_bytes(&mut [0; 0]), Ok(0));
+        assert_eq!(generate().fill_bytes(&mut [0; 1]), Ok(1));
+        assert_eq!(generate().fill_bytes(&mut [0; 64]), Ok(64));
+        assert_eq!(generate().fill_bytes(&mut [0; 65]), Ok(64));
+
+        let mut expander = generate();
+        assert_eq!(expander.fill_bytes(&mut [0; 0]), Ok(0));
+        assert_eq!(expander.fill_bytes(&mut [0; 32]), Ok(32));
+        assert_eq!(expander.fill_bytes(&mut [0; 0]), Ok(0));
+        assert_eq!(expander.fill_bytes(&mut [0; 31]), Ok(31));
+        assert_eq!(expander.fill_bytes(&mut [0; 2]), Ok(1));
+        assert_eq!(expander.fill_bytes(&mut [0; 1]), Err(Error));
+    }
+
     fn assert_message<HashT>(
         msg: &[u8],
         domain: &Domain<'_, HashT::OutputSize>,
