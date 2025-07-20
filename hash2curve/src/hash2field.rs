@@ -53,9 +53,6 @@ where
         .ok_or(Error)?;
     let mut expander = E::expand_message(data, domain, len_in_bytes)?;
     Ok(core::array::from_fn(|_| {
-        let tmp = Array::<u8, <T as FromOkm>::Length>::from_iter(
-            expander.by_ref().take(T::Length::USIZE),
-        );
-        T::from_okm(&tmp)
+        T::from_okm(&expander.by_ref().take(T::Length::USIZE).collect())
     }))
 }
