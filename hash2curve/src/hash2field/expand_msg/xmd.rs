@@ -50,8 +50,10 @@ where
             return Err(ExpandMsgXmdError::Length);
         }
 
-        let ell = u8::try_from(usize::from(len_in_bytes.get()).div_ceil(b_in_bytes))
-            .expect("should never pass the previous check");
+        debug_assert!(
+            usize::from(len_in_bytes.get()).div_ceil(b_in_bytes) <= u8::MAX.into(),
+            "should never pass the previous check"
+        );
 
         let domain = Domain::xmd::<HashT>(dst)?;
         let mut b_0 = HashT::default();
@@ -80,7 +82,7 @@ where
             domain,
             index: 1,
             offset: 0,
-            ell,
+            remaining: len_in_bytes.get(),
         })
     }
 }
@@ -97,36 +99,7 @@ where
     domain: Domain<'a, HashT::OutputSize>,
     index: u8,
     offset: usize,
-    ell: u8,
-}
-
-impl<HashT> ExpanderXmd<'_, HashT>
-where
-    HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
-    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
-{
-    fn next(&mut self) -> bool {
-        if self.index < self.ell {
-            self.index += 1;
-            self.offset = 0;
-            // b_0 XOR b_(idx - 1)
-            let mut tmp = Array::<u8, HashT::OutputSize>::default();
-            self.b_0
-                .iter()
-                .zip(&self.b_vals[..])
-                .enumerate()
-                .for_each(|(j, (b0val, bi1val))| tmp[j] = b0val ^ bi1val);
-            let mut b_vals = HashT::default();
-            b_vals.update(&tmp);
-            b_vals.update(&[self.index]);
-            self.domain.update_hash(&mut b_vals);
-            b_vals.update(&[self.domain.len()]);
-            self.b_vals = b_vals.finalize_fixed();
-            true
-        } else {
-            false
-        }
-    }
+    remaining: u16,
 }
 
 impl<HashT> Expander for ExpanderXmd<'_, HashT>
@@ -136,11 +109,31 @@ where
 {
     fn fill_bytes(&mut self, okm: &mut [u8]) {
         for b in okm {
-            if self.offset == self.b_vals.len() && !self.next() {
+            if self.remaining == 0 {
                 return;
             }
+
+            if self.offset == self.b_vals.len() {
+                self.index += 1;
+                self.offset = 0;
+                // b_0 XOR b_(idx - 1)
+                let mut tmp = Array::<u8, HashT::OutputSize>::default();
+                self.b_0
+                    .iter()
+                    .zip(&self.b_vals[..])
+                    .enumerate()
+                    .for_each(|(j, (b0val, bi1val))| tmp[j] = b0val ^ bi1val);
+                let mut b_vals = HashT::default();
+                b_vals.update(&tmp);
+                b_vals.update(&[self.index]);
+                self.domain.update_hash(&mut b_vals);
+                b_vals.update(&[self.domain.len()]);
+                self.b_vals = b_vals.finalize_fixed();
+            }
+
             *b = self.b_vals[self.offset];
             self.offset += 1;
+            self.remaining -= 1;
         }
     }
 }
