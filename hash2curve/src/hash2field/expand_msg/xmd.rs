@@ -97,30 +97,32 @@ where
     type Item = u8;
 
     fn next(&mut self) -> Option<u8> {
-        if (self.index as u16 - 1) * HashT::OutputSize::U16 + self.offset as u16 == self.length {
+        if self.remaining == 0 {
             return None;
-        } else if self.offset != self.b_vals.len() {
-            let byte = self.b_vals[self.offset];
-            self.offset += 1;
-            return Some(byte);
         }
 
-        self.index += 1;
-        self.offset = 1;
-        // b_0 XOR b_(idx - 1)
-        let mut tmp = Array::<u8, HashT::OutputSize>::default();
-        self.b_0
-            .iter()
-            .zip(&self.b_vals[..])
-            .enumerate()
-            .for_each(|(j, (b0val, bi1val))| tmp[j] = b0val ^ bi1val);
-        let mut b_vals = HashT::default();
-        b_vals.update(&tmp);
-        b_vals.update(&[self.index]);
-        self.domain.update_hash(&mut b_vals);
-        b_vals.update(&[self.domain.len()]);
-        self.b_vals = b_vals.finalize_fixed();
-        Some(self.b_vals[0])
+        if self.offset == self.b_vals.len() {
+            self.index += 1;
+            self.offset = 0;
+            // b_0 XOR b_(idx - 1)
+            let mut tmp = Array::<u8, HashT::OutputSize>::default();
+            self.b_0
+                .iter()
+                .zip(&self.b_vals[..])
+                .enumerate()
+                .for_each(|(j, (b0val, bi1val))| tmp[j] = b0val ^ bi1val);
+            let mut b_vals = HashT::default();
+            b_vals.update(&tmp);
+            b_vals.update(&[self.index]);
+            self.domain.update_hash(&mut b_vals);
+            b_vals.update(&[self.domain.len()]);
+            self.b_vals = b_vals.finalize_fixed();
+        }
+
+        let byte = self.b_vals[self.offset];
+        self.offset += 1;
+        self.remaining -= 1;
+        Some(byte)
     }
 }
 
