@@ -93,36 +93,6 @@ impl From<NonIdentity<AffinePoint>> for AffinePoint {
     }
 }
 
-impl Mul<DecafScalar> for AffinePoint {
-    type Output = DecafPoint;
-
-    #[inline]
-    #[expect(clippy::op_ref, reason = "false-positive")]
-    fn mul(self, scalar: DecafScalar) -> DecafPoint {
-        &self * scalar
-    }
-}
-
-#[allow(clippy::op_ref)] // https://github.com/rust-lang/rust-clippy/issues/12463
-impl Mul<DecafScalar> for &AffinePoint {
-    type Output = DecafPoint;
-
-    #[inline]
-    fn mul(self, scalar: DecafScalar) -> DecafPoint {
-        self * &scalar
-    }
-}
-
-#[allow(clippy::op_ref)] // https://github.com/rust-lang/rust-clippy/issues/12463
-impl Mul<&DecafScalar> for AffinePoint {
-    type Output = DecafPoint;
-
-    #[inline]
-    fn mul(self, scalar: &DecafScalar) -> DecafPoint {
-        &self * scalar
-    }
-}
-
 impl Mul<&DecafScalar> for &AffinePoint {
     type Output = DecafPoint;
 
@@ -132,20 +102,4 @@ impl Mul<&DecafScalar> for &AffinePoint {
     }
 }
 
-impl Mul<AffinePoint> for DecafScalar {
-    type Output = DecafPoint;
-
-    #[inline]
-    fn mul(self, point: AffinePoint) -> DecafPoint {
-        point * self
-    }
-}
-
-impl Mul<&AffinePoint> for DecafScalar {
-    type Output = DecafPoint;
-
-    #[inline]
-    fn mul(self, point: &AffinePoint) -> DecafPoint {
-        point * self
-    }
-}
+define_mul_variants!(LHS = AffinePoint, RHS = DecafScalar, Output = DecafPoint);

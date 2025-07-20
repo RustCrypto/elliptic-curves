@@ -68,7 +68,7 @@ impl EdwardsScalar {
     }
 }
 
-elliptic_curve::scalar_from_impls!(Ed448, EdwardsScalar);
+elliptic_curve::scalar_impls!(Ed448, EdwardsScalar);
 
 /// The number of bytes needed to represent the scalar field
 pub type EdwardsScalarBytes = ScalarBytes<Ed448>;
