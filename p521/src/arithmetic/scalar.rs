@@ -18,7 +18,7 @@ use self::scalar_impl::*;
 use crate::{FieldBytes, NistP521, U576};
 use core::{
     iter::{Product, Sum},
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, SubAssign},
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, SubAssign},
 };
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result,
@@ -305,32 +305,6 @@ impl Scalar {
         res
     }
 
-    /// Right shifts the scalar.
-    ///
-    /// Note: not constant-time with respect to the `shift` parameter.
-    #[cfg(target_pointer_width = "32")]
-    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(fiat_p521_scalar_montgomery_domain_field_element(
-            u32x18_to_u64x9(
-                &U576::from_words(u64x9_to_u32x18(self.as_limbs()))
-                    .wrapping_shr_vartime(shift)
-                    .to_words(),
-            ),
-        ))
-    }
-
-    /// Right shifts the scalar.
-    ///
-    /// Note: not constant-time with respect to the `shift` parameter.
-    #[cfg(target_pointer_width = "64")]
-    pub const fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(fiat_p521_scalar_montgomery_domain_field_element(
-            U576::from_words(self.into_limbs())
-                .wrapping_shr_vartime(shift)
-                .to_words(),
-        ))
-    }
-
     /// Borrow the inner limbs of this scalar.
     pub(crate) const fn as_limbs(&self) -> &[u64; 9] {
         &self.0.0
@@ -548,28 +522,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U576 = NistP521::ORDER.shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Shr<usize> for Scalar {
-    type Output = Self;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl Shr<usize> for &Scalar {
-    type Output = Scalar;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        self.shr_vartime(rhs as u32)
-    }
-}
-
-impl ShrAssign<usize> for Scalar {
-    fn shr_assign(&mut self, rhs: usize) {
-        *self = *self >> rhs;
     }
 }
 
