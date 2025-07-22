@@ -713,22 +713,15 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::{Scalar, U256};
     use crate::{FieldBytes, NistP256, NonZeroScalar, SecretKey};
-    use elliptic_curve::Curve;
-    use elliptic_curve::array::Array;
-    use elliptic_curve::group::ff::{Field, PrimeField};
-    use elliptic_curve::ops::{BatchInvert, ReduceNonZero};
-    use proptest::prelude::any;
-    use proptest::{prop_compose, proptest};
+    use elliptic_curve::{
+        Curve,
+        array::Array,
+        group::ff::{Field, PrimeField},
+        ops::{BatchInvert, ReduceNonZero},
+    };
+    use proptest::{prelude::any, prop_compose, proptest};
 
-    /// t = (modulus - 1) >> S
-    const T: [u64; 4] = [
-        0x4f3b9cac2fc63255,
-        0xfbce6faada7179e8,
-        0x0fffffffffffffff,
-        0x0ffffffff0000000,
-    ];
-
-    primefield::test_primefield!(Scalar, T);
+    primefield::test_primefield!(Scalar, U256);
 
     #[test]
     fn from_to_bytes_roundtrip() {

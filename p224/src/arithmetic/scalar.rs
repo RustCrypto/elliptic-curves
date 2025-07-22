@@ -247,15 +247,6 @@ impl<'de> Deserialize<'de> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::Scalar;
-
-    /// t = (modulus - 1) >> S
-    const T: [u64; 4] = [
-        0x84f74a5157170a8f,
-        0xffffc5a8b82e3c0f,
-        0xffffffffffffffff,
-        0x000000003fffffff,
-    ];
-
-    primefield::test_primefield!(Scalar, T);
+    use super::{Scalar, Uint};
+    primefield::test_primefield!(Scalar, Uint);
 }

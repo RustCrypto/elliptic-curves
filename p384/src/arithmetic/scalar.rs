@@ -295,17 +295,7 @@ mod tests {
     };
     use proptest::{prelude::any, prop_compose, proptest};
 
-    /// t = (modulus - 1) >> S
-    const T: [u64; 6] = [
-        0x76760cb5666294b9,
-        0xac0d06d9245853bd,
-        0xe3b1a6c0fa1b96ef,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0x7fffffffffffffff,
-    ];
-
-    primefield::test_primefield!(Scalar, T);
+    primefield::test_primefield!(Scalar, U384);
 
     #[test]
     fn from_to_bytes_roundtrip() {

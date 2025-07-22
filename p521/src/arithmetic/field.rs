@@ -43,10 +43,10 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 
+const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+
 /// Field modulus: p = 2^{521} − 1
-pub(crate) const MODULUS: U576 = U576::from_be_hex(
-    "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-);
+pub(crate) const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
@@ -465,7 +465,7 @@ impl Field for FieldElement {
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
-    const MODULUS: &'static str = "1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
@@ -667,23 +667,10 @@ impl Invert for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::FieldElement;
+    use super::{FieldElement, U576};
     use hex_literal::hex;
 
-    /// t = (modulus - 1) >> S
-    const T: [u64; 9] = [
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0x00000000000000ff,
-    ];
-
-    primefield::test_primefield!(FieldElement, T);
+    primefield::test_primefield!(FieldElement, U576);
 
     /// Regression test for RustCrypto/elliptic-curves#965
     #[test]
