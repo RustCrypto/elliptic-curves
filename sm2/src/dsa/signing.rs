@@ -34,7 +34,7 @@ use signature::{
 };
 use sm3::Sm3;
 
-#[cfg(feature = "pkcs8")]
+#[cfg(all(feature = "pkcs8", feature = "alloc"))]
 use crate::pkcs8::{
     der::AnyRef,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier},
@@ -247,7 +247,7 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
     Signature::from_scalars(r, s)
 }
 
-#[cfg(feature = "pkcs8")]
+#[cfg(all(feature = "pkcs8", feature = "alloc"))]
 impl SignatureAlgorithmIdentifier for SigningKey {
     type Params = AnyRef<'static>;
 

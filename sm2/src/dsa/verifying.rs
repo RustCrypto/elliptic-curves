@@ -31,10 +31,10 @@ use sm3::{Sm3, digest::Digest};
 use alloc::{boxed::Box, string::String};
 
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
-use crate::pkcs8::{self, EncodePublicKey, spki};
-#[cfg(feature = "pkcs8")]
 use crate::pkcs8::{
+    self, EncodePublicKey,
     der::AnyRef,
+    spki,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier, SignatureAlgorithmIdentifier},
 };
 
@@ -223,7 +223,7 @@ impl EncodePublicKey for VerifyingKey {
     }
 }
 
-#[cfg(feature = "pkcs8")]
+#[cfg(all(feature = "pkcs8", feature = "alloc"))]
 impl SignatureAlgorithmIdentifier for VerifyingKey {
     type Params = AnyRef<'static>;
 

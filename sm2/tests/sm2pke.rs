@@ -3,9 +3,13 @@
 use elliptic_curve::{NonZeroScalar, ops::Reduce};
 use hex_literal::hex;
 use proptest::prelude::*;
-use rand_core::OsRng;
 
-use sm2::{Scalar, Sm2, U256, pke::DecryptingKey};
+#[allow(unused_imports)]
+use sm2::{
+    Scalar, Sm2, U256,
+    pkcs8::der::{Decode, Encode},
+    pke::{Cipher, DecryptingKey, Mode},
+};
 
 // private key bytes
 const PRIVATE_KEY: [u8; 32] =
@@ -23,25 +27,28 @@ const ASN1_CIPHER: [u8; 116] = hex!(
 
 #[test]
 fn decrypt_verify() {
-    assert_eq!(
-        DecryptingKey::new(
-            NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8])
-                .unwrap()
-                .into()
-        )
-        .decrypt(&CIPHER)
-        .unwrap(),
-        MSG
-    );
+    let cipher = Cipher::from_slice(&CIPHER, Mode::default()).expect("Unable to resolve");
+    let mut buf = vec![0; MSG.len()];
+
+    DecryptingKey::new(
+        NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8])
+            .unwrap()
+            .into(),
+    )
+    .decrypt_into(&cipher, &mut buf)
+    .unwrap();
+    assert_eq!(buf, MSG)
 }
 
 #[test]
 fn decrypt_der_verify() {
-    let dk = DecryptingKey::new_with_mode(
+    let cipher = Cipher::from_der(&ASN1_CIPHER).expect("Unable to resolve");
+    let dk = DecryptingKey::from_nonzero_scalar(
         NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8]).unwrap(),
-        sm2::pke::Mode::C1C2C3,
     );
-    assert_eq!(dk.decrypt_der(&ASN1_CIPHER).unwrap(), MSG);
+    let mut buf = vec![0; MSG.len()];
+    dk.decrypt_into(&cipher, &mut buf).unwrap();
+    assert_eq!(buf, MSG);
 }
 
 prop_compose! {
@@ -49,46 +56,38 @@ prop_compose! {
         loop {
             let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into());
             if let Some(scalar) = Option::from(NonZeroScalar::new(scalar)) {
-                return DecryptingKey::from_nonzero_scalar(scalar).unwrap();
+                return DecryptingKey::from_nonzero_scalar(scalar);
             }
         }
     }
 }
 
-prop_compose! {
-    fn decrypting_key_c1c2c3()(bytes in any::<[u8; 32]>()) -> DecryptingKey {
-        loop {
-            let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into());
-            if let Some(scalar) = Option::from(NonZeroScalar::new(scalar)) {
-                return DecryptingKey::new_with_mode(scalar, sm2::pke::Mode::C1C2C3);
-            }
-        }
-    }
-}
-
+#[cfg(feature = "alloc")]
 proptest! {
     #[test]
     fn encrypt_and_decrypt_der(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt_der(&mut OsRng, MSG).unwrap();
-        prop_assert!(dk.decrypt_der(&cipher_bytes).is_ok());
+        let cipher = ek.encrypt(MSG).unwrap();
+        let cipher_bytes = cipher.to_der().unwrap();
+        let cipher = Cipher::from_der(&cipher_bytes).unwrap();
+        prop_assert!(dk.decrypt(&cipher).is_ok());
     }
 
     #[test]
     fn encrypt_and_decrypt(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt(&mut OsRng, MSG).unwrap();
-        assert_eq!(dk.decrypt(&cipher_bytes).unwrap(), MSG);
+        let cipher = ek.encrypt(MSG).unwrap();
+        let cipher_bytes = cipher.to_vec(Mode::C1C2C3);
+        let cipher = Cipher::from_slice(&cipher_bytes, Mode::C1C2C3).unwrap();
+        assert_eq!(dk.decrypt(&cipher).unwrap(), MSG);
     }
 
     #[test]
-    fn encrypt_and_decrypt_mode(dk in decrypting_key_c1c2c3()) {
+    fn encrypt_and_decrypt_mode(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt(&mut OsRng, MSG).unwrap();
-        assert_eq!(
-            dk.decrypt(&cipher_bytes)
-                .unwrap(),
-            MSG
-        );
+        let cipher = ek.encrypt(MSG).unwrap();
+        let cipher_bytes = cipher.to_vec(Mode::C1C3C2);
+        let cipher = Cipher::from_slice(&cipher_bytes, Mode::C1C3C2).unwrap();
+        assert_eq!(dk.decrypt(&cipher).unwrap(), MSG);
     }
 }

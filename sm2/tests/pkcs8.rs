@@ -133,6 +133,7 @@ fn encode_pkcs8_public_key_to_pem() {
     assert_eq!(reencoded_public_key.as_str(), PKCS8_PUBLIC_KEY_PEM);
 }
 
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 #[test]
 fn test_x509() {
     fn dummy_cert_builder<S, Signature>(_signer: &S)
