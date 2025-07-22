@@ -34,14 +34,12 @@ use elliptic_curve::{
 
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{224} − 2^{96} + 1
-const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffff000000000000000000000001";
-
 #[cfg(target_pointer_width = "32")]
-const MODULUS: Uint = Uint::from_be_hex(MODULUS_HEX);
-
+const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffff000000000000000000000001";
 #[cfg(target_pointer_width = "64")]
-const MODULUS: Uint =
-    Uint::from_be_hex("00000000ffffffffffffffffffffffffffffffff000000000000000000000001");
+const MODULUS_HEX: &str = "00000000ffffffffffffffffffffffffffffffff000000000000000000000001";
+
+const MODULUS: Uint = Uint::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp224r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
@@ -290,15 +288,6 @@ impl PrimeField for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::FieldElement;
-
-    /// t = (modulus - 1) >> S
-    const T: [u64; 4] = [
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0x0000000000000000,
-        0x0000000000000000,
-    ];
-
-    primefield::test_primefield!(FieldElement, T);
+    use super::{FieldElement, Uint};
+    primefield::test_primefield!(FieldElement, Uint);
 }

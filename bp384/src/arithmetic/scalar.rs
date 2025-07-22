@@ -164,18 +164,6 @@ impl TryFrom<U384> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use super::Scalar;
-
-    /// t = (modulus - 1) >> S
-    /// 0x232e47a0a8ce1b4a03d75bdf94399077c54bdc427b5515acc7c59b9b2b010969f3ceadabdadff0c40ee20c80ba411959
-    const T: [u64; 6] = [
-        0x0ee20c80ba411959,
-        0xf3ceadabdadff0c4,
-        0xc7c59b9b2b010969,
-        0xc54bdc427b5515ac,
-        0x03d75bdf94399077,
-        0x232e47a0a8ce1b4a,
-    ];
-
-    primefield::test_primefield!(Scalar, T);
+    use super::{Scalar, U384};
+    primefield::test_primefield!(Scalar, U384);
 }

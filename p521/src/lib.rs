@@ -55,6 +55,8 @@ use elliptic_curve::{FieldBytesEncoding, array::Array, consts::U66};
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP521;
 
+const ORDER_HEX: &str = "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
+
 impl elliptic_curve::Curve for NistP521 {
     /// 66-byte serialized field elements.
     type FieldBytesSize = U66;
@@ -63,9 +65,7 @@ impl elliptic_curve::Curve for NistP521 {
     type Uint = U576;
 
     /// Order of NIST P-521's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U576 = U576::from_be_hex(
-        "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409",
-    );
+    const ORDER: U576 = U576::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP521 {}

@@ -1,8 +1,8 @@
 /// Implement all tests for a type which impls the `PrimeField` trait.
 #[macro_export]
 macro_rules! test_primefield {
-    ($fe:tt, $t:expr) => {
-        $crate::test_primefield_constants!($fe, $t);
+    ($fe:tt, $uint:ident) => {
+        $crate::test_primefield_constants!($fe, $uint);
         $crate::test_field_identity!($fe);
         $crate::test_field_invert!($fe);
         $crate::test_field_sqrt!($fe);
@@ -12,16 +12,36 @@ macro_rules! test_primefield {
 /// Implement tests for constants defined by the `PrimeField` trait.
 #[macro_export]
 macro_rules! test_primefield_constants {
-    ($fe:tt, $t:expr) => {
+    ($fe:tt, $uint:ident) => {
+        use $crate::ff::PrimeField as _;
+
+        /// t = (modulus - 1) >> S
+        const T: $uint = $uint::from_be_hex($fe::MODULUS)
+            .wrapping_sub(&$uint::ONE)
+            .wrapping_shr($fe::S);
+
+        /// Helper function to compute the args to `pow_vartime`.
+        #[cfg(target_pointer_width = "32")]
+        fn pow_args(n: &$uint) -> [u64; $uint::LIMBS.div_ceil(2)] {
+            let words = n.as_words();
+            core::array::from_fn(|i| {
+                let hi = words.get((2 * i) + 1).copied().unwrap_or_default();
+                let lo = words[2 * i];
+                (hi as u64) << 32 | (lo as u64)
+            })
+        }
+        #[cfg(target_pointer_width = "64")]
+        fn pow_args(n: &$uint) -> [u64; $uint::LIMBS] {
+            *n.as_words()
+        }
+
         #[test]
         fn two_inv_constant() {
-            use $crate::ff::PrimeField;
             assert_eq!($fe::from(2u32) * $fe::TWO_INV, $fe::ONE);
         }
 
         #[test]
         fn root_of_unity_constant() {
-            use $crate::ff::PrimeField;
             assert!($fe::S < 128);
             let two_to_s = 1u128 << $fe::S;
 
@@ -38,23 +58,20 @@ macro_rules! test_primefield_constants {
 
             // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
             assert_eq!(
-                $fe::MULTIPLICATIVE_GENERATOR.pow_vartime(&$t),
+                $fe::MULTIPLICATIVE_GENERATOR.pow_vartime(&pow_args(&T)),
                 $fe::ROOT_OF_UNITY
             )
         }
 
         #[test]
         fn root_of_unity_inv_constant() {
-            use $crate::ff::PrimeField;
             assert_eq!($fe::ROOT_OF_UNITY * $fe::ROOT_OF_UNITY_INV, $fe::ONE);
         }
 
         #[test]
         fn delta_constant() {
-            use $crate::ff::PrimeField;
-
             // DELTA^{t} mod m == 1
-            assert_eq!($fe::DELTA.pow_vartime(&$t), $fe::ONE);
+            assert_eq!($fe::DELTA.pow_vartime(&pow_args(&T)), $fe::ONE);
         }
     };
 }
