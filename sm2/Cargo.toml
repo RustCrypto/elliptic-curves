@@ -35,9 +35,10 @@ proptest = "1"
 rand_core = { version = "0.9", features = ["os_rng"] }
 
 [features]
-default = ["arithmetic", "dsa", "pke", "pem"]
+default = ["arithmetic", "dsa", "pke", "pem", "std", "getrandom"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
+
 getrandom = ["rand_core/os_rng"]
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]

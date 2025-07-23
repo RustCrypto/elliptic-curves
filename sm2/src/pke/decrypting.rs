@@ -127,7 +127,7 @@ impl Debug for DecryptingKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DecryptingKey")
             .field("private_key", &self.secret_scalar.as_ref())
-            // .field("encrypting_key", &self.encrypting_key())
+            .field("encrypting_key", &self.encrypting_key())
             .finish_non_exhaustive()
     }
 }

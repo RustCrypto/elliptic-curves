@@ -62,7 +62,7 @@ prop_compose! {
     }
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(all(feature = "alloc", feature = "getrandom"))]
 proptest! {
     #[test]
     fn encrypt_and_decrypt_der(dk in decrypting_key()) {
