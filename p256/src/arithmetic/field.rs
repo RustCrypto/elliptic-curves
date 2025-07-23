@@ -195,22 +195,12 @@ impl PrimeField for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use crate::{FieldBytes, test_vectors::field::DBL_TEST_VECTORS};
+    use crate::{FieldBytes, U256, test_vectors::field::DBL_TEST_VECTORS};
 
-    #[cfg(target_pointer_width = "64")]
-    use crate::U256;
     #[cfg(target_pointer_width = "64")]
     use proptest::{num::u64::ANY, prelude::*};
 
-    /// t = (modulus - 1) >> S
-    const T: [u64; 4] = [
-        0xffffffffffffffff,
-        0x000000007fffffff,
-        0x8000000000000000,
-        0x7fffffff80000000,
-    ];
-
-    primefield::test_primefield!(FieldElement, T);
+    primefield::test_primefield!(FieldElement, U256);
 
     #[test]
     fn from_bytes() {

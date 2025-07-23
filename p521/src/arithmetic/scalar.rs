@@ -15,7 +15,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP521, U576};
+use crate::{FieldBytes, NistP521, ORDER_HEX, U576};
 use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, SubAssign},
@@ -528,7 +528,7 @@ impl IsHigh for Scalar {
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 
-    const MODULUS: &'static str = "01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
+    const MODULUS: &'static str = ORDER_HEX;
     const CAPACITY: u32 = 520;
     const NUM_BITS: u32 = 521;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
@@ -652,20 +652,7 @@ mod tests {
     };
     use proptest::{prelude::any, prop_compose, proptest};
 
-    /// t = (modulus - 1) >> S
-    const T: [u64; 9] = [
-        0xd76df6e3d2270c81,
-        0x0776b937113388f5,
-        0x6ff980291ee134ba,
-        0x4a30d0f077e5f2cd,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0xffffffffffffffff,
-        0x000000000000003f,
-    ];
-
-    primefield::test_primefield_constants!(Scalar, T);
+    primefield::test_primefield_constants!(Scalar, U576);
     primefield::test_field_identity!(Scalar);
     primefield::test_field_invert!(Scalar);
     //primefield::test_field_sqrt!(Scalar); // TODO(tarcieri): impl this

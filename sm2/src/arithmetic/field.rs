@@ -120,16 +120,6 @@ impl PrimeField for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::FieldElement;
-
-    /// t = (modulus - 1) >> S
-    /// 0x7fffffff7fffffffffffffffffffffffffffffff800000007fffffffffffffff
-    const T: [u64; 4] = [
-        0x7fffffffffffffff,
-        0xffffffff80000000,
-        0xffffffffffffffff,
-        0x7fffffff7fffffff,
-    ];
-
-    primefield::test_primefield!(FieldElement, T);
+    use super::{FieldElement, U256};
+    primefield::test_primefield!(FieldElement, U256);
 }
