@@ -125,5 +125,5 @@ impl hash2curve::OprfParameters for NistP521 {
 
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.2.2.10>
     /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.2.2.12>.
-    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha512>;
+    type ExpandMsg<'a> = hash2curve::ExpandMsgXmd<'a, sha2::Sha512>;
 }
