@@ -121,13 +121,14 @@ impl AffineNielsPoint {
             && (self.td == other.td)
     }
 
-    /// Converts an AffineNielsPoint to an ExtendedPoint
-    pub(crate) fn to_extended(self) -> ExtendedPoint {
-        ExtendedPoint {
+    /// Converts an AffineNielsPoint to an ExtensiblePoint
+    pub(crate) fn to_extensible(self) -> ExtensiblePoint {
+        ExtensiblePoint {
             X: self.y_plus_x - self.y_minus_x,
             Y: self.y_minus_x + self.y_plus_x,
             Z: FieldElement::ONE,
-            T: self.y_plus_x * self.y_minus_x,
+            T1: self.y_plus_x,
+            T2: self.y_minus_x,
         }
     }
 }
@@ -140,7 +141,7 @@ mod tests {
     #[test]
     fn test_negation() {
         use crate::TWISTED_EDWARDS_BASE_POINT;
-        let a = TWISTED_EDWARDS_BASE_POINT.to_affine();
+        let a = TWISTED_EDWARDS_BASE_POINT.to_extensible().to_affine();
         assert!(a.is_on_curve());
 
         let neg_a = a.negate();
