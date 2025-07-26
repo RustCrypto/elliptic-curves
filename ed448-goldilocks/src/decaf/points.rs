@@ -63,7 +63,7 @@ impl UpperHex for DecafPoint {
 
 impl ConstantTimeEq for DecafPoint {
     fn ct_eq(&self, other: &DecafPoint) -> Choice {
-        (self.0.X * other.0.Y).ct_eq(&(self.0.Y * other.0.X))
+        self.0.ct_eq(&other.0)
     }
 }
 
