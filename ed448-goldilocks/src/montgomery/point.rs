@@ -25,34 +25,34 @@ use crate::{AffinePoint, Curve448, Curve448FieldBytes, ORDER};
 /// A point in Montgomery form including the y-coordinate.
 #[derive(Copy, Clone, Debug, Default, Eq)]
 pub struct MontgomeryPoint {
-    pub(super) x: FieldElement,
-    pub(super) y: FieldElement,
+    pub(super) U: FieldElement,
+    pub(super) V: FieldElement,
 }
 
 impl MontgomeryPoint {
     /// The identity element of the group: the point at infinity.
     pub const IDENTITY: Self = Self {
-        x: FieldElement::ZERO,
-        y: FieldElement::ONE,
+        U: FieldElement::ZERO,
+        V: FieldElement::ONE,
     };
 
-    pub(crate) fn new(x: FieldElement, y: FieldElement) -> Self {
-        Self { x, y }
+    pub(crate) fn new(U: FieldElement, V: FieldElement) -> Self {
+        Self { U, V }
     }
 }
 
 impl ConditionallySelectable for MontgomeryPoint {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self {
-            x: FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+            U: FieldElement::conditional_select(&a.U, &b.U, choice),
+            V: FieldElement::conditional_select(&a.V, &b.V, choice),
         }
     }
 }
 
 impl ConstantTimeEq for MontgomeryPoint {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
+        self.U.ct_eq(&other.U) & self.V.ct_eq(&other.V)
     }
 }
 
@@ -65,8 +65,8 @@ impl PartialEq for MontgomeryPoint {
 impl From<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
     fn from(value: &MontgomeryPoint) -> Self {
         ProjectiveMontgomeryPoint {
-            U: value.x,
-            V: value.y,
+            U: value.U,
+            V: value.V,
             W: FieldElement::ONE,
         }
     }
@@ -80,7 +80,7 @@ impl From<MontgomeryPoint> for ProjectiveMontgomeryPoint {
 
 impl From<&MontgomeryPoint> for MontgomeryXpoint {
     fn from(value: &MontgomeryPoint) -> Self {
-        MontgomeryXpoint(value.x.to_bytes())
+        MontgomeryXpoint(value.U.to_bytes())
     }
 }
 
@@ -93,8 +93,8 @@ impl From<MontgomeryPoint> for MontgomeryXpoint {
 impl From<&MontgomeryPoint> for AffinePoint {
     // https://www.rfc-editor.org/rfc/rfc7748#section-4.2
     fn from(value: &MontgomeryPoint) -> AffinePoint {
-        let x = value.x;
-        let y = value.y;
+        let x = value.U;
+        let y = value.V;
         let mut t0 = x.square(); // x^2
         let t1 = t0 + FieldElement::ONE; // x^2+1
         t0 -= FieldElement::ONE; // x^2-1
@@ -140,19 +140,19 @@ impl AffineCoordinates for MontgomeryPoint {
     type FieldRepr = Curve448FieldBytes;
 
     fn x(&self) -> Self::FieldRepr {
-        self.x.to_bytes().into()
+        self.U.to_bytes().into()
     }
 
     fn y(&self) -> Self::FieldRepr {
-        self.y.to_bytes().into()
+        self.V.to_bytes().into()
     }
 
     fn x_is_odd(&self) -> Choice {
-        self.x.is_negative()
+        self.U.is_negative()
     }
 
     fn y_is_odd(&self) -> Choice {
-        self.y.is_negative()
+        self.V.is_negative()
     }
 }
 
@@ -259,10 +259,10 @@ impl PartialEq for ProjectiveMontgomeryPoint {
 impl From<&ProjectiveMontgomeryPoint> for MontgomeryPoint {
     fn from(value: &ProjectiveMontgomeryPoint) -> Self {
         let W_inv = value.W.invert();
-        let x = value.U * W_inv;
-        let y = value.V * W_inv;
+        let U = value.U * W_inv;
+        let V = value.V * W_inv;
 
-        MontgomeryPoint { x, y }
+        MontgomeryPoint { U, V }
     }
 }
 
@@ -404,10 +404,10 @@ impl CurveGroup for ProjectiveMontgomeryPoint {
 
     fn to_affine(&self) -> Self::AffineRepr {
         let W_inv = self.W.invert();
-        let x = self.U * W_inv;
-        let y = self.V * W_inv;
+        let U = self.U * W_inv;
+        let V = self.V * W_inv;
 
-        MontgomeryPoint { x, y }
+        MontgomeryPoint { U, V }
     }
 }
 
@@ -427,10 +427,10 @@ impl GroupEncoding for ProjectiveMontgomeryPoint {
             _ => (Choice::from(0), Choice::from(0)),
         };
 
-        FieldElement::from_repr(&x_bytes).and_then(|x| {
+        FieldElement::from_repr(&x_bytes).and_then(|U| {
             CtOption::new(
                 ProjectiveMontgomeryXpoint {
-                    U: x,
+                    U,
                     W: FieldElement::ONE,
                 }
                 .to_extended(sign),
@@ -448,13 +448,13 @@ impl GroupEncoding for ProjectiveMontgomeryPoint {
         let affine = self.to_affine();
         let mut compressed_bytes = Array::default();
 
-        compressed_bytes[0] = if affine.y.is_negative().unwrap_u8() == 1 {
+        compressed_bytes[0] = if affine.V.is_negative().unwrap_u8() == 1 {
             0x03
         } else {
             0x02
         };
 
-        compressed_bytes[1..].copy_from_slice(&affine.x.to_bytes()[..]);
+        compressed_bytes[1..].copy_from_slice(&affine.U.to_bytes()[..]);
         compressed_bytes
     }
 }
