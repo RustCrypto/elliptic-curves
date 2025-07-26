@@ -19,12 +19,12 @@ use crate::{AffinePoint, Curve448, Curve448FieldBytes, ORDER};
 
 /// A point in Montgomery form including the y-coordinate.
 #[derive(Copy, Clone, Debug, Default, Eq)]
-pub struct MontgomeryPoint {
+pub struct AffineMontgomeryPoint {
     pub(super) U: FieldElement,
     pub(super) V: FieldElement,
 }
 
-impl MontgomeryPoint {
+impl AffineMontgomeryPoint {
     /// The identity element of the group: the point at infinity.
     pub const IDENTITY: Self = Self {
         U: FieldElement::ZERO,
@@ -35,7 +35,7 @@ impl MontgomeryPoint {
         Self { U, V }
     }
 
-    /// Generate a random [`MontgomeryPoint`].
+    /// Generate a random [`AffineMontgomeryPoint`].
     pub fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
         R: TryRngCore + ?Sized,
@@ -53,7 +53,7 @@ impl MontgomeryPoint {
     }
 }
 
-impl ConditionallySelectable for MontgomeryPoint {
+impl ConditionallySelectable for AffineMontgomeryPoint {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self {
             U: FieldElement::conditional_select(&a.U, &b.U, choice),
@@ -62,20 +62,20 @@ impl ConditionallySelectable for MontgomeryPoint {
     }
 }
 
-impl ConstantTimeEq for MontgomeryPoint {
+impl ConstantTimeEq for AffineMontgomeryPoint {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.U.ct_eq(&other.U) & self.V.ct_eq(&other.V)
     }
 }
 
-impl PartialEq for MontgomeryPoint {
+impl PartialEq for AffineMontgomeryPoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
     }
 }
 
-impl From<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
-    fn from(value: &MontgomeryPoint) -> Self {
+impl From<&AffineMontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn from(value: &AffineMontgomeryPoint) -> Self {
         ProjectiveMontgomeryPoint {
             U: value.U,
             V: value.V,
@@ -84,27 +84,27 @@ impl From<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
     }
 }
 
-impl From<MontgomeryPoint> for ProjectiveMontgomeryPoint {
-    fn from(value: MontgomeryPoint) -> Self {
+impl From<AffineMontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn from(value: AffineMontgomeryPoint) -> Self {
         (&value).into()
     }
 }
 
-impl From<&MontgomeryPoint> for MontgomeryXpoint {
-    fn from(value: &MontgomeryPoint) -> Self {
+impl From<&AffineMontgomeryPoint> for MontgomeryXpoint {
+    fn from(value: &AffineMontgomeryPoint) -> Self {
         MontgomeryXpoint(value.U.to_bytes())
     }
 }
 
-impl From<MontgomeryPoint> for MontgomeryXpoint {
-    fn from(value: MontgomeryPoint) -> Self {
+impl From<AffineMontgomeryPoint> for MontgomeryXpoint {
+    fn from(value: AffineMontgomeryPoint) -> Self {
         (&value).into()
     }
 }
 
-impl From<&MontgomeryPoint> for AffinePoint {
+impl From<&AffineMontgomeryPoint> for AffinePoint {
     // https://www.rfc-editor.org/rfc/rfc7748#section-4.2
-    fn from(value: &MontgomeryPoint) -> AffinePoint {
+    fn from(value: &AffineMontgomeryPoint) -> AffinePoint {
         let x = value.U;
         let y = value.V;
         let mut t0 = x.square(); // x^2
@@ -135,20 +135,20 @@ impl From<&MontgomeryPoint> for AffinePoint {
         AffinePoint::conditional_select(
             &AffinePoint { x, y },
             &AffinePoint::IDENTITY,
-            value.ct_eq(&MontgomeryPoint::IDENTITY),
+            value.ct_eq(&AffineMontgomeryPoint::IDENTITY),
         )
     }
 }
 
-impl From<MontgomeryPoint> for AffinePoint {
-    fn from(value: MontgomeryPoint) -> Self {
+impl From<AffineMontgomeryPoint> for AffinePoint {
+    fn from(value: AffineMontgomeryPoint) -> Self {
         (&value).into()
     }
 }
 
-impl DefaultIsZeroes for MontgomeryPoint {}
+impl DefaultIsZeroes for AffineMontgomeryPoint {}
 
-impl AffineCoordinates for MontgomeryPoint {
+impl AffineCoordinates for AffineMontgomeryPoint {
     type FieldRepr = Curve448FieldBytes;
 
     fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
@@ -181,23 +181,23 @@ impl AffineCoordinates for MontgomeryPoint {
     }
 }
 
-impl DecompressPoint<Curve448> for MontgomeryPoint {
+impl DecompressPoint<Curve448> for AffineMontgomeryPoint {
     fn decompress(x: &FieldBytes<Curve448>, y_is_odd: Choice) -> CtOption<Self> {
         FieldElement::from_repr(&x.0).map(|_| MontgomeryXpoint(x.0).to_extended(y_is_odd))
     }
 }
 
-impl From<NonIdentity<MontgomeryPoint>> for MontgomeryPoint {
-    fn from(affine: NonIdentity<MontgomeryPoint>) -> Self {
+impl From<NonIdentity<AffineMontgomeryPoint>> for AffineMontgomeryPoint {
+    fn from(affine: NonIdentity<AffineMontgomeryPoint>) -> Self {
         affine.to_point()
     }
 }
 
 /// The constant-time alternative is available at [`NonIdentity::new()`].
-impl TryFrom<MontgomeryPoint> for NonIdentity<MontgomeryPoint> {
+impl TryFrom<AffineMontgomeryPoint> for NonIdentity<AffineMontgomeryPoint> {
     type Error = Error;
 
-    fn try_from(affine_point: MontgomeryPoint) -> Result<Self, Error> {
+    fn try_from(affine_point: AffineMontgomeryPoint) -> Result<Self, Error> {
         NonIdentity::new(affine_point).into_option().ok_or(Error)
     }
 }
@@ -266,17 +266,17 @@ impl PartialEq for ProjectiveMontgomeryPoint {
     }
 }
 
-impl From<&ProjectiveMontgomeryPoint> for MontgomeryPoint {
+impl From<&ProjectiveMontgomeryPoint> for AffineMontgomeryPoint {
     fn from(value: &ProjectiveMontgomeryPoint) -> Self {
         let W_inv = value.W.invert();
         let U = value.U * W_inv;
         let V = value.V * W_inv;
 
-        MontgomeryPoint { U, V }
+        AffineMontgomeryPoint { U, V }
     }
 }
 
-impl From<ProjectiveMontgomeryPoint> for MontgomeryPoint {
+impl From<ProjectiveMontgomeryPoint> for AffineMontgomeryPoint {
     fn from(value: ProjectiveMontgomeryPoint) -> Self {
         (&value).into()
     }
@@ -349,8 +349,8 @@ impl Group for ProjectiveMontgomeryPoint {
         R: TryRngCore + ?Sized,
     {
         loop {
-            let point = MontgomeryPoint::try_from_rng(rng)?;
-            if point != MontgomeryPoint::IDENTITY {
+            let point = AffineMontgomeryPoint::try_from_rng(rng)?;
+            if point != AffineMontgomeryPoint::IDENTITY {
                 break Ok(point.into());
             }
         }
@@ -413,14 +413,14 @@ impl Group for ProjectiveMontgomeryPoint {
 }
 
 impl CurveGroup for ProjectiveMontgomeryPoint {
-    type AffineRepr = MontgomeryPoint;
+    type AffineRepr = AffineMontgomeryPoint;
 
     fn to_affine(&self) -> Self::AffineRepr {
         let W_inv = self.W.invert();
         let U = self.U * W_inv;
         let V = self.V * W_inv;
 
-        MontgomeryPoint { U, V }
+        AffineMontgomeryPoint { U, V }
     }
 }
 
@@ -548,7 +548,7 @@ mod tests {
     #[test]
     fn identity_to_edwards() {
         let edwards = AffinePoint::IDENTITY;
-        let montgomery = MontgomeryPoint::IDENTITY;
+        let montgomery = AffineMontgomeryPoint::IDENTITY;
 
         assert_eq!(AffinePoint::from(montgomery), edwards);
     }
@@ -556,7 +556,7 @@ mod tests {
     #[test]
     fn identity_from_montgomery() {
         let edwards = EdwardsPoint::IDENTITY;
-        let montgomery = MontgomeryPoint::IDENTITY;
+        let montgomery = AffineMontgomeryPoint::IDENTITY;
 
         assert_eq!(edwards.to_montgomery(), montgomery);
     }

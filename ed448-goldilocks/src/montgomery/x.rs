@@ -1,5 +1,5 @@
 // use crate::constants::A_PLUS_TWO_OVER_FOUR;
-use super::{MontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
+use super::{AffineMontgomeryPoint, MontgomeryScalar, ProjectiveMontgomeryPoint};
 use crate::field::{ConstMontyType, FieldElement};
 use crate::{AffinePoint, Curve448};
 use core::fmt;
@@ -163,11 +163,11 @@ impl MontgomeryXpoint {
     }
 
     /// Convert the point to its form including the y-coordinate
-    pub fn to_extended(&self, sign: Choice) -> MontgomeryPoint {
+    pub fn to_extended(&self, sign: Choice) -> AffineMontgomeryPoint {
         let x = FieldElement::from_bytes(&self.0);
         let y = Self::y_internal(&x, sign);
 
-        MontgomeryPoint::new(x, y)
+        AffineMontgomeryPoint::new(x, y)
     }
 
     /// Convert this point to an [`AffinePoint`]
@@ -367,11 +367,11 @@ impl ProjectiveMontgomeryXpoint {
     }
 
     /// Convert the point to affine form including the y-coordinate
-    pub fn to_extended_affine(&self, sign: Choice) -> MontgomeryPoint {
+    pub fn to_extended_affine(&self, sign: Choice) -> AffineMontgomeryPoint {
         let x = self.U * self.W.invert();
         let y = self.y(sign);
 
-        MontgomeryPoint::new(x, y)
+        AffineMontgomeryPoint::new(x, y)
     }
 
     /// Convert the point to its form including the y-coordinate

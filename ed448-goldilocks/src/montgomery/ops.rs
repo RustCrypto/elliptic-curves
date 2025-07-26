@@ -6,7 +6,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use elliptic_curve::CurveGroup;
 use elliptic_curve::bigint::U448;
 
-use super::{MontgomeryPoint, MontgomeryScalar, MontgomeryXpoint, ProjectiveMontgomeryPoint};
+use super::{AffineMontgomeryPoint, MontgomeryScalar, MontgomeryXpoint, ProjectiveMontgomeryPoint};
 
 impl Add<&ProjectiveMontgomeryPoint> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
@@ -52,12 +52,12 @@ define_add_variants!(
     Output = ProjectiveMontgomeryPoint
 );
 
-impl Add<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
+impl Add<&AffineMontgomeryPoint> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
     // See Complete Addition Law for Montgomery Curves - Algorithm 2.
     // With "Trade-Off Technique".
-    fn add(self, rhs: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
+    fn add(self, rhs: &AffineMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         let (x1, y1, z1) = (self.U, self.V, self.W);
         let (x2, y2) = (rhs.U, rhs.V);
 
@@ -92,11 +92,11 @@ impl Add<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
 
 define_add_variants!(
     LHS = ProjectiveMontgomeryPoint,
-    RHS = MontgomeryPoint,
+    RHS = AffineMontgomeryPoint,
     Output = ProjectiveMontgomeryPoint
 );
 
-impl Add<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
+impl Add<&ProjectiveMontgomeryPoint> for &AffineMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
     fn add(self, other: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
@@ -105,7 +105,7 @@ impl Add<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
 }
 
 define_add_variants!(
-    LHS = MontgomeryPoint,
+    LHS = AffineMontgomeryPoint,
     RHS = ProjectiveMontgomeryPoint,
     Output = ProjectiveMontgomeryPoint
 );
@@ -121,21 +121,21 @@ define_add_assign_variants!(
     RHS = ProjectiveMontgomeryPoint
 );
 
-impl AddAssign<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
-    fn add_assign(&mut self, rhs: &MontgomeryPoint) {
+impl AddAssign<&AffineMontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn add_assign(&mut self, rhs: &AffineMontgomeryPoint) {
         *self += Self::from(*rhs);
     }
 }
 
-define_add_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = MontgomeryPoint);
+define_add_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = AffineMontgomeryPoint);
 
-impl AddAssign<&ProjectiveMontgomeryPoint> for MontgomeryPoint {
+impl AddAssign<&ProjectiveMontgomeryPoint> for AffineMontgomeryPoint {
     fn add_assign(&mut self, rhs: &ProjectiveMontgomeryPoint) {
         *self = (ProjectiveMontgomeryPoint::from(*self) + rhs).into();
     }
 }
 
-define_add_assign_variants!(LHS = MontgomeryPoint, RHS = ProjectiveMontgomeryPoint);
+define_add_assign_variants!(LHS = AffineMontgomeryPoint, RHS = ProjectiveMontgomeryPoint);
 
 impl Mul<&MontgomeryScalar> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
@@ -152,7 +152,7 @@ define_mul_variants!(
     Output = ProjectiveMontgomeryPoint
 );
 
-impl Mul<&MontgomeryScalar> for &MontgomeryPoint {
+impl Mul<&MontgomeryScalar> for &AffineMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
     // Montgomery curves and their arithmetic - Algorithm 6
@@ -160,7 +160,7 @@ impl Mul<&MontgomeryScalar> for &MontgomeryPoint {
     fn mul(self, rhs: &MontgomeryScalar) -> ProjectiveMontgomeryPoint {
         pub const A2: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(312652)));
 
-        let MontgomeryPoint { U: xP, V: yP } = self;
+        let AffineMontgomeryPoint { U: xP, V: yP } = self;
         let (
             ProjectiveMontgomeryXpoint { U: xQ, W: zQ },
             ProjectiveMontgomeryXpoint { U: xD, W: zD },
@@ -191,7 +191,7 @@ impl Mul<&MontgomeryScalar> for &MontgomeryPoint {
 }
 
 define_mul_variants!(
-    LHS = MontgomeryPoint,
+    LHS = AffineMontgomeryPoint,
     RHS = MontgomeryScalar,
     Output = ProjectiveMontgomeryPoint
 );
@@ -239,21 +239,21 @@ define_sub_variants!(
     Output = ProjectiveMontgomeryPoint
 );
 
-impl Sub<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
+impl Sub<&AffineMontgomeryPoint> for &ProjectiveMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
-    fn sub(self, other: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
+    fn sub(self, other: &AffineMontgomeryPoint) -> ProjectiveMontgomeryPoint {
         *self - ProjectiveMontgomeryPoint::from(*other)
     }
 }
 
 define_sub_variants!(
     LHS = ProjectiveMontgomeryPoint,
-    RHS = MontgomeryPoint,
+    RHS = AffineMontgomeryPoint,
     Output = ProjectiveMontgomeryPoint
 );
 
-impl Sub<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
+impl Sub<&ProjectiveMontgomeryPoint> for &AffineMontgomeryPoint {
     type Output = ProjectiveMontgomeryPoint;
 
     fn sub(self, other: &ProjectiveMontgomeryPoint) -> ProjectiveMontgomeryPoint {
@@ -262,7 +262,7 @@ impl Sub<&ProjectiveMontgomeryPoint> for &MontgomeryPoint {
 }
 
 define_sub_variants!(
-    LHS = MontgomeryPoint,
+    LHS = AffineMontgomeryPoint,
     RHS = ProjectiveMontgomeryPoint,
     Output = ProjectiveMontgomeryPoint
 );
@@ -278,21 +278,21 @@ define_sub_assign_variants!(
     RHS = ProjectiveMontgomeryPoint
 );
 
-impl SubAssign<&MontgomeryPoint> for ProjectiveMontgomeryPoint {
-    fn sub_assign(&mut self, rhs: &MontgomeryPoint) {
+impl SubAssign<&AffineMontgomeryPoint> for ProjectiveMontgomeryPoint {
+    fn sub_assign(&mut self, rhs: &AffineMontgomeryPoint) {
         *self -= ProjectiveMontgomeryPoint::from(*rhs);
     }
 }
 
-define_sub_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = MontgomeryPoint);
+define_sub_assign_variants!(LHS = ProjectiveMontgomeryPoint, RHS = AffineMontgomeryPoint);
 
-impl SubAssign<&ProjectiveMontgomeryPoint> for MontgomeryPoint {
+impl SubAssign<&ProjectiveMontgomeryPoint> for AffineMontgomeryPoint {
     fn sub_assign(&mut self, rhs: &ProjectiveMontgomeryPoint) {
         *self = (ProjectiveMontgomeryPoint::from(*self) - rhs).into();
     }
 }
 
-define_sub_assign_variants!(LHS = MontgomeryPoint, RHS = ProjectiveMontgomeryPoint);
+define_sub_assign_variants!(LHS = AffineMontgomeryPoint, RHS = ProjectiveMontgomeryPoint);
 
 impl<T> Sum<T> for ProjectiveMontgomeryPoint
 where

@@ -59,7 +59,7 @@ pub use edwards::{
 };
 pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
 pub use montgomery::{
-    MontgomeryPoint, MontgomeryScalar, MontgomeryScalarBytes, MontgomeryXpoint,
+    AffineMontgomeryPoint, MontgomeryScalar, MontgomeryScalarBytes, MontgomeryXpoint,
     ProjectiveMontgomeryPoint, ProjectiveMontgomeryXpoint, WideMontgomeryScalarBytes,
 };
 #[cfg(feature = "signing")]
@@ -218,7 +218,7 @@ impl FieldBytesEncoding<Curve448> for U448 {
 }
 
 impl CurveArithmetic for Curve448 {
-    type AffinePoint = MontgomeryPoint;
+    type AffinePoint = AffineMontgomeryPoint;
     type ProjectivePoint = ProjectiveMontgomeryPoint;
     type Scalar = MontgomeryScalar;
 }
