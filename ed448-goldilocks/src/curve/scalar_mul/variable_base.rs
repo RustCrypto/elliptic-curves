@@ -5,7 +5,7 @@ use crate::EdwardsScalar;
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
 use subtle::{Choice, ConditionallyNegatable};
 
-pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtendedPoint {
+pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtensiblePoint {
     let mut result = ExtensiblePoint::IDENTITY;
 
     // Recode Scalar
@@ -28,10 +28,10 @@ pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtendedPoint 
         let mut neg_P = lookup.select(abs_value);
         neg_P.conditional_negate(Choice::from((sign) as u8));
 
-        result = result.add_projective_niels(&neg_P);
+        result = result.to_extended().add_projective_niels(&neg_P);
     }
 
-    result.to_extended()
+    result
 }
 
 #[cfg(test)]
@@ -55,7 +55,7 @@ mod test {
         assert_eq!(got, got2);
 
         // Lets see if this is conserved over the isogenies
-        let edwards_point = twisted_point.to_untwisted();
+        let edwards_point = twisted_point.to_extensible().to_untwisted();
         let got_untwisted_point = edwards_point.scalar_mul(&scalar);
         let expected_untwisted_point = got.to_untwisted();
         assert_eq!(got_untwisted_point, expected_untwisted_point);
@@ -69,9 +69,8 @@ mod test {
         let exp = variable_base(&x, &EdwardsScalar::from(1u8));
         assert!(x == exp);
         // Test that 2 * (P + P) = 4 * P
-        let x_ext = x.to_extensible();
-        let expected_two_x = x_ext.add_extensible(&x_ext).double();
+        let expected_two_x = x.add_extended(&x).double();
         let got = variable_base(&x, &EdwardsScalar::from(4u8));
-        assert!(expected_two_x.to_extended() == got);
+        assert!(expected_two_x == got);
     }
 }
