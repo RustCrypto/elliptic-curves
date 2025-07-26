@@ -15,7 +15,7 @@ mod point;
 mod scalar;
 mod x;
 
-pub use point::{MontgomeryPoint, ProjectiveMontgomeryPoint};
+pub use point::{AffineMontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use scalar::{MontgomeryScalar, MontgomeryScalarBytes, WideMontgomeryScalarBytes};
 pub use x::{MontgomeryXpoint, ProjectiveMontgomeryXpoint};
 

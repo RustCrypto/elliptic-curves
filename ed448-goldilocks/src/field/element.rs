@@ -3,7 +3,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::ConstMontyType;
 use crate::{
-    AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint, ORDER,
+    AffineMontgomeryPoint, AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint, ORDER,
     ProjectiveMontgomeryPoint, curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::{
@@ -402,7 +402,7 @@ impl FieldElement {
         (inv_sqrt_x * u, zero_u | is_res)
     }
 
-    pub(crate) fn map_to_curve_elligator2_curve448(&self) -> MontgomeryPoint {
+    pub(crate) fn map_to_curve_elligator2_curve448(&self) -> AffineMontgomeryPoint {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
         let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
@@ -422,7 +422,7 @@ impl FieldElement {
         let mut y = y2.sqrt(); // 17.   y = sqrt(y2)
         let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
         y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
-        MontgomeryPoint::new(x, y)
+        AffineMontgomeryPoint::new(x, y)
     }
 
     // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
