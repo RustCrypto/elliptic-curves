@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::curve::twedwards::extended::ExtendedPoint;
+use super::extensible::ExtensiblePoint;
 use crate::field::FieldElement;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable};
 
@@ -22,7 +22,7 @@ pub struct ProjectiveNielsPoint {
 
 impl PartialEq for ProjectiveNielsPoint {
     fn eq(&self, other: &ProjectiveNielsPoint) -> bool {
-        self.to_extended().eq(&other.to_extended())
+        self.to_extensible().eq(&other.to_extensible())
     }
 }
 impl Eq for ProjectiveNielsPoint {}
@@ -52,21 +52,22 @@ impl ProjectiveNielsPoint {
         Z: FieldElement::TWO,
     };
 
-    pub fn to_extended(self) -> ExtendedPoint {
+    pub fn to_extensible(self) -> ExtensiblePoint {
         let A = self.Y_plus_X - self.Y_minus_X;
         let B = self.Y_plus_X + self.Y_minus_X;
-        ExtendedPoint {
+        ExtensiblePoint {
             X: self.Z * A,
             Y: self.Z * B,
             Z: self.Z.square(),
-            T: B * A,
+            T1: B,
+            T2: A,
         }
     }
 }
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::curve::twedwards::extensible::ExtensiblePoint;
+    use crate::curve::twedwards::extended::ExtendedPoint;
 
     #[test]
     fn identity() {
@@ -75,11 +76,11 @@ mod tests {
         // and then both sides are converted to twisted-curve form.
         assert_eq!(
             ProjectiveNielsPoint::IDENTITY,
-            ExtensiblePoint::IDENTITY.to_projective_niels(),
+            ExtendedPoint::IDENTITY.to_projective_niels(),
         );
         // Here only the left-side identity point is converted.
         assert_eq!(
-            ProjectiveNielsPoint::IDENTITY.to_extended(),
+            ProjectiveNielsPoint::IDENTITY.to_extensible(),
             ExtendedPoint::IDENTITY,
         );
     }
@@ -88,10 +89,10 @@ mod tests {
     fn test_conditional_negate() {
         let bp = ExtendedPoint::GENERATOR;
 
-        let mut bp_neg = bp.to_extensible().to_projective_niels();
+        let mut bp_neg = bp.to_projective_niels();
         bp_neg.conditional_negate(1.into());
 
-        let expect_identity = bp_neg.to_extended().add(&bp);
+        let expect_identity = bp_neg.to_extensible().to_extended().add_extended(&bp);
         assert_eq!(ExtendedPoint::IDENTITY, expect_identity);
     }
 }
