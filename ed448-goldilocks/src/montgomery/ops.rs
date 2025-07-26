@@ -59,7 +59,7 @@ impl Add<&MontgomeryPoint> for &ProjectiveMontgomeryPoint {
     // With "Trade-Off Technique".
     fn add(self, rhs: &MontgomeryPoint) -> ProjectiveMontgomeryPoint {
         let (x1, y1, z1) = (self.U, self.V, self.W);
-        let (x2, y2) = (rhs.x, rhs.y);
+        let (x2, y2) = (rhs.U, rhs.V);
 
         let t0 = x1 * x2;
         let t1 = y1 * y2;
@@ -160,7 +160,7 @@ impl Mul<&MontgomeryScalar> for &MontgomeryPoint {
     fn mul(self, rhs: &MontgomeryScalar) -> ProjectiveMontgomeryPoint {
         pub const A2: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(312652)));
 
-        let MontgomeryPoint { x: xP, y: yP } = self;
+        let MontgomeryPoint { U: xP, V: yP } = self;
         let (
             ProjectiveMontgomeryXpoint { U: xQ, W: zQ },
             ProjectiveMontgomeryXpoint { U: xD, W: zD },
