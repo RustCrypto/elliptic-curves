@@ -38,12 +38,9 @@ pub trait FromOkm {
 /// [`ExpandMsgXmd`]: crate::hash2field::ExpandMsgXmd
 /// [`ExpandMsgXof`]: crate::hash2field::ExpandMsgXof
 #[doc(hidden)]
-pub fn hash_to_field<'dst, const N: usize, E, K, T>(
-    data: &[&[u8]],
-    domain: &'dst [&[u8]],
-) -> Result<[T; N]>
+pub fn hash_to_field<const N: usize, E, K, T>(data: &[&[u8]], domain: &[&[u8]]) -> Result<[T; N]>
 where
-    E: ExpandMsg<'dst, K>,
+    E: ExpandMsg<K>,
     T: FromOkm + Default,
 {
     let len_in_bytes = T::Length::USIZE

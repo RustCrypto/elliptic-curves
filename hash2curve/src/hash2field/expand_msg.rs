@@ -22,16 +22,19 @@ const MAX_DST_LEN: usize = 255;
 ///
 /// # Errors
 /// See implementors of [`ExpandMsg`] for errors.
-pub trait ExpandMsg<'dst, K>: Iterator<Item = u8> + Sized {
+pub trait ExpandMsg<K> {
+    /// The expanded message.
+    type Expanded<'a>: Iterator<Item = u8>;
+
     /// Expands `msg` to the required number of bytes.
     ///
     /// Returns an expander that can be used to call `read` until enough
     /// bytes have been consumed
-    fn expand_message(
+    fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self>;
+    ) -> Result<Self::Expanded<'dst>>;
 }
 
 /// The domain separation tag

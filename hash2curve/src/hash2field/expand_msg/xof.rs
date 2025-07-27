@@ -38,7 +38,7 @@ where
     }
 }
 
-impl<HashT, K> ExpandMsg<'_, K> for ExpandMsgXof<HashT>
+impl<HashT, K> ExpandMsg<K> for ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
     // If DST is larger than 255 bytes, the length of the computed DST is calculated by `K * 2`.
@@ -48,6 +48,8 @@ where
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.2-2.1
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
 {
+    type Expanded<'a> = Self;
+
     fn expand_message(msg: &[&[u8]], dst: &[&[u8]], len_in_bytes: NonZero<u16>) -> Result<Self> {
         let len_in_bytes = len_in_bytes.get();
 
