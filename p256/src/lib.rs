@@ -182,5 +182,5 @@ impl hash2curve::OprfParameters for NistP256 {
 
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.10>
     /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.12>.
-    type ExpandMsg<'a> = hash2curve::ExpandMsgXmd<'a, sha2::Sha256>;
+    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha256>;
 }

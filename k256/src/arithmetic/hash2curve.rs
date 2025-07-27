@@ -355,7 +355,7 @@ mod tests {
             // in parts
             let u = hash2curve::hash_to_field::<
                 2,
-                ExpandMsgXmd<'_, Sha256>,
+                ExpandMsgXmd<Sha256>,
                 <Secp256k1 as GroupDigest>::K,
                 FieldElement,
             >(&[test_vector.msg], &[DST])
