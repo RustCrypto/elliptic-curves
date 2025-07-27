@@ -380,7 +380,7 @@ mod tests {
 
             // complete run
             let pt =
-                Secp256k1::hash_from_bytes::<ExpandMsgXmd<'_, Sha256>>(&[test_vector.msg], &[DST])
+                Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], &[DST])
                     .unwrap();
             let apt = pt.to_affine();
             assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
