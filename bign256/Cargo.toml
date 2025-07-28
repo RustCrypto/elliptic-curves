@@ -36,7 +36,7 @@ sec1 = { version = "0.8.0-rc.1", optional = true }
 signature = { version = "3.0.0-pre.1", optional = true }
 
 [dev-dependencies]
-criterion = "0.6"
+criterion = "0.7"
 hex-literal = "1"
 primeorder = { version = "=0.14.0-pre.7", features = ["dev"] }
 proptest = "1"
