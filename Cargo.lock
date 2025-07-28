@@ -319,7 +319,7 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 [[package]]
 name = "crypto-bigint"
 version = "0.7.0-pre.7"
-source = "git+https://github.com/RustCrypto/crypto-bigint#08377c5a61d6d891f37b465d5222b645b80e672d"
+source = "git+https://github.com/RustCrypto/crypto-bigint#bfd010775118fe29c02f5141a80a8e153472ead7"
 dependencies = [
  "hybrid-array",
  "num-traits",

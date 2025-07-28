@@ -3,11 +3,9 @@
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, Integer, Invert, Odd, PrecomputeInverter, Uint,
+    ArrayEncoding, ByteArray, Integer, Invert, Uint,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
-    modular::{
-        ConstMontyForm as MontyForm, ConstMontyFormInverter, ConstMontyParams, SafeGcdInverter,
-    },
+    modular::{ConstMontyForm as MontyForm, ConstMontyFormInverter, ConstMontyParams},
 };
 use core::fmt::Formatter;
 use core::{
@@ -325,20 +323,14 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
 
     /// Compute field inversion: `1 / self`.
     #[inline]
-    pub fn invert(&self) -> CtOption<Self>
-    where
-        MontyForm<MOD, LIMBS>: Invert<Output = CtOption<MontyForm<MOD, LIMBS>>>,
-    {
-        self.0.invert().map(Self)
+    pub fn invert(&self) -> CtOption<Self> {
+        CtOption::from(self.0.invert()).map(Self)
     }
 
     /// Compute field inversion as a `const fn`. Panics if `self` is zero.
     ///
     /// This is mainly intended for inverting constants at compile time.
-    pub const fn const_invert<const UNSAT_LIMBS: usize>(&self) -> Self
-    where
-        Odd<Uint<LIMBS>>: PrecomputeInverter<Inverter = SafeGcdInverter<LIMBS, UNSAT_LIMBS>, Output = Uint<LIMBS>>,
-    {
+    pub const fn const_invert(&self) -> Self {
         Self(
             ConstMontyFormInverter::<MOD, LIMBS>::new()
                 .invert(&self.0)
@@ -377,13 +369,10 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
 // `ff` crate trait impls
 //
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize, const UNSAT_LIMBS: usize> Field
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Field for MontyFieldElement<MOD, LIMBS>
 where
     Array<u8, MOD::ByteSize>: Copy,
     Uint<LIMBS>: ArrayEncoding,
-    Odd<Uint<LIMBS>>:
-        PrecomputeInverter<Inverter = SafeGcdInverter<LIMBS, UNSAT_LIMBS>, Output = Uint<LIMBS>>,
 {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
@@ -424,13 +413,10 @@ where
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize, const UNSAT_LIMBS: usize> PrimeField
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> PrimeField for MontyFieldElement<MOD, LIMBS>
 where
     Array<u8, MOD::ByteSize>: Copy,
     Uint<LIMBS>: ArrayEncoding,
-    Odd<Uint<LIMBS>>:
-        PrecomputeInverter<Inverter = SafeGcdInverter<LIMBS, UNSAT_LIMBS>, Output = Uint<LIMBS>>,
 {
     type Repr = Array<u8, MOD::ByteSize>;
 
