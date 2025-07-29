@@ -12,6 +12,6 @@
 pub(crate) mod affine;
 pub(crate) mod extended;
 mod scalar;
-pub use affine::AffinePoint;
-pub use extended::{CompressedEdwardsY, EdwardsPoint};
+pub use affine::{AffinePoint, CompressedEdwardsY};
+pub use extended::EdwardsPoint;
 pub use scalar::{EdwardsScalar, EdwardsScalarBytes, WideEdwardsScalarBytes};
