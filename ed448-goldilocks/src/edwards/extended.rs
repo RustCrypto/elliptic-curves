@@ -10,10 +10,10 @@ use crate::edwards::affine::PointBytes;
 use crate::field::FieldElement;
 use crate::*;
 use elliptic_curve::{
-    CurveGroup, Error,
+    BatchNormalize, CurveGroup, Error,
     array::Array,
     group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
-    ops::LinearCombination,
+    ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
 };
 use hash2curve::ExpandMsgXof;
@@ -295,6 +295,14 @@ impl CurveGroup for EdwardsPoint {
 
     fn to_affine(&self) -> AffinePoint {
         self.to_affine()
+    }
+
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
+        let mut zs = alloc::vec![FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
 }
 
@@ -714,11 +722,76 @@ impl<'de> serdect::serde::Deserialize<'de> for EdwardsPoint {
 
 impl elliptic_curve::zeroize::DefaultIsZeroes for EdwardsPoint {}
 
+impl<const N: usize> BatchNormalize<[EdwardsPoint; N]> for EdwardsPoint {
+    type Output = [<Self as CurveGroup>::AffineRepr; N];
+
+    #[inline]
+    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::AffineRepr; N] {
+        let zs = [FieldElement::ONE; N];
+        let mut affine_points = [AffinePoint::IDENTITY; N];
+        batch_normalize_generic(points, zs, &mut affine_points);
+        affine_points
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BatchNormalize<[EdwardsPoint]> for EdwardsPoint {
+    type Output = Vec<<Self as CurveGroup>::AffineRepr>;
+
+    #[inline]
+    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::AffineRepr> {
+        use alloc::vec;
+
+        let mut zs = vec![FieldElement::ONE; points.len()];
+        let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
+        batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
+        affine_points
+    }
+}
+
+/// Generic implementation of batch normalization.
+fn batch_normalize_generic<P, Z, I, O>(points: &P, mut zs: Z, out: &mut O)
+where
+    FieldElement: BatchInvert<Z, Output = CtOption<I>>,
+    P: AsRef<[EdwardsPoint]> + ?Sized,
+    Z: AsMut<[FieldElement]>,
+    I: AsRef<[FieldElement]>,
+    O: AsMut<[AffinePoint]> + ?Sized,
+{
+    let points = points.as_ref();
+    let out = out.as_mut();
+
+    for (i, point) in points.iter().enumerate() {
+        // Even a single zero value will fail inversion for the entire batch.
+        // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
+        // and treat that case specially later-on.
+        zs.as_mut()[i].conditional_assign(&point.Z, !point.Z.ct_eq(&FieldElement::ZERO));
+    }
+
+    // This is safe to unwrap since we assured that all elements are non-zero
+    let zs_inverses = <FieldElement as BatchInvert<Z>>::batch_invert(zs)
+        .expect("all elements should be non-zero");
+
+    for i in 0..out.len() {
+        // If the `z` coordinate is non-zero, we can use it to invert;
+        // otherwise it defaults to the `IDENTITY` value.
+        out[i] = AffinePoint::conditional_select(
+            &AffinePoint {
+                x: points[i].X * zs_inverses.as_ref()[i],
+                y: points[i].Y * zs_inverses.as_ref()[i],
+            },
+            &AffinePoint::IDENTITY,
+            points[i].Z.ct_eq(&FieldElement::ZERO),
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use elliptic_curve::Field;
     use hex_literal::hex;
+    use rand_core::OsRng;
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -1012,5 +1085,34 @@ mod tests {
         }
 
         assert_eq!(computed_commitment, expected_commitment);
+    }
+
+    #[test]
+    fn batch_normalize() {
+        let points: [EdwardsPoint; 2] = [
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+        ];
+
+        let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(&points);
+
+        for (point, affine_point) in points.into_iter().zip(affine_points) {
+            assert_eq!(affine_point, point.to_affine());
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn batch_normalize_alloc() {
+        let points = alloc::vec![
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+        ];
+
+        let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(points.as_slice());
+
+        for (point, affine_point) in points.into_iter().zip(affine_points) {
+            assert_eq!(affine_point, point.to_affine());
+        }
     }
 }
