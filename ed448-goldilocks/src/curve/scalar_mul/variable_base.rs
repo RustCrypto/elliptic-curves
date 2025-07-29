@@ -56,7 +56,7 @@ mod test {
 
         // Lets see if this is conserved over the isogenies
         let edwards_point = twisted_point.to_untwisted();
-        let got_untwisted_point = edwards_point.scalar_mul(&scalar);
+        let got_untwisted_point = edwards_point.to_affine().scalar_mul(&scalar);
         let expected_untwisted_point = got.to_untwisted();
         assert_eq!(got_untwisted_point, expected_untwisted_point);
     }
