@@ -4,7 +4,7 @@ use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::curve::scalar_mul::variable_base;
-use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
+use crate::curve::twedwards::extensible::ExtensiblePoint as TwistedExtensiblePoint;
 use crate::field::FieldElement;
 use crate::*;
 use elliptic_curve::{
@@ -548,7 +548,8 @@ impl EdwardsPoint {
         scalar_div_four.div_by_four();
 
         // Use isogeny and dual isogeny to compute phi^-1((s/4) * phi(P))
-        let partial_result = variable_base(&self.to_twisted(), &scalar_div_four).to_untwisted();
+        let partial_result =
+            variable_base(&self.to_twisted().to_extended(), &scalar_div_four).to_untwisted();
         // Add partial result to (scalar mod 4) * P
         partial_result.add(&self.scalar_mod_four(scalar))
     }
@@ -664,7 +665,7 @@ impl EdwardsPoint {
     /// Edwards_Isogeny is derived from the doubling formula
     /// XXX: There is a duplicate method in the twisted edwards module to compute the dual isogeny
     /// XXX: Not much point trying to make it generic I think. So what we can do is optimise each respective isogeny method for a=1 or a = -1 (currently, I just made it really slow and simple)
-    fn edwards_isogeny(&self, a: FieldElement) -> TwistedExtendedPoint {
+    fn edwards_isogeny(&self, a: FieldElement) -> TwistedExtensiblePoint {
         // Convert to affine now, then derive extended version later
         let affine = self.to_affine();
         let x = affine.x;
@@ -681,15 +682,16 @@ impl EdwardsPoint {
         let y_denom = (FieldElement::ONE + FieldElement::ONE) - y.square() - (a * x.square());
         let new_y = y_numerator * y_denom.invert();
 
-        TwistedExtendedPoint {
+        TwistedExtensiblePoint {
             X: new_x,
             Y: new_y,
             Z: FieldElement::ONE,
-            T: new_x * new_y,
+            T1: new_x,
+            T2: new_y,
         }
     }
 
-    pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
+    pub(crate) fn to_twisted(self) -> TwistedExtensiblePoint {
         self.edwards_isogeny(FieldElement::ONE)
     }
 

@@ -192,7 +192,7 @@ impl Group for DecafPoint {
     }
 
     fn double(&self) -> Self {
-        Self(self.0.double())
+        Self(self.0.to_extensible().double().to_extended())
     }
 }
 
@@ -240,31 +240,31 @@ impl CurveGroup for DecafPoint {
     type AffineRepr = DecafAffinePoint;
 
     fn to_affine(&self) -> Self::AffineRepr {
-        DecafAffinePoint(self.0.to_affine())
+        DecafAffinePoint(self.0.to_extensible().to_affine())
     }
 }
 
 impl From<EdwardsPoint> for DecafPoint {
     fn from(point: EdwardsPoint) -> Self {
-        Self(point.to_twisted())
+        Self(point.to_twisted().to_extended())
     }
 }
 
 impl From<&EdwardsPoint> for DecafPoint {
     fn from(point: &EdwardsPoint) -> Self {
-        Self(point.to_twisted())
+        Self(point.to_twisted().to_extended())
     }
 }
 
 impl From<DecafPoint> for EdwardsPoint {
     fn from(point: DecafPoint) -> Self {
-        point.0.to_untwisted()
+        point.0.to_extensible().to_untwisted()
     }
 }
 
 impl From<&DecafPoint> for EdwardsPoint {
     fn from(point: &DecafPoint) -> Self {
-        point.0.to_untwisted()
+        point.0.to_extensible().to_untwisted()
     }
 }
 
@@ -282,13 +282,13 @@ impl From<&DecafAffinePoint> for DecafPoint {
 
 impl From<DecafPoint> for DecafAffinePoint {
     fn from(point: DecafPoint) -> Self {
-        DecafAffinePoint(point.0.to_affine())
+        DecafAffinePoint(point.0.to_extensible().to_affine())
     }
 }
 
 impl From<&DecafPoint> for DecafAffinePoint {
     fn from(point: &DecafPoint) -> Self {
-        DecafAffinePoint(point.0.to_affine())
+        DecafAffinePoint(point.0.to_extensible().to_affine())
     }
 }
 
@@ -307,12 +307,12 @@ impl DecafPoint {
 
     /// Add two points
     pub fn add(&self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.to_extensible().add_extended(&other.0).to_extended())
+        DecafPoint(self.0.add_extended(&other.0).to_extended())
     }
 
     /// Subtract two points
     pub fn sub(&self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.to_extensible().sub_extended(&other.0).to_extended())
+        DecafPoint(self.0.sub_extended(&other.0).to_extended())
     }
 
     /// Compress this point
@@ -369,7 +369,7 @@ impl DecafPoint {
         let u1 = FieldElement::from_bytes(&hi);
         let q0 = u0.map_to_curve_decaf448();
         let q1 = u1.map_to_curve_decaf448();
-        Self(q0.add(&q1))
+        Self(q0.add_extended(&q1).to_extended())
     }
 }
 
@@ -600,8 +600,8 @@ mod test {
 
         let P = TWISTED_EDWARDS_BASE_POINT;
 
-        let P2 = P.double();
-        let P3 = P2.to_extensible().add_extended(&P).to_extended();
+        let P2 = P.to_extensible().double().to_extended();
+        let P3 = P2.add_extended(&P).to_extended();
 
         // Encode and decode to make them Decaf points
         let Decaf_P = DecafPoint(P).compress().decompress().unwrap();
