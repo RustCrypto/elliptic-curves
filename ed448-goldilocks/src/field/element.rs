@@ -263,12 +263,8 @@ impl FieldElement {
     }
 
     /// Inverts a field element
-    /// Previous chain length: 462, new length 460
     pub fn invert(&self) -> Self {
-        const INV_EXP: U448 = U448::from_be_hex(
-            "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffd",
-        );
-        Self(self.0.pow(&INV_EXP))
+        Self(self.0.invert().unwrap_or(ConstMontyType::default()))
     }
 
     pub fn square(&self) -> Self {
