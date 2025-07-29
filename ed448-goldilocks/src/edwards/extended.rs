@@ -7,7 +7,7 @@ use crate::curve::scalar_mul::variable_base;
 use crate::curve::twedwards::IsogenyMap;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::edwards::affine::PointBytes;
-use crate::field::FieldElement;
+use crate::field::{ConstMontyType, FieldElement};
 use crate::*;
 use elliptic_curve::{
     BatchNormalize, CurveGroup, Error,
@@ -474,8 +474,57 @@ impl EdwardsPoint {
     ///   prime-order subgroup;
     /// * `false` if `self` has a nonzero torsion component and is not
     ///   in the prime-order subgroup.
+    // See https://eprint.iacr.org/2022/1164.
     pub fn is_torsion_free(&self) -> Choice {
-        (self * EdwardsScalar::new(*ORDER)).ct_eq(&Self::IDENTITY)
+        const A: FieldElement = FieldElement(ConstMontyType::new(&U448::from_be_hex(
+            "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffeceaf",
+        )));
+        const A1: FieldElement = FieldElement(ConstMontyType::new(&U448::from_u64(156320)));
+        const MINUS_SQRT_B1: FieldElement = FieldElement(ConstMontyType::new(&U448::from_be_hex(
+            "749a7410536c225f1025ca374176557d7839611d691caad26d74a1fca5cfad15f196642c0a4484b67f321025577cc6b5a6f443c2eaa36327",
+        )));
+
+        let mut e = self.X * (self.Z - self.Y);
+        let ee = e.square();
+        let mut u = FieldElement::A_PLUS_TWO_OVER_FOUR * (self.Z + self.Y) * e * self.X;
+        let w = self.Z.double() * (self.Z - self.Y);
+
+        let u2 = u.double().double();
+        let w2 = w.double();
+
+        let mut w1 = u2.sqrt();
+        let mut ok = w1.square().ct_eq(&u2);
+        let u1 = (u2 - A1 * ee - w1 * w2).div_by_2();
+
+        // If `u1` happens not to be a square, then `sqrt(u1)` returns `sqrt(-u1)`
+        // in that case (since we are in a finite field GF(q) with q = 3 mod 4,
+        // if `u1` is not a square then `-u1` must be a square). In such a case, we
+        // should replace `(u1,w1)` with `((B1*e^4)/u1, -w1)`. To avoid the division,
+        // we instead switch to an isomorphic curve; namely:
+        //   u2 = B1*(e^4)*u1
+        //   w2 = -w1*u1
+        //   e2 = e*u1
+        // Then:
+        //   w = sqrt(u2) = sqrt(-B1)*(e^2)*sqrt(-u1)
+        //   u = (w^2 - A*e^2 - w*w1)/2
+        let mut w = u1.sqrt();
+        let u1_is_square = w.square().ct_eq(&u1);
+        w1.conditional_assign(&-(w1 * u1), !u1_is_square);
+        e.conditional_assign(&(e * u1), !u1_is_square);
+        w.conditional_assign(&(MINUS_SQRT_B1 * ee * w), !u1_is_square);
+        u = (w.square() - A * e.square() - w * w1).div_by_2();
+
+        ok &= u.is_square();
+
+        // If the source point was a low-order point, then the computations
+        // above are incorrect. We handle this case here; among the
+        // low-order points, only the neutral point is in the prime-order
+        // subgroup.
+        let is_low_order = self.X.is_zero() | self.Y.is_zero();
+        let is_neutral = self.Y.ct_eq(&self.Z);
+        ok ^= is_low_order & (ok ^ is_neutral);
+
+        ok
     }
 
     /// Hash a message to a point on the curve
@@ -791,7 +840,9 @@ mod tests {
     use super::*;
     use elliptic_curve::Field;
     use hex_literal::hex;
-    use rand_core::OsRng;
+    use proptest::prelude::any;
+    use proptest::proptest;
+    use rand_core::{OsRng, TryRngCore};
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -1113,6 +1164,17 @@ mod tests {
 
         for (point, affine_point) in points.into_iter().zip(affine_points) {
             assert_eq!(affine_point, point.to_affine());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn fuzz_is_torsion_free(
+           bytes in any::<[u8; 57]>()
+        ) {
+            let scalar = EdwardsScalar::from_bytes_mod_order(&bytes.into());
+            let point = EdwardsPoint::mul_by_generator(&scalar);
+            assert_eq!(point.is_torsion_free().unwrap_u8(), 1);
         }
     }
 }
