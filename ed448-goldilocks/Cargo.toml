@@ -39,6 +39,7 @@ serde = ["dep:serdect", "ed448?/serde_bytes"]
 [dev-dependencies]
 hex-literal = "1"
 hex = "0.4"
+proptest = "1"
 rand_core = { version = "0.9", features = ["os_rng"] }
 rand_chacha = "0.9"
 serde_bare = "0.5"
