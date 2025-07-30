@@ -3,7 +3,7 @@ use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::curve::scalar_mul::variable_base;
+use super::scalar_mul;
 use crate::curve::twedwards::extensible::ExtensiblePoint as TwistedExtensiblePoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -543,40 +543,7 @@ impl EdwardsPoint {
 
     /// Generic scalar multiplication to compute s*P
     pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
-        // Compute floor(s/4)
-        let mut scalar_div_four = *scalar;
-        scalar_div_four.div_by_four();
-
-        // Use isogeny and dual isogeny to compute phi^-1((s/4) * phi(P))
-        let partial_result =
-            variable_base(&self.to_twisted().to_extended(), &scalar_div_four).to_untwisted();
-        // Add partial result to (scalar mod 4) * P
-        partial_result.add(&self.scalar_mod_four(scalar))
-    }
-
-    /// Returns (scalar mod 4) * P in constant time
-    pub(crate) fn scalar_mod_four(&self, scalar: &EdwardsScalar) -> Self {
-        // Compute compute (scalar mod 4)
-        let s_mod_four = scalar[0] & 3;
-
-        // Compute all possible values of (scalar mod 4) * P
-        let zero_p = EdwardsPoint::IDENTITY;
-        let one_p = self;
-        let two_p = one_p.double();
-        let three_p = two_p.add(self);
-
-        // Under the reasonable assumption that `==` is constant time
-        // Then the whole function is constant time.
-        // This should be cheaper than calling double_and_add or a scalar mul operation
-        // as the number of possibilities are so small.
-        // XXX: This claim has not been tested (although it sounds intuitive to me)
-        let mut result = EdwardsPoint::IDENTITY;
-        result.conditional_assign(&zero_p, Choice::from((s_mod_four == 0) as u8));
-        result.conditional_assign(one_p, Choice::from((s_mod_four == 1) as u8));
-        result.conditional_assign(&two_p, Choice::from((s_mod_four == 2) as u8));
-        result.conditional_assign(&three_p, Choice::from((s_mod_four == 3) as u8));
-
-        result
+        scalar_mul(self, scalar)
     }
 
     /// Standard compression; store Y and sign of X
