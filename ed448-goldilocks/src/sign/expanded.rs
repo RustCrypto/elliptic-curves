@@ -61,7 +61,7 @@ impl ExpandedSecretKey {
 
         let point = EdwardsPoint::GENERATOR * scalar;
         let public_key = VerifyingKey {
-            compressed: point.compress(),
+            compressed: point.to_affine().compress(),
             point,
         };
 
@@ -124,7 +124,7 @@ impl ExpandedSecretKey {
 
         // R = r*B
         let big_r = EdwardsPoint::GENERATOR * r;
-        let compressed_r = big_r.compress();
+        let compressed_r = big_r.to_affine().compress();
 
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
         reader = Shake256::default()

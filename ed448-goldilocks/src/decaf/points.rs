@@ -244,14 +244,14 @@ impl CurveGroup for DecafPoint {
     }
 }
 
-impl From<EdwardsPoint> for DecafPoint {
-    fn from(point: EdwardsPoint) -> Self {
+impl From<AffinePoint> for DecafPoint {
+    fn from(point: AffinePoint) -> Self {
         Self(point.to_twisted())
     }
 }
 
-impl From<&EdwardsPoint> for DecafPoint {
-    fn from(point: &EdwardsPoint) -> Self {
+impl From<&AffinePoint> for DecafPoint {
+    fn from(point: &AffinePoint) -> Self {
         Self(point.to_twisted())
     }
 }

@@ -197,7 +197,7 @@ mod tests {
             "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
         );
         let a = AffinePoint { x, y }.to_extended();
-        let twist_a = a.to_untwisted().to_twisted();
+        let twist_a = a.to_untwisted().to_affine().to_twisted();
         assert_eq!(twist_a, a.double().double())
     }
 

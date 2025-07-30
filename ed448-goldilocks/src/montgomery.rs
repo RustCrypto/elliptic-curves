@@ -234,7 +234,7 @@ mod tests {
         let montgomery_res = &montgomery_bp * &scalar;
 
         // Goldilocks scalar mul
-        let goldilocks_point = bp.scalar_mul(&scalar);
+        let goldilocks_point = bp.to_affine().scalar_mul(&scalar);
         assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
     }
 }
