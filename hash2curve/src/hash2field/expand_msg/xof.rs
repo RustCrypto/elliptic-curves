@@ -16,7 +16,7 @@ use digest::{
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof>
 ///
 /// # Errors
-/// 
+///
 /// `expand_message` caa return an [`EmptyDST`] error.
 pub struct ExpandMsgXof<HashT>
 where
