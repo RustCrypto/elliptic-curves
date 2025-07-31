@@ -45,7 +45,7 @@ where
     E: ExpandMsg<K>,
     T: FromOkm + Default,
 {
-    // Completely degenerate case - `N` and `T::Length` would need to be extremely large.
+    // Completely degenerate case; `N` and `T::Length` would need to be extremely large.
     const { assert!(T::Length::USIZE * N <= u16::MAX as usize) }
     let Some(len_in_bytes) = NonZeroU16::new(T::Length::U16 * N as u16) else {
         // Since `T::Length: NonZero`, only `N = 0` can lead to this case.
