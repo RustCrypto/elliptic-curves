@@ -5,9 +5,12 @@ pub(super) mod xof;
 
 use core::num::NonZero;
 
-use digest::{Digest, ExtendableOutput, Update, XofReader};
-use elliptic_curve::array::{Array, ArraySize};
-use elliptic_curve::{Error, Result};
+use digest::{
+    Digest, ExtendableOutput, Update, XofReader,
+    array::{Array, ArraySize},
+    consts::{True, U256},
+    typenum::IsLess,
+};
 
 /// Salt when the DST is too long
 const OVERSIZE_DST_SALT: &[u8] = b"H2C-OVERSIZE-DST-";
@@ -25,6 +28,8 @@ const MAX_DST_LEN: usize = 255;
 pub trait ExpandMsg<K> {
     /// Type holding data for the [`Expander`].
     type Expander<'dst>: Expander + Sized;
+    /// Error returned by [`ExpandMsg::expand_message`].
+    type Error: core::error::Error;
 
     /// Expands `msg` to the required number of bytes.
     ///
@@ -34,7 +39,7 @@ pub trait ExpandMsg<K> {
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>>;
+    ) -> Result<Self::Expander<'dst>, Self::Error>;
 }
 
 /// Expander that, call `read` until enough bytes have been consumed.
@@ -56,19 +61,15 @@ pub(crate) enum Domain<'a, L: ArraySize> {
     Array(&'a [&'a [u8]]),
 }
 
-impl<'a, L: ArraySize> Domain<'a, L> {
-    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self>
+impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
+    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDST>
     where
         X: Default + ExtendableOutput + Update,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(Error)
+            Err(EmptyDST)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
-            if L::USIZE > u8::MAX.into() {
-                return Err(Error);
-            }
-
             let mut data = Array::<u8, L>::default();
             let mut hash = X::default();
             hash.update(OVERSIZE_DST_SALT);
@@ -85,18 +86,14 @@ impl<'a, L: ArraySize> Domain<'a, L> {
         }
     }
 
-    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self>
+    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDST>
     where
         X: Digest<OutputSize = L>,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(Error)
+            Err(EmptyDST)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
-            if L::USIZE > u8::MAX.into() {
-                return Err(Error);
-            }
-
             Ok(Self::Hashed({
                 let mut hash = X::new();
                 hash.update(OVERSIZE_DST_SALT);
@@ -153,3 +150,15 @@ impl<'a, L: ArraySize> Domain<'a, L> {
         assert_eq!(self.len(), bytes[bytes.len() - 1]);
     }
 }
+
+/// Error when an empty domain separation tag is used.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EmptyDST;
+
+impl core::fmt::Display for EmptyDST {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Empty domain separation tag")
+    }
+}
+
+impl core::error::Error for EmptyDST {}

@@ -3,12 +3,13 @@
 use super::{Domain, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
 use digest::{
-    CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader, typenum::IsGreaterOrEqual,
-};
-use elliptic_curve::Result;
-use elliptic_curve::array::{
-    ArraySize,
-    typenum::{Prod, True, U2},
+    CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader,
+    array::{
+        ArraySize,
+        typenum::{Prod, True, U2},
+    },
+    consts::U256,
+    typenum::{IsGreaterOrEqual, IsLess},
 };
 
 /// Implements `expand_message_xof` via the [`ExpandMsg`] trait:
@@ -41,18 +42,19 @@ where
     HashT: Default + ExtendableOutput + Update + HashMarker,
     // If DST is larger than 255 bytes, the length of the computed DST is calculated by `K * 2`.
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.1-2.1
-    K: Mul<U2, Output: ArraySize>,
+    K: Mul<U2, Output: ArraySize + IsLess<U256, Output = True>>,
     // The collision resistance of `HashT` MUST be at least `K` bits.
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.2-2.1
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
 {
     type Expander<'dst> = Self;
+    type Error = super::EmptyDST;
 
     fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>> {
+    ) -> Result<Self::Expander<'dst>, super::EmptyDST> {
         let len_in_bytes = len_in_bytes.get();
 
         let domain = Domain::<Prod<K, U2>>::xof::<HashT>(dst)?;
@@ -81,8 +83,6 @@ where
 
 #[cfg(test)]
 mod test {
-    use elliptic_curve::Error;
-
     use super::*;
     use core::mem::size_of;
     use elliptic_curve::array::{
@@ -119,7 +119,7 @@ mod test {
 
     impl TestVector {
         #[allow(clippy::panic_in_result_fn)]
-        fn assert<HashT, L>(&self, dst: &'static [u8], domain: &Domain<'_, U32>) -> Result<()>
+        fn assert<HashT, L>(&self, dst: &'static [u8], domain: &Domain<'_, U32>)
         where
             HashT: Default
                 + ExtendableOutput
@@ -133,24 +133,24 @@ mod test {
             let mut expander = <ExpandMsgXof<HashT> as ExpandMsg<U16>>::expand_message(
                 &[self.msg],
                 &[dst],
-                NonZero::new(L::U16).ok_or(Error)?,
-            )?;
+                NonZero::new(L::U16).unwrap(),
+            )
+            .unwrap();
 
             let mut uniform_bytes = Array::<u8, L>::default();
             expander.fill_bytes(&mut uniform_bytes);
 
             assert_eq!(uniform_bytes.as_slice(), self.uniform_bytes);
-            Ok(())
         }
     }
 
     #[test]
-    fn expand_message_xof_shake_128() -> Result<()> {
+    fn expand_message_xof_shake_128() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHAKE128";
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348414b4531323824");
 
-        let dst_prime = Domain::<U32>::xof::<Shake128>(&[DST])?;
+        let dst_prime = Domain::<U32>::xof::<Shake128>(&[DST]).unwrap();
         dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
@@ -182,7 +182,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_32 {
-            test_vector.assert::<Shake128, U32>(DST, &dst_prime)?;
+            test_vector.assert::<Shake128, U32>(DST, &dst_prime);
         }
 
         const TEST_VECTORS_128: &[TestVector] = &[
@@ -214,19 +214,17 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_128 {
-            test_vector.assert::<Shake128, U128>(DST, &dst_prime)?;
+            test_vector.assert::<Shake128, U128>(DST, &dst_prime);
         }
-
-        Ok(())
     }
 
     #[test]
-    fn expand_message_xof_shake_128_long() -> Result<()> {
+    fn expand_message_xof_shake_128_long() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHAKE128-long-DST-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111";
         const DST_PRIME: &[u8] =
             &hex!("acb9736c0867fdfbd6385519b90fc8c034b5af04a958973212950132d035792f20");
 
-        let dst_prime = Domain::<U32>::xof::<Shake128>(&[DST])?;
+        let dst_prime = Domain::<U32>::xof::<Shake128>(&[DST]).unwrap();
         dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
@@ -258,7 +256,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_32 {
-            test_vector.assert::<Shake128, U32>(DST, &dst_prime)?;
+            test_vector.assert::<Shake128, U32>(DST, &dst_prime);
         }
 
         const TEST_VECTORS_128: &[TestVector] = &[
@@ -290,21 +288,19 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_128 {
-            test_vector.assert::<Shake128, U128>(DST, &dst_prime)?;
+            test_vector.assert::<Shake128, U128>(DST, &dst_prime);
         }
-
-        Ok(())
     }
 
     #[test]
-    fn expand_message_xof_shake_256() -> Result<()> {
+    fn expand_message_xof_shake_256() {
         use sha3::Shake256;
 
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHAKE256";
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348414b4532353624");
 
-        let dst_prime = Domain::<U32>::xof::<Shake256>(&[DST])?;
+        let dst_prime = Domain::<U32>::xof::<Shake256>(&[DST]).unwrap();
         dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
@@ -336,7 +332,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_32 {
-            test_vector.assert::<Shake256, U32>(DST, &dst_prime)?;
+            test_vector.assert::<Shake256, U32>(DST, &dst_prime);
         }
 
         const TEST_VECTORS_128: &[TestVector] = &[
@@ -368,9 +364,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_128 {
-            test_vector.assert::<Shake256, U128>(DST, &dst_prime)?;
+            test_vector.assert::<Shake256, U128>(DST, &dst_prime);
         }
-
-        Ok(())
     }
 }
