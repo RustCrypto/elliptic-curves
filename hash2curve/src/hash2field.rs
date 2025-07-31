@@ -48,10 +48,8 @@ where
         .and_then(|len| len.try_into().ok())
         .and_then(NonZeroU16::new)
         .ok_or(Error)?;
-    let mut tmp = Array::<u8, <T as FromOkm>::Length>::default();
     let mut expander = E::expand_message(data, domain, len_in_bytes)?;
     Ok(core::array::from_fn(|_| {
-        expander.fill_bytes(&mut tmp);
-        T::from_okm(&tmp)
+        T::from_okm(&expander.by_ref().take(T::Length::USIZE).collect())
     }))
 }

@@ -441,7 +441,7 @@ impl FieldElement {
 mod tests {
     use super::*;
     use elliptic_curve::consts::U32;
-    use hash2curve::{ExpandMsg, ExpandMsgXof, Expander};
+    use hash2curve::{ExpandMsg, ExpandMsgXof};
     use hex_literal::hex;
     use sha3::Shake256;
 
@@ -463,18 +463,16 @@ mod tests {
                 (84 * 2).try_into().unwrap(),
             )
             .unwrap();
-            let mut data = Array::<u8, U84>::default();
-            expander.fill_bytes(&mut data);
             // TODO: This should be `Curve448FieldElement`.
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = Ed448FieldElement::from_okm(&expander.by_ref().take(84).collect()).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
-            expander.fill_bytes(&mut data);
+
             // TODO: This should be `Curve448FieldElement`.
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = Ed448FieldElement::from_okm(&expander.collect()).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
@@ -497,16 +495,13 @@ mod tests {
                 (84 * 2).try_into().unwrap(),
             )
             .unwrap();
-            let mut data = Array::<u8, U84>::default();
-            expander.fill_bytes(&mut data);
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = Ed448FieldElement::from_okm(&expander.by_ref().take(84).collect()).0;
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
-            expander.fill_bytes(&mut data);
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = Ed448FieldElement::from_okm(&expander.collect()).0;
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
