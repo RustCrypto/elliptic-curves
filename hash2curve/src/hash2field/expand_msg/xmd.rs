@@ -18,9 +18,8 @@ use digest::{
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xmd>
 ///
 /// # Errors
-/// - `dst` contains no bytes
-/// - `dst > 255 && HashT::OutputSize > 255`
-/// - `len_in_bytes > 255 * HashT::OutputSize`
+///
+/// `expand_message` can return an [`ExpandMsgXmdError`].
 #[derive(Debug)]
 pub struct ExpandMsgXmd<HashT>(PhantomData<HashT>)
 where
@@ -39,18 +38,18 @@ where
     HashT::OutputSize: IsGreaterOrEqual<Prod<K, U2>, Output = True>,
 {
     type Expander<'dst> = ExpanderXmd<'dst, HashT>;
-    type Error = ExapandMsgXmdError;
+    type Error = ExpandMsgXmdError;
 
     fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>, ExapandMsgXmdError> {
+    ) -> Result<Self::Expander<'dst>, ExpandMsgXmdError> {
         let b_in_bytes = HashT::OutputSize::USIZE;
 
         // `255 * <b_in_bytes>` can not exceed `u16::MAX`
         if usize::from(len_in_bytes.get()) > 255 * b_in_bytes {
-            return Err(ExapandMsgXmdError::OversizedLen);
+            return Err(ExpandMsgXmdError::OversizedLen);
         }
 
         let ell = u8::try_from(usize::from(len_in_bytes.get()).div_ceil(b_in_bytes))
@@ -150,7 +149,7 @@ where
 
 /// Error type for [`ExpandMsgXmd`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ExapandMsgXmdError {
+pub enum ExpandMsgXmdError {
     /// The domain separation tag is empty.
     DSTError(EmptyDST),
     /// The length in bytes is too large.
@@ -159,7 +158,7 @@ pub enum ExapandMsgXmdError {
     OversizedLen,
 }
 
-impl core::fmt::Display for ExapandMsgXmdError {
+impl core::fmt::Display for ExpandMsgXmdError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::DSTError(e) => write!(f, "{e}"),
@@ -168,9 +167,9 @@ impl core::fmt::Display for ExapandMsgXmdError {
     }
 }
 
-impl core::error::Error for ExapandMsgXmdError {}
+impl core::error::Error for ExpandMsgXmdError {}
 
-impl From<EmptyDST> for ExapandMsgXmdError {
+impl From<EmptyDST> for ExpandMsgXmdError {
     fn from(e: EmptyDST) -> Self {
         Self::DSTError(e)
     }

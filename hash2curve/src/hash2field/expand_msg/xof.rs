@@ -1,6 +1,6 @@
 //! `expand_message_xof` for the `ExpandMsg` trait
 
-use super::{Domain, ExpandMsg, Expander};
+use super::{Domain, EmptyDST, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
 use digest::{
     CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader,
@@ -16,8 +16,8 @@ use digest::{
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xof>
 ///
 /// # Errors
-/// - `dst` contains no bytes
-/// - `dst > 255 && K * 2 > 255`
+/// 
+/// `expand_message` caa return an [`EmptyDST`] error.
 pub struct ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
@@ -48,13 +48,13 @@ where
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
 {
     type Expander<'dst> = Self;
-    type Error = super::EmptyDST;
+    type Error = EmptyDST;
 
     fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>, super::EmptyDST> {
+    ) -> Result<Self::Expander<'dst>, EmptyDST> {
         let len_in_bytes = len_in_bytes.get();
 
         let domain = Domain::<Prod<K, U2>>::xof::<HashT>(dst)?;

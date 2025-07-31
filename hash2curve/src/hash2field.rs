@@ -27,15 +27,8 @@ pub trait FromOkm {
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-hash_to_field-implementatio>
 ///
 /// # Errors
-/// - `len_in_bytes > u16::MAX`
-/// - See implementors of [`ExpandMsg`] for additional errors:
-///   - [`ExpandMsgXmd`]
-///   - [`ExpandMsgXof`]
 ///
-/// `len_in_bytes = T::Length * out.len()`
-///
-/// [`ExpandMsgXmd`]: crate::hash2field::ExpandMsgXmd
-/// [`ExpandMsgXof`]: crate::hash2field::ExpandMsgXof
+/// Returns an error if the [`ExpandMsg`] implementation fails.
 #[doc(hidden)]
 pub fn hash_to_field<const N: usize, E, K, T>(
     data: &[&[u8]],
