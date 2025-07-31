@@ -29,8 +29,20 @@ const SIG: [u8; 64] = hex!(
 #[test]
 fn verify_test_vector() {
     let vk = VerifyingKey::from_sec1_bytes(IDENTITY, &PUBLIC_KEY).unwrap();
-    let sig = Signature::try_from(&SIG).unwrap();
+    let sig = Signature::from_bytes(&SIG.into()).expect("decoded Signature failed");
     assert!(vk.verify(MSG, &sig).is_ok());
+}
+
+const SIG_DER: [u8; 71] = hex!(
+    "304502201d09df0f021b8c9aa7a437c713f11f9bc5ef49b5f053de912d6a3a8b68d49688022100c8acda282cb69bd4734b9c164925772f8f5cb23b273c222d69a4a49bb40a8701"
+);
+
+#[test]
+#[cfg(feature = "der")]
+fn test_signature_encoding() {
+    let sig = Signature::from_der(&SIG_DER).expect("decoded Signature failed");
+    assert_eq!(sig.r().to_bytes().to_vec(), SIG_DER[4..36].to_vec());
+    assert_eq!(sig.s().to_bytes().to_vec(), SIG_DER[39..71].to_vec());
 }
 
 prop_compose! {
@@ -48,6 +60,16 @@ proptest! {
     #[test]
     fn sign_and_verify(sk in signing_key()) {
         let signature = sk.sign(MSG);
+        prop_assert!(sk.verifying_key().verify(MSG, &signature).is_ok());
+    }
+
+    #[test]
+    #[cfg(feature = "der")]
+    fn sign_and_verify_der(sk in signing_key()) {
+        let signature = sk.sign(MSG);
+        let signature_der = signature.to_der();
+        let signature_der_bytes = signature_der.to_vec();
+        let signature = Signature::from_der(&signature_der_bytes).expect("decoded Signature failed");
         prop_assert!(sk.verifying_key().verify(MSG, &signature).is_ok());
     }
 
