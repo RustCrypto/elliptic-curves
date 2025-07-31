@@ -152,7 +152,7 @@ where
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExapandMsgXmdError {
     /// The domain separation tag is empty.
-    EmptyDST(EmptyDST),
+    DSTError(EmptyDST),
     /// The length in bytes is too large.
     ///
     /// `len_in_bytes` must be at most `255 * HashT::OutputSize`
@@ -162,7 +162,7 @@ pub enum ExapandMsgXmdError {
 impl core::fmt::Display for ExapandMsgXmdError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::EmptyDST(e) => write!(f, "{e}"),
+            Self::DSTError(e) => write!(f, "{e}"),
             Self::OversizedLen => write!(f, "length in bytes is too large"),
         }
     }
@@ -172,7 +172,7 @@ impl core::error::Error for ExapandMsgXmdError {}
 
 impl From<EmptyDST> for ExapandMsgXmdError {
     fn from(e: EmptyDST) -> Self {
-        Self::EmptyDST(e)
+        Self::DSTError(e)
     }
 }
 
