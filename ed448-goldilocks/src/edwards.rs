@@ -11,7 +11,9 @@
 /// If this is a problem, one can use a different isogeny strategy (Decaf)
 pub(crate) mod affine;
 pub(crate) mod extended;
+mod mul;
 mod scalar;
 pub use affine::AffinePoint;
 pub use extended::{CompressedEdwardsY, EdwardsPoint};
+use mul::scalar_mul;
 pub use scalar::{EdwardsScalar, EdwardsScalarBytes, WideEdwardsScalarBytes};

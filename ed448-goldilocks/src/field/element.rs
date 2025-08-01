@@ -246,6 +246,7 @@ impl FieldElement {
         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000262a8",
     )));
     pub const ONE: Self = Self(ConstMontyType::new(&U448::ONE));
+    pub const TWO: Self = Self(ConstMontyType::new(&U448::from_u64(2)));
     pub const TWISTED_D: Self = Self(ConstMontyType::new(&U448::from_be_hex(
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffff6755",
     )));
@@ -264,10 +265,7 @@ impl FieldElement {
     /// Inverts a field element
     /// Previous chain length: 462, new length 460
     pub fn invert(&self) -> Self {
-        const INV_EXP: U448 = U448::from_be_hex(
-            "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffd",
-        );
-        Self(self.0.pow(&INV_EXP))
+        Self(self.0.invert().unwrap_or(ConstMontyType::default()))
     }
 
     pub fn square(&self) -> Self {

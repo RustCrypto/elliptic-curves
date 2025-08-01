@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 
 use super::window::wnaf::LookupTable;
-use crate::EdwardsScalar;
+use crate::Scalar;
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
+use crate::field::CurveWithScalar;
 use subtle::{Choice, ConditionallyNegatable};
 
-pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtendedPoint {
+pub fn variable_base<C: CurveWithScalar>(point: &ExtendedPoint, s: &Scalar<C>) -> ExtensiblePoint {
     let mut result = ExtensiblePoint::IDENTITY;
 
     // Recode Scalar
@@ -28,21 +29,39 @@ pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtendedPoint 
         let mut neg_P = lookup.select(abs_value);
         neg_P.conditional_negate(Choice::from((sign) as u8));
 
-        result = result.add_projective_niels(&neg_P);
+        result = result.to_extended().add_projective_niels(&neg_P);
     }
 
-    result.to_extended()
+    result
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::EdwardsScalar;
     use crate::TWISTED_EDWARDS_BASE_POINT;
-    use crate::curve::scalar_mul::double_and_add;
     use elliptic_curve::bigint::U448;
+    use subtle::ConditionallySelectable;
 
     #[test]
     fn test_scalar_mul() {
+        /// Traditional double and add algorithm
+        fn double_and_add(point: &ExtendedPoint, s_bits: [bool; 448]) -> ExtensiblePoint {
+            let mut result = ExtensiblePoint::IDENTITY;
+
+            // NB, we reverse here, so we are going from MSB to LSB
+            // XXX: Would be great if subtle had a From<u32> for Choice. But maybe that is not it's purpose?
+            for bit in s_bits.into_iter().rev() {
+                result = result.double();
+                result.conditional_assign(
+                    &result.to_extended().add_extended(point),
+                    Choice::from(u8::from(bit)),
+                );
+            }
+
+            result
+        }
+
         // XXX: In the future use known multiples from Sage in bytes form?
         let twisted_point = TWISTED_EDWARDS_BASE_POINT;
         let scalar = EdwardsScalar::new(U448::from_be_hex(
@@ -55,7 +74,7 @@ mod test {
         assert_eq!(got, got2);
 
         // Lets see if this is conserved over the isogenies
-        let edwards_point = twisted_point.to_untwisted();
+        let edwards_point = twisted_point.to_extensible().to_untwisted();
         let got_untwisted_point = edwards_point.scalar_mul(&scalar);
         let expected_untwisted_point = got.to_untwisted();
         assert_eq!(got_untwisted_point, expected_untwisted_point);
@@ -69,9 +88,8 @@ mod test {
         let exp = variable_base(&x, &EdwardsScalar::from(1u8));
         assert!(x == exp);
         // Test that 2 * (P + P) = 4 * P
-        let x_ext = x.to_extensible();
-        let expected_two_x = x_ext.add_extensible(&x_ext).double();
+        let expected_two_x = x.add_extended(&x).double();
         let got = variable_base(&x, &EdwardsScalar::from(4u8));
-        assert!(expected_two_x.to_extended() == got);
+        assert!(expected_two_x == got);
     }
 }

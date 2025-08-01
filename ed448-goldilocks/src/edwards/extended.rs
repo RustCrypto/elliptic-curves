@@ -3,8 +3,8 @@ use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::curve::scalar_mul::variable_base;
-use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
+use super::scalar_mul;
+use crate::curve::twedwards::extensible::ExtensiblePoint as TwistedExtensiblePoint;
 use crate::field::FieldElement;
 use crate::*;
 use elliptic_curve::{
@@ -543,39 +543,7 @@ impl EdwardsPoint {
 
     /// Generic scalar multiplication to compute s*P
     pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
-        // Compute floor(s/4)
-        let mut scalar_div_four = *scalar;
-        scalar_div_four.div_by_four();
-
-        // Use isogeny and dual isogeny to compute phi^-1((s/4) * phi(P))
-        let partial_result = variable_base(&self.to_twisted(), &scalar_div_four).to_untwisted();
-        // Add partial result to (scalar mod 4) * P
-        partial_result.add(&self.scalar_mod_four(scalar))
-    }
-
-    /// Returns (scalar mod 4) * P in constant time
-    pub(crate) fn scalar_mod_four(&self, scalar: &EdwardsScalar) -> Self {
-        // Compute compute (scalar mod 4)
-        let s_mod_four = scalar[0] & 3;
-
-        // Compute all possible values of (scalar mod 4) * P
-        let zero_p = EdwardsPoint::IDENTITY;
-        let one_p = self;
-        let two_p = one_p.double();
-        let three_p = two_p.add(self);
-
-        // Under the reasonable assumption that `==` is constant time
-        // Then the whole function is constant time.
-        // This should be cheaper than calling double_and_add or a scalar mul operation
-        // as the number of possibilities are so small.
-        // XXX: This claim has not been tested (although it sounds intuitive to me)
-        let mut result = EdwardsPoint::IDENTITY;
-        result.conditional_assign(&zero_p, Choice::from((s_mod_four == 0) as u8));
-        result.conditional_assign(one_p, Choice::from((s_mod_four == 1) as u8));
-        result.conditional_assign(&two_p, Choice::from((s_mod_four == 2) as u8));
-        result.conditional_assign(&three_p, Choice::from((s_mod_four == 3) as u8));
-
-        result
+        scalar_mul(self, scalar)
     }
 
     /// Standard compression; store Y and sign of X
@@ -597,41 +565,41 @@ impl EdwardsPoint {
     }
 
     /// Add two points
-    //https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf (3.1)
-    // These formulas are unified, so for now we can use it for doubling. Will refactor later for speed
+    // (3.1) https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
     pub fn add(&self, other: &EdwardsPoint) -> Self {
-        let aXX = self.X * other.X; // aX1X2
-        let dTT = FieldElement::EDWARDS_D * self.T * other.T; // dT1T2
-        let ZZ = self.Z * other.Z; // Z1Z2
-        let YY = self.Y * other.Y;
-
-        let X = {
-            let x_1 = (self.X * other.Y) + (self.Y * other.X);
-            let x_2 = ZZ - dTT;
-            x_1 * x_2
-        };
-        let Y = {
-            let y_1 = YY - aXX;
-            let y_2 = ZZ + dTT;
-            y_1 * y_2
-        };
-
-        let T = {
-            let t_1 = YY - aXX;
-            let t_2 = (self.X * other.Y) + (self.Y * other.X);
-            t_1 * t_2
-        };
-
-        let Z = { (ZZ - dTT) * (ZZ + dTT) };
-
-        EdwardsPoint { X, Y, Z, T }
+        let A = self.X * other.X;
+        let B = self.Y * other.Y;
+        let C = self.T * other.T * FieldElement::EDWARDS_D;
+        let D = self.Z * other.Z;
+        let E = (self.X + self.Y) * (other.X + other.Y) - A - B;
+        let F = D - C;
+        let G = D + C;
+        let H = B - A;
+        Self {
+            X: E * F,
+            Y: G * H,
+            Z: F * G,
+            T: E * H,
+        }
     }
 
     /// Double this point
-    // XXX: See comment on addition, the formula is unified, so this will do for now
-    //https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf (3.1)
+    // (3.3) https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
     pub fn double(&self) -> Self {
-        self.add(self)
+        let A = self.X.square();
+        let B = self.Y.square();
+        let C = self.Z.square().double();
+        let D = A;
+        let E = (self.X + self.Y).square() - A - B;
+        let G = D + B;
+        let F = G - C;
+        let H = D - B;
+        Self {
+            X: E * F,
+            Y: G * H,
+            Z: F * G,
+            T: E * H,
+        }
     }
 
     /// Check if this point is on the curve
@@ -664,7 +632,7 @@ impl EdwardsPoint {
     /// Edwards_Isogeny is derived from the doubling formula
     /// XXX: There is a duplicate method in the twisted edwards module to compute the dual isogeny
     /// XXX: Not much point trying to make it generic I think. So what we can do is optimise each respective isogeny method for a=1 or a = -1 (currently, I just made it really slow and simple)
-    fn edwards_isogeny(&self, a: FieldElement) -> TwistedExtendedPoint {
+    fn edwards_isogeny(&self, a: FieldElement) -> TwistedExtensiblePoint {
         // Convert to affine now, then derive extended version later
         let affine = self.to_affine();
         let x = affine.x;
@@ -681,15 +649,16 @@ impl EdwardsPoint {
         let y_denom = (FieldElement::ONE + FieldElement::ONE) - y.square() - (a * x.square());
         let new_y = y_numerator * y_denom.invert();
 
-        TwistedExtendedPoint {
+        TwistedExtensiblePoint {
             X: new_x,
             Y: new_y,
             Z: FieldElement::ONE,
-            T: new_x * new_y,
+            T1: new_x,
+            T2: new_y,
         }
     }
 
-    pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
+    pub(crate) fn to_twisted(self) -> TwistedExtensiblePoint {
         self.edwards_isogeny(FieldElement::ONE)
     }
 
