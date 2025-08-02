@@ -49,7 +49,7 @@ where
 
         // `255 * <b_in_bytes>` can not exceed `u16::MAX`
         if usize::from(len_in_bytes.get()) > 255 * b_in_bytes {
-            return Err(ExpandMsgXmdError::OversizedLen);
+            return Err(ExpandMsgXmdError::Length);
         }
 
         let ell = u8::try_from(usize::from(len_in_bytes.get()).div_ceil(b_in_bytes))
@@ -155,14 +155,14 @@ pub enum ExpandMsgXmdError {
     /// The length in bytes is too large.
     ///
     /// `len_in_bytes` must be at most `255 * HashT::OutputSize`
-    OversizedLen,
+    Length,
 }
 
 impl core::fmt::Display for ExpandMsgXmdError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Dst(e) => write!(f, "{e}"),
-            Self::OversizedLen => write!(f, "`len_in_bytes` is too large"),
+            Self::Length => write!(f, "`len_in_bytes` is too large"),
         }
     }
 }
