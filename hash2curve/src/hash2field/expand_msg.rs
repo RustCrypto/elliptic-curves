@@ -62,13 +62,13 @@ pub(crate) enum Domain<'a, L: ArraySize> {
 }
 
 impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
-    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDST>
+    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDst>
     where
         X: Default + ExtendableOutput + Update,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(EmptyDST)
+            Err(EmptyDst)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
             let mut data = Array::<u8, L>::default();
             let mut hash = X::default();
@@ -86,13 +86,13 @@ impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
         }
     }
 
-    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDST>
+    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDst>
     where
         X: Digest<OutputSize = L>,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(EmptyDST)
+            Err(EmptyDst)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
             Ok(Self::Hashed({
                 let mut hash = X::new();
@@ -153,12 +153,12 @@ impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
 
 /// Error when an empty domain separation tag is used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EmptyDST;
+pub struct EmptyDst;
 
-impl core::fmt::Display for EmptyDST {
+impl core::fmt::Display for EmptyDst {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Empty domain separation tag")
     }
 }
 
-impl core::error::Error for EmptyDST {}
+impl core::error::Error for EmptyDst {}
