@@ -8,8 +8,6 @@ use core::num::NonZero;
 use digest::{
     Digest, ExtendableOutput, Update, XofReader,
     array::{Array, ArraySize},
-    consts::{True, U256},
-    typenum::IsLess,
 };
 
 /// Salt when the DST is too long
@@ -61,7 +59,7 @@ pub(crate) enum Domain<'a, L: ArraySize> {
     Array(&'a [&'a [u8]]),
 }
 
-impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
+impl<'a, L: ArraySize> Domain<'a, L> {
     pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, DstError>
     where
         X: Default + ExtendableOutput + Update,

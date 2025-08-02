@@ -10,8 +10,6 @@ use digest::{
         typenum::{IsGreaterOrEqual, IsLessOrEqual, Prod, True, U2, Unsigned},
     },
     block_api::BlockSizeUser,
-    consts::U256,
-    typenum::IsLess,
 };
 
 /// Implements `expand_message_xof` via the [`ExpandMsg`] trait:
@@ -31,7 +29,7 @@ where
     HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
     // The number of bits output by `HashT` MUST be at most `HashT::BlockSize`.
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.1-4
-    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True> + IsLess<U256, Output = True>,
+    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
     // The number of bits output by `HashT` MUST be at least `K * 2`.
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.1-2.1
     K: Mul<U2>,
@@ -105,7 +103,7 @@ where
 impl<HashT> ExpanderXmd<'_, HashT>
 where
     HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
-    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True> + IsLess<U256, Output = True>,
+    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
 {
     fn next(&mut self) -> bool {
         if self.index < self.ell {
@@ -134,7 +132,7 @@ where
 impl<HashT> Expander for ExpanderXmd<'_, HashT>
 where
     HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
-    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True> + IsLess<U256, Output = True>,
+    HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
 {
     fn fill_bytes(&mut self, okm: &mut [u8]) {
         for b in okm {
@@ -180,7 +178,7 @@ mod test {
     use super::*;
     use elliptic_curve::array::{
         ArraySize,
-        typenum::{IsLess, U4, U8, U32, U128, U256, U65536},
+        typenum::{IsLess, U4, U8, U32, U128, U65536},
     };
     use hex_literal::hex;
     use sha2::Sha256;
@@ -192,7 +190,6 @@ mod test {
         bytes: &[u8],
     ) where
         HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
-        HashT::OutputSize: IsLess<U256, Output = True>,
     {
         let block = HashT::BlockSize::USIZE;
         assert_eq!(
@@ -230,7 +227,7 @@ mod test {
         where
             HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
             HashT::OutputSize:
-                IsLessOrEqual<HashT::BlockSize, Output = True> + IsLess<U256, Output = True>,
+                IsLessOrEqual<HashT::BlockSize, Output = True>,
             HashT::OutputSize: IsGreaterOrEqual<U8, Output = True>,
             L: ArraySize + IsLess<U65536, Output = True>,
         {

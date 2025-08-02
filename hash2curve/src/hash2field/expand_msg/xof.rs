@@ -6,10 +6,8 @@ use digest::{
     CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader,
     array::{
         ArraySize,
-        typenum::{Prod, True, U2},
+        typenum::{IsGreaterOrEqual, Prod, True, U2},
     },
-    consts::U256,
-    typenum::{IsGreaterOrEqual, IsLess},
 };
 
 /// Implements `expand_message_xof` via the [`ExpandMsg`] trait:
@@ -42,7 +40,7 @@ where
     HashT: Default + ExtendableOutput + Update + HashMarker,
     // If DST is larger than 255 bytes, the length of the computed DST is calculated by `K * 2`.
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.1-2.1
-    K: Mul<U2, Output: ArraySize + IsLess<U256, Output = True>>,
+    K: Mul<U2, Output: ArraySize>,
     // The collision resistance of `HashT` MUST be at least `K` bits.
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.2-2.1
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
