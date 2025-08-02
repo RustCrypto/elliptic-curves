@@ -258,13 +258,13 @@ where
 
 impl<C> Group for ProjectivePoint<C>
 where
-    Self: Double,
     C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
 {
     type Scalar = Scalar<C>;
 
     fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
-        Ok(Self::GENERATOR * <Scalar<C> as Field>::try_from_rng(rng)?)
+        AffinePoint::try_from_rng(rng).map(Self::from)
     }
 
     fn identity() -> Self {
@@ -311,8 +311,8 @@ where
 
 impl<C> CurveGroup for ProjectivePoint<C>
 where
-    Self: Double,
     C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
 {
     type AffineRepr = AffinePoint<C>;
 
@@ -331,8 +331,8 @@ where
 
 impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
-    Self: Double,
     C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
 {
     type Output = [<Self as CurveGroup>::AffineRepr; N];
 
@@ -348,8 +348,8 @@ where
 #[cfg(feature = "alloc")]
 impl<C> BatchNormalize<[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
-    Self: Double,
     C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
 {
     type Output = Vec<<Self as CurveGroup>::AffineRepr>;
 
@@ -400,16 +400,16 @@ where
 
 impl<C> LinearCombination<[(Self, Scalar<C>)]> for ProjectivePoint<C>
 where
-    Self: Double,
     C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
 {
     // TODO(tarcieri): optimized implementation
 }
 
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
 where
-    Self: Double,
     C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
 {
     // TODO(tarcieri): optimized implementation
 }

@@ -174,9 +174,14 @@ impl Group for DecafPoint {
     where
         R: TryRngCore + ?Sized,
     {
-        let mut uniform_bytes = [0u8; 112];
-        rng.try_fill_bytes(&mut uniform_bytes)?;
-        Ok(Self::from_uniform_bytes(&uniform_bytes))
+        let mut bytes = DecafPointRepr::default();
+
+        loop {
+            rng.try_fill_bytes(bytes.as_mut())?;
+            if let Some(point) = Self::from_bytes(&bytes).into() {
+                return Ok(point);
+            }
+        }
     }
 
     fn identity() -> Self {

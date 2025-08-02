@@ -341,9 +341,14 @@ impl Group for EdwardsPoint {
     where
         R: TryRngCore + ?Sized,
     {
-        let mut bytes = [0u8; 32];
-        rng.try_fill_bytes(&mut bytes)?;
-        Ok(Self::hash_with_defaults(&bytes))
+        let mut bytes = Array::default();
+
+        loop {
+            rng.try_fill_bytes(bytes.as_mut())?;
+            if let Some(point) = Self::from_bytes(&bytes).into() {
+                return Ok(point);
+            }
+        }
     }
 
     fn identity() -> Self {

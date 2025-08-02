@@ -9,6 +9,7 @@ use elliptic_curve::{
     Error, Result,
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
+    rand_core::TryRngCore,
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -73,6 +74,22 @@ impl AffinePoint {
         ]),
         infinity: 0,
     };
+
+    /// Generate a random [`AffinePoint`].
+    pub fn try_from_rng<R: TryRngCore + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        let mut bytes = FieldBytes::default();
+        let mut sign = 0;
+
+        loop {
+            rng.try_fill_bytes(&mut bytes)?;
+            rng.try_fill_bytes(core::array::from_mut(&mut sign))?;
+            if let Some(point) = Self::decompress(&bytes, Choice::from(sign & 1)).into_option() {
+                return Ok(point);
+            }
+        }
+    }
 }
 
 impl AffinePoint {
