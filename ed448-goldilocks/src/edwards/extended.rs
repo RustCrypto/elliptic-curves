@@ -344,8 +344,11 @@ impl Group for EdwardsPoint {
         let mut bytes = Array::default();
 
         loop {
-            rng.try_fill_bytes(bytes.as_mut())?;
-            if let Some(point) = Self::from_bytes(&bytes).into() {
+            rng.try_fill_bytes(&mut bytes)?;
+            if let Some(point) = Self::from_bytes(&bytes)
+                .into_option()
+                .filter(|&point| point != Self::IDENTITY)
+            {
                 return Ok(point);
             }
         }
