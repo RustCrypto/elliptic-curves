@@ -226,8 +226,7 @@ mod test {
         fn assert<HashT, L>(&self, dst: &'static [u8], domain: &Domain<'_, HashT::OutputSize>)
         where
             HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
-            HashT::OutputSize:
-                IsLessOrEqual<HashT::BlockSize, Output = True>,
+            HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
             HashT::OutputSize: IsGreaterOrEqual<U8, Output = True>,
             L: ArraySize + IsLess<U65536, Output = True>,
         {
