@@ -174,8 +174,13 @@ impl core::fmt::Display for DstError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             DstError::Empty => write!(f, "Empty domain separation tag"),
-            DstError::XmdHash => write!(f, "XMD hash function output size is too large to hash the DST"),
-            DstError::XofSecurityLevel => write!(f, "XOF target security level in bytes is too large "),
+            DstError::XmdHash => write!(
+                f,
+                "XMD hash function output size is too large to hash the DST"
+            ),
+            DstError::XofSecurityLevel => {
+                write!(f, "XOF target security level in bytes is too large ")
+            }
         }
     }
 }

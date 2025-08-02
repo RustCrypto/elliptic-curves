@@ -47,7 +47,7 @@ pub trait GroupDigest: MapToCurve {
     /// > uniformly random in G: the set of possible outputs of
     /// > encode_to_curve is only a fraction of the points in G, and some
     /// > points in this set are more likely to be output than others.
-    /// 
+    ///
     /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
     ///
     /// # Errors
@@ -68,7 +68,7 @@ pub trait GroupDigest: MapToCurve {
     /// and returns a scalar.
     ///   
     /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
-    /// 
+    ///
     /// # Errors
     ///
     /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
