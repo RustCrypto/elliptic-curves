@@ -162,7 +162,7 @@ impl core::fmt::Display for ExpandMsgXmdError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::Dst(e) => write!(f, "{e}"),
-            Self::OversizedLen => write!(f, "length in bytes is too large"),
+            Self::OversizedLen => write!(f, "`len_in_bytes` is too large"),
         }
     }
 }
