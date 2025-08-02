@@ -3,9 +3,9 @@
 #![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
 
 use elliptic_curve::{
-    BatchNormalize,
+    BatchNormalize, Group,
     group::{GroupEncoding, ff::PrimeField},
-    ops::ReduceNonZero,
+    ops::{LinearCombination, Reduce, ReduceNonZero},
     point::NonIdentity,
     sec1::{self, ToEncodedPoint},
 };
@@ -13,7 +13,7 @@ use p256::{
     AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };
-use primeorder::{Double, test_projective_arithmetic};
+use primeorder::test_projective_arithmetic;
 use proptest::{prelude::any, prop_compose, proptest};
 
 test_projective_arithmetic!(
@@ -33,6 +33,18 @@ fn projective_identity_to_bytes() {
 prop_compose! {
     fn non_identity()(bytes in any::<[u8; 32]>()) -> NonIdentity<ProjectivePoint> {
         NonIdentity::mul_by_generator(&NonZeroScalar::reduce_nonzero_bytes(&bytes.into()))
+    }
+}
+
+prop_compose! {
+    fn projective()(bytes in any::<[u8; 32]>()) -> ProjectivePoint {
+        ProjectivePoint::mul_by_generator(&Scalar::reduce_bytes(&bytes.into()))
+    }
+}
+
+prop_compose! {
+    fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
+        Scalar::reduce_bytes(&bytes.into())
     }
 }
 
@@ -65,5 +77,30 @@ proptest! {
         for (point, affine_point) in points.into_iter().zip(affine_points) {
             assert_eq!(affine_point, point.to_affine());
         }
+    }
+
+    #[test]
+    fn lincomb(
+        p1 in projective(),
+        s1 in scalar(),
+        p2 in projective(),
+        s2 in scalar(),
+    ) {
+        let reference = p1 * s1 + p2 * s2;
+        let test = ProjectivePoint::lincomb(&[(p1, s1), (p2, s2)]);
+        assert_eq!(reference, test);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn lincomb_alloc(
+        p1 in projective(),
+        s1 in scalar(),
+        p2 in projective(),
+        s2 in scalar(),
+    ) {
+        let reference = p1 * s1 + p2 * s2;
+        let test = ProjectivePoint::lincomb(vec![(p1, s1), (p2, s2)].as_slice());
+        assert_eq!(reference, test);
     }
 }

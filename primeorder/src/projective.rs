@@ -12,7 +12,7 @@ use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, FieldBytes, FieldBytesSize, PrimeField, PublicKey, Result,
     Scalar,
     array::ArraySize,
-    bigint::ArrayEncoding,
+    bigint::{ArrayEncoding, ByteArray},
     group::{
         Group, GroupEncoding,
         prime::{PrimeCurve, PrimeGroup},
@@ -109,46 +109,11 @@ where
     where
         Self: Double,
     {
-        let k = Into::<C::Uint>::into(*k).to_le_byte_array();
-
-        let mut pc = [Self::default(); 16];
-        pc[0] = Self::IDENTITY;
-        pc[1] = *self;
-
-        for i in 2..16 {
-            pc[i] = if i % 2 == 0 {
-                Double::double(&pc[i / 2])
-            } else {
-                pc[i - 1].add(self)
-            };
-        }
-
-        let mut q = Self::IDENTITY;
-        let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
-
-        loop {
-            let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
-
-            let mut t = ProjectivePoint::IDENTITY;
-
-            for i in 1..16 {
-                t.conditional_assign(
-                    &pc[i],
-                    Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
-                );
-            }
-
-            q = q.add(&t);
-
-            if pos == 0 {
-                break;
-            }
-
-            q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
-            pos -= 4;
-        }
-
-        q
+        lincomb(
+            &[(*self, *k)],
+            &mut [ByteArray::<C::Uint>::default()],
+            &mut [[ProjectivePoint::default(); 16]],
+        )
     }
 }
 
@@ -403,7 +368,15 @@ where
     Self: Double,
     C: PrimeCurveParams,
 {
-    // TODO(tarcieri): optimized implementation
+    #[cfg(feature = "alloc")]
+    fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
+        let mut ks: Vec<_> = core::iter::repeat_with(ByteArray::<C::Uint>::default)
+            .take(points_and_scalars.len())
+            .collect();
+        let mut pcs = vec![[Self::default(); 16]; points_and_scalars.len()];
+
+        lincomb(points_and_scalars, &mut ks, &mut pcs)
+    }
 }
 
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
@@ -411,7 +384,64 @@ where
     Self: Double,
     C: PrimeCurveParams,
 {
-    // TODO(tarcieri): optimized implementation
+    fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
+        let mut ks: [_; N] = core::array::from_fn(|_| ByteArray::<C::Uint>::default());
+        let mut pcs = [[Self::default(); 16]; N];
+
+        lincomb(points_and_scalars, &mut ks, &mut pcs)
+    }
+}
+
+fn lincomb<C: PrimeCurveParams>(
+    points_and_scalars: &[(ProjectivePoint<C>, Scalar<C>)],
+    ks: &mut [ByteArray<C::Uint>],
+    pcs: &mut [[ProjectivePoint<C>; 16]],
+) -> ProjectivePoint<C> {
+    for ((_, scalar), k) in points_and_scalars.iter().zip(ks.iter_mut()) {
+        *k = Into::<C::Uint>::into(*scalar).to_le_byte_array();
+    }
+
+    for ((point, _), pc) in points_and_scalars.iter().zip(pcs.iter_mut()) {
+        pc[0] = ProjectivePoint::IDENTITY;
+        pc[1] = *point;
+
+        for i in 2..16 {
+            pc[i] = if i % 2 == 0 {
+                Double::double(&pc[i / 2])
+            } else {
+                pc[i - 1].add(point)
+            };
+        }
+    }
+
+    let mut q = ProjectivePoint::IDENTITY;
+    let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
+
+    loop {
+        for (k, pc) in ks.iter().zip(pcs.iter()) {
+            let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
+
+            let mut t = ProjectivePoint::IDENTITY;
+
+            for i in 1..16 {
+                t.conditional_assign(
+                    &pc[i],
+                    Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
+                );
+            }
+
+            q = q.add(&t);
+        }
+
+        if pos == 0 {
+            break;
+        }
+
+        q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
+        pos -= 4;
+    }
+
+    q
 }
 
 impl<C> PrimeGroup for ProjectivePoint<C>
