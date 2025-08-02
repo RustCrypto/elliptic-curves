@@ -8,11 +8,10 @@ use core::num::NonZeroU16;
 
 pub use expand_msg::{xmd::*, xof::*, *};
 
-use elliptic_curve::array::{
+use digest::array::{
     Array, ArraySize,
     typenum::{NonZero, Unsigned},
 };
-use elliptic_curve::{Error, Result};
 
 /// The trait for helping to convert to a field element.
 pub trait FromOkm {
@@ -28,26 +27,23 @@ pub trait FromOkm {
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-hash_to_field-implementatio>
 ///
 /// # Errors
-/// - `len_in_bytes > u16::MAX`
-/// - See implementors of [`ExpandMsg`] for additional errors:
-///   - [`ExpandMsgXmd`]
-///   - [`ExpandMsgXof`]
 ///
-/// `len_in_bytes = T::Length * out.len()`
-///
-/// [`ExpandMsgXmd`]: crate::hash2field::ExpandMsgXmd
-/// [`ExpandMsgXof`]: crate::hash2field::ExpandMsgXof
+/// Returns an error if the [`ExpandMsg`] implementation fails.
 #[doc(hidden)]
-pub fn hash_to_field<const N: usize, E, K, T>(data: &[&[u8]], domain: &[&[u8]]) -> Result<[T; N]>
+pub fn hash_to_field<const N: usize, E, K, T>(
+    data: &[&[u8]],
+    domain: &[&[u8]],
+) -> Result<[T; N], E::Error>
 where
     E: ExpandMsg<K>,
     T: FromOkm + Default,
 {
-    let len_in_bytes = T::Length::USIZE
-        .checked_mul(N)
-        .and_then(|len| len.try_into().ok())
-        .and_then(NonZeroU16::new)
-        .ok_or(Error)?;
+    // Completely degenerate case; `N` and `T::Length` would need to be extremely large.
+    const { assert!(T::Length::USIZE * N <= u16::MAX as usize) }
+    let Some(len_in_bytes) = NonZeroU16::new(T::Length::U16 * N as u16) else {
+        // Since `T::Length: NonZero`, only `N = 0` can lead to this case.
+        return Ok(core::array::from_fn(|_| T::default()));
+    };
     let mut tmp = Array::<u8, <T as FromOkm>::Length>::default();
     let mut expander = E::expand_message(data, domain, len_in_bytes)?;
     Ok(core::array::from_fn(|_| {

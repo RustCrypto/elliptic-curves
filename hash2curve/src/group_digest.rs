@@ -1,8 +1,8 @@
 //! Traits for handling hash to curve.
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
-use elliptic_curve::array::typenum::Unsigned;
-use elliptic_curve::{ProjectivePoint, Result};
+use digest::array::typenum::Unsigned;
+use elliptic_curve::ProjectivePoint;
 
 /// Hash arbitrary byte sequences to a valid group element.
 pub trait GroupDigest: MapToCurve {
@@ -23,16 +23,10 @@ pub trait GroupDigest: MapToCurve {
     /// > hash function is used.
     ///
     /// # Errors
-    /// - `len_in_bytes > u16::MAX`
-    /// - See implementors of [`ExpandMsg`] for additional errors:
-    ///   - [`ExpandMsgXmd`]
-    ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`
-    ///
-    /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::ExpandMsgXof
-    fn hash_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>>
+    /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
+    /// and [`crate::ExpandMsgXof`] for examples.
+    fn hash_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
         X: ExpandMsg<Self::K>,
     {
@@ -53,16 +47,10 @@ pub trait GroupDigest: MapToCurve {
     /// > points in this set are more likely to be output than others.
     ///
     /// # Errors
-    /// - `len_in_bytes > u16::MAX`
-    /// - See implementors of [`ExpandMsg`] for additional errors:
-    ///   - [`ExpandMsgXmd`]
-    ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::FieldElement as FromOkm>::Length`
-    ///
-    /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::ExpandMsgXof
-    fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>>
+    /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
+    /// and [`crate::ExpandMsgXof`] for examples.
+    fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
         X: ExpandMsg<Self::K>,
     {
@@ -76,16 +64,10 @@ pub trait GroupDigest: MapToCurve {
     /// and returns a scalar.
     ///
     /// # Errors
-    /// - `len_in_bytes > u16::MAX`
-    /// - See implementors of [`ExpandMsg`] for additional errors:
-    ///   - [`ExpandMsgXmd`]
-    ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::Scalar as FromOkm>::Length`
-    ///
-    /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::ExpandMsgXof
-    fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar>
+    /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
+    /// and [`crate::ExpandMsgXof`] for examples.
+    fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar, X::Error>
     where
         X: ExpandMsg<Self::K>,
     {
