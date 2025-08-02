@@ -22,6 +22,8 @@ pub trait GroupDigest: MapToCurve {
     /// > oracle returning points in G assuming a cryptographically secure
     /// > hash function is used.
     ///
+    /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`.
+    ///
     /// # Errors
     ///
     /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
@@ -45,6 +47,8 @@ pub trait GroupDigest: MapToCurve {
     /// > uniformly random in G: the set of possible outputs of
     /// > encode_to_curve is only a fraction of the points in G, and some
     /// > points in this set are more likely to be output than others.
+    /// 
+    /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
     ///
     /// # Errors
     ///
@@ -62,7 +66,9 @@ pub trait GroupDigest: MapToCurve {
     /// Computes the hash to field routine according to
     /// <https://www.rfc-editor.org/rfc/rfc9380.html#section-5-4>
     /// and returns a scalar.
-    ///
+    ///   
+    /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
+    /// 
     /// # Errors
     ///
     /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
