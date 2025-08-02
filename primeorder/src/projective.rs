@@ -4,6 +4,7 @@
 
 use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
 use core::{
+    array,
     borrow::Borrow,
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -109,11 +110,10 @@ where
     where
         Self: Double,
     {
-        lincomb(
-            &[(*self, *k)],
-            &mut [ByteArray::<C::Uint>::default()],
-            &mut [[ProjectivePoint::default(); 16]],
-        )
+        let mut k = Into::<C::Uint>::into(*k).to_le_byte_array();
+        let mut pc = LookupTable::new(*self);
+
+        lincomb(array::from_mut(&mut k), array::from_mut(&mut pc))
     }
 }
 
@@ -370,12 +370,17 @@ where
 {
     #[cfg(feature = "alloc")]
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
-        let mut ks: Vec<_> = core::iter::repeat_with(ByteArray::<C::Uint>::default)
-            .take(points_and_scalars.len())
-            .collect();
-        let mut pcs = vec![[Self::default(); 16]; points_and_scalars.len()];
+        let (mut ks, mut pcs): (Vec<_>, Vec<_>) = points_and_scalars
+            .iter()
+            .map(|(point, scalar)| {
+                (
+                    Into::<C::Uint>::into(*scalar).to_le_byte_array(),
+                    LookupTable::new(*point),
+                )
+            })
+            .unzip();
 
-        lincomb(points_and_scalars, &mut ks, &mut pcs)
+        lincomb(&mut ks, &mut pcs)
     }
 }
 
@@ -385,52 +390,26 @@ where
     C: PrimeCurveParams,
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
-        let mut ks: [_; N] = core::array::from_fn(|_| ByteArray::<C::Uint>::default());
-        let mut pcs = [[Self::default(); 16]; N];
+        let mut ks: [_; N] = array::from_fn(|index| {
+            Into::<C::Uint>::into(points_and_scalars[index].1).to_le_byte_array()
+        });
+        let mut pcs: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
 
-        lincomb(points_and_scalars, &mut ks, &mut pcs)
+        lincomb(&mut ks, &mut pcs)
     }
 }
 
 fn lincomb<C: PrimeCurveParams>(
-    points_and_scalars: &[(ProjectivePoint<C>, Scalar<C>)],
     ks: &mut [ByteArray<C::Uint>],
-    pcs: &mut [[ProjectivePoint<C>; 16]],
+    pcs: &mut [LookupTable<C>],
 ) -> ProjectivePoint<C> {
-    for ((_, scalar), k) in points_and_scalars.iter().zip(ks.iter_mut()) {
-        *k = Into::<C::Uint>::into(*scalar).to_le_byte_array();
-    }
-
-    for ((point, _), pc) in points_and_scalars.iter().zip(pcs.iter_mut()) {
-        pc[0] = ProjectivePoint::IDENTITY;
-        pc[1] = *point;
-
-        for i in 2..16 {
-            pc[i] = if i % 2 == 0 {
-                Double::double(&pc[i / 2])
-            } else {
-                pc[i - 1].add(point)
-            };
-        }
-    }
-
     let mut q = ProjectivePoint::IDENTITY;
     let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
 
     loop {
         for (k, pc) in ks.iter().zip(pcs.iter()) {
             let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
-
-            let mut t = ProjectivePoint::IDENTITY;
-
-            for i in 1..16 {
-                t.conditional_assign(
-                    &pc[i],
-                    Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
-                );
-            }
-
-            q = q.add(&t);
+            q = q.add(&pc.select(slot));
         }
 
         if pos == 0 {
@@ -442,6 +421,39 @@ fn lincomb<C: PrimeCurveParams>(
     }
 
     q
+}
+
+struct LookupTable<C: PrimeCurveParams>([ProjectivePoint<C>; 16]);
+
+impl<C: PrimeCurveParams> LookupTable<C> {
+    fn new(point: ProjectivePoint<C>) -> Self {
+        let mut pc = [ProjectivePoint::default(); 16];
+        pc[0] = ProjectivePoint::IDENTITY;
+        pc[1] = point;
+
+        for i in 2..16 {
+            pc[i] = if i % 2 == 0 {
+                Double::double(&pc[i / 2])
+            } else {
+                pc[i - 1].add(point)
+            };
+        }
+
+        Self(pc)
+    }
+
+    fn select(&self, slot: u8) -> ProjectivePoint<C> {
+        let mut t = ProjectivePoint::IDENTITY;
+
+        for i in 1..16 {
+            t.conditional_assign(
+                &self.0[i],
+                Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
+            );
+        }
+
+        t
+    }
 }
 
 impl<C> PrimeGroup for ProjectivePoint<C>
