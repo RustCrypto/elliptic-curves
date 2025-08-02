@@ -15,7 +15,7 @@ use digest::{
 ///
 /// # Errors
 ///
-/// `expand_message` can return an [`EmptyDST`] error.
+/// `expand_message` can return a [`DstError`] error.
 pub struct ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
