@@ -62,14 +62,17 @@ pub(crate) enum Domain<'a, L: ArraySize> {
 }
 
 impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
-    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDst>
+    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, DstError>
     where
         X: Default + ExtendableOutput + Update,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(EmptyDst)
+            Err(DstError::Empty)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
+            if L::USIZE > u8::MAX.into() {
+                return Err(DstError::XofSecurityLevel);
+            }
             let mut data = Array::<u8, L>::default();
             let mut hash = X::default();
             hash.update(OVERSIZE_DST_SALT);
@@ -86,14 +89,17 @@ impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
         }
     }
 
-    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, EmptyDst>
+    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, DstError>
     where
         X: Digest<OutputSize = L>,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(EmptyDst)
+            Err(DstError::Empty)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
+            if L::USIZE > u8::MAX.into() {
+                return Err(DstError::XmdHash);
+            }
             Ok(Self::Hashed({
                 let mut hash = X::new();
                 hash.update(OVERSIZE_DST_SALT);
@@ -153,12 +159,25 @@ impl<'a, L: ArraySize + IsLess<U256, Output = True>> Domain<'a, L> {
 
 /// Error when an empty domain separation tag is used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct EmptyDst;
+pub enum DstError {
+    /// Empty domain separation tag.
+    Empty,
+    /// The domain separation tag is too long and needs to be hashed, but the hash function
+    /// selected has an output size too large (greater than `255`).
+    XmdHash,
+    /// The domain separation tag is too long and needs to be hashed, but the chosen `K` (target
+    /// security level in bytes) is too large (greater than `127`),
+    XofSecurityLevel,
+}
 
-impl core::fmt::Display for EmptyDst {
+impl core::fmt::Display for DstError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Empty domain separation tag")
+        match self {
+            DstError::Empty => write!(f, "Empty domain separation tag"),
+            DstError::XmdHash => write!(f, "XMD hash function output size is too large to hash the DST"),
+            DstError::XofSecurityLevel => write!(f, "XOF target security level in bytes is too large "),
+        }
     }
 }
 
-impl core::error::Error for EmptyDst {}
+impl core::error::Error for DstError {}

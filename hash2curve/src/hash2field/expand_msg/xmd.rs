@@ -2,7 +2,7 @@
 
 use core::{marker::PhantomData, num::NonZero, ops::Mul};
 
-use super::{Domain, EmptyDst, ExpandMsg, Expander};
+use super::{Domain, DstError, ExpandMsg, Expander};
 use digest::{
     FixedOutput, HashMarker,
     array::{
@@ -151,7 +151,7 @@ where
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpandMsgXmdError {
     /// The domain separation tag is empty.
-    Dst(EmptyDst),
+    Dst(DstError),
     /// The length in bytes is too large.
     ///
     /// `len_in_bytes` must be at most `255 * HashT::OutputSize`
@@ -169,8 +169,8 @@ impl core::fmt::Display for ExpandMsgXmdError {
 
 impl core::error::Error for ExpandMsgXmdError {}
 
-impl From<EmptyDst> for ExpandMsgXmdError {
-    fn from(e: EmptyDst) -> Self {
+impl From<DstError> for ExpandMsgXmdError {
+    fn from(e: DstError) -> Self {
         Self::Dst(e)
     }
 }

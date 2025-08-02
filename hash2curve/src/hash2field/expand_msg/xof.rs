@@ -1,6 +1,6 @@
 //! `expand_message_xof` for the `ExpandMsg` trait
 
-use super::{Domain, EmptyDst, ExpandMsg, Expander};
+use super::{Domain, DstError, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
 use digest::{
     CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader,
@@ -48,13 +48,13 @@ where
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
 {
     type Expander<'dst> = Self;
-    type Error = EmptyDst;
+    type Error = DstError;
 
     fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>, EmptyDst> {
+    ) -> Result<Self::Expander<'dst>, DstError> {
         let len_in_bytes = len_in_bytes.get();
 
         let domain = Domain::<Prod<K, U2>>::xof::<HashT>(dst)?;
