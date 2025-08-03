@@ -145,8 +145,12 @@ version = "0.7.0-pre"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
+ "hex-literal",
  "primefield",
  "primeorder",
+ "proptest",
+ "rand_chacha",
+ "rand_core",
  "sha2",
 ]
 
