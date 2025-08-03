@@ -39,14 +39,13 @@ where
     T: FromOkm + Default,
 {
     // Completely degenerate case; `N` and `T::Length` would need to be extremely large.
-    const {
+    let len_in_bytes = const {
         assert!(
             T::Length::USIZE.saturating_mul(N) <= u16::MAX as usize,
             "The product of `T::Length` and `N` must not exceed `u16::MAX`."
         );
-        assert!(N > 0, "N must be greater than 0.");
-    }
-    let len_in_bytes = NonZeroU16::new(T::Length::U16 * N as u16).expect("N is greater than 0");
+        NonZeroU16::new(T::Length::U16 * N as u16).expect("N is greater than 0")
+    };
     let mut tmp = Array::<u8, <T as FromOkm>::Length>::default();
     let mut expander = E::expand_message(data, domain, len_in_bytes)?;
     Ok(core::array::from_fn(|_| {
