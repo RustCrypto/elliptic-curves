@@ -4,8 +4,8 @@ use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::curve::scalar_mul::variable_base;
-use crate::curve::twedwards::IsogenyMap;
-use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
+use crate::curve::twedwards::extensible::ExtensiblePoint as TwistedExtensiblePoint;
+use crate::curve::twedwards::{IsogenyMap, IsogenyMapResult};
 use crate::field::FieldElement;
 use crate::*;
 use elliptic_curve::{
@@ -557,7 +557,9 @@ impl EdwardsPoint {
         scalar_div_four.div_by_four();
 
         // Use isogeny and dual isogeny to compute phi^-1((s/4) * phi(P))
-        let partial_result = variable_base(&self.to_twisted(), &scalar_div_four).to_untwisted();
+        let partial_result = variable_base(&self.to_twisted().to_extended(), &scalar_div_four)
+            .to_extended()
+            .to_untwisted();
         // Add partial result to (scalar mod 4) * P
         partial_result.add(&self.scalar_mod_four(scalar))
     }
@@ -670,16 +672,16 @@ impl EdwardsPoint {
         AffinePoint { x, y }
     }
 
-    pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
-        let IsogenyMap { X, Y, T, Z } = IsogenyMap {
+    pub(crate) fn to_twisted(self) -> TwistedExtensiblePoint {
+        let IsogenyMapResult { X, Y, Z, T1, T2 } = IsogenyMap {
             X: self.X,
             Y: self.Y,
-            T: self.T,
             Z: self.Z,
+            T: self.T,
         }
         .map(|f| f);
 
-        TwistedExtendedPoint { X, Y, Z, T }
+        TwistedExtensiblePoint { X, Y, Z, T1, T2 }
     }
 
     /// Compute the negation of this point's `x`-coordinate.
@@ -980,7 +982,7 @@ mod tests {
             "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
         );
         let a = AffinePoint { x, y }.to_edwards();
-        let twist_a = a.to_twisted().to_untwisted();
+        let twist_a = a.to_twisted().to_extended().to_untwisted();
         assert!(twist_a == a.double().double())
     }
 
