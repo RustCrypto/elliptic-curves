@@ -17,7 +17,7 @@ use digest::{
 ///
 /// # Errors
 ///
-/// `expand_message` can return an [`ExpandMsgXmdError`].
+/// See [`ExpandMsgXmdError`] for more details.
 #[derive(Debug)]
 pub struct ExpandMsgXmd<HashT>(PhantomData<HashT>)
 where
