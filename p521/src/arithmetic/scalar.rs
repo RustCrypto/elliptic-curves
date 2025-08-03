@@ -22,7 +22,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result,
-    bigint::{self, Integer},
+    bigint::{self, Integer, NonZero},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -575,11 +575,8 @@ impl Reduce<U576> for Scalar {
 impl ReduceNonZero<U576> for Scalar {
     fn reduce_nonzero(w: U576) -> Self {
         const ORDER_MINUS_ONE: U576 = NistP521::ORDER.wrapping_sub(&U576::ONE);
-        let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, bigint::Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(
-            U576::conditional_select(&w, &r, !underflow).wrapping_add(&U576::ONE),
-        )
+        let r = w.rem(&NonZero::new(ORDER_MINUS_ONE).unwrap());
+        Self::from_uint_unchecked(r.wrapping_add(&U576::ONE))
     }
 
     fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
@@ -704,6 +701,13 @@ mod tests {
         assert_eq!(
             U576::from(Scalar::reduce_nonzero(
                 NistP521::ORDER.wrapping_add(&U576::from_u8(2))
+            )),
+            U576::from_u8(4),
+        );
+
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                NistP521::ORDER.wrapping_mul(&U576::from_u8(3))
             )),
             U576::from_u8(4),
         );
