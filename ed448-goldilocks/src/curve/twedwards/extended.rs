@@ -105,38 +105,50 @@ impl ExtendedPoint {
     }
 
     /// Uses a 2-isogeny to map the point to the Ed448-Goldilocks
-    // (2. Algorithm 2) https://eprint.iacr.org/2008/522.pdf
+    // (1.) https://eprint.iacr.org/2014/027.pdf
     pub fn to_untwisted(self) -> EdwardsExtendedPoint {
-        // x = 2xy / (y^2 + a*x^2)
-        // y = (y^2 - a*x^2) / (2 - y^2 - a*x^2)
+        // x = 2xy / (y^2 - a*x^2)
+        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
 
-        // Convert to affine now, then derive extended version later
-        let affine = self.to_affine();
-        let x = affine.x;
-        let y = affine.y;
+        // Derive algorithm for projective form:
 
-        let yy = y.square();
-        let xx = x.square();
+        // x = X / Z
+        // y = Y / Z
+        // xy = T / Z
+        // x^2 = X^2 / Z^2
+        // y^2 = y^2 / Z^2
+
+        // x = 2xy / (y^2 - a*x^2)
+        // x = (2T/Z) / (Y^2/Z^2 + a*X^2/Z^2)
+        // x = 2TZ / (Y^2 - a*X^2)
+
+        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
+        // y = (Y^2/Z^2 + a*X^2/Z^2) / (2 - Y^2/Z^2 - a*X^2/Z^2)
+        // y = (Y^2 + a*X^2) / (2*Z^2 - Y^2 - a*X^2)
+
+        let xx = self.X.square();
+        let yy = self.Y.square();
         let axx = -xx;
         let yy_plus_axx = yy + axx;
 
         // Compute x
-        let x_numerator = (x * y).double();
+        let x_numerator = (self.T * self.Z).double();
         let x_denom = yy - axx;
 
         // Compute y
         let y_numerator = yy_plus_axx;
-        let y_denom = FieldElement::TWO - yy_plus_axx;
+        let y_denom = self.Z.square().double() - yy_plus_axx;
 
-        let common_denom = (x_denom * y_denom).invert();
-        let new_x = x_numerator * y_denom * common_denom;
-        let new_y = y_numerator * x_denom * common_denom;
+        let new_x = x_numerator * y_denom;
+        let new_y = y_numerator * x_denom;
+        let new_z = x_denom * y_denom;
+        let new_t = x_numerator * y_numerator;
 
         EdwardsExtendedPoint {
             X: new_x,
             Y: new_y,
-            Z: FieldElement::ONE,
-            T: new_x * new_y,
+            Z: new_z,
+            T: new_t,
         }
     }
 

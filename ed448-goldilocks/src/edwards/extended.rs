@@ -669,22 +669,44 @@ impl EdwardsPoint {
         AffinePoint { x, y }
     }
 
-    // Copied from https://github.com/otrv4/libgoldilocks/blob/d07cb5b423995bae1155702aa949846c95d855c1/src/goldilocks.c#L980-L994.
+    // (1.) https://eprint.iacr.org/2014/027.pdf
     pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
-        let c = self.X.square();
-        let a = self.Y.square();
-        let d = c + a;
-        let t = self.Y + self.X;
-        let b = t.square();
-        let b = b - d;
-        let t = a - c;
-        let x = self.Z.square();
-        let z = x.double();
-        let a = z - d;
-        let new_x = a * b;
-        let new_z = t * a;
-        let new_y = t * d;
-        let new_t = b * d;
+        // x = 2xy / (y^2 - a*x^2)
+        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
+
+        // Derive algorithm for projective form:
+
+        // x = X / Z
+        // y = Y / Z
+        // xy = T / Z
+        // x^2 = X^2 / Z^2
+        // y^2 = y^2 / Z^2
+
+        // x = 2xy / (y^2 - a*x^2)
+        // x = (2T/Z) / (Y^2/Z^2 + a*X^2/Z^2)
+        // x = 2TZ / (Y^2 - a*X^2)
+
+        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
+        // y = (Y^2/Z^2 + a*X^2/Z^2) / (2 - Y^2/Z^2 - a*X^2/Z^2)
+        // y = (Y^2 + a*X^2) / (2*Z^2 - Y^2 - a*X^2)
+
+        let xx = self.X.square();
+        let yy = self.Y.square();
+        let axx = xx;
+        let yy_plus_axx = yy + axx;
+
+        // Compute x
+        let x_numerator = (self.T * self.Z).double();
+        let x_denom = yy - axx;
+
+        // Compute y
+        let y_numerator = yy_plus_axx;
+        let y_denom = self.Z.square().double() - yy_plus_axx;
+
+        let new_x = x_numerator * y_denom;
+        let new_y = y_numerator * x_denom;
+        let new_z = x_denom * y_denom;
+        let new_t = x_numerator * y_numerator;
 
         TwistedExtendedPoint {
             X: new_x,
