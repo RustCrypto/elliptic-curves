@@ -13,7 +13,7 @@ use elliptic_curve::consts::{U28, U84};
 use elliptic_curve::ops::Reduce;
 use hash2curve::{ExpandMsg, ExpandMsgXof, Expander, MapToCurve};
 use sha3::Shake256;
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 impl MontgomeryXpoint {
     /// First low order point on Curve448 and it's twist
@@ -113,19 +113,19 @@ impl MontgomeryXpoint {
     }
 
     /// Compute the Y-coordinate
-    pub fn y(&self, sign: Choice) -> [u8; 56] {
-        Self::y_internal(&FieldElement::from_bytes(&self.0), sign).to_bytes()
+    pub fn y(&self, sign: Choice) -> CtOption<[u8; 56]> {
+        Self::y_internal(&FieldElement::from_bytes(&self.0), sign).map(FieldElement::to_bytes)
     }
 
     // See https://www.rfc-editor.org/rfc/rfc7748#section-1.
-    pub(super) fn y_internal(u: &FieldElement, sign: Choice) -> FieldElement {
+    pub(super) fn y_internal(u: &FieldElement, sign: Choice) -> CtOption<FieldElement> {
         // v^2 = u^3 + A*u^2 + u
         let uu = u.square();
         let vv = uu * u + FieldElement::J * uu + u;
 
         let mut v = vv.sqrt();
         v.conditional_negate(v.is_negative() ^ sign);
-        v
+        CtOption::new(v, v.square().ct_eq(&vv))
     }
 
     pub(super) fn mul_internal(
@@ -161,21 +161,21 @@ impl MontgomeryXpoint {
     }
 
     /// Convert the point to projective form including the y-coordinate
-    pub fn to_extended_projective(&self, sign: Choice) -> ProjectiveMontgomeryPoint {
+    pub fn to_extended_projective(&self, sign: Choice) -> CtOption<ProjectiveMontgomeryPoint> {
         self.to_projective().to_extended(sign)
     }
 
     /// Convert the point to its form including the y-coordinate
-    pub fn to_extended(&self, sign: Choice) -> AffineMontgomeryPoint {
+    pub fn to_extended(&self, sign: Choice) -> CtOption<AffineMontgomeryPoint> {
         let x = FieldElement::from_bytes(&self.0);
         let y = Self::y_internal(&x, sign);
 
-        AffineMontgomeryPoint::new(x, y)
+        y.map(|y| AffineMontgomeryPoint::new(x, y))
     }
 
     /// Convert this point to an [`AffinePoint`]
-    pub fn to_edwards(&self, sign: Choice) -> AffinePoint {
-        self.to_extended(sign).into()
+    pub fn to_edwards(&self, sign: Choice) -> CtOption<AffinePoint> {
+        self.to_extended(sign).map(AffinePoint::from)
     }
 }
 
@@ -274,14 +274,14 @@ impl ProjectiveMontgomeryXpoint {
     };
 
     // See https://www.rfc-editor.org/rfc/rfc7748#section-1.
-    fn y(&self, sign: Choice) -> FieldElement {
+    fn y(&self, sign: Choice) -> CtOption<FieldElement> {
         // v^2 = u^3 + A*u^2 + u
         let u_sq = self.U.square();
         let v_sq = u_sq * self.U + FieldElement::J * u_sq + self.U;
 
         let mut v = v_sq.sqrt();
         v.conditional_negate(v.is_negative() ^ sign);
-        v
+        CtOption::new(v, v.square().ct_eq(&v_sq))
     }
 
     /// Double this point
@@ -372,20 +372,30 @@ impl ProjectiveMontgomeryXpoint {
     }
 
     /// Convert the point to affine form including the y-coordinate
-    pub fn to_extended_affine(&self, sign: Choice) -> AffineMontgomeryPoint {
+    pub fn to_extended_affine(&self, sign: Choice) -> CtOption<AffineMontgomeryPoint> {
         let x = self.U * self.W.invert();
         let y = self.y(sign);
 
-        AffineMontgomeryPoint::new(x, y)
+        y.map(|y| AffineMontgomeryPoint::new(x, y))
     }
 
     /// Convert the point to its form including the y-coordinate
-    pub fn to_extended(&self, sign: Choice) -> ProjectiveMontgomeryPoint {
-        ProjectiveMontgomeryPoint::conditional_select(
-            &ProjectiveMontgomeryPoint::new(self.U, self.y(sign), self.W),
-            &ProjectiveMontgomeryPoint::IDENTITY,
+    pub fn to_extended(&self, sign: Choice) -> CtOption<ProjectiveMontgomeryPoint> {
+        CtOption::new(
+            ProjectiveMontgomeryPoint::IDENTITY,
             self.ct_eq(&Self::IDENTITY),
         )
+        .or_else(|| {
+            let y = self.y(sign);
+
+            y.map(|y| {
+                ProjectiveMontgomeryPoint::conditional_select(
+                    &ProjectiveMontgomeryPoint::new(self.U, y, self.W),
+                    &ProjectiveMontgomeryPoint::IDENTITY,
+                    self.ct_eq(&Self::IDENTITY),
+                )
+            })
+        })
     }
 }
 
@@ -418,7 +428,7 @@ mod tests {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY;
         let identity = ProjectiveMontgomeryPoint::IDENTITY;
 
-        assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
+        assert_eq!(x_identity.to_extended(Choice::from(1)).unwrap(), identity);
     }
 
     #[test]
@@ -426,7 +436,7 @@ mod tests {
         let x_identity = ProjectiveMontgomeryXpoint::IDENTITY.to_affine();
         let identity = ProjectiveMontgomeryPoint::IDENTITY.to_affine();
 
-        assert_eq!(x_identity.to_extended(Choice::from(1)), identity);
+        assert_eq!(x_identity.to_extended(Choice::from(1)).unwrap(), identity);
     }
 
     #[test]
@@ -451,7 +461,7 @@ mod tests {
             yy.copy_from_slice(&y[..]);
             yy.reverse();
             assert_eq!(p.0, xx);
-            assert!(p.y(Choice::from(0)) == yy || p.y(Choice::from(1)) == yy);
+            assert!(p.y(Choice::from(0)).unwrap() == yy || p.y(Choice::from(1)).unwrap() == yy);
         }
     }
 
@@ -477,7 +487,7 @@ mod tests {
             yy.copy_from_slice(&y[..]);
             yy.reverse();
             assert_eq!(p.0, xx);
-            assert!(p.y(Choice::from(0)) == yy || p.y(Choice::from(1)) == yy);
+            assert!(p.y(Choice::from(0)).unwrap() == yy || p.y(Choice::from(1)).unwrap() == yy);
         }
     }
 }
