@@ -3,7 +3,10 @@ use crate::{
     VerifyingKey, WideEdwardsScalarBytes,
     sign::{HASH_HEAD, InnerSignature},
 };
-use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
+use elliptic_curve::{
+    group::GroupEncoding,
+    zeroize::{Zeroize, ZeroizeOnDrop},
+};
 use sha3::{
     Shake256,
     digest::{ExtendableOutput, ExtendableOutputReset, Update, XofReader},
@@ -61,7 +64,7 @@ impl ExpandedSecretKey {
 
         let point = EdwardsPoint::GENERATOR * scalar;
         let public_key = VerifyingKey {
-            compressed: point.compress(),
+            compressed: point.to_affine().compress(),
             point,
         };
 
@@ -124,7 +127,7 @@ impl ExpandedSecretKey {
 
         // R = r*B
         let big_r = EdwardsPoint::GENERATOR * r;
-        let compressed_r = big_r.compress();
+        let compressed_r = big_r.to_bytes();
 
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
         reader = Shake256::default()
@@ -132,7 +135,7 @@ impl ExpandedSecretKey {
             .chain([phflag])
             .chain([ctx_len])
             .chain(ctx)
-            .chain(compressed_r.as_bytes())
+            .chain(compressed_r)
             .chain(self.public_key.compressed.as_bytes())
             .chain(m)
             .finalize_xof();
