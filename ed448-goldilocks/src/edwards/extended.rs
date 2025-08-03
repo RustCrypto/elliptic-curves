@@ -4,6 +4,7 @@ use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::curve::scalar_mul::variable_base;
+use crate::curve::twedwards::IsogenyMap;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -669,29 +670,16 @@ impl EdwardsPoint {
         AffinePoint { x, y }
     }
 
-    // Copied from https://github.com/otrv4/libgoldilocks/blob/d07cb5b423995bae1155702aa949846c95d855c1/src/goldilocks.c#L980-L994.
     pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
-        let c = self.X.square();
-        let a = self.Y.square();
-        let d = c + a;
-        let t = self.Y + self.X;
-        let b = t.square();
-        let b = b - d;
-        let t = a - c;
-        let x = self.Z.square();
-        let z = x.double();
-        let a = z - d;
-        let new_x = a * b;
-        let new_z = t * a;
-        let new_y = t * d;
-        let new_t = b * d;
-
-        TwistedExtendedPoint {
-            X: new_x,
-            Y: new_y,
-            Z: new_z,
-            T: new_t,
+        let IsogenyMap { X, Y, T, Z } = IsogenyMap {
+            X: self.X,
+            Y: self.Y,
+            T: self.T,
+            Z: self.Z,
         }
+        .map(|f| f);
+
+        TwistedExtendedPoint { X, Y, Z, T }
     }
 
     /// Compute the negation of this point's `x`-coordinate.
