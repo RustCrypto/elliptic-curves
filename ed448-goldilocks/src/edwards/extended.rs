@@ -4,6 +4,7 @@ use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::curve::scalar_mul::variable_base;
+use crate::curve::twedwards::IsogenyMap;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -669,51 +670,16 @@ impl EdwardsPoint {
         AffinePoint { x, y }
     }
 
-    // (1.) https://eprint.iacr.org/2014/027.pdf
     pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
-        // x = 2xy / (y^2 - a*x^2)
-        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
-
-        // Derive algorithm for projective form:
-
-        // x = X / Z
-        // y = Y / Z
-        // xy = T / Z
-        // x^2 = X^2 / Z^2
-        // y^2 = y^2 / Z^2
-
-        // x = 2xy / (y^2 - a*x^2)
-        // x = (2T/Z) / (Y^2/Z^2 + a*X^2/Z^2)
-        // x = 2TZ / (Y^2 - a*X^2)
-
-        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
-        // y = (Y^2/Z^2 + a*X^2/Z^2) / (2 - Y^2/Z^2 - a*X^2/Z^2)
-        // y = (Y^2 + a*X^2) / (2*Z^2 - Y^2 - a*X^2)
-
-        let xx = self.X.square();
-        let yy = self.Y.square();
-        let axx = xx;
-        let yy_plus_axx = yy + axx;
-
-        // Compute x
-        let x_numerator = (self.T * self.Z).double();
-        let x_denom = yy - axx;
-
-        // Compute y
-        let y_numerator = yy_plus_axx;
-        let y_denom = self.Z.square().double() - yy_plus_axx;
-
-        let new_x = x_numerator * y_denom;
-        let new_y = y_numerator * x_denom;
-        let new_z = x_denom * y_denom;
-        let new_t = x_numerator * y_numerator;
-
-        TwistedExtendedPoint {
-            X: new_x,
-            Y: new_y,
-            Z: new_z,
-            T: new_t,
+        let IsogenyMap { X, Y, T, Z } = IsogenyMap {
+            X: self.X,
+            Y: self.Y,
+            T: self.T,
+            Z: self.Z,
         }
+        .map(|f| f);
+
+        TwistedExtendedPoint { X, Y, Z, T }
     }
 
     /// Compute the negation of this point's `x`-coordinate.

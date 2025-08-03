@@ -1,8 +1,9 @@
 #![allow(non_snake_case)]
 #![allow(dead_code)]
 
-use crate::curve::twedwards::affine::AffinePoint;
-use crate::curve::twedwards::extensible::ExtensiblePoint;
+use super::IsogenyMap;
+use super::affine::AffinePoint;
+use super::extensible::ExtensiblePoint;
 use crate::edwards::EdwardsPoint as EdwardsExtendedPoint;
 use crate::field::FieldElement;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
@@ -105,51 +106,16 @@ impl ExtendedPoint {
     }
 
     /// Uses a 2-isogeny to map the point to the Ed448-Goldilocks
-    // (1.) https://eprint.iacr.org/2014/027.pdf
     pub fn to_untwisted(self) -> EdwardsExtendedPoint {
-        // x = 2xy / (y^2 - a*x^2)
-        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
-
-        // Derive algorithm for projective form:
-
-        // x = X / Z
-        // y = Y / Z
-        // xy = T / Z
-        // x^2 = X^2 / Z^2
-        // y^2 = y^2 / Z^2
-
-        // x = 2xy / (y^2 - a*x^2)
-        // x = (2T/Z) / (Y^2/Z^2 + a*X^2/Z^2)
-        // x = 2TZ / (Y^2 - a*X^2)
-
-        // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
-        // y = (Y^2/Z^2 + a*X^2/Z^2) / (2 - Y^2/Z^2 - a*X^2/Z^2)
-        // y = (Y^2 + a*X^2) / (2*Z^2 - Y^2 - a*X^2)
-
-        let xx = self.X.square();
-        let yy = self.Y.square();
-        let axx = -xx;
-        let yy_plus_axx = yy + axx;
-
-        // Compute x
-        let x_numerator = (self.T * self.Z).double();
-        let x_denom = yy - axx;
-
-        // Compute y
-        let y_numerator = yy_plus_axx;
-        let y_denom = self.Z.square().double() - yy_plus_axx;
-
-        let new_x = x_numerator * y_denom;
-        let new_y = y_numerator * x_denom;
-        let new_z = x_denom * y_denom;
-        let new_t = x_numerator * y_numerator;
-
-        EdwardsExtendedPoint {
-            X: new_x,
-            Y: new_y,
-            Z: new_z,
-            T: new_t,
+        let IsogenyMap { X, Y, T, Z } = IsogenyMap {
+            X: self.X,
+            Y: self.Y,
+            T: self.T,
+            Z: self.Z,
         }
+        .map(|f| -f);
+
+        EdwardsExtendedPoint { X, Y, Z, T }
     }
 
     /// Checks if the point is on the curve
