@@ -1199,8 +1199,8 @@ mod tests {
             let conv_p =
                 ProjectiveMontgomeryXpoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
                     .to_affine();
-            let conv_p1 = conv_p.to_edwards(Choice::from(0));
-            let conv_p2 = conv_p.to_edwards(Choice::from(1));
+            let conv_p1 = conv_p.to_edwards(Choice::from(0)).unwrap();
+            let conv_p2 = conv_p.to_edwards(Choice::from(1)).unwrap();
             assert!(conv_p1.x == p.x || conv_p2.x == p.x);
             assert!(conv_p1.y == p.y || conv_p2.y == p.y);
 
