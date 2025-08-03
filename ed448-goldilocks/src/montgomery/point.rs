@@ -183,7 +183,7 @@ impl AffineCoordinates for AffineMontgomeryPoint {
 
 impl DecompressPoint<Curve448> for AffineMontgomeryPoint {
     fn decompress(x: &FieldBytes<Curve448>, y_is_odd: Choice) -> CtOption<Self> {
-        FieldElement::from_repr(&x.0).map(|_| MontgomeryXpoint(x.0).to_extended(y_is_odd))
+        FieldElement::from_repr(&x.0).and_then(|_| MontgomeryXpoint(x.0).to_extended(y_is_odd))
     }
 }
 
@@ -432,7 +432,7 @@ impl GroupEncoding for ProjectiveMontgomeryPoint {
         let sign = bytes[0] & 1;
         bytes[0] &= 0xfe;
 
-        FieldElement::from_repr(&bytes).map(|U| {
+        FieldElement::from_repr(&bytes).and_then(|U| {
             ProjectiveMontgomeryXpoint {
                 U,
                 W: FieldElement::ONE,
