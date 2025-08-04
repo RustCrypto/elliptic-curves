@@ -82,7 +82,7 @@ impl FieldElement {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// This method is primarily intended for defining internal constants.
-    pub(crate) const fn from_hex(hex: &str) -> Self {
+    pub(crate) const fn from_hex_unchecked(hex: &str) -> Self {
         Self::from_uint_unchecked(U576::from_be_hex(hex))
     }
 
@@ -471,7 +471,7 @@ impl PrimeField for FieldElement {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_hex(
+    const ROOT_OF_UNITY: Self = Self::from_hex_unchecked(
         "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();

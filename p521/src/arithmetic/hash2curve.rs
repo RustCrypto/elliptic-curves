@@ -18,7 +18,7 @@ impl FromOkm for FieldElement {
     type Length = U98;
 
     fn from_okm(data: &Array<u8, Self::Length>) -> Self {
-        const F_2_392: FieldElement = FieldElement::from_hex(
+        const F_2_392: FieldElement = FieldElement::from_hex_unchecked(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
@@ -53,11 +53,11 @@ impl OsswuMap for FieldElement {
             0xffff_ffff_ffff_ffff,
             0x0000_0000_0000_007f,
         ],
-        c2: FieldElement::from_hex(
+        c2: FieldElement::from_hex_unchecked(
             "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002",
         ),
         map_a: FieldElement::from_u64(3).neg(),
-        map_b: FieldElement::from_hex(
+        map_b: FieldElement::from_hex_unchecked(
             "0000000000000051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
         ),
         z: FieldElement::from_u64(4).neg(),
@@ -86,7 +86,7 @@ impl FromOkm for Scalar {
     type Length = U98;
 
     fn from_okm(data: &Array<u8, Self::Length>) -> Self {
-        const F_2_392: Scalar = Scalar::from_hex(
+        const F_2_392: Scalar = Scalar::from_hex_unchecked(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 

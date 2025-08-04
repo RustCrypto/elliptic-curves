@@ -106,7 +106,7 @@ impl Scalar {
     ///
     /// This method is primarily intended for defining internal constants.
     #[allow(dead_code)]
-    pub(crate) const fn from_hex(hex: &str) -> Self {
+    pub(crate) const fn from_hex_unchecked(hex: &str) -> Self {
         Self::from_uint_unchecked(U576::from_be_hex(hex))
     }
 
@@ -534,7 +534,7 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 3;
-    const ROOT_OF_UNITY: Self = Self::from_hex(
+    const ROOT_OF_UNITY: Self = Self::from_hex_unchecked(
         "000000000000009a0a650d44b28c17f3d708ad2fa8c4fbc7e6000d7c12dafa92fcc5673a3055276d535f79ff391dcdbcd998b7836647d3a72472b3da861ac810a7f9c7b7b63e2205",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();

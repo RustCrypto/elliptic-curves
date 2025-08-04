@@ -124,6 +124,17 @@ macro_rules! fiat_field_arithmetic {
                 $crate::subtle::CtOption::new(self.invert_unchecked(), !self.is_zero())
             }
 
+            /// Compute field inversion as a `const fn`. Panics if `self` is zero.
+            ///
+            /// This is mainly intended for inverting constants at compile time.
+            pub const fn const_invert(&self) -> Self {
+                if self.0.cmp_vartime(&<$uint>::ZERO).is_eq() {
+                    panic!("input to invert should be non-zero");
+                }
+
+                self.invert_unchecked()
+            }
+
             /// Returns the multiplicative inverse of self.
             ///
             /// Does not check that self is non-zero.

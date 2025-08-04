@@ -42,7 +42,7 @@ impl PrimeCurveParams for NistP384 {
 
     /// b = b3312fa7 e23ee7e4 988e056b e3f82d19 181d9c6e fe814112
     ///     0314088f 5013875a c656398d 8a2ed19d 2a85c8ed d3ec2aef
-    const EQUATION_B: FieldElement = FieldElement::from_hex(
+    const EQUATION_B: FieldElement = FieldElement::from_hex_vartime(
         "b3312fa7e23ee7e4988e056be3f82d19181d9c6efe8141120314088f5013875ac656398d8a2ed19d2a85c8edd3ec2aef",
     );
 
@@ -57,10 +57,10 @@ impl PrimeCurveParams for NistP384 {
     ///      e9da3113 b5f0b8c0 0a60b1ce 1d7e819d 7a431d7c 90ea0e5f
     /// ```
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex(
+        FieldElement::from_hex_vartime(
             "aa87ca22be8b05378eb1c71ef320ad746e1d3b628ba79b9859f741e082542a385502f25dbf55296c3a545e3872760ab7",
         ),
-        FieldElement::from_hex(
+        FieldElement::from_hex_vartime(
             "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f",
         ),
     );

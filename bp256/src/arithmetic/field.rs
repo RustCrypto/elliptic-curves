@@ -85,7 +85,7 @@ impl PrimeField for FieldElement {
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(11);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5376");
+        Self::from_hex_vartime("a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5376");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(121);
 
