@@ -1,6 +1,7 @@
 //! A pure-Rust implementation of group operations on secp256k1.
 
 pub(crate) mod affine;
+pub mod affine_op;
 mod field;
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
