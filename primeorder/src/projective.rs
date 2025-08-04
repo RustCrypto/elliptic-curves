@@ -4,7 +4,6 @@
 
 use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
 use core::{
-    array,
     borrow::Borrow,
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -13,7 +12,7 @@ use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, FieldBytes, FieldBytesSize, PrimeField, PublicKey, Result,
     Scalar,
     array::ArraySize,
-    bigint::{ArrayEncoding, ByteArray},
+    bigint::ArrayEncoding,
     group::{
         Group, GroupEncoding,
         prime::{PrimeCurve, PrimeGroup},
@@ -110,10 +109,46 @@ where
     where
         Self: Double,
     {
-        let mut k = Into::<C::Uint>::into(*k).to_le_byte_array();
-        let mut pc = LookupTable::new(*self);
+        let k = Into::<C::Uint>::into(*k).to_le_byte_array();
 
-        lincomb(array::from_mut(&mut k), array::from_mut(&mut pc))
+        let mut pc = [Self::default(); 16];
+        pc[0] = Self::IDENTITY;
+        pc[1] = *self;
+
+        for i in 2..16 {
+            pc[i] = if i % 2 == 0 {
+                Double::double(&pc[i / 2])
+            } else {
+                pc[i - 1].add(self)
+            };
+        }
+
+        let mut q = Self::IDENTITY;
+        let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
+
+        loop {
+            let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
+
+            let mut t = ProjectivePoint::IDENTITY;
+
+            for i in 1..16 {
+                t.conditional_assign(
+                    &pc[i],
+                    Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
+                );
+            }
+
+            q = q.add(&t);
+
+            if pos == 0 {
+                break;
+            }
+
+            q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
+            pos -= 4;
+        }
+
+        q
     }
 }
 
@@ -368,20 +403,7 @@ where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
 {
-    #[cfg(feature = "alloc")]
-    fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
-        let (mut ks, mut pcs): (Vec<_>, Vec<_>) = points_and_scalars
-            .iter()
-            .map(|(point, scalar)| {
-                (
-                    Into::<C::Uint>::into(*scalar).to_le_byte_array(),
-                    LookupTable::new(*point),
-                )
-            })
-            .unzip();
-
-        lincomb(&mut ks, &mut pcs)
-    }
+    // TODO(tarcieri): optimized implementation
 }
 
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
@@ -389,71 +411,7 @@ where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
 {
-    fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
-        let mut ks: [_; N] = array::from_fn(|index| {
-            Into::<C::Uint>::into(points_and_scalars[index].1).to_le_byte_array()
-        });
-        let mut pcs: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
-
-        lincomb(&mut ks, &mut pcs)
-    }
-}
-
-fn lincomb<C: PrimeCurveParams>(
-    ks: &mut [ByteArray<C::Uint>],
-    pcs: &mut [LookupTable<C>],
-) -> ProjectivePoint<C> {
-    let mut q = ProjectivePoint::IDENTITY;
-    let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
-
-    loop {
-        for (k, pc) in ks.iter().zip(pcs.iter()) {
-            let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
-            q = q.add(&pc.select(slot));
-        }
-
-        if pos == 0 {
-            break;
-        }
-
-        q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
-        pos -= 4;
-    }
-
-    q
-}
-
-struct LookupTable<C: PrimeCurveParams>([ProjectivePoint<C>; 16]);
-
-impl<C: PrimeCurveParams> LookupTable<C> {
-    fn new(point: ProjectivePoint<C>) -> Self {
-        let mut pc = [ProjectivePoint::default(); 16];
-        pc[0] = ProjectivePoint::IDENTITY;
-        pc[1] = point;
-
-        for i in 2..16 {
-            pc[i] = if i % 2 == 0 {
-                Double::double(&pc[i / 2])
-            } else {
-                pc[i - 1].add(point)
-            };
-        }
-
-        Self(pc)
-    }
-
-    fn select(&self, slot: u8) -> ProjectivePoint<C> {
-        let mut t = ProjectivePoint::IDENTITY;
-
-        for i in 1..16 {
-            t.conditional_assign(
-                &self.0[i],
-                Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
-            );
-        }
-
-        t
-    }
+    // TODO(tarcieri): optimized implementation
 }
 
 impl<C> PrimeGroup for ProjectivePoint<C>
