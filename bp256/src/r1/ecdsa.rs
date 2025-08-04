@@ -58,3 +58,11 @@ pub type VerifyingKey = ecdsa::VerifyingKey<BrainpoolP256r1>;
 impl ecdsa::hazmat::DigestAlgorithm for BrainpoolP256r1 {
     type Digest = sha2::Sha256;
 }
+
+#[cfg(all(test, feature = "ecdsa"))]
+mod tests {
+    mod wycheproof {
+        use crate::BrainpoolP256r1;
+        ecdsa::new_wycheproof_test!(wycheproof, "wycheproof", BrainpoolP256r1);
+    }
+}

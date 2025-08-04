@@ -143,6 +143,7 @@ dependencies = [
 name = "bp256"
 version = "0.7.0-pre"
 dependencies = [
+ "blobby",
  "ecdsa",
  "elliptic-curve",
  "hex-literal",

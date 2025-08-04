@@ -35,6 +35,8 @@ arithmetic = ["dep:primefield", "dep:primeorder"]
 ecdsa = ["arithmetic", "ecdsa/signing", "ecdsa/verifying", "sha256"]
 
 [dev-dependencies]
+blobby = "0.3"
+ecdsa = { version = "0.17.0-rc.4", features = ["dev"] }
 hex-literal = "1.0.0"
 proptest = "1"
 rand_chacha = "0.9.0"
