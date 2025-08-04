@@ -5,7 +5,7 @@ use crate::ByteOrder;
 use bigint::{
     ArrayEncoding, ByteArray, Integer, Invert, Uint,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
-    modular::{ConstMontyForm as MontyForm, ConstMontyFormInverter, ConstMontyParams},
+    modular::{ConstMontyForm as MontyForm, ConstMontyParams},
 };
 use core::fmt::Formatter;
 use core::{
@@ -331,11 +331,7 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     ///
     /// This is mainly intended for inverting constants at compile time.
     pub const fn const_invert(&self) -> Self {
-        Self(
-            ConstMontyFormInverter::<MOD, LIMBS>::new()
-                .invert(&self.0)
-                .expect("input to invert should be non-zero"),
-        )
+        Self(self.0.invert().expect("input to invert should be non-zero"))
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
