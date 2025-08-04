@@ -31,17 +31,17 @@ impl PrimeCurveParams for BrainpoolP384r1 {
     type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
 
-    const EQUATION_A: FieldElement = FieldElement::from_hex(
+    const EQUATION_A: FieldElement = FieldElement::from_hex_vartime(
         "7bc382c63d8c150c3c72080ace05afa0c2bea28e4fb22787139165efba91f90f8aa5814a503ad4eb04a8c7dd22ce2826",
     );
-    const EQUATION_B: FieldElement = FieldElement::from_hex(
+    const EQUATION_B: FieldElement = FieldElement::from_hex_vartime(
         "04a8c7dd22ce28268b39b55416f0447c2fb77de107dcd2a62e880ea53eeb62d57cb4390295dbc9943ab78696fa504c11",
     );
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex(
+        FieldElement::from_hex_vartime(
             "1d1c64f068cf45ffa2a63a81b7c13f6b8847a3e77ef14fe3db7fcafe0cbd10e8e826e03436d646aaef87b2e247d4af1e",
         ),
-        FieldElement::from_hex(
+        FieldElement::from_hex_vartime(
             "8abe1d7520f9c2a45cb1eb8e95cfd55262b70b29feec5864e19c054ff99129280e4646217791811142820341263c5315",
         ),
     );

@@ -9,7 +9,6 @@ use bigint::{
 };
 use core::fmt::Formatter;
 use core::{
-    cmp::Ordering,
     fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
@@ -170,16 +169,18 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     ///
     /// - When hex is malformed
     /// - When input is the wrong length
+    /// - If input overflows the modulus
     pub const fn from_hex_vartime(hex: &str) -> Self {
         let uint = match MOD::BYTE_ORDER {
             ByteOrder::BigEndian => Uint::from_be_hex(hex),
             ByteOrder::LittleEndian => Uint::from_le_hex(hex),
         };
 
-        match uint.cmp_vartime(MOD::PARAMS.modulus().as_ref()) {
-            Ordering::Less => Self::from_uint_reduced(&uint),
-            _ => panic!("hex encoded field element overflows modulus"),
+        if uint.cmp_vartime(MOD::PARAMS.modulus().as_ref()).is_lt() {
+            panic!("hex encoded field element overflows modulus");
         }
+
+        Self::from_uint_reduced(&uint)
     }
 
     /// Convert [`Uint`] into [`MontyFieldElement`], first converting it into Montgomery form:

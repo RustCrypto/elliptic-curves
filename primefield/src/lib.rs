@@ -127,16 +127,25 @@ macro_rules! field_element_type {
                 $crate::subtle::CtOption::new(Self::from_uint_unchecked(uint), is_some)
             }
 
-            /// Parse a [`
+            /// Decode a [`
             #[doc = stringify!($fe)]
             /// `] from big endian hex-encoded bytes.
             ///
-            /// Does *not* perform a check that the field element does not overflow the order.
+            /// This is primarily intended for defining constants using hex literals.
             ///
-            /// This method is primarily intended for defining internal constants.
-            #[allow(dead_code)]
-            pub(crate) const fn from_hex(hex: &str) -> Self {
-                Self::from_uint_unchecked(<$uint>::from_be_hex(hex))
+            /// # Panics
+            ///
+            /// - When hex is malformed
+            /// - When input is the wrong length
+            /// - If input overflows the modulus
+            pub const fn from_hex_vartime(hex: &str) -> Self {
+                let uint = <$uint>::from_be_hex(hex);
+
+                if uint.cmp_vartime(&$modulus).is_ge() {
+                    panic!("hex encoded field element overflows modulus");
+                }
+
+                Self::from_uint_unchecked(uint)
             }
 
             /// Convert a `u64` into a [`

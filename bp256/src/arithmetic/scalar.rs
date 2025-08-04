@@ -111,7 +111,7 @@ impl PrimeField for Scalar {
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a6");
+        Self::from_hex_vartime("a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a6");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
 

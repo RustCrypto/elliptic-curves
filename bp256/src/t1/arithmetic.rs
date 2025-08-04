@@ -31,12 +31,18 @@ impl PrimeCurveParams for BrainpoolP256t1 {
     type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
 
-    const EQUATION_A: FieldElement =
-        FieldElement::from_hex("a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5374");
-    const EQUATION_B: FieldElement =
-        FieldElement::from_hex("662c61c430d84ea4fe66a7733d0b76b7bf93ebc4af2f49256ae58101fee92b04");
+    const EQUATION_A: FieldElement = FieldElement::from_hex_vartime(
+        "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5374",
+    );
+    const EQUATION_B: FieldElement = FieldElement::from_hex_vartime(
+        "662c61c430d84ea4fe66a7733d0b76b7bf93ebc4af2f49256ae58101fee92b04",
+    );
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex("a3e8eb3cc1cfe7b7732213b23a656149afa142c47aafbc2b79a191562e1305f4"),
-        FieldElement::from_hex("2d996c823439c56d7f7b22e14644417e69bcb6de39d027001dabe8f35b25c9be"),
+        FieldElement::from_hex_vartime(
+            "a3e8eb3cc1cfe7b7732213b23a656149afa142c47aafbc2b79a191562e1305f4",
+        ),
+        FieldElement::from_hex_vartime(
+            "2d996c823439c56d7f7b22e14644417e69bcb6de39d027001dabe8f35b25c9be",
+        ),
     );
 }

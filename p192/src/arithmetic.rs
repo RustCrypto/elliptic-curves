@@ -40,7 +40,7 @@ impl PrimeCurveParams for NistP192 {
 
     /// b = 0x64210519 e59c80e7 0fa7e9ab 72243049 feb8deec c146b9b1
     const EQUATION_B: FieldElement =
-        FieldElement::from_hex("64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1");
+        FieldElement::from_hex_vartime("64210519e59c80e70fa7e9ab72243049feb8deecc146b9b1");
 
     /// Base point of P-192.
     ///
@@ -49,7 +49,7 @@ impl PrimeCurveParams for NistP192 {
     /// Gᵧ = 0x07192b95 ffc8da78 631011ed 6b24cdd5 73f977a1 1e794811
     /// ```
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex("188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012"),
-        FieldElement::from_hex("07192b95ffc8da78631011ed6b24cdd573f977a11e794811"),
+        FieldElement::from_hex_vartime("188da80eb03090f67cbf20eb43a18800f4ff0afd82ff1012"),
+        FieldElement::from_hex_vartime("07192b95ffc8da78631011ed6b24cdd573f977a11e794811"),
     );
 }
