@@ -15,7 +15,7 @@ use digest::{
 ///
 /// # Errors
 ///
-/// `expand_message` can return a [`ExpandMsgXofError`] error.
+/// See [`ExpandMsgXofError`] for details.
 pub struct ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
