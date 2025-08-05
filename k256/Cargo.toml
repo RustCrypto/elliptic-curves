@@ -50,7 +50,7 @@ rand_core = { version = "0.9", features = ["os_rng"] }
 sha3 = { version = "0.11.0-rc.0", default-features = false }
 
 [features]
-default = ["arithmetic", "ecdsa", "pkcs8", "precomputed-tables", "schnorr", "std","expose-field"]
+default = ["arithmetic", "ecdsa", "pkcs8", "precomputed-tables", "schnorr", "std", "expose-field"]
 alloc = ["ecdsa-core?/alloc", "elliptic-curve/alloc"]
 std = ["alloc", "ecdsa-core?/std", "elliptic-curve/std", "once_cell?/std"]
 
