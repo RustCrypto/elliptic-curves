@@ -170,7 +170,7 @@ fn decrypt(
     let mut c1_point = AffinePoint::from_encoded_point(&encoded_c1).unwrap();
 
     // B2: compute point 𝑆 = [ℎ]𝐶1
-    let s = c1_point * Scalar::reduce(U256::from_u32(FieldElement::S));
+    let s = c1_point * Scalar::reduce(&U256::from_u32(FieldElement::S));
     if s.is_identity().into() {
         return Err(Error);
     }

@@ -753,54 +753,58 @@ impl MulAssign<&Scalar> for Scalar {
 }
 
 impl Reduce<U256> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U256) -> Self {
+    fn reduce(w: &U256) -> Self {
         let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self(U256::conditional_select(&w, &r, !underflow))
+        Self(U256::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce(U256::from_be_byte_array(*bytes))
+    fn reduce(bytes: &FieldBytes) -> Self {
+        Self::reduce(&U256::from_be_byte_array(*bytes))
     }
 }
 
 impl Reduce<U512> for Scalar {
-    type Bytes = WideBytes;
-
-    fn reduce(w: U512) -> Self {
-        WideScalar(w).reduce()
+    fn reduce(w: &U512) -> Self {
+        WideScalar(*w).reduce()
     }
+}
 
-    fn reduce_bytes(bytes: &WideBytes) -> Self {
-        Self::reduce(U512::from_be_byte_array(*bytes))
+impl Reduce<WideBytes> for Scalar {
+    fn reduce(bytes: &WideBytes) -> Self {
+        Self::reduce(&U512::from_be_byte_array(*bytes))
     }
 }
 
 impl ReduceNonZero<U256> for Scalar {
-    fn reduce_nonzero(w: U256) -> Self {
+    fn reduce_nonzero(w: &U256) -> Self {
         const ORDER_MINUS_ONE: U256 = ORDER.wrapping_sub(&U256::ONE);
         let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self(U256::conditional_select(&w, &r, !underflow).wrapping_add(&U256::ONE))
+        Self(U256::conditional_select(w, &r, !underflow).wrapping_add(&U256::ONE))
     }
+}
 
+impl ReduceNonZero<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce_nonzero(U256::from_be_byte_array(*bytes))
+    fn reduce_nonzero(bytes: &FieldBytes) -> Self {
+        Self::reduce_nonzero(&U256::from_be_byte_array(*bytes))
     }
 }
 
 impl ReduceNonZero<U512> for Scalar {
-    fn reduce_nonzero(w: U512) -> Self {
-        WideScalar(w).reduce_nonzero()
+    fn reduce_nonzero(w: &U512) -> Self {
+        WideScalar(*w).reduce_nonzero()
     }
+}
 
+impl ReduceNonZero<WideBytes> for Scalar {
     #[inline]
-    fn reduce_nonzero_bytes(bytes: &WideBytes) -> Self {
-        Self::reduce_nonzero(U512::from_be_byte_array(*bytes))
+    fn reduce_nonzero(bytes: &WideBytes) -> Self {
+        Self::reduce_nonzero(&U512::from_be_byte_array(*bytes))
     }
 }
 
@@ -1128,8 +1132,8 @@ mod tests {
     fn from_bytes_reduced() {
         let m = Scalar::modulus_as_biguint();
 
-        fn reduce<T: Reduce<U256, Bytes = FieldBytes>>(arr: &[u8]) -> T {
-            T::reduce_bytes(&Array::try_from(arr).unwrap())
+        fn reduce<T: Reduce<FieldBytes>>(arr: &[u8]) -> T {
+            T::reduce(&Array::try_from(arr).unwrap())
         }
 
         // Regular reduction
@@ -1171,10 +1175,10 @@ mod tests {
     fn from_wide_bytes_reduced() {
         let m = Scalar::modulus_as_biguint();
 
-        fn reduce<T: Reduce<U512, Bytes = WideBytes>>(slice: &[u8]) -> T {
+        fn reduce<T: Reduce<WideBytes>>(slice: &[u8]) -> T {
             let mut bytes = WideBytes::default();
             bytes[(64 - slice.len())..].copy_from_slice(slice);
-            T::reduce_bytes(&bytes)
+            T::reduce(&bytes)
         }
 
         // Regular reduction
@@ -1214,7 +1218,7 @@ mod tests {
 
     prop_compose! {
         fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
-            <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into())
+            <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into())
         }
     }
 
@@ -1317,7 +1321,7 @@ mod tests {
             let mut bytes = [0u8; 64];
             bytes[0..32].clone_from_slice(&bytes_hi);
             bytes[32..64].clone_from_slice(&bytes_lo);
-            let s = <Scalar as Reduce<U512>>::reduce(U512::from_be_slice(&bytes));
+            let s = <Scalar as Reduce<U512>>::reduce(&U512::from_be_slice(&bytes));
             let s_bu = s.to_biguint().unwrap();
             assert!(s_bu < m);
         }

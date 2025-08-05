@@ -10,7 +10,7 @@ use elliptic_curve::{
     sec1::{self, ToEncodedPoint},
 };
 use p256::{
-    AffinePoint, NonZeroScalar, ProjectivePoint, Scalar,
+    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };
 use primeorder::{Double, test_projective_arithmetic};
@@ -32,7 +32,7 @@ fn projective_identity_to_bytes() {
 
 prop_compose! {
     fn non_identity()(bytes in any::<[u8; 32]>()) -> NonIdentity<ProjectivePoint> {
-        NonIdentity::mul_by_generator(&NonZeroScalar::reduce_nonzero_bytes(&bytes.into()))
+        NonIdentity::mul_by_generator(&NonZeroScalar::reduce_nonzero(&FieldBytes::from(bytes)))
     }
 }
 

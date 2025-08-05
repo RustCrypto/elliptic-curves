@@ -92,11 +92,11 @@ impl FromOkm for Scalar {
 
         let mut d0 = Array::default();
         d0[23..].copy_from_slice(&data[0..49]);
-        let d0 = Scalar::reduce(U576::from_be_byte_array(d0));
+        let d0 = Scalar::reduce(&U576::from_be_byte_array(d0));
 
         let mut d1 = Array::default();
         d1[23..].copy_from_slice(&data[49..]);
-        let d1 = Scalar::reduce(U576::from_be_byte_array(d1));
+        let d1 = Scalar::reduce(&U576::from_be_byte_array(d1));
 
         d0 * F_2_392 + d1
     }
@@ -333,7 +333,7 @@ mod tests {
             let scalar = wide_data % wide_order;
             let reduced_scalar = U576::from_be_slice(&scalar.to_be_byte_array()[40..]);
 
-            Scalar::reduce(reduced_scalar)
+            Scalar::reduce(&reduced_scalar)
         };
 
         proptest!(
