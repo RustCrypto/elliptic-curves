@@ -26,7 +26,7 @@ pub trait GroupDigest: MapToCurve {
     ///
     /// # Errors
     ///
-    /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`crate::ExpandMsgXmd`]
     /// and [`crate::ExpandMsgXof`] for examples.
     fn hash_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
@@ -53,7 +53,7 @@ pub trait GroupDigest: MapToCurve {
     ///
     /// # Errors
     ///
-    /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`crate::ExpandMsgXmd`]
     /// and [`crate::ExpandMsgXof`] for examples.
     fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
@@ -73,7 +73,7 @@ pub trait GroupDigest: MapToCurve {
     ///
     /// # Errors
     ///
-    /// When the chosen `ExpandMsg` implementation returns an error. See [`crate::ExpandMsgXmd`]
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`crate::ExpandMsgXmd`]
     /// and [`crate::ExpandMsgXof`] for examples.
     fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar, X::Error>
     where
