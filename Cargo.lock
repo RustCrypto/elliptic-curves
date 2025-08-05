@@ -340,9 +340,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.8.0-rc.7"
+version = "0.8.0-rc.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2fe0a4fafae25053c19a03fefe040607bda956b4941d692ed9fb9d3c18a3193"
+checksum = "7050e8041c28720851f7db83183195b6acf375bb7bb28e3b86f0fe6cbd69459d"
 dependencies = [
  "const-oid",
  "pem-rfc7468",
@@ -1192,6 +1192,7 @@ dependencies = [
 name = "sm2"
 version = "0.14.0-pre"
 dependencies = [
+ "der",
  "elliptic-curve",
  "hex-literal",
  "primefield",
