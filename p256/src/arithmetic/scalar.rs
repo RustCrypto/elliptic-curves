@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve,
-    bigint::{Limb, U256, prelude::*},
+    bigint::{Limb, U256, U384, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -634,6 +634,31 @@ impl Reduce<U256> for Scalar {
     }
 }
 
+impl Reduce<U384> for Scalar {
+    type Bytes = [u8; 48];
+
+    fn reduce(w: U384) -> Self {
+        // Convert U384 to U512 for use with barrett_reduce, which expects 512 bits total
+        let w_bytes = w.to_be_bytes();
+        let mut lo_bytes = [0u8; 32];
+        let mut hi_bytes = [0u8; 32];
+        
+        // Copy the lower 256 bits (bytes 16-47)
+        lo_bytes.copy_from_slice(&w_bytes[16..48]);
+        // Copy the upper 128 bits to the lower part of hi (bytes 0-15 -> 16-31 of hi)
+        hi_bytes[16..32].copy_from_slice(&w_bytes[0..16]);
+        
+        let lo = U256::from_be_byte_array(lo_bytes.into());
+        let hi = U256::from_be_byte_array(hi_bytes.into());
+        let w_reduced = barrett_reduce(lo, hi);
+        Self(w_reduced)
+    }
+
+    fn reduce_bytes(bytes: &[u8; 48]) -> Self {
+        Self::reduce(U384::from_be_byte_array((*bytes).into()))
+    }
+}
+
 impl ReduceNonZero<U256> for Scalar {
     fn reduce_nonzero(w: U256) -> Self {
         const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
@@ -644,6 +669,21 @@ impl ReduceNonZero<U256> for Scalar {
 
     fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
         Self::reduce_nonzero(U256::from_be_byte_array(*bytes))
+    }
+}
+
+impl ReduceNonZero<U384> for Scalar {
+    fn reduce_nonzero(w: U384) -> Self {
+        // Reduce U384 to U256 first, then apply non-zero reduction
+        let reduced = <Self as Reduce<U384>>::reduce(w);
+        const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
+        let (r, underflow) = reduced.0.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
+        Self(U256::conditional_select(&reduced.0, &r, !underflow).wrapping_add(&U256::ONE))
+    }
+
+    fn reduce_nonzero_bytes(bytes: &[u8; 48]) -> Self {
+        Self::reduce_nonzero(U384::from_be_byte_array((*bytes).into()))
     }
 }
 
@@ -781,37 +821,61 @@ mod tests {
 
     #[test]
     fn reduce_nonzero() {
-        assert_eq!(Scalar::reduce_nonzero_bytes(&Array::default()).0, U256::ONE,);
-        assert_eq!(Scalar::reduce_nonzero(U256::ONE).0, U256::from_u8(2),);
-        assert_eq!(Scalar::reduce_nonzero(U256::from_u8(2)).0, U256::from_u8(3),);
+        assert_eq!(<Scalar as ReduceNonZero<U256>>::reduce_nonzero_bytes(&Array::default()).0, U256::ONE,);
+        assert_eq!(<Scalar as ReduceNonZero<U256>>::reduce_nonzero(U256::ONE).0, U256::from_u8(2),);
+        assert_eq!(<Scalar as ReduceNonZero<U256>>::reduce_nonzero(U256::from_u8(2)).0, U256::from_u8(3),);
 
-        assert_eq!(Scalar::reduce_nonzero(NistP256::ORDER).0, U256::from_u8(2),);
+        assert_eq!(<Scalar as ReduceNonZero<U256>>::reduce_nonzero(NistP256::ORDER).0, U256::from_u8(2),);
         assert_eq!(
-            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(1))).0,
+            <Scalar as ReduceNonZero<U256>>::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(1))).0,
             U256::ONE,
         );
         assert_eq!(
-            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(2))).0,
+            <Scalar as ReduceNonZero<U256>>::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(2))).0,
             NistP256::ORDER.wrapping_sub(&U256::ONE),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(3))).0,
+            <Scalar as ReduceNonZero<U256>>::reduce_nonzero(NistP256::ORDER.wrapping_sub(&U256::from_u8(3))).0,
             NistP256::ORDER.wrapping_sub(&U256::from_u8(2)),
         );
 
         assert_eq!(
-            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_add(&U256::ONE)).0,
+            <Scalar as ReduceNonZero<U256>>::reduce_nonzero(NistP256::ORDER.wrapping_add(&U256::ONE)).0,
             U256::from_u8(3),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(NistP256::ORDER.wrapping_add(&U256::from_u8(2))).0,
+            <Scalar as ReduceNonZero<U256>>::reduce_nonzero(NistP256::ORDER.wrapping_add(&U256::from_u8(2))).0,
             U256::from_u8(4),
         );
     }
 
+    #[test]
+    fn reduce_nonzero_u384() {
+        use elliptic_curve::bigint::{U384, ArrayEncoding};
+        
+        // Test with 48 zero bytes (384 bits)
+        let zero_bytes = [0u8; 48];
+        assert_eq!(<Scalar as ReduceNonZero<U384>>::reduce_nonzero_bytes(&zero_bytes).0, U256::ONE);
+
+        // Test with small values
+        let mut bytes = [0u8; 48];
+        bytes[47] = 1; // Set the least significant byte to 1
+        assert_eq!(<Scalar as ReduceNonZero<U384>>::reduce_nonzero(U384::from_be_byte_array(bytes.into())).0, U256::from_u8(2));
+
+        bytes[47] = 2;
+        assert_eq!(<Scalar as ReduceNonZero<U384>>::reduce_nonzero(U384::from_be_byte_array(bytes.into())).0, U256::from_u8(3));
+
+        // Test with a value that spans the full 384 bits
+        let large_value = U384::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+        let reduced = <Scalar as ReduceNonZero<U384>>::reduce_nonzero(large_value);
+        // The result should be non-zero and within the field
+        assert_ne!(reduced.0, U256::ZERO);
+        assert!(reduced.0 < NistP256::ORDER);
+    }
+
     prop_compose! {
         fn non_zero_scalar()(bytes in any::<[u8; 32]>()) -> NonZeroScalar {
-            NonZeroScalar::reduce_nonzero_bytes(&bytes.into())
+            <NonZeroScalar as ReduceNonZero<U256>>::reduce_nonzero_bytes(&bytes.into())
         }
     }
 
