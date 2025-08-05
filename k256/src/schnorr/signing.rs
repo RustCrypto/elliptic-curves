@@ -5,7 +5,6 @@ use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
 use elliptic_curve::{
-    bigint::U256,
     ops::Reduce,
     rand_core::{CryptoRng, TryCryptoRng},
     subtle::ConditionallySelectable,
@@ -107,7 +106,7 @@ impl SigningKey {
         let verifying_point = AffinePoint::from(k.verifying_key);
         let r = verifying_point.x.normalize();
 
-        let e = <Scalar as Reduce<U256>>::reduce_bytes(
+        let e = <Scalar as Reduce<FieldBytes>>::reduce(
             &tagged_hash(CHALLENGE_TAG)
                 .chain_update(r.to_bytes())
                 .chain_update(self.verifying_key.to_bytes())

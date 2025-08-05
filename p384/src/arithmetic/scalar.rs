@@ -228,30 +228,33 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl Reduce<U384> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U384) -> Self {
+    fn reduce(w: &U384) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP384::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U384::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U384::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce(U384::from_be_byte_array(*bytes))
+    fn reduce(bytes: &FieldBytes) -> Self {
+        Self::reduce(&U384::from_be_byte_array(*bytes))
     }
 }
 
 impl ReduceNonZero<U384> for Scalar {
-    fn reduce_nonzero(w: U384) -> Self {
+    fn reduce_nonzero(w: &U384) -> Self {
         const ORDER_MINUS_ONE: U384 = NistP384::ORDER.wrapping_sub(&U384::ONE);
         let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self(U384::conditional_select(&w, &r, !underflow).wrapping_add(&U384::ONE))
+        Self(U384::conditional_select(w, &r, !underflow).wrapping_add(&U384::ONE))
     }
+}
 
-    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce_nonzero(U384::from_be_byte_array(*bytes))
+impl ReduceNonZero<FieldBytes> for Scalar {
+    #[inline]
+    fn reduce_nonzero(bytes: &FieldBytes) -> Self {
+        Self::reduce_nonzero(&U384::from_be_byte_array(*bytes))
     }
 }
 
@@ -326,37 +329,40 @@ mod tests {
 
     #[test]
     fn reduce_nonzero() {
-        assert_eq!(Scalar::reduce_nonzero_bytes(&Array::default()).0, U384::ONE,);
-        assert_eq!(Scalar::reduce_nonzero(U384::ONE).0, U384::from_u8(2),);
-        assert_eq!(Scalar::reduce_nonzero(U384::from_u8(2)).0, U384::from_u8(3),);
-
-        assert_eq!(Scalar::reduce_nonzero(NistP384::ORDER).0, U384::from_u8(2),);
+        assert_eq!(Scalar::reduce_nonzero(&Array::default()).0, U384::ONE,);
+        assert_eq!(Scalar::reduce_nonzero(&U384::ONE).0, U384::from_u8(2),);
         assert_eq!(
-            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_sub(&U384::from_u8(1))).0,
+            Scalar::reduce_nonzero(&U384::from_u8(2)).0,
+            U384::from_u8(3),
+        );
+
+        assert_eq!(Scalar::reduce_nonzero(&NistP384::ORDER).0, U384::from_u8(2),);
+        assert_eq!(
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(1))).0,
             U384::ONE,
         );
         assert_eq!(
-            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_sub(&U384::from_u8(2))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(2))).0,
             NistP384::ORDER.wrapping_sub(&U384::ONE),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_sub(&U384::from_u8(3))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(3))).0,
             NistP384::ORDER.wrapping_sub(&U384::from_u8(2)),
         );
 
         assert_eq!(
-            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_add(&U384::ONE)).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_add(&U384::ONE)).0,
             U384::from_u8(3),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(NistP384::ORDER.wrapping_add(&U384::from_u8(2))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_add(&U384::from_u8(2))).0,
             U384::from_u8(4),
         );
     }
 
     prop_compose! {
         fn non_zero_scalar()(bytes in any::<[u8; 48]>()) -> NonZeroScalar {
-            NonZeroScalar::reduce_nonzero_bytes(&bytes.into())
+            NonZeroScalar::reduce_nonzero(&FieldBytes::from(bytes))
         }
     }
 
