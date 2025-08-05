@@ -8,7 +8,7 @@ use core::num::NonZeroU16;
 
 pub use expand_msg::{xmd::*, xof::*, *};
 
-use digest::array::{
+use elliptic_curve::array::{
     Array, ArraySize,
     typenum::{NonZero, Unsigned},
 };

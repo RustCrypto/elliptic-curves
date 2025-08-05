@@ -2,12 +2,10 @@
 
 use super::{Domain, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
-use digest::{
-    CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader,
-    array::{
-        ArraySize,
-        typenum::{IsGreaterOrEqual, Prod, True, U2},
-    },
+use digest::{CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader};
+use elliptic_curve::array::{
+    ArraySize,
+    typenum::{IsGreaterOrEqual, Prod, True, U2},
 };
 
 /// Implements `expand_message_xof` via the [`ExpandMsg`] trait:
