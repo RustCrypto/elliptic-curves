@@ -380,7 +380,7 @@ where
             })
             .unzip();
 
-        lincomb(&mut ks, &mut pcs)
+        lincomb::<C>(&mut ks, &mut pcs)
     }
 }
 
@@ -395,7 +395,7 @@ where
         });
         let mut pcs: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
 
-        lincomb(&mut ks, &mut pcs)
+        lincomb::<C>(&mut ks, &mut pcs)
     }
 }
 
