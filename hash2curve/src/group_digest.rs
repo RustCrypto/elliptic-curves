@@ -1,7 +1,6 @@
 //! Traits for handling hash to curve.
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
-use digest::array::typenum::Unsigned;
 use elliptic_curve::{ProjectivePoint, array::typenum::Unsigned};
 
 /// Hash arbitrary byte sequences to a valid group element.
