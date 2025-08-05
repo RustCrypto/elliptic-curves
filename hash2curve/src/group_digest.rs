@@ -22,6 +22,7 @@ pub trait GroupDigest: MapToCurve {
     /// > hash function is used.
     ///
     /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`.
+    /// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
     ///
     /// # Errors
     ///
@@ -48,6 +49,7 @@ pub trait GroupDigest: MapToCurve {
     /// > points in this set are more likely to be output than others.
     ///
     /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
+    /// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
     ///
     /// # Errors
     ///
@@ -67,6 +69,7 @@ pub trait GroupDigest: MapToCurve {
     /// and returns a scalar.
     ///   
     /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
+    /// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
     ///
     /// # Errors
     ///
