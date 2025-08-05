@@ -68,7 +68,7 @@ impl Mul<Scalar> for PowdrAffinePoint {
 }
 
 impl PowdrAffinePoint {
-    /// Ruduces the coordinates of the point to their canonical form.
+    /// Reduces the coordinates of the point to their canonical form.
     pub fn normalize_coordinates(&self) -> Self {
         PowdrAffinePoint(AffinePoint {
             x: self.0.x.normalize(),
