@@ -5,10 +5,8 @@ pub(super) mod xof;
 
 use core::num::NonZero;
 
-use digest::{
-    Digest, ExtendableOutput, Update, XofReader,
-    array::{Array, ArraySize},
-};
+use digest::{Digest, ExtendableOutput, Update, XofReader};
+use elliptic_curve::array::{Array, ArraySize};
 
 /// Salt when the DST is too long
 const OVERSIZE_DST_SALT: &[u8] = b"H2C-OVERSIZE-DST-";
