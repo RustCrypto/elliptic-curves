@@ -114,7 +114,7 @@ impl<'a> DecodeValue<'a> for Cipher<'a> {
         decoder: &mut R,
         header: der::Header,
     ) -> core::result::Result<Self, Self::Error> {
-        decoder.read_nested(header.length, |nr| {
+        decoder.read_nested(header.length(), |nr| {
             let x = UintRef::decode(nr)?.as_bytes();
             let y = UintRef::decode(nr)?.as_bytes();
             let digest = OctetStringRef::decode(nr)?.into();

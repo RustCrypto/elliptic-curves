@@ -159,10 +159,10 @@ impl<'a> Decode<'a> for Signature {
 
     fn decode<R: Reader<'a>>(reader: &mut R) -> der::Result<Self> {
         let header = Header::peek(reader)?;
-        header.tag.assert_eq(Tag::Sequence)?;
+        header.tag().assert_eq(Tag::Sequence)?;
 
         let mut buf = SignatureBytes::default();
-        let len = (header.encoded_len()? + header.length)?;
+        let len = (header.encoded_len()? + header.length())?;
         let slice = buf
             .get_mut(..usize::try_from(len)?)
             .ok_or_else(|| reader.error(Tag::Sequence.length_error()))?;
