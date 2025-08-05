@@ -1,6 +1,6 @@
 //! `expand_message_xof` for the `ExpandMsg` trait
 
-use super::{Domain, DstError, ExpandMsg, Expander};
+use super::{Domain, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
 use digest::{
     CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader,
@@ -15,7 +15,7 @@ use digest::{
 ///
 /// # Errors
 ///
-/// `expand_message` can return a [`DstError`] error.
+/// `expand_message` can return a [`ExpandMsgXofError`] error.
 pub struct ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
@@ -46,13 +46,13 @@ where
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
 {
     type Expander<'dst> = Self;
-    type Error = DstError;
+    type Error = ExpandMsgXofError;
 
     fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>, DstError> {
+    ) -> Result<Self::Expander<'dst>, ExpandMsgXofError> {
         let len_in_bytes = len_in_bytes.get();
 
         let domain = Domain::<Prod<K, U2>>::xof::<HashT>(dst)?;
@@ -78,6 +78,30 @@ where
         self.reader.read(okm);
     }
 }
+
+/// Error type for [`ExpandMsgXof`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExpandMsgXofError {
+    /// The domain separation tag is invalid because it is empty.
+    EmptyDst,
+    /// The domain separation tag is too long and needs to be hashed, but the selected
+    /// target security level in bytes (`K`) is too large (greater than `127`).
+    DstSecurityLevel,
+}
+
+impl core::fmt::Display for ExpandMsgXofError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::EmptyDst => write!(f, "the domain separation tag is empty"),
+            Self::DstSecurityLevel => write!(
+                f,
+                "the domain separation tag is too long and the target security level is too large"
+            ),
+        }
+    }
+}
+
+impl core::error::Error for ExpandMsgXofError {}
 
 #[cfg(test)]
 mod test {

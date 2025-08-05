@@ -2,7 +2,7 @@
 
 use core::{marker::PhantomData, num::NonZero, ops::Mul};
 
-use super::{Domain, DstError, ExpandMsg, Expander};
+use super::{Domain, ExpandMsg, Expander};
 use digest::{
     FixedOutput, HashMarker,
     array::{
@@ -148,8 +148,11 @@ where
 /// Error type for [`ExpandMsgXmd`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpandMsgXmdError {
-    /// The domain separation tag is empty.
-    Dst(DstError),
+    /// The domain separation tag is invalid because it is empty.
+    EmptyDst,
+    /// The domain separation tag is too long and needs to be hashed, but the hash function
+    /// selected has an output size too large (greater than `255`).
+    DstHash,
     /// The length in bytes is too large.
     ///
     /// `len_in_bytes` must be at most `255 * HashT::OutputSize`
@@ -159,19 +162,17 @@ pub enum ExpandMsgXmdError {
 impl core::fmt::Display for ExpandMsgXmdError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Self::Dst(e) => write!(f, "{e}"),
+            Self::EmptyDst => write!(f, "the domain separation tag is empty"),
+            Self::DstHash => write!(
+                f,
+                "`dst` is too long and the hash function has an output size greater than 255"
+            ),
             Self::Length => write!(f, "`len_in_bytes` is too large"),
         }
     }
 }
 
 impl core::error::Error for ExpandMsgXmdError {}
-
-impl From<DstError> for ExpandMsgXmdError {
-    fn from(e: DstError) -> Self {
-        Self::Dst(e)
-    }
-}
 
 #[cfg(test)]
 mod test {
