@@ -30,18 +30,14 @@ impl Add<PowdrAffinePoint> for PowdrAffinePoint {
             }
         }
 
-        // normalization is needed here to ensure the initial magnitude is 1.
-        let x1 = self.0.x.normalize_weak();
-        let y1 = self.0.y.normalize_weak();
-
-        let dx = other.0.x - x1;
+        let dx = other.0.x - self.0.x;
         let invert = dx.invert().unwrap();
 
-        let dy = other.0.y - y1;
+        let dy = other.0.y - self.0.y;
         let lambda = dy * invert;
 
-        let x3 = lambda.square() - x1 - other.0.x;
-        let y3 = lambda * (x1 + x3.negate(5)) - y1;
+        let x3 = lambda.square() - self.0.x - other.0.x;
+        let y3 = lambda * (self.0.x + x3.negate(5)) - self.0.y;
 
         PowdrAffinePoint(AffinePoint {
             x: x3.normalize_weak(),
@@ -241,6 +237,7 @@ impl LookupTable {
 
             if x < 0 {
                 point.0.y = -point.0.y;
+                point.0.y = point.0.y.normalize();
             }
 
             point

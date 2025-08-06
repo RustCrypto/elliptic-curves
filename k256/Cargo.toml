@@ -34,7 +34,7 @@ signature = { version = "3.0.0-rc.1", optional = true }
 
 
 [target.'cfg(target_os = "zkvm")'.dependencies]
-openvm = { git = "https://github.com/powdr-labs/openvm.git", rev="391b737fef5c12fd617c9030d8cb5ac4419b1622"}
+openvm = { git = "https://github.com/powdr-labs/openvm.git", rev="391b737fef5c12fd617c9030d8cb5ac4419b1622" }
 powdr-openvm-hints-guest = { git = "https://github.com/powdr-labs/powdr.git", rev="ea3e10d68683ad79a4ba247084346329704be587" }
 
 [dev-dependencies]
