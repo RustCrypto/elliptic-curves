@@ -34,7 +34,7 @@ impl Add<PowdrAffinePoint> for PowdrAffinePoint {
         let dx_inv = dx.invert().unwrap();
 
         let dy = other.0.y - self.0.y;
-        let lambda = dy * invert;
+        let lambda = dy * dx_inv;
 
         let x3 = lambda.square() - self.0.x - other.0.x;
         let y3 = lambda * (self.0.x + x3.negate(5)) - self.0.y;
