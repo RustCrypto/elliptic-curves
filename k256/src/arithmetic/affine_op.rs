@@ -79,12 +79,12 @@ impl PowdrAffinePoint {
             return PowdrAffinePoint(AffinePoint::IDENTITY);
         }
 
-        let num = FieldElement::from(3u64) * self.0.x.square();
-        let denom = FieldElement::from(2u64) * self.0.y;
+        let num = self.0.x.square().mul_single(3);
+        let denom = self.0.y.mul_single(2);
         let lambda = num * denom.invert().unwrap();
 
-        let x3 = lambda.square() - FieldElement::from(2u64) * self.0.x;
-        let y3 = lambda * (self.0.x + x3.negate(3)) - self.0.y;
+        let x3 = lambda.square() + self.0.x.mul_single(2).negate(2);
+        let y3 = lambda * (self.0.x + x3.negate(4)) - self.0.y;
 
         PowdrAffinePoint(AffinePoint {
             x: x3.normalize_weak(),
