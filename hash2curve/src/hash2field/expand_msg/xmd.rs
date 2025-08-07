@@ -165,7 +165,7 @@ impl core::fmt::Display for ExpandMsgXmdError {
             Self::EmptyDst => write!(f, "the domain separation tag is empty"),
             Self::DstHash => write!(
                 f,
-                "`dst` is too long and the hash function has an output size greater than 255"
+                "hash output size is too large"
             ),
             Self::Length => write!(f, "`len_in_bytes` is too large"),
         }
