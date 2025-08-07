@@ -155,7 +155,7 @@ pub enum ExpandMsgXmdError {
     DstHash,
     /// The length in bytes is too large.
     ///
-    /// `len_in_bytes` must be at most `255 * HashT::OutputSize`
+    /// `len_in_bytes` must be at most `255 * HashT::OutputSize`.
     Length,
 }
 
