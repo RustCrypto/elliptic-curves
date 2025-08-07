@@ -91,10 +91,7 @@ impl core::fmt::Display for ExpandMsgXofError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::EmptyDst => write!(f, "the domain separation tag is empty"),
-            Self::DstSecurityLevel => write!(
-                f,
-                "target security level is too large"
-            ),
+            Self::DstSecurityLevel => write!(f, "target security level is too large"),
         }
     }
 }

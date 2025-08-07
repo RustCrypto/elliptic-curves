@@ -163,10 +163,7 @@ impl core::fmt::Display for ExpandMsgXmdError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             Self::EmptyDst => write!(f, "the domain separation tag is empty"),
-            Self::DstHash => write!(
-                f,
-                "hash output size is too large"
-            ),
+            Self::DstHash => write!(f, "hash output size is too large"),
             Self::Length => write!(f, "`len_in_bytes` is too large"),
         }
     }
