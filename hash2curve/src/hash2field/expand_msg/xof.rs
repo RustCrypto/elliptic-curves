@@ -93,7 +93,7 @@ impl core::fmt::Display for ExpandMsgXofError {
             Self::EmptyDst => write!(f, "the domain separation tag is empty"),
             Self::DstSecurityLevel => write!(
                 f,
-                "the domain separation tag is too long and the target security level is too large"
+                "target security level is too large"
             ),
         }
     }
