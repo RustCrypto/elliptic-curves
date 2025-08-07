@@ -150,8 +150,8 @@ where
 pub enum ExpandMsgXmdError {
     /// The domain separation tag must not be empty.
     EmptyDst,
-    /// The domain separation tag is too long and needs to be hashed, but the hash function
-    /// selected has an output size too large (greater than `255`).
+    /// The hash's output size must not be greater then `255`
+    /// if the domain separation tag is longer than `255`.
     DstHash,
     /// The length in bytes is too large.
     ///
