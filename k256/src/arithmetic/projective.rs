@@ -3,6 +3,7 @@
 #![allow(clippy::op_ref)]
 
 use super::{AffinePoint, CURVE_EQUATION_B_SINGLE, FieldElement, Scalar};
+use crate::arithmetic::mul::{Endomorphism, Identity};
 use crate::{CompressedPoint, EncodedPoint, PublicKey, Secp256k1};
 use core::{
     iter::Sum,
@@ -38,6 +39,25 @@ pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
     pub(super) z: FieldElement,
+}
+
+impl Endomorphism for ProjectivePoint {
+    /// Calculates SECP256k1 endomorphism: `self * lambda`.
+    fn endomorphism(&self) -> Self {
+        Self {
+            x: self.x * &ENDOMORPHISM_BETA,
+            y: self.y,
+            z: self.z,
+        }
+    }
+}
+
+impl Identity for ProjectivePoint {
+    /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
+    /// "point at infinity".
+    fn identity() -> Self {
+        Self::IDENTITY
+    }
 }
 
 impl ProjectivePoint {

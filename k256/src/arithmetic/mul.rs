@@ -45,7 +45,9 @@ use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
 };
 
-use core::ops::{Mul, MulAssign};
+use core::ops::{Add, Mul, MulAssign, Neg, Sub};
+use std::println;
+use elliptic_curve::ops::AddAssign;
 use elliptic_curve::{
     ops::LinearCombination,
     scalar::IsHigh,
@@ -62,21 +64,40 @@ use std::sync::LazyLock;
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 #[derive(Copy, Clone, Default)]
-struct LookupTable([ProjectivePoint; 8]);
+pub struct LookupTable<P>([P; 8]);
 
-impl From<&ProjectivePoint> for LookupTable {
-    fn from(p: &ProjectivePoint) -> Self {
+impl<P> From<&P> for LookupTable<P>
+where
+    P: Copy + Add<Output = P> + Sub<Output = P>,
+{
+    fn from(p: &P) -> Self {
         let mut points = [*p; 8];
         for j in 0..7 {
-            points[j + 1] = p + &points[j];
+            points[j + 1] = *p + points[j];
         }
         LookupTable(points)
     }
 }
 
-impl LookupTable {
+impl<P: Identity + ConditionallySelectable + Neg<Output = P>> LookupTable<P> {
     /// Given -8 <= x <= 8, returns x * p in constant time.
-    fn select(&self, x: i8) -> ProjectivePoint {
+    fn select(&self, x: i8) -> P {
+        //     debug_assert!((-8..=8).contains(&x));
+
+        //     if x == 0 {
+        //         P::identity()
+        //     } else {
+        //         let abs = x.unsigned_abs() as usize;
+        //         let mut point = self.0[abs - 1];
+
+        //         if x < 0 {
+        //             point = -point;
+        //         }
+
+        //         point
+        //     }
+        // }
+
         debug_assert!(x >= -8);
         debug_assert!(x <= 8);
 
@@ -85,7 +106,7 @@ impl LookupTable {
         let xabs = (x + xmask) ^ xmask;
 
         // Get an array element in constant time
-        let mut t = ProjectivePoint::IDENTITY;
+        let mut t = P::identity();
         for j in 1..9 {
             let c = (xabs as u8).ct_eq(&(j as u8));
             t.conditional_assign(&self.0[j - 1], c);
@@ -99,6 +120,29 @@ impl LookupTable {
         t
     }
 }
+
+// fn select(&self, x: i8) -> P {
+//         debug_assert!(x >= -8);
+//         debug_assert!(x <= 8);
+
+//         // Compute xabs = |x|
+//         let xmask = x >> 7;
+//         let xabs = (x + xmask) ^ xmask;
+
+//         // Get an array element in constant time
+//         let mut t = P::identity();
+//         for j in 1..9 {
+//             let c = (xabs as u8).ct_eq(&(j as u8));
+//             t.conditional_assign(&self.0[j - 1], c);
+//         }
+//         // Now t == |x| * p.
+
+//         let neg_mask = Choice::from((xmask & 1) as u8);
+//         t.conditional_assign(&-t, neg_mask);
+//         // Now t == x * p.
+
+//         t
+//     }
 
 pub const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,
@@ -230,8 +274,16 @@ pub const G2: Scalar = Scalar::from_bytes_unchecked(&[
  * Q.E.D.
  */
 
+pub trait Endomorphism {
+    fn endomorphism(&self) -> Self;
+}
+
+pub trait Identity {
+    fn identity() -> Self;
+}
+
 /// Find r1 and r2 given k, such that r1 + r2 * lambda == k mod n.
-fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
+pub fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
     // these _vartime calls are constant time since the shift amount is constant
     let c1 = WideScalar::mul_shift_vartime(k, &G1, 384) * MINUS_B1;
     let c2 = WideScalar::mul_shift_vartime(k, &G2, 384) * MINUS_B2;
@@ -292,7 +344,7 @@ impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for Proje
             Radix16Decomposition::<33>::default(),
         ); N];
 
-        lincomb(points_and_scalars, &mut tables, &mut digits)
+        lincomb::<ProjectivePoint>(points_and_scalars, &mut tables, &mut digits)
     }
 }
 
@@ -313,11 +365,25 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
     }
 }
 
-fn lincomb(
-    xks: &[(ProjectivePoint, Scalar)],
-    tables: &mut [(LookupTable, LookupTable)],
+pub fn lincomb<P>(
+    xks: &[(P, Scalar)],
+    tables: &mut [(LookupTable<P>, LookupTable<P>)],
     digits: &mut [(Radix16Decomposition<33>, Radix16Decomposition<33>)],
-) -> ProjectivePoint {
+) -> P
+where
+    P: Copy
+        + Clone
+        + Default
+        + Add<Output = P>
+        + Neg<Output = P>
+        + Sub<Output = P>
+        + PartialEq
+        + ConditionallySelectable
+        + Endomorphism
+        + Identity
+        + AddAssign<P>,
+    for<'a> LookupTable<P>: From<&'a P>,
+{
     xks.iter().enumerate().for_each(|(i, (x, k))| {
         let (r1, r2) = decompose_scalar(k);
         let x_beta = x.endomorphism();
@@ -329,10 +395,8 @@ fn lincomb(
         );
 
         tables[i] = (
-            LookupTable::from(&ProjectivePoint::conditional_select(x, &-*x, r1_sign)),
-            LookupTable::from(&ProjectivePoint::conditional_select(
-                &x_beta, &-x_beta, r2_sign,
-            )),
+            LookupTable::from(&P::conditional_select(x, &-*x, r1_sign)),
+            LookupTable::from(&P::conditional_select(&x_beta, &-x_beta, r2_sign)),
         );
 
         digits[i] = (
@@ -341,26 +405,26 @@ fn lincomb(
         )
     });
 
-    let mut acc = ProjectivePoint::IDENTITY;
+    let mut acc = P::identity();
     for component in 0..xks.len() {
         let (digit1, digit2) = digits[component];
         let (table1, table2) = tables[component];
 
-        acc += &table1.select(digit1.0[32]);
-        acc += &table2.select(digit2.0[32]);
+        acc += table1.select(digit1.0[32]);
+        acc += table2.select(digit2.0[32]);
     }
 
     for i in (0..32).rev() {
         for _j in 0..4 {
-            acc = acc.double();
+            acc = acc + acc; // double the accumulator 4 times
         }
 
         for component in 0..xks.len() {
             let (digit1, digit2) = digits[component];
             let (table1, table2) = tables[component];
 
-            acc += &table1.select(digit1.0[i]);
-            acc += &table2.select(digit2.0[i]);
+            acc += table1.select(digit1.0[i]);
+            acc += table2.select(digit2.0[i]);
         }
     }
     acc
@@ -368,10 +432,11 @@ fn lincomb(
 
 /// Lazily computed basepoint table.
 #[cfg(feature = "precomputed-tables")]
-static GEN_LOOKUP_TABLE: LazyLock<[LookupTable; 33]> = LazyLock::new(precompute_gen_lookup_table);
+static GEN_LOOKUP_TABLE: LazyLock<[LookupTable<ProjectivePoint>; 33]> =
+    LazyLock::new(precompute_gen_lookup_table);
 
 #[cfg(feature = "precomputed-tables")]
-fn precompute_gen_lookup_table() -> [LookupTable; 33] {
+fn precompute_gen_lookup_table() -> [LookupTable<ProjectivePoint>; 33] {
     let mut generator = ProjectivePoint::GENERATOR;
     let mut res = [LookupTable::default(); 33];
 

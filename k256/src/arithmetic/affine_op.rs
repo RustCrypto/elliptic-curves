@@ -1,8 +1,11 @@
-use crate::arithmetic::mul::{G1, G2, MINUS_B1, MINUS_B2, MINUS_LAMBDA, Radix16Decomposition};
+use crate::arithmetic::mul::{
+    Endomorphism, G1, G2, Identity, MINUS_B1, MINUS_B2, MINUS_LAMBDA, Radix16Decomposition,
+};
+use crate::arithmetic::mul::{LookupTable, decompose_scalar, lincomb as lincomb_pippenger};
 use crate::arithmetic::projective::ENDOMORPHISM_BETA;
 use crate::arithmetic::scalar::{Scalar, WideScalar};
 use crate::{AffinePoint, FieldElement};
-use core::ops::{Add, Mul, Neg};
+use core::ops::{Add, AddAssign, Mul, Neg, Sub};
 use elliptic_curve::scalar::IsHigh;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable};
 
@@ -47,11 +50,26 @@ impl Add<PowdrAffinePoint> for PowdrAffinePoint {
     }
 }
 
+impl AddAssign<PowdrAffinePoint> for PowdrAffinePoint {
+    fn add_assign(&mut self, other: PowdrAffinePoint) {
+        *self = *self + other;
+    }
+}
+
 impl Neg for PowdrAffinePoint {
     type Output = PowdrAffinePoint;
 
     fn neg(self) -> PowdrAffinePoint {
         PowdrAffinePoint::neg(&self)
+    }
+}
+
+impl Sub<PowdrAffinePoint> for PowdrAffinePoint {
+    type Output = PowdrAffinePoint;
+
+    fn sub(self, other: PowdrAffinePoint) -> PowdrAffinePoint {
+        let neg_other = other.neg();
+        self + neg_other
     }
 }
 
@@ -105,7 +123,7 @@ impl PowdrAffinePoint {
         PowdrAffinePoint(AffinePoint {
             x: FieldElement::conditional_select(&a.0.x, &b.0.x, choice),
             y: FieldElement::conditional_select(&a.0.y, &b.0.y, choice),
-            infinity: a.0.infinity,
+            infinity: if choice.unwrap_u8() == 0 { a.0.infinity } else { b.0.infinity },
         })
     }
 
@@ -128,6 +146,26 @@ impl PowdrAffinePoint {
     }
 }
 
+impl ConditionallySelectable for PowdrAffinePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self::conditional_select(a, b, choice)
+    }
+}
+
+impl Endomorphism for PowdrAffinePoint {
+    fn endomorphism(&self) -> Self {
+        self.endomorphism()
+    }
+}
+
+impl Identity for PowdrAffinePoint {
+    /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
+    /// "point at infinity".
+    fn identity() -> Self {
+        PowdrAffinePoint(AffinePoint::IDENTITY)
+    }
+}
+
 #[inline(always)]
 fn mul(x: &PowdrAffinePoint, k: &Scalar) -> PowdrAffinePoint {
     lincomb(&[(*x, *k)])
@@ -143,107 +181,42 @@ pub fn lincomb<const N: usize>(
         Radix16Decomposition::<33>::default(),
     ); N];
 
-    lincomb_pippenger(points_and_scalars, &mut tables, &mut digits)
+    lincomb_pippenger::<PowdrAffinePoint>(points_and_scalars, &mut tables, &mut digits)
 }
 
-fn lincomb_pippenger(
-    xks: &[(PowdrAffinePoint, Scalar)],
-    tables: &mut [(LookupTable, LookupTable)],
-    digits: &mut [(Radix16Decomposition<33>, Radix16Decomposition<33>)],
-) -> PowdrAffinePoint {
-    xks.iter().enumerate().for_each(|(i, (x, k))| {
-        let (r1, r2) = decompose_scalar(k);
-        let x_beta = x.endomorphism();
-        let (r1_sign, r2_sign) = (r1.is_high(), r2.is_high());
+// #[derive(Copy, Clone, Default)]
+// struct LookupTable([PowdrAffinePoint; 8]);
 
-        let (r1_c, r2_c) = (
-            Scalar::conditional_select(&r1, &-r1, r1_sign),
-            Scalar::conditional_select(&r2, &-r2, r2_sign),
-        );
+// impl From<&PowdrAffinePoint> for LookupTable {
+//     fn from(p: &PowdrAffinePoint) -> Self {
+//         let mut points = [*p; 8];
+//         for j in 0..7 {
+//             points[j + 1] = *p + points[j];
+//         }
+//         LookupTable(points)
+//     }
+// }
 
-        tables[i] = (
-            LookupTable::from(&PowdrAffinePoint::conditional_select(x, &-*x, r1_sign)),
-            LookupTable::from(&PowdrAffinePoint::conditional_select(
-                &x_beta, &-x_beta, r2_sign,
-            )),
-        );
+// impl LookupTable {
+//     /// Given -8 <= x <= 8, returns x * p in constant time.
+//     fn select(&self, x: i8) -> PowdrAffinePoint {
+//         debug_assert!((-8..=8).contains(&x));
 
-        digits[i] = (
-            Radix16Decomposition::<33>::new(&r1_c),
-            Radix16Decomposition::<33>::new(&r2_c),
-        )
-    });
+//         if x == 0 {
+//             PowdrAffinePoint(AffinePoint::IDENTITY)
+//         } else {
+//             let abs = x.unsigned_abs() as usize;
+//             let mut point = self.0[abs - 1];
 
-    let mut acc = PowdrAffinePoint(AffinePoint::IDENTITY);
-    for component in 0..xks.len() {
-        let (digit1, digit2) = digits[component];
-        let (table1, table2) = tables[component];
+//             if x < 0 {
+//                 point.0.y = -point.0.y;
+//                 point.0.y = point.0.y.normalize();
+//             }
 
-        acc = table1.select(digit1.0[32]) + acc;
-        acc = table2.select(digit2.0[32]) + acc;
-    }
-
-    for i in (0..32).rev() {
-        for _j in 0..4 {
-            acc = acc.double();
-        }
-
-        for component in 0..xks.len() {
-            let (digit1, digit2) = digits[component];
-            let (table1, table2) = tables[component];
-
-            acc = table1.select(digit1.0[i]) + acc;
-            acc = table2.select(digit2.0[i]) + acc;
-        }
-    }
-
-    acc
-}
-
-/// Find r1 and r2 given k, such that r1 + r2 * lambda == k mod n.
-fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
-    // these _vartime calls are constant time since the shift amount is constant
-    let c1 = WideScalar::mul_shift_vartime(k, &G1, 384) * MINUS_B1;
-    let c2 = WideScalar::mul_shift_vartime(k, &G2, 384) * MINUS_B2;
-    let r2 = c1 + c2;
-    let r1 = k + r2 * MINUS_LAMBDA;
-
-    (r1, r2)
-}
-
-#[derive(Copy, Clone, Default)]
-struct LookupTable([PowdrAffinePoint; 8]);
-
-impl From<&PowdrAffinePoint> for LookupTable {
-    fn from(p: &PowdrAffinePoint) -> Self {
-        let mut points = [*p; 8];
-        for j in 0..7 {
-            points[j + 1] = *p + points[j];
-        }
-        LookupTable(points)
-    }
-}
-
-impl LookupTable {
-    /// Given -8 <= x <= 8, returns x * p in constant time.
-    fn select(&self, x: i8) -> PowdrAffinePoint {
-        debug_assert!((-8..=8).contains(&x));
-
-        if x == 0 {
-            PowdrAffinePoint(AffinePoint::IDENTITY)
-        } else {
-            let abs = x.unsigned_abs() as usize;
-            let mut point = self.0[abs - 1];
-
-            if x < 0 {
-                point.0.y = -point.0.y;
-                point.0.y = point.0.y.normalize();
-            }
-
-            point
-        }
-    }
-}
+//             point
+//         }
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
