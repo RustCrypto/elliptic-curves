@@ -26,6 +26,8 @@ pub trait FromOkm {
 ///
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-hash_to_field-implementatio>
 ///
+/// For the `expand_message` call, `len_in_bytes = T::Length * N`.
+///
 /// # Errors
 ///
 /// Returns an error if the [`ExpandMsg`] implementation fails.
