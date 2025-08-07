@@ -7,6 +7,8 @@ use core::num::NonZero;
 
 use digest::{Digest, ExtendableOutput, Update, XofReader};
 use elliptic_curve::array::{Array, ArraySize};
+use xmd::ExpandMsgXmdError;
+use xof::ExpandMsgXofError;
 
 /// Salt when the DST is too long
 const OVERSIZE_DST_SALT: &[u8] = b"H2C-OVERSIZE-DST-";
@@ -58,16 +60,16 @@ pub(crate) enum Domain<'a, L: ArraySize> {
 }
 
 impl<'a, L: ArraySize> Domain<'a, L> {
-    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, xof::ExpandMsgXofError>
+    pub fn xof<X>(dst: &'a [&'a [u8]]) -> Result<Self, ExpandMsgXofError>
     where
         X: Default + ExtendableOutput + Update,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(xof::ExpandMsgXofError::EmptyDst)
+            Err(ExpandMsgXofError::EmptyDst)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
             if L::USIZE > u8::MAX.into() {
-                return Err(xof::ExpandMsgXofError::DstSecurityLevel);
+                return Err(ExpandMsgXofError::DstSecurityLevel);
             }
             let mut data = Array::<u8, L>::default();
             let mut hash = X::default();
@@ -85,16 +87,16 @@ impl<'a, L: ArraySize> Domain<'a, L> {
         }
     }
 
-    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, xmd::ExpandMsgXmdError>
+    pub fn xmd<X>(dst: &'a [&'a [u8]]) -> Result<Self, ExpandMsgXmdError>
     where
         X: Digest<OutputSize = L>,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
         if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
-            Err(xmd::ExpandMsgXmdError::EmptyDst)
+            Err(ExpandMsgXmdError::EmptyDst)
         } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
             if L::USIZE > u8::MAX.into() {
-                return Err(xmd::ExpandMsgXmdError::DstHash);
+                return Err(ExpandMsgXmdError::DstHash);
             }
             Ok(Self::Hashed({
                 let mut hash = X::new();
