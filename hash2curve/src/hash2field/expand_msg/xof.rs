@@ -82,8 +82,8 @@ where
 pub enum ExpandMsgXofError {
     /// The domain separation tag is invalid because it is empty.
     EmptyDst,
-    /// The domain separation tag is too long and needs to be hashed, but the selected
-    /// target security level in bytes (`K`) is too large (greater than `127`).
+    /// The target security level (`K`) must not be greater then `127`
+    /// if the domain separation tag is longer than `255`.
     DstSecurityLevel,
 }
 
