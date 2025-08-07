@@ -148,7 +148,7 @@ where
 /// Error type for [`ExpandMsgXmd`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ExpandMsgXmdError {
-    /// The domain separation tag is invalid because it is empty.
+    /// The domain separation tag must not be empty.
     EmptyDst,
     /// The domain separation tag is too long and needs to be hashed, but the hash function
     /// selected has an output size too large (greater than `255`).
