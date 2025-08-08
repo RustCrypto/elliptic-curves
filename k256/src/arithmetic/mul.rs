@@ -46,7 +46,6 @@ use crate::arithmetic::{
 };
 
 use core::ops::{Add, Mul, MulAssign, Neg, Sub};
-use std::println;
 use elliptic_curve::ops::AddAssign;
 use elliptic_curve::{
     ops::LinearCombination,
@@ -82,21 +81,6 @@ where
 impl<P: Identity + ConditionallySelectable + Neg<Output = P>> LookupTable<P> {
     /// Given -8 <= x <= 8, returns x * p in constant time.
     fn select(&self, x: i8) -> P {
-        //     debug_assert!((-8..=8).contains(&x));
-
-        //     if x == 0 {
-        //         P::identity()
-        //     } else {
-        //         let abs = x.unsigned_abs() as usize;
-        //         let mut point = self.0[abs - 1];
-
-        //         if x < 0 {
-        //             point = -point;
-        //         }
-
-        //         point
-        //     }
-        // }
 
         debug_assert!(x >= -8);
         debug_assert!(x <= 8);
@@ -121,28 +105,6 @@ impl<P: Identity + ConditionallySelectable + Neg<Output = P>> LookupTable<P> {
     }
 }
 
-// fn select(&self, x: i8) -> P {
-//         debug_assert!(x >= -8);
-//         debug_assert!(x <= 8);
-
-//         // Compute xabs = |x|
-//         let xmask = x >> 7;
-//         let xabs = (x + xmask) ^ xmask;
-
-//         // Get an array element in constant time
-//         let mut t = P::identity();
-//         for j in 1..9 {
-//             let c = (xabs as u8).ct_eq(&(j as u8));
-//             t.conditional_assign(&self.0[j - 1], c);
-//         }
-//         // Now t == |x| * p.
-
-//         let neg_mask = Choice::from((xmask & 1) as u8);
-//         t.conditional_assign(&-t, neg_mask);
-//         // Now t == x * p.
-
-//         t
-//     }
 
 pub const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,

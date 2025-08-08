@@ -1,12 +1,8 @@
-use crate::arithmetic::mul::{
-    Endomorphism, G1, G2, Identity, MINUS_B1, MINUS_B2, MINUS_LAMBDA, Radix16Decomposition,
-};
-use crate::arithmetic::mul::{LookupTable, decompose_scalar, lincomb as lincomb_pippenger};
+use crate::arithmetic::mul::{LookupTable,lincomb as lincomb_pippenger,Endomorphism, Identity,Radix16Decomposition,};
 use crate::arithmetic::projective::ENDOMORPHISM_BETA;
-use crate::arithmetic::scalar::{Scalar, WideScalar};
+use crate::arithmetic::scalar::Scalar;
 use crate::{AffinePoint, FieldElement};
 use core::ops::{Add, AddAssign, Mul, Neg, Sub};
-use elliptic_curve::scalar::IsHigh;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
@@ -28,7 +24,6 @@ impl Add<PowdrAffinePoint> for PowdrAffinePoint {
             if self.0.y == other.0.y {
                 return self.double();
             } else {
-                //  x1 == x2 but y1 != y2 → vertical line → point at infinity
                 return PowdrAffinePoint(AffinePoint::IDENTITY);
             }
         }
@@ -123,7 +118,7 @@ impl PowdrAffinePoint {
         PowdrAffinePoint(AffinePoint {
             x: FieldElement::conditional_select(&a.0.x, &b.0.x, choice),
             y: FieldElement::conditional_select(&a.0.y, &b.0.y, choice),
-            infinity: if choice.unwrap_u8() == 0 { a.0.infinity } else { b.0.infinity },
+            infinity: if choice.into() { b.0.infinity } else { a.0.infinity },
         })
     }
 
@@ -159,8 +154,6 @@ impl Endomorphism for PowdrAffinePoint {
 }
 
 impl Identity for PowdrAffinePoint {
-    /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
-    /// "point at infinity".
     fn identity() -> Self {
         PowdrAffinePoint(AffinePoint::IDENTITY)
     }
@@ -184,39 +177,6 @@ pub fn lincomb<const N: usize>(
     lincomb_pippenger::<PowdrAffinePoint>(points_and_scalars, &mut tables, &mut digits)
 }
 
-// #[derive(Copy, Clone, Default)]
-// struct LookupTable([PowdrAffinePoint; 8]);
-
-// impl From<&PowdrAffinePoint> for LookupTable {
-//     fn from(p: &PowdrAffinePoint) -> Self {
-//         let mut points = [*p; 8];
-//         for j in 0..7 {
-//             points[j + 1] = *p + points[j];
-//         }
-//         LookupTable(points)
-//     }
-// }
-
-// impl LookupTable {
-//     /// Given -8 <= x <= 8, returns x * p in constant time.
-//     fn select(&self, x: i8) -> PowdrAffinePoint {
-//         debug_assert!((-8..=8).contains(&x));
-
-//         if x == 0 {
-//             PowdrAffinePoint(AffinePoint::IDENTITY)
-//         } else {
-//             let abs = x.unsigned_abs() as usize;
-//             let mut point = self.0[abs - 1];
-
-//             if x < 0 {
-//                 point.0.y = -point.0.y;
-//                 point.0.y = point.0.y.normalize();
-//             }
-
-//             point
-//         }
-//     }
-// }
 
 #[cfg(test)]
 mod tests {
