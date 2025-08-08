@@ -179,7 +179,7 @@ impl FieldElement {
             let normalizes_to_zero = self.normalizes_to_zero();
             if !bool::from(normalizes_to_zero) {
                 // prove its the inverse
-                assert_eq!((inv * self).normalize(), Self::ONE);
+                assert_eq!((inv * self - Self::ONE).normalizes_to_zero(), Self::ZERO);
             }
             CtOption::new(inv, !normalizes_to_zero)
         }
