@@ -53,7 +53,6 @@ impl Endomorphism for ProjectivePoint {
 }
 
 impl Identity for ProjectivePoint {
-    /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
     /// "point at infinity".
     fn identity() -> Self {
         Self::IDENTITY
