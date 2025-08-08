@@ -65,8 +65,7 @@ impl Sub<PowdrAffinePoint> for PowdrAffinePoint {
     type Output = PowdrAffinePoint;
 
     fn sub(self, other: PowdrAffinePoint) -> PowdrAffinePoint {
-        let neg_other = other.neg();
-        self + neg_other
+        self + other.neg()
     }
 }
 
@@ -105,14 +104,6 @@ impl PowdrAffinePoint {
             x: x3.normalize_weak(),
             y: y3.normalize_weak(),
             infinity: 0,
-        })
-    }
-
-    fn neg(&self) -> Self {
-        PowdrAffinePoint(AffinePoint {
-            x: self.0.x,
-            y: self.0.y.negate(1).normalize(),
-            infinity: self.0.infinity,
         })
     }
 
