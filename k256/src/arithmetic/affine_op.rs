@@ -55,7 +55,7 @@ impl Neg for PowdrAffinePoint {
     type Output = PowdrAffinePoint;
 
     fn neg(self) -> PowdrAffinePoint {
-        PowdrAffinePoint::neg(&self)
+        PowdrAffinePoint(self.0.neg())
     }
 }
 
