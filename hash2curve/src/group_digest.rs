@@ -1,8 +1,7 @@
 //! Traits for handling hash to curve.
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
-use elliptic_curve::array::typenum::Unsigned;
-use elliptic_curve::{ProjectivePoint, Result};
+use elliptic_curve::{ProjectivePoint, array::typenum::Unsigned};
 
 /// Hash arbitrary byte sequences to a valid group element.
 pub trait GroupDigest: MapToCurve {
@@ -22,17 +21,17 @@ pub trait GroupDigest: MapToCurve {
     /// > oracle returning points in G assuming a cryptographically secure
     /// > hash function is used.
     ///
+    /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`.
+    /// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
+    ///
     /// # Errors
-    /// - `len_in_bytes > u16::MAX`
-    /// - See implementors of [`ExpandMsg`] for additional errors:
-    ///   - [`ExpandMsgXmd`]
-    ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`ExpandMsgXmdError`]
+    /// and [`ExpandMsgXofError`] for examples.
     ///
-    /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::ExpandMsgXof
-    fn hash_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>>
+    /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
+    /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
+    fn hash_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
         X: ExpandMsg<Self::K>,
     {
@@ -52,17 +51,17 @@ pub trait GroupDigest: MapToCurve {
     /// > encode_to_curve is only a fraction of the points in G, and some
     /// > points in this set are more likely to be output than others.
     ///
+    /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
+    /// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
+    ///
     /// # Errors
-    /// - `len_in_bytes > u16::MAX`
-    /// - See implementors of [`ExpandMsg`] for additional errors:
-    ///   - [`ExpandMsgXmd`]
-    ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::FieldElement as FromOkm>::Length`
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`ExpandMsgXmdError`]
+    /// and [`ExpandMsgXofError`] for examples.
     ///
-    /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::ExpandMsgXof
-    fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>>
+    /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
+    /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
+    fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
         X: ExpandMsg<Self::K>,
     {
@@ -74,18 +73,18 @@ pub trait GroupDigest: MapToCurve {
     /// Computes the hash to field routine according to
     /// <https://www.rfc-editor.org/rfc/rfc9380.html#section-5-4>
     /// and returns a scalar.
+    ///   
+    /// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
+    /// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
     ///
     /// # Errors
-    /// - `len_in_bytes > u16::MAX`
-    /// - See implementors of [`ExpandMsg`] for additional errors:
-    ///   - [`ExpandMsgXmd`]
-    ///   - [`ExpandMsgXof`]
     ///
-    /// `len_in_bytes = <Self::Scalar as FromOkm>::Length`
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`ExpandMsgXmdError`]
+    /// and [`ExpandMsgXofError`] for examples.
     ///
-    /// [`ExpandMsgXmd`]: crate::ExpandMsgXmd
-    /// [`ExpandMsgXof`]: crate::ExpandMsgXof
-    fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar>
+    /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
+    /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
+    fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar, X::Error>
     where
         X: ExpandMsg<Self::K>,
     {

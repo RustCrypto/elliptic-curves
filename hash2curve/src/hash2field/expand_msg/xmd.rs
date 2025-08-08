@@ -11,15 +11,13 @@ use digest::{
     },
     block_api::BlockSizeUser,
 };
-use elliptic_curve::{Error, Result};
 
 /// Implements `expand_message_xof` via the [`ExpandMsg`] trait:
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-expand_message_xmd>
 ///
 /// # Errors
-/// - `dst` contains no bytes
-/// - `dst > 255 && HashT::OutputSize > 255`
-/// - `len_in_bytes > 255 * HashT::OutputSize`
+///
+/// See [`ExpandMsgXmdError`] for details.
 #[derive(Debug)]
 pub struct ExpandMsgXmd<HashT>(PhantomData<HashT>)
 where
@@ -38,17 +36,18 @@ where
     HashT::OutputSize: IsGreaterOrEqual<Prod<K, U2>, Output = True>,
 {
     type Expander<'dst> = ExpanderXmd<'dst, HashT>;
+    type Error = ExpandMsgXmdError;
 
     fn expand_message<'dst>(
         msg: &[&[u8]],
         dst: &'dst [&[u8]],
         len_in_bytes: NonZero<u16>,
-    ) -> Result<Self::Expander<'dst>> {
+    ) -> Result<Self::Expander<'dst>, ExpandMsgXmdError> {
         let b_in_bytes = HashT::OutputSize::USIZE;
 
         // `255 * <b_in_bytes>` can not exceed `u16::MAX`
         if usize::from(len_in_bytes.get()) > 255 * b_in_bytes {
-            return Err(Error);
+            return Err(ExpandMsgXmdError::Length);
         }
 
         let ell = u8::try_from(usize::from(len_in_bytes.get()).div_ceil(b_in_bytes))
@@ -146,6 +145,32 @@ where
     }
 }
 
+/// Error type for [`ExpandMsgXmd`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExpandMsgXmdError {
+    /// The domain separation tag must not be empty.
+    EmptyDst,
+    /// The hash's output size must not be greater then `255`
+    /// if the domain separation tag is longer than `255`.
+    DstHash,
+    /// The length in bytes is too large.
+    ///
+    /// `len_in_bytes` must be at most `255 * HashT::OutputSize`.
+    Length,
+}
+
+impl core::fmt::Display for ExpandMsgXmdError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::EmptyDst => write!(f, "the domain separation tag is empty"),
+            Self::DstHash => write!(f, "hash output size is too large"),
+            Self::Length => write!(f, "`len_in_bytes` is too large"),
+        }
+    }
+}
+
+impl core::error::Error for ExpandMsgXmdError {}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -196,11 +221,7 @@ mod test {
 
     impl TestVector {
         #[allow(clippy::panic_in_result_fn)]
-        fn assert<HashT, L>(
-            &self,
-            dst: &'static [u8],
-            domain: &Domain<'_, HashT::OutputSize>,
-        ) -> Result<()>
+        fn assert<HashT, L>(&self, dst: &'static [u8], domain: &Domain<'_, HashT::OutputSize>)
         where
             HashT: BlockSizeUser + Default + FixedOutput + HashMarker,
             HashT::OutputSize: IsLessOrEqual<HashT::BlockSize, Output = True>,
@@ -213,24 +234,24 @@ mod test {
             let mut expander = <ExpandMsgXmd<HashT> as ExpandMsg<U4>>::expand_message(
                 &[self.msg],
                 &dst,
-                NonZero::new(L::U16).ok_or(Error)?,
-            )?;
+                NonZero::new(L::U16).unwrap(),
+            )
+            .unwrap();
 
             let mut uniform_bytes = Array::<u8, L>::default();
             expander.fill_bytes(&mut uniform_bytes);
 
             assert_eq!(uniform_bytes.as_slice(), self.uniform_bytes);
-            Ok(())
         }
     }
 
     #[test]
-    fn expand_message_xmd_sha_256() -> Result<()> {
+    fn expand_message_xmd_sha_256() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHA256-128";
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348413235362d31323826");
 
-        let dst_prime = Domain::xmd::<Sha256>(&[DST])?;
+        let dst_prime = Domain::xmd::<Sha256>(&[DST]).unwrap();
         dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
@@ -262,7 +283,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_32 {
-            test_vector.assert::<Sha256, U32>(DST, &dst_prime)?;
+            test_vector.assert::<Sha256, U32>(DST, &dst_prime);
         }
 
         const TEST_VECTORS_128: &[TestVector] = &[
@@ -290,19 +311,17 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_128 {
-            test_vector.assert::<Sha256, U128>(DST, &dst_prime)?;
+            test_vector.assert::<Sha256, U128>(DST, &dst_prime);
         }
-
-        Ok(())
     }
 
     #[test]
-    fn expand_message_xmd_sha_256_long() -> Result<()> {
+    fn expand_message_xmd_sha_256_long() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHA256-128-long-DST-1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111";
         const DST_PRIME: &[u8] =
             &hex!("412717974da474d0f8c420f320ff81e8432adb7c927d9bd082b4fb4d16c0a23620");
 
-        let dst_prime = Domain::xmd::<Sha256>(&[DST])?;
+        let dst_prime = Domain::xmd::<Sha256>(&[DST]).unwrap();
         dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
@@ -334,7 +353,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_32 {
-            test_vector.assert::<Sha256, U32>(DST, &dst_prime)?;
+            test_vector.assert::<Sha256, U32>(DST, &dst_prime);
         }
 
         const TEST_VECTORS_128: &[TestVector] = &[
@@ -366,21 +385,19 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_128 {
-            test_vector.assert::<Sha256, U128>(DST, &dst_prime)?;
+            test_vector.assert::<Sha256, U128>(DST, &dst_prime);
         }
-
-        Ok(())
     }
 
     #[test]
-    fn expand_message_xmd_sha_512() -> Result<()> {
+    fn expand_message_xmd_sha_512() {
         use sha2::Sha512;
 
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHA512-256";
         const DST_PRIME: &[u8] =
             &hex!("515555582d5630312d435330322d776974682d657870616e6465722d5348413531322d32353626");
 
-        let dst_prime = Domain::xmd::<Sha512>(&[DST])?;
+        let dst_prime = Domain::xmd::<Sha512>(&[DST]).unwrap();
         dst_prime.assert_dst(DST_PRIME);
 
         const TEST_VECTORS_32: &[TestVector] = &[
@@ -412,7 +429,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_32 {
-            test_vector.assert::<Sha512, U32>(DST, &dst_prime)?;
+            test_vector.assert::<Sha512, U32>(DST, &dst_prime);
         }
 
         const TEST_VECTORS_128: &[TestVector] = &[
@@ -444,9 +461,7 @@ mod test {
         ];
 
         for test_vector in TEST_VECTORS_128 {
-            test_vector.assert::<Sha512, U128>(DST, &dst_prime)?;
+            test_vector.assert::<Sha512, U128>(DST, &dst_prime);
         }
-
-        Ok(())
     }
 }
