@@ -56,8 +56,11 @@ pub trait GroupDigest: MapToCurve {
     ///
     /// # Errors
     ///
-    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`crate::ExpandMsgXmd`]
-    /// and [`crate::ExpandMsgXof`] for examples.
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`ExpandMsgXmdError`]
+    /// and [`ExpandMsgXofError`] for examples.
+    ///
+    /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
+    /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
         X: ExpandMsg<Self::K>,
