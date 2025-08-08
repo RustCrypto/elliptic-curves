@@ -1,4 +1,6 @@
-use crate::arithmetic::mul::{LookupTable,lincomb as lincomb_pippenger,Endomorphism, Identity,Radix16Decomposition,};
+use crate::arithmetic::mul::{
+    Endomorphism, Identity, LookupTable, Radix16Decomposition, lincomb as lincomb_pippenger,
+};
 use crate::arithmetic::projective::ENDOMORPHISM_BETA;
 use crate::arithmetic::scalar::Scalar;
 use crate::{AffinePoint, FieldElement};
@@ -115,11 +117,7 @@ impl PowdrAffinePoint {
     }
 
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        PowdrAffinePoint(AffinePoint {
-            x: FieldElement::conditional_select(&a.0.x, &b.0.x, choice),
-            y: FieldElement::conditional_select(&a.0.y, &b.0.y, choice),
-            infinity: if choice.into() { b.0.infinity } else { a.0.infinity },
-        })
+        PowdrAffinePoint(AffinePoint::conditional_select(&a.0, &b.0, choice))
     }
 
     /// Calculates SECP256k1 endomorphism: `self * lambda`.
@@ -176,7 +174,6 @@ pub fn lincomb<const N: usize>(
 
     lincomb_pippenger::<PowdrAffinePoint>(points_and_scalars, &mut tables, &mut digits)
 }
-
 
 #[cfg(test)]
 mod tests {

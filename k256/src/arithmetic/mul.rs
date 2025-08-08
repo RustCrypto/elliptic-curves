@@ -81,7 +81,6 @@ where
 impl<P: Identity + ConditionallySelectable + Neg<Output = P>> LookupTable<P> {
     /// Given -8 <= x <= 8, returns x * p in constant time.
     fn select(&self, x: i8) -> P {
-
         debug_assert!(x >= -8);
         debug_assert!(x <= 8);
 
@@ -104,7 +103,6 @@ impl<P: Identity + ConditionallySelectable + Neg<Output = P>> LookupTable<P> {
         t
     }
 }
-
 
 pub const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,
