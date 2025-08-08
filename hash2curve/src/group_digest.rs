@@ -79,8 +79,11 @@ pub trait GroupDigest: MapToCurve {
     ///
     /// # Errors
     ///
-    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`crate::ExpandMsgXmd`]
-    /// and [`crate::ExpandMsgXof`] for examples.
+    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`ExpandMsgXmdError`]
+    /// and [`ExpandMsgXofError`] for examples.
+    ///
+    /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
+    /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar, X::Error>
     where
         X: ExpandMsg<Self::K>,
