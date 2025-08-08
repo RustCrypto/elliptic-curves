@@ -26,7 +26,6 @@ pub trait GroupDigest: MapToCurve {
     ///
     /// # Errors
     ///
-    /// When the chosen [`ExpandMsg`] implementation returns an error. See [`crate::ExpandMsgXmd`]
     /// When the chosen [`ExpandMsg`] implementation returns an error. See [`ExpandMsgXmdError`]
     /// and [`ExpandMsgXofError`] for examples.
     ///
