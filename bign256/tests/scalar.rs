@@ -2,13 +2,13 @@
 
 #![cfg(feature = "arithmetic")]
 
-use bign256::{Scalar, U256};
+use bign256::{FieldBytes, Scalar};
 use elliptic_curve::ops::{Invert, Reduce};
 use proptest::prelude::*;
 
 prop_compose! {
     fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
-        <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into())
+        <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into())
     }
 }
 

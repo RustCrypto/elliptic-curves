@@ -89,11 +89,11 @@ impl FromOkm for Scalar {
 
         let mut d0 = FieldBytes::default();
         d0[12..].copy_from_slice(&data[0..36]);
-        let d0 = Scalar::reduce(U384::from_be_byte_array(d0));
+        let d0 = Scalar::reduce(&U384::from_be_byte_array(d0));
 
         let mut d1 = FieldBytes::default();
         d1[12..].copy_from_slice(&data[36..]);
-        let d1 = Scalar::reduce(U384::from_be_byte_array(d1));
+        let d1 = Scalar::reduce(&U384::from_be_byte_array(d1));
 
         d0 * F_2_288 + d1
     }
@@ -327,7 +327,7 @@ mod tests {
             let scalar = data % wide_order;
             let reduced_scalar = U384::from_be_slice(&scalar.to_be_byte_array()[24..]);
 
-            Scalar::reduce(reduced_scalar)
+            Scalar::reduce(&reduced_scalar)
         };
 
         proptest!(ProptestConfig::with_cases(1000), |(b0 in ANY, b1 in ANY, b2 in ANY, b3 in ANY, b4 in ANY, b5 in ANY, b6 in ANY, b7 in ANY, b8 in ANY)| {

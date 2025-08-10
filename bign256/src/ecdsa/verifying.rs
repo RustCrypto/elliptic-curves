@@ -121,7 +121,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         let mut hash: Array<u8, U32> = Array::clone_from_slice(prehash);
         hash.reverse();
 
-        let hw = Scalar::reduce_bytes(FieldBytes::from_slice(&hash));
+        let hw = Scalar::reduce(FieldBytes::from_slice(&hash));
         let left = s1.add(&hw);
 
         let right = s0.add(&Scalar::from_u64(2).pow([128, 0, 0, 0]));

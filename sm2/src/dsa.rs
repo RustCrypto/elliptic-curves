@@ -38,13 +38,23 @@ mod signing;
 #[cfg(feature = "arithmetic")]
 mod verifying;
 
+#[cfg(feature = "der")]
+mod der;
+
+#[cfg(feature = "der")]
+pub use der::Signature as DerSignature;
+
 pub use signature;
 
 #[cfg(feature = "arithmetic")]
 pub use self::{signing::SigningKey, verifying::VerifyingKey};
 
-use crate::{FieldBytes, NonZeroScalar, Sm2};
-use core::fmt::{self, Debug};
+use crate::{Array, FieldBytes, FieldBytesSize, NonZeroScalar, Sm2};
+use core::{
+    fmt::{self, Debug},
+    ops::Add,
+};
+
 use signature::{Error, Result, SignatureEncoding};
 
 #[cfg(feature = "alloc")]
@@ -52,13 +62,19 @@ use alloc::vec::Vec;
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8::{
-    AlgorithmIdentifierRef, ObjectIdentifier, der::AnyRef, spki::AssociatedAlgorithmIdentifier,
+    AlgorithmIdentifierRef, ObjectIdentifier,
+    der::{self as der_core, AnyRef, asn1::BitString},
+    spki::AssociatedAlgorithmIdentifier,
 };
-#[cfg(all(feature = "alloc", feature = "pkcs8"))]
-use crate::pkcs8::{der, spki::SignatureBitStringEncoding};
 
-/// SM2DSA signature serialized as bytes.
-pub type SignatureBytes = [u8; Signature::BYTE_SIZE];
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use crate::pkcs8::spki::SignatureBitStringEncoding;
+
+/// SM2DSA signature size.
+pub type SignatureSize = <FieldBytesSize as Add>::Output;
+
+/// SM2DSA signature bytes.
+pub type SignatureBytes = Array<u8, SignatureSize>;
 
 /// Primitive scalar type (works without the `arithmetic` feature).
 type ScalarPrimitive = elliptic_curve::ScalarPrimitive<Sm2>;
@@ -101,9 +117,15 @@ impl Signature {
         Self::try_from(r.into().concat(s.into()).as_slice())
     }
 
+    /// Parse a signature from ASN.1 DER.
+    #[cfg(feature = "der")]
+    pub fn from_der(bytes: &[u8]) -> Result<Self> {
+        DerSignature::try_from(bytes).and_then(Self::try_from)
+    }
+
     /// Serialize this signature as bytes.
     pub fn to_bytes(&self) -> SignatureBytes {
-        let mut ret = [0; Self::BYTE_SIZE];
+        let mut ret = SignatureBytes::default();
         let (r_bytes, s_bytes) = ret.split_at_mut(Self::BYTE_SIZE / 2);
         r_bytes.copy_from_slice(&self.r.to_bytes());
         s_bytes.copy_from_slice(&self.s.to_bytes());
@@ -118,6 +140,12 @@ impl Signature {
     /// Bytes for the `s` component of a signature.
     pub fn s_bytes(&self) -> FieldBytes {
         self.s.to_bytes()
+    }
+
+    /// Serialize this signature as ASN.1 DER.
+    #[cfg(feature = "der")]
+    pub fn to_der(&self) -> DerSignature {
+        DerSignature::from_components(&self.r_bytes(), &self.s_bytes()).expect("DER encoding error")
     }
 
     /// Convert this signature into a byte vector.
@@ -207,8 +235,8 @@ impl TryFrom<&[u8]> for Signature {
 
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl SignatureBitStringEncoding for Signature {
-    fn to_bitstring(&self) -> der::Result<der::asn1::BitString> {
-        der::asn1::BitString::new(0, self.to_vec())
+    fn to_bitstring(&self) -> der_core::Result<BitString> {
+        BitString::new(0, self.to_vec())
     }
 }
 

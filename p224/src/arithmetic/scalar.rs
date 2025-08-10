@@ -202,18 +202,18 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl Reduce<Uint> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: Uint) -> Self {
+    fn reduce(w: &Uint) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP224::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(Uint::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(Uint::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+    fn reduce(bytes: &FieldBytes) -> Self {
         let w = <Uint as FieldBytesEncoding<NistP224>>::decode_field_bytes(bytes);
-        Self::reduce(w)
+        Self::reduce(&w)
     }
 }
 

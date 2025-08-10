@@ -3,7 +3,7 @@
 use elliptic_curve::ops::Reduce;
 use proptest::prelude::*;
 use sm2::{
-    NonZeroScalar, Scalar, U256,
+    FieldBytes, NonZeroScalar, Scalar,
     dsa::{
         Signature, SigningKey,
         signature::{Signer, Verifier},
@@ -16,7 +16,7 @@ const IDENTITY: &str = "test@rustcrypto.org";
 fn create_test_signing_key() -> SigningKey {
     // Use a fixed test key for deterministic testing
     let test_key = [42u8; 32];
-    let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&test_key.into());
+    let scalar = <Scalar as Reduce<FieldBytes>>::reduce(&test_key.into());
     let scalar = NonZeroScalar::new(scalar).unwrap();
     SigningKey::from_nonzero_scalar(IDENTITY, scalar).unwrap()
 }

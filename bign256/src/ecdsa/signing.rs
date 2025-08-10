@@ -109,7 +109,7 @@ impl PrehashSigner<Signature> for SigningKey {
         let mut h_word: Array<u8, U32> = Array::clone_from_slice(prehash);
         h_word.reverse();
 
-        let h = Scalar::reduce_bytes(&h_word);
+        let h = Scalar::reduce(&h_word);
 
         //2. Generate 𝑘 ← rand(1,..,𝑞-1)
         let k = Scalar::from_repr(rfc6979::generate_k::<BeltHash, _>(

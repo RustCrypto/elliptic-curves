@@ -149,7 +149,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
 
         // B4: calculate e'=Hv(M'~)
         #[allow(deprecated)] // from_slice
-        let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
+        let e = Scalar::reduce(FieldBytes::from_slice(prehash));
 
         // B5: calculate t = (r' + s') modn, verification failed if t=0
         let t = *r + *s;
@@ -166,7 +166,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         .x();
 
         // B7: calculate R=(e'+x1') modn, verification pass if yes, otherwise failed
-        if *r == e + Scalar::reduce_bytes(&x) {
+        if *r == e + Scalar::reduce(&x) {
             Ok(())
         } else {
             Err(Error::new())

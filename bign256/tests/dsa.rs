@@ -7,7 +7,7 @@ use hex_literal::hex;
 use proptest::prelude::*;
 
 use bign256::{
-    NonZeroScalar, Scalar, U256,
+    FieldBytes, NonZeroScalar, Scalar,
     ecdsa::{
         Signature, SigningKey, VerifyingKey,
         signature::{Signer, Verifier},
@@ -35,7 +35,7 @@ fn verify_test_vector() {
 prop_compose! {
     fn signing_key()(bytes in any::<[u8; 32]>()) -> SigningKey {
         loop {
-            let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into());
+            let scalar = <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into());
             if let Some(scalar) = Option::from(NonZeroScalar::new(scalar)) {
                 return SigningKey::from_nonzero_scalar(scalar).unwrap();
             }

@@ -132,17 +132,17 @@ impl PrimeField for Scalar {
 }
 
 impl Reduce<U256> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U256) -> Self {
+    fn reduce(w: &U256) -> Self {
         let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U256::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U256::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce(U256::from_be_byte_array(*bytes))
+    fn reduce(bytes: &FieldBytes) -> Self {
+        Self::reduce(&U256::from_be_byte_array(*bytes))
     }
 }
 
