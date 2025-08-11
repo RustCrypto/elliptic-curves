@@ -92,15 +92,31 @@
 //! # }
 //! ```
 
+use crate::ecdsa::hazmat::bits2field;
+use crate::elliptic_curve::CurveArithmetic;
+use crate::elliptic_curve::ops::Reduce;
+use crate::{PowdrAffinePoint, arithmetic::scalar::Scalar};
 pub use ecdsa_core::{
     EcdsaCurve, RecoveryId,
     signature::{self, Error},
 };
 
+use crate::ORDER;
+use crate::elliptic_curve::AffinePoint;
+use crate::elliptic_curve::PrimeField;
+use crate::elliptic_curve::bigint::CheckedAdd;
+pub use crate::elliptic_curve::bigint::U256;
+use crate::elliptic_curve::point::DecompressPoint;
+use crate::{
+    Secp256k1,
+    elliptic_curve::{
+        self as ec, Curve, FieldBytes, FieldBytesEncoding, bigint::ArrayEncoding, subtle::CtOption,
+    },
+};
+type U = <Secp256k1 as Curve>::Uint;
+
 #[cfg(any(feature = "ecdsa", feature = "sha256"))]
 pub use ecdsa_core::hazmat;
-
-use crate::Secp256k1;
 
 /// ECDSA/secp256k1 signature (fixed-size)
 pub type Signature = ecdsa_core::Signature<Secp256k1>;
@@ -119,6 +135,91 @@ pub type SigningKey = ecdsa_core::SigningKey<Secp256k1>;
 /// ECDSA/secp256k1 verification key (i.e. public key)
 #[cfg(feature = "ecdsa")]
 pub type VerifyingKey = ecdsa_core::VerifyingKey<Secp256k1>;
+
+#[cfg(all(feature = "ecdsa", feature = "arithmetic"))]
+/// Extension trait for [`VerifyingKey`] for zkvm
+pub trait K256VerifyExt {
+    /// Recover a [`VerifyingKey`] from a pre-hashed message and signature.
+    fn recover_from_prehash<D: hazmat::DigestAlgorithm>(
+        prehash: &[u8],
+        signature: &Signature,
+        recovery_id: RecoveryId,
+    ) -> Result<VerifyingKey, Error>;
+}
+#[cfg(all(feature = "ecdsa", feature = "arithmetic"))]
+#[allow(non_snake_case)]
+impl K256VerifyExt for VerifyingKey {
+    fn recover_from_prehash<D: hazmat::DigestAlgorithm>(
+        prehash: &[u8],
+        signature: &Signature,
+        recovery_id: RecoveryId,
+    ) -> Result<Self, Error> {
+        let (r, s) = signature.split_scalars();
+        let z = Scalar::reduce(&bits2field::<Secp256k1>(prehash)?);
+
+        let r_bytes = if recovery_id.is_x_reduced() {
+            let repr: FieldBytes<Secp256k1> = r.to_repr();
+            let mut x = <U as FieldBytesEncoding<Secp256k1>>::decode_field_bytes(&repr);
+
+            x = x.checked_add(&ORDER).into_option().ok_or_else(Error::new)?;
+
+            let r_bytes: FieldBytes<Secp256k1> =
+                <U as FieldBytesEncoding<Secp256k1>>::encode_field_bytes(&x);
+            r_bytes
+        } else {
+            r.to_repr()
+        };
+
+        let R = PowdrAffinePoint(
+            <Secp256k1 as CurveArithmetic>::AffinePoint::decompress(
+                &r_bytes,
+                u8::from(recovery_id.is_y_odd()).into(),
+            )
+            .into_option()
+            .ok_or_else(Error::new)
+            .unwrap(),
+        );
+
+        let r_inv = r.invert().unwrap();
+        let u1 = -(r_inv * z);
+        let u2 = r_inv * *s;
+        let pk =
+            crate::arithmetic::affine_op::lincomb(&[(PowdrAffinePoint::generator(), u1), (R, u2)]);
+        let vk = Self::from_affine(pk.0).expect("public key recovery failed");
+
+        // Ensure signature verifies with the recovered key
+        verify_prehashed(
+            &PowdrAffinePoint(*vk.as_affine()),
+            &bits2field::<Secp256k1>(prehash)?,
+            signature,
+        )?;
+        Ok(vk)
+    }
+}
+
+#[cfg(all(feature = "ecdsa", feature = "arithmetic"))]
+/// Verify signature
+pub fn verify_prehashed(
+    q: &PowdrAffinePoint,
+    z: &FieldBytes<Secp256k1>,
+    sig: &Signature,
+) -> Result<(), Error> {
+    let z = Scalar::reduce(z);
+    let (r, s) = sig.split_scalars();
+    let s_inv = s.invert().unwrap();
+    let u1 = z * s_inv;
+    let u2 = *r * s_inv;
+    let x: FieldBytes<Secp256k1> =
+        crate::arithmetic::affine_op::lincomb(&[(PowdrAffinePoint::generator(), u1), (*q, u2)])
+            .x()
+            .to_bytes();
+
+    if *r == Scalar::reduce(&x) {
+        Ok(())
+    } else {
+        Err(Error::new())
+    }
+}
 
 #[cfg(feature = "sha256")]
 impl hazmat::DigestAlgorithm for Secp256k1 {
@@ -177,8 +278,11 @@ mod tests {
     #[cfg(feature = "sha256")]
     mod recovery {
         use crate::{
-            EncodedPoint,
-            ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey, signature::DigestVerifier},
+            EncodedPoint, Secp256k1,
+            ecdsa::{
+                K256VerifyExt, RecoveryId, Signature, SigningKey, VerifyingKey,
+                signature::DigestVerifier,
+            },
         };
         use hex_literal::hex;
         use sha2::{Digest, Sha256};
@@ -222,6 +326,22 @@ mod tests {
                 let sig = Signature::try_from(vector.sig.as_slice()).unwrap();
                 let recid = vector.recid;
                 let pk = VerifyingKey::recover_from_digest(digest, &sig, recid).unwrap();
+                assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
+            }
+        }
+
+        #[test]
+        fn public_key_recovery_zkvm() {
+            for vector in RECOVERY_TEST_VECTORS {
+                let digest = Sha256::new_with_prefix(vector.msg);
+                let sig = Signature::try_from(vector.sig.as_slice()).unwrap();
+                let recid = vector.recid;
+                let pk = <VerifyingKey as K256VerifyExt>::recover_from_prehash::<Secp256k1>(
+                    &digest.finalize(),
+                    &sig,
+                    recid,
+                )
+                .unwrap();
                 assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
             }
         }
