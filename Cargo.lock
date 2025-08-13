@@ -318,8 +318,9 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.0-pre.7"
-source = "git+https://github.com/RustCrypto/crypto-bigint#bfd010775118fe29c02f5141a80a8e153472ead7"
+version = "0.7.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "737a2363b81de8cc95d8780d84aecb4b3c6f41e4473759da6636072b5514c875"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -339,9 +340,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.8.0-rc.7"
+version = "0.8.0-rc.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2fe0a4fafae25053c19a03fefe040607bda956b4941d692ed9fb9d3c18a3193"
+checksum = "7050e8041c28720851f7db83183195b6acf375bb7bb28e3b86f0fe6cbd69459d"
 dependencies = [
  "const-oid",
  "pem-rfc7468",
@@ -363,8 +364,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "112839e868b3376c2066506d42331023165d687a7ed38b2ed77f28763d9a7742"
+source = "git+https://github.com/RustCrypto/signatures.git#41edbafeca0ecaf8076232e4b87a5564540bd2e3"
 dependencies = [
  "der",
  "digest",
@@ -415,8 +415,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.10"
-source = "git+https://github.com/RustCrypto/traits.git#d5355ef8a85577d9842505cf3241f6e1d011d0da"
+version = "0.14.0-rc.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02a716b7c32bccdb9c70c78ecdc1e4188f2a76d3ee7d98f404e26b3be8550861"
 dependencies = [
  "base16ct",
  "base64ct",
@@ -1192,6 +1193,7 @@ dependencies = [
 name = "sm2"
 version = "0.14.0-pre"
 dependencies = [
+ "der",
  "elliptic-curve",
  "hex-literal",
  "primefield",

@@ -12,7 +12,6 @@ use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, Result,
     group::{
         Group, GroupEncoding,
-        ff::Field,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     },
     rand_core::TryRngCore,
@@ -411,7 +410,7 @@ impl Group for ProjectivePoint {
     type Scalar = Scalar;
 
     fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
-        Ok(Self::GENERATOR * Scalar::try_from_rng(rng)?)
+        AffinePoint::try_from_rng(rng).map(Self::from)
     }
 
     fn identity() -> Self {

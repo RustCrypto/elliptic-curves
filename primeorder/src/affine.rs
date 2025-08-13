@@ -13,6 +13,7 @@ use elliptic_curve::{
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
+    rand_core::TryRngCore,
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
@@ -73,6 +74,28 @@ where
             x: self.x,
             y: C::FieldElement::conditional_select(&self.y, &neg_self.y, choice),
             infinity: self.infinity,
+        }
+    }
+}
+
+impl<C> AffinePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+{
+    /// Generate a cryptographically random [`AffinePoint`].
+    pub fn try_from_rng<R: TryRngCore + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        let mut bytes = FieldBytes::<C>::default();
+        let mut sign = 0;
+
+        loop {
+            rng.try_fill_bytes(&mut bytes)?;
+            rng.try_fill_bytes(core::array::from_mut(&mut sign))?;
+            if let Some(point) = Self::decompress(&bytes, Choice::from(sign & 1)).into_option() {
+                return Ok(point);
+            }
         }
     }
 }

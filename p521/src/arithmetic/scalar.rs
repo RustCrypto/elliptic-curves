@@ -22,7 +22,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result,
-    bigint::{self, Integer},
+    bigint::{self, Integer, NonZero},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -106,7 +106,7 @@ impl Scalar {
     ///
     /// This method is primarily intended for defining internal constants.
     #[allow(dead_code)]
-    pub(crate) const fn from_hex(hex: &str) -> Self {
+    pub(crate) const fn from_hex_unchecked(hex: &str) -> Self {
         Self::from_uint_unchecked(U576::from_be_hex(hex))
     }
 
@@ -534,7 +534,7 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 3;
-    const ROOT_OF_UNITY: Self = Self::from_hex(
+    const ROOT_OF_UNITY: Self = Self::from_hex_unchecked(
         "000000000000009a0a650d44b28c17f3d708ad2fa8c4fbc7e6000d7c12dafa92fcc5673a3055276d535f79ff391dcdbcd998b7836647d3a72472b3da861ac810a7f9c7b7b63e2205",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
@@ -557,34 +557,33 @@ impl PrimeField for Scalar {
 }
 
 impl Reduce<U576> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U576) -> Self {
+    fn reduce(w: &U576) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP521::ORDER, bigint::Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U576::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U576::conditional_select(w, &r, !underflow))
     }
-
+}
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+    fn reduce(bytes: &FieldBytes) -> Self {
         let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
-        Self::reduce(w)
+        Self::reduce(&w)
     }
 }
 
 impl ReduceNonZero<U576> for Scalar {
-    fn reduce_nonzero(w: U576) -> Self {
+    fn reduce_nonzero(w: &U576) -> Self {
         const ORDER_MINUS_ONE: U576 = NistP521::ORDER.wrapping_sub(&U576::ONE);
-        let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, bigint::Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(
-            U576::conditional_select(&w, &r, !underflow).wrapping_add(&U576::ONE),
-        )
+        let r = w.rem(&NonZero::new(ORDER_MINUS_ONE).unwrap());
+        Self::from_uint_unchecked(r.wrapping_add(&U576::ONE))
     }
+}
 
-    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
+impl ReduceNonZero<FieldBytes> for Scalar {
+    #[inline]
+    fn reduce_nonzero(bytes: &FieldBytes) -> Self {
         let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
-        Self::reduce_nonzero(w)
+        Self::reduce_nonzero(&w)
     }
 }
 
@@ -642,7 +641,7 @@ impl<'de> Deserialize<'de> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{NistP521, NonZeroScalar};
+    use crate::{FieldBytes, NistP521, NonZeroScalar};
 
     use super::{Scalar, U576};
     use elliptic_curve::{
@@ -660,50 +659,57 @@ mod tests {
     #[test]
     fn reduce_nonzero() {
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero_bytes(&Array::default())),
+            U576::from(Scalar::reduce_nonzero(&Array::default())),
             U576::ONE,
         );
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(U576::ONE)),
+            U576::from(Scalar::reduce_nonzero(&U576::ONE)),
             U576::from_u8(2),
         );
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(U576::from_u8(2))),
+            U576::from(Scalar::reduce_nonzero(&U576::from_u8(2))),
             U576::from_u8(3),
         );
 
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(NistP521::ORDER)),
+            U576::from(Scalar::reduce_nonzero(&NistP521::ORDER)),
             U576::from_u8(2),
         );
         assert_eq!(
             U576::from(Scalar::reduce_nonzero(
-                NistP521::ORDER.wrapping_sub(&U576::from_u8(1))
+                &NistP521::ORDER.wrapping_sub(&U576::from_u8(1))
             )),
             U576::ONE,
         );
         assert_eq!(
             U576::from(Scalar::reduce_nonzero(
-                NistP521::ORDER.wrapping_sub(&U576::from_u8(2))
+                &NistP521::ORDER.wrapping_sub(&U576::from_u8(2))
             )),
             NistP521::ORDER.wrapping_sub(&U576::ONE),
         );
         assert_eq!(
             U576::from(Scalar::reduce_nonzero(
-                NistP521::ORDER.wrapping_sub(&U576::from_u8(3))
+                &NistP521::ORDER.wrapping_sub(&U576::from_u8(3))
             )),
             NistP521::ORDER.wrapping_sub(&U576::from_u8(2)),
         );
 
         assert_eq!(
             U576::from(Scalar::reduce_nonzero(
-                NistP521::ORDER.wrapping_add(&U576::ONE)
+                &NistP521::ORDER.wrapping_add(&U576::ONE)
             )),
             U576::from_u8(3),
         );
         assert_eq!(
             U576::from(Scalar::reduce_nonzero(
-                NistP521::ORDER.wrapping_add(&U576::from_u8(2))
+                &NistP521::ORDER.wrapping_add(&U576::from_u8(2))
+            )),
+            U576::from_u8(4),
+        );
+
+        assert_eq!(
+            U576::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_mul(&U576::from_u8(3))
             )),
             U576::from_u8(4),
         );
@@ -711,7 +717,7 @@ mod tests {
 
     prop_compose! {
         fn non_zero_scalar()(bytes in any::<[u8; 66]>()) -> NonZeroScalar {
-            NonZeroScalar::reduce_nonzero_bytes(&bytes.into())
+            NonZeroScalar::reduce_nonzero(&FieldBytes::from(bytes))
         }
     }
 

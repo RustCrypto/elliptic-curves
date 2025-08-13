@@ -173,7 +173,8 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 4;
-    const ROOT_OF_UNITY: Self = Self::from_hex("5c1fbd92d24b720fc3eee409e29f6b56b4db11947185a1bc");
+    const ROOT_OF_UNITY: Self =
+        Self::from_hex_vartime("5c1fbd92d24b720fc3eee409e29f6b56b4db11947185a1bc");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(43046721);
 
@@ -207,18 +208,18 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl Reduce<U192> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U192) -> Self {
+    fn reduce(w: &U192) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP192::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U192::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U192::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+    fn reduce(bytes: &FieldBytes) -> Self {
         let w = <U192 as FieldBytesEncoding<NistP192>>::decode_field_bytes(bytes);
-        Self::reduce(w)
+        Self::reduce(&w)
     }
 }
 

@@ -4,6 +4,7 @@ use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::curve::scalar_mul::variable_base;
+use crate::curve::twedwards::IsogenyMap;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -341,9 +342,17 @@ impl Group for EdwardsPoint {
     where
         R: TryRngCore + ?Sized,
     {
-        let mut bytes = [0u8; 32];
-        rng.try_fill_bytes(&mut bytes)?;
-        Ok(Self::hash_with_defaults(&bytes))
+        let mut bytes = Array::default();
+
+        loop {
+            rng.try_fill_bytes(&mut bytes)?;
+            if let Some(point) = Self::from_bytes(&bytes)
+                .into_option()
+                .filter(|&point| point != Self::IDENTITY)
+            {
+                return Ok(point);
+            }
+        }
     }
 
     fn identity() -> Self {
@@ -661,36 +670,16 @@ impl EdwardsPoint {
         AffinePoint { x, y }
     }
 
-    /// Edwards_Isogeny is derived from the doubling formula
-    /// XXX: There is a duplicate method in the twisted edwards module to compute the dual isogeny
-    /// XXX: Not much point trying to make it generic I think. So what we can do is optimise each respective isogeny method for a=1 or a = -1 (currently, I just made it really slow and simple)
-    fn edwards_isogeny(&self, a: FieldElement) -> TwistedExtendedPoint {
-        // Convert to affine now, then derive extended version later
-        let affine = self.to_affine();
-        let x = affine.x;
-        let y = affine.y;
-
-        // Compute x
-        let xy = x * y;
-        let x_numerator = xy.double();
-        let x_denom = y.square() - (a * x.square());
-        let new_x = x_numerator * x_denom.invert();
-
-        // Compute y
-        let y_numerator = y.square() + (a * x.square());
-        let y_denom = (FieldElement::ONE + FieldElement::ONE) - y.square() - (a * x.square());
-        let new_y = y_numerator * y_denom.invert();
-
-        TwistedExtendedPoint {
-            X: new_x,
-            Y: new_y,
-            Z: FieldElement::ONE,
-            T: new_x * new_y,
-        }
-    }
-
     pub(crate) fn to_twisted(self) -> TwistedExtendedPoint {
-        self.edwards_isogeny(FieldElement::ONE)
+        let IsogenyMap { X, Y, T, Z } = IsogenyMap {
+            X: self.X,
+            Y: self.Y,
+            T: self.T,
+            Z: self.Z,
+        }
+        .map(|f| f);
+
+        TwistedExtendedPoint { X, Y, Z, T }
     }
 
     /// Compute the negation of this point's `x`-coordinate.

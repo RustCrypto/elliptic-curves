@@ -91,14 +91,14 @@ pub struct Cipher<'a> {
 impl<'a> Sequence<'a> for Cipher<'a> {}
 
 impl EncodeValue for Cipher<'_> {
-    fn value_len(&self) -> elliptic_curve::pkcs8::der::Result<Length> {
+    fn value_len(&self) -> der::Result<Length> {
         UintRef::new(&self.x.to_be_bytes())?.encoded_len()?
             + UintRef::new(&self.y.to_be_bytes())?.encoded_len()?
             + OctetStringRef::new(self.digest)?.encoded_len()?
             + OctetStringRef::new(self.cipher)?.encoded_len()?
     }
 
-    fn encode_value(&self, writer: &mut impl Writer) -> elliptic_curve::pkcs8::der::Result<()> {
+    fn encode_value(&self, writer: &mut impl Writer) -> der::Result<()> {
         UintRef::new(&self.x.to_be_bytes())?.encode(writer)?;
         UintRef::new(&self.y.to_be_bytes())?.encode(writer)?;
         OctetStringRef::new(self.digest)?.encode(writer)?;
@@ -108,13 +108,13 @@ impl EncodeValue for Cipher<'_> {
 }
 
 impl<'a> DecodeValue<'a> for Cipher<'a> {
-    type Error = elliptic_curve::pkcs8::der::Error;
+    type Error = der::Error;
 
     fn decode_value<R: Reader<'a>>(
         decoder: &mut R,
-        header: elliptic_curve::pkcs8::der::Header,
+        header: der::Header,
     ) -> core::result::Result<Self, Self::Error> {
-        decoder.read_nested(header.length, |nr| {
+        decoder.read_nested(header.length(), |nr| {
             let x = UintRef::decode(nr)?.as_bytes();
             let y = UintRef::decode(nr)?.as_bytes();
             let digest = OctetStringRef::decode(nr)?.into();
@@ -163,9 +163,7 @@ fn xor(c2: &mut [u8], ha: &[u8], offset: usize, xor_len: usize) {
 }
 
 /// Converts a byte slice to a fixed-size array, padding with leading zeroes if necessary.
-pub(crate) fn zero_pad_byte_slice<const N: usize>(
-    bytes: &[u8],
-) -> elliptic_curve::pkcs8::der::Result<[u8; N]> {
+pub(crate) fn zero_pad_byte_slice<const N: usize>(bytes: &[u8]) -> der::Result<[u8; N]> {
     let num_zeroes = N
         .checked_sub(bytes.len())
         .ok_or_else(|| Tag::Integer.length_error())?;

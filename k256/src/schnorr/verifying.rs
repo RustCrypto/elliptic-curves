@@ -3,7 +3,6 @@
 use super::{CHALLENGE_TAG, Signature, tagged_hash};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
 use elliptic_curve::{
-    bigint::U256,
     group::prime::PrimeCurveAffine,
     ops::{LinearCombination, Reduce},
     point::DecompactPoint,
@@ -54,7 +53,7 @@ impl VerifyingKey {
     ) -> core::result::Result<(), Error> {
         let (r, s) = signature.split();
 
-        let e = <Scalar as Reduce<U256>>::reduce_bytes(
+        let e = <Scalar as Reduce<FieldBytes>>::reduce(
             &tagged_hash(CHALLENGE_TAG)
                 .chain_update(signature.r.to_bytes())
                 .chain_update(self.to_bytes())

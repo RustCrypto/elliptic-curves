@@ -217,7 +217,7 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
 
     // A2: calculate e=Hv(M~)
     #[allow(deprecated)] // from_slice
-    let e = Scalar::reduce_bytes(FieldBytes::from_slice(prehash));
+    let e = Scalar::reduce(FieldBytes::from_slice(prehash));
 
     // A3: pick a random number k in [1, n-1] via a random number generator
     let k = Scalar::from_repr(rfc6979::generate_k::<Sm3, _>(
@@ -232,7 +232,7 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
     let R = ProjectivePoint::mul_by_generator(&k).to_affine();
 
     // A5: calculate r=(e+x1) modn, return to A3 if r=0 or r+k=n
-    let r = e + Scalar::reduce_bytes(&R.x());
+    let r = e + Scalar::reduce(&R.x());
     if bool::from(r.is_zero() | (r + k).ct_eq(&Scalar::ZERO)) {
         return Err(Error::new());
     }

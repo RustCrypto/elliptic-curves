@@ -165,7 +165,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
 
         // A3: compute point 𝑆 = [ℎ]𝑃𝐵 of the elliptic curve
         let pb_point = public_key.as_affine();
-        let s = *pb_point * Scalar::reduce(U256::from_u32(FieldElement::S));
+        let s = *pb_point * Scalar::reduce(&U256::from_u32(FieldElement::S));
         if s.is_identity().into() {
             return Err(Error);
         }

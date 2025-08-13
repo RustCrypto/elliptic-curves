@@ -4,14 +4,14 @@
 
 use elliptic_curve::ops::Reduce;
 use p256::{
-    NonZeroScalar, U256,
+    FieldBytes, NonZeroScalar,
     ecdsa::{SigningKey, VerifyingKey},
 };
 use proptest::prelude::*;
 
 prop_compose! {
     fn signing_key()(bytes in any::<[u8; 32]>()) -> SigningKey {
-        <NonZeroScalar as Reduce<U256>>::reduce_bytes(&bytes.into()).into()
+        <NonZeroScalar as Reduce<FieldBytes>>::reduce(&bytes.into()).into()
     }
 }
 

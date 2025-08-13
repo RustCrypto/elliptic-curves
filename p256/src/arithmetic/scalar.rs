@@ -621,16 +621,17 @@ impl Neg for &Scalar {
 }
 
 impl Reduce<U256> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U256) -> Self {
+    fn reduce(w: &U256) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP256::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self(U256::conditional_select(&w, &r, !underflow))
+        Self(U256::conditional_select(w, &r, !underflow))
     }
+}
 
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce(U256::from_be_byte_array(*bytes))
+impl Reduce<FieldBytes> for Scalar {
+    #[inline]
+    fn reduce(bytes: &FieldBytes) -> Self {
+        Self::reduce(&U256::from_be_byte_array(*bytes))
     }
 }
 
@@ -674,15 +675,18 @@ impl Reduce<U384> for Scalar {
 }
 
 impl ReduceNonZero<U256> for Scalar {
-    fn reduce_nonzero(w: U256) -> Self {
+    fn reduce_nonzero(w: &U256) -> Self {
         const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
         let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self(U256::conditional_select(&w, &r, !underflow).wrapping_add(&U256::ONE))
+        Self(U256::conditional_select(w, &r, !underflow).wrapping_add(&U256::ONE))
     }
+}
 
-    fn reduce_nonzero_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce_nonzero(U256::from_be_byte_array(*bytes))
+impl ReduceNonZero<FieldBytes> for Scalar {
+    #[inline]
+    fn reduce_nonzero(bytes: &FieldBytes) -> Self {
+        Self::reduce_nonzero(&U256::from_be_byte_array(*bytes))
     }
 }
 

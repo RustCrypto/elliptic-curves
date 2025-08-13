@@ -5,7 +5,7 @@ use hex_literal::hex;
 use proptest::prelude::*;
 use rand_core::OsRng;
 
-use sm2::{Scalar, Sm2, U256, pke::DecryptingKey};
+use sm2::{FieldBytes, Scalar, Sm2, pke::DecryptingKey};
 
 // private key bytes
 const PRIVATE_KEY: [u8; 32] =
@@ -47,7 +47,7 @@ fn decrypt_der_verify() {
 prop_compose! {
     fn decrypting_key()(bytes in any::<[u8; 32]>()) -> DecryptingKey {
         loop {
-            let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into());
+            let scalar = <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into());
             if let Some(scalar) = Option::from(NonZeroScalar::new(scalar)) {
                 return DecryptingKey::from_nonzero_scalar(scalar).unwrap();
             }
@@ -58,7 +58,7 @@ prop_compose! {
 prop_compose! {
     fn decrypting_key_c1c2c3()(bytes in any::<[u8; 32]>()) -> DecryptingKey {
         loop {
-            let scalar = <Scalar as Reduce<U256>>::reduce_bytes(&bytes.into());
+            let scalar = <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into());
             if let Some(scalar) = Option::from(NonZeroScalar::new(scalar)) {
                 return DecryptingKey::new_with_mode(scalar, sm2::pke::Mode::C1C2C3);
             }

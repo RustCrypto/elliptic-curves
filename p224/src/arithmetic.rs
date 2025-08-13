@@ -43,12 +43,13 @@ impl PrimeCurveParams for NistP224 {
     /// b = 0xb4050a85 0c04b3ab f5413256 5044b0b7 d7bfd8ba 270b3943 2355ffb4
     #[cfg(target_pointer_width = "32")]
     const EQUATION_B: FieldElement =
-        FieldElement::from_hex("b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4");
+        FieldElement::from_hex_vartime("b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4");
 
     /// b = 0xb4050a85 0c04b3ab f5413256 5044b0b7 d7bfd8ba 270b3943 2355ffb4
     #[cfg(target_pointer_width = "64")]
-    const EQUATION_B: FieldElement =
-        FieldElement::from_hex("00000000b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4");
+    const EQUATION_B: FieldElement = FieldElement::from_hex_vartime(
+        "00000000b4050a850c04b3abf54132565044b0b7d7bfd8ba270b39432355ffb4",
+    );
 
     /// Base point of P-224.
     ///
@@ -58,8 +59,8 @@ impl PrimeCurveParams for NistP224 {
     /// ```
     #[cfg(target_pointer_width = "32")]
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex("b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21"),
-        FieldElement::from_hex("bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34"),
+        FieldElement::from_hex_vartime("b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21"),
+        FieldElement::from_hex_vartime("bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34"),
     );
 
     /// Base point of P-224.
@@ -70,7 +71,11 @@ impl PrimeCurveParams for NistP224 {
     /// ```
     #[cfg(target_pointer_width = "64")]
     const GENERATOR: (FieldElement, FieldElement) = (
-        FieldElement::from_hex("00000000b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21"),
-        FieldElement::from_hex("00000000bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34"),
+        FieldElement::from_hex_vartime(
+            "00000000b70e0cbd6bb4bf7f321390b94a03c1d356c21122343280d6115c1d21",
+        ),
+        FieldElement::from_hex_vartime(
+            "00000000bd376388b5f723fb4c22dfe6cd4375a05a07476444d5819985007e34",
+        ),
     );
 }

@@ -152,7 +152,7 @@ impl PrimeField for Scalar {
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122");
+        Self::from_hex_vartime("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
 
@@ -186,18 +186,18 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl Reduce<U256> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U256) -> Self {
+    fn reduce(w: &U256) -> Self {
         let (r, underflow) = w.borrowing_sub(&Sm2::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U256::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U256::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+    fn reduce(bytes: &FieldBytes) -> Self {
         let w = <U256 as FieldBytesEncoding<Sm2>>::decode_field_bytes(bytes);
-        Self::reduce(w)
+        Self::reduce(&w)
     }
 }
 

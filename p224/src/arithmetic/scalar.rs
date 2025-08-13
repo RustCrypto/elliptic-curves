@@ -165,10 +165,10 @@ impl PrimeField for Scalar {
     const S: u32 = 2;
     #[cfg(target_pointer_width = "32")]
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
+        Self::from_hex_vartime("317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
     #[cfg(target_pointer_width = "64")]
     const ROOT_OF_UNITY: Self =
-        Self::from_hex("00000000317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
+        Self::from_hex_vartime("00000000317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(16);
 
@@ -202,18 +202,18 @@ impl PrimeFieldBits for Scalar {
 }
 
 impl Reduce<Uint> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: Uint) -> Self {
+    fn reduce(w: &Uint) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP224::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(Uint::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(Uint::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
+    fn reduce(bytes: &FieldBytes) -> Self {
         let w = <Uint as FieldBytesEncoding<NistP224>>::decode_field_bytes(bytes);
-        Self::reduce(w)
+        Self::reduce(&w)
     }
 }
 

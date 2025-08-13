@@ -117,7 +117,7 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
     const S: u32 = 2;
-    const ROOT_OF_UNITY: Self = Self::from_hex(
+    const ROOT_OF_UNITY: Self = Self::from_hex_vartime(
         "76cdc6369fb54dde55a851fce47cc5f830bb074c85684b3ee476be128dc50cfa8602aeecf53a1982fcf3b95f8d4258ff",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
@@ -140,17 +140,17 @@ impl PrimeField for Scalar {
 }
 
 impl Reduce<U384> for Scalar {
-    type Bytes = FieldBytes;
-
-    fn reduce(w: U384) -> Self {
+    fn reduce(w: &U384) -> Self {
         let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U384::conditional_select(&w, &r, !underflow))
+        Self::from_uint_unchecked(U384::conditional_select(w, &r, !underflow))
     }
+}
 
+impl Reduce<FieldBytes> for Scalar {
     #[inline]
-    fn reduce_bytes(bytes: &FieldBytes) -> Self {
-        Self::reduce(U384::from_be_byte_array(*bytes))
+    fn reduce(bytes: &FieldBytes) -> Self {
+        Self::reduce(&U384::from_be_byte_array(*bytes))
     }
 }
 
