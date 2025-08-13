@@ -637,18 +637,7 @@ impl Reduce<FieldBytes> for Scalar {
 
 impl Reduce<U512> for Scalar {
     fn reduce(w: &U512) -> Self {
-        // Convert U512 to two U256s for use with barrett_reduce
-        let w_bytes = w.to_be_bytes();
-        let mut lo_bytes = [0u8; 32];
-        let mut hi_bytes = [0u8; 32];
-
-        // Copy the lower 256 bits (bytes 32-63)
-        lo_bytes.copy_from_slice(&w_bytes[32..64]);
-        // Copy the upper 256 bits (bytes 0-31)
-        hi_bytes.copy_from_slice(&w_bytes[0..32]);
-
-        let lo = U256::from_be_byte_array(lo_bytes.into());
-        let hi = U256::from_be_byte_array(hi_bytes.into());
+        let (lo, hi) = w.split();
         let w_reduced = barrett_reduce(lo, hi);
         Self(w_reduced)
     }
