@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve,
-    bigint::{Limb, U256, U384, prelude::*},
+    bigint::{Limb, U128, U256, U384, U512, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -634,24 +634,38 @@ impl Reduce<U256> for Scalar {
     }
 }
 
-impl Reduce<U384> for Scalar {
-    type Bytes = [u8; 48];
+impl Reduce<U512> for Scalar {
+    type Bytes = [u8; 64];
 
-    fn reduce(w: U384) -> Self {
-        // Convert U384 to U512 for use with barrett_reduce, which expects 512 bits total
+    fn reduce(w: U512) -> Self {
+        // Convert U512 to two U256s for use with barrett_reduce
         let w_bytes = w.to_be_bytes();
         let mut lo_bytes = [0u8; 32];
         let mut hi_bytes = [0u8; 32];
         
-        // Copy the lower 256 bits (bytes 16-47)
-        lo_bytes.copy_from_slice(&w_bytes[16..48]);
-        // Copy the upper 128 bits to the lower part of hi (bytes 0-15 -> 16-31 of hi)
-        hi_bytes[16..32].copy_from_slice(&w_bytes[0..16]);
+        // Copy the lower 256 bits (bytes 32-63)
+        lo_bytes.copy_from_slice(&w_bytes[32..64]);
+        // Copy the upper 256 bits (bytes 0-31)
+        hi_bytes.copy_from_slice(&w_bytes[0..32]);
         
         let lo = U256::from_be_byte_array(lo_bytes.into());
         let hi = U256::from_be_byte_array(hi_bytes.into());
         let w_reduced = barrett_reduce(lo, hi);
         Self(w_reduced)
+    }
+
+    fn reduce_bytes(bytes: &[u8; 64]) -> Self {
+        Self::reduce(U512::from_be_byte_array((*bytes).into()))
+    }
+}
+
+impl Reduce<U384> for Scalar {
+    type Bytes = [u8; 48];
+
+    fn reduce(w: U384) -> Self {
+        // Use U512 reduction by concatenating U384 with U128::ZERO
+        let w512 = w.concat(&U128::ZERO);
+        <Self as Reduce<U512>>::reduce(w512)
     }
 
     fn reduce_bytes(bytes: &[u8; 48]) -> Self {
@@ -672,14 +686,26 @@ impl ReduceNonZero<U256> for Scalar {
     }
 }
 
-impl ReduceNonZero<U384> for Scalar {
-    fn reduce_nonzero(w: U384) -> Self {
-        // Reduce U384 to U256 first, then apply non-zero reduction
-        let reduced = <Self as Reduce<U384>>::reduce(w);
+impl ReduceNonZero<U512> for Scalar {
+    fn reduce_nonzero(w: U512) -> Self {
+        // Reduce U512 to U256 first, then apply non-zero reduction
+        let reduced = <Self as Reduce<U512>>::reduce(w);
         const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
         let (r, underflow) = reduced.0.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(&reduced.0, &r, !underflow).wrapping_add(&U256::ONE))
+    }
+
+    fn reduce_nonzero_bytes(bytes: &[u8; 64]) -> Self {
+        Self::reduce_nonzero(U512::from_be_byte_array((*bytes).into()))
+    }
+}
+
+impl ReduceNonZero<U384> for Scalar {
+    fn reduce_nonzero(w: U384) -> Self {
+        // Use U512 non-zero reduction by concatenating U384 with U128::ZERO
+        let w512 = w.concat(&U128::ZERO);
+        <Self as ReduceNonZero<U512>>::reduce_nonzero(w512)
     }
 
     fn reduce_nonzero_bytes(bytes: &[u8; 48]) -> Self {
