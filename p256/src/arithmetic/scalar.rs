@@ -645,13 +645,7 @@ impl Reduce<U512> for Scalar {
 
 impl Reduce<U384> for Scalar {
     fn reduce(w: &U384) -> Self {
-        // Convert U384 to U512 by zero-padding the high bits
-        let w_bytes = w.to_be_bytes();
-        let mut w512_bytes = [0u8; 64];
-        // Copy U384 bytes to the lower part of U512 (384 bits = 48 bytes)
-        w512_bytes[16..64].copy_from_slice(&w_bytes);
-        let w512 = U512::from_be_byte_array(w512_bytes.into());
-        <Self as Reduce<U512>>::reduce(&w512)
+        <Self as Reduce<U512>>::reduce(&w.concat(&U128::ZERO))
     }
 }
 
