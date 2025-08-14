@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Limb, NonZero, U448, U896, Word, Zero},
+    bigint::{Integer, Limb, NonZero, U448, U896, Word, Zero},
     consts::U2,
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -662,6 +662,18 @@ impl<C: CurveWithScalar> Scalar<C> {
     /// This is used in the 2-isogeny when mapping points from Ed448-Goldilocks
     /// to Twisted-Goldilocks
     pub(crate) fn div_by_four(&mut self) {
+        let s_mod_4 = self[0] & 3;
+
+        let s_plus_l = self.scalar + ORDER;
+        let s_plus_2l = s_plus_l + ORDER;
+        let s_plus_3l = s_plus_2l + ORDER;
+
+        self.scalar.conditional_assign(&s_plus_l, s_mod_4.ct_eq(&1));
+        self.scalar
+            .conditional_assign(&s_plus_2l, s_mod_4.ct_eq(&2));
+        self.scalar
+            .conditional_assign(&s_plus_3l, s_mod_4.ct_eq(&3));
+
         self.scalar >>= 2;
     }
 
@@ -778,8 +790,12 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Halves a Scalar modulo the prime
-    pub const fn halve(&self) -> Self {
-        Self::new(self.scalar.shr_vartime(1))
+    pub fn halve(&self) -> Self {
+        let is_odd = self.scalar.is_odd();
+        let if_odd = self.scalar + *ORDER;
+        let scalar = U448::conditional_select(&self.scalar, &if_odd, is_odd);
+
+        Self::new(scalar >> 1)
     }
 
     /// Attempt to construct a `Scalar` from a canonical byte representation.
