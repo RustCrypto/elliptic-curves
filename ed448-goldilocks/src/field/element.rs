@@ -9,7 +9,7 @@ use crate::{
 use elliptic_curve::{
     array::Array,
     bigint::{
-        Integer, NonZero, U448, U704,
+        Integer, NonZero, U448, U704, Zero,
         consts::{U56, U84, U88},
     },
     group::cofactor::CofactorGroup,
@@ -262,6 +262,10 @@ impl FieldElement {
         self.0.retrieve().is_odd()
     }
 
+    pub fn is_zero(&self) -> Choice {
+        self.0.is_zero()
+    }
+
     /// Inverts a field element
     /// Previous chain length: 462, new length 460
     pub fn invert(&self) -> Self {
@@ -367,6 +371,10 @@ impl FieldElement {
         // will be zero, which is what we want, but is_res will be 0)
         let zero_u = u.ct_eq(&FieldElement::ZERO);
         (inv_sqrt_x * u, zero_u | is_res)
+    }
+
+    pub(crate) fn half(&self) -> FieldElement {
+        Self(self.0.div_by_2())
     }
 
     pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
