@@ -1,22 +1,29 @@
 use core::fmt::{self, Debug, Display, Formatter, LowerHex, UpperHex};
+use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use super::ConstMontyType;
+use super::{ConstMontyType, MODULUS};
 use crate::{
     AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::{
+    Field,
     array::Array,
     bigint::{
         Integer, NonZero, U448, U704,
         consts::{U56, U84, U88},
+        modular::ConstMontyParams,
     },
     group::cofactor::CofactorGroup,
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::{FromOkm, MapToCurve};
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
+use rand_core::TryRngCore;
+use subtle::{
+    Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess,
+    CtOption,
+};
 
 #[derive(Clone, Copy, Default)]
 pub struct FieldElement(pub(crate) ConstMontyType);
@@ -225,6 +232,68 @@ impl MapToCurve for Decaf448 {
     }
 }
 
+impl Sum for FieldElement {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(Add::add).unwrap_or(Self::ZERO)
+    }
+}
+
+impl<'a> Sum<&'a FieldElement> for FieldElement {
+    fn sum<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
+        iter.copied().sum()
+    }
+}
+
+impl Product for FieldElement {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(Mul::mul).unwrap_or(Self::ONE)
+    }
+}
+
+impl<'a> Product<&'a FieldElement> for FieldElement {
+    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.copied().product()
+    }
+}
+
+impl Field for FieldElement {
+    const ZERO: Self = Self::ZERO;
+    const ONE: Self = Self::ONE;
+
+    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        let mut bytes = [0; 56];
+
+        loop {
+            rng.try_fill_bytes(&mut bytes)?;
+            if let Some(fe) = Self::from_repr(&bytes).into() {
+                return Ok(fe);
+            }
+        }
+    }
+
+    fn square(&self) -> Self {
+        self.square()
+    }
+
+    fn double(&self) -> Self {
+        self.double()
+    }
+
+    fn invert(&self) -> CtOption<Self> {
+        CtOption::from(self.0.invert()).map(Self)
+    }
+
+    fn sqrt(&self) -> CtOption<Self> {
+        let sqrt = self.sqrt();
+        CtOption::new(sqrt, sqrt.square().ct_eq(self))
+    }
+
+    fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+        let (result, is_square) = Self::sqrt_ratio(num, div);
+        (is_square, result)
+    }
+}
+
 impl FieldElement {
     pub const A_PLUS_TWO_OVER_FOUR: Self = Self(ConstMontyType::new(&U448::from_be_hex(
         "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000098aa",
@@ -314,6 +383,12 @@ impl FieldElement {
 
     pub fn from_bytes(bytes: &[u8; 56]) -> Self {
         Self(ConstMontyType::new(&U448::from_le_slice(bytes)))
+    }
+
+    pub fn from_repr(bytes: &[u8; 56]) -> CtOption<Self> {
+        let integer = U448::from_le_slice(bytes);
+        let is_some = integer.ct_lt(MODULUS::PARAMS.modulus());
+        CtOption::new(Self(ConstMontyType::new(&integer)), is_some)
     }
 
     pub fn double(&self) -> Self {
