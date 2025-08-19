@@ -7,7 +7,7 @@ mod wide;
 pub(crate) use self::wide::WideScalar;
 
 use crate::{
-    FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes,
+    FieldBytes, NZ_ORDER, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes,
     arithmetic::{AffinePoint, ProjectivePoint},
 };
 use core::{
@@ -97,17 +97,17 @@ impl Scalar {
 
     /// Negates the scalar.
     pub const fn negate(&self) -> Self {
-        Self(self.0.neg_mod(&ORDER))
+        Self(self.0.neg_mod(&NZ_ORDER))
     }
 
     /// Returns self + rhs mod n.
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(self.0.add_mod(&rhs.0, &ORDER))
+        Self(self.0.add_mod(&rhs.0, &NZ_ORDER))
     }
 
     /// Returns self - rhs mod n.
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(self.0.sub_mod(&rhs.0, &ORDER))
+        Self(self.0.sub_mod(&rhs.0, &NZ_ORDER))
     }
 
     /// Modulo multiplies two scalars.

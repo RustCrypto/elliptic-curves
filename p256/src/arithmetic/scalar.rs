@@ -89,7 +89,7 @@ impl Scalar {
 
     /// Returns self + rhs mod n
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(self.0.add_mod(&rhs.0, &NistP256::ORDER))
+        Self(self.0.add_mod(&rhs.0, &crate::NZ_ORDER))
     }
 
     /// Returns 2*self.
@@ -99,7 +99,7 @@ impl Scalar {
 
     /// Returns self - rhs mod n.
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(self.0.sub_mod(&rhs.0, &NistP256::ORDER))
+        Self(self.0.sub_mod(&rhs.0, &crate::NZ_ORDER))
     }
 
     /// Returns self * rhs mod n

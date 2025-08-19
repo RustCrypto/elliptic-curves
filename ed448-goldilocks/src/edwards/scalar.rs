@@ -24,7 +24,7 @@ impl CurveWithScalar for Ed448 {
         top[..2].copy_from_slice(&input[112..]);
         let top = U448::from_le_slice(&top).mul_mod(&TOP_MULTIPLIER, &NZ_ORDER);
         let bottom = U448::rem_wide_vartime(value, &NZ_ORDER);
-        Scalar::new(bottom.add_mod(&top, &ORDER))
+        Scalar::new(bottom.add_mod(&top, &NZ_ORDER))
     }
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {

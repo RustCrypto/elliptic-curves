@@ -107,6 +107,10 @@ impl elliptic_curve::Curve for NistP256 {
     const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
 }
 
+#[cfg(feature = "arithmetic")]
+const NZ_ORDER: elliptic_curve::bigint::NonZero<U256> =
+    elliptic_curve::bigint::NonZero::<U256>::new_unwrap(<NistP256 as elliptic_curve::Curve>::ORDER);
+
 impl elliptic_curve::PrimeCurve for NistP256 {}
 
 impl elliptic_curve::point::PointCompression for NistP256 {
@@ -117,11 +121,6 @@ impl elliptic_curve::point::PointCompression for NistP256 {
 impl elliptic_curve::point::PointCompaction for NistP256 {
     /// NIST P-256 points are typically uncompressed.
     const COMPACT_POINTS: bool = false;
-}
-
-#[cfg(feature = "jwk")]
-impl elliptic_curve::JwkParameters for NistP256 {
-    const CRV: &'static str = "P-256";
 }
 
 #[cfg(feature = "pkcs8")]

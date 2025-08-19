@@ -628,17 +628,17 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Compute `self` + `rhs` mod ℓ
     pub const fn addition(&self, rhs: &Self) -> Self {
-        Self::new(self.scalar.add_mod(&rhs.scalar, &ORDER))
+        Self::new(self.scalar.add_mod(&rhs.scalar, &NZ_ORDER))
     }
 
     /// Compute `self` + `self` mod ℓ
     pub const fn double(&self) -> Self {
-        Self::new(self.scalar.double_mod(&ORDER))
+        Self::new(self.scalar.double_mod(&NZ_ORDER))
     }
 
     /// Compute `self` - `rhs` mod ℓ
     pub const fn subtract(&self, rhs: &Self) -> Self {
-        Self::new(self.scalar.sub_mod(&rhs.scalar, &ORDER))
+        Self::new(self.scalar.sub_mod(&rhs.scalar, &NZ_ORDER))
     }
 
     /// Compute `self` * `rhs` mod ℓ

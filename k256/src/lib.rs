@@ -77,6 +77,11 @@ const ORDER_HEX: &str = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8
 /// Order of the secp256k1 elliptic curve.
 const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
 
+/// Order of the secp256k1 elliptic curve.
+#[cfg(feature = "arithmetic")]
+const NZ_ORDER: elliptic_curve::bigint::NonZero<U256> =
+    elliptic_curve::bigint::NonZero::<U256>::new_unwrap(U256::from_be_hex(ORDER_HEX));
+
 /// secp256k1 (K-256) elliptic curve.
 ///
 /// Specified in Certicom's SECG in "SEC 2: Recommended Elliptic Curve Domain Parameters":
@@ -107,11 +112,6 @@ impl elliptic_curve::PrimeCurve for Secp256k1 {}
 impl elliptic_curve::point::PointCompression for Secp256k1 {
     /// secp256k1 points are typically compressed.
     const COMPRESS_POINTS: bool = true;
-}
-
-#[cfg(feature = "jwk")]
-impl elliptic_curve::JwkParameters for Secp256k1 {
-    const CRV: &'static str = "secp256k1";
 }
 
 #[cfg(feature = "pkcs8")]

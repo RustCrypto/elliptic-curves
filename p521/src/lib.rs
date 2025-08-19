@@ -80,11 +80,6 @@ impl elliptic_curve::point::PointCompaction for NistP521 {
     const COMPACT_POINTS: bool = false;
 }
 
-#[cfg(feature = "jwk")]
-impl elliptic_curve::JwkParameters for NistP521 {
-    const CRV: &'static str = "P-521";
-}
-
 #[cfg(feature = "pkcs8")]
 impl pkcs8::AssociatedOid for NistP521 {
     const OID: pkcs8::ObjectIdentifier = pkcs8::ObjectIdentifier::new_unwrap("1.3.132.0.35");
