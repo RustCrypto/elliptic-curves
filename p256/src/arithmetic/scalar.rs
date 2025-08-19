@@ -687,7 +687,7 @@ impl ReduceNonZero<U256> for Scalar {
 
 impl Sum for Scalar {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+        iter.reduce(Add::add).unwrap_or(Self::ZERO)
     }
 }
 
@@ -699,7 +699,7 @@ impl<'a> Sum<&'a Scalar> for Scalar {
 
 impl Product for Scalar {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
+        iter.reduce(Mul::mul).unwrap_or(Self::ONE)
     }
 }
 

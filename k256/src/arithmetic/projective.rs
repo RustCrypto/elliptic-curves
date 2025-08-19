@@ -3,12 +3,14 @@
 #![allow(clippy::op_ref)]
 
 use super::{AffinePoint, FieldElement, Scalar, CURVE_EQUATION_B_SINGLE};
-use crate::{CompressedPoint, EncodedPoint, PublicKey, Secp256k1};
+use crate::{
+    arithmetic::mul::{Endomorphism, Identity},
+    CompressedPoint, EncodedPoint, PublicKey, Secp256k1,
+};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::ops::BatchInvert;
 use elliptic_curve::{
     group::{
         ff::Field,
@@ -21,12 +23,13 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
     BatchNormalize, Error, Result,
 };
+use elliptic_curve::{ops::BatchInvert, point::Double};
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
 #[rustfmt::skip]
-const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
+pub(crate) const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
     0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
     0x6e, 0x64, 0x47, 0x9e, 0xac, 0x34, 0x34, 0xe9,
     0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
@@ -39,6 +42,30 @@ pub struct ProjectivePoint {
     x: FieldElement,
     y: FieldElement,
     pub(super) z: FieldElement,
+}
+
+impl Endomorphism for ProjectivePoint {
+    /// Calculates SECP256k1 endomorphism: `self * lambda`.
+    fn endomorphism(&self) -> Self {
+        Self {
+            x: self.x * &ENDOMORPHISM_BETA,
+            y: self.y,
+            z: self.z,
+        }
+    }
+}
+
+impl Identity for ProjectivePoint {
+    /// "point at infinity".
+    fn identity() -> Self {
+        Self::IDENTITY
+    }
+}
+impl Double for ProjectivePoint {
+    /// Double this point.
+    fn double(&self) -> Self {
+        self.double()
+    }
 }
 
 impl ProjectivePoint {
@@ -215,15 +242,6 @@ impl ProjectivePoint {
     /// Returns `self - other`.
     fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         self.add_mixed(&other.neg())
-    }
-
-    /// Calculates SECP256k1 endomorphism: `self * lambda`.
-    pub fn endomorphism(&self) -> Self {
-        Self {
-            x: self.x * &ENDOMORPHISM_BETA,
-            y: self.y,
-            z: self.z,
-        }
     }
 
     /// Check whether `self` is equal to an affine point.
@@ -418,7 +436,6 @@ impl Group for ProjectivePoint {
         self.z.normalizes_to_zero()
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         Self::double(self)
     }

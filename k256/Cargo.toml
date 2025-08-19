@@ -29,6 +29,10 @@ serdect = { version = "0.2", optional = true, default-features = false }
 sha2 = { version = "0.10", optional = true, default-features = false }
 signature = { version = "2", optional = true }
 
+[target.'cfg(target_os = "zkvm")'.dependencies]
+openvm = { git = "https://github.com/powdr-labs/openvm.git", rev = "dcf8ee6" }
+powdr-openvm-hints-guest = { git = "https://github.com/powdr-labs/powdr.git", rev="1b7c281" }
+
 [dev-dependencies]
 blobby = "0.3"
 criterion = "0.5"

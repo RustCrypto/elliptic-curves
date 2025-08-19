@@ -642,7 +642,7 @@ impl Neg for &FieldElement {
 
 impl Sum for FieldElement {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+        iter.reduce(Add::add).unwrap_or(Self::ZERO)
     }
 }
 
@@ -654,7 +654,7 @@ impl<'a> Sum<&'a FieldElement> for FieldElement {
 
 impl Product for FieldElement {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
+        iter.reduce(Mul::mul).unwrap_or(Self::ONE)
     }
 }
 

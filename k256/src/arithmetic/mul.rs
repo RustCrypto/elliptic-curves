@@ -45,54 +45,48 @@ use crate::arithmetic::{
     ProjectivePoint,
 };
 
-use core::ops::{Mul, MulAssign};
-use elliptic_curve::ops::LinearCombinationExt as LinearCombination;
-use elliptic_curve::{
-    ops::MulByGenerator,
-    scalar::IsHigh,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
-};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub};
+use elliptic_curve::{ops::LinearCombinationExt as LinearCombination, point::Double};
+use elliptic_curve::{ops::MulByGenerator, scalar::IsHigh, subtle::ConditionallySelectable};
 
 #[cfg(feature = "precomputed-tables")]
 use once_cell::sync::Lazy;
 
 /// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
 #[derive(Copy, Clone, Default)]
-struct LookupTable([ProjectivePoint; 8]);
+pub(crate) struct LookupTable<P>([P; 8]);
 
-impl From<&ProjectivePoint> for LookupTable {
-    fn from(p: &ProjectivePoint) -> Self {
+impl<P> From<&P> for LookupTable<P>
+where
+    P: Copy + Add<Output = P> + Sub<Output = P>,
+{
+    fn from(p: &P) -> Self {
         let mut points = [*p; 8];
         for j in 0..7 {
-            points[j + 1] = p + &points[j];
+            points[j + 1] = *p + points[j];
         }
         LookupTable(points)
     }
 }
 
-impl LookupTable {
+impl<P: Identity + ConditionallySelectable + Neg<Output = P>> LookupTable<P> {
     /// Given -8 <= x <= 8, returns x * p in constant time.
-    fn select(&self, x: i8) -> ProjectivePoint {
+    fn select(&self, x: i8) -> P {
         debug_assert!(x >= -8);
         debug_assert!(x <= 8);
 
-        // Compute xabs = |x|
-        let xmask = x >> 7;
-        let xabs = (x + xmask) ^ xmask;
+        if x == 0 {
+            P::identity()
+        } else {
+            let abs = x.unsigned_abs() as usize;
+            let mut point = self.0[abs - 1];
 
-        // Get an array element in constant time
-        let mut t = ProjectivePoint::IDENTITY;
-        for j in 1..9 {
-            let c = (xabs as u8).ct_eq(&(j as u8));
-            t.conditional_assign(&self.0[j - 1], c);
+            if x < 0 {
+                point = -point;
+            }
+
+            point
         }
-        // Now t == |x| * p.
-
-        let neg_mask = Choice::from((xmask & 1) as u8);
-        t.conditional_assign(&-t, neg_mask);
-        // Now t == x * p.
-
-        t
     }
 }
 
@@ -226,6 +220,14 @@ const G2: Scalar = Scalar::from_bytes_unchecked(&[
  * Q.E.D.
  */
 
+pub trait Endomorphism {
+    fn endomorphism(&self) -> Self;
+}
+
+pub trait Identity {
+    fn identity() -> Self;
+}
+
 /// Find r1 and r2 given k, such that r1 + r2 * lambda == k mod n.
 fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
     // these _vartime calls are constant time since the shift amount is constant
@@ -241,7 +243,7 @@ fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
 // (required because it's used in static_map later)
 // Otherwise we could just have a function returning an array.
 #[derive(Copy, Clone)]
-struct Radix16Decomposition<const D: usize>([i8; D]);
+pub(crate) struct Radix16Decomposition<const D: usize>([i8; D]);
 
 impl<const D: usize> Radix16Decomposition<D> {
     /// Returns an object containing a decomposition
@@ -309,11 +311,26 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
     }
 }
 
-fn lincomb(
-    xks: &[(ProjectivePoint, Scalar)],
-    tables: &mut [(LookupTable, LookupTable)],
+pub(crate) fn lincomb<P>(
+    xks: &[(P, Scalar)],
+    tables: &mut [(LookupTable<P>, LookupTable<P>)],
     digits: &mut [(Radix16Decomposition<33>, Radix16Decomposition<33>)],
-) -> ProjectivePoint {
+) -> P
+where
+    P: Copy
+        + Clone
+        + Default
+        + Add<Output = P>
+        + Neg<Output = P>
+        + Sub<Output = P>
+        + PartialEq
+        + ConditionallySelectable
+        + Endomorphism
+        + Identity
+        + Double
+        + AddAssign<P>,
+    for<'a> LookupTable<P>: From<&'a P>,
+{
     xks.iter().enumerate().for_each(|(i, (x, k))| {
         let (r1, r2) = decompose_scalar(k);
         let x_beta = x.endomorphism();
@@ -325,10 +342,8 @@ fn lincomb(
         );
 
         tables[i] = (
-            LookupTable::from(&ProjectivePoint::conditional_select(x, &-*x, r1_sign)),
-            LookupTable::from(&ProjectivePoint::conditional_select(
-                &x_beta, &-x_beta, r2_sign,
-            )),
+            LookupTable::from(&P::conditional_select(x, &-*x, r1_sign)),
+            LookupTable::from(&P::conditional_select(&x_beta, &-x_beta, r2_sign)),
         );
 
         digits[i] = (
@@ -337,13 +352,13 @@ fn lincomb(
         )
     });
 
-    let mut acc = ProjectivePoint::IDENTITY;
+    let mut acc = P::identity();
     for component in 0..xks.len() {
         let (digit1, digit2) = digits[component];
         let (table1, table2) = tables[component];
 
-        acc += &table1.select(digit1.0[32]);
-        acc += &table2.select(digit2.0[32]);
+        acc += table1.select(digit1.0[32]);
+        acc += table2.select(digit2.0[32]);
     }
 
     for i in (0..32).rev() {
@@ -355,8 +370,8 @@ fn lincomb(
             let (digit1, digit2) = digits[component];
             let (table1, table2) = tables[component];
 
-            acc += &table1.select(digit1.0[i]);
-            acc += &table2.select(digit2.0[i]);
+            acc += table1.select(digit1.0[i]);
+            acc += table2.select(digit2.0[i]);
         }
     }
     acc
@@ -364,10 +379,11 @@ fn lincomb(
 
 /// Lazily computed basepoint table.
 #[cfg(feature = "precomputed-tables")]
-static GEN_LOOKUP_TABLE: Lazy<[LookupTable; 33]> = Lazy::new(precompute_gen_lookup_table);
+static GEN_LOOKUP_TABLE: Lazy<[LookupTable<ProjectivePoint>; 33]> =
+    Lazy::new(precompute_gen_lookup_table);
 
 #[cfg(feature = "precomputed-tables")]
-fn precompute_gen_lookup_table() -> [LookupTable; 33] {
+fn precompute_gen_lookup_table() -> [LookupTable<ProjectivePoint>; 33] {
     let mut gen = ProjectivePoint::GENERATOR;
     let mut res = [LookupTable::default(); 33];
 

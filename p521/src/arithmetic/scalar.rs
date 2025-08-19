@@ -381,12 +381,10 @@ impl Field for Scalar {
         Self::ZERO.ct_eq(self)
     }
 
-    #[must_use]
     fn square(&self) -> Self {
         self.square()
     }
 
-    #[must_use]
     fn double(&self) -> Self {
         self.double()
     }

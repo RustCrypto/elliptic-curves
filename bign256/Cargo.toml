@@ -37,6 +37,7 @@ hex = {version = "0.4" }
 default = ["arithmetic", "pkcs8", "std", "dsa"]
 alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "elliptic-curve/std", "signature?/std"]
+test-vectors = [] 
 
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:belt-hash", "dep:crypto-bigint"]
 arithmetic = ["dep:primeorder", "elliptic-curve/arithmetic"]
