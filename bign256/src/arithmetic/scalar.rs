@@ -122,7 +122,7 @@ impl FromUintUnchecked for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        const MODULUS_SHR1: U256 = BignP256::ORDER.shr_vartime(1);
+        const MODULUS_SHR1: U256 = BignP256::ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
     }
 }

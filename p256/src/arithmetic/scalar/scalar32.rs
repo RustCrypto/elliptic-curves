@@ -207,7 +207,7 @@ const fn q1_times_mu_shift_nine(q1: &[Limb; 9]) -> [Limb; 9] {
 const fn q3_times_n_keep_nine(q3: &[Limb; 9]) -> [Limb; 9] {
     // Schoolbook multiplication
 
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     /* NOTE
      * modulus[7] = 2^32 - 1
@@ -298,7 +298,7 @@ const fn sub_inner_nine(l: [Limb; 9], r: [Limb; 9]) -> [Limb; 9] {
 #[inline]
 #[allow(clippy::too_many_arguments)]
 const fn subtract_n_if_necessary(r: [Limb; 9]) -> [Limb; 9] {
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     let (w0, borrow) = r[0].borrowing_sub(modulus[0], Limb::ZERO);
     let (w1, borrow) = r[1].borrowing_sub(modulus[1], borrow);

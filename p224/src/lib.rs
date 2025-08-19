@@ -38,6 +38,7 @@ pub use elliptic_curve::pkcs8;
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
+    bigint::NonZero,
     consts::{U28, U29},
 };
 
@@ -64,7 +65,7 @@ impl elliptic_curve::Curve for NistP224 {
     type Uint = Uint;
 
     /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus).
-    const ORDER: Uint = Uint::from_be_hex(ORDER_HEX);
+    const ORDER: NonZero<Uint> = NonZero::<Uint>::new_unwrap(Uint::from_be_hex(ORDER_HEX));
 }
 
 impl elliptic_curve::PrimeCurve for NistP224 {}

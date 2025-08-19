@@ -31,6 +31,7 @@ use self::field_impl::*;
 use crate::{FieldBytes, Sm2, U256};
 use elliptic_curve::{
     FieldBytesEncoding,
+    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
@@ -38,7 +39,7 @@ use elliptic_curve::{
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff";
 
-const MODULUS: U256 = U256::from_be_hex(MODULUS_HEX);
+const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
 
 /// Element of the SM2 elliptic curve base field used for curve point coordinates.
 #[derive(Clone, Copy)]

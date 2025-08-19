@@ -55,6 +55,7 @@ pub trait CurveWithScalar: 'static + CurveArithmetic + Send + Sync {
 pub const ORDER: U448 = U448::from_be_hex(
     "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
 );
+/// The order of the scalar field
 pub const NZ_ORDER: NonZero<U448> = NonZero::<U448>::new_unwrap(ORDER);
 const ORDER_MINUS_ONE: U448 = ORDER.wrapping_sub(&U448::ONE);
 const HALF_ORDER: U448 = ORDER.shr_vartime(1);

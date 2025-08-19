@@ -67,7 +67,7 @@ pub use sha2;
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
-    bigint::ArrayEncoding,
+    bigint::{ArrayEncoding, NonZero},
     consts::{U32, U33, U64},
 };
 
@@ -75,12 +75,7 @@ use elliptic_curve::{
 const ORDER_HEX: &str = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
 
 /// Order of the secp256k1 elliptic curve.
-const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
-
-/// Order of the secp256k1 elliptic curve.
-#[cfg(feature = "arithmetic")]
-const NZ_ORDER: elliptic_curve::bigint::NonZero<U256> =
-    elliptic_curve::bigint::NonZero::<U256>::new_unwrap(U256::from_be_hex(ORDER_HEX));
+const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
 
 /// secp256k1 (K-256) elliptic curve.
 ///
@@ -104,7 +99,7 @@ impl elliptic_curve::Curve for Secp256k1 {
     type Uint = U256;
 
     /// Curve order.
-    const ORDER: U256 = ORDER;
+    const ORDER: NonZero<U256> = ORDER;
 }
 
 impl elliptic_curve::PrimeCurve for Secp256k1 {}

@@ -33,14 +33,16 @@ use self::field_impl::*;
 use crate::{BignP256, FieldBytes, U256};
 use elliptic_curve::{
     FieldBytesEncoding,
+    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus
 /// p = 2^{256} − 189
-pub(crate) const MODULUS: U256 =
-    U256::from_be_hex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43");
+pub(crate) const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(
+    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43",
+);
 
 /// Element of the bign-256 base field used for curve coordinates.
 #[derive(Clone, Copy)]

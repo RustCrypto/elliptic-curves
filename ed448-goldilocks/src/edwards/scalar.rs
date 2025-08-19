@@ -1,5 +1,5 @@
+use crate::Ed448;
 use crate::field::{CurveWithScalar, NZ_ORDER, Scalar, ScalarBytes, WideScalarBytes};
-use crate::{Ed448, ORDER};
 
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, NonZero, U448, U704};
@@ -39,7 +39,7 @@ impl CurveWithScalar for Ed448 {
         let candidate = Scalar::new(U448::from_le_slice(&bytes));
 
         // underflow means candidate < ORDER, thus canonical
-        let (_, underflow) = candidate.scalar.borrowing_sub(&ORDER, Limb::ZERO);
+        let (_, underflow) = candidate.scalar.borrowing_sub(&NZ_ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         CtOption::new(candidate, underflow & is_valid)
     }

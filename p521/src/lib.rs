@@ -49,7 +49,7 @@ pub use elliptic_curve::{self, bigint::U576};
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{FieldBytesEncoding, array::Array, consts::U66};
+use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::NonZero, consts::U66};
 
 /// NIST P-521 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
@@ -65,7 +65,7 @@ impl elliptic_curve::Curve for NistP521 {
     type Uint = U576;
 
     /// Order of NIST P-521's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U576 = U576::from_be_hex(ORDER_HEX);
+    const ORDER: NonZero<U576> = NonZero::<U576>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP521 {}

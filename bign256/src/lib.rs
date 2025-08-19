@@ -30,7 +30,11 @@
 extern crate alloc;
 
 pub use elliptic_curve::{self, bigint::U256};
-use elliptic_curve::{Error, FieldBytesEncoding, bigint::ArrayEncoding, consts::U32};
+use elliptic_curve::{
+    Error, FieldBytesEncoding,
+    bigint::{ArrayEncoding, NonZero},
+    consts::U32,
+};
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
@@ -89,7 +93,7 @@ impl elliptic_curve::Curve for BignP256 {
     type Uint = U256;
 
     /// Order of BIGN P-256's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
+    const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for BignP256 {}

@@ -28,6 +28,7 @@ use self::field_impl::*;
 use crate::{FieldBytes, NistP224, Uint};
 use elliptic_curve::{
     FieldBytesEncoding,
+    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
@@ -39,7 +40,7 @@ const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffff000000000000000000000
 #[cfg(target_pointer_width = "64")]
 const MODULUS_HEX: &str = "00000000ffffffffffffffffffffffffffffffff000000000000000000000001";
 
-const MODULUS: Uint = Uint::from_be_hex(MODULUS_HEX);
+const MODULUS: NonZero<Uint> = NonZero::<Uint>::new_unwrap(Uint::from_be_hex(MODULUS_HEX));
 
 /// Element of the secp224r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]

@@ -33,13 +33,13 @@ pub use elliptic_curve::pkcs8;
 #[cfg(feature = "arithmetic")]
 pub(crate) use crate::arithmetic::field::FieldElement;
 use elliptic_curve::array::{Array, typenum::U32};
-use elliptic_curve::bigint::ArrayEncoding;
+use elliptic_curve::bigint::{ArrayEncoding, NonZero};
 
 /// Byte representation of a base/scalar field element of a given curve.
 pub type FieldBytes = Array<u8, U32>;
 
 const ORDER_HEX: &str = "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7";
-const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
+const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
 
 fn decode_field_bytes(field_bytes: &FieldBytes) -> U256 {
     U256::from_be_byte_array(*field_bytes)

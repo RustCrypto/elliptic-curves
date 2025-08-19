@@ -50,7 +50,12 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::ArrayEncoding, consts::U33};
+use elliptic_curve::{
+    FieldBytesEncoding,
+    array::Array,
+    bigint::{ArrayEncoding, NonZero},
+    consts::U33,
+};
 
 /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus) serialized
 /// as hexadecimal.
@@ -104,12 +109,8 @@ impl elliptic_curve::Curve for NistP256 {
     type Uint = U256;
 
     /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
+    const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
 }
-
-#[cfg(feature = "arithmetic")]
-const NZ_ORDER: elliptic_curve::bigint::NonZero<U256> =
-    elliptic_curve::bigint::NonZero::<U256>::new_unwrap(<NistP256 as elliptic_curve::Curve>::ORDER);
 
 impl elliptic_curve::PrimeCurve for NistP256 {}
 
