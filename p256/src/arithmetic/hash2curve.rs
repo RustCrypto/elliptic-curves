@@ -308,7 +308,7 @@ mod tests {
     fn from_okm_fuzz() {
         let mut wide_order = Array::default();
         wide_order[16..].copy_from_slice(&NistP256::ORDER.to_be_byte_array());
-        let wide_order = NonZero::new(U384::from_be_byte_array(wide_order)).unwrap();
+        let wide_order = NonZero::<U384>::from_be_byte_array(wide_order).unwrap();
 
         let simple_from_okm = move |data: Array<u8, U48>| -> Scalar {
             let data = U384::from_be_slice(&data);
