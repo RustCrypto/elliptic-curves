@@ -59,7 +59,7 @@ pub use edwards::{
     AffinePoint, CompressedEdwardsY, EdwardsPoint, EdwardsScalar, EdwardsScalarBytes,
     WideEdwardsScalarBytes,
 };
-pub use field::{MODULUS_LIMBS, NZ_ORDER, ORDER, Scalar, WIDE_ORDER};
+pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
 pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
@@ -90,7 +90,7 @@ impl Curve for Ed448 {
     type FieldBytesSize = U57;
     type Uint = U448;
 
-    const ORDER: NonZero<U448> = NZ_ORDER;
+    const ORDER: NonZero<U448> = ORDER;
 }
 
 impl PrimeCurve for Ed448 {}
@@ -139,7 +139,7 @@ impl Curve for Decaf448 {
     type FieldBytesSize = U56;
     type Uint = U448;
 
-    const ORDER: NonZero<U448> = NZ_ORDER;
+    const ORDER: NonZero<U448> = ORDER;
 }
 
 impl PrimeCurve for Decaf448 {}

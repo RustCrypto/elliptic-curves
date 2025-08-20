@@ -1,5 +1,5 @@
 use crate::Ed448;
-use crate::field::{CurveWithScalar, NZ_ORDER, Scalar, ScalarBytes, WideScalarBytes};
+use crate::field::{CurveWithScalar, ORDER, Scalar, ScalarBytes, WideScalarBytes};
 
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, NonZero, U448, U704};
@@ -22,9 +22,9 @@ impl CurveWithScalar for Ed448 {
         );
         let mut top = [0u8; 56];
         top[..2].copy_from_slice(&input[112..]);
-        let top = U448::from_le_slice(&top).mul_mod(&TOP_MULTIPLIER, &NZ_ORDER);
-        let bottom = U448::rem_wide_vartime(value, &NZ_ORDER);
-        Scalar::new(bottom.add_mod(&top, &NZ_ORDER))
+        let top = U448::from_le_slice(&top).mul_mod(&TOP_MULTIPLIER, &ORDER);
+        let bottom = U448::rem_wide_vartime(value, &ORDER);
+        Scalar::new(bottom.add_mod(&top, &ORDER))
     }
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {
@@ -39,7 +39,7 @@ impl CurveWithScalar for Ed448 {
         let candidate = Scalar::new(U448::from_le_slice(&bytes));
 
         // underflow means candidate < ORDER, thus canonical
-        let (_, underflow) = candidate.scalar.borrowing_sub(&NZ_ORDER, Limb::ZERO);
+        let (_, underflow) = candidate.scalar.borrowing_sub(&ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         CtOption::new(candidate, underflow & is_valid)
     }

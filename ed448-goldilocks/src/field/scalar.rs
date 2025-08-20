@@ -52,13 +52,12 @@ pub trait CurveWithScalar: 'static + CurveArithmetic + Send + Sync {
 }
 
 /// The order of the scalar field
-pub const ORDER: U448 = U448::from_be_hex(
+pub const ORDER: NonZero<U448> = NonZero::<U448>::from_be_hex(
     "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
 );
 /// The order of the scalar field
-pub const NZ_ORDER: NonZero<U448> = NonZero::<U448>::new_unwrap(ORDER);
-const ORDER_MINUS_ONE: U448 = ORDER.wrapping_sub(&U448::ONE);
-const HALF_ORDER: U448 = ORDER.shr_vartime(1);
+const ORDER_MINUS_ONE: U448 = ORDER.as_ref().wrapping_sub(&U448::ONE);
+const HALF_ORDER: U448 = ORDER.as_ref().shr_vartime(1);
 /// The wide order of the scalar field
 pub const WIDE_ORDER: U896 = U896::from_be_hex(
     "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
@@ -629,29 +628,29 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Compute `self` + `rhs` mod ℓ
     pub const fn addition(&self, rhs: &Self) -> Self {
-        Self::new(self.scalar.add_mod(&rhs.scalar, &NZ_ORDER))
+        Self::new(self.scalar.add_mod(&rhs.scalar, &ORDER))
     }
 
     /// Compute `self` + `self` mod ℓ
     pub const fn double(&self) -> Self {
-        Self::new(self.scalar.double_mod(&NZ_ORDER))
+        Self::new(self.scalar.double_mod(&ORDER))
     }
 
     /// Compute `self` - `rhs` mod ℓ
     pub const fn subtract(&self, rhs: &Self) -> Self {
-        Self::new(self.scalar.sub_mod(&rhs.scalar, &NZ_ORDER))
+        Self::new(self.scalar.sub_mod(&rhs.scalar, &ORDER))
     }
 
     /// Compute `self` * `rhs` mod ℓ
     pub const fn multiply(&self, rhs: &Self) -> Self {
         let wide_value = self.scalar.widening_mul(&rhs.scalar);
-        Self::new(U448::rem_wide_vartime(wide_value, &NZ_ORDER))
+        Self::new(U448::rem_wide_vartime(wide_value, &ORDER))
     }
 
     /// Square this scalar
     pub const fn square(&self) -> Self {
         let value = self.scalar.square_wide();
-        Self::new(U448::rem_wide_vartime(value, &NZ_ORDER))
+        Self::new(U448::rem_wide_vartime(value, &ORDER))
     }
 
     /// Is this scalar equal to zero?
@@ -797,7 +796,7 @@ impl<C: CurveWithScalar> Scalar<C> {
     /// Construct a Scalar by reducing a 448-bit little-endian integer modulo the group order ℓ
     pub fn from_bytes_mod_order(input: &ScalarBytes<C>) -> Scalar<C> {
         let value = U448::from_le_slice(&input[..56]);
-        Self::new(value.rem_vartime(&NZ_ORDER))
+        Self::new(value.rem_vartime(&ORDER))
     }
 
     /// Return a `Scalar` chosen uniformly at random using a user-provided RNG.
