@@ -17,6 +17,7 @@ mod field_impl;
 use self::field_impl::*;
 use crate::{FieldBytes, U256};
 use elliptic_curve::{
+    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
@@ -24,7 +25,7 @@ use elliptic_curve::{
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377";
 
-const MODULUS: U256 = U256::from_be_hex(MODULUS_HEX);
+const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
 
 /// Element of the brainpoolP256's base field used for curve point coordinates.
 #[derive(Clone, Copy)]

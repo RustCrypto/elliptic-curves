@@ -323,7 +323,7 @@ mod tests {
         let mut wide_order = Array::default();
         wide_order[40..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
         // TODO: This could be reduced to `U832` when `crypto-bigint` implements `ArrayEncoding`.
-        let wide_order = NonZero::new(U896::from_be_byte_array(wide_order)).unwrap();
+        let wide_order = NonZero::<U896>::from_be_byte_array(wide_order).unwrap();
 
         let simple_from_okm = move |data: Array<u8, U98>| -> Scalar {
             let mut wide_data = Array::default();

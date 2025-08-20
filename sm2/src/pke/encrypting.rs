@@ -152,7 +152,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
     digest: &mut dyn DynDigest,
     msg: &[u8],
 ) -> Result<Vec<u8>> {
-    const N_BYTES: u32 = Sm2::ORDER.bits().div_ceil(8);
+    const N_BYTES: u32 = Sm2::ORDER.as_ref().bits().div_ceil(8);
     let mut c1 = vec![0; (N_BYTES * 2 + 1) as usize];
     let mut c2 = msg.to_owned();
     let mut hpb: AffinePoint;
@@ -204,7 +204,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
 fn next_k<R: TryCryptoRng + ?Sized>(rng: &mut R, bit_length: u32) -> Result<U256> {
     loop {
         let k = U256::try_random_bits(rng, bit_length).map_err(|_| Error)?;
-        if !bool::from(k.is_zero()) && k < Sm2::ORDER {
+        if !bool::from(k.is_zero()) && k < *Sm2::ORDER {
             return Ok(k);
         }
     }

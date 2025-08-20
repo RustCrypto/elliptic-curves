@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve,
-    bigint::{Limb, U256, prelude::*},
+    bigint::{Limb, NonZero, U256, prelude::*},
     group::ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -36,10 +36,10 @@ use {
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
-pub(crate) const MODULUS: U256 = NistP256::ORDER;
+pub(crate) const MODULUS: NonZero<U256> = NistP256::ORDER;
 
 /// `MODULUS / 2`
-const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.shr_vartime(1));
+const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.as_ref().shr_vartime(1));
 
 /// Scalars are elements in the finite field modulo n.
 ///
@@ -356,7 +356,7 @@ impl Invert for Scalar {
     #[allow(non_snake_case)]
     fn invert_vartime(&self) -> CtOption<Self> {
         let mut u = *self;
-        let mut v = Self(MODULUS);
+        let mut v = Self(*MODULUS);
         let mut A = Self::ONE;
         let mut C = Self::ZERO;
 
@@ -637,7 +637,7 @@ impl Reduce<FieldBytes> for Scalar {
 
 impl ReduceNonZero<U256> for Scalar {
     fn reduce_nonzero(w: &U256) -> Self {
-        const ORDER_MINUS_ONE: U256 = NistP256::ORDER.wrapping_sub(&U256::ONE);
+        const ORDER_MINUS_ONE: U256 = NistP256::ORDER.as_ref().wrapping_sub(&U256::ONE);
         let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(w, &r, !underflow).wrapping_add(&U256::ONE))
@@ -792,7 +792,10 @@ mod tests {
             U256::from_u8(3),
         );
 
-        assert_eq!(Scalar::reduce_nonzero(&NistP256::ORDER).0, U256::from_u8(2),);
+        assert_eq!(
+            Scalar::reduce_nonzero(NistP256::ORDER.as_ref()).0,
+            U256::from_u8(2),
+        );
         assert_eq!(
             Scalar::reduce_nonzero(&NistP256::ORDER.wrapping_sub(&U256::from_u8(1))).0,
             U256::ONE,

@@ -27,14 +27,14 @@ use self::field_impl::*;
 use crate::{FieldBytes, NistP384};
 use elliptic_curve::{
     FieldBytesEncoding,
-    bigint::U384,
+    bigint::{NonZero, U384},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-pub(crate) const MODULUS: U384 = U384::from_be_hex(FieldElement::MODULUS);
+pub(crate) const MODULUS: NonZero<U384> = NonZero::<U384>::from_be_hex(FieldElement::MODULUS);
 
 /// Element of the secp384r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]

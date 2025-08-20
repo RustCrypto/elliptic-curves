@@ -50,7 +50,7 @@ pub use elliptic_curve::pkcs8;
 use elliptic_curve::{
     FieldBytesEncoding,
     array::{Array, typenum::U33},
-    bigint::ArrayEncoding,
+    bigint::{ArrayEncoding, NonZero},
     consts::U32,
 };
 
@@ -77,7 +77,7 @@ impl elliptic_curve::Curve for Sm2 {
     type Uint = U256;
 
     /// Order of SM2's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
+    const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for Sm2 {}

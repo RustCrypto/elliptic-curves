@@ -67,7 +67,7 @@ pub use sha2;
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
-    bigint::ArrayEncoding,
+    bigint::{ArrayEncoding, NonZero},
     consts::{U32, U33, U64},
 };
 
@@ -75,7 +75,7 @@ use elliptic_curve::{
 const ORDER_HEX: &str = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
 
 /// Order of the secp256k1 elliptic curve.
-const ORDER: U256 = U256::from_be_hex(ORDER_HEX);
+const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
 
 /// secp256k1 (K-256) elliptic curve.
 ///
@@ -99,7 +99,7 @@ impl elliptic_curve::Curve for Secp256k1 {
     type Uint = U256;
 
     /// Curve order.
-    const ORDER: U256 = ORDER;
+    const ORDER: NonZero<U256> = ORDER;
 }
 
 impl elliptic_curve::PrimeCurve for Secp256k1 {}
@@ -107,11 +107,6 @@ impl elliptic_curve::PrimeCurve for Secp256k1 {}
 impl elliptic_curve::point::PointCompression for Secp256k1 {
     /// secp256k1 points are typically compressed.
     const COMPRESS_POINTS: bool = true;
-}
-
-#[cfg(feature = "jwk")]
-impl elliptic_curve::JwkParameters for Secp256k1 {
-    const CRV: &'static str = "secp256k1";
 }
 
 #[cfg(feature = "pkcs8")]

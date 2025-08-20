@@ -520,7 +520,7 @@ impl Invert for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        const MODULUS_SHR1: U576 = NistP521::ORDER.shr_vartime(1);
+        const MODULUS_SHR1: U576 = NistP521::ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
     }
 }
@@ -573,7 +573,7 @@ impl Reduce<FieldBytes> for Scalar {
 
 impl ReduceNonZero<U576> for Scalar {
     fn reduce_nonzero(w: &U576) -> Self {
-        const ORDER_MINUS_ONE: U576 = NistP521::ORDER.wrapping_sub(&U576::ONE);
+        const ORDER_MINUS_ONE: U576 = NistP521::ORDER.as_ref().wrapping_sub(&U576::ONE);
         let r = w.rem(&NonZero::new(ORDER_MINUS_ONE).unwrap());
         Self::from_uint_unchecked(r.wrapping_add(&U576::ONE))
     }
@@ -672,7 +672,7 @@ mod tests {
         );
 
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(&NistP521::ORDER)),
+            U576::from(Scalar::reduce_nonzero(NistP521::ORDER.as_ref())),
             U576::from_u8(2),
         );
         assert_eq!(

@@ -141,7 +141,7 @@ macro_rules! field_element_type {
             pub const fn from_hex_vartime(hex: &str) -> Self {
                 let uint = <$uint>::from_be_hex(hex);
 
-                if uint.cmp_vartime(&$modulus).is_ge() {
+                if uint.cmp_vartime($modulus.as_ref()).is_ge() {
                     panic!("hex encoded field element overflows modulus");
                 }
 

@@ -712,7 +712,7 @@ impl EdwardsPoint {
     /// * `false` if `self` has a nonzero torsion component and is not
     ///   in the prime-order subgroup.
     pub fn is_torsion_free(&self) -> Choice {
-        (self * EdwardsScalar::new(ORDER)).ct_eq(&Self::IDENTITY)
+        (self * EdwardsScalar::new(*ORDER)).ct_eq(&Self::IDENTITY)
     }
 
     /// Hash a message to a point on the curve

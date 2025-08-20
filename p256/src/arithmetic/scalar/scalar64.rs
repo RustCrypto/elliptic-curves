@@ -116,7 +116,7 @@ const fn q1_times_mu_shift_five(q1: &[Limb; 5]) -> [Limb; 5] {
 const fn q3_times_n_keep_five(q3: &[Limb; 5]) -> [Limb; 5] {
     // Schoolbook multiplication.
 
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     let (w0, carry) = q3[0].carrying_mul_add(modulus[0], Limb::ZERO, Limb::ZERO);
     let (w1, carry) = q3[0].carrying_mul_add(modulus[1], Limb::ZERO, carry);
@@ -158,7 +158,7 @@ const fn sub_inner_five(l: [Limb; 5], r: [Limb; 5]) -> [Limb; 5] {
 #[inline]
 #[allow(clippy::too_many_arguments)]
 const fn subtract_n_if_necessary(r: [Limb; 5]) -> [Limb; 5] {
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     let (w0, borrow) = r[0].borrowing_sub(modulus[0], Limb::ZERO);
     let (w1, borrow) = r[1].borrowing_sub(modulus[1], borrow);

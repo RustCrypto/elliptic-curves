@@ -39,10 +39,10 @@ use num_bigint::{BigUint, ToBigUint};
 
 /// Constant representing the modulus
 /// n = FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFE BAAEDCE6 AF48A03B BFD25E8C D0364141
-const MODULUS: [Word; U256::LIMBS] = ORDER.to_words();
+const MODULUS: [Word; U256::LIMBS] = ORDER.as_ref().to_words();
 
 /// Constant representing the modulus / 2
-const FRAC_MODULUS_2: U256 = ORDER.shr_vartime(1);
+const FRAC_MODULUS_2: U256 = ORDER.as_ref().shr_vartime(1);
 
 /// Scalars are elements in the finite field modulo n.
 ///
@@ -454,7 +454,7 @@ impl Invert for Scalar {
     #[allow(non_snake_case)]
     fn invert_vartime(&self) -> CtOption<Self> {
         let mut u = *self;
-        let mut v = Self::from_uint_unchecked(Secp256k1::ORDER);
+        let mut v = Self::from_uint_unchecked(*Secp256k1::ORDER);
         let mut A = Self::ONE;
         let mut C = Self::ZERO;
 
@@ -781,7 +781,7 @@ impl Reduce<WideBytes> for Scalar {
 
 impl ReduceNonZero<U256> for Scalar {
     fn reduce_nonzero(w: &U256) -> Self {
-        const ORDER_MINUS_ONE: U256 = ORDER.wrapping_sub(&U256::ONE);
+        const ORDER_MINUS_ONE: U256 = ORDER.as_ref().wrapping_sub(&U256::ONE);
         let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self(U256::conditional_select(w, &r, !underflow).wrapping_add(&U256::ONE))

@@ -32,7 +32,11 @@ pub mod ecdsa;
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
-pub use elliptic_curve::{self, bigint::U384, consts::U48};
+pub use elliptic_curve::{
+    self,
+    bigint::{NonZero, U384},
+    consts::U48,
+};
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
@@ -60,7 +64,7 @@ impl elliptic_curve::Curve for NistP384 {
     type Uint = U384;
 
     /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus).
-    const ORDER: U384 = U384::from_be_hex(ORDER_HEX);
+    const ORDER: NonZero<U384> = NonZero::<U384>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP384 {}
@@ -73,11 +77,6 @@ impl elliptic_curve::point::PointCompression for NistP384 {
 impl elliptic_curve::point::PointCompaction for NistP384 {
     /// NIST P-384 points are typically uncompressed.
     const COMPACT_POINTS: bool = false;
-}
-
-#[cfg(feature = "jwk")]
-impl elliptic_curve::JwkParameters for NistP384 {
-    const CRV: &'static str = "P-384";
 }
 
 #[cfg(feature = "pkcs8")]

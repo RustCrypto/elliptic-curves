@@ -13,7 +13,11 @@ pub use {
 };
 
 use crate::ORDER;
-use elliptic_curve::{FieldBytesEncoding, bigint::U256, consts::U32};
+use elliptic_curve::{
+    FieldBytesEncoding,
+    bigint::{NonZero, U256},
+    consts::U32,
+};
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8;
@@ -30,7 +34,7 @@ impl elliptic_curve::Curve for BrainpoolP256t1 {
     type Uint = U256;
 
     /// Curve order
-    const ORDER: U256 = ORDER;
+    const ORDER: NonZero<U256> = ORDER;
 }
 
 impl elliptic_curve::PrimeCurve for BrainpoolP256t1 {}

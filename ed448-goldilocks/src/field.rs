@@ -3,9 +3,7 @@ mod scalar;
 
 pub(crate) use element::*;
 pub(crate) use scalar::CurveWithScalar;
-pub use scalar::{
-    MODULUS_LIMBS, NZ_ORDER, ORDER, Scalar, ScalarBytes, WIDE_ORDER, WideScalarBytes,
-};
+pub use scalar::{MODULUS_LIMBS, ORDER, Scalar, ScalarBytes, WIDE_ORDER, WideScalarBytes};
 
 use crate::curve::twedwards::extended::ExtendedPoint as TwExtendedPoint;
 use crate::edwards::EdwardsPoint;

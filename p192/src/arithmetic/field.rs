@@ -28,6 +28,7 @@ use self::field_impl::*;
 use crate::{FieldBytes, NistP192, U192};
 use elliptic_curve::{
     FieldBytesEncoding,
+    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
@@ -36,7 +37,7 @@ use elliptic_curve::{
 /// p = 2^{192} − 2^{64} - 1
 const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffeffffffffffffffff";
 
-const MODULUS: U192 = U192::from_be_hex(MODULUS_HEX);
+const MODULUS: NonZero<U192> = NonZero::<U192>::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp192r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]

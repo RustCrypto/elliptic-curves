@@ -127,7 +127,7 @@ impl WideScalar {
         let modulus = if modulus_minus_one {
             ORDER.wrapping_sub(&U256::ONE)
         } else {
-            ORDER
+            *ORDER
         };
 
         let w = self.0.to_words();

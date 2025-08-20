@@ -18,7 +18,7 @@ pub(super) const fn add(a: U256, b: U256) -> U256 {
     // let (w3, w4) = carrying_add(a[3], b[3], carry);
 
     // Attempt to subtract the modulus, to ensure the result is in the field
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     let (result, _) = sub_inner(
         [w0, w1, w2, w3, w4],
@@ -98,7 +98,7 @@ pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
     let a6 = hi[2];
     let a7 = hi[3];
 
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     /*
     let (a1, carry) = mac(a1, a0, modulus[1], a0);
@@ -171,7 +171,7 @@ const fn sub_inner(l: [Limb; 5], r: [Limb; 5]) -> ([Limb; 4], Limb) {
     // borrow = 0x000...000. Thus, we use it as a mask to conditionally add the
     // modulus.
 
-    let modulus = MODULUS.as_limbs();
+    let modulus = MODULUS.as_ref().as_limbs();
 
     /*
     let (w0, carry) = carrying_add(w0, modulus[0] & borrow, 0);

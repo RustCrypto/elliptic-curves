@@ -10,7 +10,7 @@ use crate::{FieldBytes, NistP256};
 use core::ops::Mul;
 use elliptic_curve::{
     FieldBytesEncoding,
-    bigint::U256,
+    bigint::{NonZero, U256},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
@@ -19,7 +19,7 @@ const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000fffffffffffff
 
 /// Constant representing the modulus
 /// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
-pub const MODULUS: U256 = U256::from_be_hex(MODULUS_HEX);
+pub const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
 
 /// R^2 = 2^512 mod p
 const R2: FieldElement = FieldElement(U256::from_be_hex(
