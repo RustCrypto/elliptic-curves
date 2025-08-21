@@ -122,11 +122,6 @@ impl Secret {
         Some(SharedSecret(shared_key))
     }
 
-    /// Performs a Diffie-hellman key exchange once between the secret key and an external public key
-    pub fn to_diffie_hellman(self, public_key: &PublicKey) -> Option<SharedSecret> {
-        self.as_diffie_hellman(public_key)
-    }
-
     /// Converts a byte slice into a secret and clamp
     pub fn from_bytes(bytes: &[u8]) -> Option<Secret> {
         // First check if we have 56 bytes
@@ -268,8 +263,8 @@ mod test {
         ];
         assert_eq!(got_bob_pub.as_bytes()[..], expected_bob_pub[..]);
 
-        let bob_shared = bob_priv.to_diffie_hellman(&got_alice_pub).unwrap();
-        let alice_shared = alice_priv.to_diffie_hellman(&got_bob_pub).unwrap();
+        let bob_shared = bob_priv.as_diffie_hellman(&got_alice_pub).unwrap();
+        let alice_shared = alice_priv.as_diffie_hellman(&got_bob_pub).unwrap();
         assert_eq!(bob_shared.as_bytes()[..], alice_shared.as_bytes()[..]);
 
         let expected_shared = [
