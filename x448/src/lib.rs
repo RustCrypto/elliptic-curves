@@ -1,8 +1,13 @@
 #![no_std]
 
+use core::array::TryFromSliceError;
 use ed448_goldilocks::{
     MontgomeryPoint,
-    elliptic_curve::{bigint::U448, scalar::FromUintUnchecked},
+    elliptic_curve::{
+        array::{Array, typenum::U56},
+        bigint::U448,
+        scalar::FromUintUnchecked,
+    },
 };
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
@@ -13,7 +18,7 @@ type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
 /// given a byte array of length 56
 impl From<[u8; 56]> for Secret {
     fn from(arr: [u8; 56]) -> Secret {
-        let mut secret = Secret(arr);
+        let mut secret = Secret(arr.into());
         secret.clamp();
         secret
     }
@@ -37,7 +42,7 @@ pub struct PublicKey(MontgomeryPoint);
 /// A Secret is a Scalar on Curve448.
 #[derive(Clone, Zeroize)]
 #[zeroize(drop)]
-pub struct Secret([u8; 56]);
+pub struct Secret(Array<u8, U56>);
 
 /// A SharedSecret is a point on Curve448.
 /// This point is the result of a Diffie-Hellman key exchange.
@@ -122,20 +127,19 @@ impl Secret {
         Some(SharedSecret(shared_key))
     }
 
-    /// Converts a byte slice into a secret and clamp
-    pub fn from_bytes(bytes: &[u8]) -> Option<Secret> {
-        // First check if we have 56 bytes
-        if bytes.len() != 56 {
-            return None;
-        }
-
-        let secret = Secret::from(slice_to_array(bytes));
-        Some(secret)
-    }
-
     /// Converts a secret into a byte array
     pub fn as_bytes(&self) -> &[u8; 56] {
-        &self.0
+        self.0.as_ref()
+    }
+}
+
+impl TryFrom<&[u8]> for Secret {
+    type Error = TryFromSliceError;
+
+    fn try_from(bytes: &[u8]) -> Result<Secret, TryFromSliceError> {
+        let mut secret = Secret(Array::try_from(bytes)?);
+        secret.clamp();
+        Ok(secret)
     }
 }
 
@@ -229,13 +233,12 @@ mod test {
 
     #[test]
     fn test_rfc_test_vectors_alice_bob() {
-        let alice_priv = Secret::from_bytes(&[
+        let alice_priv = Secret::from([
             0x9a, 0x8f, 0x49, 0x25, 0xd1, 0x51, 0x9f, 0x57, 0x75, 0xcf, 0x46, 0xb0, 0x4b, 0x58,
             0x0, 0xd4, 0xee, 0x9e, 0xe8, 0xba, 0xe8, 0xbc, 0x55, 0x65, 0xd4, 0x98, 0xc2, 0x8d,
             0xd9, 0xc9, 0xba, 0xf5, 0x74, 0xa9, 0x41, 0x97, 0x44, 0x89, 0x73, 0x91, 0x0, 0x63,
             0x82, 0xa6, 0xf1, 0x27, 0xab, 0x1d, 0x9a, 0xc2, 0xd8, 0xc0, 0xa5, 0x98, 0x72, 0x6b,
-        ])
-        .unwrap();
+        ]);
         let got_alice_pub = PublicKey::from(&alice_priv);
 
         let expected_alice_pub = [
@@ -246,13 +249,12 @@ mod test {
         ];
         assert_eq!(got_alice_pub.as_bytes()[..], expected_alice_pub[..]);
 
-        let bob_priv = Secret::from_bytes(&[
+        let bob_priv = Secret::from([
             0x1c, 0x30, 0x6a, 0x7a, 0xc2, 0xa0, 0xe2, 0xe0, 0x99, 0xb, 0x29, 0x44, 0x70, 0xcb,
             0xa3, 0x39, 0xe6, 0x45, 0x37, 0x72, 0xb0, 0x75, 0x81, 0x1d, 0x8f, 0xad, 0xd, 0x1d,
             0x69, 0x27, 0xc1, 0x20, 0xbb, 0x5e, 0xe8, 0x97, 0x2b, 0xd, 0x3e, 0x21, 0x37, 0x4c,
             0x9c, 0x92, 0x1b, 0x9, 0xd1, 0xb0, 0x36, 0x6f, 0x10, 0xb6, 0x51, 0x73, 0x99, 0x2d,
-        ])
-        .unwrap();
+        ]);
         let got_bob_pub = PublicKey::from(&bob_priv);
 
         let expected_bob_pub = [
@@ -336,7 +338,7 @@ mod test {
 
         for vector in test_vectors {
             let public_key = PublicKey::from_bytes(&vector.point).unwrap();
-            let secret = Secret::from_bytes(&vector.secret).unwrap();
+            let secret = Secret::try_from(&vector.secret[..]).unwrap();
 
             let got = secret.as_diffie_hellman(&public_key).unwrap();
 
