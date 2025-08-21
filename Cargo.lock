@@ -47,6 +47,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
+name = "base16ct"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8b59d472eab27ade8d770dcb11da7201c11234bef9f82ce7aa517be028d462b"
+
+[[package]]
 name = "base64ct"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -417,7 +423,7 @@ name = "elliptic-curve"
 version = "0.14.0-rc.12"
 source = "git+https://github.com/RustCrypto/traits.git#40508e0480c748542358c620e055b12aa858b042"
 dependencies = [
- "base16ct",
+ "base16ct 0.2.0",
  "crypto-bigint",
  "digest",
  "ff",
@@ -785,7 +791,7 @@ dependencies = [
 name = "p521"
 version = "0.14.0-pre.9"
 dependencies = [
- "base16ct",
+ "base16ct 0.3.0",
  "blobby",
  "criterion",
  "ecdsa",
@@ -1086,7 +1092,7 @@ version = "0.8.0-rc.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c54dee398d74b1d03d78ddc09c90e456bf906b5b7aa790ba4f48b025b2179e5d"
 dependencies = [
- "base16ct",
+ "base16ct 0.2.0",
  "der",
  "hybrid-array",
  "serdect",
@@ -1150,7 +1156,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f42f67da2385b51a5f9652db9c93d78aeaf7610bf5ec366080b6de810604af53"
 dependencies = [
- "base16ct",
+ "base16ct 0.2.0",
  "serde",
 ]
 

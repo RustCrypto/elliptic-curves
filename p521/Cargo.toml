@@ -17,7 +17,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-base16ct = "0.2"
+base16ct = "0.3"
 elliptic-curve = { version = "0.14.0-rc.11", default-features = false, features = ["sec1"] }
 
 # optional dependencies
