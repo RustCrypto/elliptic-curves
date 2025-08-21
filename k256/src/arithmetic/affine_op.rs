@@ -176,7 +176,6 @@ mod tests {
 
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use crate::FieldBytes;
     use elliptic_curve::PrimeField;
     use elliptic_curve::{rand_core::OsRng, Field, Group};
     use hex_literal::hex;
