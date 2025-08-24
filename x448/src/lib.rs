@@ -1,6 +1,5 @@
 #![no_std]
 
-use core::array::TryFromSliceError;
 use ed448_goldilocks::{
     MontgomeryPoint,
     elliptic_curve::{
@@ -14,21 +13,10 @@ use zeroize::Zeroize;
 
 type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
 
-/// Computes a Scalar according to RFC7748
-/// given a byte array of length 56
-impl From<[u8; 56]> for Secret {
-    fn from(arr: [u8; 56]) -> Secret {
-        let mut secret = Secret(arr.into());
-        secret.clamp();
-        secret
-    }
-}
-
-/// Given a Secret Key, compute the corresponding public key
+/// Given an [`EphemeralSecret`] Key, compute the corresponding public key
 /// using the generator specified in RFC7748
-/// XXX: Waiting for upstream PR to use pre-computation
-impl From<&Secret> for PublicKey {
-    fn from(secret: &Secret) -> PublicKey {
+impl From<&EphemeralSecret> for PublicKey {
+    fn from(secret: &EphemeralSecret) -> PublicKey {
         let secret = secret.as_scalar();
         let point = &MontgomeryPoint::GENERATOR * &secret;
         PublicKey(point)
@@ -39,10 +27,10 @@ impl From<&Secret> for PublicKey {
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct PublicKey(MontgomeryPoint);
 
-/// A Secret is a Scalar on Curve448.
+/// An [`EphemeralSecret`] is a Scalar on Curve448.
 #[derive(Clone, Zeroize)]
 #[zeroize(drop)]
-pub struct Secret(Array<u8, U56>);
+pub struct EphemeralSecret(Array<u8, U56>);
 
 /// A SharedSecret is a point on Curve448.
 /// This point is the result of a Diffie-Hellman key exchange.
@@ -62,6 +50,7 @@ impl PublicKey {
         }
         Some(public_key)
     }
+
     /// Converts a bytes slice into a Public key
     /// Returns None if:
     /// -  The length of the slice is not 56
@@ -77,11 +66,6 @@ impl PublicKey {
 
         Some(PublicKey(point))
     }
-
-    /// Converts a public key into a byte slice
-    pub fn as_bytes(&self) -> &[u8; 56] {
-        self.0.as_bytes()
-    }
 }
 
 impl SharedSecret {
@@ -91,18 +75,24 @@ impl SharedSecret {
     }
 }
 
-impl Secret {
+impl EphemeralSecret {
+    fn new(value: Array<u8, U56>) -> Self {
+        let mut out = Self(value);
+        out.clamp();
+        out
+    }
+
     /// Generate a x448 `Secret` key.
     // Taken from dalek-x25519
-    pub fn new<T>(csprng: &mut T) -> Self
+    pub fn random_from_rng<T>(csprng: &mut T) -> Self
     where
         T: RngCore + CryptoRng + ?Sized,
     {
-        let mut bytes = [0u8; 56];
+        let mut bytes = Array::default();
 
-        csprng.fill_bytes(&mut bytes);
+        csprng.fill_bytes(bytes.as_mut_slice());
 
-        Secret::from(bytes)
+        Self::new(bytes)
     }
 
     /// Clamps the secret key according to RFC7748
@@ -111,35 +101,23 @@ impl Secret {
         self.0[55] |= 128;
     }
 
-    /// Views a Secret as a Scalar
+    /// Views an Secret as a Scalar
     fn as_scalar(&self) -> MontgomeryScalar {
         let secret = U448::from_le_slice(&self.0);
         MontgomeryScalar::from_uint_unchecked(secret)
     }
 
     /// Performs a Diffie-hellman key exchange between the secret key and an external public key
-    pub fn as_diffie_hellman(&self, public_key: &PublicKey) -> Option<SharedSecret> {
-        // Check if the point is one of the low order points
-        if public_key.0.is_low_order() {
-            return None;
-        }
+    pub fn diffie_hellman(&self, public_key: &PublicKey) -> SharedSecret {
+        // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
+        // created.
         let shared_key = &public_key.0 * &self.as_scalar();
-        Some(SharedSecret(shared_key))
+        SharedSecret(shared_key)
     }
 
     /// Converts a secret into a byte array
     pub fn as_bytes(&self) -> &[u8; 56] {
         self.0.as_ref()
-    }
-}
-
-impl TryFrom<&[u8]> for Secret {
-    type Error = TryFromSliceError;
-
-    fn try_from(bytes: &[u8]) -> Result<Secret, TryFromSliceError> {
-        let mut secret = Secret(Array::try_from(bytes)?);
-        secret.clamp();
-        Ok(secret)
     }
 }
 
@@ -157,14 +135,14 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
 /// [1]: https://github.com/rust-lang/nomicon/issues/59
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
-    let scalar = Secret::from(scalar_bytes).as_scalar();
+    let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
     Some((&point.0 * &scalar).0)
 }
 /// An unchecked version of the x448 function defined in RFC448
 /// No checks are made on the points.
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
     let point = MontgomeryPoint(point_bytes);
-    let scalar = Secret::from(scalar_bytes).as_scalar();
+    let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
     (&point * &scalar).0
 }
 
@@ -176,45 +154,31 @@ mod test {
 
     use super::*;
     use alloc::vec;
+    use core::array::TryFromSliceError;
 
-    #[test]
-    fn test_low_order() {
-        // Notice, that this is the only way to add low order points into the system
-        // and this is not exposed to the user. The user will use `from_bytes` which will check for low order points.
-        let bad_key_a = PublicKey(MontgomeryPoint::LOW_A);
-        let checked_bad_key_a = PublicKey::from_bytes(&MontgomeryPoint::LOW_A.0);
-        assert!(checked_bad_key_a.is_none());
+    /// Helpers to test properties of EphemeralSecret. Those `From` and `TryFrom` are not meant to
+    /// be exposed outside tests.
+    impl From<[u8; 56]> for EphemeralSecret {
+        fn from(arr: [u8; 56]) -> Self {
+            Self::new(arr.into())
+        }
+    }
 
-        let bad_key_b = PublicKey(MontgomeryPoint::LOW_B);
-        let checked_bad_key_b = PublicKey::from_bytes(&MontgomeryPoint::LOW_B.0);
-        assert!(checked_bad_key_b.is_none());
+    impl TryFrom<&[u8]> for EphemeralSecret {
+        type Error = TryFromSliceError;
 
-        let bad_key_c = PublicKey(MontgomeryPoint::LOW_C);
-        let checked_bad_key_c = PublicKey::from_bytes(&MontgomeryPoint::LOW_C.0);
-        assert!(checked_bad_key_c.is_none());
-
-        let mut rng = rand::rng();
-        let bob_priv = Secret::new(&mut rng);
-
-        // If for some reason, these low order points are added to the system
-        // The Diffie-Hellman key exchange for the honest party will return None.
-        let shared_bob = bob_priv.as_diffie_hellman(&bad_key_a);
-        assert!(shared_bob.is_none());
-
-        let shared_bob = bob_priv.as_diffie_hellman(&bad_key_b);
-        assert!(shared_bob.is_none());
-
-        let shared_bob = bob_priv.as_diffie_hellman(&bad_key_c);
-        assert!(shared_bob.is_none());
+        fn try_from(bytes: &[u8]) -> Result<Self, TryFromSliceError> {
+            Ok(Self::new(Array::try_from(bytes)?))
+        }
     }
 
     #[test]
     fn test_random_dh() {
         let mut rng = rand::rng();
-        let alice_priv = Secret::new(&mut rng);
+        let alice_priv = EphemeralSecret::random_from_rng(&mut rng);
         let alice_pub = PublicKey::from(&alice_priv);
 
-        let bob_priv = Secret::new(&mut rng);
+        let bob_priv = EphemeralSecret::random_from_rng(&mut rng);
         let bob_pub = PublicKey::from(&bob_priv);
 
         // Since Alice and Bob are both using the API correctly
@@ -225,15 +189,15 @@ mod test {
 
         // Both Alice and Bob perform the DH key exchange.
         // As mentioned above, we unwrap because both Parties are using the API correctly.
-        let shared_alice = alice_priv.as_diffie_hellman(&bob_pub).unwrap();
-        let shared_bob = bob_priv.as_diffie_hellman(&alice_pub).unwrap();
+        let shared_alice = alice_priv.diffie_hellman(&bob_pub);
+        let shared_bob = bob_priv.diffie_hellman(&alice_pub);
 
         assert_eq!(shared_alice.as_bytes()[..], shared_bob.as_bytes()[..]);
     }
 
     #[test]
     fn test_rfc_test_vectors_alice_bob() {
-        let alice_priv = Secret::from([
+        let alice_priv = EphemeralSecret::from([
             0x9a, 0x8f, 0x49, 0x25, 0xd1, 0x51, 0x9f, 0x57, 0x75, 0xcf, 0x46, 0xb0, 0x4b, 0x58,
             0x0, 0xd4, 0xee, 0x9e, 0xe8, 0xba, 0xe8, 0xbc, 0x55, 0x65, 0xd4, 0x98, 0xc2, 0x8d,
             0xd9, 0xc9, 0xba, 0xf5, 0x74, 0xa9, 0x41, 0x97, 0x44, 0x89, 0x73, 0x91, 0x0, 0x63,
@@ -247,9 +211,9 @@ mod test {
             0xc5, 0xd9, 0xbb, 0xc8, 0x36, 0x64, 0x72, 0x41, 0xd9, 0x53, 0xd4, 0xc, 0x5b, 0x12,
             0xda, 0x88, 0x12, 0xd, 0x53, 0x17, 0x7f, 0x80, 0xe5, 0x32, 0xc4, 0x1f, 0xa0,
         ];
-        assert_eq!(got_alice_pub.as_bytes()[..], expected_alice_pub[..]);
+        assert_eq!(got_alice_pub.0.as_bytes()[..], expected_alice_pub[..]);
 
-        let bob_priv = Secret::from([
+        let bob_priv = EphemeralSecret::from([
             0x1c, 0x30, 0x6a, 0x7a, 0xc2, 0xa0, 0xe2, 0xe0, 0x99, 0xb, 0x29, 0x44, 0x70, 0xcb,
             0xa3, 0x39, 0xe6, 0x45, 0x37, 0x72, 0xb0, 0x75, 0x81, 0x1d, 0x8f, 0xad, 0xd, 0x1d,
             0x69, 0x27, 0xc1, 0x20, 0xbb, 0x5e, 0xe8, 0x97, 0x2b, 0xd, 0x3e, 0x21, 0x37, 0x4c,
@@ -263,10 +227,10 @@ mod test {
             0x27, 0xd8, 0xb9, 0x72, 0xfc, 0x3e, 0x34, 0xfb, 0x42, 0x32, 0xa1, 0x3c, 0xa7, 0x6,
             0xdc, 0xb5, 0x7a, 0xec, 0x3d, 0xae, 0x7, 0xbd, 0xc1, 0xc6, 0x7b, 0xf3, 0x36, 0x9,
         ];
-        assert_eq!(got_bob_pub.as_bytes()[..], expected_bob_pub[..]);
+        assert_eq!(got_bob_pub.0.as_bytes()[..], expected_bob_pub[..]);
 
-        let bob_shared = bob_priv.as_diffie_hellman(&got_alice_pub).unwrap();
-        let alice_shared = alice_priv.as_diffie_hellman(&got_bob_pub).unwrap();
+        let bob_shared = bob_priv.diffie_hellman(&got_alice_pub);
+        let alice_shared = alice_priv.diffie_hellman(&got_bob_pub);
         assert_eq!(bob_shared.as_bytes()[..], alice_shared.as_bytes()[..]);
 
         let expected_shared = [
@@ -338,11 +302,11 @@ mod test {
 
         for vector in test_vectors {
             let public_key = PublicKey::from_bytes(&vector.point).unwrap();
-            let secret = Secret::try_from(&vector.secret[..]).unwrap();
+            let secret = EphemeralSecret::try_from(&vector.secret[..]).unwrap();
 
-            let got = secret.as_diffie_hellman(&public_key).unwrap();
+            let got = secret.diffie_hellman(&public_key);
 
-            assert_eq!(got.as_bytes()[..], vector.expected[..])
+            assert_eq!(got.0.as_bytes()[..], vector.expected[..])
         }
     }
 
