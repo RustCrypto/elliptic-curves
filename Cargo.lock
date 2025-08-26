@@ -375,7 +375,7 @@ dependencies = [
  "digest",
  "elliptic-curve",
  "rfc6979",
- "serdect",
+ "serdect 0.3.0",
  "signature",
  "spki",
  "zeroize",
@@ -406,7 +406,7 @@ dependencies = [
  "rand_core",
  "serde_bare",
  "serde_json",
- "serdect",
+ "serdect 0.4.0",
  "sha3",
  "signature",
  "subtle",
@@ -435,7 +435,7 @@ dependencies = [
  "pkcs8",
  "rand_core",
  "sec1",
- "serdect",
+ "serdect 0.3.0",
  "subtle",
  "zeroize",
 ]
@@ -623,7 +623,7 @@ dependencies = [
  "once_cell",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.4.0",
  "sha2",
  "sha3",
  "signature",
@@ -733,7 +733,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "sec1",
- "serdect",
+ "serdect 0.4.0",
 ]
 
 [[package]]
@@ -747,7 +747,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "rand_core",
- "serdect",
+ "serdect 0.4.0",
  "sha2",
 ]
 
@@ -765,7 +765,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.4.0",
  "sha2",
 ]
 
@@ -783,7 +783,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.4.0",
  "sha2",
 ]
 
@@ -802,7 +802,7 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core",
- "serdect",
+ "serdect 0.4.0",
  "sha2",
 ]
 
@@ -884,7 +884,7 @@ name = "primeorder"
 version = "0.14.0-pre.7"
 dependencies = [
  "elliptic-curve",
- "serdect",
+ "serdect 0.4.0",
 ]
 
 [[package]]
@@ -1095,7 +1095,7 @@ dependencies = [
  "base16ct 0.2.0",
  "der",
  "hybrid-array",
- "serdect",
+ "serdect 0.3.0",
  "subtle",
  "zeroize",
 ]
@@ -1161,6 +1161,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serdect"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90faa9344350bebcc60a4beae3290b8548ecc55a542e25f5ca1cdc83b267fe7e"
+dependencies = [
+ "base16ct 0.2.0",
+ "serde",
+]
+
+[[package]]
 name = "sha2"
 version = "0.11.0-rc.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1203,7 +1213,7 @@ dependencies = [
  "proptest",
  "rand_core",
  "rfc6979",
- "serdect",
+ "serdect 0.4.0",
  "signature",
  "sm3",
 ]
