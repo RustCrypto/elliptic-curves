@@ -14,7 +14,7 @@ use core::{
 use elliptic_curve::{
     Curve,
     bigint::{Limb, NonZero, U256, prelude::*},
-    group::ff::{self, Field, PrimeField},
+    group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
     scalar::{FromUintUnchecked, IsHigh},
@@ -486,6 +486,15 @@ impl From<Scalar> for U256 {
 impl From<&Scalar> for U256 {
     fn from(scalar: &Scalar) -> U256 {
         scalar.0
+    }
+}
+
+impl FromUniformBytes<64> for Scalar {
+    fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
+        Self(barrett_reduce(
+            U256::from_be_slice(&bytes[32..]),
+            U256::from_be_slice(&bytes[..32]),
+        ))
     }
 }
 
