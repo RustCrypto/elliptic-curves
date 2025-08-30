@@ -210,17 +210,17 @@ mod tests {
         );
         assert_eq!(
             FieldElement::from_bytes(
-                [
+                (&[
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 1
-                ]
-                .as_ref()
+                ])
+                    .into()
             )
             .unwrap(),
             FieldElement::ONE
         );
         assert!(bool::from(
-            FieldElement::from_bytes([0xff; 32].as_ref()).is_none()
+            FieldElement::from_bytes((&[0xff; 32]).into()).is_none()
         ));
     }
 
