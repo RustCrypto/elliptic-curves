@@ -31,3 +31,6 @@ ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
+
+# https://github.com/RustCrypto/hybrid-array/pull/132
+hybrid-array = { git = "https://github.com/kayabaNerve/hybrid-array", branch = "remove-as-ref" }
