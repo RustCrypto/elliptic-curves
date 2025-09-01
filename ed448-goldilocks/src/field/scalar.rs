@@ -658,25 +658,6 @@ impl<C: CurveWithScalar> Scalar<C> {
         self.scalar.is_zero()
     }
 
-    /// Divides a scalar by four without reducing mod p
-    /// This is used in the 2-isogeny when mapping points from Ed448-Goldilocks
-    /// to Twisted-Goldilocks
-    pub(crate) fn div_by_four(&mut self) {
-        let s_mod_4 = self[0] & 3;
-
-        let s_plus_l = self.scalar + ORDER;
-        let s_plus_2l = s_plus_l + ORDER;
-        let s_plus_3l = s_plus_2l + ORDER;
-
-        self.scalar.conditional_assign(&s_plus_l, s_mod_4.ct_eq(&1));
-        self.scalar
-            .conditional_assign(&s_plus_2l, s_mod_4.ct_eq(&2));
-        self.scalar
-            .conditional_assign(&s_plus_3l, s_mod_4.ct_eq(&3));
-
-        self.scalar >>= 2;
-    }
-
     // This method was modified from Curve25519-Dalek codebase. [scalar.rs]
     // We start with 14 u32s and convert them to 56 u8s.
     // We then use the code copied from Dalek to convert the 56 u8s to radix-16 and re-center the coefficients to be between [-16,16)

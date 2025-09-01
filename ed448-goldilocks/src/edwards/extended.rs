@@ -334,8 +334,7 @@ impl EdwardsPoint {
     /// Generic scalar multiplication to compute s*P
     pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
         // Compute floor(s/4)
-        let mut scalar_div_four = *scalar;
-        scalar_div_four.div_by_four();
+        let scalar_div_four = scalar.halve().halve();
 
         // Use isogeny and dual isogeny to compute phi^-1((s/4) * phi(P))
         variable_base(&self.to_twisted(), &scalar_div_four).to_untwisted()
