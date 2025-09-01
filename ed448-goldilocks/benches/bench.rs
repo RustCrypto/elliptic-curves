@@ -3,6 +3,7 @@ use ed448_goldilocks::{
     CompressedDecaf, CompressedEdwardsY, Decaf448, DecafPoint, DecafScalar, EdwardsPoint,
     EdwardsScalar, MontgomeryPoint,
 };
+use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
 use hash2curve::{ExpandMsgXof, GroupDigest};
 use rand_core::{OsRng, TryRngCore};
@@ -62,14 +63,14 @@ pub fn ed448(c: &mut Criterion) {
     group.bench_function("compress", |b| {
         b.iter_batched(
             || EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
-            |point| point.compress().0,
+            |point| point.to_bytes().0,
             BatchSize::SmallInput,
         )
     });
 
     group.bench_function("decompress", |b| {
         b.iter_batched(
-            || EdwardsPoint::try_from_rng(&mut OsRng).unwrap().compress().0,
+            || EdwardsPoint::try_from_rng(&mut OsRng).unwrap().to_bytes().0,
             |bytes| CompressedEdwardsY(bytes).decompress().unwrap(),
             BatchSize::SmallInput,
         )
