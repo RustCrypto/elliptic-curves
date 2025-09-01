@@ -6,254 +6,24 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use crate::curve::scalar_mul::variable_base;
 use crate::curve::twedwards::IsogenyMap;
 use crate::curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint;
+use crate::edwards::affine::PointBytes;
 use crate::field::FieldElement;
 use crate::*;
 use elliptic_curve::{
-    CurveGroup, Error,
+    BatchNormalize, CurveGroup, Error,
     array::Array,
     group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
-    ops::LinearCombination,
+    ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
 };
 use hash2curve::ExpandMsgXof;
 use rand_core::TryRngCore;
-use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// The default hash to curve domain separation tag
 pub const DEFAULT_HASH_TO_CURVE_SUITE: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_RO_";
 /// The default encode to curve domain separation tag
 pub const DEFAULT_ENCODE_TO_CURVE_SUITE: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_NU_";
-
-/// The compressed internal representation of a point on the Twisted Edwards Curve
-pub type PointBytes = [u8; 57];
-
-/// Represents a point on the Compressed Twisted Edwards Curve
-/// in little endian format where the most significant bit is the sign bit
-/// and the remaining 448 bits represent the y-coordinate
-#[derive(Copy, Clone, Debug)]
-pub struct CompressedEdwardsY(pub PointBytes);
-
-impl elliptic_curve::zeroize::Zeroize for CompressedEdwardsY {
-    fn zeroize(&mut self) {
-        self.0.zeroize()
-    }
-}
-
-impl Display for CompressedEdwardsY {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        for b in &self.0[..] {
-            write!(f, "{b:02x}")?;
-        }
-        Ok(())
-    }
-}
-
-impl LowerHex for CompressedEdwardsY {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        for b in &self.0[..] {
-            write!(f, "{b:02x}")?;
-        }
-        Ok(())
-    }
-}
-
-impl UpperHex for CompressedEdwardsY {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        for b in &self.0[..] {
-            write!(f, "{b:02X}")?;
-        }
-        Ok(())
-    }
-}
-
-impl Default for CompressedEdwardsY {
-    fn default() -> Self {
-        Self([0u8; 57])
-    }
-}
-
-impl ConditionallySelectable for CompressedEdwardsY {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut bytes = [0u8; 57];
-        for (i, byte) in bytes.iter_mut().enumerate() {
-            *byte = u8::conditional_select(&a.0[i], &b.0[i], choice);
-        }
-        Self(bytes)
-    }
-}
-
-impl ConstantTimeEq for CompressedEdwardsY {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
-    }
-}
-
-impl PartialEq for CompressedEdwardsY {
-    fn eq(&self, other: &CompressedEdwardsY) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Eq for CompressedEdwardsY {}
-
-impl AsRef<[u8]> for CompressedEdwardsY {
-    fn as_ref(&self) -> &[u8] {
-        &self.0[..]
-    }
-}
-
-impl AsRef<PointBytes> for CompressedEdwardsY {
-    fn as_ref(&self) -> &PointBytes {
-        &self.0
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl From<CompressedEdwardsY> for Vec<u8> {
-    fn from(value: CompressedEdwardsY) -> Self {
-        Self::from(&value)
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl From<&CompressedEdwardsY> for Vec<u8> {
-    fn from(value: &CompressedEdwardsY) -> Self {
-        value.0.to_vec()
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl TryFrom<Vec<u8>> for CompressedEdwardsY {
-    type Error = &'static str;
-
-    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from(&value)
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl TryFrom<&Vec<u8>> for CompressedEdwardsY {
-    type Error = &'static str;
-
-    fn try_from(value: &Vec<u8>) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_slice())
-    }
-}
-
-impl TryFrom<&[u8]> for CompressedEdwardsY {
-    type Error = &'static str;
-
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let bytes = <PointBytes>::try_from(value).map_err(|_| "Invalid length")?;
-        Ok(CompressedEdwardsY(bytes))
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl TryFrom<Box<[u8]>> for CompressedEdwardsY {
-    type Error = &'static str;
-
-    fn try_from(value: Box<[u8]>) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_ref())
-    }
-}
-
-impl From<CompressedEdwardsY> for PointBytes {
-    fn from(value: CompressedEdwardsY) -> Self {
-        value.0
-    }
-}
-
-impl From<&CompressedEdwardsY> for PointBytes {
-    fn from(value: &CompressedEdwardsY) -> Self {
-        Self::from(*value)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl serdect::serde::Serialize for CompressedEdwardsY {
-    fn serialize<S: serdect::serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        serdect::array::serialize_hex_lower_or_bin(&self.0, s)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> serdect::serde::Deserialize<'de> for CompressedEdwardsY {
-    fn deserialize<D>(d: D) -> Result<Self, D::Error>
-    where
-        D: serdect::serde::Deserializer<'de>,
-    {
-        let mut arr = [0u8; 57];
-        serdect::array::deserialize_hex_or_bin(&mut arr, d)?;
-        Ok(CompressedEdwardsY(arr))
-    }
-}
-
-impl From<PointBytes> for CompressedEdwardsY {
-    fn from(point: PointBytes) -> Self {
-        Self(point)
-    }
-}
-
-impl CompressedEdwardsY {
-    /// The compressed generator point
-    pub const GENERATOR: Self = Self([
-        20, 250, 48, 242, 91, 121, 8, 152, 173, 200, 215, 78, 44, 19, 189, 253, 196, 57, 124, 230,
-        28, 255, 211, 58, 215, 194, 160, 5, 30, 156, 120, 135, 64, 152, 163, 108, 115, 115, 234,
-        75, 98, 199, 201, 86, 55, 32, 118, 136, 36, 188, 182, 110, 113, 70, 63, 105, 0,
-    ]);
-    /// The compressed identity point
-    pub const IDENTITY: Self = Self([0u8; 57]);
-
-    /// Attempt to decompress to an `EdwardsPoint`.
-    ///
-    /// Returns `None` if the input is not the \\(y\\)-coordinate of a
-    /// curve point.
-    pub fn decompress_unchecked(&self) -> CtOption<EdwardsPoint> {
-        // Safe to unwrap here as the underlying data structure is a slice
-        let (sign, b) = self.0.split_last().expect("slice is non-empty");
-
-        let mut y_bytes: [u8; 56] = [0; 56];
-        y_bytes.copy_from_slice(b);
-
-        // Recover x using y
-        let y = FieldElement::from_bytes(&y_bytes);
-        let yy = y.square();
-        let dyy = FieldElement::EDWARDS_D * yy;
-        let numerator = FieldElement::ONE - yy;
-        let denominator = FieldElement::ONE - dyy;
-
-        let (mut x, is_res) = FieldElement::sqrt_ratio(&numerator, &denominator);
-
-        // Compute correct sign of x
-        let compressed_sign_bit = Choice::from(sign >> 7);
-        let is_negative = x.is_negative();
-        x.conditional_negate(compressed_sign_bit ^ is_negative);
-
-        CtOption::new(AffinePoint { x, y }.to_edwards(), is_res)
-    }
-
-    /// Attempt to decompress to an `EdwardsPoint`.
-    ///
-    /// Returns `None`:
-    /// - if the input is not the \\(y\\)-coordinate of a curve point.
-    /// - if the input point is not on the curve.
-    /// - if the input point has nonzero torsion component.
-    pub fn decompress(&self) -> CtOption<EdwardsPoint> {
-        self.decompress_unchecked()
-            .and_then(|pt| CtOption::new(pt, pt.is_on_curve() & pt.is_torsion_free()))
-    }
-
-    /// View this `CompressedEdwardsY` as an array of bytes.
-    pub const fn as_bytes(&self) -> &PointBytes {
-        &self.0
-    }
-
-    /// Copy this `CompressedEdwardsY` to an array of bytes.
-    pub const fn to_bytes(&self) -> PointBytes {
-        self.0
-    }
-}
 
 /// Represent points on the (untwisted) edwards curve using Extended Homogenous Projective Co-ordinates
 /// (x, y) -> (X/Z, Y/Z, Z, T)
@@ -342,15 +112,10 @@ impl Group for EdwardsPoint {
     where
         R: TryRngCore + ?Sized,
     {
-        let mut bytes = Array::default();
-
         loop {
-            rng.try_fill_bytes(&mut bytes)?;
-            if let Some(point) = Self::from_bytes(&bytes)
-                .into_option()
-                .filter(|&point| point != Self::IDENTITY)
-            {
-                return Ok(point);
+            let point = AffinePoint::try_from_rng(rng)?;
+            if point != AffinePoint::IDENTITY {
+                break Ok(point.into());
             }
         }
     }
@@ -378,17 +143,21 @@ impl GroupEncoding for EdwardsPoint {
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
         let mut value = [0u8; 57];
         value.copy_from_slice(bytes);
-        CompressedEdwardsY(value).decompress()
+        CompressedEdwardsY(value)
+            .decompress()
+            .map(|point| point.to_edwards())
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
         let mut value = [0u8; 57];
         value.copy_from_slice(bytes);
-        CompressedEdwardsY(value).decompress()
+        CompressedEdwardsY(value)
+            .decompress()
+            .map(|point| point.to_edwards())
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        Self::Repr::from(self.compress().0)
+        Self::Repr::from(self.to_affine().compress().0)
     }
 }
 
@@ -420,7 +189,7 @@ impl From<EdwardsPoint> for Vec<u8> {
 #[cfg(feature = "alloc")]
 impl From<&EdwardsPoint> for Vec<u8> {
     fn from(value: &EdwardsPoint) -> Self {
-        value.compress().0.to_vec()
+        value.to_affine().compress().0.to_vec()
     }
 }
 
@@ -465,7 +234,11 @@ impl TryFrom<PointBytes> for EdwardsPoint {
     type Error = &'static str;
 
     fn try_from(value: PointBytes) -> Result<Self, Self::Error> {
-        Option::<Self>::from(CompressedEdwardsY(value).decompress()).ok_or("Invalid point")
+        CompressedEdwardsY(value)
+            .decompress()
+            .into_option()
+            .map(|point| point.to_edwards())
+            .ok_or("Invalid point")
     }
 }
 
@@ -479,7 +252,7 @@ impl TryFrom<&PointBytes> for EdwardsPoint {
 
 impl From<EdwardsPoint> for PointBytes {
     fn from(value: EdwardsPoint) -> Self {
-        value.compress().into()
+        value.to_affine().compress().into()
     }
 }
 
@@ -522,6 +295,14 @@ impl CurveGroup for EdwardsPoint {
 
     fn to_affine(&self) -> AffinePoint {
         self.to_affine()
+    }
+
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
+        let mut zs = alloc::vec![FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
 }
 
@@ -585,24 +366,6 @@ impl EdwardsPoint {
         result.conditional_assign(&three_p, Choice::from((s_mod_four == 3) as u8));
 
         result
-    }
-
-    /// Standard compression; store Y and sign of X
-    // XXX: This needs more docs and is `compress` the conventional function name? I think to_bytes/encode is?
-    pub fn compress(&self) -> CompressedEdwardsY {
-        let affine = self.to_affine();
-
-        let affine_x = affine.x;
-        let affine_y = affine.y;
-
-        let mut compressed_bytes = [0u8; 57];
-
-        let sign = affine_x.is_negative().unwrap_u8();
-
-        let y_bytes = affine_y.to_bytes();
-        compressed_bytes[..y_bytes.len()].copy_from_slice(&y_bytes[..]);
-        *compressed_bytes.last_mut().expect("at least one byte") = sign << 7;
-        CompressedEdwardsY(compressed_bytes)
     }
 
     /// Add two points
@@ -938,7 +701,7 @@ impl Mul<&EdwardsScalar> for &EdwardsPoint {
 #[cfg(feature = "serde")]
 impl serdect::serde::Serialize for EdwardsPoint {
     fn serialize<S: serdect::serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        self.compress().serialize(s)
+        self.to_affine().compress().serialize(s)
     }
 }
 
@@ -949,19 +712,86 @@ impl<'de> serdect::serde::Deserialize<'de> for EdwardsPoint {
         D: serdect::serde::Deserializer<'de>,
     {
         let compressed = CompressedEdwardsY::deserialize(d)?;
-        Option::<EdwardsPoint>::from(compressed.decompress())
+        compressed
+            .decompress()
+            .into_option()
+            .map(|point| point.to_edwards())
             .ok_or_else(|| serdect::serde::de::Error::custom("invalid point"))
     }
 }
 
 impl elliptic_curve::zeroize::DefaultIsZeroes for EdwardsPoint {}
 
+impl<const N: usize> BatchNormalize<[EdwardsPoint; N]> for EdwardsPoint {
+    type Output = [<Self as CurveGroup>::AffineRepr; N];
+
+    #[inline]
+    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::AffineRepr; N] {
+        let zs = [FieldElement::ONE; N];
+        let mut affine_points = [AffinePoint::IDENTITY; N];
+        batch_normalize_generic(points, zs, &mut affine_points);
+        affine_points
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BatchNormalize<[EdwardsPoint]> for EdwardsPoint {
+    type Output = Vec<<Self as CurveGroup>::AffineRepr>;
+
+    #[inline]
+    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::AffineRepr> {
+        use alloc::vec;
+
+        let mut zs = vec![FieldElement::ONE; points.len()];
+        let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
+        batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
+        affine_points
+    }
+}
+
+/// Generic implementation of batch normalization.
+fn batch_normalize_generic<P, Z, I, O>(points: &P, mut zs: Z, out: &mut O)
+where
+    FieldElement: BatchInvert<Z, Output = CtOption<I>>,
+    P: AsRef<[EdwardsPoint]> + ?Sized,
+    Z: AsMut<[FieldElement]>,
+    I: AsRef<[FieldElement]>,
+    O: AsMut<[AffinePoint]> + ?Sized,
+{
+    let points = points.as_ref();
+    let out = out.as_mut();
+
+    for (i, point) in points.iter().enumerate() {
+        // Even a single zero value will fail inversion for the entire batch.
+        // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
+        // and treat that case specially later-on.
+        zs.as_mut()[i].conditional_assign(&point.Z, !point.Z.ct_eq(&FieldElement::ZERO));
+    }
+
+    // This is safe to unwrap since we assured that all elements are non-zero
+    let zs_inverses = <FieldElement as BatchInvert<Z>>::batch_invert(zs)
+        .expect("all elements should be non-zero");
+
+    for i in 0..out.len() {
+        // If the `z` coordinate is non-zero, we can use it to invert;
+        // otherwise it defaults to the `IDENTITY` value.
+        out[i] = AffinePoint::conditional_select(
+            &AffinePoint {
+                x: points[i].X * zs_inverses.as_ref()[i],
+                y: points[i].Y * zs_inverses.as_ref()[i],
+            },
+            &AffinePoint::IDENTITY,
+            points[i].Z.ct_eq(&FieldElement::ZERO),
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use elliptic_curve::Field;
     use hex_literal::hex;
-    use rand_core::TryRngCore;
+    use rand_core::OsRng;
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -1038,7 +868,7 @@ mod tests {
         let y = hex_to_field(
             "ae05e9634ad7048db359d6205086c2b0036ed7a035884dd7b7e36d728ad8c4b80d6565833a2a3098bbbcb2bed1cda06bdaeafbcdea9386ed",
         );
-        let generated = AffinePoint { x, y }.to_edwards();
+        let generated = AffinePoint { x, y };
 
         let decompressed_point = generated.compress().decompress();
         assert!(<Choice as Into<bool>>::into(decompressed_point.is_some()));
@@ -1066,13 +896,13 @@ mod tests {
         let decompressed = compressed.decompress().unwrap();
 
         assert_eq!(
-            decompressed.X,
+            decompressed.x,
             hex_to_field(
                 "39c41cea305d737df00de8223a0d5f4d48c8e098e16e9b4b2f38ac353262e119cb5ff2afd6d02464702d9d01c9921243fc572f9c718e2527"
             )
         );
         assert_eq!(
-            decompressed.Y,
+            decompressed.y,
             hex_to_field(
                 "a7ad5629142315c3c03730ab126380eb99a33cf01d06dfc3cf8ca3ae66bde9dc2d6d74f3dd3d05e1d41fd0233f032d967d8909b1536a9c64"
             )
@@ -1085,13 +915,13 @@ mod tests {
         let decompressed = compressed.decompress().unwrap();
 
         assert_eq!(
-            decompressed.X,
+            decompressed.x,
             hex_to_field(
                 "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
             )
         );
         assert_eq!(
-            decompressed.Y,
+            decompressed.y,
             hex_to_field(
                 "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001"
             )
@@ -1255,5 +1085,34 @@ mod tests {
         }
 
         assert_eq!(computed_commitment, expected_commitment);
+    }
+
+    #[test]
+    fn batch_normalize() {
+        let points: [EdwardsPoint; 2] = [
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+        ];
+
+        let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(&points);
+
+        for (point, affine_point) in points.into_iter().zip(affine_points) {
+            assert_eq!(affine_point, point.to_affine());
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn batch_normalize_alloc() {
+        let points = alloc::vec![
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+        ];
+
+        let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(points.as_slice());
+
+        for (point, affine_point) in points.into_iter().zip(affine_points) {
+            assert_eq!(affine_point, point.to_affine());
+        }
     }
 }

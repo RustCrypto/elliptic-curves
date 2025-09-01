@@ -1,7 +1,7 @@
 //! Much of this code is borrowed from Thomas Pornin's [CRRL Project](https://github.com/pornin/crrl/blob/main/src/ed448.rs)
 //! and adapted to mirror `ed25519-dalek`'s API.
 
-use crate::edwards::extended::PointBytes;
+use crate::edwards::affine::PointBytes;
 use crate::sign::{HASH_HEAD, InnerSignature};
 use crate::{
     CompressedEdwardsY, Context, EdwardsPoint, EdwardsScalar, PreHash, Signature, SigningError,
@@ -178,7 +178,10 @@ impl VerifyingKey {
     /// Construct a `VerifyingKey` from a slice of bytes.
     pub fn from_bytes(bytes: &PointBytes) -> Result<Self, Error> {
         let compressed = CompressedEdwardsY(*bytes);
-        let point = Option::<EdwardsPoint>::from(compressed.decompress())
+        let point = compressed
+            .decompress()
+            .into_option()
+            .map(|point| point.to_edwards())
             .ok_or(SigningError::InvalidPublicKeyBytes)?;
         if point.is_identity().into() {
             return Err(SigningError::InvalidPublicKeyBytes.into());
