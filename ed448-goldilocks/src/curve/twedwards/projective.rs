@@ -1,18 +1,18 @@
 #![allow(non_snake_case)]
 
-use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
+use crate::curve::twedwards::extended::ExtendedPoint;
 use crate::field::FieldElement;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable};
 
 impl Default for ProjectiveNielsPoint {
     fn default() -> ProjectiveNielsPoint {
-        ProjectiveNielsPoint::identity()
+        ProjectiveNielsPoint::IDENTITY
     }
 }
 
 // Its a variant of Niels, where a Z coordinate is added for unmixed readdition
 // ((y+x)/2, (y-x)/2, dxy, Z)
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct ProjectiveNielsPoint {
     pub(crate) Y_plus_X: FieldElement,
     pub(crate) Y_minus_X: FieldElement,
@@ -45,9 +45,12 @@ impl ConditionallyNegatable for ProjectiveNielsPoint {
 }
 
 impl ProjectiveNielsPoint {
-    pub fn identity() -> ProjectiveNielsPoint {
-        ExtensiblePoint::IDENTITY.to_projective_niels()
-    }
+    pub const IDENTITY: ProjectiveNielsPoint = ProjectiveNielsPoint {
+        Y_plus_X: FieldElement::ONE,
+        Y_minus_X: FieldElement::ONE,
+        Td: FieldElement::ZERO,
+        Z: FieldElement::TWO,
+    };
 
     pub fn to_extended(self) -> ExtendedPoint {
         let A = self.Y_plus_X - self.Y_minus_X;
@@ -63,6 +66,23 @@ impl ProjectiveNielsPoint {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::curve::twedwards::extensible::ExtensiblePoint;
+
+    #[test]
+    fn identity() {
+        // Internally are compared by converting to `ExtendedPoint`.
+        // Here the right-side identity point is converted to Niel's
+        // and then both sides are converted to twisted-curve form.
+        assert_eq!(
+            ProjectiveNielsPoint::IDENTITY,
+            ExtensiblePoint::IDENTITY.to_projective_niels(),
+        );
+        // Here only the left-side identity point is converted.
+        assert_eq!(
+            ProjectiveNielsPoint::IDENTITY.to_extended(),
+            ExtendedPoint::IDENTITY,
+        );
+    }
 
     #[test]
     fn test_conditional_negate() {
