@@ -1,7 +1,7 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use ed448_goldilocks::{
-    Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryScalar,
-    MontgomeryXpoint, ProjectiveMontgomeryXpoint,
+    Curve448, Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar,
+    MontgomeryScalar, MontgomeryXpoint, ProjectiveMontgomeryPoint, ProjectiveMontgomeryXpoint,
 };
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
@@ -117,6 +117,48 @@ pub fn decaf448(c: &mut Criterion) {
         b.iter_batched(
             || DecafPoint::try_from_rng(&mut OsRng).unwrap().to_bytes(),
             |bytes| DecafPoint::from_bytes(&bytes).unwrap(),
+            BatchSize::SmallInput,
+        )
+    });
+
+    group.finish();
+}
+
+pub fn curve448(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Curve448");
+
+    group.bench_function("scalar multiplication", |b| {
+        b.iter_batched(
+            || {
+                let point = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
+                let scalar = MontgomeryScalar::try_from_rng(&mut OsRng).unwrap();
+                (point, scalar)
+            },
+            |(point, scalar)| point * scalar,
+            BatchSize::SmallInput,
+        )
+    });
+
+    group.bench_function("point addition", |b| {
+        b.iter_batched(
+            || {
+                let p1 = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
+                let p2 = ProjectiveMontgomeryPoint::try_from_rng(&mut OsRng).unwrap();
+                (p1, p2)
+            },
+            |(p1, p2)| p1 + p2,
+            BatchSize::SmallInput,
+        )
+    });
+
+    group.bench_function("encode_to_curve", |b| {
+        b.iter_batched(
+            || {
+                let mut msg = [0; 64];
+                OsRng.try_fill_bytes(&mut msg).unwrap();
+                msg
+            },
+            |msg| Curve448::encode_from_bytes(&msg, b"test DST"),
             BatchSize::SmallInput,
         )
     });
