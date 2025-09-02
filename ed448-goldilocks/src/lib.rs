@@ -70,7 +70,8 @@ use elliptic_curve::{
     bigint::{ArrayEncoding, NonZero, U448},
     point::PointCompression,
 };
-use hash2curve::GroupDigest;
+use hash2curve::{ExpandMsgXof, GroupDigest};
+use sha3::Shake256;
 
 /// Edwards448 curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -117,6 +118,13 @@ impl elliptic_curve::CurveArithmetic for Ed448 {
     type Scalar = EdwardsScalar;
 }
 
+impl GroupDigest for Ed448 {
+    const HASH_TO_CURVE_DST: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_RO_";
+    const ENCODE_TO_CURVE_DST: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_NU_";
+
+    type ExpandMsg = ExpandMsgXof<Shake256>;
+}
+
 /// Decaf448 curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Decaf448;
@@ -160,4 +168,11 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
     type AffinePoint = DecafAffinePoint;
     type ProjectivePoint = DecafPoint;
     type Scalar = DecafScalar;
+}
+
+impl GroupDigest for Decaf448 {
+    const HASH_TO_CURVE_DST: &[u8] = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
+    const ENCODE_TO_CURVE_DST: &[u8] = b"decaf448_XOF:SHAKE256_D448MAP_NU_";
+
+    type ExpandMsg = ExpandMsgXof<Shake256>;
 }

@@ -34,17 +34,17 @@ let compressed_public_key = public_key.to_bytes();
 
 assert_eq!(compressed_public_key.len(), 57);
 
-let hashed_scalar = Ed448::hash_to_scalar::<ExpandMsgXof<Shake256>>(&[b"test"], &[b"edwards448_XOF:SHAKE256_ELL2_RO_"]).unwrap();
+let hashed_scalar = hash2curve::hash_to_scalar::<Ed448, <Ed448 as GroupDigest>::ExpandMsg>(&[b"test"], &[Ed448::HASH_TO_CURVE_DST]).unwrap();
 let input = hex_literal::hex!("c8c6c8f584e0c25efdb6af5ad234583c56dedd7c33e0c893468e96740fa0cf7f1a560667da40b7bde340a39252e89262fcf707d1180fd43400");
 let expected_scalar = EdwardsScalar::from_canonical_bytes(&input.into()).unwrap();
 assert_eq!(hashed_scalar, expected_scalar);
 
-let hashed_point = Ed448::hash_from_bytes::<ExpandMsgXof<Shake256>>(&[b"test"], &[b"edwards448_XOF:SHAKE256_ELL2_RO_"]).unwrap();
+let hashed_point = Ed448::hash_from_bytes(b"test");
 let expected = hex_literal::hex!("d15c4427b5c5611a53593c2be611fd3635b90272d331c7e6721ad3735e95dd8b9821f8e4e27501ce01aa3c913114052dce2e91e8ca050f4980");
 let expected_point = CompressedEdwardsY(expected).decompress().unwrap().to_edwards();
 assert_eq!(hashed_point, expected_point);
 
-let hashed_point = EdwardsPoint::hash_with_defaults(b"test");
+let hashed_point = Ed448::hash_from_bytes(b"test");
 assert_eq!(hashed_point, expected_point);
 ```
 
