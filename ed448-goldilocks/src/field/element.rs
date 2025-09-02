@@ -11,7 +11,7 @@ use elliptic_curve::{
     Field,
     array::Array,
     bigint::{
-        Integer, NonZero, U448, U704,
+        Integer, NonZero, U448, U704, Zero,
         consts::{U56, U84, U88},
         modular::ConstMontyParams,
     },
@@ -331,6 +331,10 @@ impl FieldElement {
         self.0.retrieve().is_odd()
     }
 
+    pub fn is_zero(&self) -> Choice {
+        self.0.is_zero()
+    }
+
     /// Inverts a field element
     pub fn invert(&self) -> Self {
         Self(self.0.invert().unwrap_or(ConstMontyType::default()))
@@ -438,6 +442,10 @@ impl FieldElement {
         // will be zero, which is what we want, but is_res will be 0)
         let zero_u = u.ct_eq(&FieldElement::ZERO);
         (inv_sqrt_x * u, zero_u | is_res)
+    }
+
+    pub(crate) fn div_by_2(&self) -> FieldElement {
+        Self(self.0.div_by_2())
     }
 
     pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
