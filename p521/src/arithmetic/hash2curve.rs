@@ -7,12 +7,8 @@ use elliptic_curve::{
     ops::Reduce,
     subtle::Choice,
 };
-use hash2curve::{GroupDigest, MapToCurve};
+use hash2curve::MapToCurve;
 use primeorder::osswu::{AffineOsswuMap, OsswuMap, OsswuMapParams, Sgn0};
-
-impl GroupDigest for NistP521 {
-    type SecurityLevel = U32;
-}
 
 impl Reduce<Array<u8, U98>> for FieldElement {
     fn reduce(value: &Array<u8, U98>) -> Self {
@@ -63,6 +59,7 @@ impl OsswuMap for FieldElement {
 }
 
 impl MapToCurve for NistP521 {
+    type SecurityLevel = U32;
     type FieldElement = FieldElement;
     type FieldLength = U98;
     type ScalarLength = U98;
@@ -205,7 +202,7 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha512>,
-                <NistP521 as GroupDigest>::SecurityLevel,
+                <NistP521 as MapToCurve>::SecurityLevel,
                 FieldElement,
                 <NistP521 as MapToCurve>::FieldLength,
             >(&[test_vector.msg], &[DST])

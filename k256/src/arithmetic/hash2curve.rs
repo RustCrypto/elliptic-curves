@@ -4,16 +4,12 @@ use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-use hash2curve::{GroupDigest, MapToCurve};
+use hash2curve::MapToCurve;
 use primeorder::osswu::{OsswuMap, OsswuMapParams, Sgn0};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
 use super::FieldElement;
-
-impl GroupDigest for Secp256k1 {
-    type SecurityLevel = U16;
-}
 
 impl Reduce<Array<u8, U48>> for FieldElement {
     fn reduce(value: &Array<u8, U48>) -> Self {
@@ -127,6 +123,7 @@ impl OsswuMap for FieldElement {
 }
 
 impl MapToCurve for Secp256k1 {
+    type SecurityLevel = U16;
     type FieldElement = FieldElement;
     type FieldLength = U48;
     type ScalarLength = U48;
@@ -370,7 +367,7 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha256>,
-                <Secp256k1 as GroupDigest>::SecurityLevel,
+                <Secp256k1 as MapToCurve>::SecurityLevel,
                 FieldElement,
                 <Secp256k1 as MapToCurve>::FieldLength,
             >(&[test_vector.msg], &[DST])

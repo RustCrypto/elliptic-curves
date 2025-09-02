@@ -4,8 +4,7 @@ use elliptic_curve::PrimeCurve;
 use elliptic_curve::array::typenum::IsLess;
 use elliptic_curve::consts::{True, U65536};
 
-use crate::ExpandMsg;
-use crate::GroupDigest;
+use crate::{ExpandMsg, GroupDigest, MapToCurve};
 
 /// Elliptic curve parameters used by OPRF.
 pub trait OprfParameters: GroupDigest + PrimeCurve {
@@ -25,5 +24,5 @@ pub trait OprfParameters: GroupDigest + PrimeCurve {
     /// and `HashToScalar` as defined in [section 4 of RFC9497][oprf].
     ///
     /// [oprf]: https://www.rfc-editor.org/rfc/rfc9497.html#name-ciphersuites
-    type ExpandMsg: ExpandMsg<<Self as GroupDigest>::SecurityLevel>;
+    type ExpandMsg: ExpandMsg<<Self as MapToCurve>::SecurityLevel>;
 }
