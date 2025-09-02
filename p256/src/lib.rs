@@ -176,11 +176,4 @@ pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
 impl hash2curve::OprfParameters for NistP256 {
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-1>.
     const ID: &'static [u8] = b"P256-SHA256";
-
-    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.4>.
-    type Hash = sha2::Sha256;
-
-    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.10>
-    /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-2.2.2.12>.
-    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha256>;
 }
