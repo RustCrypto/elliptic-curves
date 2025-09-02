@@ -66,7 +66,7 @@ pub use sign::*;
 
 use elliptic_curve::{
     Curve, FieldBytesEncoding, PrimeCurve,
-    array::typenum::{U28, U56, U57},
+    array::typenum::{U56, U57},
     bigint::{ArrayEncoding, NonZero, U448},
     point::PointCompression,
 };
@@ -117,10 +117,6 @@ impl elliptic_curve::CurveArithmetic for Ed448 {
     type Scalar = EdwardsScalar;
 }
 
-impl GroupDigest for Ed448 {
-    type SecurityLevel = U28;
-}
-
 /// Decaf448 curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Decaf448;
@@ -164,8 +160,4 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
     type AffinePoint = DecafAffinePoint;
     type ProjectivePoint = DecafPoint;
     type Scalar = DecafScalar;
-}
-
-impl GroupDigest for Decaf448 {
-    type SecurityLevel = U28;
 }

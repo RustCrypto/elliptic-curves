@@ -2,16 +2,10 @@
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
 use elliptic_curve::ProjectivePoint;
-use elliptic_curve::array::typenum::Unsigned;
 use elliptic_curve::group::cofactor::CofactorGroup;
 
 /// Hash arbitrary byte sequences to a valid group element.
 pub trait GroupDigest: MapToCurve {
-    /// The target security level in bytes:
-    /// <https://www.rfc-editor.org/rfc/rfc9380.html#section-8.9-2.2>
-    /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-target-security-levels>
-    type SecurityLevel: Unsigned;
-
     /// Computes the hash to curve routine.
     ///
     /// From <https://www.rfc-editor.org/rfc/rfc9380.html>:
@@ -94,3 +88,5 @@ pub trait GroupDigest: MapToCurve {
         Ok(u)
     }
 }
+
+impl<C: MapToCurve> GroupDigest for C {}
