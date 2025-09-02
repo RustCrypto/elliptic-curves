@@ -139,8 +139,7 @@ checksum = "847495c209977a90e8aad588b959d0ca9f5dc228096d29a6bd3defd53f35eaec"
 [[package]]
 name = "block-buffer"
 version = "0.11.0-rc.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a229bfd78e4827c91b9b95784f69492c1b77c1ab75a45a8a037b139215086f94"
+source = "git+https://github.com/RustCrypto/utils#adfccfea2686ef191b607f653cc3587753b6ec66"
 dependencies = [
  "hybrid-array",
 ]
@@ -324,8 +323,8 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.0-rc.1"
-source = "git+https://github.com/RustCrypto/crypto-bigint#3c3a24a85c439c8946e133eb717bfbf8e86148bc"
+version = "0.7.0-rc.2"
+source = "git+https://github.com/RustCrypto/crypto-bigint#60047823b17a8400969dca71416a363e71c74a03"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -337,8 +336,7 @@ dependencies = [
 [[package]]
 name = "crypto-common"
 version = "0.2.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a23fa214dea9efd4dacee5a5614646b30216ae0f05d4bb51bafb50e9da1c5be"
+source = "git+https://github.com/RustCrypto/traits#b91704f633a83798c1ba89f908cff067ddc7d843"
 dependencies = [
  "hybrid-array",
 ]
@@ -357,8 +355,7 @@ dependencies = [
 [[package]]
 name = "digest"
 version = "0.11.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "460dd7f37e4950526b54a5a6b1f41b6c8e763c58eb9a8fc8fc05ba5c2f44ca7b"
+source = "git+https://github.com/RustCrypto/traits#b91704f633a83798c1ba89f908cff067ddc7d843"
 dependencies = [
  "block-buffer",
  "const-oid",
@@ -369,7 +366,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.5"
-source = "git+https://github.com/RustCrypto/signatures.git#41edbafeca0ecaf8076232e4b87a5564540bd2e3"
+source = "git+https://github.com/RustCrypto/signatures.git#137ec7935c0c1f49ff431ffad1521d4f3bc70b25"
 dependencies = [
  "der",
  "digest",
@@ -422,9 +419,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.12"
-source = "git+https://github.com/RustCrypto/traits.git#40508e0480c748542358c620e055b12aa858b042"
+source = "git+https://github.com/RustCrypto/traits#b91704f633a83798c1ba89f908cff067ddc7d843"
 dependencies = [
- "base16ct 0.2.0",
+ "base16ct 0.3.0",
  "crypto-bigint",
  "digest",
  "ff",
@@ -436,7 +433,7 @@ dependencies = [
  "pkcs8",
  "rand_core",
  "sec1",
- "serdect 0.3.0",
+ "serdect 0.4.0",
  "subtle",
  "zeroize",
 ]
@@ -574,9 +571,9 @@ dependencies = [
 
 [[package]]
 name = "hybrid-array"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "891d15931895091dea5c47afa5b3c9a01ba634b311919fd4d41388fa0e3d76af"
+checksum = "6fe39a812f039072707ce38020acbab2f769087952eddd9e2b890f37654b2349"
 dependencies = [
  "typenum",
  "zeroize",
@@ -1090,13 +1087,12 @@ dependencies = [
 [[package]]
 name = "sec1"
 version = "0.8.0-rc.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c54dee398d74b1d03d78ddc09c90e456bf906b5b7aa790ba4f48b025b2179e5d"
+source = "git+https://github.com/RustCrypto/formats?branch=sec1%2Fhybrid-array-v0.4#fdc1f293f71bfbbee5e89997b1ec17b13e632c61"
 dependencies = [
- "base16ct 0.2.0",
+ "base16ct 0.3.0",
  "der",
  "hybrid-array",
- "serdect 0.3.0",
+ "serdect 0.4.0",
  "subtle",
  "zeroize",
 ]

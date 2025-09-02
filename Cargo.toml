@@ -22,10 +22,13 @@ members = [
 opt-level = 2
 
 [patch.crates-io]
+block-buffer = { git = "https://github.com/RustCrypto/utils" }
 crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint" }
-
+crypto-common = { git = "https://github.com/RustCrypto/traits" }
+digest = { git = "https://github.com/RustCrypto/traits" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits.git" }
-ecdsa          = { git = "https://github.com/RustCrypto/signatures.git" }
+ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
+sec1 = { git = "https://github.com/RustCrypto/formats", branch = "sec1/hybrid-array-v0.4" }
 
 ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
