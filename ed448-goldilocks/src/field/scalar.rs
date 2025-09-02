@@ -771,7 +771,7 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Halves a Scalar modulo the prime
-    pub fn halve(&self) -> Self {
+    pub fn div_by_2(&self) -> Self {
         let is_odd = self.scalar.is_odd();
         let if_odd = self.scalar + *ORDER;
         let scalar = U448::conditional_select(&self.scalar, &if_odd, is_odd);

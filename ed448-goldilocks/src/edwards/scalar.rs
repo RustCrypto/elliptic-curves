@@ -169,9 +169,9 @@ mod test {
         let eight = EdwardsScalar::from(8u8);
         let four = EdwardsScalar::from(4u8);
         let two = EdwardsScalar::from(2u8);
-        assert_eq!(eight.halve(), four);
-        assert_eq!(four.halve(), two);
-        assert_eq!(two.halve(), EdwardsScalar::ONE);
+        assert_eq!(eight.div_by_2(), four);
+        assert_eq!(four.div_by_2(), two);
+        assert_eq!(two.div_by_2(), EdwardsScalar::ONE);
     }
 
     #[test]
