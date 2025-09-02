@@ -118,7 +118,7 @@ impl elliptic_curve::CurveArithmetic for Ed448 {
 }
 
 impl GroupDigest for Ed448 {
-    type K = U28;
+    type SecurityLevel = U28;
 }
 
 /// Decaf448 curve.
@@ -167,5 +167,5 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
 }
 
 impl GroupDigest for Decaf448 {
-    type K = U28;
+    type SecurityLevel = U28;
 }
