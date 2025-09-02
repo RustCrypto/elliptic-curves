@@ -85,7 +85,7 @@ mod test {
     use super::*;
     use elliptic_curve::PrimeField;
     use elliptic_curve::array::Array;
-    use hash2curve::{ExpandMsgXof, GroupDigest};
+    use hash2curve::ExpandMsgXof;
     use hex_literal::hex;
     use sha3::Shake256;
 
@@ -283,7 +283,8 @@ mod test {
     fn scalar_hash() {
         let msg = b"hello world";
         let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
-        let res = Decaf448::hash_to_scalar::<ExpandMsgXof<Shake256>>(&[msg], &[dst]).unwrap();
+        let res =
+            hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>>(&[msg], &[dst]).unwrap();
         let expected: [u8; 56] = hex_literal::hex!(
             "55e7b59aa035db959409c6b69b817a18c8133d9ad06687665f5720672924da0a84eab7fee415ef13e7aaebdd227291ee8e156f32c507ad2e"
         );
@@ -327,7 +328,7 @@ mod test {
 
         'outer: for test_vector in TEST_VECTORS {
             for counter in 0_u8..=u8::MAX {
-                let scalar = Decaf448::hash_to_scalar::<ExpandMsgXof<Shake256>>(
+                let scalar = hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>>(
                     &[SEED, &key_info_len, KEY_INFO, &counter.to_be_bytes()],
                     &[test_vector.dst],
                 )

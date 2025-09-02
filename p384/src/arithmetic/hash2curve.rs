@@ -10,6 +10,14 @@ use elliptic_curve::{
 use hash2curve::MapToCurve;
 use primeorder::osswu::{AffineOsswuMap, OsswuMap, OsswuMapParams, Sgn0};
 
+#[cfg(feature = "group-digest")]
+impl hash2curve::GroupDigest for NistP384 {
+    const HASH_TO_CURVE_ID: &[u8] = b"P384_XMD:SHA-384_SSWU_RO_";
+    const ENCODE_TO_CURVE_ID: &[u8] = b"P384_XMD:SHA-384_SSWU_NU_";
+
+    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha384>;
+}
+
 impl Reduce<Array<u8, U72>> for FieldElement {
     fn reduce(value: &Array<u8, U72>) -> Self {
         const F_2_288: FieldElement = FieldElement::from_hex_vartime(
@@ -96,7 +104,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve};
+    use hash2curve::{self, ExpandMsgXmd, MapToCurve};
     use hex_literal::hex;
     use primeorder::osswu::OsswuMap;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
@@ -233,8 +241,11 @@ mod tests {
             assert_point_eq!(p, test_vector.p_x, test_vector.p_y);
 
             // complete run
-            let pt = NistP384::hash_from_bytes::<ExpandMsgXmd<Sha384>>(&[test_vector.msg], &[DST])
-                .unwrap();
+            let pt = hash2curve::hash_from_bytes::<NistP384, ExpandMsgXmd<Sha384>>(
+                &[test_vector.msg],
+                &[DST],
+            )
+            .unwrap();
             assert_point_eq!(pt, test_vector.p_x, test_vector.p_y);
         }
     }
@@ -282,7 +293,7 @@ mod tests {
                 .to_be_bytes();
 
             for counter in 0_u8..=u8::MAX {
-                let scalar = NistP384::hash_to_scalar::<ExpandMsgXmd<Sha384>>(
+                let scalar = hash2curve::hash_to_scalar::<NistP384, ExpandMsgXmd<Sha384>>(
                     &[
                         test_vector.seed,
                         &key_info_len,

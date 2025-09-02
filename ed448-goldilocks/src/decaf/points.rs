@@ -599,6 +599,8 @@ impl From<NonIdentity<DecafPoint>> for DecafPoint {
 mod test {
     use super::*;
     use crate::TWISTED_EDWARDS_BASE_POINT;
+    use hash2curve::ExpandMsgXof;
+    use sha3::Shake256;
 
     #[test]
     fn test_edwards_decaf_operations() {
@@ -748,10 +750,8 @@ mod test {
 
     #[test]
     fn test_hash_to_curve() {
-        use hash2curve::ExpandMsgXof;
-
         let msg = b"Hello, world!";
-        let point = Decaf448::hash_from_bytes::<ExpandMsgXof<sha3::Shake256>>(
+        let point = hash2curve::hash_from_bytes::<Decaf448, ExpandMsgXof<Shake256>>(
             &[msg],
             &[b"test_hash_to_curve"],
         )

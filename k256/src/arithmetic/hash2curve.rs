@@ -11,6 +11,14 @@ use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
 use super::FieldElement;
 
+#[cfg(feature = "group-digest")]
+impl hash2curve::GroupDigest for Secp256k1 {
+    const HASH_TO_CURVE_ID: &[u8] = b"secp256k1_XMD:SHA-256_SSWU_RO_";
+    const ENCODE_TO_CURVE_ID: &[u8] = b"secp256k1_XMD:SHA-256_SSWU_NU_";
+
+    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha256>;
+}
+
 impl Reduce<Array<u8, U48>> for FieldElement {
     fn reduce(value: &Array<u8, U48>) -> Self {
         // 0x0000000000000001000000000000000000000000000000000000000000000000
@@ -280,7 +288,7 @@ mod tests {
         group::cofactor::CofactorGroup,
         ops::Reduce,
     };
-    use hash2curve::{GroupDigest, MapToCurve};
+    use hash2curve::MapToCurve;
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 
@@ -391,8 +399,11 @@ mod tests {
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
 
             // complete run
-            let pt = Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], &[DST])
-                .unwrap();
+            let pt = hash2curve::hash_from_bytes::<Secp256k1, ExpandMsgXmd<Sha256>>(
+                &[test_vector.msg],
+                &[DST],
+            )
+            .unwrap();
             let apt = pt.to_affine();
             assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
             assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);
