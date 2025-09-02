@@ -6,6 +6,7 @@ pub(super) mod xof;
 use core::num::NonZero;
 
 use digest::{Digest, ExtendableOutput, Update, XofReader};
+use elliptic_curve::Error;
 use elliptic_curve::array::{Array, ArraySize};
 use xmd::ExpandMsgXmdError;
 use xof::ExpandMsgXofError;
@@ -42,8 +43,12 @@ pub trait ExpandMsg<K> {
 
 /// Expander that, call `read` until enough bytes have been consumed.
 pub trait Expander {
-    /// Fill the array with the expanded bytes
-    fn fill_bytes(&mut self, okm: &mut [u8]);
+    /// Fill the array with the expanded bytes, returning how many bytes were read.
+    ///
+    /// # Errors
+    ///
+    /// If no bytes are left.
+    fn fill_bytes(&mut self, okm: &mut [u8]) -> Result<usize, Error>;
 }
 
 /// The domain separation tag

@@ -3,6 +3,7 @@
 use super::{Domain, ExpandMsg, Expander};
 use core::{fmt, num::NonZero, ops::Mul};
 use digest::{CollisionResistance, ExtendableOutput, HashMarker, Update, XofReader};
+use elliptic_curve::Error;
 use elliptic_curve::array::{
     ArraySize,
     typenum::{IsGreaterOrEqual, Prod, True, U2},
@@ -19,6 +20,7 @@ where
     HashT: Default + ExtendableOutput + Update + HashMarker,
 {
     reader: <HashT as ExtendableOutput>::Reader,
+    remaining: u16,
 }
 
 impl<HashT> fmt::Debug for ExpandMsgXof<HashT>
@@ -64,7 +66,10 @@ where
         domain.update_hash(&mut reader);
         reader.update(&[domain.len()]);
         let reader = reader.finalize_xof();
-        Ok(Self { reader })
+        Ok(Self {
+            reader,
+            remaining: len_in_bytes,
+        })
     }
 }
 
@@ -72,8 +77,15 @@ impl<HashT> Expander for ExpandMsgXof<HashT>
 where
     HashT: Default + ExtendableOutput + Update + HashMarker,
 {
-    fn fill_bytes(&mut self, okm: &mut [u8]) {
-        self.reader.read(okm);
+    fn fill_bytes(&mut self, okm: &mut [u8]) -> Result<usize, Error> {
+        if self.remaining == 0 {
+            return Err(Error);
+        }
+
+        let bytes_to_read = self.remaining.min(okm.len().try_into().unwrap_or(u16::MAX));
+        self.reader.read(&mut okm[..bytes_to_read.into()]);
+        self.remaining -= bytes_to_read;
+        Ok(bytes_to_read.into())
     }
 }
 
@@ -108,6 +120,29 @@ mod test {
     };
     use hex_literal::hex;
     use sha3::Shake128;
+
+    #[test]
+    fn edge_cases() {
+        fn generate() -> ExpandMsgXof<Shake128> {
+            <ExpandMsgXof<Shake128> as ExpandMsg<U16>>::expand_message(
+                &[b"test message"],
+                &[b"test DST"],
+                NonZero::new(64).unwrap(),
+            )
+            .unwrap()
+        }
+
+        assert_eq!(generate().fill_bytes(&mut [0; 0]), Ok(0));
+        assert_eq!(generate().fill_bytes(&mut [0; 1]), Ok(1));
+        assert_eq!(generate().fill_bytes(&mut [0; 64]), Ok(64));
+        assert_eq!(generate().fill_bytes(&mut [0; 65]), Ok(64));
+
+        let mut expander = generate();
+        assert_eq!(expander.fill_bytes(&mut [0; 0]), Ok(0));
+        assert_eq!(expander.fill_bytes(&mut [0; 1]), Ok(1));
+        assert_eq!(expander.fill_bytes(&mut [0; 64]), Ok(63));
+        assert_eq!(expander.fill_bytes(&mut [0; 1]), Err(Error));
+    }
 
     fn assert_message(msg: &[u8], domain: &Domain<'_, U32>, len_in_bytes: u16, bytes: &[u8]) {
         let msg_len = msg.len();
@@ -155,7 +190,7 @@ mod test {
             .unwrap();
 
             let mut uniform_bytes = Array::<u8, L>::default();
-            expander.fill_bytes(&mut uniform_bytes);
+            expander.fill_bytes(&mut uniform_bytes).unwrap();
 
             assert_eq!(uniform_bytes.as_slice(), self.uniform_bytes);
         }
