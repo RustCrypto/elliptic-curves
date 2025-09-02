@@ -114,11 +114,4 @@ pub type SecretKey = elliptic_curve::SecretKey<NistP521>;
 impl hash2curve::OprfParameters for NistP521 {
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-1>.
     const ID: &'static [u8] = b"P521-SHA512";
-
-    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.4>.
-    type Hash = sha2::Sha512;
-
-    /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.2.2.10>
-    /// and <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-2.2.2.12>.
-    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha512>;
 }
