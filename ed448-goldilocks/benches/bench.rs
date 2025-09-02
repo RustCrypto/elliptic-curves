@@ -1,7 +1,6 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use ed448_goldilocks::{
-    CompressedDecaf, CompressedEdwardsY, Decaf448, DecafPoint, DecafScalar, EdwardsPoint,
-    EdwardsScalar, MontgomeryPoint,
+    Decaf448, DecafPoint, DecafScalar, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
 };
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
@@ -36,18 +35,6 @@ pub fn ed448(c: &mut Criterion) {
         )
     });
 
-    group.bench_function("hash_to_curve", |b| {
-        b.iter_batched(
-            || {
-                let mut msg = [0; 64];
-                OsRng.try_fill_bytes(&mut msg).unwrap();
-                msg
-            },
-            |msg| EdwardsPoint::hash_with_defaults(&msg),
-            BatchSize::SmallInput,
-        )
-    });
-
     group.bench_function("encode_to_curve", |b| {
         b.iter_batched(
             || {
@@ -63,15 +50,15 @@ pub fn ed448(c: &mut Criterion) {
     group.bench_function("compress", |b| {
         b.iter_batched(
             || EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
-            |point| point.to_bytes().0,
+            |point| point.to_bytes(),
             BatchSize::SmallInput,
         )
     });
 
     group.bench_function("decompress", |b| {
         b.iter_batched(
-            || EdwardsPoint::try_from_rng(&mut OsRng).unwrap().to_bytes().0,
-            |bytes| CompressedEdwardsY(bytes).decompress().unwrap(),
+            || EdwardsPoint::try_from_rng(&mut OsRng).unwrap().to_bytes(),
+            |bytes| EdwardsPoint::from_bytes(&bytes).unwrap(),
             BatchSize::SmallInput,
         )
     });
@@ -106,23 +93,6 @@ pub fn decaf448(c: &mut Criterion) {
         )
     });
 
-    group.bench_function("hash_to_curve", |b| {
-        b.iter_batched(
-            || {
-                let mut msg = [0; 64];
-                OsRng.try_fill_bytes(&mut msg).unwrap();
-                msg
-            },
-            |msg| {
-                Decaf448::hash_from_bytes::<ExpandMsgXof<Shake256>>(
-                    &[&msg],
-                    &[b"decaf448_XOF:SHAKE256_D448MAP_RO_"],
-                )
-            },
-            BatchSize::SmallInput,
-        )
-    });
-
     group.bench_function("encode_to_curve", |b| {
         b.iter_batched(
             || {
@@ -140,18 +110,18 @@ pub fn decaf448(c: &mut Criterion) {
         )
     });
 
-    group.bench_function("compress", |b| {
+    group.bench_function("encode", |b| {
         b.iter_batched(
             || DecafPoint::try_from_rng(&mut OsRng).unwrap(),
-            |point| point.compress().0,
+            |point| point.to_bytes(),
             BatchSize::SmallInput,
         )
     });
 
-    group.bench_function("decompress", |b| {
+    group.bench_function("decode", |b| {
         b.iter_batched(
-            || DecafPoint::try_from_rng(&mut OsRng).unwrap().compress().0,
-            |bytes| CompressedDecaf(bytes).decompress().unwrap(),
+            || DecafPoint::try_from_rng(&mut OsRng).unwrap().to_bytes(),
+            |bytes| DecafPoint::from_bytes(&bytes).unwrap(),
             BatchSize::SmallInput,
         )
     });
@@ -159,8 +129,8 @@ pub fn decaf448(c: &mut Criterion) {
     group.finish();
 }
 
-pub fn curve448(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Curve448");
+pub fn x448(c: &mut Criterion) {
+    let mut group = c.benchmark_group("X448");
 
     group.bench_function("scalar multiplication", |b| {
         b.iter_batched(
@@ -178,5 +148,5 @@ pub fn curve448(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, ed448, decaf448, curve448);
+criterion_group!(benches, ed448, decaf448, x448);
 criterion_main!(benches);
