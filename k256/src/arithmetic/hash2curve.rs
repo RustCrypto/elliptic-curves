@@ -12,7 +12,7 @@ use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 use super::FieldElement;
 
 impl GroupDigest for Secp256k1 {
-    type K = U16;
+    type SecurityLevel = U16;
 }
 
 impl FromOkm for FieldElement {
@@ -356,7 +356,7 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha256>,
-                <Secp256k1 as GroupDigest>::K,
+                <Secp256k1 as GroupDigest>::SecurityLevel,
                 FieldElement,
             >(&[test_vector.msg], &[DST])
             .unwrap();

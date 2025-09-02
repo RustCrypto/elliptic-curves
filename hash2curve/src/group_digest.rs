@@ -8,7 +8,7 @@ pub trait GroupDigest: MapToCurve {
     /// The target security level in bytes:
     /// <https://www.rfc-editor.org/rfc/rfc9380.html#section-8.9-2.2>
     /// <https://www.rfc-editor.org/rfc/rfc9380.html#name-target-security-levels>
-    type K: Unsigned;
+    type SecurityLevel: Unsigned;
 
     /// Computes the hash to curve routine.
     ///
@@ -33,7 +33,7 @@ pub trait GroupDigest: MapToCurve {
     /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn hash_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
-        X: ExpandMsg<Self::K>,
+        X: ExpandMsg<Self::SecurityLevel>,
     {
         let [u0, u1] = hash_to_field::<2, X, _, Self::FieldElement>(msg, dst)?;
         let q0 = Self::map_to_curve(u0);
@@ -63,7 +63,7 @@ pub trait GroupDigest: MapToCurve {
     /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn encode_from_bytes<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<Self>, X::Error>
     where
-        X: ExpandMsg<Self::K>,
+        X: ExpandMsg<Self::SecurityLevel>,
     {
         let [u] = hash_to_field::<1, X, _, Self::FieldElement>(msg, dst)?;
         let q0 = Self::map_to_curve(u);
@@ -86,7 +86,7 @@ pub trait GroupDigest: MapToCurve {
     /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn hash_to_scalar<X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<Self::Scalar, X::Error>
     where
-        X: ExpandMsg<Self::K>,
+        X: ExpandMsg<Self::SecurityLevel>,
     {
         let [u] = hash_to_field::<1, X, _, Self::Scalar>(msg, dst)?;
         Ok(u)

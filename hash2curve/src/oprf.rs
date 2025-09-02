@@ -25,5 +25,5 @@ pub trait OprfParameters: GroupDigest + PrimeCurve {
     /// and `HashToScalar` as defined in [section 4 of RFC9497][oprf].
     ///
     /// [oprf]: https://www.rfc-editor.org/rfc/rfc9497.html#name-ciphersuites
-    type ExpandMsg: ExpandMsg<<Self as GroupDigest>::K>;
+    type ExpandMsg: ExpandMsg<<Self as GroupDigest>::SecurityLevel>;
 }

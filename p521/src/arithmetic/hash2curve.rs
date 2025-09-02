@@ -11,7 +11,7 @@ use elliptic_curve::{
 use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP521 {
-    type K = U32;
+    type SecurityLevel = U32;
 }
 
 impl FromOkm for FieldElement {
@@ -215,7 +215,7 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha512>,
-                <NistP521 as GroupDigest>::K,
+                <NistP521 as GroupDigest>::SecurityLevel,
                 FieldElement,
             >(&[test_vector.msg], &[DST])
             .unwrap();
