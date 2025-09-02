@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Limb, NonZero, U448, U896, Word, Zero},
+    bigint::{Integer, Limb, NonZero, U448, U896, Word, Zero},
     consts::U2,
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -658,13 +658,6 @@ impl<C: CurveWithScalar> Scalar<C> {
         self.scalar.is_zero()
     }
 
-    /// Divides a scalar by four without reducing mod p
-    /// This is used in the 2-isogeny when mapping points from Ed448-Goldilocks
-    /// to Twisted-Goldilocks
-    pub(crate) fn div_by_four(&mut self) {
-        self.scalar >>= 2;
-    }
-
     // This method was modified from Curve25519-Dalek codebase. [scalar.rs]
     // We start with 14 u32s and convert them to 56 u8s.
     // We then use the code copied from Dalek to convert the 56 u8s to radix-16 and re-center the coefficients to be between [-16,16)
@@ -778,8 +771,12 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Halves a Scalar modulo the prime
-    pub const fn halve(&self) -> Self {
-        Self::new(self.scalar.shr_vartime(1))
+    pub fn div_by_2(&self) -> Self {
+        let is_odd = self.scalar.is_odd();
+        let if_odd = self.scalar + *ORDER;
+        let scalar = U448::conditional_select(&self.scalar, &if_odd, is_odd);
+
+        Self::new(scalar >> 1)
     }
 
     /// Attempt to construct a `Scalar` from a canonical byte representation.

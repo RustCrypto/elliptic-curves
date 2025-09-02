@@ -153,9 +153,9 @@ mod test {
         let eight = DecafScalar::from(8u8);
         let four = DecafScalar::from(4u8);
         let two = DecafScalar::from(2u8);
-        assert_eq!(eight.halve(), four);
-        assert_eq!(four.halve(), two);
-        assert_eq!(two.halve(), DecafScalar::ONE);
+        assert_eq!(eight.div_by_2(), four);
+        assert_eq!(four.div_by_2(), two);
+        assert_eq!(two.div_by_2(), DecafScalar::ONE);
     }
 
     #[test]
