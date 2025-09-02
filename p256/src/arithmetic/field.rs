@@ -196,6 +196,7 @@ impl PrimeField for FieldElement {
 mod tests {
     use super::FieldElement;
     use crate::{FieldBytes, U256, test_vectors::field::DBL_TEST_VECTORS};
+    use elliptic_curve::array::Array;
 
     #[cfg(target_pointer_width = "64")]
     use proptest::{num::u64::ANY, prelude::*};
@@ -209,18 +210,15 @@ mod tests {
             FieldElement::ZERO
         );
         assert_eq!(
-            FieldElement::from_bytes(
-                [
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 1
-                ]
-                .as_ref()
-            )
+            FieldElement::from_bytes(&Array([
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1
+            ]))
             .unwrap(),
             FieldElement::ONE
         );
         assert!(bool::from(
-            FieldElement::from_bytes([0xff; 32].as_ref()).is_none()
+            FieldElement::from_bytes(&Array([0xff; 32])).is_none()
         ));
     }
 
