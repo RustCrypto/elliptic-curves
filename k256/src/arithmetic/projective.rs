@@ -12,6 +12,7 @@ use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, Result,
     group::{
         Group, GroupEncoding,
+        cofactor::CofactorGroup,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     },
     rand_core::TryRngCore,
@@ -448,6 +449,22 @@ impl GroupEncoding for ProjectivePoint {
 
     fn to_bytes(&self) -> Self::Repr {
         self.to_affine().to_bytes()
+    }
+}
+
+impl CofactorGroup for ProjectivePoint {
+    type Subgroup = ProjectivePoint;
+
+    fn clear_cofactor(&self) -> Self::Subgroup {
+        *self
+    }
+
+    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
+        CtOption::new(self, Choice::from(1))
+    }
+
+    fn is_torsion_free(&self) -> Choice {
+        Choice::from(1)
     }
 }
 

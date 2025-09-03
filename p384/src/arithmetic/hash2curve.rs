@@ -72,10 +72,6 @@ impl MapToCurve for NistP384 {
             .unwrap()
             .into()
     }
-
-    fn map_to_subgroup(point: ProjectivePoint) -> ProjectivePoint {
-        point
-    }
 }
 
 impl Reduce<Array<u8, U72>> for Scalar {
@@ -107,6 +103,7 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384, U576},
         consts::U72,
+        group::cofactor::CofactorGroup,
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
@@ -239,7 +236,7 @@ mod tests {
             let q1 = NistP384::map_to_curve(u[1]);
             assert_point_eq!(q1, test_vector.q1_x, test_vector.q1_y);
 
-            let p = NistP384::add_and_map_to_subgroup(q0, q1);
+            let p = (q0 + q1).clear_cofactor();
             assert_point_eq!(p, test_vector.p_x, test_vector.p_y);
 
             // complete run

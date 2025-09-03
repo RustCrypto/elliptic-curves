@@ -16,7 +16,6 @@ use elliptic_curve::{
         consts::{U56, U64, U84, U88},
         modular::ConstMontyParams,
     },
-    group::cofactor::CofactorGroup,
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::MapToCurve;
@@ -199,10 +198,6 @@ impl MapToCurve for Ed448 {
     fn map_to_curve(element: FieldElement) -> EdwardsPoint {
         element.map_to_curve_elligator2().isogeny().to_edwards()
     }
-
-    fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
-        point.clear_cofactor()
-    }
 }
 
 impl MapToCurve for Decaf448 {
@@ -212,10 +207,6 @@ impl MapToCurve for Decaf448 {
 
     fn map_to_curve(element: FieldElement) -> DecafPoint {
         DecafPoint(element.map_to_curve_decaf448())
-    }
-
-    fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
-        point
     }
 }
 

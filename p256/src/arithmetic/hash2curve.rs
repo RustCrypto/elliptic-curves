@@ -70,10 +70,6 @@ impl MapToCurve for NistP256 {
             .unwrap()
             .into()
     }
-
-    fn map_to_subgroup(point: ProjectivePoint) -> ProjectivePoint {
-        point
-    }
 }
 
 impl Reduce<Array<u8, U48>> for Scalar {

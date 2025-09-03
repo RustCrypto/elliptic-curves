@@ -1,7 +1,9 @@
 //! Traits for handling hash to curve.
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
-use elliptic_curve::{ProjectivePoint, array::typenum::Unsigned};
+use elliptic_curve::ProjectivePoint;
+use elliptic_curve::array::typenum::Unsigned;
+use elliptic_curve::group::cofactor::CofactorGroup;
 
 /// Hash arbitrary byte sequences to a valid group element.
 pub trait GroupDigest: MapToCurve {
@@ -38,7 +40,7 @@ pub trait GroupDigest: MapToCurve {
         let [u0, u1] = hash_to_field::<2, X, _, Self::FieldElement, Self::FieldLength>(msg, dst)?;
         let q0 = Self::map_to_curve(u0);
         let q1 = Self::map_to_curve(u1);
-        Ok(Self::add_and_map_to_subgroup(q0, q1))
+        Ok((q0 + q1).clear_cofactor())
     }
 
     /// Computes the encode to curve routine.
@@ -67,7 +69,7 @@ pub trait GroupDigest: MapToCurve {
     {
         let [u] = hash_to_field::<1, X, _, Self::FieldElement, Self::FieldLength>(msg, dst)?;
         let q0 = Self::map_to_curve(u);
-        Ok(Self::map_to_subgroup(q0))
+        Ok(q0.clear_cofactor())
     }
 
     /// Computes the hash to field routine according to
