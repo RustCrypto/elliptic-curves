@@ -192,26 +192,20 @@ impl Neg for FieldElement {
 }
 
 impl MapToCurve for Ed448 {
-    type CurvePoint = EdwardsPoint;
     type FieldElement = FieldElement;
     type FieldLength = U84;
     type ScalarLength = U84;
 
-    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+    fn map_to_curve(element: FieldElement) -> EdwardsPoint {
         element.map_to_curve_elligator2().isogeny().to_edwards()
     }
 
     fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
         point.clear_cofactor()
     }
-
-    fn add_and_map_to_subgroup(lhs: EdwardsPoint, rhs: EdwardsPoint) -> EdwardsPoint {
-        (lhs + rhs).clear_cofactor()
-    }
 }
 
 impl MapToCurve for Decaf448 {
-    type CurvePoint = DecafPoint;
     type FieldElement = FieldElement;
     type FieldLength = U56;
     type ScalarLength = U64;

@@ -60,12 +60,11 @@ impl OsswuMap for FieldElement {
 }
 
 impl MapToCurve for NistP384 {
-    type CurvePoint = ProjectivePoint;
     type FieldElement = FieldElement;
     type FieldLength = U72;
     type ScalarLength = U72;
 
-    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+    fn map_to_curve(element: FieldElement) -> ProjectivePoint {
         let (qx, qy) = element.osswu();
 
         // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
@@ -74,7 +73,7 @@ impl MapToCurve for NistP384 {
             .into()
     }
 
-    fn map_to_subgroup(point: Self::CurvePoint) -> ProjectivePoint {
+    fn map_to_subgroup(point: ProjectivePoint) -> ProjectivePoint {
         point
     }
 }
