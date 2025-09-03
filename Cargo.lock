@@ -318,9 +318,9 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.0-rc.3"
+version = "0.7.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "191664d1a454b91a62c539643b9742dd178357e50920060163bdbe72ed82fdfa"
+checksum = "7c069823f41bdc75e99546bfd59eb1ed27d69dc720e5c949fe502b82926f8448"
 dependencies = [
  "hybrid-array",
  "num-traits",
@@ -363,8 +363,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.5"
-source = "git+https://github.com/RustCrypto/signatures.git#5f39c23a1f616610eb3c7d257305cfb53603dca2"
+version = "0.17.0-rc.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4aa27d88fe1d40a293286027c9306393094d9b36ccd91f2ac4d647870dc0042"
 dependencies = [
  "der",
  "digest",
@@ -417,8 +418,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.12"
-source = "git+https://github.com/RustCrypto/traits.git#501b8854593a440a08fcb299a1ae421b16c76169"
+version = "0.14.0-rc.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b95fd42abd85018a59f5dbe05551e9eed19edfd1182a415cd98f90ca5af1422"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -552,18 +554,18 @@ checksum = "bcaaec4551594c969335c98c903c1397853d4198408ea609190f420500f6be71"
 
 [[package]]
 name = "hkdf"
-version = "0.13.0-rc.0"
+version = "0.13.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6738bc5110ee31b066339f0c9454db29a93db3b0484bbf2afa8a7e9cebc62141"
+checksum = "7984b5d6605e93b2787c95aef698b3c28933a4d7f9fd09d46f54130da1efaee0"
 dependencies = [
  "hmac",
 ]
 
 [[package]]
 name = "hmac"
-version = "0.13.0-rc.0"
+version = "0.13.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dc6a2fcc35ab09136c6df2cdf9ca49790701420a3a6b5db0987dddbabc79b21"
+checksum = "49e206bca159aebaaed410f5e78b2fe56bfc0dd5b19ecae922813b8556b8b07e"
 dependencies = [
  "digest",
 ]
@@ -1029,9 +1031,9 @@ checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 
 [[package]]
 name = "rfc6979"
-version = "0.5.0-rc.0"
+version = "0.5.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f53f124bf3ec90be84ae97d7f52175ba938898525554c13c9017eb8f0a604146"
+checksum = "d369f9c4f79388704648e7bcb92749c0d6cf4397039293a9b747694fa4fb4bae"
 dependencies = [
  "hmac",
  "subtle",
@@ -1159,9 +1161,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.11.0-rc.0"
+version = "0.11.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa1d2e6b3cc4e43a8258a9a3b17aa5dfd2cc5186c7024bba8a64aa65b2c71a59"
+checksum = "d1e3878ab0f98e35b2df35fe53201d088299b41a6bb63e3e34dada2ac4abd924"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -1207,9 +1209,9 @@ dependencies = [
 
 [[package]]
 name = "sm3"
-version = "0.5.0-rc.0"
+version = "0.5.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd4150a9ed499352d8c4da088deb0c3348b18d3df054e529868e3290f4dd1be6"
+checksum = "a57b5b482126c6f104de6268b759d878998522390c5fb5ad84d10ab13b820f05"
 dependencies = [
  "digest",
 ]
