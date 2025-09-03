@@ -8,26 +8,24 @@ use elliptic_curve::{
     point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP521 {
     type SecurityLevel = U32;
 }
 
-impl FromOkm for FieldElement {
-    type Length = U98;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl Reduce<Array<u8, U98>> for FieldElement {
+    fn reduce(value: &Array<u8, U98>) -> Self {
         const F_2_392: FieldElement = FieldElement::from_hex_unchecked(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
         let mut d0 = Array::default();
-        d0[23..].copy_from_slice(&data[0..49]);
+        d0[23..].copy_from_slice(&value[0..49]);
         let d0 = FieldElement::from_uint_unchecked(U576::from_be_byte_array(d0));
 
         let mut d1 = Array::default();
-        d1[23..].copy_from_slice(&data[49..]);
+        d1[23..].copy_from_slice(&value[49..]);
         let d1 = FieldElement::from_uint_unchecked(U576::from_be_byte_array(d1));
 
         d0 * F_2_392 + d1
@@ -67,6 +65,8 @@ impl OsswuMap for FieldElement {
 impl MapToCurve for NistP521 {
     type CurvePoint = ProjectivePoint;
     type FieldElement = FieldElement;
+    type FieldLength = U98;
+    type ScalarLength = U98;
 
     fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
         let (qx, qy) = element.osswu();
@@ -82,20 +82,18 @@ impl MapToCurve for NistP521 {
     }
 }
 
-impl FromOkm for Scalar {
-    type Length = U98;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl Reduce<Array<u8, U98>> for Scalar {
+    fn reduce(value: &Array<u8, U98>) -> Self {
         const F_2_392: Scalar = Scalar::from_hex_unchecked(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
         let mut d0 = Array::default();
-        d0[23..].copy_from_slice(&data[0..49]);
+        d0[23..].copy_from_slice(&value[0..49]);
         let d0 = Scalar::reduce(&U576::from_be_byte_array(d0));
 
         let mut d1 = Array::default();
-        d1[23..].copy_from_slice(&data[49..]);
+        d1[23..].copy_from_slice(&value[49..]);
         let d1 = Scalar::reduce(&U576::from_be_byte_array(d1));
 
         d0 * F_2_392 + d1
@@ -116,7 +114,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
@@ -217,6 +215,7 @@ mod tests {
                 ExpandMsgXmd<Sha512>,
                 <NistP521 as GroupDigest>::SecurityLevel,
                 FieldElement,
+                <NistP521 as MapToCurve>::FieldLength,
             >(&[test_vector.msg], &[DST])
             .unwrap();
 
@@ -368,7 +367,7 @@ mod tests {
                 data[88..96].copy_from_slice(&b11.to_be_bytes());
                 data[96..].copy_from_slice(&b12.to_be_bytes());
 
-                let from_okm = Scalar::from_okm(&data);
+                let from_okm = Scalar::reduce(&data);
                 let simple_from_okm = simple_from_okm(data);
                 assert_eq!(from_okm, simple_from_okm);
             }

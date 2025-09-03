@@ -1,17 +1,22 @@
 //! Traits for mapping field elements to points on the curve.
 
+use elliptic_curve::array::typenum::NonZero;
+use elliptic_curve::array::{Array, ArraySize};
+use elliptic_curve::ops::Reduce;
 use elliptic_curve::{CurveArithmetic, ProjectivePoint};
-
-use super::FromOkm;
 
 /// Trait for converting field elements into a point via a mapping method like
 /// Simplified Shallue-van de Woestijne-Ulas or Elligator.
-pub trait MapToCurve: CurveArithmetic<Scalar: FromOkm> {
+pub trait MapToCurve: CurveArithmetic<Scalar: Reduce<Array<u8, Self::ScalarLength>>> {
     /// The intermediate representation, an element of the curve which may or may not
     /// be in the curve subgroup.
     type CurvePoint;
     /// The field element representation for a group value with multiple elements.
-    type FieldElement: FromOkm + Default + Copy;
+    type FieldElement: Reduce<Array<u8, Self::FieldLength>> + Default + Copy;
+    /// The `L` parameter as specified in the [RFC](https://www.rfc-editor.org/rfc/rfc9380.html#section-5-6) for field elements.
+    type FieldLength: ArraySize + NonZero;
+    /// The `L` parameter as specified in the [RFC](https://www.rfc-editor.org/rfc/rfc9380.html#section-5-6) for scalars.
+    type ScalarLength: ArraySize + NonZero;
 
     /// Map a field element into a curve point.
     fn map_to_curve(element: Self::FieldElement) -> Self::CurvePoint;

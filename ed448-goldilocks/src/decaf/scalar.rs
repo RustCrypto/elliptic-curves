@@ -4,8 +4,8 @@ use crate::field::{CurveWithScalar, ORDER, Scalar, ScalarBytes, WideScalarBytes}
 use elliptic_curve::array::Array;
 use elliptic_curve::bigint::{Limb, NonZero, U448, U512};
 use elliptic_curve::consts::{U56, U64};
+use elliptic_curve::ops::Reduce;
 use elliptic_curve::scalar::FromUintUnchecked;
-use hash2curve::FromOkm;
 use subtle::{Choice, CtOption};
 
 impl CurveWithScalar for Decaf448 {
@@ -66,15 +66,13 @@ impl From<&DecafScalar> for elliptic_curve::scalar::ScalarBits<Decaf448> {
     }
 }
 
-impl FromOkm for DecafScalar {
-    type Length = U64;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl Reduce<Array<u8, U64>> for DecafScalar {
+    fn reduce(value: &Array<u8, U64>) -> Self {
         const SEMI_WIDE_MODULUS: NonZero<U512> = NonZero::<U512>::new_unwrap(U512::from_be_hex(
             "00000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
         ));
 
-        let mut num = U512::from_le_slice(data);
+        let mut num = U512::from_le_slice(value);
         num %= SEMI_WIDE_MODULUS;
         let mut words = [0; U448::LIMBS];
         words.copy_from_slice(&num.to_words()[..U448::LIMBS]);

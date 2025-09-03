@@ -5,6 +5,7 @@
 use elliptic_curve::{
     BatchNormalize, Group,
     array::Array,
+    consts::U32,
     group::{GroupEncoding, ff::PrimeField},
     ops::{LinearCombination, Reduce, ReduceNonZero},
     point::NonIdentity,
@@ -39,13 +40,13 @@ prop_compose! {
 
 prop_compose! {
     fn projective()(bytes in any::<[u8; 32]>()) -> ProjectivePoint {
-        ProjectivePoint::mul_by_generator(&Scalar::reduce(&Array::from(bytes)))
+        ProjectivePoint::mul_by_generator(&Scalar::reduce(&Array::<u8, U32>::from(bytes)))
     }
 }
 
 prop_compose! {
     fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
-        Scalar::reduce(&Array::from(bytes))
+        Scalar::reduce(&Array::<u8, U32>::from(bytes))
     }
 }
 

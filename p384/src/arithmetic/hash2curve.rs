@@ -8,26 +8,24 @@ use elliptic_curve::{
     point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{FromOkm, GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP384 {
     type SecurityLevel = U24;
 }
 
-impl FromOkm for FieldElement {
-    type Length = U72;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl Reduce<Array<u8, U72>> for FieldElement {
+    fn reduce(value: &Array<u8, U72>) -> Self {
         const F_2_288: FieldElement = FieldElement::from_hex_vartime(
             "000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
         let mut d0 = FieldBytes::default();
-        d0[12..].copy_from_slice(&data[0..36]);
+        d0[12..].copy_from_slice(&value[0..36]);
         let d0 = FieldElement::from_uint_unchecked(U384::from_be_byte_array(d0));
 
         let mut d1 = FieldBytes::default();
-        d1[12..].copy_from_slice(&data[36..]);
+        d1[12..].copy_from_slice(&value[36..]);
         let d1 = FieldElement::from_uint_unchecked(U384::from_be_byte_array(d1));
 
         d0 * F_2_288 + d1
@@ -64,6 +62,8 @@ impl OsswuMap for FieldElement {
 impl MapToCurve for NistP384 {
     type CurvePoint = ProjectivePoint;
     type FieldElement = FieldElement;
+    type FieldLength = U72;
+    type ScalarLength = U72;
 
     fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
         let (qx, qy) = element.osswu();
@@ -79,20 +79,18 @@ impl MapToCurve for NistP384 {
     }
 }
 
-impl FromOkm for Scalar {
-    type Length = U72;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl Reduce<Array<u8, U72>> for Scalar {
+    fn reduce(value: &Array<u8, U72>) -> Self {
         const F_2_288: Scalar = Scalar::from_hex_vartime(
             "000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
         let mut d0 = FieldBytes::default();
-        d0[12..].copy_from_slice(&data[0..36]);
+        d0[12..].copy_from_slice(&value[0..36]);
         let d0 = Scalar::reduce(&U384::from_be_byte_array(d0));
 
         let mut d1 = FieldBytes::default();
-        d1[12..].copy_from_slice(&data[36..]);
+        d1[12..].copy_from_slice(&value[36..]);
         let d1 = Scalar::reduce(&U384::from_be_byte_array(d1));
 
         d0 * F_2_288 + d1
@@ -113,7 +111,7 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, FromOkm, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap};
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha384;
@@ -214,6 +212,7 @@ mod tests {
                 ExpandMsgXmd<Sha384>,
                 <NistP384 as GroupDigest>::SecurityLevel,
                 FieldElement,
+                <NistP384 as MapToCurve>::FieldLength,
             >(&[test_vector.msg], &[DST])
             .unwrap();
 
@@ -342,7 +341,7 @@ mod tests {
             data[56..64].copy_from_slice(&b7.to_be_bytes());
             data[64..].copy_from_slice(&b8.to_be_bytes());
 
-            let from_okm = Scalar::from_okm(&data);
+            let from_okm = Scalar::reduce(&data);
             let simple_from_okm = simple_from_okm(data);
             assert_eq!(from_okm, simple_from_okm);
         });
