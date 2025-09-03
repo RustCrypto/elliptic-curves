@@ -4,9 +4,8 @@ use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-use hash2curve::{
-    GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve, OsswuMap, OsswuMapParams, Sgn0,
-};
+use hash2curve::{GroupDigest, Isogeny, IsogenyCoefficients, MapToCurve};
+use primeorder::osswu::{OsswuMap, OsswuMapParams, Sgn0};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 

@@ -8,7 +8,8 @@ use elliptic_curve::{
     point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, MapToCurve};
+use primeorder::osswu::{OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP521 {
     type SecurityLevel = U32;
@@ -110,8 +111,9 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve};
     use hex_literal::hex;
+    use primeorder::osswu::OsswuMap;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
 

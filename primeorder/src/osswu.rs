@@ -2,10 +2,8 @@
 //!
 //! <hhttps://www.rfc-editor.org/rfc/rfc9380.html#name-simplified-swu-method>
 
-use ff::Field;
-use subtle::Choice;
-use subtle::ConditionallySelectable;
-use subtle::ConstantTimeEq;
+use elliptic_curve::Field;
+use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 /// The Optimized Simplified Shallue-van de Woestijne-Ulas parameters
 #[derive(Debug)]
