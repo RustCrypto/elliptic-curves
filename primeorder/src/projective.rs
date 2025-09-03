@@ -222,6 +222,55 @@ where
     }
 }
 
+//
+// `group` trait impls
+//
+
+/// Prime order elliptic curves have a cofactor of 1.
+impl<C> CofactorGroup for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    CompressedPoint<C>: Send + Sync,
+    FieldBytes<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
+    CompressedPoint<C>: Copy,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
+{
+    type Subgroup = ProjectivePoint<C>;
+
+    fn clear_cofactor(&self) -> Self::Subgroup {
+        *self
+    }
+
+    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
+        CtOption::new(self, Choice::from(1))
+    }
+
+    fn is_torsion_free(&self) -> Choice {
+        Choice::from(1)
+    }
+}
+
+impl<C> CurveGroup for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+{
+    type AffineRepr = AffinePoint<C>;
+
+    fn to_affine(&self) -> AffinePoint<C> {
+        ProjectivePoint::to_affine(self)
+    }
+
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
+        let mut zs = vec![C::FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
+    }
+}
+
 impl<C> Group for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
@@ -275,49 +324,32 @@ where
     }
 }
 
-impl<C> CofactorGroup for ProjectivePoint<C>
+impl<C> PrimeCurve for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
-    CompressedPoint<C>: Send + Sync,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    type Subgroup = ProjectivePoint<C>;
-
-    fn clear_cofactor(&self) -> Self::Subgroup {
-        *self
-    }
-
-    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
-        CtOption::new(self, Choice::from(1))
-    }
-
-    fn is_torsion_free(&self) -> Choice {
-        Choice::from(1)
-    }
+    type Affine = AffinePoint<C>;
 }
 
-impl<C> CurveGroup for ProjectivePoint<C>
+impl<C> PrimeGroup for ProjectivePoint<C>
 where
+    Self: Double,
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytes<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
+    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    type AffineRepr = AffinePoint<C>;
-
-    fn to_affine(&self) -> AffinePoint<C> {
-        ProjectivePoint::to_affine(self)
-    }
-
-    #[cfg(feature = "alloc")]
-    #[inline]
-    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
-        assert_eq!(projective.len(), affine.len());
-        let mut zs = vec![C::FieldElement::ONE; projective.len()];
-        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
-    }
 }
+
+//
+// Batch trait impls
+//
 
 impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
@@ -481,29 +513,6 @@ impl<C: PrimeCurveParams> LookupTable<C> {
     }
 }
 
-impl<C> PrimeGroup for ProjectivePoint<C>
-where
-    Self: Double,
-    C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
-    FieldBytes<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
-{
-}
-
-impl<C> PrimeCurve for ProjectivePoint<C>
-where
-    Self: Double,
-    C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
-    FieldBytes<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
-{
-    type Affine = AffinePoint<C>;
-}
-
 impl<C> PartialEq for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
@@ -560,7 +569,7 @@ where
 }
 
 //
-// Arithmetic trait impls
+// `core::ops` trait impls
 //
 
 impl<C> Add<ProjectivePoint<C>> for ProjectivePoint<C>

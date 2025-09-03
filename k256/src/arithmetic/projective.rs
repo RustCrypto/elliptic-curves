@@ -15,12 +15,13 @@ use elliptic_curve::{
         cofactor::CofactorGroup,
         prime::{PrimeCurve, PrimeCurveAffine, PrimeGroup},
     },
+    ops::BatchInvert,
+    point::NonIdentity,
     rand_core::TryRngCore,
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
-use elliptic_curve::{ops::BatchInvert, point::NonIdentity};
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
@@ -387,6 +388,16 @@ impl ConstantTimeEq for ProjectivePoint {
     }
 }
 
+impl Default for ProjectivePoint {
+    fn default() -> Self {
+        Self::IDENTITY
+    }
+}
+
+impl DefaultIsZeroes for ProjectivePoint {}
+
+impl Eq for ProjectivePoint {}
+
 impl PartialEq for ProjectivePoint {
     fn eq(&self, other: &Self) -> bool {
         self.ct_eq(other).into()
@@ -405,7 +416,42 @@ impl PartialEq<ProjectivePoint> for AffinePoint {
     }
 }
 
-impl Eq for ProjectivePoint {}
+//
+// `group` trait impls
+//
+
+/// secp256k1 has a cofactor of 1.
+impl CofactorGroup for ProjectivePoint {
+    type Subgroup = Self;
+
+    fn clear_cofactor(&self) -> Self::Subgroup {
+        *self
+    }
+
+    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
+        CtOption::new(self, Choice::from(1))
+    }
+
+    fn is_torsion_free(&self) -> Choice {
+        Choice::from(1)
+    }
+}
+
+impl CurveGroup for ProjectivePoint {
+    type AffineRepr = AffinePoint;
+
+    fn to_affine(&self) -> AffinePoint {
+        ProjectivePoint::to_affine(self)
+    }
+
+    #[cfg(feature = "alloc")]
+    #[inline]
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+        assert_eq!(projective.len(), affine.len());
+        let mut zs = vec![FieldElement::ONE; projective.len()];
+        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
+    }
+}
 
 impl Group for ProjectivePoint {
     type Scalar = Scalar;
@@ -452,51 +498,15 @@ impl GroupEncoding for ProjectivePoint {
     }
 }
 
-impl CofactorGroup for ProjectivePoint {
-    type Subgroup = ProjectivePoint;
-
-    fn clear_cofactor(&self) -> Self::Subgroup {
-        *self
-    }
-
-    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
-        CtOption::new(self, Choice::from(1))
-    }
-
-    fn is_torsion_free(&self) -> Choice {
-        Choice::from(1)
-    }
-}
-
-impl PrimeGroup for ProjectivePoint {}
-
-impl CurveGroup for ProjectivePoint {
-    type AffineRepr = AffinePoint;
-
-    fn to_affine(&self) -> AffinePoint {
-        ProjectivePoint::to_affine(self)
-    }
-
-    #[cfg(feature = "alloc")]
-    #[inline]
-    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
-        assert_eq!(projective.len(), affine.len());
-        let mut zs = vec![FieldElement::ONE; projective.len()];
-        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
-    }
-}
-
 impl PrimeCurve for ProjectivePoint {
     type Affine = AffinePoint;
 }
 
-impl Default for ProjectivePoint {
-    fn default() -> Self {
-        Self::IDENTITY
-    }
-}
+impl PrimeGroup for ProjectivePoint {}
 
-impl DefaultIsZeroes for ProjectivePoint {}
+//
+// `core::ops` trait impls
+//
 
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
