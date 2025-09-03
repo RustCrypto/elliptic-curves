@@ -22,12 +22,12 @@ jobs:
   clippy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: 1.88.0
-        components: clippy
-    - run: cargo clippy --all --all-features -- -D warnings
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.89 # pinned to prevent breakages when new stable versions are released
+          components: clippy
+      - run: cargo clippy --all --all-features -- -D warnings
 
   rustfmt:
     runs-on: ubuntu-latest
