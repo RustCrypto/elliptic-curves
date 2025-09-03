@@ -31,6 +31,7 @@ signature = { version = "3.0.0-rc.3", optional = true, default-features = false,
 default = ["std", "signing", "pkcs8"]
 alloc = ["ed448?/alloc", "elliptic-curve/alloc", "serdect?/alloc", "signature?/alloc"]
 std = ["alloc"]
+
 bits = ["elliptic-curve/bits"]
 pkcs8 = ["ed448?/pkcs8", "elliptic-curve/pkcs8"]
 signing = ["dep:ed448", "dep:signature"]
