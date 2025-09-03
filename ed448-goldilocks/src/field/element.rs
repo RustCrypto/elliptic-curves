@@ -7,18 +7,19 @@ use crate::{
     AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
+use elliptic_curve::ops::Reduce;
 use elliptic_curve::{
     Field,
     array::Array,
     bigint::{
         Integer, NonZero, U448, U704, Zero,
-        consts::{U56, U84, U88},
+        consts::{U56, U64, U84, U88},
         modular::ConstMontyParams,
     },
     group::cofactor::CofactorGroup,
     zeroize::DefaultIsZeroes,
 };
-use hash2curve::{FromOkm, MapToCurve};
+use hash2curve::MapToCurve;
 use rand_core::TryRngCore;
 use subtle::{
     Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess,
@@ -71,32 +72,26 @@ impl PartialEq for FieldElement {
 }
 impl Eq for FieldElement {}
 
-impl FromOkm for Ed448FieldElement {
-    type Length = U84;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
+impl Reduce<Array<u8, U84>> for FieldElement {
+    fn reduce(value: &Array<u8, U84>) -> Self {
         const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex(
             "0000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
         ));
         let mut tmp = Array::<u8, U88>::default();
-        tmp[4..].copy_from_slice(&data[..]);
+        tmp[4..].copy_from_slice(&value[..]);
 
         let mut num = U704::from_be_slice(&tmp[..]);
         num %= SEMI_WIDE_MODULUS;
 
         let bytes =
             <[u8; 56]>::try_from(&num.to_le_bytes()[..56]).expect("slice is the wrong length");
-        Self(FieldElement(ConstMontyType::new(&U448::from_le_slice(
-            &bytes,
-        ))))
+        FieldElement(ConstMontyType::new(&U448::from_le_slice(&bytes)))
     }
 }
 
-impl FromOkm for Decaf448FieldElement {
-    type Length = U56;
-
-    fn from_okm(data: &Array<u8, Self::Length>) -> Self {
-        Self(FieldElement::from_bytes(&data.0))
+impl Reduce<Array<u8, U56>> for FieldElement {
+    fn reduce(value: &Array<u8, U56>) -> Self {
+        FieldElement::from_bytes(&value.0)
     }
 }
 
@@ -196,15 +191,14 @@ impl Neg for FieldElement {
     }
 }
 
-#[derive(Clone, Copy, Default, Debug)]
-pub struct Ed448FieldElement(FieldElement);
-
 impl MapToCurve for Ed448 {
     type CurvePoint = EdwardsPoint;
-    type FieldElement = Ed448FieldElement;
+    type FieldElement = FieldElement;
+    type FieldLength = U84;
+    type ScalarLength = U84;
 
-    fn map_to_curve(element: Ed448FieldElement) -> Self::CurvePoint {
-        element.0.map_to_curve_elligator2().isogeny().to_edwards()
+    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+        element.map_to_curve_elligator2().isogeny().to_edwards()
     }
 
     fn map_to_subgroup(point: EdwardsPoint) -> EdwardsPoint {
@@ -216,15 +210,14 @@ impl MapToCurve for Ed448 {
     }
 }
 
-#[derive(Clone, Copy, Default, Debug)]
-pub struct Decaf448FieldElement(FieldElement);
-
 impl MapToCurve for Decaf448 {
     type CurvePoint = DecafPoint;
-    type FieldElement = Decaf448FieldElement;
+    type FieldElement = FieldElement;
+    type FieldLength = U56;
+    type ScalarLength = U64;
 
-    fn map_to_curve(element: Decaf448FieldElement) -> DecafPoint {
-        DecafPoint(element.0.map_to_curve_decaf448())
+    fn map_to_curve(element: FieldElement) -> DecafPoint {
+        DecafPoint(element.map_to_curve_decaf448())
     }
 
     fn map_to_subgroup(point: DecafPoint) -> DecafPoint {
@@ -546,7 +539,7 @@ mod tests {
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data).unwrap();
             // TODO: This should be `Curve448FieldElement`.
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = FieldElement::reduce(&data);
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
@@ -554,7 +547,7 @@ mod tests {
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data).unwrap();
             // TODO: This should be `Curve448FieldElement`.
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = FieldElement::reduce(&data);
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }
@@ -579,14 +572,14 @@ mod tests {
             .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data).unwrap();
-            let u0 = Ed448FieldElement::from_okm(&data).0;
+            let u0 = FieldElement::reduce(&data);
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
             let mut e_u1 = *expected_u1;
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data).unwrap();
-            let u1 = Ed448FieldElement::from_okm(&data).0;
+            let u1 = FieldElement::reduce(&data);
             assert_eq!(u1.to_bytes(), e_u1);
         }
     }

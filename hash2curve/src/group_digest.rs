@@ -35,7 +35,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::SecurityLevel>,
     {
-        let [u0, u1] = hash_to_field::<2, X, _, Self::FieldElement>(msg, dst)?;
+        let [u0, u1] = hash_to_field::<2, X, _, Self::FieldElement, Self::FieldLength>(msg, dst)?;
         let q0 = Self::map_to_curve(u0);
         let q1 = Self::map_to_curve(u1);
         Ok(Self::add_and_map_to_subgroup(q0, q1))
@@ -65,7 +65,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::SecurityLevel>,
     {
-        let [u] = hash_to_field::<1, X, _, Self::FieldElement>(msg, dst)?;
+        let [u] = hash_to_field::<1, X, _, Self::FieldElement, Self::FieldLength>(msg, dst)?;
         let q0 = Self::map_to_curve(u);
         Ok(Self::map_to_subgroup(q0))
     }
@@ -88,7 +88,7 @@ pub trait GroupDigest: MapToCurve {
     where
         X: ExpandMsg<Self::SecurityLevel>,
     {
-        let [u] = hash_to_field::<1, X, _, Self::Scalar>(msg, dst)?;
+        let [u] = hash_to_field::<1, X, _, Self::Scalar, Self::ScalarLength>(msg, dst)?;
         Ok(u)
     }
 }
