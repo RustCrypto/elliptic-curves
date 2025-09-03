@@ -21,5 +21,5 @@ subtle = { version = "2.6", default-features = false }
 
 [dev-dependencies]
 hex-literal = "1"
-sha3 = { version = "0.11.0-rc.2", default-features = false }
 sha2 = { version = "0.11.0-rc.2", default-features = false }
+sha3 = { version = "0.11.0-rc.3", default-features = false }
