@@ -128,12 +128,11 @@ impl OsswuMap for FieldElement {
 }
 
 impl MapToCurve for Secp256k1 {
-    type CurvePoint = ProjectivePoint;
     type FieldElement = FieldElement;
     type FieldLength = U48;
     type ScalarLength = U48;
 
-    fn map_to_curve(element: FieldElement) -> Self::CurvePoint {
+    fn map_to_curve(element: FieldElement) -> ProjectivePoint {
         let (rx, ry) = element.osswu();
         let (qx, qy) = FieldElement::isogeny(rx, ry);
 
@@ -145,7 +144,7 @@ impl MapToCurve for Secp256k1 {
         .into()
     }
 
-    fn map_to_subgroup(point: Self::CurvePoint) -> ProjectivePoint {
+    fn map_to_subgroup(point: ProjectivePoint) -> ProjectivePoint {
         point
     }
 }

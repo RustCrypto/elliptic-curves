@@ -8,9 +8,6 @@ use elliptic_curve::{CurveArithmetic, ProjectivePoint};
 /// Trait for converting field elements into a point via a mapping method like
 /// Simplified Shallue-van de Woestijne-Ulas or Elligator.
 pub trait MapToCurve: CurveArithmetic<Scalar: Reduce<Array<u8, Self::ScalarLength>>> {
-    /// The intermediate representation, an element of the curve which may or may not
-    /// be in the curve subgroup.
-    type CurvePoint;
     /// The field element representation for a group value with multiple elements.
     type FieldElement: Reduce<Array<u8, Self::FieldLength>> + Default + Copy;
     /// The `L` parameter as specified in the [RFC](https://www.rfc-editor.org/rfc/rfc9380.html#section-5-6) for field elements.
@@ -19,20 +16,18 @@ pub trait MapToCurve: CurveArithmetic<Scalar: Reduce<Array<u8, Self::ScalarLengt
     type ScalarLength: ArraySize + NonZero;
 
     /// Map a field element into a curve point.
-    fn map_to_curve(element: Self::FieldElement) -> Self::CurvePoint;
+    fn map_to_curve(element: Self::FieldElement) -> ProjectivePoint<Self>;
 
     /// Map a curve point to a point in the curve subgroup.
     /// This is usually done by clearing the cofactor, if necessary.
-    fn map_to_subgroup(point: Self::CurvePoint) -> ProjectivePoint<Self>;
+    fn map_to_subgroup(point: ProjectivePoint<Self>) -> ProjectivePoint<Self>;
 
     /// Combine two curve points into a point in the curve subgroup.
-    /// This is usually done by clearing the cofactor of the sum. In case
-    /// addition is not implemented for `Self::CurvePoint`, then both terms
-    /// must be mapped to the subgroup individually before being added.
+    /// This is usually done by clearing the cofactor of the sum.
     fn add_and_map_to_subgroup(
-        lhs: Self::CurvePoint,
-        rhs: Self::CurvePoint,
+        lhs: ProjectivePoint<Self>,
+        rhs: ProjectivePoint<Self>,
     ) -> ProjectivePoint<Self> {
-        Self::map_to_subgroup(lhs) + Self::map_to_subgroup(rhs)
+        Self::map_to_subgroup(lhs + rhs)
     }
 }
