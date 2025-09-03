@@ -1,9 +1,9 @@
 [package]
 name = "x448"
-version = "0.7.0-pre"
+version = "0.14.0-pre.0"
 authors = ["RustCrypto Developers"]
 categories = ["cryptography"]
-keywords = ["cryptography", "crypto", "x448", "diffie-hellman", "curve448",]
+keywords = ["cryptography", "crypto", "x448", "diffie-hellman", "curve448", ]
 homepage = "https://docs.rs/x448/"
 repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/x448"
 documentation = "https://docs.rs/ed448-goldilocks"
@@ -14,8 +14,8 @@ readme = "README.md"
 description = "A pure-Rust implementation of X448."
 
 [dependencies]
-ed448-goldilocks = { version = "0.14.0-pre.0", default-features = false }
-rand_core = { version = "0.9", default-features = false } 
+ed448-goldilocks = { version = "0.14.0-pre.3", default-features = false }
+rand_core = { version = "0.9", default-features = false }
 
 [dependencies.zeroize]
 version = "1"

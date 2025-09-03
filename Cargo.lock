@@ -141,7 +141,7 @@ dependencies = [
 
 [[package]]
 name = "bp256"
-version = "0.7.0-pre"
+version = "0.14.0-pre.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -152,7 +152,7 @@ dependencies = [
 
 [[package]]
 name = "bp384"
-version = "0.7.0-pre"
+version = "0.14.0-pre.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -391,7 +391,7 @@ dependencies = [
 
 [[package]]
 name = "ed448-goldilocks"
-version = "0.14.0-pre.2"
+version = "0.14.0-pre.3"
 dependencies = [
  "criterion",
  "ed448",
@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "hash2curve"
-version = "0.14.0-rc.0"
+version = "0.14.0-rc.1"
 dependencies = [
  "digest",
  "elliptic-curve",
@@ -607,7 +607,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-pre.9"
+version = "0.14.0-pre.10"
 dependencies = [
  "blobby",
  "cfg-if",
@@ -751,7 +751,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-pre.9"
+version = "0.14.0-pre.10"
 dependencies = [
  "blobby",
  "criterion",
@@ -769,7 +769,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-pre.9"
+version = "0.14.0-pre.10"
 dependencies = [
  "blobby",
  "criterion",
@@ -787,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-pre.9"
+version = "0.14.0-pre.10"
 dependencies = [
  "base16ct",
  "blobby",
@@ -1502,7 +1502,7 @@ dependencies = [
 
 [[package]]
 name = "x448"
-version = "0.7.0-pre"
+version = "0.14.0-pre.0"
 dependencies = [
  "ed448-goldilocks",
  "rand",
