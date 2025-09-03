@@ -18,8 +18,8 @@ elliptic-curve = { version = "0.14.0-rc.13", default-features = false, features 
 
 # optional dependencies
 ecdsa = { version = "0.17.0-rc.6", optional = true, default-features = false, features = ["der"] }
-primefield = { version = "=0.14.0-pre.4", optional = true }
-primeorder = { version = "=0.14.0-pre.7", optional = true }
+primefield = { version = "=0.14.0-pre.5", optional = true }
+primeorder = { version = "=0.14.0-pre.8", optional = true }
 sha2 = { version = "0.11.0-rc.2", optional = true, default-features = false }
 
 [features]

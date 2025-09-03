@@ -22,14 +22,14 @@ elliptic-curve = { version = "0.14.0-rc.13", default-features = false, features 
 # optional dependencies
 ecdsa-core = { version = "0.17.0-rc.6", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
-primefield = { version = "=0.14.0-pre.4", optional = true }
-primeorder = { version = "=0.14.0-pre.7", optional = true }
+primefield = { version = "=0.14.0-pre.5", optional = true }
+primeorder = { version = "=0.14.0-pre.8", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 
 [dev-dependencies]
 ecdsa-core = { version = "0.17.0-rc.6", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "=0.14.0-pre.7", features = ["dev"] }
+primeorder = { version = "=0.14.0-pre.8", features = ["dev"] }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]
