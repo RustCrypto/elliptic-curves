@@ -11,7 +11,7 @@ license = "Apache-2.0 OR MIT"
 edition = "2024"
 rust-version = "1.85"
 readme = "README.md"
-description = "A pure-Rust implementation of X448."
+description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellman function"
 
 [dependencies]
 ed448-goldilocks = { version = "0.14.0-pre.3", default-features = false }
