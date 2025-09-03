@@ -12,13 +12,21 @@ use crate::field::FieldElement;
 pub(crate) struct IsogenyMap {
     pub(crate) X: FieldElement,
     pub(crate) Y: FieldElement,
-    pub(crate) T: FieldElement,
     pub(crate) Z: FieldElement,
+    pub(crate) T: FieldElement,
+}
+
+pub(crate) struct IsogenyMapResult {
+    pub(crate) X: FieldElement,
+    pub(crate) Y: FieldElement,
+    pub(crate) Z: FieldElement,
+    pub(crate) T1: FieldElement,
+    pub(crate) T2: FieldElement,
 }
 
 impl IsogenyMap {
     // (1.) https://eprint.iacr.org/2014/027.pdf
-    pub(crate) fn map(&self, scale: impl FnOnce(FieldElement) -> FieldElement) -> Self {
+    pub(crate) fn map(&self, scale: impl FnOnce(FieldElement) -> FieldElement) -> IsogenyMapResult {
         // x = 2xy / (y^2 - a*x^2)
         // y = (y^2 + a*x^2) / (2 - y^2 - a*x^2)
 
@@ -53,9 +61,10 @@ impl IsogenyMap {
 
         let X = x_numerator * y_denom;
         let Y = y_numerator * x_denom;
-        let T = x_numerator * y_numerator;
         let Z = x_denom * y_denom;
+        let T1 = x_numerator;
+        let T2 = y_numerator;
 
-        Self { X, Y, T, Z }
+        IsogenyMapResult { X, Y, Z, T1, T2 }
     }
 }

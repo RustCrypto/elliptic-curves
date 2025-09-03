@@ -14,7 +14,7 @@ impl Mul<&DecafScalar> for &DecafPoint {
 
     fn mul(self, scalar: &DecafScalar) -> DecafPoint {
         // XXX: We can do better than double and add
-        DecafPoint(double_and_add(&self.0, scalar.bits()))
+        DecafPoint(double_and_add(&self.0, scalar.bits()).to_extended())
     }
 }
 
@@ -37,7 +37,7 @@ impl Add<&DecafPoint> for &DecafPoint {
     type Output = DecafPoint;
 
     fn add(self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.to_extensible().add_extended(&other.0).to_extended())
+        DecafPoint(self.0.add_extended(&other.0).to_extended())
     }
 }
 
@@ -101,7 +101,7 @@ impl Sub<&DecafPoint> for &DecafPoint {
     type Output = DecafPoint;
 
     fn sub(self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.to_extensible().sub_extended(&other.0).to_extended())
+        DecafPoint(self.0.sub_extended(&other.0).to_extended())
     }
 }
 
