@@ -143,10 +143,6 @@ impl MapToCurve for Secp256k1 {
         }
         .into()
     }
-
-    fn map_to_subgroup(point: ProjectivePoint) -> ProjectivePoint {
-        point
-    }
 }
 
 impl Reduce<Array<u8, U48>> for Scalar {
@@ -267,6 +263,7 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, NonZero, U384},
         consts::U48,
+        group::cofactor::CofactorGroup,
         ops::Reduce,
     };
     use hash2curve::{GroupDigest, MapToCurve};
@@ -374,7 +371,7 @@ mod tests {
             assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
             assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
 
-            let p = Secp256k1::add_and_map_to_subgroup(q0, q1);
+            let p = (q0 + q1).clear_cofactor();
             let ap = p.to_affine();
             assert_eq!(ap.x.to_bytes().as_slice(), test_vector.p_x);
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
