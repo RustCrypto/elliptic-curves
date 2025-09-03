@@ -1,6 +1,6 @@
 [package]
 name = "primeorder"
-version = "0.14.0-pre.7"
+version = "0.14.0-pre.8"
 description = """
 Pure Rust implementation of complete addition formulas for prime order elliptic
 curves (Renes-Costello-Batina 2015). Generic over field elements and curve
