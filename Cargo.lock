@@ -731,7 +731,6 @@ dependencies = [
  "hex-literal",
  "primefield",
  "primeorder",
- "sec1",
  "serdect",
 ]
 
@@ -1172,9 +1171,9 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.11.0-rc.0"
+version = "0.11.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9e6a92fd180fd205defdc0b78288ce847c7309d329fd6647a814567e67db50e"
+checksum = "b3c185ed8cff82204014bfaa7649b4c945ca565e03c0534eb33a8d2a01572932"
 dependencies = [
  "digest",
  "keccak",
