@@ -39,8 +39,6 @@ pub use rand_core;
 pub use sha3;
 pub use subtle;
 
-// As usual, we will use this file to carefully define the API/ what we expose to the user
-pub(crate) mod constants;
 pub(crate) mod curve;
 pub(crate) mod decaf;
 pub(crate) mod edwards;

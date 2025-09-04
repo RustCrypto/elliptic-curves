@@ -1,4 +1,3 @@
-use crate::constants::DECAF_BASEPOINT;
 use crate::curve::twedwards::extended::ExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
@@ -304,7 +303,7 @@ impl elliptic_curve::zeroize::DefaultIsZeroes for DecafPoint {}
 
 impl DecafPoint {
     /// The generator point
-    pub const GENERATOR: DecafPoint = DECAF_BASEPOINT;
+    pub const GENERATOR: DecafPoint = DecafPoint(TWISTED_EDWARDS_BASE_POINT);
     /// The identity point
     pub const IDENTITY: DecafPoint = DecafPoint(ExtendedPoint::IDENTITY);
 
