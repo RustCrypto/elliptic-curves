@@ -12,6 +12,8 @@
 #[macro_use]
 extern crate alloc;
 
+#[cfg(feature = "hash2curve")]
+pub mod osswu;
 pub mod point_arithmetic;
 
 mod affine;

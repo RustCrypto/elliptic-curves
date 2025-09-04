@@ -5,10 +5,10 @@ use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     consts::{U16, U48},
     ops::Reduce,
-    point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, MapToCurve};
+use primeorder::osswu::{AffineOsswuMap, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP256 {
     type SecurityLevel = U16;
@@ -63,12 +63,7 @@ impl MapToCurve for NistP256 {
     type ScalarLength = U48;
 
     fn map_to_curve(element: Self::FieldElement) -> ProjectivePoint {
-        let (qx, qy) = element.osswu();
-
-        // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
-        AffinePoint::decompress(&qx.to_bytes(), qy.is_odd())
-            .unwrap()
-            .into()
+        AffinePoint::osswu(&element).into()
     }
 }
 
@@ -101,9 +96,10 @@ mod tests {
         consts::U48,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve};
     use hex_literal::hex;
     use primefield::bigint::Reduce;
+    use primeorder::osswu::OsswuMap;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
     use sha2::Sha256;
 

@@ -5,10 +5,10 @@ use elliptic_curve::{
     bigint::{ArrayEncoding, U576},
     consts::{U32, U98},
     ops::Reduce,
-    point::DecompressPoint,
     subtle::Choice,
 };
-use hash2curve::{GroupDigest, MapToCurve, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::{GroupDigest, MapToCurve};
+use primeorder::osswu::{AffineOsswuMap, OsswuMap, OsswuMapParams, Sgn0};
 
 impl GroupDigest for NistP521 {
     type SecurityLevel = U32;
@@ -68,12 +68,7 @@ impl MapToCurve for NistP521 {
     type ScalarLength = U98;
 
     fn map_to_curve(element: FieldElement) -> ProjectivePoint {
-        let (qx, qy) = element.osswu();
-
-        // TODO(tarcieri): assert that `qy` is correct? less circuitous conversion?
-        AffinePoint::decompress(&qx.to_bytes(), qy.is_odd())
-            .unwrap()
-            .into()
+        AffinePoint::osswu(&element).into()
     }
 }
 
@@ -110,8 +105,9 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve, OsswuMap};
+    use hash2curve::{self, ExpandMsgXmd, GroupDigest, MapToCurve};
     use hex_literal::hex;
+    use primeorder::osswu::OsswuMap;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
 

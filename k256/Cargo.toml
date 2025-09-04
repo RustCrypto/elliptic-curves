@@ -27,6 +27,7 @@ hash2curve = { version = "0.14.0-rc.1", optional = true }
 once_cell = { version = "1.21", optional = true, default-features = false }
 ecdsa-core = { version = "0.17.0-rc.6", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
+primeorder = { version = "=0.14.0-pre.8", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.2", optional = true, default-features = false }
 signature = { version = "3.0.0-rc.3", optional = true }
@@ -55,7 +56,7 @@ digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha256"]
 expose-field = ["arithmetic"]
-hash2curve = ["arithmetic", "dep:hash2curve"]
+hash2curve = ["arithmetic", "dep:hash2curve", "dep:primeorder", "primeorder/hash2curve"]
 pem = ["ecdsa-core/pem", "elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa-core/pkcs8", "elliptic-curve/pkcs8"]
 precomputed-tables = ["arithmetic"]

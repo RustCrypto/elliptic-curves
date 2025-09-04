@@ -42,6 +42,7 @@ jobs:
           targets: ${{ matrix.target }}
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features hash2curve
 
   test:
     runs-on: ubuntu-latest
