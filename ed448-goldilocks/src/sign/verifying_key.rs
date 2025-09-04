@@ -279,6 +279,11 @@ impl VerifyingKey {
             return Err(SigningError::InvalidSignatureSComponent.into());
         }
 
+        // RFC 8032 mandates context length <= 255 bytes. Enforce consistently with signing path.
+        if ctx.len() > 255 {
+            return Err(SigningError::PrehashedContextLength.into());
+        }
+
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
         let mut bytes = WideEdwardsScalarBytes::default();
         let ctx_len = ctx.len() as u8;
