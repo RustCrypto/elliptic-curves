@@ -143,10 +143,15 @@ dependencies = [
 name = "bp256"
 version = "0.14.0-pre.0"
 dependencies = [
+ "blobby",
  "ecdsa",
  "elliptic-curve",
+ "hex-literal",
  "primefield",
  "primeorder",
+ "proptest",
+ "rand_chacha",
+ "rand_core",
  "sha2",
 ]
 

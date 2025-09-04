@@ -23,7 +23,7 @@ primeorder = { version = "=0.14.0-pre.8", optional = true }
 sha2 = { version = "0.11.0-rc.2", optional = true, default-features = false }
 
 [features]
-default = ["pkcs8", "std"]
+default = ["pkcs8", "std", "ecdsa"]
 alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "ecdsa?/std", "elliptic-curve/std"]
 
@@ -32,6 +32,15 @@ pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
 sha256 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 arithmetic = ["dep:primefield", "dep:primeorder"]
+ecdsa = ["arithmetic", "ecdsa/signing", "ecdsa/verifying", "sha256"]
+
+[dev-dependencies]
+blobby = "0.3"
+ecdsa = { version = "0.17.0-rc.4", features = ["dev"] }
+hex-literal = "1.0.0"
+proptest = "1"
+rand_chacha = "0.9.0"
+rand_core = "0.9.3"
 
 [package.metadata.docs.rs]
 all-features = true
