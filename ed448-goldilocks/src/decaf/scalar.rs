@@ -284,7 +284,8 @@ mod test {
         let msg = b"hello world";
         let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
         let res =
-            hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>>(&[msg], &[dst]).unwrap();
+            hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>, U64>(&[msg], &[dst])
+                .unwrap();
         let expected: [u8; 56] = hex_literal::hex!(
             "55e7b59aa035db959409c6b69b817a18c8133d9ad06687665f5720672924da0a84eab7fee415ef13e7aaebdd227291ee8e156f32c507ad2e"
         );
@@ -328,7 +329,7 @@ mod test {
 
         'outer: for test_vector in TEST_VECTORS {
             for counter in 0_u8..=u8::MAX {
-                let scalar = hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>>(
+                let scalar = hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>, U64>(
                     &[SEED, &key_info_len, KEY_INFO, &counter.to_be_bytes()],
                     &[test_vector.dst],
                 )

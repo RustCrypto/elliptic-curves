@@ -13,7 +13,7 @@ use elliptic_curve::{
     array::Array,
     bigint::{
         Integer, NonZero, U448, U704, Zero,
-        consts::{U28, U56, U64, U84, U88},
+        consts::{U28, U56, U84, U88},
         modular::ConstMontyParams,
     },
     zeroize::DefaultIsZeroes,
@@ -193,8 +193,7 @@ impl Neg for FieldElement {
 impl MapToCurve for Ed448 {
     type SecurityLevel = U28;
     type FieldElement = FieldElement;
-    type FieldLength = U84;
-    type ScalarLength = U84;
+    type Length = U84;
 
     fn map_to_curve(element: FieldElement) -> EdwardsPoint {
         element.map_to_curve_elligator2().isogeny().to_edwards()
@@ -204,8 +203,7 @@ impl MapToCurve for Ed448 {
 impl MapToCurve for Decaf448 {
     type SecurityLevel = U28;
     type FieldElement = FieldElement;
-    type FieldLength = U56;
-    type ScalarLength = U64;
+    type Length = U56;
 
     fn map_to_curve(element: FieldElement) -> DecafPoint {
         DecafPoint(element.map_to_curve_decaf448())

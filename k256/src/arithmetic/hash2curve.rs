@@ -133,8 +133,7 @@ impl OsswuMap for FieldElement {
 impl MapToCurve for Secp256k1 {
     type SecurityLevel = U16;
     type FieldElement = FieldElement;
-    type FieldLength = U48;
-    type ScalarLength = U48;
+    type Length = U48;
 
     fn map_to_curve(element: FieldElement) -> ProjectivePoint {
         let (rx, ry) = element.osswu();
@@ -377,7 +376,7 @@ mod tests {
                 ExpandMsgXmd<Sha256>,
                 <Secp256k1 as MapToCurve>::SecurityLevel,
                 FieldElement,
-                <Secp256k1 as MapToCurve>::FieldLength,
+                <Secp256k1 as MapToCurve>::Length,
             >(&[test_vector.msg], &[DST])
             .unwrap();
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);

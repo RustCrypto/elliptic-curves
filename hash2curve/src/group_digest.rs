@@ -2,7 +2,10 @@
 
 use super::{ExpandMsg, MapToCurve, hash_to_field};
 use elliptic_curve::ProjectivePoint;
+use elliptic_curve::array::typenum::NonZero;
+use elliptic_curve::array::{Array, ArraySize};
 use elliptic_curve::group::cofactor::CofactorGroup;
+use elliptic_curve::ops::Reduce;
 
 /// Hash arbitrary byte sequences to a valid group element.
 pub trait GroupDigest: MapToCurve {
@@ -84,7 +87,7 @@ where
     C: MapToCurve,
     X: ExpandMsg<C::SecurityLevel>,
 {
-    let [u0, u1] = hash_to_field::<2, X, _, C::FieldElement, C::FieldLength>(msg, dst)?;
+    let [u0, u1] = hash_to_field::<2, X, _, C::FieldElement, C::Length>(msg, dst)?;
     let q0 = C::map_to_curve(u0);
     let q1 = C::map_to_curve(u1);
     Ok((q0 + q1).clear_cofactor())
@@ -107,7 +110,7 @@ where
     C: MapToCurve,
     X: ExpandMsg<C::SecurityLevel>,
 {
-    let [u] = hash_to_field::<1, X, _, C::FieldElement, C::FieldLength>(msg, dst)?;
+    let [u] = hash_to_field::<1, X, _, C::FieldElement, C::Length>(msg, dst)?;
     let q0 = C::map_to_curve(u);
     Ok(q0.clear_cofactor())
 }
@@ -126,11 +129,13 @@ where
 ///
 /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
 /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
-pub fn hash_to_scalar<C, X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<C::Scalar, X::Error>
+pub fn hash_to_scalar<C, X, L>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<C::Scalar, X::Error>
 where
     C: MapToCurve,
     X: ExpandMsg<C::SecurityLevel>,
+    L: ArraySize + NonZero,
+    C::Scalar: Reduce<Array<u8, L>>,
 {
-    let [u] = hash_to_field::<1, X, _, C::Scalar, C::ScalarLength>(msg, dst)?;
+    let [u] = hash_to_field::<1, X, _, C::Scalar, L>(msg, dst)?;
     Ok(u)
 }

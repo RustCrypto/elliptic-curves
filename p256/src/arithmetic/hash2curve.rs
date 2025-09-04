@@ -64,8 +64,7 @@ impl OsswuMap for FieldElement {
 impl MapToCurve for NistP256 {
     type SecurityLevel = U16;
     type FieldElement = FieldElement;
-    type FieldLength = U48;
-    type ScalarLength = U48;
+    type Length = U48;
 
     fn map_to_curve(element: Self::FieldElement) -> ProjectivePoint {
         AffinePoint::osswu(&element).into()
@@ -205,7 +204,7 @@ mod tests {
                 ExpandMsgXmd<Sha256>,
                 <NistP256 as MapToCurve>::SecurityLevel,
                 FieldElement,
-                <NistP256 as MapToCurve>::FieldLength,
+                <NistP256 as MapToCurve>::Length,
             >(&[test_vector.msg], &[DST])
             .unwrap();
 
@@ -283,7 +282,7 @@ mod tests {
                 .to_be_bytes();
 
             for counter in 0_u8..=u8::MAX {
-                let scalar = hash2curve::hash_to_scalar::<NistP256, ExpandMsgXmd<Sha256>>(
+                let scalar = hash2curve::hash_to_scalar::<NistP256, ExpandMsgXmd<Sha256>, U48>(
                     &[
                         test_vector.seed,
                         &key_info_len,
