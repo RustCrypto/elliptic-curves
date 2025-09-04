@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
 use crate::field::FieldElement;
-use subtle::{Choice, ConditionallySelectable};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
 
 /// This point representation is not a part of the API.
 ///
@@ -31,11 +31,11 @@ impl AffinePoint {
     };
 
     /// Checks if the AffinePoint is on the TwistedEdwards curve
-    fn is_on_curve(&self) -> bool {
+    pub(crate) fn is_on_curve(&self) -> Choice {
         let xx = self.x.square();
         let yy = self.y.square();
 
-        yy - xx == FieldElement::ONE + (FieldElement::TWISTED_D * xx * yy)
+        (yy - xx).ct_eq(&(FieldElement::ONE + (FieldElement::TWISTED_D * xx * yy)))
     }
 
     // Negates an AffinePoint
@@ -142,7 +142,7 @@ mod tests {
     fn test_negation() {
         use crate::TWISTED_EDWARDS_BASE_POINT;
         let a = TWISTED_EDWARDS_BASE_POINT.to_extensible().to_affine();
-        assert!(a.is_on_curve());
+        assert_eq!(a.is_on_curve().unwrap_u8(), 1);
 
         let neg_a = a.negate();
         let got = neg_a.add(&a);

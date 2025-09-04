@@ -1,13 +1,13 @@
 use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
 use crate::field::FieldElement;
-use crate::{Decaf448FieldBytes, DecafPoint, DecafScalar};
+use crate::{Decaf448FieldBytes, DecafPoint, DecafScalar, ORDER};
 use core::ops::Mul;
 use elliptic_curve::{
     Error,
     point::{AffineCoordinates, NonIdentity},
     zeroize::DefaultIsZeroes,
 };
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// Affine point on the twisted curve
 #[derive(Copy, Clone, Debug, Default)]
@@ -38,6 +38,18 @@ impl Eq for AffinePoint {}
 
 impl AffineCoordinates for AffinePoint {
     type FieldRepr = Decaf448FieldBytes;
+
+    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
+        let point = Self(InnerAffinePoint {
+            x: FieldElement::from_bytes(&x.0),
+            y: FieldElement::from_bytes(&y.0),
+        });
+
+        CtOption::new(
+            point,
+            point.0.is_on_curve() & (point * DecafScalar::new(*ORDER)).ct_eq(&DecafPoint::IDENTITY),
+        )
+    }
 
     fn x(&self) -> Self::FieldRepr {
         Decaf448FieldBytes::from(self.x())

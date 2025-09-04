@@ -127,6 +127,21 @@ impl PrimeCurveAffine for AffinePoint {
 impl AffineCoordinates for AffinePoint {
     type FieldRepr = FieldBytes;
 
+    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
+        let x = FieldElement::from_bytes(x);
+        let y = FieldElement::from_bytes(y);
+
+        x.and_then(|x| {
+            y.and_then(|y| {
+                // Check that the point is on the curve
+                let lhs = (y * &y).negate(1);
+                let rhs = x * &x * &x + &CURVE_EQUATION_B;
+                let point = Self::new(x, y);
+                CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
+            })
+        })
+    }
+
     fn x(&self) -> FieldBytes {
         self.x.to_bytes()
     }
@@ -276,20 +291,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
             }
-            sec1::Coordinates::Uncompressed { x, y } => {
-                let x = FieldElement::from_bytes(x);
-                let y = FieldElement::from_bytes(y);
-
-                x.and_then(|x| {
-                    y.and_then(|y| {
-                        // Check that the point is on the curve
-                        let lhs = (y * &y).negate(1);
-                        let rhs = x * &x * &x + &CURVE_EQUATION_B;
-                        let point = Self::new(x, y);
-                        CtOption::new(point, (lhs + &rhs).normalizes_to_zero())
-                    })
-                })
-            }
+            sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y),
         }
     }
 }
