@@ -18,6 +18,7 @@ It is intended to be portable, fast, and safe.
 
 ```rust
 use ed448_goldilocks::{Ed448, EdwardsPoint, CompressedEdwardsY, EdwardsScalar, sha3::Shake256};
+use elliptic_curve::consts::U84;
 use elliptic_curve::Field;
 use elliptic_curve::group::GroupEncoding;
 use hash2curve::{ExpandMsgXof, GroupDigest};
@@ -34,7 +35,7 @@ let compressed_public_key = public_key.to_bytes();
 
 assert_eq!(compressed_public_key.len(), 57);
 
-let hashed_scalar = hash2curve::hash_to_scalar::<Ed448, <Ed448 as GroupDigest>::ExpandMsg>(&[b"test"], &[Ed448::HASH_TO_CURVE_DST]).unwrap();
+let hashed_scalar = hash2curve::hash_to_scalar::<Ed448, <Ed448 as GroupDigest>::ExpandMsg, U84>(&[b"test"], &[Ed448::HASH_TO_CURVE_DST]).unwrap();
 let input = hex_literal::hex!("c8c6c8f584e0c25efdb6af5ad234583c56dedd7c33e0c893468e96740fa0cf7f1a560667da40b7bde340a39252e89262fcf707d1180fd43400");
 let expected_scalar = EdwardsScalar::from_canonical_bytes(&input.into()).unwrap();
 assert_eq!(hashed_scalar, expected_scalar);
