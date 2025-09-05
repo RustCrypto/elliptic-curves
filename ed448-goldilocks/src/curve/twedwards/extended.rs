@@ -80,35 +80,14 @@ impl ExtendedPoint {
     /// Returns an extensible point
     /// (3.1) https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf
     pub fn add_extended(&self, other: &ExtendedPoint) -> ExtensiblePoint {
-        let A = self.X * other.X;
-        let B = self.Y * other.Y;
-        let C = self.T * other.T * FieldElement::TWISTED_D;
-        let D = self.Z * other.Z;
-        let E = (self.X + self.Y) * (other.X + other.Y) - A - B;
+        let A = (self.Y - self.X) * (other.Y - other.X);
+        let B = (self.Y + self.X) * (other.Y + other.X);
+        let C = FieldElement::TWO_TIMES_TWISTED_D * self.T * other.T;
+        let D = (self.Z * other.Z).double();
+        let E = B - A;
         let F = D - C;
         let G = D + C;
         let H = B + A;
-        ExtensiblePoint {
-            X: E * F,
-            Y: G * H,
-            T1: E,
-            T2: H,
-            Z: F * G,
-        }
-    }
-
-    /// Subtracts an extensible point from an extended point
-    /// Returns an extensible point
-    /// This is a direct modification of the addition formula to the negation of `other`
-    pub fn sub_extended(&self, other: &ExtendedPoint) -> ExtensiblePoint {
-        let A = self.X * other.X;
-        let B = self.Y * other.Y;
-        let C = self.T * other.T * FieldElement::TWISTED_D;
-        let D = self.Z * other.Z;
-        let E = (self.X + self.Y) * (other.Y - other.X) + A - B;
-        let F = D + C;
-        let G = D - C;
-        let H = B - A;
         ExtensiblePoint {
             X: E * F,
             Y: G * H,
@@ -295,19 +274,6 @@ mod tests {
         // Adding identity point should not change result
         let c = c_1.add_extended(&ExtendedPoint::IDENTITY);
         assert!(c == c_1);
-    }
-
-    #[test]
-    fn test_point_sub() {
-        let a = TWISTED_EDWARDS_BASE_POINT;
-        let b = a.to_extensible().double().to_extended();
-
-        // A - B = C
-        let c_1 = a.sub_extended(&b).to_extended();
-
-        // -B + A = C
-        let c_2 = b.negate().add_extended(&a).to_extended();
-        assert!(c_1 == c_2);
     }
 
     #[test]
