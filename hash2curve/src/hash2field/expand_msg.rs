@@ -25,6 +25,8 @@ const MAX_DST_LEN: usize = 255;
 /// # Errors
 /// See implementors of [`ExpandMsg`] for errors.
 pub trait ExpandMsg<K> {
+    /// The hash used by this implementation.
+    type Hash;
     /// Type holding data for the [`Expander`].
     type Expander<'dst>: Expander + Sized;
     /// Error returned by [`ExpandMsg::expand_message`].
