@@ -317,8 +317,8 @@ impl EdwardsPoint {
         T: FieldElement::ZERO,
     };
 
-    /// Convert this point to [`MontgomeryPoint`]
-    pub fn to_montgomery(&self) -> MontgomeryPoint {
+    /// Convert this point to [`MontgomeryXpoint`]
+    pub fn to_montgomery_x(&self) -> MontgomeryXpoint {
         // u = y^2 * [(1-dy^2)/(1-y^2)]
 
         let affine = self.to_affine();
@@ -328,7 +328,29 @@ impl EdwardsPoint {
 
         let u = yy * (FieldElement::ONE - dyy) * (FieldElement::ONE - yy).invert();
 
-        MontgomeryPoint(u.to_bytes())
+        MontgomeryXpoint(u.to_bytes())
+    }
+
+    /// Convert this point to [`AffineMontgomeryPoint`]
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
+    pub fn to_montgomery(&self) -> AffineMontgomeryPoint {
+        // u = y^2/x^2
+        // v = (2 - x^2 - y^2)*y/x^3
+
+        let affine = self.to_affine();
+
+        // TODO: optimize to a single inversion.
+        let xx = affine.x.square();
+        let yy = affine.y.square();
+
+        let u = yy * xx.invert();
+        let v = (FieldElement::TWO - xx - yy) * affine.y * (xx * affine.x).invert();
+
+        AffineMontgomeryPoint::conditional_select(
+            &AffineMontgomeryPoint::new(u, v),
+            &AffineMontgomeryPoint::IDENTITY,
+            self.ct_eq(&Self::IDENTITY),
+        )
     }
 
     /// Generic scalar multiplication to compute s*P
@@ -817,6 +839,7 @@ mod tests {
     use proptest::prelude::any;
     use proptest::proptest;
     use rand_core::{OsRng, TryRngCore};
+    use sha3::Shake256;
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -977,7 +1000,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = Ed448::hash_from_bytes::<ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST]).unwrap();
+            let p = Ed448::hash_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST]).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1014,8 +1037,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p =
-                Ed448::encode_from_bytes::<ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST]).unwrap();
+            let p = Ed448::encode_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST]).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1026,6 +1048,25 @@ mod tests {
             yy.reverse();
             assert_eq!(p.x.to_bytes(), xx);
             assert_eq!(p.y.to_bytes(), yy);
+
+            // Test Montgomery to Edwards conversion.
+            // See https://github.com/cfrg/draft-irtf-cfrg-hash-to-curve/blob/664b13592116cecc9e52fb192dcde0ade36f904e/poc/ell2_opt_3mod4.sage#L243-L245.
+            let conv_p =
+                ProjectiveMontgomeryXpoint::encode::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                    .unwrap()
+                    .to_affine();
+            let conv_p1 = conv_p.to_edwards(Choice::from(0)).unwrap();
+            let conv_p2 = conv_p.to_edwards(Choice::from(1)).unwrap();
+            assert!(conv_p1.x == p.x || conv_p2.x == p.x);
+            assert!(conv_p1.y == p.y || conv_p2.y == p.y);
+
+            let conv_p = AffinePoint::from(
+                Curve448::encode_from_bytes::<ExpandMsgXof<Shake256>>(&[msg], &[DST])
+                    .unwrap()
+                    .to_affine(),
+            );
+            assert_eq!(conv_p.x, p.x);
+            assert_eq!(conv_p.y, p.y);
         }
     }
 
