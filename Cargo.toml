@@ -23,6 +23,8 @@ opt-level = 2
 
 [patch.crates-io]
 ed448-goldilocks = { path = "ed448-goldilocks" }
+# https://github.com/RustCrypto/traits/pull/1996
+elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }

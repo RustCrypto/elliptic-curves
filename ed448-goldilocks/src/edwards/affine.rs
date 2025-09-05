@@ -45,6 +45,15 @@ impl Eq for AffinePoint {}
 impl elliptic_curve::point::AffineCoordinates for AffinePoint {
     type FieldRepr = Ed448FieldBytes;
 
+    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
+        let point = Self {
+            x: FieldElement::from_bytes_extended(&x.0),
+            y: FieldElement::from_bytes_extended(&y.0),
+        };
+
+        CtOption::new(point, point.is_on_curve())
+    }
+
     fn x(&self) -> Self::FieldRepr {
         Ed448FieldBytes::from(self.x.to_bytes_extended())
     }

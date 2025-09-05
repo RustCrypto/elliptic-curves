@@ -363,6 +363,10 @@ impl FieldElement {
         Self(ConstMontyType::new(&U448::from_le_slice(bytes)))
     }
 
+    pub fn from_bytes_extended(bytes: &[u8; 57]) -> Self {
+        Self(ConstMontyType::new(&U448::from_le_slice(&bytes[..56])))
+    }
+
     pub fn from_repr(bytes: &[u8; 56]) -> CtOption<Self> {
         let integer = U448::from_le_slice(bytes);
         let is_some = integer.ct_lt(MODULUS::PARAMS.modulus());
