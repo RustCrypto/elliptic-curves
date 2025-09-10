@@ -38,7 +38,6 @@ use subtle::{
 ///     fe_name: "FieldElement",
 ///     modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
 ///     uint: U256,
-///     bytes: U32,
 ///     byte_order: ByteOrder::BigEndian,
 ///     doc: "P-256 field modulus",
 ///     multiplicative_generator: 6
@@ -51,7 +50,6 @@ macro_rules! monty_field_params {
         fe_name: $fe_name:expr,
         modulus: $modulus_hex:expr,
         uint: $uint_type:ty,
-        bytes: $byte_size:ty,
         byte_order: $byte_order:expr,
         doc: $doc:expr,
         multiplicative_generator: $multiplicative_generator:expr
@@ -61,7 +59,9 @@ macro_rules! monty_field_params {
         $crate::bigint::const_monty_params!($name, $uint_type, $modulus_hex, $doc);
 
         impl $crate::MontyFieldParams<{ <$uint_type>::LIMBS }> for $name {
-            type ByteSize = $byte_size;
+            type ByteSize = $crate::bigint::hybrid_array::typenum::U<
+                { $name::PARAMS.modulus().as_ref().bits().div_ceil(8) as usize },
+            >;
             const BYTE_ORDER: $crate::ByteOrder = $byte_order;
             const FIELD_ELEMENT_NAME: &'static str = $fe_name;
             const MODULUS_HEX: &'static str = $modulus_hex;
@@ -758,9 +758,7 @@ pub const fn compute_t<const N: usize, const LIMBS: usize>(modulus: &Uint<LIMBS>
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        ByteOrder, consts::U32, test_field_identity, test_field_invert, test_primefield_constants,
-    };
+    use crate::{ByteOrder, test_field_identity, test_field_invert, test_primefield_constants};
     use bigint::U256;
 
     // Example modulus: P-256 base field.
@@ -770,7 +768,6 @@ mod tests {
         fe_name: "FieldElement",
         modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
         uint: U256,
-        bytes: U32,
         byte_order: ByteOrder::BigEndian,
         doc: "P-256 field modulus",
         multiplicative_generator: 6
