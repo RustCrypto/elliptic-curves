@@ -34,7 +34,18 @@ use elliptic_curve::{
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1
-pub(crate) const MODULUS: NonZero<U384> = NonZero::<U384>::from_be_hex(FieldElement::MODULUS);
+const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff";
+pub(crate) const MODULUS: NonZero<U384> = NonZero::<U384>::from_be_hex(MODULUS_HEX);
+
+primefield::monty_field_params!(
+    name: FieldParams,
+    fe_name: "FieldElement",
+    modulus: MODULUS_HEX,
+    uint: U384,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "P-384 field modulus",
+    multiplicative_generator: 19
+);
 
 /// Element of the secp384r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
@@ -108,7 +119,7 @@ impl FieldElement {
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
-    const MODULUS: &'static str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000ffffffff";
+    const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 384;
     const CAPACITY: u32 = 383;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();

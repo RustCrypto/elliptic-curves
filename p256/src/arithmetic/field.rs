@@ -15,11 +15,19 @@ use elliptic_curve::{
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
+/// Constant representing the modulus: p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff";
-
-/// Constant representing the modulus
-/// p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 pub const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
+
+primefield::monty_field_params!(
+    name: FieldParams,
+    fe_name: "FieldElement",
+    modulus: MODULUS_HEX,
+    uint: U256,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "Bign P-256 field modulus",
+    multiplicative_generator: 6
+);
 
 /// R^2 = 2^512 mod p
 const R2: FieldElement = FieldElement(U256::from_be_hex(

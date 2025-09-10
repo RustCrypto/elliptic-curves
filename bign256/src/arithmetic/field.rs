@@ -38,10 +38,18 @@ use elliptic_curve::{
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
-/// Constant representing the modulus
-/// p = 2^{256} − 189
-pub(crate) const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(
-    "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43",
+/// Constant representing the modulus: p = 2^{256} − 189
+const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43";
+pub(crate) const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
+
+primefield::monty_field_params!(
+    name: FieldParams,
+    fe_name: "FieldElement",
+    modulus: MODULUS_HEX,
+    uint: U256,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "P-256 field modulus",
+    multiplicative_generator: 6
 );
 
 /// Element of the bign-256 base field used for curve coordinates.
@@ -110,8 +118,7 @@ impl PrimeField for FieldElement {
         self.is_odd()
     }
 
-    const MODULUS: &'static str =
-        "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43";
+    const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
