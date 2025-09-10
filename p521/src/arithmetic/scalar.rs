@@ -46,6 +46,16 @@ use core::ops::Sub;
 #[cfg(target_pointer_width = "32")]
 use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
 
+primefield::monty_field_params!(
+    name: ScalarParams,
+    fe_name: "Scalar",
+    modulus: ORDER_HEX,
+    uint: U576,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "P-521 scalar modulus",
+    multiplicative_generator: 3
+);
+
 /// Scalars are elements in the finite field modulo `n`.
 ///
 /// # Trait impls

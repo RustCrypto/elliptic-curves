@@ -24,8 +24,17 @@ use elliptic_curve::{
 
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b412b1da197fb71123acd3a729901d1a71874700133107ec53";
-
 const MODULUS: NonZero<U384> = NonZero::<U384>::from_be_hex(MODULUS_HEX);
+
+primefield::monty_field_params!(
+    name: FieldParams,
+    fe_name: "FieldElement",
+    modulus: MODULUS_HEX,
+    uint: U384,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "brainpoolP384 field modulus",
+    multiplicative_generator: 3
+);
 
 /// Element of the brainpoolP384's base field used for curve point coordinates.
 #[derive(Clone, Copy)]

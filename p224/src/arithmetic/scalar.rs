@@ -40,6 +40,16 @@ use {
 #[cfg(doc)]
 use core::ops::{Add, Mul, Neg, Sub};
 
+primefield::monty_field_params!(
+    name: ScalarParams,
+    fe_name: "Scalar",
+    modulus: ORDER_HEX,
+    uint: Uint,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "P-224 scalar modulus",
+    multiplicative_generator: 2
+);
+
 /// Scalars are elements in the finite field modulo `n`.
 ///
 /// # Trait impls

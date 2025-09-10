@@ -28,6 +28,16 @@ use elliptic_curve::{
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
 
+primefield::monty_field_params!(
+    name: ScalarParams,
+    fe_name: "Scalar",
+    modulus: ORDER_HEX,
+    uint: U384,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "brainpoolP384 scalar modulus",
+    multiplicative_generator: 2
+);
+
 /// Element of the brainpoolP384's scalar field.
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(pub(super) U384);

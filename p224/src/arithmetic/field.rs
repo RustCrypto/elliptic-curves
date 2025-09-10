@@ -42,6 +42,16 @@ const MODULUS_HEX: &str = "00000000ffffffffffffffffffffffffffffffff0000000000000
 
 const MODULUS: NonZero<Uint> = NonZero::<Uint>::new_unwrap(Uint::from_be_hex(MODULUS_HEX));
 
+primefield::monty_field_params!(
+    name: FieldParams,
+    fe_name: "FieldElement",
+    modulus: MODULUS_HEX,
+    uint: Uint,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "P-224 field modulus",
+    multiplicative_generator: 22
+);
+
 /// Element of the secp224r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
 pub struct FieldElement(pub(super) Uint);

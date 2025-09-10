@@ -36,8 +36,17 @@ use elliptic_curve::{
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{192} − 2^{64} - 1
 const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffeffffffffffffffff";
-
 const MODULUS: NonZero<U192> = NonZero::<U192>::from_be_hex(MODULUS_HEX);
+
+primefield::monty_field_params!(
+    name: FieldParams,
+    fe_name: "FieldElement",
+    modulus: MODULUS_HEX,
+    uint: U192,
+    byte_order: primefield::ByteOrder::BigEndian,
+    doc: "P-192 field modulus",
+    multiplicative_generator: 11
+);
 
 /// Element of the secp192r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
