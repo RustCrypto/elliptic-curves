@@ -112,16 +112,26 @@ pub trait MontyFieldParams<const LIMBS: usize>: ConstMontyParams<LIMBS> {
 
 /// Field element type which uses an internal Montgomery form representation.
 #[derive(Clone, Copy)]
-pub struct MontyFieldElement<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize>(
-    MontyForm<MOD, LIMBS>,
-);
+pub struct MontyFieldElement<MOD, const LIMBS: usize>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    inner: MontyForm<MOD, LIMBS>,
+}
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     /// Zero element (additive identity).
-    pub const ZERO: Self = Self(MontyForm::ZERO);
+    pub const ZERO: Self = Self {
+        inner: MontyForm::ZERO,
+    };
 
     /// Multiplicative identity.
-    pub const ONE: Self = Self(MontyForm::ONE);
+    pub const ONE: Self = Self {
+        inner: MontyForm::ONE,
+    };
 
     /// Number of limbs used by the internal integer representation.
     pub const LIMBS: usize = LIMBS;
@@ -192,7 +202,9 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     /// Reduces the input modulo `p`.
     #[inline]
     pub const fn from_uint_reduced(uint: &Uint<LIMBS>) -> Self {
-        Self(MontyForm::new(uint))
+        Self {
+            inner: MontyForm::new(uint),
+        }
     }
 
     /// Convert [`Uint`] into [`MontyFieldElement`], first converting it into Montgomery form:
@@ -227,6 +239,7 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     /// Returns the bytestring encoding of this field element.
     pub fn to_bytes(self) -> Array<u8, MOD::ByteSize>
     where
+        MOD: MontyFieldParams<LIMBS>,
         Uint<LIMBS>: ArrayEncoding,
     {
         let mut repr = Array::<u8, MOD::ByteSize>::default();
@@ -236,11 +249,11 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
 
         match MOD::BYTE_ORDER {
             ByteOrder::BigEndian => {
-                let padded = self.0.retrieve().to_be_byte_array();
+                let padded = self.inner.retrieve().to_be_byte_array();
                 repr.copy_from_slice(&padded[offset..]);
             }
             ByteOrder::LittleEndian => {
-                let padded = self.0.retrieve().to_le_byte_array();
+                let padded = self.inner.retrieve().to_le_byte_array();
                 repr.copy_from_slice(&padded[..offset]);
             }
         }
@@ -255,7 +268,7 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     #[inline]
     pub fn is_odd(&self) -> Choice {
-        self.0.retrieve().is_odd()
+        self.inner.retrieve().is_odd()
     }
 
     /// Determine if this field element is even: `self mod 2 == 0`.
@@ -281,13 +294,15 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     /// Translate field element out of the Montgomery domain, returning a [`Uint`] in canonical form.
     #[inline]
     pub const fn to_canonical(self) -> Uint<LIMBS> {
-        self.0.retrieve()
+        self.inner.retrieve()
     }
 
     /// Add elements.
     #[inline]
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(MontyForm::add(&self.0, &rhs.0))
+        Self {
+            inner: MontyForm::add(&self.inner, &rhs.inner),
+        }
     }
 
     /// Double element (add it to itself).
@@ -300,19 +315,25 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     /// Subtract elements.
     #[inline]
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(MontyForm::sub(&self.0, &rhs.0))
+        Self {
+            inner: MontyForm::sub(&self.inner, &rhs.inner),
+        }
     }
 
     /// Multiply elements.
     #[inline]
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        Self(MontyForm::mul(&self.0, &rhs.0))
+        Self {
+            inner: MontyForm::mul(&self.inner, &rhs.inner),
+        }
     }
 
     /// Negate element.
     #[inline]
     pub const fn neg(&self) -> Self {
-        Self(MontyForm::neg(&self.0))
+        Self {
+            inner: MontyForm::neg(&self.inner),
+        }
     }
 
     /// Compute modular square.
@@ -325,17 +346,22 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
     /// Compute field inversion: `1 / self`.
     #[inline]
     pub fn invert(&self) -> CtOption<Self> {
-        CtOption::from(self.0.invert()).map(Self)
+        CtOption::from(self.inner.invert()).map(|inner| Self { inner })
     }
 
     /// Compute field inversion as a `const fn`. Panics if `self` is zero.
     ///
     /// This is mainly intended for inverting constants at compile time.
     pub const fn const_invert(&self) -> Self {
-        Self(self.0.invert().expect("input to invert should be non-zero"))
+        Self {
+            inner: self
+                .inner
+                .invert()
+                .expect("input to invert should be non-zero"),
+        }
     }
 
-    /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
+    /// Returns `self^exp`, where `exp` is a little-endian integer exponent
     ///
     /// **This operation is variable time with respect to the exponent.**
     ///
@@ -366,8 +392,9 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MontyFieldElement<MOD, LI
 // `ff` crate trait impls
 //
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Field for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> Field for MontyFieldElement<MOD, LIMBS>
 where
+    MOD: MontyFieldParams<LIMBS>,
     Array<u8, MOD::ByteSize>: Copy,
     Uint<LIMBS>: ArrayEncoding,
 {
@@ -410,8 +437,9 @@ where
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> PrimeField for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> PrimeField for MontyFieldElement<MOD, LIMBS>
 where
+    MOD: MontyFieldParams<LIMBS>,
     Array<u8, MOD::ByteSize>: Copy,
     Uint<LIMBS>: ArrayEncoding,
 {
@@ -447,8 +475,9 @@ where
 /// Emit a `core::ops` trait wrapper for an inherent method.
 macro_rules! monty_field_op {
     ($op:tt, $func:ident, $inner_func:ident) => {
-        impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> $op
-            for MontyFieldElement<MOD, LIMBS>
+        impl<MOD, const LIMBS: usize> $op for MontyFieldElement<MOD, LIMBS>
+        where
+            MOD: MontyFieldParams<LIMBS>,
         {
             type Output = MontyFieldElement<MOD, LIMBS>;
 
@@ -458,8 +487,9 @@ macro_rules! monty_field_op {
             }
         }
 
-        impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> $op<&MontyFieldElement<MOD, LIMBS>>
-            for MontyFieldElement<MOD, LIMBS>
+        impl<MOD, const LIMBS: usize> $op<&Self> for MontyFieldElement<MOD, LIMBS>
+        where
+            MOD: MontyFieldParams<LIMBS>,
         {
             type Output = MontyFieldElement<MOD, LIMBS>;
 
@@ -469,8 +499,9 @@ macro_rules! monty_field_op {
             }
         }
 
-        impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> $op<&MontyFieldElement<MOD, LIMBS>>
-            for &MontyFieldElement<MOD, LIMBS>
+        impl<MOD, const LIMBS: usize> $op<Self> for &MontyFieldElement<MOD, LIMBS>
+        where
+            MOD: MontyFieldParams<LIMBS>,
         {
             type Output = MontyFieldElement<MOD, LIMBS>;
 
@@ -486,8 +517,9 @@ monty_field_op!(Add, add, add);
 monty_field_op!(Sub, sub, sub);
 monty_field_op!(Mul, mul, multiply);
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> AddAssign<MontyFieldElement<MOD, LIMBS>>
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> AddAssign<Self> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     #[inline]
     fn add_assign(&mut self, other: MontyFieldElement<MOD, LIMBS>) {
@@ -495,8 +527,9 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> AddAssign<MontyFieldEleme
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> AddAssign<&MontyFieldElement<MOD, LIMBS>>
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> AddAssign<&Self> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     #[inline]
     fn add_assign(&mut self, other: &MontyFieldElement<MOD, LIMBS>) {
@@ -504,8 +537,9 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> AddAssign<&MontyFieldElem
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> SubAssign<MontyFieldElement<MOD, LIMBS>>
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> SubAssign<Self> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     #[inline]
     fn sub_assign(&mut self, other: MontyFieldElement<MOD, LIMBS>) {
@@ -513,8 +547,9 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> SubAssign<MontyFieldEleme
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> SubAssign<&MontyFieldElement<MOD, LIMBS>>
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> SubAssign<&Self> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     #[inline]
     fn sub_assign(&mut self, other: &MontyFieldElement<MOD, LIMBS>) {
@@ -522,8 +557,9 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> SubAssign<&MontyFieldElem
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MulAssign<&MontyFieldElement<MOD, LIMBS>>
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> MulAssign<&Self> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     #[inline]
     fn mul_assign(&mut self, other: &MontyFieldElement<MOD, LIMBS>) {
@@ -531,14 +567,20 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MulAssign<&MontyFieldElem
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> MulAssign for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> MulAssign for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     #[inline]
     fn mul_assign(&mut self, other: MontyFieldElement<MOD, LIMBS>) {
         *self = *self * other;
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Neg for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Neg for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     type Output = MontyFieldElement<MOD, LIMBS>;
 
     #[inline]
@@ -547,7 +589,10 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Neg for MontyFieldElement
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Neg for &MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Neg for &MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     type Output = MontyFieldElement<MOD, LIMBS>;
 
     #[inline]
@@ -556,21 +601,28 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Neg for &MontyFieldElemen
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Sum for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Sum for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(Add::add).unwrap_or(Self::ZERO)
     }
 }
 
-impl<'a, MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Sum<&'a MontyFieldElement<MOD, LIMBS>>
-    for MontyFieldElement<MOD, LIMBS>
+impl<'a, MOD, const LIMBS: usize> Sum<&'a Self> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn sum<I: Iterator<Item = &'a MontyFieldElement<MOD, LIMBS>>>(iter: I) -> Self {
         iter.copied().sum()
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Product for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Product for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.reduce(Mul::mul).unwrap_or(Self::ONE)
     }
@@ -584,8 +636,9 @@ impl<'a, MOD: MontyFieldParams<LIMBS>, const LIMBS: usize>
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Invert for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> Invert for MontyFieldElement<MOD, LIMBS>
 where
+    MOD: MontyFieldParams<LIMBS>,
     MontyForm<MOD, LIMBS>: Invert<Output = CtOption<MontyForm<MOD, LIMBS>>>,
 {
     type Output = CtOption<Self>;
@@ -599,37 +652,43 @@ where
 // `subtle` trait impls
 //
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> ConditionallySelectable
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> ConditionallySelectable for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(MontyForm::conditional_select(&a.0, &b.0, choice))
+        Self {
+            inner: MontyForm::conditional_select(&a.inner, &b.inner, choice),
+        }
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> ConstantTimeEq
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> ConstantTimeEq for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        self.inner.ct_eq(&other.inner)
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> ConstantTimeGreater
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> ConstantTimeGreater for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn ct_gt(&self, other: &Self) -> Choice {
         // TODO(tarcieri): impl `ConstantTimeGreater` for `ConstMontyForm`
-        self.0.retrieve().ct_gt(&other.0.retrieve())
+        self.inner.retrieve().ct_gt(&other.inner.retrieve())
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> ConstantTimeLess
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> ConstantTimeLess for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn ct_lt(&self, other: &Self) -> Choice {
         // TODO(tarcieri): impl `ConstantTimeLess` for `ConstMontyForm`
-        self.0.retrieve().ct_lt(&other.0.retrieve())
+        self.inner.retrieve().ct_lt(&other.inner.retrieve())
     }
 }
 
@@ -637,14 +696,20 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> ConstantTimeLess
 // Miscellaneous trait impls
 //
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Debug for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Debug for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let canonical = self.to_canonical();
         write!(f, "{}(0x{:X})", MOD::FIELD_ELEMENT_NAME, &canonical)
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Default for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Default for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     fn default() -> Self {
         Self::ZERO
     }
@@ -653,35 +718,42 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Default for MontyFieldEle
 impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Eq for MontyFieldElement<MOD, LIMBS> {}
 impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> PartialEq for MontyFieldElement<MOD, LIMBS> {
     fn eq(&self, rhs: &Self) -> bool {
-        self.0.ct_eq(&(rhs.0)).into()
+        self.inner.ct_eq(&(rhs.inner)).into()
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<u32> for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> From<u32> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     #[inline]
     fn from(n: u32) -> MontyFieldElement<MOD, LIMBS> {
         Self::from_uint_reduced(&Uint::from(n))
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<u64> for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> From<u64> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     #[inline]
     fn from(n: u64) -> MontyFieldElement<MOD, LIMBS> {
         Self::from_u64(n)
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<u128>
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> From<u128> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn from(n: u128) -> MontyFieldElement<MOD, LIMBS> {
         Self::from_uint_reduced(&Uint::from(n))
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<MontyFieldElement<MOD, LIMBS>>
-    for Array<u8, MOD::ByteSize>
+impl<MOD, const LIMBS: usize> From<MontyFieldElement<MOD, LIMBS>> for Array<u8, MOD::ByteSize>
 where
+    MOD: MontyFieldParams<LIMBS>,
     Uint<LIMBS>: ArrayEncoding,
 {
     fn from(fe: MontyFieldElement<MOD, LIMBS>) -> Self {
@@ -689,9 +761,9 @@ where
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<&MontyFieldElement<MOD, LIMBS>>
-    for Array<u8, MOD::ByteSize>
+impl<MOD, const LIMBS: usize> From<&MontyFieldElement<MOD, LIMBS>> for Array<u8, MOD::ByteSize>
 where
+    MOD: MontyFieldParams<LIMBS>,
     Uint<LIMBS>: ArrayEncoding,
 {
     fn from(fe: &MontyFieldElement<MOD, LIMBS>) -> Self {
@@ -699,16 +771,18 @@ where
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<MontyFieldElement<MOD, LIMBS>>
-    for Uint<LIMBS>
+impl<MOD, const LIMBS: usize> From<MontyFieldElement<MOD, LIMBS>> for Uint<LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn from(fe: MontyFieldElement<MOD, LIMBS>) -> Uint<LIMBS> {
         Uint::from(&fe)
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> From<&MontyFieldElement<MOD, LIMBS>>
-    for Uint<LIMBS>
+impl<MOD, const LIMBS: usize> From<&MontyFieldElement<MOD, LIMBS>> for Uint<LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn from(fe: &MontyFieldElement<MOD, LIMBS>) -> Uint<LIMBS> {
         fe.to_canonical()
