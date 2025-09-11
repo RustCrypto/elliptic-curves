@@ -30,30 +30,23 @@ use core::ops::{Add, Mul, Sub};
 
 primefield::monty_field_params!(
     name: ScalarParams,
-    fe_name: "Scalar",
     modulus: ORDER_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "brainpoolP256 scalar modulus",
-    multiplicative_generator: 3
+    multiplicative_generator: 3,
+    fe_name: "Scalar",
+    doc: "brainpoolP256 scalar modulus"
 );
 
 /// Element of brainpoolP256's scalar field.
 #[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(pub(super) U256);
+pub struct Scalar(pub(super) primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
 
-primefield::field_element_type!(
-    Scalar,
-    FieldBytes,
-    U256,
-    ORDER,
-    crate::decode_field_bytes,
-    crate::encode_field_bytes
-);
+primefield::field_element_type!(Scalar, ScalarParams, U256);
 
 primefield::fiat_field_arithmetic!(
     Scalar,
-    FieldBytes,
+    ScalarParams,
     U256,
     fiat_bp256_scalar_non_montgomery_domain_field_element,
     fiat_bp256_scalar_montgomery_domain_field_element,
@@ -111,36 +104,6 @@ impl IsHigh for Scalar {
     }
 }
 
-impl PrimeField for Scalar {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = ORDER_HEX;
-    const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
-    const S: u32 = 1;
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a6");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(9);
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
-    }
-}
-
 impl Reduce<U256> for Scalar {
     fn reduce(w: &U256) -> Self {
         let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
@@ -160,7 +123,15 @@ impl TryFrom<U256> for Scalar {
     type Error = Error;
 
     fn try_from(w: U256) -> Result<Self> {
-        Option::from(Self::from_uint(w)).ok_or(Error)
+        Self::try_from(&w)
+    }
+}
+
+impl TryFrom<&U256> for Scalar {
+    type Error = Error;
+
+    fn try_from(w: &U256) -> Result<Self> {
+        Self::from_uint(w).into_option().ok_or(Error)
     }
 }
 

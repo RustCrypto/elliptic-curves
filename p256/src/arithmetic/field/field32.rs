@@ -3,7 +3,7 @@
 use super::MODULUS;
 use elliptic_curve::bigint::{Limb, U256};
 
-pub(super) const fn add(a: U256, b: U256) -> U256 {
+pub(super) const fn add(a: &U256, b: &U256) -> U256 {
     let a = a.as_limbs();
     let b = b.as_limbs();
 
@@ -39,7 +39,7 @@ pub(super) const fn add(a: U256, b: U256) -> U256 {
     ])
 }
 
-pub(super) const fn sub(a: U256, b: U256) -> U256 {
+pub(super) const fn sub(a: &U256, b: &U256) -> U256 {
     let a = a.as_limbs();
     let b = b.as_limbs();
 
@@ -53,8 +53,8 @@ pub(super) const fn sub(a: U256, b: U256) -> U256 {
 }
 
 #[inline]
-pub(super) const fn to_canonical(a: U256) -> U256 {
-    montgomery_reduce(a, U256::ZERO)
+pub(super) const fn to_canonical(a: &U256) -> U256 {
+    montgomery_reduce(a, &U256::ZERO)
 }
 
 /// Montgomery Reduction
@@ -105,7 +105,7 @@ pub(super) const fn to_canonical(a: U256) -> U256 {
 ///   https://csrc.nist.gov/csrc/media/events/workshop-on-elliptic-curve-cryptography-standards/documents/papers/session6-adalier-mehmet.pdf
 #[inline]
 #[allow(clippy::too_many_arguments)]
-pub(super) const fn montgomery_reduce(lo: U256, hi: U256) -> U256 {
+pub(super) const fn montgomery_reduce(lo: &U256, hi: &U256) -> U256 {
     let lo = lo.as_limbs();
     let hi = hi.as_limbs();
 

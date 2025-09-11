@@ -16,7 +16,7 @@ impl GroupDigest for NistP256 {
 
 impl Reduce<Array<u8, U48>> for FieldElement {
     fn reduce(value: &Array<u8, U48>) -> Self {
-        const F_2_192: FieldElement = FieldElement(U256::from_be_hex(
+        const F_2_192: FieldElement = FieldElement::from_montgomery(U256::from_be_hex(
             "00000000000000030000000200000000fffffffffffffffefffffffeffffffff",
         ));
 
@@ -46,11 +46,11 @@ impl OsswuMap for FieldElement {
             0x4000_0000_0000_0000,
             0x3fff_ffff_c000_0000,
         ],
-        c2: FieldElement(U256::from_be_hex(
+        c2: FieldElement::from_montgomery(U256::from_be_hex(
             "9051d26e12a8f3046913c88f9ea8dfee78400ad7423dcf70a1fd38ee98a195fd",
         )),
         map_a: FieldElement::from_u64(3).neg(),
-        map_b: FieldElement(U256::from_be_hex(
+        map_b: FieldElement::from_montgomery(U256::from_be_hex(
             "dc30061d04874834e5a220abf7212ed6acf005cd78843090d89cdf6229c4bddf",
         )),
         z: FieldElement::from_u64(10).neg(),

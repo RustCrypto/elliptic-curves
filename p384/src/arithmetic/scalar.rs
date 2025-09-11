@@ -17,18 +17,12 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, ORDER_HEX, U384};
 use elliptic_curve::{
-    Curve as _, Error, FieldBytesEncoding, Result,
+    Curve as _, Error, Result,
     bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
     ops::{Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
-};
-
-#[cfg(feature = "bits")]
-use {
-    crate::ScalarBits,
-    elliptic_curve::{bigint::Word, group::ff::PrimeFieldBits},
 };
 
 #[cfg(feature = "serde")]
@@ -42,12 +36,12 @@ use core::ops::{Add, Mul, Neg, Sub};
 
 primefield::monty_field_params!(
     name: ScalarParams,
-    fe_name: "Scalar",
     modulus: ORDER_HEX,
     uint: U384,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "P-384 scalar modulus",
-    multiplicative_generator: 2
+    multiplicative_generator: 2,
+    fe_name: "Scalar",
+    doc: "P-384 scalar modulus"
 );
 
 /// Scalars are elements in the finite field modulo `n`.
@@ -82,20 +76,13 @@ primefield::monty_field_params!(
 /// The serialization is a fixed-width big endian encoding. When used with
 /// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(U384);
+pub struct Scalar(primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
 
-primefield::field_element_type!(
-    Scalar,
-    FieldBytes,
-    U384,
-    NistP384::ORDER,
-    FieldBytesEncoding::<NistP384>::decode_field_bytes,
-    FieldBytesEncoding::<NistP384>::encode_field_bytes
-);
+primefield::field_element_type!(Scalar, ScalarParams, U384);
 
 primefield::fiat_field_arithmetic!(
     Scalar,
-    FieldBytes,
+    ScalarParams,
     U384,
     fiat_p384_scalar_non_montgomery_domain_field_element,
     fiat_p384_scalar_montgomery_domain_field_element,
@@ -186,50 +173,6 @@ impl IsHigh for Scalar {
     }
 }
 
-impl PrimeField for Scalar {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = ORDER_HEX;
-    const CAPACITY: u32 = 383;
-    const NUM_BITS: u32 = 384;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
-    const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_hex_vartime(
-        "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52972",
-    );
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(4);
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
-    }
-}
-
-#[cfg(feature = "bits")]
-impl PrimeFieldBits for Scalar {
-    type ReprBits = [Word; U384::LIMBS];
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.to_canonical().to_words().into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        NistP384::ORDER.to_words().into()
-    }
-}
-
 impl Reduce<U384> for Scalar {
     fn reduce(w: &U384) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP384::ORDER, Limb::ZERO);
@@ -250,7 +193,9 @@ impl ReduceNonZero<U384> for Scalar {
         const ORDER_MINUS_ONE: U384 = NistP384::ORDER.as_ref().wrapping_sub(&U384::ONE);
         let (r, underflow) = w.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self(U384::conditional_select(w, &r, !underflow).wrapping_add(&U384::ONE))
+        Self::from_uint_unchecked(
+            U384::conditional_select(w, &r, !underflow).wrapping_add(&U384::ONE),
+        )
     }
 }
 
@@ -265,7 +210,15 @@ impl TryFrom<U384> for Scalar {
     type Error = Error;
 
     fn try_from(w: U384) -> Result<Self> {
-        Option::from(Self::from_uint(w)).ok_or(Error)
+        Self::try_from(&w)
+    }
+}
+
+impl TryFrom<&U384> for Scalar {
+    type Error = Error;
+
+    fn try_from(w: &U384) -> Result<Self> {
+        Self::from_uint(w).into_option().ok_or(Error)
     }
 }
 
@@ -332,36 +285,42 @@ mod tests {
 
     #[test]
     fn reduce_nonzero() {
-        assert_eq!(Scalar::reduce_nonzero(&Array::default()).0, U384::ONE,);
-        assert_eq!(Scalar::reduce_nonzero(&U384::ONE).0, U384::from_u8(2),);
         assert_eq!(
-            Scalar::reduce_nonzero(&U384::from_u8(2)).0,
+            Scalar::reduce_nonzero(&Array::default()).to_canonical(),
+            U384::ONE
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(&U384::ONE).to_canonical(),
+            U384::from_u8(2)
+        );
+        assert_eq!(
+            Scalar::reduce_nonzero(&U384::from_u8(2)).to_canonical(),
             U384::from_u8(3),
         );
 
         assert_eq!(
-            Scalar::reduce_nonzero(NistP384::ORDER.as_ref()).0,
+            Scalar::reduce_nonzero(NistP384::ORDER.as_ref()).to_canonical(),
             U384::from_u8(2),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(1))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(1))).to_canonical(),
             U384::ONE,
         );
         assert_eq!(
-            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(2))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(2))).to_canonical(),
             NistP384::ORDER.wrapping_sub(&U384::ONE),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(3))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_sub(&U384::from_u8(3))).to_canonical(),
             NistP384::ORDER.wrapping_sub(&U384::from_u8(2)),
         );
 
         assert_eq!(
-            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_add(&U384::ONE)).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_add(&U384::ONE)).to_canonical(),
             U384::from_u8(3),
         );
         assert_eq!(
-            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_add(&U384::from_u8(2))).0,
+            Scalar::reduce_nonzero(&NistP384::ORDER.wrapping_add(&U384::from_u8(2))).to_canonical(),
             U384::from_u8(4),
         );
     }

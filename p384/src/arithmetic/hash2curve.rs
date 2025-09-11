@@ -89,10 +89,7 @@ impl Reduce<Array<u8, U72>> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        NistP384, Scalar,
-        arithmetic::field::{FieldElement, MODULUS},
-    };
+    use crate::{NistP384, Scalar, arithmetic::field::FieldElement};
     use elliptic_curve::{
         Curve,
         array::Array,
@@ -112,7 +109,10 @@ mod tests {
     fn params() {
         let params = <FieldElement as OsswuMap>::PARAMS;
 
-        let c1 = MODULUS.checked_sub(&U384::from_u8(3)).unwrap()
+        let c1 = FieldElement::PARAMS
+            .modulus()
+            .checked_sub(&U384::from_u8(3))
+            .unwrap()
             / NonZero::new(U384::from_u8(4)).unwrap();
         assert_eq!(
             Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),

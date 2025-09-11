@@ -2,6 +2,67 @@
 
 mod fiat;
 
+/// Creates a ZST representing the Montgomery parameters for a given field modulus.
+///
+/// Accepts the following parameters:
+///
+/// - name of the ZST representing the field modulus
+/// - hex serialization of the modulus
+/// - `crypto-bigint` unsigned integer type (e.g. U256)
+/// - number of bytes in an encoded field element
+/// - byte order to use when encoding/decoding field elements
+/// - documentation string for the field modulus type
+///
+/// ```
+/// use primefield::{ByteOrder, bigint::U256, consts::U32};
+///
+/// primefield::monty_field_params!(
+///     name: FieldParams,
+///     modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+///     uint: U256,
+///     byte_order: ByteOrder::BigEndian,
+///     multiplicative_generator: 6,
+///     fe_name: "FieldElement",
+///     doc: "P-256 field modulus"
+/// );
+/// ```
+#[macro_export]
+macro_rules! monty_field_params {
+    (
+        name: $name:ident,
+        modulus: $modulus_hex:expr,
+        uint: $uint_type:ty,
+        byte_order: $byte_order:expr,
+        multiplicative_generator: $multiplicative_generator:expr,
+        fe_name: $fe_name:expr,
+        doc: $doc:expr
+    ) => {
+        use $crate::bigint::modular::ConstMontyParams;
+
+        $crate::bigint::const_monty_params!($name, $uint_type, $modulus_hex, $doc);
+
+        impl $crate::MontyFieldParams<{ <$uint_type>::LIMBS }> for $name {
+            type ByteSize = $crate::bigint::hybrid_array::typenum::U<
+                { $name::PARAMS.modulus().as_ref().bits().div_ceil(8) as usize },
+            >;
+            const BYTE_ORDER: $crate::ByteOrder = $byte_order;
+            const FIELD_ELEMENT_NAME: &'static str = $fe_name;
+            const MODULUS_HEX: &'static str = $modulus_hex;
+            const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
+            #[cfg(target_pointer_width = "32")]
+            const T: &'static [u64] = &$crate::compute_t::<
+                { <$uint_type>::LIMBS.div_ceil(2) },
+                { <$uint_type>::LIMBS },
+            >($name::PARAMS.modulus().as_ref());
+            #[cfg(target_pointer_width = "64")]
+            const T: &'static [u64] = &$crate::compute_t::<
+                { <$uint_type>::LIMBS },
+                { <$uint_type>::LIMBS },
+            >($name::PARAMS.modulus().as_ref());
+        }
+    };
+}
+
 /// Implements a field element type whose internal representation is in
 /// Montgomery form, providing a combination of trait impls and inherent impls
 /// which are `const fn` where possible.
@@ -52,50 +113,35 @@ mod fiat;
 /// - `Invert`
 #[macro_export]
 macro_rules! field_element_type {
-    (
-        $fe:tt,
-        $bytes:ty,
-        $uint:ty,
-        $modulus:expr,
-        $decode_uint:path,
-        $encode_uint:path
-    ) => {
+    ($fe:tt, $params:ty, $uint:tt) => {
         impl $fe {
             /// Zero element.
-            pub const ZERO: Self = Self(<$uint>::ZERO);
+            pub const ZERO: Self =
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ZERO);
 
             /// Multiplicative identity.
-            pub const ONE: Self = Self::from_uint_unchecked(<$uint>::ONE);
+            pub const ONE: Self =
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ONE);
+
+            /// Montgomery parameters constant.
+            pub const PARAMS: $crate::bigint::modular::MontyParams<{ <$uint>::LIMBS }> =
+                <$params>::PARAMS;
 
             /// Create a [`
             #[doc = stringify!($fe)]
             /// `] from a canonical big-endian representation.
-            pub fn from_bytes(repr: &$bytes) -> $crate::subtle::CtOption<Self> {
-                Self::from_uint($decode_uint(repr))
+            pub fn from_bytes(
+                repr: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>,
+            ) -> $crate::subtle::CtOption<Self> {
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_bytes(repr).map(Self)
             }
 
             /// Decode [`
             #[doc = stringify!($fe)]
             /// `] from a big endian byte slice.
             pub fn from_slice(slice: &[u8]) -> Option<Self> {
-                let array = <$bytes>::try_from(slice).ok()?;
-                Self::from_bytes(&array).into()
-            }
-
-            /// Decode [`
-            #[doc = stringify!($fe)]
-            /// `]
-            /// from [`
-            #[doc = stringify!($uint)]
-            /// `] converting it into Montgomery form:
-            ///
-            /// ```text
-            /// w * R^2 * R^-1 mod p = wR mod p
-            /// ```
-            pub fn from_uint(uint: $uint) -> $crate::subtle::CtOption<Self> {
-                use $crate::subtle::ConstantTimeLess as _;
-                let is_some = uint.ct_lt(&$modulus);
-                $crate::subtle::CtOption::new(Self::from_uint_unchecked(uint), is_some)
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_slice(slice)
+                    .map(Self)
             }
 
             /// Decode a [`
@@ -110,27 +156,37 @@ macro_rules! field_element_type {
             /// - When input is the wrong length
             /// - If input overflows the modulus
             pub const fn from_hex_vartime(hex: &str) -> Self {
-                let uint = <$uint>::from_be_hex(hex);
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_hex_vartime(hex),
+                )
+            }
 
-                if uint.cmp_vartime($modulus.as_ref()).is_ge() {
-                    panic!("hex encoded field element overflows modulus");
-                }
-
-                Self::from_uint_unchecked(uint)
+            /// Decode [`
+            #[doc = stringify!($fe)]
+            /// `]
+            /// from [`
+            #[doc = stringify!($uint)]
+            /// `] converting it into Montgomery form:
+            ///
+            /// ```text
+            /// w * R^2 * R^-1 mod p = wR mod p
+            /// ```
+            pub fn from_uint(uint: &$uint) -> $crate::subtle::CtOption<Self> {
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_uint(uint).map(Self)
             }
 
             /// Convert a `u64` into a [`
             #[doc = stringify!($fe)]
             /// `].
             pub const fn from_u64(w: u64) -> Self {
-                Self::from_uint_unchecked(<$uint>::from_u64(w))
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_u64(w))
             }
 
             /// Returns the big-endian encoding of this [`
             #[doc = stringify!($fe)]
             /// `].
-            pub fn to_bytes(self) -> $bytes {
-                $encode_uint(&self.to_canonical())
+            pub fn to_bytes(self) -> $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
+                self.0.to_bytes()
             }
 
             /// Determine if this [`
@@ -141,8 +197,7 @@ macro_rules! field_element_type {
             ///
             /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
             pub fn is_odd(&self) -> $crate::subtle::Choice {
-                use $crate::bigint::Integer;
-                self.to_canonical().is_odd()
+                self.0.is_odd()
             }
 
             /// Determine if this [`
@@ -164,7 +219,7 @@ macro_rules! field_element_type {
             ///
             /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
             pub fn is_zero(&self) -> $crate::subtle::Choice {
-                self.ct_eq(&Self::ZERO)
+                self.0.is_zero()
             }
 
             /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -173,24 +228,7 @@ macro_rules! field_element_type {
             ///
             /// If the exponent is fixed, this operation is constant time.
             pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
-                let mut res = Self::ONE;
-                let mut i = exp.len();
-
-                while i > 0 {
-                    i -= 1;
-
-                    let mut j = 64;
-                    while j > 0 {
-                        j -= 1;
-                        res = res.square();
-
-                        if ((exp[i] >> j) & 1) == 1 {
-                            res = res.multiply(self);
-                        }
-                    }
-                }
-
-                res
+                Self(self.0.pow_vartime(exp))
             }
         }
 
@@ -201,18 +239,12 @@ macro_rules! field_element_type {
             fn try_from_rng<R: $crate::rand_core::TryRngCore + ?Sized>(
                 rng: &mut R,
             ) -> ::core::result::Result<Self, R::Error> {
-                let mut bytes = <$bytes>::default();
-
-                loop {
-                    rng.try_fill_bytes(&mut bytes)?;
-                    if let Some(fe) = Self::from_bytes(&bytes).into() {
-                        return Ok(fe);
-                    }
-                }
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::try_from_rng(rng)
+                    .map(Self)
             }
 
             fn is_zero(&self) -> Choice {
-                Self::ZERO.ct_eq(self)
+                self.0.is_zero()
             }
 
             fn square(&self) -> Self {
@@ -235,6 +267,71 @@ macro_rules! field_element_type {
                 $crate::ff::helpers::sqrt_ratio_generic(num, div)
             }
         }
+
+        impl PrimeField for $fe {
+            type Repr = $crate::MontyFieldBytes<$params, { <$params>::LIMBS }>;
+
+            const MODULUS: &'static str =
+                <$params as $crate::MontyFieldParams<{ <$uint>::LIMBS }>>::MODULUS_HEX;
+            const NUM_BITS: u32 =
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::NUM_BITS;
+            const CAPACITY: u32 =
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::CAPACITY;
+            const TWO_INV: Self =
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::TWO_INV);
+            const MULTIPLICATIVE_GENERATOR: Self = Self(
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::MULTIPLICATIVE_GENERATOR,
+            );
+            const S: u32 = $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::S;
+            const ROOT_OF_UNITY: Self =
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ROOT_OF_UNITY);
+            const ROOT_OF_UNITY_INV: Self =
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ROOT_OF_UNITY_INV);
+            const DELTA: Self =
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::DELTA);
+
+            #[inline]
+            fn from_repr(bytes: Self::Repr) -> $crate::subtle::CtOption<Self> {
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_repr(bytes).map(Self)
+            }
+
+            #[inline]
+            fn to_repr(&self) -> Self::Repr {
+                self.0.to_repr()
+            }
+
+            #[inline]
+            fn is_odd(&self) -> $crate::subtle::Choice {
+                self.0.is_odd()
+            }
+        }
+
+        #[cfg(feature = "bits")]
+        impl $crate::ff::PrimeFieldBits for $fe {
+            type ReprBits = [$crate::bigint::Word; <$uint>::LIMBS];
+
+            fn to_le_bits(&self) -> $crate::ff::FieldBits<Self::ReprBits> {
+                self.to_canonical().to_words().into()
+            }
+
+            fn char_le_bits() -> $crate::ff::FieldBits<Self::ReprBits> {
+                Self::PARAMS.modulus().to_words().into()
+            }
+        }
+
+        // TODO(tarcieri): write `Reduce` impls
+        // impl $crate::bigint::Reduce<$uint> for $fe {
+        //     fn reduce(w: &$uint) -> Self {
+        //         Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(w))
+        //     }
+        // }
+        //
+        // impl $crate::bigint::Reduce<$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>> for $fe {
+        //     #[inline]
+        //     fn reduce(bytes: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>) -> Self {
+        //         Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(bytes))
+        //     }
+        // }
 
         $crate::field_op!($fe, Add, add, add);
         $crate::field_op!($fe, Sub, sub, sub);
@@ -337,13 +434,13 @@ macro_rules! field_element_type {
             }
         }
 
-        impl From<$fe> for $bytes {
+        impl From<$fe> for $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
             fn from(fe: $fe) -> Self {
-                <$bytes>::from(&fe)
+                $crate::MontyFieldBytes::<$params, { <$params>::LIMBS }>::from(&fe)
             }
         }
 
-        impl From<&$fe> for $bytes {
+        impl From<&$fe> for $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
             fn from(fe: &$fe) -> Self {
                 fe.to_repr()
             }
@@ -397,7 +494,11 @@ macro_rules! field_element_type {
 
         impl $crate::subtle::ConditionallySelectable for $fe {
             fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-                Self(<$uint>::conditional_select(&a.0, &b.0, choice))
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::conditional_select(
+                        &a.0, &b.0, choice,
+                    ),
+                )
             }
         }
 

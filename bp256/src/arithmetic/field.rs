@@ -15,43 +15,36 @@
 mod field_impl;
 
 use self::field_impl::*;
-use crate::{FieldBytes, U256};
+use crate::U256;
 use elliptic_curve::{
-    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377";
-const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
 
 primefield::monty_field_params!(
     name: FieldParams,
-    fe_name: "FieldElement",
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "brainpoolP256 field modulus",
-    multiplicative_generator: 11
+    multiplicative_generator: 11,
+    fe_name: "FieldElement",
+    doc: "brainpoolP256 field modulus"
 );
 
 /// Element of the brainpoolP256's base field used for curve point coordinates.
 #[derive(Clone, Copy)]
-pub struct FieldElement(pub(super) U256);
-
-primefield::field_element_type!(
-    FieldElement,
-    FieldBytes,
-    U256,
-    MODULUS,
-    crate::decode_field_bytes,
-    crate::encode_field_bytes
+pub struct FieldElement(
+    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
 );
+
+primefield::field_element_type!(FieldElement, FieldParams, U256);
 
 primefield::fiat_field_arithmetic!(
     FieldElement,
-    FieldBytes,
+    FieldParams,
     U256,
     fiat_bp256_non_montgomery_domain_field_element,
     fiat_bp256_montgomery_domain_field_element,
@@ -82,36 +75,6 @@ impl FieldElement {
             0x2a7ed5f6e87baa6f,
         ]);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
-    }
-}
-
-impl PrimeField for FieldElement {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = MODULUS_HEX;
-    const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(11);
-    const S: u32 = 1;
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5376");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(121);
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
     }
 }
 

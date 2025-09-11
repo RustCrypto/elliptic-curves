@@ -24,13 +24,6 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
-
-#[cfg(feature = "bits")]
-use {
-    crate::ScalarBits,
-    elliptic_curve::{bigint::Word, group::ff::PrimeFieldBits},
-};
-
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarPrimitive,
@@ -42,12 +35,12 @@ use core::ops::{Add, Mul, Neg, Sub};
 
 primefield::monty_field_params!(
     name: ScalarParams,
-    fe_name: "Scalar",
     modulus: ORDER_HEX,
     uint: Uint,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "P-224 scalar modulus",
-    multiplicative_generator: 2
+    multiplicative_generator: 2,
+    fe_name: "Scalar",
+    doc: "P-224 scalar modulus"
 );
 
 /// Scalars are elements in the finite field modulo `n`.
@@ -82,20 +75,13 @@ primefield::monty_field_params!(
 ///
 /// [RustCrypto/elliptic-curves#847]: https://github.com/RustCrypto/elliptic-curves/issues/847
 #[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(Uint);
+pub struct Scalar(primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
 
-primefield::field_element_type!(
-    Scalar,
-    FieldBytes,
-    Uint,
-    NistP224::ORDER,
-    FieldBytesEncoding::<NistP224>::decode_field_bytes,
-    FieldBytesEncoding::<NistP224>::encode_field_bytes
-);
+primefield::field_element_type!(Scalar, ScalarParams, Uint);
 
 primefield::fiat_field_arithmetic!(
     Scalar,
-    FieldBytes,
+    ScalarParams,
     Uint,
     fiat_p224_scalar_non_montgomery_domain_field_element,
     fiat_p224_scalar_montgomery_domain_field_element,
@@ -157,53 +143,6 @@ impl IsHigh for Scalar {
     }
 }
 
-impl PrimeField for Scalar {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = ORDER_HEX;
-    const CAPACITY: u32 = 223;
-    const NUM_BITS: u32 = 224;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(2);
-    const S: u32 = 2;
-    #[cfg(target_pointer_width = "32")]
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
-    #[cfg(target_pointer_width = "64")]
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("00000000317fd4f4d5947c88975e7ca95d8c1164ceed46e611c9e5bafaa1aa3d");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(16);
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
-    }
-}
-
-#[cfg(feature = "bits")]
-impl PrimeFieldBits for Scalar {
-    type ReprBits = [Word; Uint::LIMBS];
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.to_canonical().to_words().into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        NistP224::ORDER.to_words().into()
-    }
-}
-
 impl Reduce<Uint> for Scalar {
     fn reduce(w: &Uint) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP224::ORDER, Limb::ZERO);
@@ -224,7 +163,15 @@ impl TryFrom<Uint> for Scalar {
     type Error = Error;
 
     fn try_from(w: Uint) -> Result<Self> {
-        Option::from(Self::from_uint(w)).ok_or(Error)
+        Self::try_from(&w)
+    }
+}
+
+impl TryFrom<&Uint> for Scalar {
+    type Error = Error;
+
+    fn try_from(w: &Uint) -> Result<Self> {
+        Self::from_uint(w).into_option().ok_or(Error)
     }
 }
 

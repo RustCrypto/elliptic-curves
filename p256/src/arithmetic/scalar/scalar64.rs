@@ -16,6 +16,8 @@ const MU: [Limb; 5] = [
 
 /// Barrett Reduction
 ///
+/// NOTE: this implementation is specialized to P-256's order! See #1155
+///
 /// The general algorithm is:
 /// ```text
 /// p = n = order of group

@@ -6,10 +6,8 @@
 #[cfg_attr(target_pointer_width = "64", path = "field/field64.rs")]
 mod field_impl;
 
-use crate::{FieldBytes, NistP256};
 use core::ops::Mul;
 use elliptic_curve::{
-    FieldBytesEncoding,
     bigint::{NonZero, U256},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
@@ -21,34 +19,24 @@ pub const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
 
 primefield::monty_field_params!(
     name: FieldParams,
-    fe_name: "FieldElement",
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "Bign P-256 field modulus",
-    multiplicative_generator: 6
+    multiplicative_generator: 6,
+    fe_name: "FieldElement",
+    doc: "Bign P-256 field modulus"
 );
-
-/// R^2 = 2^512 mod p
-const R2: FieldElement = FieldElement(U256::from_be_hex(
-    "00000004fffffffdfffffffffffffffefffffffbffffffff0000000000000003",
-));
 
 /// An element in the finite field modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1.
 ///
 /// The internal representation is in little-endian order. Elements are always in
 /// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
 #[derive(Clone, Copy)]
-pub struct FieldElement(pub(crate) U256);
-
-primefield::field_element_type!(
-    FieldElement,
-    FieldBytes,
-    U256,
-    MODULUS,
-    FieldBytesEncoding::<NistP256>::decode_field_bytes,
-    FieldBytesEncoding::<NistP256>::encode_field_bytes
+pub struct FieldElement(
+    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
 );
+
+primefield::field_element_type!(FieldElement, FieldParams, U256);
 
 impl FieldElement {
     /// Decode [`FieldElement`] from [`U256`] converting it into Montgomery form.
@@ -57,12 +45,18 @@ impl FieldElement {
     ///
     /// Used incorrectly this can lead to invalid results!
     pub(crate) const fn from_uint_unchecked(w: U256) -> Self {
-        Self(w).to_montgomery()
+        Self::multiply(
+            &Self::from_montgomery(w),
+            &Self::from_montgomery(*FieldParams::PARAMS.r2()),
+        )
     }
 
     /// Returns self + rhs mod p
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(field_impl::add(self.0, rhs.0))
+        Self::from_montgomery(field_impl::add(
+            self.0.as_montgomery(),
+            rhs.0.as_montgomery(),
+        ))
     }
 
     /// Returns 2 * self.
@@ -72,7 +66,10 @@ impl FieldElement {
 
     /// Returns self - rhs mod p
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(field_impl::sub(self.0, rhs.0))
+        Self::from_montgomery(field_impl::sub(
+            self.0.as_montgomery(),
+            rhs.0.as_montgomery(),
+        ))
     }
 
     /// Negate element.
@@ -83,19 +80,13 @@ impl FieldElement {
     /// Translate a field element out of the Montgomery domain.
     #[inline]
     pub(crate) const fn to_canonical(self) -> U256 {
-        field_impl::to_canonical(self.0)
-    }
-
-    /// Translate a field element into the Montgomery domain.
-    #[inline]
-    pub(crate) const fn to_montgomery(self) -> Self {
-        Self::multiply(&self, &R2)
+        field_impl::to_canonical(self.0.as_montgomery())
     }
 
     /// Returns self * rhs mod p
     pub const fn multiply(&self, rhs: &Self) -> Self {
-        let (lo, hi): (U256, U256) = self.0.widening_mul(&rhs.0);
-        Self(field_impl::montgomery_reduce(lo, hi))
+        let (lo, hi): (U256, U256) = self.0.as_montgomery().widening_mul(rhs.0.as_montgomery());
+        Self::from_montgomery(field_impl::montgomery_reduce(&lo, &hi))
     }
 
     /// Returns self * self mod p
@@ -171,45 +162,37 @@ impl FieldElement {
             (&sqrt * &sqrt).ct_eq(self), // Only return Some if it's the square root.
         )
     }
-}
 
-impl PrimeField for FieldElement {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = MODULUS_HEX;
-    const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(6);
-    const S: u32 = 1;
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("ffffffff00000001000000000000000000000000fffffffffffffffffffffffe");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(36);
-
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
+    /// Construct a field element from a [`U256`] in Montgomery form.
+    #[inline]
+    pub(crate) const fn from_montgomery(uint: U256) -> Self {
+        Self(primefield::MontyFieldElement::<
+            FieldParams,
+            { FieldParams::LIMBS },
+        >::from_montgomery(uint))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::FieldElement;
+    use super::{FieldElement, FieldParams};
     use crate::{FieldBytes, U256, test_vectors::field::DBL_TEST_VECTORS};
-    use elliptic_curve::array::Array;
+    use elliptic_curve::{array::Array, bigint::modular::ConstMontyParams};
 
     #[cfg(target_pointer_width = "64")]
     use proptest::{num::u64::ANY, prelude::*};
 
     primefield::test_primefield!(FieldElement, U256);
+
+    /// Ensures the legacy `R2` constant is computed the same way as the `crypto-bigint`
+    /// implementation.
+    // TODO(tarcieri): since we know this works, it can probably be removed in future refactoring
+    #[test]
+    fn r2() {
+        let expected_r2 =
+            U256::from_be_hex("00000004fffffffdfffffffffffffffefffffffbffffffff0000000000000003");
+        assert_eq!(FieldParams::PARAMS.r2(), &expected_r2);
+    }
 
     #[test]
     fn from_bytes() {
@@ -299,8 +282,8 @@ mod tests {
             b1 in ANY,
             b2 in ANY,
         ) {
-            let a = FieldElement(U256::from_words([a0, a1, a2, 0]));
-            let b = FieldElement(U256::from_words([b0, b1, b2, 0]));
+            let a = FieldElement::from_montgomery(U256::from_words([a0, a1, a2, 0]));
+            let b = FieldElement::from_montgomery(U256::from_words([b0, b1, b2, 0]));
             assert_eq!(a.add(&b).sub(&a), b);
         }
     }

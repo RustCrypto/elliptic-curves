@@ -25,10 +25,8 @@
 mod field_impl;
 
 use self::field_impl::*;
-use crate::{FieldBytes, NistP192, U192};
+use crate::U192;
 use elliptic_curve::{
-    FieldBytesEncoding,
-    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
@@ -36,34 +34,28 @@ use elliptic_curve::{
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{192} − 2^{64} - 1
 const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffeffffffffffffffff";
-const MODULUS: NonZero<U192> = NonZero::<U192>::from_be_hex(MODULUS_HEX);
 
 primefield::monty_field_params!(
     name: FieldParams,
-    fe_name: "FieldElement",
     modulus: MODULUS_HEX,
     uint: U192,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "P-192 field modulus",
-    multiplicative_generator: 11
+    multiplicative_generator: 11,
+    fe_name: "FieldElement",
+    doc: "P-192 field modulus"
 );
 
 /// Element of the secp192r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
-pub struct FieldElement(pub(super) U192);
-
-primefield::field_element_type!(
-    FieldElement,
-    FieldBytes,
-    U192,
-    MODULUS,
-    FieldBytesEncoding::<NistP192>::decode_field_bytes,
-    FieldBytesEncoding::<NistP192>::encode_field_bytes
+pub struct FieldElement(
+    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
 );
+
+primefield::field_element_type!(FieldElement, FieldParams, U192);
 
 primefield::fiat_field_arithmetic!(
     FieldElement,
-    FieldBytes,
+    FieldParams,
     U192,
     fiat_p192_non_montgomery_domain_field_element,
     fiat_p192_montgomery_domain_field_element,
@@ -88,36 +80,6 @@ impl FieldElement {
         // exponentiation via the computation of self^((p + 1) // 4) (mod p).
         let sqrt = self.pow_vartime(&[0xc000000000000000, 0xffffffffffffffff, 0x3fffffffffffffff]);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
-    }
-}
-
-impl PrimeField for FieldElement {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = MODULUS_HEX;
-    const NUM_BITS: u32 = 192;
-    const CAPACITY: u32 = 191;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(11);
-    const S: u32 = 1;
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("fffffffffffffffffffffffffffffffefffffffffffffffe");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(121);
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
     }
 }
 
