@@ -10,18 +10,10 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#![allow(
-    clippy::should_implement_trait,
-    clippy::suspicious_op_assign_impl,
-    clippy::unused_unit,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments,
-    clippy::identity_op,
-    rustdoc::bare_urls
-)]
-
 // TODO(tarcieri): 32-bit backend?
 #[path = "field/p521_64.rs"]
+#[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
+#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod field_impl;
 mod loose;
 

@@ -12,11 +12,20 @@
 
 // TODO(tarcieri): 32-bit backend?
 #[path = "scalar/p521_scalar_64.rs"]
+#[allow(
+    clippy::identity_op,
+    clippy::needless_lifetimes,
+    clippy::unnecessary_cast,
+    clippy::too_many_arguments
+)]
+#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod scalar_impl;
 
 use self::scalar_impl::*;
 use crate::{FieldBytes, NistP521, ORDER_HEX, U576};
 use core::{
+    cmp::Ordering,
+    fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, SubAssign},
 };
@@ -34,6 +43,9 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 
+#[cfg(target_pointer_width = "32")]
+use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
+
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarPrimitive,
@@ -42,9 +54,6 @@ use {
 
 #[cfg(doc)]
 use core::ops::Sub;
-
-#[cfg(target_pointer_width = "32")]
-use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
 
 primefield::monty_field_params!(
     name: ScalarParams,
@@ -80,7 +89,7 @@ primefield::monty_field_params!(
 ///
 /// Please see the documentation for the relevant traits for more information.
 // TODO(tarcieri): `primefield::MontyFieldElement` as the interior type
-#[derive(Clone, Copy, Debug, PartialOrd, Ord)]
+#[derive(Clone, Copy)]
 pub struct Scalar(fiat_p521_scalar_montgomery_domain_field_element);
 
 impl Scalar {
@@ -331,6 +340,12 @@ impl AsRef<fiat_p521_scalar_montgomery_domain_field_element> for Scalar {
     }
 }
 
+impl Debug for Scalar {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Scalar({:X})", self.to_canonical())
+    }
+}
+
 impl Default for Scalar {
     fn default() -> Self {
         Self::ZERO
@@ -531,6 +546,18 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U576 = NistP521::ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
+    }
+}
+
+impl Ord for Scalar {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.to_canonical().cmp(&other.to_canonical())
+    }
+}
+
+impl PartialOrd for Scalar {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
