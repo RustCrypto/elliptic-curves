@@ -34,7 +34,7 @@ pub mod test_vectors;
 
 pub use elliptic_curve::{
     self,
-    bigint::{NonZero, U384},
+    bigint::{Odd, U384},
     consts::U48,
 };
 
@@ -64,7 +64,7 @@ impl elliptic_curve::Curve for NistP384 {
     type Uint = U384;
 
     /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus).
-    const ORDER: NonZero<U384> = NonZero::<U384>::from_be_hex(ORDER_HEX);
+    const ORDER: Odd<U384> = Odd::<U384>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP384 {}

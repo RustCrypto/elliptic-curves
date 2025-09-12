@@ -97,17 +97,17 @@ impl Scalar {
 
     /// Negates the scalar.
     pub const fn negate(&self) -> Self {
-        Self(self.0.neg_mod(&ORDER))
+        Self(self.0.neg_mod(ORDER.as_nz_ref()))
     }
 
     /// Returns self + rhs mod n.
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(self.0.add_mod(&rhs.0, &ORDER))
+        Self(self.0.add_mod(&rhs.0, ORDER.as_nz_ref()))
     }
 
     /// Returns self - rhs mod n.
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(self.0.sub_mod(&rhs.0, &ORDER))
+        Self(self.0.sub_mod(&rhs.0, ORDER.as_nz_ref()))
     }
 
     /// Modulo multiplies two scalars.
