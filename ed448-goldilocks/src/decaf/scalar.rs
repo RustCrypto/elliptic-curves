@@ -16,7 +16,7 @@ impl CurveWithScalar for Decaf448 {
             U448::from_le_slice(&input[..56]),
             U448::from_le_slice(&input[56..112]),
         );
-        Scalar::new(U448::rem_wide_vartime(value, &ORDER))
+        Scalar::new(U448::rem_wide_vartime(value, ORDER.as_nz_ref()))
     }
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {

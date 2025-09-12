@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Integer, Limb, NonZero, U448, U896, Word, Zero},
+    bigint::{Integer, Limb, U448, U896, Word, Zero},
     consts::U2,
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -52,7 +52,7 @@ pub trait CurveWithScalar: 'static + CurveArithmetic + Send + Sync {
 }
 
 /// The order of the scalar field
-pub const ORDER: NonZero<U448> = NonZero::<U448>::from_be_hex(
+pub const ORDER: Odd<U448> = Odd::<U448>::from_be_hex(
     "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
 );
 /// The order of the scalar field
@@ -628,29 +628,29 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Compute `self` + `rhs` mod ℓ
     pub const fn addition(&self, rhs: &Self) -> Self {
-        Self::new(self.scalar.add_mod(&rhs.scalar, &ORDER))
+        Self::new(self.scalar.add_mod(&rhs.scalar, ORDER.as_nz_ref()))
     }
 
     /// Compute `self` + `self` mod ℓ
     pub const fn double(&self) -> Self {
-        Self::new(self.scalar.double_mod(&ORDER))
+        Self::new(self.scalar.double_mod(ORDER.as_nz_ref()))
     }
 
     /// Compute `self` - `rhs` mod ℓ
     pub const fn subtract(&self, rhs: &Self) -> Self {
-        Self::new(self.scalar.sub_mod(&rhs.scalar, &ORDER))
+        Self::new(self.scalar.sub_mod(&rhs.scalar, ORDER.as_nz_ref()))
     }
 
     /// Compute `self` * `rhs` mod ℓ
     pub const fn multiply(&self, rhs: &Self) -> Self {
         let wide_value = self.scalar.widening_mul(&rhs.scalar);
-        Self::new(U448::rem_wide_vartime(wide_value, &ORDER))
+        Self::new(U448::rem_wide_vartime(wide_value, ORDER.as_nz_ref()))
     }
 
     /// Square this scalar
     pub const fn square(&self) -> Self {
         let value = self.scalar.square_wide();
-        Self::new(U448::rem_wide_vartime(value, &ORDER))
+        Self::new(U448::rem_wide_vartime(value, ORDER.as_nz_ref()))
     }
 
     /// Is this scalar equal to zero?
@@ -793,7 +793,7 @@ impl<C: CurveWithScalar> Scalar<C> {
     /// Construct a Scalar by reducing a 448-bit little-endian integer modulo the group order ℓ
     pub fn from_bytes_mod_order(input: &ScalarBytes<C>) -> Scalar<C> {
         let value = U448::from_le_slice(&input[..56]);
-        Self::new(value.rem_vartime(&ORDER))
+        Self::new(value.rem_vartime(ORDER.as_nz_ref()))
     }
 
     /// Return a `Scalar` chosen uniformly at random using a user-provided RNG.

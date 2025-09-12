@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve,
-    bigint::{Limb, NonZero, U256, prelude::*},
+    bigint::{Limb, Odd, U256, prelude::*},
     group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -36,7 +36,7 @@ use {
 
 /// Constant representing the modulus
 /// n = FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2 FC632551
-pub(crate) const MODULUS: NonZero<U256> = NistP256::ORDER;
+pub(crate) const MODULUS: Odd<U256> = NistP256::ORDER;
 
 /// `MODULUS / 2`
 const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.as_ref().shr_vartime(1));
@@ -89,7 +89,7 @@ impl Scalar {
 
     /// Returns self + rhs mod n
     pub const fn add(&self, rhs: &Self) -> Self {
-        Self(self.0.add_mod(&rhs.0, &NistP256::ORDER))
+        Self(self.0.add_mod(&rhs.0, NistP256::ORDER.as_nz_ref()))
     }
 
     /// Returns 2*self.
@@ -99,7 +99,7 @@ impl Scalar {
 
     /// Returns self - rhs mod n.
     pub const fn sub(&self, rhs: &Self) -> Self {
-        Self(self.0.sub_mod(&rhs.0, &NistP256::ORDER))
+        Self(self.0.sub_mod(&rhs.0, NistP256::ORDER.as_nz_ref()))
     }
 
     /// Returns self * rhs mod n

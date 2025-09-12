@@ -65,7 +65,7 @@ pub use sign::*;
 use elliptic_curve::{
     Curve, FieldBytesEncoding, PrimeCurve,
     array::typenum::{U28, U56, U57},
-    bigint::{ArrayEncoding, NonZero, U448},
+    bigint::{ArrayEncoding, Odd, U448},
     point::PointCompression,
 };
 use hash2curve::GroupDigest;
@@ -88,7 +88,7 @@ impl Curve for Ed448 {
     type FieldBytesSize = U57;
     type Uint = U448;
 
-    const ORDER: NonZero<U448> = ORDER;
+    const ORDER: Odd<U448> = ORDER;
 }
 
 impl PrimeCurve for Ed448 {}
@@ -137,7 +137,7 @@ impl Curve for Decaf448 {
     type FieldBytesSize = U56;
     type Uint = U448;
 
-    const ORDER: NonZero<U448> = ORDER;
+    const ORDER: Odd<U448> = ORDER;
 }
 
 impl PrimeCurve for Decaf448 {}

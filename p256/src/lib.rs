@@ -53,7 +53,7 @@ pub use elliptic_curve::pkcs8;
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
-    bigint::{ArrayEncoding, NonZero},
+    bigint::{ArrayEncoding, Odd},
     consts::U33,
 };
 
@@ -109,7 +109,7 @@ impl elliptic_curve::Curve for NistP256 {
     type Uint = U256;
 
     /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus).
-    const ORDER: NonZero<U256> = NonZero::<U256>::from_be_hex(ORDER_HEX);
+    const ORDER: Odd<U256> = Odd::<U256>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP256 {}
