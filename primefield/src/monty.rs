@@ -373,20 +373,17 @@ where
         res
     }
 
-    /// Compute the [`PrimeField::DELTA`] constant.
-    const fn compute_delta() -> Self
-    where
-        Self: PrimeField,
-    {
-        let exp: &[u64] = if Self::S < 64 {
-            &[1 << Self::S as u64]
-        } else if Self::S < 128 {
-            &[0, 1 << (Self::S - 64) as u64]
-        } else {
-            panic!("PrimeField::S >= 128 unsupported");
-        };
-
-        Self::MULTIPLICATIVE_GENERATOR.pow_vartime(exp)
+    /// Returns self^(2^n) mod p.
+    ///
+    /// Variable-time with respect to `n`.
+    pub(crate) const fn sqn_vartime(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 }
 
@@ -455,7 +452,7 @@ where
     const S: u32 = compute_s(MOD::PARAMS.modulus().as_ref());
     const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(MOD::T);
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.const_invert();
-    const DELTA: Self = Self::compute_delta();
+    const DELTA: Self = Self::MULTIPLICATIVE_GENERATOR.sqn_vartime(Self::S as usize);
 
     fn from_repr(bytes: Self::Repr) -> CtOption<Self> {
         Self::from_bytes(&bytes)
