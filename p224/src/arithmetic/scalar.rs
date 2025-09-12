@@ -12,6 +12,13 @@
 
 #[cfg_attr(target_pointer_width = "32", path = "scalar/p224_scalar_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "scalar/p224_scalar_64.rs")]
+#[allow(
+    clippy::identity_op,
+    clippy::needless_lifetimes,
+    clippy::unnecessary_cast,
+    clippy::too_many_arguments
+)]
+#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod scalar_impl;
 
 use self::scalar_impl::*;

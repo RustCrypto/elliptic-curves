@@ -10,18 +10,15 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#![allow(
-    clippy::should_implement_trait,
-    clippy::suspicious_op_assign_impl,
-    clippy::unused_unit,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments,
-    clippy::identity_op,
-    rustdoc::bare_urls
-)]
-
 #[cfg_attr(target_pointer_width = "32", path = "field/p192_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "field/p192_64.rs")]
+#[allow(
+    clippy::identity_op,
+    clippy::needless_lifetimes,
+    clippy::unnecessary_cast,
+    clippy::too_many_arguments
+)]
+#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod field_impl;
 
 use self::field_impl::*;
