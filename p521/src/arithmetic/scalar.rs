@@ -48,12 +48,12 @@ use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
 
 primefield::monty_field_params!(
     name: ScalarParams,
-    fe_name: "Scalar",
     modulus: ORDER_HEX,
     uint: U576,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "P-521 scalar modulus",
-    multiplicative_generator: 3
+    multiplicative_generator: 3,
+    fe_name: "Scalar",
+    doc: "P-521 scalar modulus"
 );
 
 /// Scalars are elements in the finite field modulo `n`.
@@ -79,6 +79,7 @@ primefield::monty_field_params!(
 ///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
+// TODO(tarcieri): `primefield::MontyFieldElement` as the interior type
 #[derive(Clone, Copy, Debug, PartialOrd, Ord)]
 pub struct Scalar(fiat_p521_scalar_montgomery_domain_field_element);
 
@@ -102,9 +103,7 @@ impl Scalar {
 
     /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form:
     ///
-    /// ```text
-    /// w * R^2 * R^-1 mod p = wR mod p
-    /// ```
+    /// `w * R^2 * R^-1 mod p = wR mod p`
     pub fn from_uint(uint: U576) -> CtOption<Self> {
         let is_some = uint.ct_lt(&NistP521::ORDER);
         CtOption::new(Self::from_uint_unchecked(uint), is_some)
@@ -535,6 +534,7 @@ impl IsHigh for Scalar {
     }
 }
 
+// TODO(tarcieri): use `primefield` to derive `PrimeField` impl
 impl PrimeField for Scalar {
     type Repr = FieldBytes;
 

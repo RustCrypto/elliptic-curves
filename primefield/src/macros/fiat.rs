@@ -11,7 +11,7 @@
 macro_rules! fiat_field_arithmetic {
     (
         $fe:tt,
-        $bytes:ty,
+        $params:ty,
         $uint:ty,
         $non_mont_type: expr,
         $mont_type: expr,
@@ -41,7 +41,11 @@ macro_rules! fiat_field_arithmetic {
             pub(crate) const fn from_uint_unchecked(w: $uint) -> Self {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
                 $to_mont(&mut out, &$non_mont_type(w.to_words()));
-                Self(<$uint>::from_words(out.0))
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        out.0,
+                    ),
+                )
             }
 
             /// Translate [`
@@ -52,7 +56,7 @@ macro_rules! fiat_field_arithmetic {
             #[inline]
             pub const fn to_canonical(self) -> $uint {
                 let mut out = $non_mont_type([0; <$uint>::LIMBS]);
-                $from_mont(&mut out, &$mont_type(self.0.to_words()));
+                $from_mont(&mut out, &$mont_type(self.0.to_montgomery_words()));
                 <$uint>::from_words(out.0)
             }
 
@@ -62,10 +66,14 @@ macro_rules! fiat_field_arithmetic {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
                 $add(
                     &mut out,
-                    &$mont_type(self.0.to_words()),
-                    &$mont_type(rhs.0.to_words()),
+                    &$mont_type(self.0.to_montgomery_words()),
+                    &$mont_type(rhs.0.to_montgomery_words()),
                 );
-                Self(<$uint>::from_words(out.0))
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        out.0,
+                    ),
+                )
             }
 
             /// Double element (add it to itself).
@@ -81,10 +89,14 @@ macro_rules! fiat_field_arithmetic {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
                 $sub(
                     &mut out,
-                    &$mont_type(self.0.to_words()),
-                    &$mont_type(rhs.0.to_words()),
+                    &$mont_type(self.0.to_montgomery_words()),
+                    &$mont_type(rhs.0.to_montgomery_words()),
                 );
-                Self(<$uint>::from_words(out.0))
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        out.0,
+                    ),
+                )
             }
 
             /// Multiply elements.
@@ -93,18 +105,26 @@ macro_rules! fiat_field_arithmetic {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
                 $mul(
                     &mut out,
-                    &$mont_type(self.0.to_words()),
-                    &$mont_type(rhs.0.to_words()),
+                    &$mont_type(self.0.to_montgomery_words()),
+                    &$mont_type(rhs.0.to_montgomery_words()),
                 );
-                Self(<$uint>::from_words(out.0))
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        out.0,
+                    ),
+                )
             }
 
             /// Negate element.
             #[inline]
             pub const fn neg(&self) -> Self {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
-                $neg(&mut out, &$mont_type(self.0.to_words()));
-                Self(<$uint>::from_words(out.0))
+                $neg(&mut out, &$mont_type(self.0.to_montgomery_words()));
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        out.0,
+                    ),
+                )
             }
 
             /// Compute modular square.
@@ -112,8 +132,12 @@ macro_rules! fiat_field_arithmetic {
             #[must_use]
             pub const fn square(&self) -> Self {
                 let mut out = $mont_type([0; <$uint>::LIMBS]);
-                $square(&mut out, &$mont_type(self.0.to_words()));
-                Self(<$uint>::from_words(out.0))
+                $square(&mut out, &$mont_type(self.0.to_montgomery_words()));
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        out.0,
+                    ),
+                )
             }
 
             /// Compute
@@ -128,10 +152,10 @@ macro_rules! fiat_field_arithmetic {
             ///
             /// This is mainly intended for inverting constants at compile time.
             pub const fn const_invert(&self) -> Self {
-                if self.0.cmp_vartime(&<$uint>::ZERO).is_eq() {
-                    panic!("input to invert should be non-zero");
-                }
-
+                assert!(
+                    !self.0.as_montgomery().cmp_vartime(&<$uint>::ZERO).is_eq(),
+                    "input to invert should be non-zero"
+                );
                 self.invert_unchecked()
             }
 
@@ -140,8 +164,8 @@ macro_rules! fiat_field_arithmetic {
             /// Does not check that self is non-zero.
             const fn invert_unchecked(&self) -> Self {
                 let words = $crate::fiat_bernstein_yang_invert!(
-                    &$mont_type(self.0.to_words()),
-                    &$mont_type(Self::ONE.0.to_words()),
+                    &$mont_type(self.0.to_montgomery_words()),
+                    &$mont_type(Self::ONE.0.to_montgomery_words()),
                     <$fe as $crate::ff::PrimeField>::NUM_BITS as usize,
                     <$uint>::LIMBS,
                     $crate::bigint::Word,
@@ -156,7 +180,11 @@ macro_rules! fiat_field_arithmetic {
                     $selectznz
                 );
 
-                Self(<$uint>::from_words(words))
+                Self(
+                    $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_montgomery_words(
+                        words,
+                    ),
+                )
             }
         }
     };

@@ -25,10 +25,8 @@
 mod field_impl;
 
 use self::field_impl::*;
-use crate::{FieldBytes, NistP224, Uint};
+use crate::Uint;
 use elliptic_curve::{
-    FieldBytesEncoding,
-    bigint::NonZero,
     ff::PrimeField,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
 };
@@ -40,34 +38,27 @@ const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffff000000000000000000000
 #[cfg(target_pointer_width = "64")]
 const MODULUS_HEX: &str = "00000000ffffffffffffffffffffffffffffffff000000000000000000000001";
 
-const MODULUS: NonZero<Uint> = NonZero::<Uint>::new_unwrap(Uint::from_be_hex(MODULUS_HEX));
-
 primefield::monty_field_params!(
     name: FieldParams,
-    fe_name: "FieldElement",
     modulus: MODULUS_HEX,
     uint: Uint,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "P-224 field modulus",
-    multiplicative_generator: 22
+    multiplicative_generator: 22,
+    fe_name: "FieldElement",
+    doc: "P-224 field modulus"
 );
 
 /// Element of the secp224r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
-pub struct FieldElement(pub(super) Uint);
-
-primefield::field_element_type!(
-    FieldElement,
-    FieldBytes,
-    Uint,
-    MODULUS,
-    FieldBytesEncoding::<NistP224>::decode_field_bytes,
-    FieldBytesEncoding::<NistP224>::encode_field_bytes
+pub struct FieldElement(
+    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
 );
+
+primefield::field_element_type!(FieldElement, FieldParams, Uint);
 
 primefield::fiat_field_arithmetic!(
     FieldElement,
-    FieldBytes,
+    FieldParams,
     Uint,
     fiat_p224_non_montgomery_domain_field_element,
     fiat_p224_montgomery_domain_field_element,
@@ -256,45 +247,6 @@ impl FieldElement {
         }
 
         CtOption::new(x, x.square().ct_eq(self))
-    }
-}
-
-impl PrimeField for FieldElement {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = MODULUS_HEX;
-    const NUM_BITS: u32 = 224;
-    const CAPACITY: u32 = 223;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(22);
-    const S: u32 = 96;
-    #[cfg(target_pointer_width = "32")]
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("395e40142de25856b7e38879fc315d7e6f6de3c1aa72e8c906610583");
-    #[cfg(target_pointer_width = "64")]
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("00000000395e40142de25856b7e38879fc315d7e6f6de3c1aa72e8c906610583");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    #[cfg(target_pointer_width = "32")]
-    const DELTA: Self =
-        Self::from_hex_vartime("697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
-    #[cfg(target_pointer_width = "64")]
-    const DELTA: Self =
-        Self::from_hex_vartime("00000000697b16135c4a62fca5c4f35ea6d5784cf3808e775aad34ec3d046867");
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
     }
 }
 

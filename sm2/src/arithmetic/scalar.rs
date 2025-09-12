@@ -34,12 +34,6 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 
-#[cfg(feature = "bits")]
-use {
-    crate::ScalarBits,
-    elliptic_curve::{bigint::Word, group::ff::PrimeFieldBits},
-};
-
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarPrimitive,
@@ -51,12 +45,12 @@ use core::ops::{Add, Mul, Neg, Sub};
 
 primefield::monty_field_params!(
     name: ScalarParams,
-    fe_name: "Scalar",
     modulus: ORDER_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    doc: "SM2 scalar modulus",
-    multiplicative_generator: 3
+    multiplicative_generator: 3,
+    fe_name: "Scalar",
+    doc: "SM2 scalar modulus"
 );
 
 /// Scalars are elements in the finite field modulo `n`.
@@ -83,20 +77,13 @@ primefield::monty_field_params!(
 ///
 /// Please see the documentation for the relevant traits for more information.
 #[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(U256);
+pub struct Scalar(pub(super) primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
 
-primefield::field_element_type!(
-    Scalar,
-    FieldBytes,
-    U256,
-    Sm2::ORDER,
-    FieldBytesEncoding::<Sm2>::decode_field_bytes,
-    FieldBytesEncoding::<Sm2>::encode_field_bytes
-);
+primefield::field_element_type!(Scalar, ScalarParams, U256);
 
 primefield::fiat_field_arithmetic!(
     Scalar,
-    FieldBytes,
+    ScalarParams,
     U256,
     fiat_sm2_scalar_non_montgomery_domain_field_element,
     fiat_sm2_scalar_montgomery_domain_field_element,
@@ -152,49 +139,6 @@ impl IsHigh for Scalar {
     }
 }
 
-impl PrimeField for Scalar {
-    type Repr = FieldBytes;
-
-    const MODULUS: &'static str = ORDER_HEX;
-    const NUM_BITS: u32 = 256;
-    const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
-    const S: u32 = 1;
-    const ROOT_OF_UNITY: Self =
-        Self::from_hex_vartime("fffffffeffffffffffffffffffffffff7203df6b21c6052b53bbf40939d54122");
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
-    const DELTA: Self = Self::from_u64(9);
-
-    #[inline]
-    fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
-        Self::from_bytes(&bytes)
-    }
-
-    #[inline]
-    fn to_repr(&self) -> FieldBytes {
-        self.to_bytes()
-    }
-
-    #[inline]
-    fn is_odd(&self) -> Choice {
-        self.is_odd()
-    }
-}
-
-#[cfg(feature = "bits")]
-impl PrimeFieldBits for Scalar {
-    type ReprBits = [Word; U256::LIMBS];
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.to_canonical().to_words().into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        Sm2::ORDER.to_words().into()
-    }
-}
-
 impl Reduce<U256> for Scalar {
     fn reduce(w: &U256) -> Self {
         let (r, underflow) = w.borrowing_sub(&Sm2::ORDER, Limb::ZERO);
@@ -215,7 +159,15 @@ impl TryFrom<U256> for Scalar {
     type Error = Error;
 
     fn try_from(w: U256) -> Result<Self> {
-        Option::from(Self::from_uint(w)).ok_or(Error)
+        Self::try_from(&w)
+    }
+}
+
+impl TryFrom<&U256> for Scalar {
+    type Error = Error;
+
+    fn try_from(w: &U256) -> Result<Self> {
+        Self::from_uint(w).into_option().ok_or(Error)
     }
 }
 

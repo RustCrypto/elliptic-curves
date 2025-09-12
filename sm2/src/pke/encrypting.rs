@@ -158,7 +158,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
     let mut hpb: AffinePoint;
     loop {
         // A1: generate a random number 𝑘 ∈ [1, 𝑛 − 1] with the random number generator
-        let k = Scalar::from_uint(next_k(rng, N_BYTES)?).unwrap();
+        let k = Scalar::from_uint(&next_k(rng, N_BYTES)?).unwrap();
 
         // A2: compute point 𝐶1 = [𝑘]𝐺 = (𝑥1, 𝑦1)
         let kg = ProjectivePoint::mul_by_generator(&k).to_affine();

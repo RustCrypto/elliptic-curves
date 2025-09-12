@@ -3,13 +3,13 @@
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, Integer, Invert, Uint,
+    ArrayEncoding, ByteArray, Integer, Invert, Reduce, Uint, Word,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{ConstMontyForm as MontyForm, ConstMontyParams},
 };
-use core::fmt::Formatter;
 use core::{
-    fmt::{self, Debug},
+    cmp::Ordering,
+    fmt,
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
@@ -18,67 +18,6 @@ use subtle::{
     Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
     CtOption,
 };
-
-/// Creates a ZST representing the Montgomery parameters for a given field modulus.
-///
-/// Accepts the following parameters:
-///
-/// - name of the ZST representing the field modulus
-/// - hex serialization of the modulus
-/// - `crypto-bigint` unsigned integer type (e.g. U256)
-/// - number of bytes in an encoded field element
-/// - byte order to use when encoding/decoding field elements
-/// - documentation string for the field modulus type
-///
-/// ```
-/// use primefield::{ByteOrder, bigint::U256, consts::U32};
-///
-/// primefield::monty_field_params!(
-///     name: FieldParams,
-///     fe_name: "FieldElement",
-///     modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
-///     uint: U256,
-///     byte_order: ByteOrder::BigEndian,
-///     doc: "P-256 field modulus",
-///     multiplicative_generator: 6
-/// );
-/// ```
-#[macro_export]
-macro_rules! monty_field_params {
-    (
-        name: $name:ident,
-        fe_name: $fe_name:expr,
-        modulus: $modulus_hex:expr,
-        uint: $uint_type:ty,
-        byte_order: $byte_order:expr,
-        doc: $doc:expr,
-        multiplicative_generator: $multiplicative_generator:expr
-    ) => {
-        use $crate::bigint::modular::ConstMontyParams;
-
-        $crate::bigint::const_monty_params!($name, $uint_type, $modulus_hex, $doc);
-
-        impl $crate::MontyFieldParams<{ <$uint_type>::LIMBS }> for $name {
-            type ByteSize = $crate::bigint::hybrid_array::typenum::U<
-                { $name::PARAMS.modulus().as_ref().bits().div_ceil(8) as usize },
-            >;
-            const BYTE_ORDER: $crate::ByteOrder = $byte_order;
-            const FIELD_ELEMENT_NAME: &'static str = $fe_name;
-            const MODULUS_HEX: &'static str = $modulus_hex;
-            const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
-            #[cfg(target_pointer_width = "32")]
-            const T: &'static [u64] = &$crate::compute_t::<
-                { <$uint_type>::LIMBS.div_ceil(2) },
-                { <$uint_type>::LIMBS },
-            >($name::PARAMS.modulus().as_ref());
-            #[cfg(target_pointer_width = "64")]
-            const T: &'static [u64] = &$crate::compute_t::<
-                { <$uint_type>::LIMBS },
-                { <$uint_type>::LIMBS },
-            >($name::PARAMS.modulus().as_ref());
-        }
-    };
-}
 
 /// Extension trait for defining additional field parameters beyond the ones provided by
 /// [`ConstMontyParams`].
@@ -110,6 +49,10 @@ pub trait MontyFieldParams<const LIMBS: usize>: ConstMontyParams<LIMBS> {
     }
 }
 
+/// Serialized representation of a field element.
+pub type MontyFieldBytes<MOD, const LIMBS: usize> =
+    Array<u8, <MOD as MontyFieldParams<LIMBS>>::ByteSize>;
+
 /// Field element type which uses an internal Montgomery form representation.
 #[derive(Clone, Copy)]
 pub struct MontyFieldElement<MOD, const LIMBS: usize>
@@ -137,14 +80,15 @@ where
     pub const LIMBS: usize = LIMBS;
 
     /// Decode field element from a canonical bytestring representation.
-    pub fn from_bytes(repr: &Array<u8, MOD::ByteSize>) -> CtOption<Self>
+    #[inline]
+    pub fn from_bytes(repr: &MontyFieldBytes<MOD, LIMBS>) -> CtOption<Self>
     where
         Uint<LIMBS>: ArrayEncoding,
     {
-        debug_assert!(repr.len() <= MOD::ByteSize::USIZE);
         let mut byte_array = ByteArray::<Uint<LIMBS>>::default();
-        let offset = MOD::ByteSize::USIZE.saturating_sub(repr.len());
+        debug_assert!(repr.len() <= byte_array.len());
 
+        let offset = byte_array.len().saturating_sub(repr.len());
         let uint = match MOD::BYTE_ORDER {
             ByteOrder::BigEndian => {
                 byte_array[offset..].copy_from_slice(repr);
@@ -186,9 +130,10 @@ where
             ByteOrder::LittleEndian => Uint::from_le_hex(hex),
         };
 
-        if uint.cmp_vartime(MOD::PARAMS.modulus().as_ref()).is_lt() {
-            panic!("hex encoded field element overflows modulus");
-        }
+        assert!(
+            uint.cmp_vartime(MOD::PARAMS.modulus().as_ref()).is_lt(),
+            "hex encoded field element overflows modulus"
+        );
 
         Self::from_uint_reduced(&uint)
     }
@@ -219,6 +164,8 @@ where
     #[inline]
     pub fn from_uint(uint: &Uint<LIMBS>) -> CtOption<Self> {
         let is_some = uint.ct_lt(MOD::PARAMS.modulus());
+
+        // TODO(tarcieri): avoid unnecessary reduction here
         CtOption::new(Self::from_uint_reduced(uint), is_some)
     }
 
@@ -236,16 +183,55 @@ where
         Self::from_uint_reduced(&Uint::from_u64(w))
     }
 
+    /// Create [`MontyFieldElement`] from a [`Uint`] which is already in Montgomery form.
+    ///
+    /// #⚠️Warning
+    ///
+    /// This value is expected to be in Montgomery form and reduced. Failure to maintain these
+    /// invariants will lead to miscomputation and potential security issues!
+    #[inline]
+    pub const fn from_montgomery(uint: Uint<LIMBS>) -> Self {
+        Self {
+            inner: MontyForm::from_montgomery(uint),
+        }
+    }
+
+    /// Helper function to construct [`MontyFieldElement`] from words in Montgomery form.
+    // TODO(tarcieri): this is here to simplify the inner type conversion for fiat-crypto.
+    // After we've successfully done that, it would be good to try to remove this
+    #[inline]
+    pub const fn from_montgomery_words(words: [Word; LIMBS]) -> Self {
+        Self::from_montgomery(Uint::from_words(words))
+    }
+
+    /// Borrow the inner [`Uint`] type which is in Montgomery form.
+    ///
+    /// #⚠️Warning
+    ///
+    /// Make sure you are actually expecting a value in Montgomery form! This is not the correct
+    /// function for converting *out* of Montgomery form: that would be
+    /// [`MontyFieldElement::to_canonical`].
+    pub const fn as_montgomery(&self) -> &Uint<LIMBS> {
+        self.inner.as_montgomery()
+    }
+
+    /// Retrieve the Montgomery form representation as an array of [`Word`]s.
+    // TODO(tarcieri): like `from_montgomery_words`, phase this out after fiat-crypto is migrated
+    pub const fn to_montgomery_words(&self) -> [Word; LIMBS] {
+        self.as_montgomery().to_words()
+    }
+
     /// Returns the bytestring encoding of this field element.
-    pub fn to_bytes(self) -> Array<u8, MOD::ByteSize>
+    #[inline]
+    pub fn to_bytes(self) -> MontyFieldBytes<MOD, LIMBS>
     where
         MOD: MontyFieldParams<LIMBS>,
         Uint<LIMBS>: ArrayEncoding,
     {
-        let mut repr = Array::<u8, MOD::ByteSize>::default();
-        debug_assert!(repr.len() <= MOD::ByteSize::USIZE);
+        let mut repr = MontyFieldBytes::<MOD, LIMBS>::default();
+        debug_assert!(repr.len() <= <Uint::<LIMBS> as ArrayEncoding>::ByteSize::USIZE);
 
-        let offset = MOD::ByteSize::USIZE.saturating_sub(repr.len());
+        let offset = <Uint<LIMBS> as ArrayEncoding>::ByteSize::USIZE.saturating_sub(repr.len());
 
         match MOD::BYTE_ORDER {
             ByteOrder::BigEndian => {
@@ -386,6 +372,22 @@ where
 
         res
     }
+
+    /// Compute the [`PrimeField::DELTA`] constant.
+    const fn compute_delta() -> Self
+    where
+        Self: PrimeField,
+    {
+        let exp: &[u64] = if Self::S < 64 {
+            &[1 << Self::S as u64]
+        } else if Self::S < 128 {
+            &[0, 1 << (Self::S - 64) as u64]
+        } else {
+            panic!("PrimeField::S >= 128 unsupported");
+        };
+
+        Self::MULTIPLICATIVE_GENERATOR.pow_vartime(exp)
+    }
 }
 
 //
@@ -395,14 +397,14 @@ where
 impl<MOD, const LIMBS: usize> Field for MontyFieldElement<MOD, LIMBS>
 where
     MOD: MontyFieldParams<LIMBS>,
-    Array<u8, MOD::ByteSize>: Copy,
+    MontyFieldBytes<MOD, LIMBS>: Copy,
     Uint<LIMBS>: ArrayEncoding,
 {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
     fn try_from_rng<R: rand_core::TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        let mut bytes = Array::<u8, MOD::ByteSize>::default();
+        let mut bytes = MontyFieldBytes::<MOD, LIMBS>::default();
 
         loop {
             rng.try_fill_bytes(&mut bytes)?;
@@ -440,10 +442,10 @@ where
 impl<MOD, const LIMBS: usize> PrimeField for MontyFieldElement<MOD, LIMBS>
 where
     MOD: MontyFieldParams<LIMBS>,
-    Array<u8, MOD::ByteSize>: Copy,
+    MontyFieldBytes<MOD, LIMBS>: Copy,
     Uint<LIMBS>: ArrayEncoding,
 {
-    type Repr = Array<u8, MOD::ByteSize>;
+    type Repr = MontyFieldBytes<MOD, LIMBS>;
 
     const MODULUS: &'static str = MOD::MODULUS_HEX;
     const NUM_BITS: u32 = MOD::PARAMS.modulus().as_ref().bits();
@@ -453,7 +455,7 @@ where
     const S: u32 = compute_s(MOD::PARAMS.modulus().as_ref());
     const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(MOD::T);
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.const_invert();
-    const DELTA: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(&[1 << Self::S]);
+    const DELTA: Self = Self::compute_delta();
 
     fn from_repr(bytes: Self::Repr) -> CtOption<Self> {
         Self::from_bytes(&bytes)
@@ -648,6 +650,32 @@ where
     }
 }
 
+impl<MOD, const LIMBS: usize> Reduce<Uint<LIMBS>> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    #[inline]
+    fn reduce(w: &Uint<LIMBS>) -> Self {
+        Self::from_uint_reduced(w)
+    }
+}
+
+impl<MOD, const LIMBS: usize> Reduce<MontyFieldBytes<MOD, LIMBS>> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+    Uint<LIMBS>: ArrayEncoding<ByteSize = MOD::ByteSize>,
+{
+    #[inline]
+    fn reduce(bytes: &MontyFieldBytes<MOD, LIMBS>) -> Self {
+        let uint = match MOD::BYTE_ORDER {
+            ByteOrder::BigEndian => Uint::<LIMBS>::from_be_byte_array(bytes.clone()),
+            ByteOrder::LittleEndian => Uint::<LIMBS>::from_le_byte_array(bytes.clone()),
+        };
+
+        Self::reduce(&uint)
+    }
+}
+
 //
 // `subtle` trait impls
 //
@@ -693,18 +721,58 @@ where
 }
 
 //
-// Miscellaneous trait impls
+// `core::fmt` trait impls
 //
 
-impl<MOD, const LIMBS: usize> Debug for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> fmt::Debug for MontyFieldElement<MOD, LIMBS>
 where
     MOD: MontyFieldParams<LIMBS>,
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let canonical = self.to_canonical();
         write!(f, "{}(0x{:X})", MOD::FIELD_ELEMENT_NAME, &canonical)
     }
 }
+
+impl<MOD, const LIMBS: usize> fmt::Display for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(self, f)
+    }
+}
+
+impl<MOD, const LIMBS: usize> fmt::Binary for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Binary::fmt(&self.to_canonical(), f)
+    }
+}
+
+impl<MOD, const LIMBS: usize> fmt::LowerHex for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.to_canonical(), f)
+    }
+}
+
+impl<MOD, const LIMBS: usize> fmt::UpperHex for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&self.to_canonical(), f)
+    }
+}
+
+//
+// Miscellaneous trait impls
+//
 
 impl<MOD, const LIMBS: usize> Default for MontyFieldElement<MOD, LIMBS>
 where
@@ -751,17 +819,17 @@ where
     }
 }
 
-impl<MOD, const LIMBS: usize> From<MontyFieldElement<MOD, LIMBS>> for Array<u8, MOD::ByteSize>
+impl<MOD, const LIMBS: usize> From<MontyFieldElement<MOD, LIMBS>> for MontyFieldBytes<MOD, LIMBS>
 where
     MOD: MontyFieldParams<LIMBS>,
     Uint<LIMBS>: ArrayEncoding,
 {
     fn from(fe: MontyFieldElement<MOD, LIMBS>) -> Self {
-        <Array<u8, MOD::ByteSize>>::from(&fe)
+        MontyFieldBytes::<MOD, LIMBS>::from(&fe)
     }
 }
 
-impl<MOD, const LIMBS: usize> From<&MontyFieldElement<MOD, LIMBS>> for Array<u8, MOD::ByteSize>
+impl<MOD, const LIMBS: usize> From<&MontyFieldElement<MOD, LIMBS>> for MontyFieldBytes<MOD, LIMBS>
 where
     MOD: MontyFieldParams<LIMBS>,
     Uint<LIMBS>: ArrayEncoding,
@@ -786,6 +854,19 @@ where
 {
     fn from(fe: &MontyFieldElement<MOD, LIMBS>) -> Uint<LIMBS> {
         fe.to_canonical()
+    }
+}
+
+impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Ord for MontyFieldElement<MOD, LIMBS> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.to_canonical().cmp(&other.to_canonical())
+    }
+}
+impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> PartialOrd
+    for MontyFieldElement<MOD, LIMBS>
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -832,19 +913,22 @@ pub const fn compute_t<const N: usize, const LIMBS: usize>(modulus: &Uint<LIMBS>
 
 #[cfg(test)]
 mod tests {
-    use crate::{ByteOrder, test_field_identity, test_field_invert, test_primefield_constants};
+    use crate::{
+        ByteOrder, monty_field_params, test_field_identity, test_field_invert,
+        test_primefield_constants,
+    };
     use bigint::U256;
 
     // Example modulus: P-256 base field.
     // p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
     monty_field_params!(
         name: FieldParams,
-        fe_name: "FieldElement",
         modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
         uint: U256,
         byte_order: ByteOrder::BigEndian,
-        doc: "P-256 field modulus",
-        multiplicative_generator: 6
+        multiplicative_generator: 6,
+        fe_name: "FieldElement",
+        doc: "P-256 field modulus"
     );
 
     /// P-256 field element
