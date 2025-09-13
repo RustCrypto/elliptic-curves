@@ -48,9 +48,9 @@ pub struct FieldElement(
     pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
 );
 
-primefield::field_element_type!(FieldElement, FieldParams, U384);
+primefield::monty_field_element!(FieldElement, FieldParams, U384);
 
-primefield::fiat_field_arithmetic!(
+primefield::monty_field_fiat_arithmetic!(
     FieldElement,
     FieldParams,
     U384,

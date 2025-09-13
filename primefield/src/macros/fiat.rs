@@ -8,7 +8,7 @@
 ///
 /// This provides a complete arithmetic implementation except for `sqrt`.
 #[macro_export]
-macro_rules! fiat_field_arithmetic {
+macro_rules! monty_field_fiat_arithmetic {
     (
         $fe:tt,
         $params:ty,
