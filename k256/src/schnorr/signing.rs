@@ -14,7 +14,7 @@ use sha2::{Digest, Sha256};
 use signature::{
     DigestSigner, Error, KeypairRef, MultipartSigner, RandomizedDigestSigner,
     RandomizedMultipartSigner, RandomizedSigner, Result, Signer,
-    digest::{FixedOutput, consts::U32},
+    digest::{Update, consts::U32},
     hazmat::{PrehashSigner, RandomizedPrehashSigner},
 };
 
@@ -166,10 +166,12 @@ impl From<&SecretKey> for SigningKey {
 
 impl<D> DigestSigner<D, Signature> for SigningKey
 where
-    D: Digest + FixedOutput<OutputSize = U32>,
+    D: Digest<OutputSize = U32> + Update,
 {
-    fn try_sign_digest(&self, digest: D) -> Result<Signature> {
-        self.sign_raw(&digest.finalize_fixed(), &Default::default())
+    fn try_sign_digest<F: Fn(&mut D) -> Result<()>>(&self, f: F) -> Result<Signature> {
+        let mut digest = D::new();
+        f(&mut digest)?;
+        self.sign_raw(&digest.finalize(), &Default::default())
     }
 }
 
@@ -181,17 +183,20 @@ impl PrehashSigner<Signature> for SigningKey {
 
 impl<D> RandomizedDigestSigner<D, Signature> for SigningKey
 where
-    D: Digest + FixedOutput<OutputSize = U32>,
+    D: Digest<OutputSize = U32> + Update,
 {
-    fn try_sign_digest_with_rng<R: TryCryptoRng + ?Sized>(
+    fn try_sign_digest_with_rng<R: TryCryptoRng + ?Sized, F: Fn(&mut D) -> Result<()>>(
         &self,
         rng: &mut R,
-        digest: D,
+        f: F,
     ) -> Result<Signature> {
+        let mut digest = D::new();
+        f(&mut digest)?;
+
         let mut aux_rand = [0u8; 32];
         rng.try_fill_bytes(&mut aux_rand)
             .map_err(|_| Error::new())?;
-        self.sign_raw(&digest.finalize_fixed(), &aux_rand)
+        self.sign_raw(&digest.finalize(), &aux_rand)
     }
 }
 
@@ -211,9 +216,10 @@ impl RandomizedMultipartSigner<Signature> for SigningKey {
         rng: &mut R,
         msg: &[&[u8]],
     ) -> Result<Signature> {
-        let mut digest = Sha256::new();
-        msg.iter().for_each(|slice| digest.update(slice));
-        self.try_sign_digest_with_rng(rng, digest)
+        self.try_sign_digest_with_rng(rng, |digest: &mut Sha256| {
+            msg.iter().for_each(|&slice| Update::update(digest, slice));
+            Ok(())
+        })
     }
 }
 
@@ -239,9 +245,10 @@ impl Signer<Signature> for SigningKey {
 
 impl MultipartSigner<Signature> for SigningKey {
     fn try_multipart_sign(&self, msg: &[&[u8]]) -> Result<Signature> {
-        let mut digest = Sha256::new();
-        msg.iter().for_each(|slice| digest.update(slice));
-        self.try_sign_digest(digest)
+        self.try_sign_digest(|digest: &mut Sha256| {
+            msg.iter().for_each(|&slice| Update::update(digest, slice));
+            Ok(())
+        })
     }
 }
 

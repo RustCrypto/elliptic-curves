@@ -363,8 +363,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.6"
-source = "git+https://github.com/RustCrypto/signatures?rev=2cd53cf4fbe82c61c2e2ac7b2099ba743b01074e#2cd53cf4fbe82c61c2e2ac7b2099ba743b01074e"
+version = "0.17.0-rc.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ab355ec063f7a110eb627471058093aba00eb7f4e70afbd15e696b79d1077b"
 dependencies = [
  "der",
  "digest",
@@ -378,9 +379,9 @@ dependencies = [
 
 [[package]]
 name = "ed448"
-version = "0.5.0-rc.0"
+version = "0.5.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3bd2909b183f83f4c02df6111d7b26add0313584e17cf2d74ce2f578a12a123"
+checksum = "812bad302d88d3e1774df473dffc64f18fedc4be6b6066c470ae3c733b9f9765"
 dependencies = [
  "pkcs8",
  "serde",
@@ -1181,9 +1182,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "3.0.0-rc.3"
+version = "3.0.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39195ff4c0dc41c93e123825ca1f0d11b856df8b26d5fe140a522355632c4345"
+checksum = "fc280a6ff65c79fbd6622f64d7127f32b85563bca8c53cd2e9141d6744a9056d"
 dependencies = [
  "digest",
  "rand_core",
