@@ -23,8 +23,7 @@ opt-level = 2
 
 [patch.crates-io]
 # https://github.com/RustCrypto/traits/pull/1996
-elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
-ecdsa = { git = "https://github.com/RustCrypto/signatures" }
+ecdsa = { git = "https://github.com/RustCrypto/signatures", rev = "2cd53cf4fbe82c61c2e2ac7b2099ba743b01074e" }
 
 ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
