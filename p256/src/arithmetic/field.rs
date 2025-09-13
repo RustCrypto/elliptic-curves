@@ -36,7 +36,7 @@ pub struct FieldElement(
     pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
 );
 
-primefield::field_element_type!(FieldElement, FieldParams, U256);
+primefield::monty_field_element!(FieldElement, FieldParams, U256);
 
 impl FieldElement {
     /// Decode [`FieldElement`] from [`U256`] converting it into Montgomery form.

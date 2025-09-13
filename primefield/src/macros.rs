@@ -112,7 +112,7 @@ macro_rules! monty_field_params {
 /// - `ShrAssign`
 /// - `Invert`
 #[macro_export]
-macro_rules! field_element_type {
+macro_rules! monty_field_element {
     ($fe:tt, $params:ty, $uint:tt) => {
         impl $fe {
             /// Zero element.

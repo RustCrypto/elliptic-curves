@@ -84,9 +84,9 @@ primefield::monty_field_params!(
 #[derive(Clone, Copy, PartialOrd, Ord)]
 pub struct Scalar(primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
 
-primefield::field_element_type!(Scalar, ScalarParams, Uint);
+primefield::monty_field_element!(Scalar, ScalarParams, Uint);
 
-primefield::fiat_field_arithmetic!(
+primefield::monty_field_fiat_arithmetic!(
     Scalar,
     ScalarParams,
     Uint,
