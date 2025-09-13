@@ -446,6 +446,18 @@ macro_rules! monty_field_element {
             }
         }
 
+        impl From<$crate::MontyFieldElement::<$params, { <$params>::LIMBS }>> for $fe {
+            fn from(fe: $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>) -> $fe {
+                $fe(fe)
+            }
+        }
+
+        impl From<$fe> for $crate::MontyFieldElement<$params, { <$params>::LIMBS }> {
+            fn from(fe: $fe) -> $crate::MontyFieldElement<$params, { <$params>::LIMBS }> {
+                fe.0
+            }
+        }
+
         impl From<$fe> for $uint {
             fn from(fe: $fe) -> $uint {
                 <$uint>::from(&fe)
