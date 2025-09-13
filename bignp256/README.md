@@ -50,12 +50,12 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/bign256?logo=rust
-[crate-link]: https://crates.io/crates/bign256
-[docs-image]: https://docs.rs/bign256/badge.svg
-[docs-link]: https://docs.rs/bign256/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bign256.yml/badge.svg
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bign256.yml
+[crate-image]: https://img.shields.io/crates/v/bignp256?logo=rust
+[crate-link]: https://crates.io/crates/bignp256
+[docs-image]: https://docs.rs/bignp256/badge.svg
+[docs-link]: https://docs.rs/bignp256/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bignp256.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bignp256.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg

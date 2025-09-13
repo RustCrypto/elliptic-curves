@@ -1,17 +1,17 @@
-name: bign256
+name: bignp256
 
 on:
   pull_request:
     paths:
-      - ".github/workflows/bign256.yml"
-      - "bign256/**"
+      - ".github/workflows/bignp256.yml"
+      - "bignp256/**"
       - "Cargo.*"
   push:
     branches: master
 
 defaults:
   run:
-    working-directory: bign256
+    working-directory: bignp256
 
 env:
   CARGO_INCREMENTAL: 0

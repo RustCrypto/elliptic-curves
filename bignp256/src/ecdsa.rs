@@ -8,7 +8,7 @@
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! use rand_core::{OsRng, TryRngCore}; // requires 'getrandom` feature
-//! use bign256::{
+//! use bignp256::{
 //!     ecdsa::{Signature, SigningKey, signature::Signer},
 //!     SecretKey
 //! };
@@ -21,7 +21,7 @@
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verifying
-//! use bign256::ecdsa::{VerifyingKey, signature::Verifier};
+//! use bignp256::ecdsa::{VerifyingKey, signature::Verifier};
 //!
 //! let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes)?;
 //! verifying_key.verify(message, &signature)?;

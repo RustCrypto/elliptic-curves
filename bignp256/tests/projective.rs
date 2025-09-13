@@ -2,7 +2,7 @@
 
 #![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
 
-use bign256::{
+use bignp256::{
     AffinePoint, ProjectivePoint, Scalar,
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };

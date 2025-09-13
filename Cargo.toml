@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "bign256",
+    "bignp256",
     "bp256",
     "bp384",
     "ed448-goldilocks",
