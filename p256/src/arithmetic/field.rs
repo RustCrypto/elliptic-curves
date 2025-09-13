@@ -8,14 +8,13 @@ mod field_impl;
 
 use core::ops::Mul;
 use elliptic_curve::{
-    bigint::{NonZero, U256},
+    bigint::U256,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 /// Constant representing the modulus: p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff";
-pub const MODULUS: NonZero<U256> = NonZero::<U256>::from_be_hex(MODULUS_HEX);
 
 primefield::monty_field_params!(
     name: FieldParams,
