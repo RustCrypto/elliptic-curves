@@ -22,7 +22,7 @@ elliptic-curve = { version = "0.14.0-rc.14", default-features = false, features 
 rand_core = { version = "0.9", default-features = false }
 
 # optional dependencies
-primefield = { version = "=0.14.0-pre.5", optional = true }
+primefield = { version = "=0.14.0-pre.6", optional = true }
 primeorder = { version = "=0.14.0-pre.8", optional = true }
 rfc6979 = { version = "0.5.0-rc.1", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
