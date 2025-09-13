@@ -56,7 +56,7 @@ use alloc::vec::Vec;
 pub type SignatureBytes = [u8; Signature::BYTE_SIZE];
 
 /// Primitive scalar type (works without the `arithmetic` feature).
-type ScalarPrimitive = elliptic_curve::ScalarPrimitive<BignP256>;
+type ScalarValue = elliptic_curve::ScalarValue<BignP256>;
 
 const BELT_OID: [u8; 11] = [
     0x06, 0x09, 0x2A, 0x70, 0x00, 0x02, 0x00, 0x22, 0x65, 0x1F, 0x51,
@@ -65,8 +65,8 @@ const BELT_OID: [u8; 11] = [
 #[derive(Copy, Clone, Eq, PartialEq)]
 /// BignP256 Signature.
 pub struct Signature {
-    s0: ScalarPrimitive,
-    s1: ScalarPrimitive,
+    s0: ScalarValue,
+    s1: ScalarValue,
 }
 
 impl Signature {
@@ -79,8 +79,8 @@ impl Signature {
         let mut s0_bytes: Array<u8, U32> = Default::default();
         s0_bytes[..16].copy_from_slice(s0);
 
-        let s0 = ScalarPrimitive::from_slice(&s0_bytes).map_err(|_| Error::new())?;
-        let s1 = ScalarPrimitive::from_slice(s1).map_err(|_| Error::new())?;
+        let s0 = ScalarValue::from_slice(&s0_bytes).map_err(|_| Error::new())?;
+        let s1 = ScalarValue::from_slice(s1).map_err(|_| Error::new())?;
 
         if s0.is_zero().into() || s1.is_zero().into() {
             return Err(Error::new());

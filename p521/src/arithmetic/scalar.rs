@@ -48,7 +48,7 @@ use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
 
 #[cfg(feature = "serde")]
 use {
-    elliptic_curve::ScalarPrimitive,
+    elliptic_curve::ScalarValue,
     serdect::serde::{Deserialize, Serialize, de, ser},
 };
 
@@ -404,7 +404,7 @@ impl Field for Scalar {
     const ONE: Self = Self::ONE;
 
     fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
-        // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
+        // NOTE: can't use ScalarValue::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
         loop {
@@ -662,7 +662,7 @@ impl Serialize for Scalar {
     where
         S: ser::Serializer,
     {
-        ScalarPrimitive::from(self).serialize(serializer)
+        ScalarValue::from(self).serialize(serializer)
     }
 }
 
@@ -672,7 +672,7 @@ impl<'de> Deserialize<'de> for Scalar {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
+        Ok(ScalarValue::deserialize(deserializer)?.into())
     }
 }
 

@@ -15,7 +15,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve, Error, ScalarPrimitive,
+    Curve, Error, ScalarValue,
     bigint::{Limb, U256, U512, Word, prelude::*},
     ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -398,27 +398,27 @@ impl From<&NonZeroScalar> for Scalar {
     }
 }
 
-impl From<ScalarPrimitive<Secp256k1>> for Scalar {
-    fn from(scalar: ScalarPrimitive<Secp256k1>) -> Scalar {
+impl From<ScalarValue<Secp256k1>> for Scalar {
+    fn from(scalar: ScalarValue<Secp256k1>) -> Scalar {
         Scalar(*scalar.as_uint())
     }
 }
 
-impl From<&ScalarPrimitive<Secp256k1>> for Scalar {
-    fn from(scalar: &ScalarPrimitive<Secp256k1>) -> Scalar {
+impl From<&ScalarValue<Secp256k1>> for Scalar {
+    fn from(scalar: &ScalarValue<Secp256k1>) -> Scalar {
         Scalar(*scalar.as_uint())
     }
 }
 
-impl From<Scalar> for ScalarPrimitive<Secp256k1> {
-    fn from(scalar: Scalar) -> ScalarPrimitive<Secp256k1> {
-        ScalarPrimitive::from(&scalar)
+impl From<Scalar> for ScalarValue<Secp256k1> {
+    fn from(scalar: Scalar) -> ScalarValue<Secp256k1> {
+        ScalarValue::from(&scalar)
     }
 }
 
-impl From<&Scalar> for ScalarPrimitive<Secp256k1> {
-    fn from(scalar: &Scalar) -> ScalarPrimitive<Secp256k1> {
-        ScalarPrimitive::new(scalar.0).unwrap()
+impl From<&Scalar> for ScalarValue<Secp256k1> {
+    fn from(scalar: &Scalar) -> ScalarValue<Secp256k1> {
+        ScalarValue::new(scalar.0).unwrap()
     }
 }
 
@@ -875,7 +875,7 @@ impl Serialize for Scalar {
     where
         S: ser::Serializer,
     {
-        ScalarPrimitive::from(self).serialize(serializer)
+        ScalarValue::from(self).serialize(serializer)
     }
 }
 
@@ -885,7 +885,7 @@ impl<'de> Deserialize<'de> for Scalar {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
+        Ok(ScalarValue::deserialize(deserializer)?.into())
     }
 }
 

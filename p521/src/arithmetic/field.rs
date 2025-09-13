@@ -418,7 +418,7 @@ impl Field for FieldElement {
     const ONE: Self = Self::ONE;
 
     fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        // NOTE: can't use ScalarPrimitive::random due to CryptoRng bound
+        // NOTE: can't use ScalarValue::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
         loop {

@@ -30,7 +30,7 @@ use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(feature = "serde")]
 use {
-    elliptic_curve::ScalarPrimitive,
+    elliptic_curve::ScalarValue,
     serdect::serde::{Deserialize, Serialize, de, ser},
 };
 
@@ -708,7 +708,7 @@ impl Serialize for Scalar {
     where
         S: ser::Serializer,
     {
-        ScalarPrimitive::from(self).serialize(serializer)
+        ScalarValue::from(self).serialize(serializer)
     }
 }
 
@@ -718,7 +718,7 @@ impl<'de> Deserialize<'de> for Scalar {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(ScalarPrimitive::deserialize(deserializer)?.into())
+        Ok(ScalarValue::deserialize(deserializer)?.into())
     }
 }
 
