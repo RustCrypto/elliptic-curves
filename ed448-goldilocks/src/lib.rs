@@ -64,11 +64,12 @@ pub use sign::*;
 
 use elliptic_curve::{
     Curve, FieldBytesEncoding, PrimeCurve,
-    array::typenum::{U28, U56, U57},
+    array::typenum::{U56, U57},
     bigint::{ArrayEncoding, Odd, U448},
     point::PointCompression,
 };
-use hash2curve::GroupDigest;
+use hash2curve::{ExpandMsgXof, GroupDigest};
+use sha3::Shake256;
 
 /// Edwards448 curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -116,7 +117,10 @@ impl elliptic_curve::CurveArithmetic for Ed448 {
 }
 
 impl GroupDigest for Ed448 {
-    type SecurityLevel = U28;
+    const HASH_TO_CURVE_ID: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_RO_";
+    const ENCODE_TO_CURVE_ID: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_NU_";
+
+    type ExpandMsg = ExpandMsgXof<Shake256>;
 }
 
 /// Decaf448 curve.
@@ -165,5 +169,8 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
 }
 
 impl GroupDigest for Decaf448 {
-    type SecurityLevel = U28;
+    const HASH_TO_CURVE_ID: &[u8] = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
+    const ENCODE_TO_CURVE_ID: &[u8] = b"decaf448_XOF:SHAKE256_D448MAP_NU_";
+
+    type ExpandMsg = ExpandMsgXof<Shake256>;
 }

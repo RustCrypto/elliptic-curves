@@ -49,12 +49,13 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features hash2curve
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features group-digest
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features oprf
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,hash2curve,oprf,pem,pkcs8,serde,sha256
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,bits,ecdh,ecdsa,group-digest,oprf,pem,pkcs8,serde,sha256
 
   benches:
     runs-on: ubuntu-latest

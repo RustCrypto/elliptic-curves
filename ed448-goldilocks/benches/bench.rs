@@ -1,12 +1,11 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use ed448_goldilocks::{
-    Decaf448, DecafPoint, DecafScalar, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
+    Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
 };
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
-use hash2curve::{ExpandMsgXof, GroupDigest};
+use hash2curve::GroupDigest;
 use rand_core::{OsRng, TryRngCore};
-use sha3::Shake256;
 
 pub fn ed448(c: &mut Criterion) {
     let mut group = c.benchmark_group("Ed448");
@@ -42,7 +41,7 @@ pub fn ed448(c: &mut Criterion) {
                 OsRng.try_fill_bytes(&mut msg).unwrap();
                 msg
             },
-            |msg| EdwardsPoint::encode_with_defaults(&msg),
+            |msg| Ed448::encode_from_bytes(&msg, b"test DST"),
             BatchSize::SmallInput,
         )
     });
@@ -100,12 +99,7 @@ pub fn decaf448(c: &mut Criterion) {
                 OsRng.try_fill_bytes(&mut msg).unwrap();
                 msg
             },
-            |msg| {
-                Decaf448::encode_from_bytes::<ExpandMsgXof<Shake256>>(
-                    &[&msg],
-                    &[b"decaf448_XOF:SHAKE256_D448MAP_NU_"],
-                )
-            },
+            |msg| Decaf448::encode_from_bytes(&msg, b"test DST"),
             BatchSize::SmallInput,
         )
     });

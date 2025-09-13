@@ -16,14 +16,8 @@ use elliptic_curve::{
     ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
 };
-use hash2curve::ExpandMsgXof;
 use rand_core::TryRngCore;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
-
-/// The default hash to curve domain separation tag
-pub const DEFAULT_HASH_TO_CURVE_SUITE: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_RO_";
-/// The default encode to curve domain separation tag
-pub const DEFAULT_ENCODE_TO_CURVE_SUITE: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_NU_";
 
 /// Represent points on the (untwisted) edwards curve using Extended Homogenous Projective Co-ordinates
 /// (x, y) -> (X/Z, Y/Z, Z, T)
@@ -500,30 +494,6 @@ impl EdwardsPoint {
 
         ok
     }
-
-    /// Hash a message to a point on the curve
-    ///
-    /// Hash using the default domain separation tag and hash function.
-    /// For more control see [`GroupDigest::hash_from_bytes()`].
-    pub fn hash_with_defaults(msg: &[u8]) -> Self {
-        Ed448::hash_from_bytes::<ExpandMsgXof<sha3::Shake256>>(
-            &[msg],
-            &[DEFAULT_HASH_TO_CURVE_SUITE],
-        )
-        .expect("should never fail with the given `ExpandMsg` and `dst`")
-    }
-
-    /// Encode a message to a point on the curve
-    ///
-    /// Encode using the default domain separation tag and hash function.
-    /// For more control see [`GroupDigest::encode_from_bytes()`].
-    pub fn encode_with_defaults(msg: &[u8]) -> Self {
-        Ed448::encode_from_bytes::<ExpandMsgXof<sha3::Shake256>>(
-            &[msg],
-            &[DEFAULT_ENCODE_TO_CURVE_SUITE],
-        )
-        .expect("should never fail with the given `ExpandMsg` and `dst`")
-    }
 }
 
 impl From<NonIdentity<EdwardsPoint>> for EdwardsPoint {
@@ -977,7 +947,9 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = Ed448::hash_from_bytes::<ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST]).unwrap();
+            let p =
+                hash2curve::hash_from_bytes::<Ed448, ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST])
+                    .unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -996,7 +968,7 @@ mod tests {
         for _ in 0..25 {
             let mut msg = [0u8; 64];
             rand_core::OsRng.try_fill_bytes(&mut msg).unwrap();
-            let p = EdwardsPoint::hash_with_defaults(&msg);
+            let p = Ed448::hash_from_bytes(&msg, b"test DST").unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             assert_eq!(p.is_torsion_free().unwrap_u8(), 1u8);
         }
@@ -1014,8 +986,11 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p =
-                Ed448::encode_from_bytes::<ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST]).unwrap();
+            let p = hash2curve::encode_from_bytes::<Ed448, ExpandMsgXof<sha3::Shake256>>(
+                &[msg],
+                &[DST],
+            )
+            .unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -1088,7 +1063,7 @@ mod tests {
         let b = EdwardsScalar::random(&mut rng);
 
         let g1 = EdwardsPoint::GENERATOR;
-        let g2 = EdwardsPoint::hash_with_defaults(b"test_pow_add_mul");
+        let g2 = Ed448::hash_from_bytes(b"test_pow_add_mul", b"test DST").unwrap();
 
         let expected_commitment = g1 * x + g2 * b;
 

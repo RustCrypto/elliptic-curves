@@ -45,6 +45,7 @@ where
     // https://www.rfc-editor.org/rfc/rfc9380.html#section-5.3.2-2.1
     HashT: CollisionResistance<CollisionResistance: IsGreaterOrEqual<K, Output = True>>,
 {
+    type Hash = HashT;
     type Expander<'dst> = Self;
     type Error = ExpandMsgXofError;
 

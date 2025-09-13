@@ -18,6 +18,7 @@ It is intended to be portable, fast, and safe.
 
 ```rust
 use ed448_goldilocks::{Ed448, EdwardsPoint, CompressedEdwardsY, EdwardsScalar, sha3::Shake256};
+use elliptic_curve::consts::U84;
 use elliptic_curve::Field;
 use elliptic_curve::group::GroupEncoding;
 use hash2curve::{ExpandMsgXof, GroupDigest};
@@ -34,17 +35,17 @@ let compressed_public_key = public_key.to_bytes();
 
 assert_eq!(compressed_public_key.len(), 57);
 
-let hashed_scalar = Ed448::hash_to_scalar::<ExpandMsgXof<Shake256>>(&[b"test"], &[b"edwards448_XOF:SHAKE256_ELL2_RO_"]).unwrap();
-let input = hex_literal::hex!("c8c6c8f584e0c25efdb6af5ad234583c56dedd7c33e0c893468e96740fa0cf7f1a560667da40b7bde340a39252e89262fcf707d1180fd43400");
+let hashed_scalar = hash2curve::hash_to_scalar::<Ed448, <Ed448 as GroupDigest>::ExpandMsg, U84>(&[b"test"], &[b"test DST"]).unwrap();
+let input = hex_literal::hex!("8108d09ce4ea5707d44a6e52d75f290d0a0801cd5e366b9a0e6f72c75246ea5042963192c01703749adb0f5a4b1ab0586ccc6cf58cfd6d0e00");
 let expected_scalar = EdwardsScalar::from_canonical_bytes(&input.into()).unwrap();
 assert_eq!(hashed_scalar, expected_scalar);
 
-let hashed_point = Ed448::hash_from_bytes::<ExpandMsgXof<Shake256>>(&[b"test"], &[b"edwards448_XOF:SHAKE256_ELL2_RO_"]).unwrap();
-let expected = hex_literal::hex!("d15c4427b5c5611a53593c2be611fd3635b90272d331c7e6721ad3735e95dd8b9821f8e4e27501ce01aa3c913114052dce2e91e8ca050f4980");
+let hashed_point = Ed448::hash_from_bytes(b"test", b"test DST").unwrap();
+let expected = hex_literal::hex!("ff5af3430905789691f01a54feb6275dc6a28a4f7e99c1c6ef261fe665428f986723060f44d4410ed4dcf33255f53bed07e068084fdb68f980");
 let expected_point = CompressedEdwardsY(expected).decompress().unwrap().to_edwards();
 assert_eq!(hashed_point, expected_point);
 
-let hashed_point = EdwardsPoint::hash_with_defaults(b"test");
+let hashed_point = Ed448::hash_from_bytes(b"test", b"test DST").unwrap();
 assert_eq!(hashed_point, expected_point);
 ```
 

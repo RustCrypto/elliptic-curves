@@ -4,15 +4,19 @@ use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-use hash2curve::{GroupDigest, MapToCurve};
+use hash2curve::MapToCurve;
 use primeorder::osswu::{OsswuMap, OsswuMapParams, Sgn0};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
 use super::FieldElement;
 
-impl GroupDigest for Secp256k1 {
-    type SecurityLevel = U16;
+#[cfg(feature = "group-digest")]
+impl hash2curve::GroupDigest for Secp256k1 {
+    const HASH_TO_CURVE_ID: &[u8] = b"secp256k1_XMD:SHA-256_SSWU_RO_";
+    const ENCODE_TO_CURVE_ID: &[u8] = b"secp256k1_XMD:SHA-256_SSWU_NU_";
+
+    type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha256>;
 }
 
 impl Reduce<Array<u8, U48>> for FieldElement {
@@ -127,9 +131,9 @@ impl OsswuMap for FieldElement {
 }
 
 impl MapToCurve for Secp256k1 {
+    type SecurityLevel = U16;
     type FieldElement = FieldElement;
-    type FieldLength = U48;
-    type ScalarLength = U48;
+    type Length = U48;
 
     fn map_to_curve(element: FieldElement) -> ProjectivePoint {
         let (rx, ry) = element.osswu();
@@ -283,7 +287,7 @@ mod tests {
         group::cofactor::CofactorGroup,
         ops::Reduce,
     };
-    use hash2curve::{GroupDigest, MapToCurve};
+    use hash2curve::MapToCurve;
     use hex_literal::hex;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 
@@ -370,9 +374,9 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha256>,
-                <Secp256k1 as GroupDigest>::SecurityLevel,
+                <Secp256k1 as MapToCurve>::SecurityLevel,
                 FieldElement,
-                <Secp256k1 as MapToCurve>::FieldLength,
+                <Secp256k1 as MapToCurve>::Length,
             >(&[test_vector.msg], &[DST])
             .unwrap();
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
@@ -394,8 +398,11 @@ mod tests {
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
 
             // complete run
-            let pt = Secp256k1::hash_from_bytes::<ExpandMsgXmd<Sha256>>(&[test_vector.msg], &[DST])
-                .unwrap();
+            let pt = hash2curve::hash_from_bytes::<Secp256k1, ExpandMsgXmd<Sha256>>(
+                &[test_vector.msg],
+                &[DST],
+            )
+            .unwrap();
             let apt = pt.to_affine();
             assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);
             assert_eq!(apt.y.to_bytes().as_slice(), test_vector.p_y);

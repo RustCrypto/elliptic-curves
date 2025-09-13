@@ -36,6 +36,7 @@ where
     K: Mul<U2>,
     HashT::OutputSize: IsGreaterOrEqual<Prod<K, U2>, Output = True>,
 {
+    type Hash = HashT;
     type Expander<'dst> = ExpanderXmd<'dst, HashT>;
     type Error = ExpandMsgXmdError;
 
