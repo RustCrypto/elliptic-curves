@@ -293,7 +293,7 @@ mod tests {
     #[test]
     fn bip340_sign_vectors() {
         for vector in BIP340_SIGN_VECTORS {
-            let sk = SigningKey::from_bytes(&vector.secret_key).unwrap();
+            let sk = SigningKey::from_bytes(&vector.secret_key.into()).unwrap();
             assert_eq!(sk.verifying_key().to_bytes().as_slice(), &vector.public_key);
 
             let sig = sk
@@ -319,9 +319,9 @@ mod tests {
         // Test indexes 15-18 from https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv
         //
         // These tests all use the same key and aux
-        let sk = SigningKey::from_bytes(&hex!(
-            "0340034003400340034003400340034003400340034003400340034003400340"
-        ))
+        let sk = SigningKey::from_bytes(
+            &hex!("0340034003400340034003400340034003400340034003400340034003400340").into(),
+        )
         .unwrap();
 
         let aux_rand = [0u8; 32];
@@ -527,7 +527,7 @@ mod tests {
     fn bip340_verify_vectors() {
         for vector in BIP340_VERIFY_VECTORS {
             let valid = match (
-                VerifyingKey::from_bytes(&vector.public_key),
+                VerifyingKey::from_bytes(&vector.public_key.into()),
                 Signature::try_from(vector.signature.as_slice()),
             ) {
                 (Ok(pk), Ok(sig)) => pk.verify_prehash(&vector.message, &sig).is_ok(),

@@ -26,6 +26,20 @@ pub struct VerifyingKey {
 }
 
 impl VerifyingKey {
+    /// Parse verifying key from big endian-encoded x-coordinate.
+    pub fn from_bytes(x_bytes: &FieldBytes) -> Result<Self> {
+        AffinePoint::decompact(x_bytes)
+            .into_option()
+            .ok_or_else(Error::new)?
+            .try_into()
+    }
+
+    /// Parse verifying key from big endian-encoded x-coordinate.
+    pub fn from_slice(x_bytes: &[u8]) -> Result<Self> {
+        let x_bytes = FieldBytes::try_from(x_bytes).map_err(|_| Error::new())?;
+        Self::from_bytes(&x_bytes)
+    }
+
     /// Borrow the inner [`AffinePoint`] this type wraps.
     pub fn as_affine(&self) -> &AffinePoint {
         self.inner.as_affine()
@@ -68,16 +82,6 @@ impl VerifyingKey {
         }
 
         Ok(())
-    }
-
-    /// Parse verifying key from big endian-encoded x-coordinate.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let field_bytes = FieldBytes::try_from(bytes).map_err(|_| Error::new())?;
-        let maybe_affine_point = AffinePoint::decompact(&field_bytes);
-        let affine_point = Option::from(maybe_affine_point).ok_or_else(Error::new)?;
-        PublicKey::from_affine(affine_point)
-            .map_err(|_| Error::new())?
-            .try_into()
     }
 }
 
@@ -152,6 +156,20 @@ impl From<&VerifyingKey> for PublicKey {
     }
 }
 
+impl TryFrom<AffinePoint> for VerifyingKey {
+    type Error = Error;
+
+    fn try_from(mut point: AffinePoint) -> Result<VerifyingKey> {
+        if point.y.normalize().is_odd().into() {
+            point = -point;
+        }
+
+        PublicKey::try_from(point)
+            .map_err(|_| Error::new())?
+            .try_into()
+    }
+}
+
 impl TryFrom<PublicKey> for VerifyingKey {
     type Error = Error;
 
@@ -169,6 +187,14 @@ impl TryFrom<&PublicKey> for VerifyingKey {
 
     fn try_from(public_key: &PublicKey) -> Result<VerifyingKey> {
         Self::try_from(*public_key)
+    }
+}
+
+impl TryFrom<&[u8]> for VerifyingKey {
+    type Error = Error;
+
+    fn try_from(x_bytes: &[u8]) -> Result<VerifyingKey> {
+        Self::from_slice(x_bytes)
     }
 }
 

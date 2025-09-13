@@ -48,10 +48,17 @@ impl SigningKey {
     }
 
     /// Parse signing key from big endian-encoded bytes.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        NonZeroScalar::try_from(bytes)
+    pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
+        NonZeroScalar::from_repr(*bytes)
+            .into_option()
             .map(Into::into)
-            .map_err(|_| Error::new())
+            .ok_or_else(Error::new)
+    }
+
+    /// Parse signing key from big endian-encoded byte slice.
+    pub fn from_slice(bytes: &[u8]) -> Result<Self> {
+        let x_bytes = FieldBytes::try_from(bytes).map_err(|_| Error::new())?;
+        Self::from_bytes(&x_bytes)
     }
 
     /// Serialize as bytes.
@@ -157,6 +164,14 @@ impl From<SecretKey> for SigningKey {
 impl From<&SecretKey> for SigningKey {
     fn from(secret_key: &SecretKey) -> SigningKey {
         secret_key.to_nonzero_scalar().into()
+    }
+}
+
+impl TryFrom<&[u8]> for SigningKey {
+    type Error = Error;
+
+    fn try_from(bytes: &[u8]) -> Result<SigningKey> {
+        Self::from_slice(bytes)
     }
 }
 
