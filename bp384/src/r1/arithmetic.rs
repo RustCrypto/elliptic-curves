@@ -12,7 +12,7 @@ pub type AffinePoint = primeorder::AffinePoint<BrainpoolP384r1>;
 pub type ProjectivePoint = primeorder::ProjectivePoint<BrainpoolP384r1>;
 
 /// Primitive scalar type.
-pub type ScalarPrimitive = elliptic_curve::ScalarPrimitive<BrainpoolP384r1>;
+pub type ScalarValue = elliptic_curve::ScalarValue<BrainpoolP384r1>;
 
 /// Non-zero scalar field element.
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BrainpoolP384r1>;

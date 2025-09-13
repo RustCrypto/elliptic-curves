@@ -11,7 +11,7 @@ use pkcs8::{
 
 #[cfg(feature = "arithmetic")]
 use crate::FieldBytes;
-use crate::{ALGORITHM_OID, PublicKey, ScalarPrimitive, SecretKey};
+use crate::{ALGORITHM_OID, PublicKey, ScalarValue, SecretKey};
 #[cfg(feature = "arithmetic")]
 use crate::{
     BignP256, NonZeroScalar, Result,
@@ -39,14 +39,14 @@ impl SecretKey {
         })
     }
 
-    /// Borrow the inner secret [`elliptic_curve::ScalarPrimitive`] value.
+    /// Borrow the inner secret [`elliptic_curve::ScalarValue`] value.
     ///
     /// # ⚠️ Warning
     ///
     /// This value is key material.
     ///
     /// Please treat it with the care it deserves!
-    pub fn as_scalar_primitive(&self) -> &ScalarPrimitive {
+    pub fn as_scalar_primitive(&self) -> &ScalarValue {
         &self.inner
     }
 
@@ -70,8 +70,7 @@ impl SecretKey {
 
     /// Deserialize secret key from an encoded secret scalar.
     pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
-        let inner: ScalarPrimitive =
-            Option::from(ScalarPrimitive::from_bytes(bytes)).ok_or(Error)?;
+        let inner = ScalarValue::from_bytes(bytes).into_option().ok_or(Error)?;
 
         if inner.is_zero().into() {
             return Err(Error);

@@ -142,7 +142,7 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BignP256>;
 
 /// Generic scalar type with primitive functionality.#
 #[cfg(feature = "arithmetic")]
-pub type ScalarPrimitive = elliptic_curve::ScalarPrimitive<BignP256>;
+pub type ScalarValue = elliptic_curve::ScalarValue<BignP256>;
 
 /// Elliptic curve BignP256 public key.
 #[cfg(feature = "arithmetic")]
@@ -155,7 +155,7 @@ pub struct PublicKey {
 #[cfg(feature = "arithmetic")]
 #[derive(Copy, Clone, Debug)]
 pub struct SecretKey {
-    inner: ScalarPrimitive,
+    inner: ScalarValue,
 }
 
 /// Bit representation of a BIGN P-256 scalar field element.

@@ -77,13 +77,13 @@ pub type SignatureSize = <FieldBytesSize as Add>::Output;
 pub type SignatureBytes = Array<u8, SignatureSize>;
 
 /// Primitive scalar type (works without the `arithmetic` feature).
-type ScalarPrimitive = elliptic_curve::ScalarPrimitive<Sm2>;
+type ScalarValue = elliptic_curve::ScalarValue<Sm2>;
 
 /// SM2DSA signature.
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub struct Signature {
-    r: ScalarPrimitive,
-    s: ScalarPrimitive,
+    r: ScalarValue,
+    s: ScalarValue,
 }
 
 impl Signature {
@@ -93,8 +93,8 @@ impl Signature {
     /// Parse an SM2DSA signature from a byte array.
     pub fn from_bytes(bytes: &SignatureBytes) -> Result<Self> {
         let (r_bytes, s_bytes) = bytes.split_at(Self::BYTE_SIZE / 2);
-        let r = ScalarPrimitive::from_slice(r_bytes).map_err(|_| Error::new())?;
-        let s = ScalarPrimitive::from_slice(s_bytes).map_err(|_| Error::new())?;
+        let r = ScalarValue::from_slice(r_bytes).map_err(|_| Error::new())?;
+        let s = ScalarValue::from_slice(s_bytes).map_err(|_| Error::new())?;
 
         if r.is_zero().into() || s.is_zero().into() {
             return Err(Error::new());
