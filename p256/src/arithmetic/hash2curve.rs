@@ -92,11 +92,11 @@ impl Reduce<Array<u8, U48>> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
-    use crate::{NistP256, Scalar, U256, arithmetic::field::MODULUS};
+    use crate::{NistP256, Scalar, U256, arithmetic::field::FieldParams};
     use elliptic_curve::{
         Curve, Field,
         array::Array,
-        bigint::{ArrayEncoding, CheckedSub, NonZero, U384},
+        bigint::{ArrayEncoding, CheckedSub, NonZero, U384, modular::ConstMontyParams},
         consts::U48,
         sec1::{self, ToEncodedPoint},
     };
@@ -111,8 +111,12 @@ mod tests {
     fn params() {
         let params = <FieldElement as OsswuMap>::PARAMS;
 
-        let c1 = MODULUS.checked_sub(&U256::from_u8(3)).unwrap()
+        let c1 = FieldParams::PARAMS
+            .modulus()
+            .checked_sub(&U256::from_u8(3))
+            .unwrap()
             / NonZero::new(U256::from_u8(4)).unwrap();
+
         assert_eq!(
             Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
             c1.to_be_byte_array()
