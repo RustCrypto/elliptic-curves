@@ -178,7 +178,9 @@ mod tests {
     mod recovery {
         use crate::{
             EncodedPoint,
-            ecdsa::{RecoveryId, Signature, SigningKey, VerifyingKey, signature::DigestVerifier},
+            ecdsa::{
+                RecoveryId, Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashVerifier,
+            },
         };
         use hex_literal::hex;
         use sha2::{Digest, Sha256};
@@ -242,8 +244,8 @@ mod tests {
             let msg = hex!(
                 "e9808504e3b29200831e848094f0109fc8df283027b6285cc889f5aa624eac1f55843b9aca0080018080"
             );
-            let digest = Keccak256::new_with_prefix(msg);
 
+            let digest = Keccak256::new_with_prefix(msg);
             let (sig, recid) = signing_key.sign_digest_recoverable(digest.clone()).unwrap();
             assert_eq!(
                 sig.to_bytes().as_slice(),
@@ -257,7 +259,11 @@ mod tests {
                 VerifyingKey::recover_from_digest(digest.clone(), &sig, recid).unwrap();
 
             assert_eq!(signing_key.verifying_key(), &verifying_key);
-            assert!(verifying_key.verify_digest(digest, &sig).is_ok());
+            assert!(
+                verifying_key
+                    .verify_prehash(&digest.finalize(), &sig)
+                    .is_ok()
+            );
         }
     }
 

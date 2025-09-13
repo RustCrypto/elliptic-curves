@@ -9,7 +9,7 @@ use elliptic_curve::{
 };
 use sha2::{
     Digest, Sha256,
-    digest::{FixedOutput, consts::U32},
+    digest::{Update, consts::U32},
 };
 use signature::{
     DigestVerifier, Error, MultipartVerifier, Result, Verifier, hazmat::PrehashVerifier,
@@ -46,11 +46,7 @@ impl VerifyingKey {
     /// Schnorr signature.
     ///
     /// The preferred interfaces are the [`DigestVerifier`] or [`PrehashVerifier`] traits.
-    pub fn verify_raw(
-        &self,
-        message: &[u8],
-        signature: &Signature,
-    ) -> core::result::Result<(), Error> {
+    pub fn verify_raw(&self, message: &[u8], signature: &Signature) -> Result<()> {
         let (r, s) = signature.split();
 
         let e = <Scalar as Reduce<FieldBytes>>::reduce(
@@ -91,19 +87,21 @@ impl VerifyingKey {
 
 impl<D> DigestVerifier<D, Signature> for VerifyingKey
 where
-    D: Digest + FixedOutput<OutputSize = U32>,
+    D: Digest<OutputSize = U32> + Update,
 {
-    fn verify_digest(&self, digest: D, signature: &Signature) -> Result<()> {
-        self.verify_prehash(digest.finalize_fixed().as_slice(), signature)
+    fn verify_digest<F: Fn(&mut D) -> Result<()>>(
+        &self,
+        f: F,
+        signature: &Signature,
+    ) -> Result<()> {
+        let mut digest = D::new();
+        f(&mut digest)?;
+        self.verify_prehash(&digest.finalize(), signature)
     }
 }
 
 impl PrehashVerifier<Signature> for VerifyingKey {
-    fn verify_prehash(
-        &self,
-        prehash: &[u8],
-        signature: &Signature,
-    ) -> core::result::Result<(), Error> {
+    fn verify_prehash(&self, prehash: &[u8], signature: &Signature) -> Result<()> {
         self.verify_raw(prehash, signature)
     }
 }
@@ -116,9 +114,13 @@ impl Verifier<Signature> for VerifyingKey {
 
 impl MultipartVerifier<Signature> for VerifyingKey {
     fn multipart_verify(&self, msg: &[&[u8]], signature: &Signature) -> Result<()> {
-        let mut digest = Sha256::new();
-        msg.iter().for_each(|slice| digest.update(slice));
-        self.verify_digest(digest, signature)
+        self.verify_digest(
+            |digest: &mut Sha256| {
+                msg.iter().for_each(|&slice| Update::update(digest, slice));
+                Ok(())
+            },
+            signature,
+        )
     }
 }
 

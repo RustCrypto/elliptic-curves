@@ -214,12 +214,15 @@ impl TryFrom<Box<[u8]>> for SigningKey {
 
 impl<D> signature::DigestSigner<D, Signature> for SigningKey
 where
-    D: Digest,
+    D: Digest + Update,
 {
-    fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
-        let mut prehashed_message = [0u8; 64];
-        prehashed_message.copy_from_slice(digest.finalize().as_slice());
-        let sig = self.secret.sign_prehashed(&[], &prehashed_message)?;
+    fn try_sign_digest<F: Fn(&mut D) -> Result<(), Error>>(
+        &self,
+        f: F,
+    ) -> Result<Signature, Error> {
+        let mut digest = D::new();
+        f(&mut digest)?;
+        let sig = self.secret.sign_prehashed(&[], &digest.finalize())?;
         Ok(sig.into())
     }
 }
@@ -240,15 +243,18 @@ impl signature::Signer<Signature> for SigningKey {
 
 impl<D> signature::DigestSigner<D, Signature> for Context<'_, '_, SigningKey>
 where
-    D: Digest,
+    D: Digest + Update,
 {
-    fn try_sign_digest(&self, digest: D) -> Result<Signature, Error> {
-        let mut prehashed_message = [0u8; 64];
-        prehashed_message.copy_from_slice(digest.finalize().as_slice());
+    fn try_sign_digest<F: Fn(&mut D) -> Result<(), Error>>(
+        &self,
+        f: F,
+    ) -> Result<Signature, Error> {
+        let mut digest = D::new();
+        f(&mut digest)?;
         let sig = self
             .key
             .secret
-            .sign_prehashed(self.value, &prehashed_message)?;
+            .sign_prehashed(self.value, &digest.finalize())?;
         Ok(sig.into())
     }
 }
@@ -269,12 +275,16 @@ impl signature::Signer<Signature> for Context<'_, '_, SigningKey> {
 
 impl<D> signature::DigestVerifier<D, Signature> for SigningKey
 where
-    D: Digest,
+    D: Digest + Update,
 {
-    fn verify_digest(&self, msg: D, signature: &Signature) -> Result<(), Error> {
+    fn verify_digest<F: Fn(&mut D) -> Result<(), Error>>(
+        &self,
+        f: F,
+        signature: &Signature,
+    ) -> Result<(), Error> {
         <VerifyingKey as signature::DigestVerifier<D, Signature>>::verify_digest(
             &self.secret.public_key,
-            msg,
+            f,
             signature,
         )
     }

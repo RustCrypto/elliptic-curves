@@ -64,12 +64,16 @@ impl signature::Verifier<Signature> for VerifyingKey {
 
 impl<D> signature::DigestVerifier<D, Signature> for VerifyingKey
 where
-    D: Digest,
+    D: Digest + Update,
 {
-    fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
-        let mut prehashed_message = [0u8; 64];
-        prehashed_message.copy_from_slice(digest.finalize().as_slice());
-        self.verify_inner(signature, 1, &[], &prehashed_message)
+    fn verify_digest<F: Fn(&mut D) -> Result<(), Error>>(
+        &self,
+        f: F,
+        signature: &Signature,
+    ) -> Result<(), Error> {
+        let mut digest = D::new();
+        f(&mut digest)?;
+        self.verify_inner(signature, 1, &[], &digest.finalize())
     }
 }
 
@@ -81,13 +85,17 @@ impl signature::Verifier<Signature> for Context<'_, '_, VerifyingKey> {
 
 impl<D> signature::DigestVerifier<D, Signature> for Context<'_, '_, VerifyingKey>
 where
-    D: Digest,
+    D: Digest + Update,
 {
-    fn verify_digest(&self, digest: D, signature: &Signature) -> Result<(), Error> {
-        let mut prehashed_message = [0u8; 64];
-        prehashed_message.copy_from_slice(digest.finalize().as_slice());
+    fn verify_digest<F: Fn(&mut D) -> Result<(), Error>>(
+        &self,
+        f: F,
+        signature: &Signature,
+    ) -> Result<(), Error> {
+        let mut digest = D::new();
+        f(&mut digest)?;
         self.key
-            .verify_inner(signature, 1, self.value, &prehashed_message)
+            .verify_inner(signature, 1, self.value, &digest.finalize())
     }
 }
 
