@@ -94,17 +94,6 @@ impl FieldElement {
         self.multiply(self)
     }
 
-    /// Returns self^(2^n) mod p
-    const fn sqn(&self, n: usize) -> Self {
-        let mut x = *self;
-        let mut i = 0;
-        while i < n {
-            x = x.square();
-            i += 1;
-        }
-        x
-    }
-
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
         CtOption::new(self.invert_unchecked(), !self.is_zero())
@@ -160,6 +149,11 @@ impl FieldElement {
             sqrt,
             (&sqrt * &sqrt).ct_eq(self), // Only return Some if it's the square root.
         )
+    }
+
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        Self(self.0.sqn_vartime(n))
     }
 
     /// Construct a field element from a [`U256`] in Montgomery form.

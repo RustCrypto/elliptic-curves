@@ -150,12 +150,9 @@ impl Scalar {
         CtOption::new(x, x.square().ct_eq(&t1))
     }
 
-    fn sqn(&self, n: usize) -> Self {
-        let mut x = *self;
-        for _ in 0..n {
-            x = x.square();
-        }
-        x
+    /// Returns self^(2^n) mod p
+    const fn sqn(&self, n: usize) -> Self {
+        Self(self.0.sqn_vartime(n))
     }
 }
 

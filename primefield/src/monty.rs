@@ -376,7 +376,7 @@ where
     /// Returns self^(2^n) mod p.
     ///
     /// Variable-time with respect to `n`.
-    pub(crate) const fn sqn_vartime(&self, n: usize) -> Self {
+    pub const fn sqn_vartime(&self, n: usize) -> Self {
         let mut x = *self;
         let mut i = 0;
         while i < n {
