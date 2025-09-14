@@ -483,6 +483,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fiat-crypto"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64cd1e32ddd350061ae6edb1b082d7c54915b5c672c389143b9a63403a109f24"
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -776,6 +782,7 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
+ "fiat-crypto",
  "hash2curve",
  "hex-literal",
  "primefield",
@@ -1196,6 +1203,7 @@ version = "0.14.0-pre"
 dependencies = [
  "der",
  "elliptic-curve",
+ "fiat-crypto",
  "hex-literal",
  "primefield",
  "primeorder",
