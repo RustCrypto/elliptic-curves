@@ -10,18 +10,11 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg_attr(target_pointer_width = "32", path = "scalar/p384_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/p384_scalar_64.rs")]
-#[allow(
-    clippy::identity_op,
-    clippy::needless_lifetimes,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments
-)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-mod scalar_impl;
+#[cfg(target_pointer_width = "32")]
+use fiat_crypto::p384_scalar_32::*;
+#[cfg(target_pointer_width = "64")]
+use fiat_crypto::p384_scalar_64::*;
 
-use self::scalar_impl::*;
 use crate::{FieldBytes, NistP384, ORDER_HEX, U384};
 use elliptic_curve::{
     Curve as _, Error, Result,
