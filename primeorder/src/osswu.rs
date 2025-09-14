@@ -3,21 +3,25 @@
 //! <hhttps://www.rfc-editor.org/rfc/rfc9380.html#name-simplified-swu-method>
 
 use elliptic_curve::Field;
+use elliptic_curve::group::cofactor::CofactorGroup;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use hash2curve::{HashToCurve, MapToCurve};
 
-use crate::{AffinePoint, PrimeCurveParams};
+use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
 
-/// [`OsswuMap`] for [`AffinePoint`].
-pub trait AffineOsswuMap<C: PrimeCurveParams<FieldElement: OsswuMap>> {
-    /// [`OsswuMap::osswu()`] to [`AffinePoint`].
-    fn osswu(u: &C::FieldElement) -> Self;
-}
+/// Shallue-van de Woestijne-Ulas mapping for Weierstrass curves.
+pub struct ShallueVanDeWoestijne;
 
-impl<C: PrimeCurveParams<FieldElement: OsswuMap>> AffineOsswuMap<C> for AffinePoint<C> {
-    fn osswu(u: &<C as PrimeCurveParams>::FieldElement) -> Self {
-        let (x, y) = u.osswu();
+impl<C> MapToCurve<C> for ShallueVanDeWoestijne
+where
+    C: HashToCurve<FieldElement: OsswuMap>
+        + PrimeCurveParams<FieldElement = <C as HashToCurve>::FieldElement>,
+    ProjectivePoint<C>: CofactorGroup<Subgroup = ProjectivePoint<C>>,
+{
+    fn map_to_curve(element: <C as HashToCurve>::FieldElement) -> ProjectivePoint<C> {
+        let (x, y) = element.osswu();
 
-        Self { x, y, infinity: 0 }
+        AffinePoint { x, y, infinity: 0 }.into()
     }
 }
 

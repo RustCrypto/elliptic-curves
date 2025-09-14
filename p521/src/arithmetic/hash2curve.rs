@@ -1,5 +1,5 @@
 use super::FieldElement;
-use crate::{AffinePoint, NistP521, ProjectivePoint, Scalar, Uint};
+use crate::{NistP521, Scalar, Uint};
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
@@ -7,8 +7,14 @@ use elliptic_curve::{
     ops::Reduce,
     subtle::Choice,
 };
-use hash2curve::MapToCurve;
-use primeorder::osswu::{AffineOsswuMap, OsswuMap, OsswuMapParams, Sgn0};
+use hash2curve::HashToCurve;
+use primeorder::osswu::{OsswuMap, OsswuMapParams, Sgn0};
+
+impl HashToCurve for NistP521 {
+    type SecurityLevel = U32;
+    type FieldElement = FieldElement;
+    type Length = U98;
+}
 
 #[cfg(feature = "group-digest")]
 impl hash2curve::GroupDigest for NistP521 {
@@ -16,6 +22,7 @@ impl hash2curve::GroupDigest for NistP521 {
     const ENCODE_TO_CURVE_ID: &[u8] = b"P521_XMD:SHA-512_SSWU_NU_";
 
     type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha512>;
+    type MapToCurve = primeorder::osswu::ShallueVanDeWoestijne;
 }
 
 impl Reduce<Array<u8, U98>> for FieldElement {
@@ -66,16 +73,6 @@ impl OsswuMap for FieldElement {
     };
 }
 
-impl MapToCurve for NistP521 {
-    type SecurityLevel = U32;
-    type FieldElement = FieldElement;
-    type Length = U98;
-
-    fn map_to_curve(element: FieldElement) -> ProjectivePoint {
-        AffinePoint::osswu(&element).into()
-    }
-}
-
 impl Reduce<Array<u8, U98>> for Scalar {
     fn reduce(value: &Array<u8, U98>) -> Self {
         // TODO(tarcieri): make `Scalar::from_hex*` accept a `FieldBytes`-length hex input
@@ -117,9 +114,9 @@ mod tests {
         ops::Reduce,
         sec1::{self, ToEncodedPoint},
     };
-    use hash2curve::{self, ExpandMsgXmd, MapToCurve};
+    use hash2curve::{self, ExpandMsgXmd, HashToCurve, MapToCurve};
     use hex_literal::hex;
-    use primeorder::osswu::OsswuMap;
+    use primeorder::osswu::{OsswuMap, ShallueVanDeWoestijne};
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
 
@@ -223,9 +220,9 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha512>,
-                <NistP521 as MapToCurve>::SecurityLevel,
+                <NistP521 as HashToCurve>::SecurityLevel,
                 FieldElement,
-                <NistP521 as MapToCurve>::Length,
+                <NistP521 as HashToCurve>::Length,
             >(&[test_vector.msg], &[DST])
             .unwrap();
 
@@ -247,20 +244,21 @@ mod tests {
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
             assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
-            let q0 = NistP521::map_to_curve(u[0]);
+            let q0 = <ShallueVanDeWoestijne as MapToCurve<NistP521>>::map_to_curve(u[0]);
             assert_point_eq!(q0, test_vector.q0_x, test_vector.q0_y);
 
-            let q1 = NistP521::map_to_curve(u[1]);
+            let q1 = <ShallueVanDeWoestijne as MapToCurve<NistP521>>::map_to_curve(u[1]);
             assert_point_eq!(q1, test_vector.q1_x, test_vector.q1_y);
 
             let p = (q0 + q1).clear_cofactor();
             assert_point_eq!(p, test_vector.p_x, test_vector.p_y);
 
             // complete run
-            let pt = hash2curve::hash_from_bytes::<NistP521, ExpandMsgXmd<Sha512>>(
-                &[test_vector.msg],
-                &[DST],
-            )
+            let pt = hash2curve::hash_from_bytes::<
+                NistP521,
+                ExpandMsgXmd<Sha512>,
+                ShallueVanDeWoestijne,
+            >(&[test_vector.msg], &[DST])
             .unwrap();
             assert_point_eq!(pt, test_vector.p_x, test_vector.p_y);
         }

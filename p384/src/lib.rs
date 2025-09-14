@@ -47,6 +47,9 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
+#[cfg(feature = "hash2curve")]
+pub use primeorder::osswu::ShallueVanDeWoestijne;
+
 use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::ArrayEncoding, consts::U49};
 
 /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus) in hexadecimal.

@@ -946,9 +946,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p =
-                hash2curve::hash_from_bytes::<Ed448, ExpandMsgXof<sha3::Shake256>>(&[msg], &[DST])
-                    .unwrap();
+            let p = Ed448::hash_from_bytes(msg, DST).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];
@@ -985,11 +983,7 @@ mod tests {
         ];
 
         for (msg, x, y) in MSGS {
-            let p = hash2curve::encode_from_bytes::<Ed448, ExpandMsgXof<sha3::Shake256>>(
-                &[msg],
-                &[DST],
-            )
-            .unwrap();
+            let p = Ed448::encode_from_bytes(msg, DST).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             let p = p.to_affine();
             let mut xx = [0u8; 56];

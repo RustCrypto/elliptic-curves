@@ -4,12 +4,19 @@ use elliptic_curve::bigint::{ArrayEncoding, U256};
 use elliptic_curve::consts::{U4, U16, U48};
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
-use hash2curve::MapToCurve;
+use hash2curve::{HashToCurve, MapToCurve};
+use primeorder::osswu::ShallueVanDeWoestijne;
 use primeorder::osswu::{OsswuMap, OsswuMapParams, Sgn0};
 
 use crate::{AffinePoint, ProjectivePoint, Scalar, Secp256k1};
 
 use super::FieldElement;
+
+impl HashToCurve for Secp256k1 {
+    type SecurityLevel = U16;
+    type FieldElement = FieldElement;
+    type Length = U48;
+}
 
 #[cfg(feature = "group-digest")]
 impl hash2curve::GroupDigest for Secp256k1 {
@@ -17,6 +24,7 @@ impl hash2curve::GroupDigest for Secp256k1 {
     const ENCODE_TO_CURVE_ID: &[u8] = b"secp256k1_XMD:SHA-256_SSWU_NU_";
 
     type ExpandMsg = hash2curve::ExpandMsgXmd<sha2::Sha256>;
+    type MapToCurve = ShallueVanDeWoestijne;
 }
 
 impl Reduce<Array<u8, U48>> for FieldElement {
@@ -130,11 +138,7 @@ impl OsswuMap for FieldElement {
     }
 }
 
-impl MapToCurve for Secp256k1 {
-    type SecurityLevel = U16;
-    type FieldElement = FieldElement;
-    type Length = U48;
-
+impl MapToCurve<Secp256k1> for ShallueVanDeWoestijne {
     fn map_to_curve(element: FieldElement) -> ProjectivePoint {
         let (rx, ry) = element.osswu();
         let (qx, qy) = isogeny(rx, ry);
@@ -287,8 +291,9 @@ mod tests {
         group::cofactor::CofactorGroup,
         ops::Reduce,
     };
-    use hash2curve::MapToCurve;
+    use hash2curve::{HashToCurve, MapToCurve};
     use hex_literal::hex;
+    use primeorder::osswu::ShallueVanDeWoestijne;
     use proptest::{num::u64::ANY, prelude::ProptestConfig, proptest};
 
     #[test]
@@ -374,20 +379,20 @@ mod tests {
             let u = hash2curve::hash_to_field::<
                 2,
                 ExpandMsgXmd<Sha256>,
-                <Secp256k1 as MapToCurve>::SecurityLevel,
+                <Secp256k1 as HashToCurve>::SecurityLevel,
                 FieldElement,
-                <Secp256k1 as MapToCurve>::Length,
+                <Secp256k1 as HashToCurve>::Length,
             >(&[test_vector.msg], &[DST])
             .unwrap();
             assert_eq!(u[0].to_bytes().as_slice(), test_vector.u_0);
             assert_eq!(u[1].to_bytes().as_slice(), test_vector.u_1);
 
-            let q0 = Secp256k1::map_to_curve(u[0]);
+            let q0 = <ShallueVanDeWoestijne as MapToCurve<Secp256k1>>::map_to_curve(u[0]);
             let aq0 = q0.to_affine();
             assert_eq!(aq0.x.to_bytes().as_slice(), test_vector.q0_x);
             assert_eq!(aq0.y.to_bytes().as_slice(), test_vector.q0_y);
 
-            let q1 = Secp256k1::map_to_curve(u[1]);
+            let q1 = <ShallueVanDeWoestijne as MapToCurve<Secp256k1>>::map_to_curve(u[1]);
             let aq1 = q1.to_affine();
             assert_eq!(aq1.x.to_bytes().as_slice(), test_vector.q1_x);
             assert_eq!(aq1.y.to_bytes().as_slice(), test_vector.q1_y);
@@ -398,10 +403,11 @@ mod tests {
             assert_eq!(ap.y.to_bytes().as_slice(), test_vector.p_y);
 
             // complete run
-            let pt = hash2curve::hash_from_bytes::<Secp256k1, ExpandMsgXmd<Sha256>>(
-                &[test_vector.msg],
-                &[DST],
-            )
+            let pt = hash2curve::hash_from_bytes::<
+                Secp256k1,
+                ExpandMsgXmd<Sha256>,
+                ShallueVanDeWoestijne,
+            >(&[test_vector.msg], &[DST])
             .unwrap();
             let apt = pt.to_affine();
             assert_eq!(apt.x.to_bytes().as_slice(), test_vector.p_x);

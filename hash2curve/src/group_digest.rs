@@ -1,10 +1,10 @@
 //! Traits for handling hash to curve.
 
-use crate::{ExpandMsg, MapToCurve};
+use crate::{ExpandMsg, HashToCurve, MapToCurve};
 use elliptic_curve::ProjectivePoint;
 
 /// Hash arbitrary byte sequences to a valid group element.
-pub trait GroupDigest: MapToCurve {
+pub trait GroupDigest: HashToCurve {
     /// Suite ID for the [hash to curve routine](Self::hash_from_bytes).
     const HASH_TO_CURVE_ID: &[u8];
     /// Suite ID for the  [encode to curve routine](Self::encode_from_bytes).
@@ -12,6 +12,8 @@ pub trait GroupDigest: MapToCurve {
 
     /// The `expand_message` function to use.
     type ExpandMsg: ExpandMsg<Self::SecurityLevel>;
+    /// The mapping function.
+    type MapToCurve: MapToCurve<Self>;
 
     /// Computes the hash to curve routine.
     ///
@@ -36,7 +38,7 @@ pub trait GroupDigest: MapToCurve {
         dst: &[u8],
     ) -> Result<ProjectivePoint<Self>, <Self::ExpandMsg as ExpandMsg<Self::SecurityLevel>>::Error>
     {
-        crate::hash_from_bytes::<Self, Self::ExpandMsg>(&[msg], &[dst])
+        crate::hash_from_bytes::<Self, Self::ExpandMsg, Self::MapToCurve>(&[msg], &[dst])
     }
 
     /// Computes the encode to curve routine.
@@ -61,6 +63,6 @@ pub trait GroupDigest: MapToCurve {
         dst: &[u8],
     ) -> Result<ProjectivePoint<Self>, <Self::ExpandMsg as ExpandMsg<Self::SecurityLevel>>::Error>
     {
-        crate::encode_from_bytes::<Self, Self::ExpandMsg>(&[msg], &[dst])
+        crate::encode_from_bytes::<Self, Self::ExpandMsg, Self::MapToCurve>(&[msg], &[dst])
     }
 }

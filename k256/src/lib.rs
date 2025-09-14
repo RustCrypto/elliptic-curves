@@ -64,6 +64,9 @@ pub use elliptic_curve::pkcs8;
 #[cfg(feature = "sha2")]
 pub use sha2;
 
+#[cfg(feature = "hash2curve")]
+pub use primeorder::osswu::ShallueVanDeWoestijne;
+
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
