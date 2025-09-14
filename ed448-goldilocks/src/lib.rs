@@ -47,7 +47,7 @@ pub(crate) mod montgomery;
 #[cfg(feature = "signing")]
 pub(crate) mod sign;
 
-pub(crate) use field::{GOLDILOCKS_BASE_POINT, TWISTED_EDWARDS_BASE_POINT};
+pub(crate) use field::{FieldElement, GOLDILOCKS_BASE_POINT, TWISTED_EDWARDS_BASE_POINT};
 
 pub use decaf::{
     AffinePoint as DecafAffinePoint, CompressedDecaf, DecafPoint, DecafScalar, DecafScalarBytes,
@@ -57,18 +57,18 @@ pub use edwards::{
     AffinePoint, CompressedEdwardsY, EdwardsPoint, EdwardsScalar, EdwardsScalarBytes,
     WideEdwardsScalarBytes,
 };
-pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
+pub use field::{Decaf448Map, Elligator2, MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
 pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
 
 use elliptic_curve::{
     Curve, FieldBytesEncoding, PrimeCurve,
-    array::typenum::{U56, U57},
+    array::typenum::{U28, U56, U57, U84},
     bigint::{ArrayEncoding, Odd, U448},
     point::PointCompression,
 };
-use hash2curve::{ExpandMsgXof, GroupDigest};
+use hash2curve::{ExpandMsgXof, GroupDigest, HashToCurve};
 use sha3::Shake256;
 
 /// Edwards448 curve.
@@ -116,11 +116,18 @@ impl elliptic_curve::CurveArithmetic for Ed448 {
     type Scalar = EdwardsScalar;
 }
 
+impl HashToCurve for Ed448 {
+    type SecurityLevel = U28;
+    type FieldElement = FieldElement;
+    type Length = U84;
+}
+
 impl GroupDigest for Ed448 {
     const HASH_TO_CURVE_ID: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_RO_";
     const ENCODE_TO_CURVE_ID: &[u8] = b"edwards448_XOF:SHAKE256_ELL2_NU_";
 
     type ExpandMsg = ExpandMsgXof<Shake256>;
+    type MapToCurve = Elligator2;
 }
 
 /// Decaf448 curve.
@@ -168,9 +175,16 @@ impl elliptic_curve::CurveArithmetic for Decaf448 {
     type Scalar = DecafScalar;
 }
 
+impl HashToCurve for Decaf448 {
+    type SecurityLevel = U28;
+    type FieldElement = FieldElement;
+    type Length = U56;
+}
+
 impl GroupDigest for Decaf448 {
     const HASH_TO_CURVE_ID: &[u8] = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
     const ENCODE_TO_CURVE_ID: &[u8] = b"decaf448_XOF:SHAKE256_D448MAP_NU_";
 
     type ExpandMsg = ExpandMsgXof<Shake256>;
+    type MapToCurve = Decaf448Map;
 }

@@ -19,13 +19,14 @@ rust-version = "1.85"
 
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.14", default-features = false, features = ["arithmetic", "sec1"] }
+hash2curve = { version = "0.14.0-rc.2", optional = true }
 
 # optional dependencies
 serdect = { version = "0.4", optional = true, default-features = false }
 
 [features]
 alloc = ["elliptic-curve/alloc"]
-hash2curve = []
+hash2curve = ["dep:hash2curve"]
 std = ["alloc", "elliptic-curve/std"]
 
 dev = []

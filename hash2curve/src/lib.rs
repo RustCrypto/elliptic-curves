@@ -26,11 +26,13 @@ mod group_digest;
 mod hash2field;
 mod map2curve;
 mod oprf;
+mod parameters;
 
 pub use group_digest::*;
 pub use hash2field::*;
 pub use map2curve::*;
 pub use oprf::*;
+pub use parameters::*;
 
 use elliptic_curve::ProjectivePoint;
 use elliptic_curve::array::typenum::NonZero;
@@ -51,14 +53,18 @@ use elliptic_curve::ops::Reduce;
 ///
 /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
 /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
-pub fn hash_from_bytes<C, X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<C>, X::Error>
+pub fn hash_from_bytes<C, X, M>(
+    msg: &[&[u8]],
+    dst: &[&[u8]],
+) -> Result<ProjectivePoint<C>, X::Error>
 where
-    C: MapToCurve,
+    C: HashToCurve,
     X: ExpandMsg<C::SecurityLevel>,
+    M: MapToCurve<C>,
 {
     let [u0, u1] = hash_to_field::<2, X, _, C::FieldElement, C::Length>(msg, dst)?;
-    let q0 = C::map_to_curve(u0);
-    let q1 = C::map_to_curve(u1);
+    let q0 = M::map_to_curve(u0);
+    let q1 = M::map_to_curve(u1);
     Ok((q0 + q1).clear_cofactor())
 }
 
@@ -74,13 +80,17 @@ where
 ///
 /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
 /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
-pub fn encode_from_bytes<C, X>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<ProjectivePoint<C>, X::Error>
+pub fn encode_from_bytes<C, X, M>(
+    msg: &[&[u8]],
+    dst: &[&[u8]],
+) -> Result<ProjectivePoint<C>, X::Error>
 where
-    C: MapToCurve,
+    C: HashToCurve,
     X: ExpandMsg<C::SecurityLevel>,
+    M: MapToCurve<C>,
 {
     let [u] = hash_to_field::<1, X, _, C::FieldElement, C::Length>(msg, dst)?;
-    let q0 = C::map_to_curve(u);
+    let q0 = M::map_to_curve(u);
     Ok(q0.clear_cofactor())
 }
 
@@ -100,7 +110,7 @@ where
 /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
 pub fn hash_to_scalar<C, X, L>(msg: &[&[u8]], dst: &[&[u8]]) -> Result<C::Scalar, X::Error>
 where
-    C: MapToCurve,
+    C: HashToCurve,
     X: ExpandMsg<C::SecurityLevel>,
     L: ArraySize + NonZero,
     C::Scalar: Reduce<Array<u8, L>>,
