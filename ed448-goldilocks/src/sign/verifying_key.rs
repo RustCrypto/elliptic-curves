@@ -279,13 +279,9 @@ impl VerifyingKey {
             return Err(SigningError::InvalidSignatureSComponent.into());
         }
 
-        // RFC 8032 mandates context length <= 255 bytes. Enforce consistently with signing path.
-        if ctx.len() > 255 {
-            return Err(SigningError::PrehashedContextLength.into());
-        }
-
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
         let mut bytes = WideEdwardsScalarBytes::default();
+        // RFC 8032 mandates context length <= 255 bytes. Enforce consistently with signing path.
         let ctx_len = u8::try_from(ctx.len()).map_err(|_| SigningError::PrehashedContextLength)?;
         let mut reader = Shake256::default()
             .chain(HASH_HEAD)
