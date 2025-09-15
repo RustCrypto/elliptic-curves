@@ -66,6 +66,11 @@ impl PublicKey {
 
         Some(PublicKey(point))
     }
+
+    /// Converts a public key into a byte slice
+    pub fn as_bytes(&self) -> &[u8; 56] {
+        self.0.as_bytes()
+    }
 }
 
 impl SharedSecret {
