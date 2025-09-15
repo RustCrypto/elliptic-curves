@@ -113,7 +113,7 @@ macro_rules! monty_field_params {
 /// - `Invert`
 #[macro_export]
 macro_rules! monty_field_element {
-    ($fe:tt, $params:ty, $uint:tt) => {
+    ($fe:path, $params:ty, $uint:path) => {
         impl $fe {
             /// Zero element.
             pub const ZERO: Self =
@@ -540,7 +540,7 @@ macro_rules! monty_field_element {
 /// backend arithmetic implementation (e.g. `fiat-crypto`)
 #[macro_export]
 macro_rules! field_op {
-    ($fe:tt, $op:tt, $func:ident, $inner_func:ident) => {
+    ($fe:path, $op:tt, $func:ident, $inner_func:ident) => {
         impl ::core::ops::$op for $fe {
             type Output = $fe;
 
