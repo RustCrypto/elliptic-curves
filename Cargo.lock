@@ -69,7 +69,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bign256"
+name = "bignp256"
 version = "0.14.0-pre"
 dependencies = [
  "belt-hash",

@@ -1,4 +1,4 @@
-//! bign256 DSA Tests
+//! bignp256 DSA Tests
 
 #![cfg(feature = "ecdsa")]
 
@@ -6,7 +6,7 @@ use elliptic_curve::ops::Reduce;
 use hex_literal::hex;
 use proptest::prelude::*;
 
-use bign256::{
+use bignp256::{
     FieldBytes, NonZeroScalar, Scalar,
     ecdsa::{
         Signature, SigningKey, VerifyingKey,

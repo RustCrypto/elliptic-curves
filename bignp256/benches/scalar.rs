@@ -1,6 +1,6 @@
 //! bign-curve256v1 scalar arithmetic benchmarks
 
-use bign256::{ProjectivePoint, Scalar, elliptic_curve::group::ff::PrimeField};
+use bignp256::{ProjectivePoint, Scalar, elliptic_curve::group::ff::PrimeField};
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };

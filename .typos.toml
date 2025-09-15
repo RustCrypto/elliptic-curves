@@ -1,7 +1,7 @@
 [files]
 extend-exclude = [
     ".git/",
-    "bign256/tests/pkcs8.rs",
+    "bignp256/tests/pkcs8.rs",
     "p224/src/arithmetic.rs",
     "p384/src/arithmetic.rs",
     "p384/tests/affine.rs",

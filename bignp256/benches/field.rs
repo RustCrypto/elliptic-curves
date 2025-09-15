@@ -1,6 +1,6 @@
 //! bign-curve256v1 field element benchmarks
 
-use bign256::arithmetic::FieldElement;
+use bignp256::arithmetic::FieldElement;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };

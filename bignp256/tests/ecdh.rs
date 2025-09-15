@@ -1,7 +1,7 @@
 #![cfg(feature = "ecdh")]
 #[test]
 fn ecdh() {
-    use bign256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
+    use bignp256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
     use rand_core::{OsRng, TryRngCore}; // requires 'os_rng' feature
 
     // Alice

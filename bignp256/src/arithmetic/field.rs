@@ -13,8 +13,8 @@
 
 #![allow(clippy::arithmetic_side_effects)]
 
-#[cfg_attr(target_pointer_width = "32", path = "field/bign256_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/bign256_64.rs")]
+#[cfg_attr(target_pointer_width = "32", path = "field/bignp256_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "field/bignp256_64.rs")]
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -59,19 +59,19 @@ primefield::monty_field_fiat_arithmetic!(
     FieldElement,
     FieldParams,
     U256,
-    fiat_bign256_non_montgomery_domain_field_element,
-    fiat_bign256_montgomery_domain_field_element,
-    fiat_bign256_from_montgomery,
-    fiat_bign256_to_montgomery,
-    fiat_bign256_add,
-    fiat_bign256_sub,
-    fiat_bign256_mul,
-    fiat_bign256_opp,
-    fiat_bign256_square,
-    fiat_bign256_divstep_precomp,
-    fiat_bign256_divstep,
-    fiat_bign256_msat,
-    fiat_bign256_selectznz
+    fiat_bignp256_non_montgomery_domain_field_element,
+    fiat_bignp256_montgomery_domain_field_element,
+    fiat_bignp256_from_montgomery,
+    fiat_bignp256_to_montgomery,
+    fiat_bignp256_add,
+    fiat_bignp256_sub,
+    fiat_bignp256_mul,
+    fiat_bignp256_opp,
+    fiat_bignp256_square,
+    fiat_bignp256_divstep_precomp,
+    fiat_bignp256_divstep,
+    fiat_bignp256_msat,
+    fiat_bignp256_selectznz
 );
 
 impl FieldElement {

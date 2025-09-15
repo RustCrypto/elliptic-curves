@@ -2,8 +2,8 @@
 
 #![allow(clippy::arithmetic_side_effects)]
 
-#[cfg_attr(target_pointer_width = "32", path = "scalar/bign256_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/bign256_scalar_64.rs")]
+#[cfg_attr(target_pointer_width = "32", path = "scalar/bignp256_scalar_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "scalar/bignp256_scalar_64.rs")]
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
@@ -46,7 +46,7 @@ primefield::monty_field_params!(
 ///
 /// Much of the important functionality of scalars is provided by traits from
 /// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
-/// `bign256::elliptic_curve::ff`:
+/// `bignp256::elliptic_curve::ff`:
 ///
 /// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
 ///   represents elements of finite fields and provides:
@@ -72,19 +72,19 @@ primefield::monty_field_fiat_arithmetic!(
     Scalar,
     ScalarParams,
     U256,
-    fiat_bign256_scalar_non_montgomery_domain_field_element,
-    fiat_bign256_scalar_montgomery_domain_field_element,
-    fiat_bign256_scalar_from_montgomery,
-    fiat_bign256_scalar_to_montgomery,
-    fiat_bign256_scalar_add,
-    fiat_bign256_scalar_sub,
-    fiat_bign256_scalar_mul,
-    fiat_bign256_scalar_opp,
-    fiat_bign256_scalar_square,
-    fiat_bign256_scalar_divstep_precomp,
-    fiat_bign256_scalar_divstep,
-    fiat_bign256_scalar_msat,
-    fiat_bign256_scalar_selectznz
+    fiat_bignp256_scalar_non_montgomery_domain_field_element,
+    fiat_bignp256_scalar_montgomery_domain_field_element,
+    fiat_bignp256_scalar_from_montgomery,
+    fiat_bignp256_scalar_to_montgomery,
+    fiat_bignp256_scalar_add,
+    fiat_bignp256_scalar_sub,
+    fiat_bignp256_scalar_mul,
+    fiat_bignp256_scalar_opp,
+    fiat_bignp256_scalar_square,
+    fiat_bignp256_scalar_divstep_precomp,
+    fiat_bignp256_scalar_divstep,
+    fiat_bignp256_scalar_msat,
+    fiat_bignp256_scalar_selectznz
 );
 
 elliptic_curve::scalar_impls!(BignP256, Scalar);

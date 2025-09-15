@@ -1,4 +1,4 @@
-//! Test vectors for the bign256 base field.
+//! Test vectors for the bignp256 base field.
 
 use hex_literal::hex;
 

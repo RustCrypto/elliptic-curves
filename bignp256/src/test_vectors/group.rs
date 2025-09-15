@@ -1,4 +1,4 @@
-//! Test vectors for the bign256 group.
+//! Test vectors for the bignp256 group.
 
 use hex_literal::hex;
 
