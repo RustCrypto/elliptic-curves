@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/bp384.yml"
       - "bp384/**"
+      - "primefield/**"
+      - "primeorder/**"
       - "Cargo.*"
   push:
     branches: master

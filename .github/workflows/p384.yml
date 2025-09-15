@@ -6,6 +6,8 @@ on:
       - ".github/workflows/p384.yml"
       - "p384/**"
       - "hash2curve/**"
+      - "primefield/**"
+      - "primeorder/**"
       - "Cargo.*"
   push:
     branches: master

@@ -6,6 +6,8 @@ on:
       - ".github/workflows/p521.yml"
       - "p521/**"
       - "hash2curve/**"
+      - "primefield/**"
+      - "primeorder/**"
       - "Cargo.*"
   push:
     branches: master

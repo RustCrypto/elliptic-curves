@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/p192.yml"
       - "p192/**"
+      - "primefield/**"
+      - "primeorder/**"
       - "Cargo.*"
   push:
     branches: master

@@ -5,6 +5,8 @@ on:
     paths:
       - ".github/workflows/bignp256.yml"
       - "bignp256/**"
+      - "primefield/**"
+      - "primeorder/**"
       - "Cargo.*"
   push:
     branches: master

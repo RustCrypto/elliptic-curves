@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - ".github/workflows/sm2.yml"
+      - "primefield/**"
+      - "primeorder/**"
       - "sm2/**"
       - "Cargo.*"
   push:
