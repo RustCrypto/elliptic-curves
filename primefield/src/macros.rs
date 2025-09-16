@@ -470,6 +470,22 @@ macro_rules! monty_field_element {
             }
         }
 
+        impl TryFrom<$uint> for $fe {
+            type Error = $crate::Error;
+
+            fn try_from(w: $uint) -> $crate::Result<Self> {
+                Self::try_from(&w)
+            }
+        }
+
+        impl TryFrom<&$uint> for $fe {
+            type Error = $crate::Error;
+
+            fn try_from(w: &$uint) -> $crate::Result<Self> {
+                Self::from_uint(w).into_option().ok_or($crate::Error)
+            }
+        }
+
         impl ::core::iter::Sum for $fe {
             #[allow(unused_qualifications)]
             fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {

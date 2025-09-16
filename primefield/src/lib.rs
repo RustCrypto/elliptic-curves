@@ -9,10 +9,14 @@
 #![doc = include_str!("../README.md")]
 
 mod dev;
+mod error;
 mod macros;
 mod monty;
 
-pub use crate::monty::{MontyFieldBytes, MontyFieldElement, MontyFieldParams, compute_t};
+pub use crate::{
+    error::{Error, Result},
+    monty::{MontyFieldBytes, MontyFieldElement, MontyFieldParams, compute_t},
+};
 pub use array::typenum::consts;
 pub use bigint;
 pub use bigint::hybrid_array as array;
