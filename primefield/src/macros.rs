@@ -123,10 +123,6 @@ macro_rules! monty_field_element {
             pub const ONE: Self =
                 Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ONE);
 
-            /// Montgomery parameters constant.
-            pub const PARAMS: $crate::bigint::modular::MontyParams<{ <$uint>::LIMBS }> =
-                <$params>::PARAMS;
-
             /// Create a [`
             #[doc = stringify!($fe)]
             /// `] from a canonical big-endian representation.
@@ -230,6 +226,12 @@ macro_rules! monty_field_element {
             pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
                 Self(self.0.pow_vartime(exp))
             }
+        }
+
+        impl $crate::bigint::modular::ConstMontyParams<{ <$params>::LIMBS }> for $fe {
+            const LIMBS: usize = <$params>::LIMBS;
+            const PARAMS: $crate::bigint::modular::MontyParams<{ <$uint>::LIMBS }> =
+                <$params>::PARAMS;
         }
 
         impl $crate::ff::Field for $fe {

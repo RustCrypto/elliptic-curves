@@ -5,7 +5,7 @@ use crate::ByteOrder;
 use bigint::{
     ArrayEncoding, ByteArray, Integer, Invert, Reduce, Uint, Word,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
-    modular::{ConstMontyForm as MontyForm, ConstMontyParams},
+    modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams},
 };
 use core::{
     cmp::Ordering,
@@ -349,7 +349,7 @@ where
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent
     ///
-    /// **This operation is variable time with respect to the exponent.**
+    /// **This operation is variable time with respect to the exponent `exp`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
     pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
@@ -373,9 +373,11 @@ where
         res
     }
 
-    /// Returns self^(2^n) mod p.
+    /// Returns `self^(2^n) mod p`.
     ///
-    /// Variable-time with respect to `n`.
+    /// **This operation is variable time with respect to the exponent `n`.**
+    ///
+    /// If the exponent is fixed, this operation is constant time.
     pub const fn sqn_vartime(&self, n: usize) -> Self {
         let mut x = *self;
         let mut i = 0;
@@ -770,6 +772,14 @@ where
 //
 // Miscellaneous trait impls
 //
+
+impl<MOD, const LIMBS: usize> ConstMontyParams<LIMBS> for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    const LIMBS: usize = LIMBS;
+    const PARAMS: MontyParams<LIMBS> = MOD::PARAMS;
+}
 
 impl<MOD, const LIMBS: usize> Default for MontyFieldElement<MOD, LIMBS>
 where

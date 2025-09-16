@@ -97,7 +97,7 @@ mod tests {
     use elliptic_curve::{
         Curve,
         array::Array,
-        bigint::{ArrayEncoding, CheckedSub, NonZero, U384, U576},
+        bigint::{ArrayEncoding, CheckedSub, NonZero, U384, U576, modular::ConstMontyParams},
         consts::U72,
         group::cofactor::CofactorGroup,
         ops::Reduce,
@@ -113,7 +113,7 @@ mod tests {
     fn params() {
         let params = <FieldElement as OsswuMap>::PARAMS;
 
-        let c1 = FieldElement::PARAMS
+        let c1 = <FieldElement as ConstMontyParams<{ U384::LIMBS }>>::PARAMS
             .modulus()
             .checked_sub(&U384::from_u8(3))
             .unwrap()
