@@ -214,7 +214,7 @@ impl TryFrom<Box<[u8]>> for SigningKey {
 
 impl<D> signature::DigestSigner<D, Signature> for SigningKey
 where
-    D: Digest + Update,
+    D: Default + FixedOutput + HashMarker + Update,
 {
     fn try_sign_digest<F: Fn(&mut D) -> Result<(), Error>>(
         &self,
@@ -243,7 +243,7 @@ impl signature::Signer<Signature> for SigningKey {
 
 impl<D> signature::DigestSigner<D, Signature> for Context<'_, '_, SigningKey>
 where
-    D: Digest + Update,
+    D: Default + FixedOutput + HashMarker + Update,
 {
     fn try_sign_digest<F: Fn(&mut D) -> Result<(), Error>>(
         &self,
@@ -275,7 +275,7 @@ impl signature::Signer<Signature> for Context<'_, '_, SigningKey> {
 
 impl<D> signature::DigestVerifier<D, Signature> for SigningKey
 where
-    D: Digest + Update,
+    D: Default + FixedOutput + HashMarker + Update,
 {
     fn verify_digest<F: Fn(&mut D) -> Result<(), Error>>(
         &self,

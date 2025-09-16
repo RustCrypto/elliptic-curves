@@ -21,7 +21,7 @@ use core::{
 use elliptic_curve::Group;
 use sha3::{
     Shake256,
-    digest::{Digest, ExtendableOutput, Update, XofReader},
+    digest::{Digest, ExtendableOutput, FixedOutput, HashMarker, Update, XofReader},
 };
 use signature::Error;
 
@@ -64,7 +64,7 @@ impl signature::Verifier<Signature> for VerifyingKey {
 
 impl<D> signature::DigestVerifier<D, Signature> for VerifyingKey
 where
-    D: Digest + Update,
+    D: Default + FixedOutput + HashMarker + Update,
 {
     fn verify_digest<F: Fn(&mut D) -> Result<(), Error>>(
         &self,
@@ -85,7 +85,7 @@ impl signature::Verifier<Signature> for Context<'_, '_, VerifyingKey> {
 
 impl<D> signature::DigestVerifier<D, Signature> for Context<'_, '_, VerifyingKey>
 where
-    D: Digest + Update,
+    D: Default + FixedOutput + HashMarker + Update,
 {
     fn verify_digest<F: Fn(&mut D) -> Result<(), Error>>(
         &self,
