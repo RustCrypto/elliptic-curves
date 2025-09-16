@@ -19,7 +19,7 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{BignP256, FieldBytes, ORDER_HEX, U256};
 use elliptic_curve::{
-    Curve as _, Error, FieldBytesEncoding, Result,
+    Curve as _, FieldBytesEncoding,
     bigint::Limb,
     ff::PrimeField,
     ops::Reduce,
@@ -139,22 +139,6 @@ impl Reduce<FieldBytes> for Scalar {
     fn reduce(bytes: &FieldBytes) -> Self {
         let w = <U256 as FieldBytesEncoding<BignP256>>::decode_field_bytes(bytes);
         Self::reduce(&w)
-    }
-}
-
-impl TryFrom<U256> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: U256) -> Result<Self> {
-        Self::try_from(&w)
-    }
-}
-
-impl TryFrom<&U256> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: &U256) -> Result<Self> {
-        Self::from_uint(w).into_option().ok_or(Error)
     }
 }
 

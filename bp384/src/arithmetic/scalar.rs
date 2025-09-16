@@ -24,7 +24,6 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{BrainpoolP384r1, BrainpoolP384t1, FieldBytes, ORDER, ORDER_HEX, U384};
 use elliptic_curve::{
-    Error, Result,
     bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
     ops::Reduce,
@@ -130,22 +129,6 @@ impl Reduce<FieldBytes> for Scalar {
     #[inline]
     fn reduce(bytes: &FieldBytes) -> Self {
         Self::reduce(&U384::from_be_byte_array(*bytes))
-    }
-}
-
-impl TryFrom<U384> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: U384) -> Result<Self> {
-        Self::try_from(&w)
-    }
-}
-
-impl TryFrom<&U384> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: &U384) -> Result<Self> {
-        Self::from_uint(w).into_option().ok_or(Error)
     }
 }
 

@@ -24,7 +24,7 @@ mod scalar_impl;
 use self::scalar_impl::*;
 use crate::{FieldBytes, FieldBytesEncoding, NistP192, ORDER_HEX, U192};
 use elliptic_curve::{
-    Curve as _, Error, Result,
+    Curve as _,
     bigint::Limb,
     ff::PrimeField,
     ops::Reduce,
@@ -177,25 +177,9 @@ impl Reduce<FieldBytes> for Scalar {
     }
 }
 
-impl TryFrom<U192> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: U192) -> Result<Self> {
-        Self::try_from(&w)
-    }
-}
-
-impl TryFrom<&U192> for Scalar {
-    type Error = Error;
-
-    fn try_from(w: &U192) -> Result<Self> {
-        Self::from_uint(w).into_option().ok_or(Error)
-    }
-}
-
 #[cfg(feature = "serde")]
 impl Serialize for Scalar {
-    fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: ser::Serializer,
     {
@@ -205,7 +189,7 @@ impl Serialize for Scalar {
 
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Scalar {
-    fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: de::Deserializer<'de>,
     {
