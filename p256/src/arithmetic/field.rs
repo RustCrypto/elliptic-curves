@@ -259,7 +259,7 @@ mod tests {
         let one = FieldElement::ONE;
         let two = one + &one;
         let four = two.square();
-        assert_eq!(two.pow_vartime(&[2, 0, 0, 0]), four);
+        assert_eq!(two.pow_vartime(&U256::from_u64(2)), four);
     }
 
     #[cfg(target_pointer_width = "64")]

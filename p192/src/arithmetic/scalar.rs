@@ -107,7 +107,8 @@ impl Scalar {
     fn sqrt(&self) -> CtOption<Self> {
         // w = self^((t - 1) // 2)
         // Note: `pow_vartime` is constant-time with respect to `self`
-        let w = self.pow_vartime(&[0xb0a35e4d8da69141, 0xfffffffffccef7c1, 0x07ffffffffffffff]);
+        const EXP: U192 = U192::from_be_hex("07fffffffffffffffffffffffccef7c1b0a35e4d8da69141");
+        let w = self.pow_vartime(&EXP);
 
         let mut v = Self::S;
         let mut x = *self * w;

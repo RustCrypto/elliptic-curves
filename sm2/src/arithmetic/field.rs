@@ -65,14 +65,11 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        // Because p ≡ 3 mod 4 for SM2's base field modulus, sqrt can be done with only one
-        // exponentiation via the computation of self^((p + 1) // 4) (mod p).
-        let sqrt = self.pow_vartime(&[
-            0x4000000000000000,
-            0xffffffffc0000000,
-            0xffffffffffffffff,
-            0x3fffffffbfffffff,
-        ]);
+        /// Because p ≡ 3 mod 4 for SM2's base field modulus, sqrt can be done with only one
+        /// exponentiation via the computation of self^((p + 1) // 4) (mod p).
+        const EXP: U256 =
+            U256::from_be_hex("3fffffffbfffffffffffffffffffffffffffffffc00000004000000000000000");
+        let sqrt = self.pow_vartime(&EXP);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 }

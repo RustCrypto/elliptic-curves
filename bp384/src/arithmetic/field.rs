@@ -72,17 +72,15 @@ impl FieldElement {
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        // Because p ≡ 3 mod 4 for brainpoolP384's base field modulus, sqrt can
-        // be implemented with only one exponentiation via the computation of
-        // self^((p + 1) // 4) (mod p).
-        let sqrt = self.pow_vartime(&[
-            0x61d1c004cc41fb15,
-            0xeb34e9ca6407469c,
-            0x04ac76865fedc448,
-            0xc54bdc427b5515ad,
-            0x03d75bdf94399077,
-            0x232e47a0a8ce1b4a,
-        ]);
+        /// Because p ≡ 3 mod 4 for brainpoolP384's base field modulus, sqrt can
+        /// be implemented with only one exponentiation via the computation of
+        /// self^((p + 1) // 4) (mod p).
+        const EXP: U384 = U384::from_be_hex(
+            "232e47a0a8ce1b4a03d75bdf94399077c54bdc427b5515ad04ac76865fedc448eb34e9ca6407469c61d1c004cc41fb15",
+        );
+
+        // Note: vartime only with respect to `EXP`, which is fixed (so therefore not vartime)
+        let sqrt = self.pow_vartime(&EXP);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 }

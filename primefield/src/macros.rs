@@ -31,7 +31,7 @@ macro_rules! monty_field_params {
     (
         name: $name:ident,
         modulus: $modulus_hex:expr,
-        uint: $uint_type:ty,
+        uint: $uint:ty,
         byte_order: $byte_order:expr,
         multiplicative_generator: $multiplicative_generator:expr,
         fe_name: $fe_name:expr,
@@ -39,9 +39,9 @@ macro_rules! monty_field_params {
     ) => {
         use $crate::bigint::modular::ConstMontyParams;
 
-        $crate::bigint::const_monty_params!($name, $uint_type, $modulus_hex, $doc);
+        $crate::bigint::const_monty_params!($name, $uint, $modulus_hex, $doc);
 
-        impl $crate::MontyFieldParams<{ <$uint_type>::LIMBS }> for $name {
+        impl $crate::MontyFieldParams<{ <$uint>::LIMBS }> for $name {
             type ByteSize = $crate::bigint::hybrid_array::typenum::U<
                 { $name::PARAMS.modulus().as_ref().bits().div_ceil(8) as usize },
             >;
@@ -49,16 +49,7 @@ macro_rules! monty_field_params {
             const FIELD_ELEMENT_NAME: &'static str = $fe_name;
             const MODULUS_HEX: &'static str = $modulus_hex;
             const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
-            #[cfg(target_pointer_width = "32")]
-            const T: &'static [u64] = &$crate::compute_t::<
-                { <$uint_type>::LIMBS.div_ceil(2) },
-                { <$uint_type>::LIMBS },
-            >($name::PARAMS.modulus().as_ref());
-            #[cfg(target_pointer_width = "64")]
-            const T: &'static [u64] = &$crate::compute_t::<
-                { <$uint_type>::LIMBS },
-                { <$uint_type>::LIMBS },
-            >($name::PARAMS.modulus().as_ref());
+            const T: $uint = $crate::compute_t($name::PARAMS.modulus().as_ref());
         }
     };
 }
@@ -220,11 +211,23 @@ macro_rules! monty_field_element {
 
             /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
             ///
-            /// **This operation is variable time with respect to the exponent.**
+            /// **This operation is variable time with respect to the exponent `exp`.**
             ///
             /// If the exponent is fixed, this operation is constant time.
-            pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+            pub const fn pow_vartime<const RHS_LIMBS: usize>(
+                &self,
+                exp: &$crate::bigint::Uint<RHS_LIMBS>
+            ) -> Self {
                 Self(self.0.pow_vartime(exp))
+            }
+
+            /// Returns `self^(2^n) mod p`.
+            ///
+            /// **This operation is variable time with respect to the exponent `n`.**
+            ///
+            /// If the exponent is fixed, this operation is constant time.
+            pub const fn sqn_vartime(&self, n: usize) -> Self {
+                Self(self.0.sqn_vartime(n))
             }
         }
 
