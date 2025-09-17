@@ -97,7 +97,7 @@ macro_rules! test_field_sqrt {
         fn sqrt() {
             for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
                 let fe = $fe::from(n);
-                let sqrt = fe.sqrt().unwrap();
+                let sqrt = $crate::ff::Field::sqrt(&fe).unwrap();
                 assert_eq!(sqrt.square(), fe);
             }
         }

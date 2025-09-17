@@ -74,19 +74,6 @@ primefield::monty_field_fiat_arithmetic!(
     fiat_bignp256_selectznz
 );
 
-impl FieldElement {
-    /// Returns the square root of self mod p, or `None` if no square root
-    /// exists.
-    pub fn sqrt(&self) -> CtOption<Self> {
-        /// Because p ≡ 3 mod 4, sqrt can be done with only one
-        /// exponentiation via the computation of self^((p + 1) // 4) (mod p).
-        const EXP: U256 =
-            U256::from_be_hex("3fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd1");
-        let sqrt = self.pow_vartime(&EXP);
-        CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U256};

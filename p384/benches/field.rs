@@ -4,7 +4,7 @@ use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
-use p384::FieldElement;
+use p384::{FieldElement, elliptic_curve::ff::Field};
 
 fn test_field_element_x() -> FieldElement {
     FieldElement::from_bytes(

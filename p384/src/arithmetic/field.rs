@@ -62,39 +62,6 @@ primefield::monty_field_fiat_arithmetic!(
     fiat_p384_selectznz
 );
 
-impl FieldElement {
-    /// Returns the square root of self mod p, or `None` if no square root
-    /// exists.
-    pub fn sqrt(&self) -> CtOption<Self> {
-        // p mod 4 = 3 -> compute sqrt(x) using x^((p+1)/4) =
-        // x^9850501549098619803069760025035903451269934817616361666987073351061430442874217582261816522064734500465401743278080
-        let t1 = *self;
-        let t10 = t1.square();
-        let t11 = t1 * t10;
-        let t110 = t11.square();
-        let t111 = t1 * t110;
-        let t111000 = t111.sqn(3);
-        let t111111 = t111 * t111000;
-        let t1111110 = t111111.square();
-        let t1111111 = t1 * t1111110;
-        let x12 = t1111110.sqn(5) * t111111;
-        let x24 = x12.sqn(12) * x12;
-        let x31 = x24.sqn(7) * t1111111;
-        let x32 = x31.square() * t1;
-        let x63 = x32.sqn(31) * x31;
-        let x126 = x63.sqn(63) * x63;
-        let x252 = x126.sqn(126) * x126;
-        let x255 = x252.sqn(3) * t111;
-        let x = ((x255.sqn(33) * x32).sqn(64) * t1).sqn(30);
-        CtOption::new(x, x.square().ct_eq(&t1))
-    }
-
-    /// Returns self^(2^n) mod p
-    const fn sqn(&self, n: usize) -> Self {
-        Self(self.0.sqn_vartime(n))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U384};

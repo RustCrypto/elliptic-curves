@@ -743,7 +743,7 @@ mod tests {
     use elliptic_curve::{
         Curve,
         array::Array,
-        group::ff::{Field, PrimeField},
+        group::ff::PrimeField,
         ops::{BatchInvert, ReduceNonZero},
     };
     use proptest::{prelude::any, prop_compose, proptest};
