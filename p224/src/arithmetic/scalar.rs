@@ -107,28 +107,6 @@ primefield::monty_field_fiat_arithmetic!(
 
 elliptic_curve::scalar_impls!(NistP224, Scalar);
 
-impl Scalar {
-    /// Atkin algorithm for q mod 8 = 5
-    /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>
-    /// (page 10, algorithm 3)
-    pub fn sqrt(&self) -> CtOption<Self> {
-        #[cfg(target_pointer_width = "32")]
-        const EXP: Uint =
-            Uint::from_be_hex("1fffffffffffffffffffffffffffe2d45c171e07c27ba528ab8b8547");
-        #[cfg(target_pointer_width = "64")]
-        const EXP: Uint =
-            Uint::from_be_hex("000000001fffffffffffffffffffffffffffe2d45c171e07c27ba528ab8b8547");
-        let t = Self::from_u64(2).pow_vartime(&EXP);
-        let a1 = self.pow_vartime(&EXP);
-        let a0 = (a1.square() * self).square();
-        let b = t * a1;
-        let ab = self * &b;
-        let i = Self::from_u64(2) * ab * b;
-        let x = ab * (i - Self::ONE);
-        CtOption::new(x, !a0.ct_eq(&-Self::ONE))
-    }
-}
-
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {
         self

@@ -99,6 +99,7 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, CheckedSub, NonZero, U384, U576, modular::ConstMontyParams},
         consts::U72,
+        ff::Field,
         group::cofactor::CofactorGroup,
         ops::Reduce,
         sec1::{self, ToEncodedPoint},

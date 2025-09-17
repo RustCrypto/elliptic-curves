@@ -265,7 +265,7 @@ macro_rules! monty_field_element {
             }
 
             fn sqrt(&self) -> CtOption<Self> {
-                self.sqrt()
+                self.0.sqrt().map(Self)
             }
 
             fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {

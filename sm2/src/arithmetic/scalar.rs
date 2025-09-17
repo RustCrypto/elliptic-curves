@@ -93,19 +93,6 @@ primefield::monty_field_fiat_arithmetic!(
 
 elliptic_curve::scalar_impls!(Sm2, Scalar);
 
-impl Scalar {
-    /// Returns the square root of self mod n, or `None` if no square root
-    /// exists.
-    pub fn sqrt(&self) -> CtOption<Self> {
-        /// Because n ≡ 3 mod 4 for SM2's scalar field modulus, sqrt can be done with only one
-        /// exponentiation via the computation of self^((n + 1) // 4) (mod n).
-        const EXP: U256 =
-            U256::from_be_hex("3fffffffbfffffffffffffffffffffffdc80f7dac871814ad4eefd024e755049");
-        let sqrt = self.pow_vartime(&EXP);
-        CtOption::new(sqrt, sqrt.square().ct_eq(self))
-    }
-}
-
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {
         self

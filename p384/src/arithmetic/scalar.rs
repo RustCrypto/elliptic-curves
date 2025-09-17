@@ -101,54 +101,6 @@ primefield::monty_field_fiat_arithmetic!(
 
 elliptic_curve::scalar_impls!(NistP384, Scalar);
 
-impl Scalar {
-    /// Compute modular square root.
-    pub fn sqrt(&self) -> CtOption<Self> {
-        // p mod 4 = 3 -> compute sqrt(x) using x^((p+1)/4) =
-        // x^9850501549098619803069760025035903451269934817616361666986726319906914849778315892349739077038073728388608413485661
-        let t1 = *self;
-        let t10 = t1.square();
-        let t11 = *self * t10;
-        let t101 = t10 * t11;
-        let t111 = t10 * t101;
-        let t1001 = t10 * t111;
-        let t1011 = t10 * t1001;
-        let t1101 = t10 * t1011;
-        let t1111 = t10 * t1101;
-        let t11110 = t1111.square();
-        let t11111 = t1 * t11110;
-        let t1111100 = t11111.sqn(2);
-        let t11111000 = t1111100.square();
-        let i14 = t11111000.square();
-        let i20 = i14.sqn(5) * i14;
-        let i31 = i20.sqn(10) * i20;
-        let i58 = (i31.sqn(4) * t11111000).sqn(21) * i31;
-        let i110 = (i58.sqn(3) * t1111100).sqn(47) * i58;
-        let x194 = i110.sqn(95) * i110 * t1111;
-        let i225 = ((x194.sqn(6) * t111).sqn(3) * t11).sqn(7);
-        let i235 = ((t1101 * i225).sqn(6) * t1101).square() * t1;
-        let i258 = ((i235.sqn(11) * t11111).sqn(2) * t1).sqn(8);
-        let i269 = ((t1101 * i258).sqn(2) * t11).sqn(6) * t1011;
-        let i286 = ((i269.sqn(4) * t111).sqn(6) * t11111).sqn(5);
-        let i308 = ((t1011 * i286).sqn(10) * t1101).sqn(9) * t1101;
-        let i323 = ((i308.sqn(4) * t1011).sqn(6) * t1001).sqn(3);
-        let i340 = ((t1 * i323).sqn(7) * t1011).sqn(7) * t101;
-        let i357 = ((i340.sqn(5) * t111).sqn(5) * t1111).sqn(5);
-        let i369 = ((t1011 * i357).sqn(4) * t1011).sqn(5) * t111;
-        let i387 = ((i369.sqn(3) * t11).sqn(7) * t11).sqn(6);
-        let i397 = ((t1011 * i387).sqn(4) * t101).sqn(3) * t11;
-        let i413 = ((i397.sqn(4) * t11).sqn(4) * t11).sqn(6);
-        let i427 = ((t101 * i413).sqn(5) * t101).sqn(6) * t1011;
-        let x = i427.sqn(3) * t101;
-        CtOption::new(x, x.square().ct_eq(&t1))
-    }
-
-    /// Returns self^(2^n) mod p
-    const fn sqn(&self, n: usize) -> Self {
-        Self(self.0.sqn_vartime(n))
-    }
-}
-
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {
         self
