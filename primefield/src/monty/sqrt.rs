@@ -13,21 +13,23 @@ where
     MontyFieldBytes<MOD, LIMBS>: Copy,
 {
     /// Returns the square root of self mod p, or `None` if no square root exists.
-    pub fn sqrt(&self) -> CtOption<MontyFieldElement<MOD, { LIMBS }>> {
-        if mod_residue(MOD::PARAMS.modulus(), 4) == 3 {
+    pub fn sqrt(&self) -> CtOption<Self> {
+        if const { mod_residue(MOD::PARAMS.modulus(), 4) == 3 } {
             self.sqrt_shanks()
+        } else if const { mod_residue(MOD::PARAMS.modulus(), 8) == 5 } {
+            self.sqrt_atkins()
         } else {
             self.sqrt_tonelli_shanks()
         }
     }
 
-    /// Shanks's algorithm for `q ≡ 3 (mod 4)`.
+    /// Shanks algorithm for `q ≡ 3 (mod 4)`.
     ///
     /// For `q = 3 (mod 4)`, sqrt can be computed with only one exponentiation as
     /// `self^((q + 1) / 4) (mod q)`.
     ///
     /// From <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
-    fn sqrt_shanks(&self) -> CtOption<MontyFieldElement<MOD, { LIMBS }>> {
+    fn sqrt_shanks(&self) -> CtOption<Self> {
         debug_assert!(mod_residue(MOD::PARAMS.modulus(), 4) == 3);
 
         let mod_plus_1_over_4 = const {
@@ -40,6 +42,30 @@ where
 
         let sqrt = self.pow_vartime(&mod_plus_1_over_4);
         CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self))
+    }
+
+    /// Atkins algorithm for `q ≡ 5 (mod 8)`.
+    ///
+    /// From <https://eprint.iacr.org/2012/685.pdf> (page 10, algorithm 3)
+    fn sqrt_atkins(&self) -> CtOption<Self> {
+        debug_assert!(mod_residue(MOD::PARAMS.modulus(), 8) == 5);
+
+        let mod_minus_5_over_8 = const {
+            MOD::PARAMS
+                .modulus()
+                .as_ref()
+                .wrapping_sub(&Uint::<LIMBS>::from_u64(5))
+                .shr(3)
+        };
+
+        let t = Self::from_u64(2).pow_vartime(&mod_minus_5_over_8);
+        let a1 = self.pow_vartime(&mod_minus_5_over_8);
+        let a0 = (a1.square() * self).square();
+        let b = t * a1;
+        let ab = self * &b;
+        let i = Self::from_u64(2) * ab * b;
+        let x = ab * (i - Self::ONE);
+        CtOption::new(x, !a0.ct_eq(&-Self::ONE))
     }
 
     /// Tonelli-Shanks algorithm works for every remaining odd prime.
@@ -109,6 +135,7 @@ mod tests {
     fn shanks() {
         use bigint::U256;
 
+        // P-256 base field
         monty_field_params!(
             name: P256FieldParams,
             modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
@@ -123,11 +150,32 @@ mod tests {
         sqrt_test(P256Fe::sqrt_shanks);
     }
 
+    /// Tests the Atkins algorithm implementation
+    #[test]
+    fn atkins() {
+        use bigint::U384;
+
+        // brainpoolP384 scalar field
+        monty_field_params!(
+            name: Bp384ScalarParams,
+            modulus: "8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b31f166e6cac0425a7cf3ab6af6b7fc3103b883202e9046565",
+            uint: U384,
+            byte_order: ByteOrder::BigEndian,
+            multiplicative_generator: 2,
+            fe_name: "Scalar",
+            doc: "brainpoolP384 scalar modulus"
+        );
+
+        type Bp384Scalar = MontyFieldElement<Bp384ScalarParams, { U384::LIMBS }>;
+        sqrt_test(Bp384Scalar::sqrt_atkins);
+    }
+
     /// Tests the generic Tonelli-Shanks implementation, where `p ≡ 1 mod 4`
     #[test]
     fn tonelli_shanks() {
         use bigint::U192;
 
+        // P-192 scalar field
         monty_field_params!(
             name: P192ScalarParams,
             modulus: "ffffffffffffffffffffffff99def836146bc9b1b4d22831",
