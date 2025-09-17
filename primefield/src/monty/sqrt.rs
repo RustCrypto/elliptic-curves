@@ -1,0 +1,144 @@
+//! Modular square root implementations, adapted from <https://eprint.iacr.org/2012/685.pdf>.
+// TODO(tarcieri): Atkins' algorithm
+
+use crate::{MontyFieldBytes, MontyFieldElement, MontyFieldParams};
+use bigint::{NonZeroUint, Odd, Uint};
+use ff::PrimeField;
+use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+impl<MOD, const LIMBS: usize> MontyFieldElement<MOD, LIMBS>
+where
+    Self: PrimeField,
+    MOD: MontyFieldParams<LIMBS>,
+    MontyFieldBytes<MOD, LIMBS>: Copy,
+{
+    /// Returns the square root of self mod p, or `None` if no square root exists.
+    pub fn sqrt(&self) -> CtOption<MontyFieldElement<MOD, { LIMBS }>> {
+        if mod_residue(MOD::PARAMS.modulus(), 4) == 3 {
+            self.sqrt_shanks()
+        } else {
+            self.sqrt_tonelli_shanks()
+        }
+    }
+
+    /// Shanks's algorithm for `q ≡ 3 (mod 4)`.
+    ///
+    /// For `q = 3 (mod 4)`, sqrt can be computed with only one exponentiation as
+    /// `self^((q + 1) / 4) (mod q)`.
+    ///
+    /// From <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
+    fn sqrt_shanks(&self) -> CtOption<MontyFieldElement<MOD, { LIMBS }>> {
+        debug_assert!(mod_residue(MOD::PARAMS.modulus(), 4) == 3);
+
+        let mod_plus_1_over_4 = const {
+            MOD::PARAMS
+                .modulus()
+                .as_ref()
+                .wrapping_add(&Uint::<LIMBS>::ONE)
+                .shr(2)
+        };
+
+        let sqrt = self.pow_vartime(&mod_plus_1_over_4);
+        CtOption::new(sqrt, (sqrt * sqrt).ct_eq(self))
+    }
+
+    /// Tonelli-Shanks algorithm works for every remaining odd prime.
+    ///
+    /// From <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
+    fn sqrt_tonelli_shanks(&self) -> CtOption<MontyFieldElement<MOD, { LIMBS }>> {
+        let t_minus_1_over_2 = const { MOD::T.wrapping_sub(&Uint::<LIMBS>::ONE).shr(1) };
+        let w = self.pow_vartime(&t_minus_1_over_2);
+
+        let mut v = Self::S;
+        let mut x = *self * w;
+        let mut b = x * w;
+        let mut z = Self::ROOT_OF_UNITY;
+
+        for max_v in (1..=Self::S).rev() {
+            let mut k = 1;
+            let mut tmp = b.square();
+            let mut j_less_than_v = Choice::from(1);
+
+            for j in 2..max_v {
+                let tmp_is_one = tmp.ct_eq(&Self::ONE);
+                let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
+                tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
+                let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
+                j_less_than_v &= !j.ct_eq(&v);
+                k = u32::conditional_select(&j, &k, tmp_is_one);
+                z = Self::conditional_select(&z, &new_z, j_less_than_v);
+            }
+
+            let result = x * z;
+            x = Self::conditional_select(&result, &x, b.ct_eq(&Self::ONE));
+            z = z.square();
+            b *= z;
+            v = k;
+        }
+
+        CtOption::new(x, x.square().ct_eq(self))
+    }
+}
+
+/// Compute the residue class of the modulus for the purposes of selecting a particular modular
+/// square root algorithm.
+const fn mod_residue<const LIMBS: usize>(p: &Odd<Uint<LIMBS>>, n: u32) -> u32 {
+    let n = core::num::NonZero::new(n).expect("n must be nonzero");
+    let residue = p.as_ref().rem_vartime(&NonZeroUint::from_u32(n));
+    residue.as_words()[0] as u32
+}
+
+// TODO(tarcieri): test selection of sqrt algorithms based on the modulus
+#[cfg(test)]
+mod tests {
+    use crate::{ByteOrder, MontyFieldElement, monty_field_params};
+    use ff::PrimeField;
+    use subtle::CtOption;
+
+    /// Generic sqrt test.
+    fn sqrt_test<Fe: PrimeField, F: Fn(&Fe) -> CtOption<Fe>>(f: F) {
+        for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
+            let fe = Fe::from(n);
+            let sqrt = f(&fe).unwrap();
+            assert_eq!(sqrt.square(), fe);
+        }
+    }
+
+    /// Tests the Shanks algorithm implementation, where `p ≡ 3 mod 4`
+    #[test]
+    fn shanks() {
+        use bigint::U256;
+
+        monty_field_params!(
+            name: P256FieldParams,
+            modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            uint: U256,
+            byte_order: ByteOrder::BigEndian,
+            multiplicative_generator: 6,
+            fe_name: "FieldElement",
+            doc: "P-256 field modulus"
+        );
+
+        type P256Fe = MontyFieldElement<P256FieldParams, { U256::LIMBS }>;
+        sqrt_test(P256Fe::sqrt_shanks);
+    }
+
+    /// Tests the generic Tonelli-Shanks implementation, where `p ≡ 1 mod 4`
+    #[test]
+    fn tonelli_shanks() {
+        use bigint::U192;
+
+        monty_field_params!(
+            name: P192ScalarParams,
+            modulus: "ffffffffffffffffffffffff99def836146bc9b1b4d22831",
+            uint: U192,
+            byte_order: ByteOrder::BigEndian,
+            multiplicative_generator: 3,
+            fe_name: "Scalar",
+            doc: "P-192 scalar modulus"
+        );
+
+        type P192Scalar = MontyFieldElement<P192ScalarParams, { U192::LIMBS }>;
+        sqrt_test(P192Scalar::sqrt_tonelli_shanks);
+    }
+}
