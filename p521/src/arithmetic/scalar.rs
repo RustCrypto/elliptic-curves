@@ -31,7 +31,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result,
-    bigint::{self, Integer, NonZero},
+    bigint::{Integer, NonZero, modular::MontyParams},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -54,6 +54,7 @@ use {
 
 #[cfg(doc)]
 use core::ops::Sub;
+use primefield::bigint::{Limb, Uint};
 
 primefield::monty_field_params!(
     name: ScalarParams,
@@ -299,28 +300,43 @@ impl Scalar {
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
     ///
-    /// **This operation is variable time with respect to the exponent.**
+    /// **This operation is variable time with respect to the exponent `exp`.**
     ///
-    /// If the exponent is fixed, this operation is effectively constant time.
-    pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+    /// If the exponent is fixed, this operation is constant time.
+    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
-        let mut i = exp.len();
+        let mut i = RHS_LIMBS;
 
         while i > 0 {
             i -= 1;
 
-            let mut j = 64;
+            let mut j = Limb::BITS;
             while j > 0 {
                 j -= 1;
                 res = res.square();
 
-                if ((exp[i] >> j) & 1) == 1 {
+                if ((exp.as_limbs()[i].0 >> j) & 1) == 1 {
                     res = res.multiply(self);
                 }
             }
         }
 
         res
+    }
+
+    /// Returns `self^(2^n) mod p`.
+    ///
+    /// **This operation is variable time with respect to the exponent `n`.**
+    ///
+    /// If the exponent is fixed, this operation is constant time.
+    pub const fn sqn_vartime(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 
     /// Borrow the inner limbs of this scalar.
@@ -338,6 +354,11 @@ impl AsRef<fiat_p521_scalar_montgomery_domain_field_element> for Scalar {
     fn as_ref(&self) -> &fiat_p521_scalar_montgomery_domain_field_element {
         &self.0
     }
+}
+
+impl ConstMontyParams<{ U576::LIMBS }> for Scalar {
+    const LIMBS: usize = U576::LIMBS;
+    const PARAMS: MontyParams<{ U576::LIMBS }> = ScalarParams::PARAMS;
 }
 
 impl Debug for Scalar {
@@ -595,8 +616,8 @@ impl PrimeField for Scalar {
 
 impl Reduce<U576> for Scalar {
     fn reduce(w: &U576) -> Self {
-        let (r, underflow) = w.borrowing_sub(&NistP521::ORDER, bigint::Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (bigint::Limb::BITS - 1)) as u8);
+        let (r, underflow) = w.borrowing_sub(&NistP521::ORDER, Limb::ZERO);
+        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
         Self::from_uint_unchecked(U576::conditional_select(w, &r, !underflow))
     }
 }

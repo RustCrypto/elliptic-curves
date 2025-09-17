@@ -112,14 +112,14 @@ impl Scalar {
     /// <https://eips.ethereum.org/assets/eip-3068/2012-685_Square_Root_Even_Ext.pdf>
     /// (page 10, algorithm 3)
     pub fn sqrt(&self) -> CtOption<Self> {
-        let w = &[
-            0xc27ba528ab8b8547,
-            0xffffe2d45c171e07,
-            0xffffffffffffffff,
-            0x1fffffff,
-        ];
-        let t = Self::from_u64(2).pow_vartime(w);
-        let a1 = self.pow_vartime(w);
+        #[cfg(target_pointer_width = "32")]
+        const EXP: Uint =
+            Uint::from_be_hex("1fffffffffffffffffffffffffffe2d45c171e07c27ba528ab8b8547");
+        #[cfg(target_pointer_width = "64")]
+        const EXP: Uint =
+            Uint::from_be_hex("000000001fffffffffffffffffffffffffffe2d45c171e07c27ba528ab8b8547");
+        let t = Self::from_u64(2).pow_vartime(&EXP);
+        let a1 = self.pow_vartime(&EXP);
         let a0 = (a1.square() * self).square();
         let b = t * a1;
         let ab = self * &b;

@@ -34,8 +34,20 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
+use primefield::bigint::modular::MontyParams;
+use primefield::bigint::{Limb, Uint};
 
 const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+
+primefield::monty_field_params!(
+    name: FieldParams,
+    modulus: MODULUS_HEX,
+    uint: U576,
+    byte_order: primefield::ByteOrder::BigEndian,
+    multiplicative_generator: 3,
+    fe_name: "FieldElement",
+    doc: "P-521 field modulus"
+);
 
 /// Field modulus: p = 2^{521} − 1
 pub(crate) const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
@@ -232,28 +244,43 @@ impl FieldElement {
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
     ///
-    /// **This operation is variable time with respect to the exponent.**
+    /// **This operation is variable time with respect to the exponent `exp`.**
     ///
-    /// If the exponent is fixed, this operation is effectively constant time.
-    pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+    /// If the exponent is fixed, this operation is constant time.
+    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
-        let mut i = exp.len();
+        let mut i = RHS_LIMBS;
 
         while i > 0 {
             i -= 1;
 
-            let mut j = 64;
+            let mut j = Limb::BITS;
             while j > 0 {
                 j -= 1;
                 res = res.square();
 
-                if ((exp[i] >> j) & 1) == 1 {
-                    res = Self::multiply(&res, self);
+                if ((exp.as_limbs()[i].0 >> j) & 1) == 1 {
+                    res = res.multiply(self);
                 }
             }
         }
 
         res
+    }
+
+    /// Returns `self^(2^n) mod p`.
+    ///
+    /// **This operation is variable time with respect to the exponent `n`.**
+    ///
+    /// If the exponent is fixed, this operation is constant time.
+    pub const fn sqn_vartime(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
@@ -323,6 +350,11 @@ impl AsRef<fiat_p521_tight_field_element> for FieldElement {
     fn as_ref(&self) -> &fiat_p521_tight_field_element {
         &self.0
     }
+}
+
+impl ConstMontyParams<{ U576::LIMBS }> for FieldElement {
+    const LIMBS: usize = U576::LIMBS;
+    const PARAMS: MontyParams<{ U576::LIMBS }> = FieldParams::PARAMS;
 }
 
 impl Default for FieldElement {

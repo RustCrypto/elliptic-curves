@@ -97,14 +97,11 @@ impl Scalar {
     /// Returns the square root of self mod n, or `None` if no square root
     /// exists.
     pub fn sqrt(&self) -> CtOption<Self> {
-        // Because n ≡ 3 mod 4 for SM2's scalar field modulus, sqrt can be done with only one
-        // exponentiation via the computation of self^((n + 1) // 4) (mod n).
-        let sqrt = self.pow_vartime(&[
-            0xd4eefd024e755049,
-            0xdc80f7dac871814a,
-            0xffffffffffffffff,
-            0x3fffffffbfffffff,
-        ]);
+        /// Because n ≡ 3 mod 4 for SM2's scalar field modulus, sqrt can be done with only one
+        /// exponentiation via the computation of self^((n + 1) // 4) (mod n).
+        const EXP: U256 =
+            U256::from_be_hex("3fffffffbfffffffffffffffffffffffdc80f7dac871814ad4eefd024e755049");
+        let sqrt = self.pow_vartime(&EXP);
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 }

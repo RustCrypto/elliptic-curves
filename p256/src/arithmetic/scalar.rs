@@ -28,6 +28,7 @@ use elliptic_curve::{
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
+use primefield::bigint::Uint;
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarValue,
@@ -140,35 +141,50 @@ impl Scalar {
         // Thus inversion can be implemented with a single exponentiation.
         //
         // This is `n - 2`, so the top right two digits are `4f` instead of `51`.
-        self.pow_vartime(&[
-            0xf3b9_cac2_fc63_254f,
-            0xbce6_faad_a717_9e84,
-            0xffff_ffff_ffff_ffff,
-            0xffff_ffff_0000_0000,
-        ])
+        const EXP: U256 =
+            U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc63254f");
+        self.pow_vartime(&EXP)
     }
 
-    /// Exponentiates `self` by `exp`, where `exp` is a little-endian order integer
-    /// exponent.
-    pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+    /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
+    ///
+    /// **This operation is variable time with respect to the exponent `exp`.**
+    ///
+    /// If the exponent is fixed, this operation is constant time.
+    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
+        let mut i = RHS_LIMBS;
 
-        let mut i = exp.len();
         while i > 0 {
             i -= 1;
 
-            let mut j = 64;
+            let mut j = Limb::BITS;
             while j > 0 {
                 j -= 1;
                 res = res.square();
 
-                if ((exp[i] >> j) & 1) == 1 {
+                if ((exp.as_limbs()[i].0 >> j) & 1) == 1 {
                     res = res.multiply(self);
                 }
             }
         }
 
         res
+    }
+
+    /// Returns `self^(2^n) mod p`.
+    ///
+    /// **This operation is variable time with respect to the exponent `n`.**
+    ///
+    /// If the exponent is fixed, this operation is constant time.
+    pub const fn sqn_vartime(&self, n: usize) -> Self {
+        let mut x = *self;
+        let mut i = 0;
+        while i < n {
+            x = x.square();
+            i += 1;
+        }
+        x
     }
 
     /// Is integer representing equivalence class odd?
@@ -230,13 +246,11 @@ impl Field for Scalar {
     /// <https://eprint.iacr.org/2012/685.pdf> (page 12, algorithm 5)
     #[allow(clippy::many_single_char_names)]
     fn sqrt(&self) -> CtOption<Self> {
+        const EXP: U256 =
+            U256::from_be_hex("07fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a");
+
         // Note: `pow_vartime` is constant-time with respect to `self`
-        let w = self.pow_vartime(&[
-            0x279dce5617e3192a,
-            0xfde737d56d38bcf4,
-            0x07ffffffffffffff,
-            0x07fffffff8000000,
-        ]);
+        let w = self.pow_vartime(&EXP);
 
         let mut v = Self::S;
         let mut x = *self * w;

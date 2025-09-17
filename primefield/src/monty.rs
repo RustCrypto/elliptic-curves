@@ -3,7 +3,7 @@
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, Integer, Invert, Reduce, Uint, Word,
+    ArrayEncoding, ByteArray, Integer, Invert, Limb, Reduce, Uint, Word,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams},
 };
@@ -40,7 +40,7 @@ pub trait MontyFieldParams<const LIMBS: usize>: ConstMontyParams<LIMBS> {
     const MULTIPLICATIVE_GENERATOR: u64;
 
     /// `t = (modulus - 1) >> s`, where `S = (modulus - 1).trailing_zeros()`
-    const T: &'static [u64];
+    const T: Uint<LIMBS>;
 
     /// Compute modular square root.
     // TODO(tarcieri): generic implementations of various algorithms e.g. Tonelli–Shanks
@@ -347,24 +347,24 @@ where
         }
     }
 
-    /// Returns `self^exp`, where `exp` is a little-endian integer exponent
+    /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
     ///
     /// **This operation is variable time with respect to the exponent `exp`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
-    pub const fn pow_vartime(&self, exp: &[u64]) -> Self {
+    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
-        let mut i = exp.len();
+        let mut i = RHS_LIMBS;
 
         while i > 0 {
             i -= 1;
 
-            let mut j = 64;
+            let mut j = Limb::BITS;
             while j > 0 {
                 j -= 1;
                 res = res.square();
 
-                if ((exp[i] >> j) & 1) == 1 {
+                if ((exp.as_limbs()[i].0 >> j) & 1) == 1 {
                     res = res.multiply(self);
                 }
             }
@@ -452,7 +452,7 @@ where
     const TWO_INV: Self = Self::from_u64(2).const_invert();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(MOD::MULTIPLICATIVE_GENERATOR);
     const S: u32 = compute_s(MOD::PARAMS.modulus().as_ref());
-    const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(MOD::T);
+    const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(&MOD::T);
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.const_invert();
     const DELTA: Self = Self::MULTIPLICATIVE_GENERATOR.sqn_vartime(Self::S as usize);
 
@@ -883,39 +883,10 @@ const fn compute_s<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> u32 {
 }
 
 /// Compute `t = (modulus - 1) >> S`
-pub const fn compute_t<const N: usize, const LIMBS: usize>(modulus: &Uint<LIMBS>) -> [u64; N] {
-    #[cfg(target_pointer_width = "32")]
-    assert!(
-        LIMBS.div_ceil(2) == N,
-        "t array should have length LIMBS.div_ceil(2) on 32-bit architectures"
-    );
-    #[cfg(target_pointer_width = "64")]
-    assert!(
-        LIMBS == N,
-        "t array should have length LIMBS on 64-bit architectures"
-    );
-
-    let s = compute_s(modulus);
-    let t = modulus.wrapping_sub(&Uint::ONE).wrapping_shr(s);
-
-    let mut ret = [0; N];
-    let mut i = 0;
-
-    #[cfg(target_pointer_width = "32")]
-    while i < N {
-        let hi_i = (2 * i) + 1;
-        let hi = if hi_i < LIMBS { t.as_words()[hi_i] } else { 0 };
-        let lo = t.as_words()[2 * i];
-        ret[i] = (hi as u64) << 32 | (lo as u64);
-        i += 1;
-    }
-    #[cfg(target_pointer_width = "64")]
-    while i < N {
-        ret[i] = t.as_words()[i];
-        i += 1;
-    }
-
-    ret
+pub const fn compute_t<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> Uint<LIMBS> {
+    modulus
+        .wrapping_sub(&Uint::ONE)
+        .wrapping_shr(compute_s(modulus))
 }
 
 #[cfg(test)]

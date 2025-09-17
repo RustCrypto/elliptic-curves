@@ -15,12 +15,8 @@ macro_rules! test_primefield_constants {
     ($fe:tt, $uint:ident) => {
         use $crate::ff::PrimeField as _;
 
-        /// t = (modulus - 1) >> S
-        #[cfg(target_pointer_width = "32")]
-        const T: [u64; $uint::LIMBS.div_ceil(2)] =
-            $crate::compute_t(&$uint::from_be_hex($fe::MODULUS));
-        #[cfg(target_pointer_width = "64")]
-        const T: [u64; $uint::LIMBS] = $crate::compute_t(&$uint::from_be_hex($fe::MODULUS));
+        // TODO(tarcieri): support for fields with little endian-encoded modulus
+        const T: $uint = $crate::compute_t(&$uint::from_be_hex($fe::MODULUS));
 
         #[test]
         fn two_inv_constant() {
@@ -29,19 +25,8 @@ macro_rules! test_primefield_constants {
 
         #[test]
         fn root_of_unity_constant() {
-            assert!($fe::S < 128);
-            let two_to_s = 1u128 << $fe::S;
-
             // ROOT_OF_UNITY^{2^s} mod m == 1
-            assert_eq!(
-                $fe::ROOT_OF_UNITY.pow_vartime(&[
-                    (two_to_s & 0xFFFFFFFFFFFFFFFF) as u64,
-                    (two_to_s >> 64) as u64,
-                    0,
-                    0
-                ]),
-                $fe::ONE
-            );
+            assert_eq!($fe::ROOT_OF_UNITY.sqn_vartime($fe::S as usize), $fe::ONE);
 
             // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
             assert_eq!(
