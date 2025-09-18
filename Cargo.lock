@@ -340,9 +340,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.8.0-rc.8"
+version = "0.8.0-rc.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7050e8041c28720851f7db83183195b6acf375bb7bb28e3b86f0fe6cbd69459d"
+checksum = "e9d8dd2f26c86b27a2a8ea2767ec7f9df7a89516e4794e54ac01ee618dda3aa4"
 dependencies = [
  "const-oid",
  "pem-rfc7468",
