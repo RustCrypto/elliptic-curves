@@ -117,8 +117,8 @@ impl<'a> DecodeValue<'a> for Cipher<'a> {
         decoder.read_nested(header.length(), |nr| {
             let x = UintRef::decode(nr)?.as_bytes();
             let y = UintRef::decode(nr)?.as_bytes();
-            let digest = OctetStringRef::decode(nr)?.into();
-            let cipher = OctetStringRef::decode(nr)?.into();
+            let digest = <&'a OctetStringRef>::decode(nr)?.into();
+            let cipher = <&'a OctetStringRef>::decode(nr)?.into();
             Ok(Cipher {
                 x: Uint::from_be_bytes(zero_pad_byte_slice(x)?),
                 y: Uint::from_be_bytes(zero_pad_byte_slice(y)?),
