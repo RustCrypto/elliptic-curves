@@ -135,13 +135,3 @@ jobs:
           targets: ${{ matrix.target }}
       - uses: RustCrypto/actions/cross-install@master
       - run: cross test --release --target ${{ matrix.target }} --all-features
-
-  doc:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: RustCrypto/actions/cargo-cache@master
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-      - run: cargo doc --all-features

@@ -50,18 +50,8 @@ jobs:
           - 1.85.0 # MSRV
           - stable
     steps:
-    - uses: actions/checkout@v5
-    - uses: dtolnay/rust-toolchain@master
-      with:
-        toolchain: ${{ matrix.rust }}
-    - run: cargo test
-
-  doc:
-    runs-on: ubuntu-latest
-    steps:
       - uses: actions/checkout@v5
-      - uses: RustCrypto/actions/cargo-cache@master
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-      - run: cargo doc
+          toolchain: ${{ matrix.rust }}
+      - run: cargo test
