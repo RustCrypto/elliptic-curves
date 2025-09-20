@@ -153,6 +153,117 @@ pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56]
 
 pub const X448_BASEPOINT_BYTES: [u8; 56] = MontgomeryPoint::GENERATOR.0;
 
+/// A Diffie-Hellman secret key that can be used to compute multiple [`SharedSecret`]s.
+///
+/// This type is identical to the [`EphemeralSecret`] type, except that the
+/// [`StaticSecret::diffie_hellman`] method does not consume the secret key, and the type provides
+/// serialization methods to save and load key material.  This means that the secret may be used
+/// multiple times (but does not *have to be*).
+///
+/// # Warning
+///
+/// If you're uncertain about whether you should use this, then you likely
+/// should not be using this.  Our strongly recommended advice is to use
+/// [`EphemeralSecret`] at all times, as that type enforces at compile-time that
+/// secret keys are never reused, which can have very serious security
+/// implications for many protocols.
+#[cfg(feature = "static_secrets")]
+#[derive(Clone, Zeroize)]
+#[zeroize(drop)]
+pub struct StaticSecret(Array<u8, U56>);
+
+#[cfg(feature = "static_secrets")]
+impl StaticSecret {
+    fn new(value: Array<u8, U56>) -> Self {
+        let mut out = Self(value);
+        out.clamp();
+        out
+    }
+
+    /// Generate a new [`StaticSecret`] with the supplied RNG.
+    pub fn random_from_rng<R: CryptoRng + ?Sized>(csprng: &mut R) -> Self {
+        let mut bytes = Array::default();
+        csprng.fill_bytes(bytes.as_mut_slice());
+        Self::new(bytes)
+    }
+
+    /// Clamps the secret key according to RFC7748
+    fn clamp(&mut self) {
+        self.0[0] &= 252;
+        self.0[55] |= 128;
+    }
+
+    /// Views an Secret as a Scalar
+    fn as_scalar(&self) -> MontgomeryScalar {
+        let secret = U448::from_le_slice(&self.0);
+        MontgomeryScalar::from_uint_unchecked(secret)
+    }
+
+    /// Perform a Diffie-Hellman key agreement between `self` and
+    /// `their_public` key to produce a `SharedSecret`.
+    pub fn diffie_hellman(&self, their_public: &PublicKey) -> SharedSecret {
+        // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
+        // created.
+        let shared_key = &their_public.0 * &self.as_scalar();
+        SharedSecret(shared_key)
+    }
+
+    /// View this key as a byte array.
+    #[inline]
+    pub fn as_bytes(&self) -> &[u8; 56] {
+        self.0.as_ref()
+    }
+}
+
+#[cfg(feature = "static_secrets")]
+impl From<[u8; 56]> for StaticSecret {
+    /// Load a secret key from a byte array.
+    fn from(bytes: [u8; 56]) -> StaticSecret {
+        StaticSecret::new(bytes.into())
+    }
+}
+
+#[cfg(feature = "static_secrets")]
+impl From<&StaticSecret> for PublicKey {
+    /// Given an x448 [`StaticSecret`] key, compute its corresponding [`PublicKey`].
+    fn from(secret: &StaticSecret) -> PublicKey {
+        let secret = secret.as_scalar();
+        let point = &MontgomeryPoint::GENERATOR * &secret;
+        PublicKey(point)
+    }
+}
+
+#[cfg(feature = "static_secrets")]
+impl AsRef<[u8]> for StaticSecret {
+    /// View this key as a byte array.
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.as_bytes()
+    }
+}
+
+#[cfg(all(feature = "static_secrets", feature = "serde"))]
+impl serdect::serde::Serialize for StaticSecret {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serdect::serde::Serializer,
+    {
+        serdect::array::serialize_hex_lower_or_bin(&self.0, s)
+    }
+}
+
+#[cfg(all(feature = "static_secrets", feature = "serde"))]
+impl<'de> serdect::serde::Deserialize<'de> for StaticSecret {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: serdect::serde::Deserializer<'de>,
+    {
+        let mut bytes = Array::default();
+        serdect::array::deserialize_hex_or_bin(&mut bytes, d)?;
+        Ok(Self(bytes))
+    }
+}
+
 #[cfg(test)]
 mod test {
     extern crate alloc;
