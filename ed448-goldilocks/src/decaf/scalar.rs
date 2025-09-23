@@ -6,7 +6,7 @@ use elliptic_curve::bigint::{Limb, NonZero, U448, U512};
 use elliptic_curve::consts::{U56, U64};
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::scalar::FromUintUnchecked;
-use subtle::{Choice, CtOption};
+use subtle::{Choice, ConstantTimeEq, CtOption};
 
 impl CurveWithScalar for Decaf448 {
     type ReprSize = U56;
@@ -20,13 +20,8 @@ impl CurveWithScalar for Decaf448 {
     }
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {
-        fn is_zero(b: u8) -> Choice {
-            let res = b as i8;
-            Choice::from((((res | -res) >> 7) + 1) as u8)
-        }
-
         // Check that the 10 high bits are not set
-        let is_valid = is_zero(bytes[55] >> 6);
+        let is_valid = (bytes[55] >> 6).ct_eq(&0);
         let bytes: [u8; 56] = core::array::from_fn(|i| bytes[i]);
         let candidate = Scalar::new(U448::from_le_slice(&bytes));
 
@@ -87,6 +82,7 @@ mod test {
     use elliptic_curve::array::Array;
     use hash2curve::ExpandMsgXof;
     use hex_literal::hex;
+    use proptest::property_test;
     use sha3::Shake256;
 
     #[test]
@@ -343,5 +339,10 @@ mod test {
 
             panic!("deriving key failed");
         }
+    }
+
+    #[property_test]
+    fn from_canonical_bytes(bytes: [u8; 56]) {
+        DecafScalar::from_canonical_bytes(&bytes.into());
     }
 }

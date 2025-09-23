@@ -6,7 +6,7 @@ use elliptic_curve::bigint::{Limb, NonZero, U448, U704};
 use elliptic_curve::consts::{U57, U84, U88};
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::scalar::FromUintUnchecked;
-use subtle::{Choice, CtOption};
+use subtle::{Choice, ConstantTimeEq, CtOption};
 
 impl CurveWithScalar for Ed448 {
     type ReprSize = U57;
@@ -28,13 +28,8 @@ impl CurveWithScalar for Ed448 {
     }
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {
-        fn is_zero(b: u8) -> Choice {
-            let res = b as i8;
-            Choice::from((((res | -res) >> 7) + 1) as u8)
-        }
-
         // Check that the 10 high bits are not set
-        let is_valid = is_zero(bytes[56]) | is_zero(bytes[55] >> 6);
+        let is_valid = bytes[56].ct_eq(&0) | (bytes[55] >> 6).ct_eq(&0);
         let bytes: [u8; 56] = core::array::from_fn(|i| bytes[i]);
         let candidate = Scalar::new(U448::from_le_slice(&bytes));
 
@@ -104,6 +99,7 @@ mod test {
     use elliptic_curve::array::Array;
     use hash2curve::ExpandMsgXof;
     use hex_literal::hex;
+    use proptest::property_test;
     use sha3::Shake256;
 
     #[test]
@@ -318,5 +314,10 @@ mod test {
             "2d32a08f09b88275cc5f437e625696b18de718ed94559e17e4d64aafd143a8527705132178b5ce7395ea6214735387398a35913656b4951300"
         );
         assert_eq!(res.to_bytes_rfc_8032(), Array::from(expected));
+    }
+
+    #[property_test]
+    fn from_canonical_bytes(bytes: [u8; 57]) {
+        EdwardsScalar::from_canonical_bytes(&bytes.into());
     }
 }
