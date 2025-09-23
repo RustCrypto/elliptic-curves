@@ -57,24 +57,24 @@ primefield::monty_field_element! {
     doc: "Element in the NIST P-192 scalar field modulo `n`."
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    Scalar,
-    ScalarParams,
-    U192,
-    fiat_p192_scalar_non_montgomery_domain_field_element,
-    fiat_p192_scalar_montgomery_domain_field_element,
-    fiat_p192_scalar_from_montgomery,
-    fiat_p192_scalar_to_montgomery,
-    fiat_p192_scalar_add,
-    fiat_p192_scalar_sub,
-    fiat_p192_scalar_mul,
-    fiat_p192_scalar_opp,
-    fiat_p192_scalar_square,
-    fiat_p192_scalar_divstep_precomp,
-    fiat_p192_scalar_divstep,
-    fiat_p192_scalar_msat,
-    fiat_p192_scalar_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U192,
+    non_mont: fiat_p192_scalar_non_montgomery_domain_field_element,
+    mont: fiat_p192_scalar_montgomery_domain_field_element,
+    from_mont: fiat_p192_scalar_from_montgomery,
+    to_mont: fiat_p192_scalar_to_montgomery,
+    add: fiat_p192_scalar_add,
+    sub: fiat_p192_scalar_sub,
+    mul: fiat_p192_scalar_mul,
+    neg: fiat_p192_scalar_opp,
+    square: fiat_p192_scalar_square,
+    divstep_precomp: fiat_p192_scalar_divstep_precomp,
+    divstep: fiat_p192_scalar_divstep,
+    msat: fiat_p192_scalar_msat,
+    selectnz: fiat_p192_scalar_selectznz
+}
 
 elliptic_curve::scalar_impls!(NistP192, Scalar);
 

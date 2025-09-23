@@ -30,14 +30,14 @@ use elliptic_curve::{
 #[cfg(doc)]
 use core::ops::{Add, Mul, Neg, Sub};
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: ScalarParams,
     modulus: ORDER_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 3,
     doc: "Montgomery parameters for the bign-curve256v1 scalar modulus"
-);
+}
 
 primefield::monty_field_element! {
     name: Scalar,
@@ -46,24 +46,24 @@ primefield::monty_field_element! {
     doc: "Element in the bign-curve256v1 scalar field modulo n"
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    Scalar,
-    ScalarParams,
-    U256,
-    fiat_bignp256_scalar_non_montgomery_domain_field_element,
-    fiat_bignp256_scalar_montgomery_domain_field_element,
-    fiat_bignp256_scalar_from_montgomery,
-    fiat_bignp256_scalar_to_montgomery,
-    fiat_bignp256_scalar_add,
-    fiat_bignp256_scalar_sub,
-    fiat_bignp256_scalar_mul,
-    fiat_bignp256_scalar_opp,
-    fiat_bignp256_scalar_square,
-    fiat_bignp256_scalar_divstep_precomp,
-    fiat_bignp256_scalar_divstep,
-    fiat_bignp256_scalar_msat,
-    fiat_bignp256_scalar_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U256,
+    non_mont: fiat_bignp256_scalar_non_montgomery_domain_field_element,
+    mont: fiat_bignp256_scalar_montgomery_domain_field_element,
+    from_mont: fiat_bignp256_scalar_from_montgomery,
+    to_mont: fiat_bignp256_scalar_to_montgomery,
+    add: fiat_bignp256_scalar_add,
+    sub: fiat_bignp256_scalar_sub,
+    mul: fiat_bignp256_scalar_mul,
+    neg: fiat_bignp256_scalar_opp,
+    square: fiat_bignp256_scalar_square,
+    divstep_precomp: fiat_bignp256_scalar_divstep_precomp,
+    divstep: fiat_bignp256_scalar_divstep,
+    msat: fiat_bignp256_scalar_msat,
+    selectnz: fiat_bignp256_scalar_selectznz
+}
 
 elliptic_curve::scalar_impls!(BignP256, Scalar);
 

@@ -50,24 +50,24 @@ primefield::monty_field_element! {
     doc: "Element in the NIST P-384 scalar field modulo `n`."
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    Scalar,
-    ScalarParams,
-    U384,
-    fiat_p384_scalar_non_montgomery_domain_field_element,
-    fiat_p384_scalar_montgomery_domain_field_element,
-    fiat_p384_scalar_from_montgomery,
-    fiat_p384_scalar_to_montgomery,
-    fiat_p384_scalar_add,
-    fiat_p384_scalar_sub,
-    fiat_p384_scalar_mul,
-    fiat_p384_scalar_opp,
-    fiat_p384_scalar_square,
-    fiat_p384_scalar_divstep_precomp,
-    fiat_p384_scalar_divstep,
-    fiat_p384_scalar_msat,
-    fiat_p384_scalar_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U384,
+    non_mont: fiat_p384_scalar_non_montgomery_domain_field_element,
+    mont: fiat_p384_scalar_montgomery_domain_field_element,
+    from_mont: fiat_p384_scalar_from_montgomery,
+    to_mont: fiat_p384_scalar_to_montgomery,
+    add: fiat_p384_scalar_add,
+    sub: fiat_p384_scalar_sub,
+    mul: fiat_p384_scalar_mul,
+    neg: fiat_p384_scalar_opp,
+    square: fiat_p384_scalar_square,
+    divstep_precomp: fiat_p384_scalar_divstep_precomp,
+    divstep: fiat_p384_scalar_divstep,
+    msat: fiat_p384_scalar_msat,
+    selectnz: fiat_p384_scalar_selectznz
+}
 
 elliptic_curve::scalar_impls!(NistP384, Scalar);
 
