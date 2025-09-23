@@ -41,24 +41,24 @@ primefield::monty_field_element! {
     doc: "Element in the finite field modulo `p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1`."
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    FieldElement,
-    FieldParams,
-    U384,
-    fiat_p384_non_montgomery_domain_field_element,
-    fiat_p384_montgomery_domain_field_element,
-    fiat_p384_from_montgomery,
-    fiat_p384_to_montgomery,
-    fiat_p384_add,
-    fiat_p384_sub,
-    fiat_p384_mul,
-    fiat_p384_opp,
-    fiat_p384_square,
-    fiat_p384_divstep_precomp,
-    fiat_p384_divstep,
-    fiat_p384_msat,
-    fiat_p384_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U384,
+    non_mont: fiat_p384_non_montgomery_domain_field_element,
+    mont: fiat_p384_montgomery_domain_field_element,
+    from_mont: fiat_p384_from_montgomery,
+    to_mont: fiat_p384_to_montgomery,
+    add: fiat_p384_add,
+    sub: fiat_p384_sub,
+    mul: fiat_p384_mul,
+    neg: fiat_p384_opp,
+    square: fiat_p384_square,
+    divstep_precomp: fiat_p384_divstep_precomp,
+    divstep: fiat_p384_divstep,
+    msat: fiat_p384_msat,
+    selectnz: fiat_p384_selectznz
+}
 
 #[cfg(test)]
 mod tests {

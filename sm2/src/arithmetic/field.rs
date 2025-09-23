@@ -40,24 +40,24 @@ primefield::monty_field_element! {
     doc: "Element in the SM2 finite field modulo `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    FieldElement,
-    FieldParams,
-    U256,
-    fiat_sm2_non_montgomery_domain_field_element,
-    fiat_sm2_montgomery_domain_field_element,
-    fiat_sm2_from_montgomery,
-    fiat_sm2_to_montgomery,
-    fiat_sm2_add,
-    fiat_sm2_sub,
-    fiat_sm2_mul,
-    fiat_sm2_opp,
-    fiat_sm2_square,
-    fiat_sm2_divstep_precomp,
-    fiat_sm2_divstep,
-    fiat_sm2_msat,
-    fiat_sm2_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256,
+    non_mont: fiat_sm2_non_montgomery_domain_field_element,
+    mont: fiat_sm2_montgomery_domain_field_element,
+    from_mont: fiat_sm2_from_montgomery,
+    to_mont: fiat_sm2_to_montgomery,
+    add: fiat_sm2_add,
+    sub: fiat_sm2_sub,
+    mul: fiat_sm2_mul,
+    neg: fiat_sm2_opp,
+    square: fiat_sm2_square,
+    divstep_precomp: fiat_sm2_divstep_precomp,
+    divstep: fiat_sm2_divstep,
+    msat: fiat_sm2_msat,
+    selectnz: fiat_sm2_selectznz
+}
 
 #[cfg(test)]
 mod tests {

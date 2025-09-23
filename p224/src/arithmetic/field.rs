@@ -51,24 +51,24 @@ primefield::monty_field_element! {
     doc: "Element in the finite field modulo `p = 2^{224} − 2^{96} + 1`."
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    FieldElement,
-    FieldParams,
-    Uint,
-    fiat_p224_non_montgomery_domain_field_element,
-    fiat_p224_montgomery_domain_field_element,
-    fiat_p224_from_montgomery,
-    fiat_p224_to_montgomery,
-    fiat_p224_add,
-    fiat_p224_sub,
-    fiat_p224_mul,
-    fiat_p224_opp,
-    fiat_p224_square,
-    fiat_p224_divstep_precomp,
-    fiat_p224_divstep,
-    fiat_p224_msat,
-    fiat_p224_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: Uint,
+    non_mont: fiat_p224_non_montgomery_domain_field_element,
+    mont: fiat_p224_montgomery_domain_field_element,
+    from_mont: fiat_p224_from_montgomery,
+    to_mont: fiat_p224_to_montgomery,
+    add: fiat_p224_add,
+    sub: fiat_p224_sub,
+    mul: fiat_p224_mul,
+    neg: fiat_p224_opp,
+    square: fiat_p224_square,
+    divstep_precomp: fiat_p224_divstep_precomp,
+    divstep: fiat_p224_divstep,
+    msat: fiat_p224_msat,
+    selectnz: fiat_p224_selectznz
+}
 
 #[cfg(test)]
 mod tests {

@@ -53,24 +53,24 @@ primefield::monty_field_element! {
     doc: "Element in the bign-curve256v1 finite field modulo p = 2^{256} − 189"
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    FieldElement,
-    FieldParams,
-    U256,
-    fiat_bignp256_non_montgomery_domain_field_element,
-    fiat_bignp256_montgomery_domain_field_element,
-    fiat_bignp256_from_montgomery,
-    fiat_bignp256_to_montgomery,
-    fiat_bignp256_add,
-    fiat_bignp256_sub,
-    fiat_bignp256_mul,
-    fiat_bignp256_opp,
-    fiat_bignp256_square,
-    fiat_bignp256_divstep_precomp,
-    fiat_bignp256_divstep,
-    fiat_bignp256_msat,
-    fiat_bignp256_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256,
+    non_mont: fiat_bignp256_non_montgomery_domain_field_element,
+    mont: fiat_bignp256_montgomery_domain_field_element,
+    from_mont: fiat_bignp256_from_montgomery,
+    to_mont: fiat_bignp256_to_montgomery,
+    add: fiat_bignp256_add,
+    sub: fiat_bignp256_sub,
+    mul: fiat_bignp256_mul,
+    neg: fiat_bignp256_opp,
+    square: fiat_bignp256_square,
+    divstep_precomp: fiat_bignp256_divstep_precomp,
+    divstep: fiat_bignp256_divstep,
+    msat: fiat_bignp256_msat,
+    selectnz: fiat_bignp256_selectznz
+}
 
 #[cfg(test)]
 mod tests {

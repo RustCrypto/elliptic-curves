@@ -50,24 +50,24 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP256 scalar field modulo n"
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    Scalar,
-    ScalarParams,
-    U384,
-    fiat_bp384_scalar_non_montgomery_domain_field_element,
-    fiat_bp384_scalar_montgomery_domain_field_element,
-    fiat_bp384_scalar_from_montgomery,
-    fiat_bp384_scalar_to_montgomery,
-    fiat_bp384_scalar_add,
-    fiat_bp384_scalar_sub,
-    fiat_bp384_scalar_mul,
-    fiat_bp384_scalar_opp,
-    fiat_bp384_scalar_square,
-    fiat_bp384_scalar_divstep_precomp,
-    fiat_bp384_scalar_divstep,
-    fiat_bp384_scalar_msat,
-    fiat_bp384_scalar_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U384,
+    non_mont: fiat_bp384_scalar_non_montgomery_domain_field_element,
+    mont: fiat_bp384_scalar_montgomery_domain_field_element,
+    from_mont: fiat_bp384_scalar_from_montgomery,
+    to_mont: fiat_bp384_scalar_to_montgomery,
+    add: fiat_bp384_scalar_add,
+    sub: fiat_bp384_scalar_sub,
+    mul: fiat_bp384_scalar_mul,
+    neg: fiat_bp384_scalar_opp,
+    square: fiat_bp384_scalar_square,
+    divstep_precomp: fiat_bp384_scalar_divstep_precomp,
+    divstep: fiat_bp384_scalar_divstep,
+    msat: fiat_bp384_scalar_msat,
+    selectnz: fiat_bp384_scalar_selectznz
+}
 
 elliptic_curve::scalar_impls!(BrainpoolP384r1, Scalar);
 elliptic_curve::scalar_impls!(BrainpoolP384t1, Scalar);

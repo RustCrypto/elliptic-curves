@@ -10,22 +10,22 @@
 #[macro_export]
 macro_rules! monty_field_fiat_arithmetic {
     (
-        $fe:tt,
-        $params:ty,
-        $uint:ty,
-        $non_mont_type: expr,
-        $mont_type: expr,
-        $from_mont:ident,
-        $to_mont:ident,
-        $add:ident,
-        $sub:ident,
-        $mul:ident,
-        $neg:ident,
-        $square:ident,
-        $divstep_precomp:ident,
-        $divstep:ident,
-        $msat:ident,
-        $selectznz:ident
+        name: $fe:tt,
+        params: $params:ty,
+        uint: $uint:ty,
+        non_mont: $non_mont_type:expr,
+        mont: $mont_type:expr,
+        from_mont: $from_mont:ident,
+        to_mont: $to_mont:ident,
+        add: $add:ident,
+        sub: $sub:ident,
+        mul: $mul:ident,
+        neg: $neg:ident,
+        square: $square:ident,
+        divstep_precomp: $divstep_precomp:ident,
+        divstep: $divstep:ident,
+        msat: $msat:ident,
+        selectnz: $selectznz:ident
     ) => {
         impl $fe {
             /// Decode [`

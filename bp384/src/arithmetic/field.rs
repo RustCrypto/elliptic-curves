@@ -47,24 +47,24 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP256 finite field modulo p"
 }
 
-primefield::monty_field_fiat_arithmetic!(
-    FieldElement,
-    FieldParams,
-    U384,
-    fiat_bp384_non_montgomery_domain_field_element,
-    fiat_bp384_montgomery_domain_field_element,
-    fiat_bp384_from_montgomery,
-    fiat_bp384_to_montgomery,
-    fiat_bp384_add,
-    fiat_bp384_sub,
-    fiat_bp384_mul,
-    fiat_bp384_opp,
-    fiat_bp384_square,
-    fiat_bp384_divstep_precomp,
-    fiat_bp384_divstep,
-    fiat_bp384_msat,
-    fiat_bp384_selectznz
-);
+primefield::monty_field_fiat_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U384,
+    non_mont: fiat_bp384_non_montgomery_domain_field_element,
+    mont: fiat_bp384_montgomery_domain_field_element,
+    from_mont: fiat_bp384_from_montgomery,
+    to_mont: fiat_bp384_to_montgomery,
+    add: fiat_bp384_add,
+    sub: fiat_bp384_sub,
+    mul: fiat_bp384_mul,
+    neg: fiat_bp384_opp,
+    square: fiat_bp384_square,
+    divstep_precomp: fiat_bp384_divstep_precomp,
+    divstep: fiat_bp384_divstep,
+    msat: fiat_bp384_msat,
+    selectnz: fiat_bp384_selectznz
+}
 
 #[cfg(test)]
 mod tests {
