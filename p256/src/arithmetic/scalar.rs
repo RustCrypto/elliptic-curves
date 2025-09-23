@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve,
-    bigint::{Limb, Odd, U256, prelude::*},
+    bigint::{Limb, Odd, U256, Uint, prelude::*},
     group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -28,7 +28,6 @@ use elliptic_curve::{
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
-use primefield::bigint::Uint;
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarValue,
@@ -42,37 +41,7 @@ pub(crate) const MODULUS: Odd<U256> = NistP256::ORDER;
 /// `MODULUS / 2`
 const FRAC_MODULUS_2: Scalar = Scalar(MODULUS.as_ref().shr_vartime(1));
 
-/// Scalars are elements in the finite field modulo n.
-///
-/// # Trait impls
-///
-/// Much of the important functionality of scalars is provided by traits from
-/// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
-/// `p256::elliptic_curve::ff`:
-///
-/// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
-///   represents elements of finite fields and provides:
-///   - [`Field::random`](https://docs.rs/ff/latest/ff/trait.Field.html#tymethod.random) -
-///     generate a random scalar
-///   - `double`, `square`, and `invert` operations
-///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
-///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
-/// - [`PrimeField`](https://docs.rs/ff/latest/ff/trait.PrimeField.html) -
-///   represents elements of prime fields and provides:
-///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
-///   - `multiplicative_generator` and `root_of_unity` constants.
-/// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
-///   operations over field elements represented as bits (requires `bits` feature)
-///
-/// Please see the documentation for the relevant traits for more information.
-///
-/// # `serde` support
-///
-/// When the `serde` feature of this crate is enabled, the `Serialize` and
-/// `Deserialize` traits are impl'd for this type.
-///
-/// The serialization is a fixed-width big endian encoding. When used with
-/// textual formats, the binary data is encoded as hexadecimal.
+#[doc = primefield::monty_field_element_doc!("Scalars are elements in the finite field modulo n.")]
 #[derive(Clone, Copy, Default)]
 pub struct Scalar(pub(crate) U256);
 

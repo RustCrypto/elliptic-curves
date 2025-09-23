@@ -166,7 +166,6 @@ mod tests {
             uint: U384,
             byte_order: ByteOrder::BigEndian,
             multiplicative_generator: 2,
-            fe_name: "Scalar",
             doc: "brainpoolP384 scalar modulus"
         );
 
@@ -191,7 +190,6 @@ mod tests {
             uint: U256,
             byte_order: ByteOrder::BigEndian,
             multiplicative_generator: 6,
-            fe_name: "FieldElement",
             doc: "P-256 field modulus"
         );
 
@@ -216,7 +214,6 @@ mod tests {
             uint: U192,
             byte_order: ByteOrder::BigEndian,
             multiplicative_generator: 3,
-            fe_name: "Scalar",
             doc: "P-192 scalar modulus"
         );
 

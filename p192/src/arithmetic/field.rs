@@ -32,23 +32,21 @@ use elliptic_curve::{
 /// p = 2^{192} − 2^{64} - 1
 const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffeffffffffffffffff";
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: FieldParams,
     modulus: MODULUS_HEX,
     uint: U192,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 11,
-    fe_name: "FieldElement",
-    doc: "P-192 field modulus"
-);
+    doc: "Montgomery parameters for the NIST P-192 field modulus: `p = 2^{192} − 2^{64} - 1`."
+}
 
-/// Element of the secp192r1 base field used for curve coordinates.
-#[derive(Clone, Copy)]
-pub struct FieldElement(
-    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
-);
-
-primefield::monty_field_element!(FieldElement, FieldParams, U192);
+primefield::monty_field_element! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U192,
+    doc: "Element in the finite field modulo `p = 2^{192} − 2^{64} - 1`."
+}
 
 primefield::monty_field_fiat_arithmetic!(
     FieldElement,

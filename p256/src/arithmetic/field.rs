@@ -13,6 +13,18 @@ use elliptic_curve::{
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
+#[cfg(doc)]
+use {
+    core::ops::{Add, Neg, Sub},
+    elliptic_curve::{
+        ff::{self, Field},
+        subtle::ConditionallySelectable,
+    },
+};
+
+#[cfg(all(doc, feature = "bits"))]
+use elliptic_curve::ff::PrimeFieldBits;
+
 /// Constant representing the modulus: p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff";
 
@@ -22,20 +34,15 @@ primefield::monty_field_params!(
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 6,
-    fe_name: "FieldElement",
-    doc: "Bign P-256 field modulus"
+    doc: "Montgomery parameters for the NIST P-256 field modulus: p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1."
 );
 
-/// An element in the finite field modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1.
-///
-/// The internal representation is in little-endian order. Elements are always in
-/// Montgomery form; i.e., FieldElement(a) = aR mod p, with R = 2^256.
-#[derive(Clone, Copy)]
-pub struct FieldElement(
-    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
+primefield::monty_field_element!(
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256,
+    doc: "Element in the finite field modulo p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1."
 );
-
-primefield::monty_field_element!(FieldElement, FieldParams, U256);
 
 impl FieldElement {
     /// Decode [`FieldElement`] from [`U256`] converting it into Montgomery form.

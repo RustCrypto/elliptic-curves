@@ -34,21 +34,21 @@ use elliptic_curve::{
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: ScalarParams,
     modulus: ORDER_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 3,
-    fe_name: "Scalar",
-    doc: "brainpoolP256 scalar modulus"
-);
+    doc: "Montgomery parameters for brainpoolP256's scalar modulus"
+}
 
-/// Element of brainpoolP256's scalar field.
-#[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(pub(super) primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
-
-primefield::monty_field_element!(Scalar, ScalarParams, U256);
+primefield::monty_field_element! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U256,
+    doc: "Element in the brainpoolP256 scalar field modulo n"
+}
 
 primefield::monty_field_fiat_arithmetic!(
     Scalar,

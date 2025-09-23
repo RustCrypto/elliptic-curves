@@ -39,11 +39,11 @@ const MU: [Limb; 5] = [
 /// References:
 /// - Handbook of Applied Cryptography, Chapter 14
 ///   Algorithm 14.42
-///   http://cacr.uwaterloo.ca/hac/about/chap14.pdf
+///   <http://cacr.uwaterloo.ca/hac/about/chap14.pdf>
 ///
 /// - Efficient and Secure Elliptic Curve Cryptography Implementation of Curve P-256
 ///   Algorithm 6) Barrett Reduction modulo p
-///   https://csrc.nist.gov/csrc/media/events/workshop-on-elliptic-curve-cryptography-standards/documents/papers/session6-adalier-mehmet.pdf
+///   <https://csrc.nist.gov/csrc/media/events/workshop-on-elliptic-curve-cryptography-standards/documents/papers/session6-adalier-mehmet.pdf>
 #[inline]
 #[allow(clippy::too_many_arguments)]
 pub(super) const fn barrett_reduce(lo: U256, hi: U256) -> U256 {

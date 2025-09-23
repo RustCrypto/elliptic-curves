@@ -37,23 +37,21 @@ use elliptic_curve::{
 /// Constant representing the modulus: p = 2^{256} − 189
 const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43";
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: FieldParams,
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 2,
-    fe_name: "FieldElement",
-    doc: "P-256 field modulus"
-);
+    doc: "Montgomery parameters for the bign-curve256v1 field modulus p = 2^{256} − 189"
+}
 
-/// Element of the bign-256 base field used for curve coordinates.
-#[derive(Clone, Copy)]
-pub struct FieldElement(
-    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
-);
-
-primefield::monty_field_element!(FieldElement, FieldParams, U256);
+primefield::monty_field_element! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256,
+    doc: "Element in the bign-curve256v1 finite field modulo p = 2^{256} − 189"
+}
 
 primefield::monty_field_fiat_arithmetic!(
     FieldElement,

@@ -41,43 +41,21 @@ use {
 #[cfg(doc)]
 use core::ops::{Add, Mul, Neg, Sub};
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: ScalarParams,
     modulus: ORDER_HEX,
     uint: U192,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 3,
-    fe_name: "Scalar",
-    doc: "P-192 scalar modulus"
-);
+    doc: "Montgomery parameters for the NIST P-192 scalar modulus `n`."
+}
 
-/// Scalars are elements in the finite field modulo `n`.
-///
-/// # Trait impls
-///
-/// Much of the important functionality of scalars is provided by traits from
-/// the [`ff`](https://docs.rs/ff/) crate, which is re-exported as
-/// `p192::elliptic_curve::ff`:
-///
-/// - [`Field`](https://docs.rs/ff/latest/ff/trait.Field.html) -
-///   represents elements of finite fields and provides:
-///   - [`Field::random`](https://docs.rs/ff/latest/ff/trait.Field.html#tymethod.random) -
-///     generate a random scalar
-///   - `double`, `square`, and `invert` operations
-///   - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (as well as `*Assign` equivalents)
-///   - Bounds for [`ConditionallySelectable`] from the `subtle` crate
-/// - [`PrimeField`](https://docs.rs/ff/latest/ff/trait.PrimeField.html) -
-///   represents elements of prime fields and provides:
-///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
-///   - `multiplicative_generator` and `root_of_unity` constants.
-/// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
-///   operations over field elements represented as bits (requires `bits` feature)
-///
-/// Please see the documentation for the relevant traits for more information.
-#[derive(Clone, Copy, PartialOrd, Ord)]
-pub struct Scalar(primefield::MontyFieldElement<ScalarParams, { ScalarParams::LIMBS }>);
-
-primefield::monty_field_element!(Scalar, ScalarParams, U192);
+primefield::monty_field_element! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U192,
+    doc: "Element in the NIST P-192 scalar field modulo `n`."
+}
 
 primefield::monty_field_fiat_arithmetic!(
     Scalar,

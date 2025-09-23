@@ -22,7 +22,6 @@ mod fiat;
 ///     uint: U256,
 ///     byte_order: ByteOrder::BigEndian,
 ///     multiplicative_generator: 6,
-///     fe_name: "FieldElement",
 ///     doc: "P-256 field modulus"
 /// );
 /// ```
@@ -34,7 +33,6 @@ macro_rules! monty_field_params {
         uint: $uint:ty,
         byte_order: $byte_order:expr,
         multiplicative_generator: $multiplicative_generator:expr,
-        fe_name: $fe_name:expr,
         doc: $doc:expr
     ) => {
         use $crate::bigint::modular::ConstMontyParams;
@@ -46,7 +44,6 @@ macro_rules! monty_field_params {
                 { $name::PARAMS.modulus().as_ref().bits().div_ceil(8) as usize },
             >;
             const BYTE_ORDER: $crate::ByteOrder = $byte_order;
-            const FIELD_ELEMENT_NAME: &'static str = $fe_name;
             const MODULUS_HEX: &'static str = $modulus_hex;
             const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
             const T: $uint = $crate::compute_t($name::PARAMS.modulus().as_ref());
@@ -104,7 +101,18 @@ macro_rules! monty_field_params {
 /// - `Invert`
 #[macro_export]
 macro_rules! monty_field_element {
-    ($fe:path, $params:ty, $uint:path) => {
+    (
+        name: $fe:tt,
+        params: $params:ty,
+        uint: $uint:path,
+        doc: $doc:expr
+    ) => {
+        #[doc = $crate::monty_field_element_doc!($doc)]
+        #[derive(Clone, Copy, PartialOrd, Ord)]
+        pub struct $fe(
+            pub(super) $crate::MontyFieldElement<$params, { <$params>::LIMBS }>,
+        );
+
         impl $fe {
             /// Zero element.
             pub const ZERO: Self =
@@ -588,5 +596,34 @@ macro_rules! field_op {
                 <$fe>::$inner_func(self, rhs)
             }
         }
+    };
+}
+
+/// Write documentation for a field element type.
+#[doc(hidden)]
+#[macro_export]
+#[rustfmt::skip]
+macro_rules! monty_field_element_doc {
+    ($about:expr) => {
+        concat!(
+            $about,
+            "\n\n",
+            "# Trait impls\n",
+            "\n",
+            "Much of the important functionality is provided by traits from the [`ff`] crate:\n",
+            "\n",
+            "- [`Field`] represents elements of finite fields and provides:\n",
+            "  - [`Field::random`] generate a random field element\n",
+            "  - `double`, `square`, and `invert` operations\n",
+            "  - Bounds for [`Add`], [`Sub`], [`Mul`], and [`Neg`] (and `*Assign` equivalents)\n",
+            "  - Bounds for [`ConditionallySelectable`] from the `subtle` crate\n",
+            "- [`PrimeField`] represents elements of prime fields and provides:\n",
+            "  - `from_repr`/`to_repr` for converting field elements from/to big integers.\n",
+            "  - `MULTIPLICATIVE_GENERATOR` and `ROOT_OF_UNITY` constants.\n",
+            "- [`PrimeFieldBits`] operations over field elements represented as bits ",
+            "  (requires `bits` feature)\n",
+            "\n",
+            "Please see the documentation for the relevant traits for more information.\n"
+        )
     };
 }
