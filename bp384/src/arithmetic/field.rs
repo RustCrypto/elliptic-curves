@@ -31,23 +31,21 @@ use elliptic_curve::{
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b412b1da197fb71123acd3a729901d1a71874700133107ec53";
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: FieldParams,
     modulus: MODULUS_HEX,
     uint: U384,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 3,
-    fe_name: "FieldElement",
-    doc: "brainpoolP384 field modulus"
-);
+    doc: "Montgomery parameters for brainpoolP384's field modulus"
+}
 
-/// Element of the brainpoolP384's base field used for curve point coordinates.
-#[derive(Clone, Copy)]
-pub struct FieldElement(
-    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
-);
-
-primefield::monty_field_element!(FieldElement, FieldParams, U384);
+primefield::monty_field_element! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U384,
+    doc: "Element in the brainpoolP256 finite field modulo p"
+}
 
 primefield::monty_field_fiat_arithmetic!(
     FieldElement,

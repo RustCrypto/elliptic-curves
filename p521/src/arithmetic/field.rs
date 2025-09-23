@@ -34,20 +34,9 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
-use primefield::bigint::modular::MontyParams;
 use primefield::bigint::{Limb, Uint};
 
 const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-
-primefield::monty_field_params!(
-    name: FieldParams,
-    modulus: MODULUS_HEX,
-    uint: U576,
-    byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 3,
-    fe_name: "FieldElement",
-    doc: "P-521 field modulus"
-);
 
 /// Field modulus: p = 2^{521} − 1
 pub(crate) const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
@@ -350,11 +339,6 @@ impl AsRef<fiat_p521_tight_field_element> for FieldElement {
     fn as_ref(&self) -> &fiat_p521_tight_field_element {
         &self.0
     }
-}
-
-impl ConstMontyParams<{ U576::LIMBS }> for FieldElement {
-    const LIMBS: usize = U576::LIMBS;
-    const PARAMS: MontyParams<{ U576::LIMBS }> = FieldParams::PARAMS;
 }
 
 impl Default for FieldElement {

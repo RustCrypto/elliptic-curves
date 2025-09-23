@@ -24,23 +24,21 @@ use elliptic_curve::{
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff";
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: FieldParams,
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 13,
-    fe_name: "FieldElement",
-    doc: "SM2 field modulus"
-);
+    doc: "Montgomery parameters for SM2's field modulus `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
+}
 
-/// Element of the SM2 elliptic curve base field used for curve point coordinates.
-#[derive(Clone, Copy)]
-pub struct FieldElement(
-    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
-);
-
-primefield::monty_field_element!(FieldElement, FieldParams, U256);
+primefield::monty_field_element! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256,
+    doc: "Element in the SM2 finite field modulo `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
+}
 
 primefield::monty_field_fiat_arithmetic!(
     FieldElement,

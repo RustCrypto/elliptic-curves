@@ -35,23 +35,21 @@ const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffff000000000000000000000
 #[cfg(target_pointer_width = "64")]
 const MODULUS_HEX: &str = "00000000ffffffffffffffffffffffffffffffff000000000000000000000001";
 
-primefield::monty_field_params!(
+primefield::monty_field_params! {
     name: FieldParams,
     modulus: MODULUS_HEX,
     uint: Uint,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 22,
-    fe_name: "FieldElement",
-    doc: "P-224 field modulus"
-);
+    doc: "Montgomery parameters for the NIST P-224 field modulus: `p = 2^{224} − 2^{96} + 1`."
+}
 
-/// Element of the secp224r1 base field used for curve coordinates.
-#[derive(Clone, Copy)]
-pub struct FieldElement(
-    pub(super) primefield::MontyFieldElement<FieldParams, { FieldParams::LIMBS }>,
-);
-
-primefield::monty_field_element!(FieldElement, FieldParams, Uint);
+primefield::monty_field_element! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: Uint,
+    doc: "Element in the finite field modulo `p = 2^{224} − 2^{96} + 1`."
+}
 
 primefield::monty_field_fiat_arithmetic!(
     FieldElement,

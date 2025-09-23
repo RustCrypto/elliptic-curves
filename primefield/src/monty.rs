@@ -30,9 +30,6 @@ pub trait MontyFieldParams<const LIMBS: usize>: ConstMontyParams<LIMBS> {
     /// Byte order to use when serializing a field element as byte.
     const BYTE_ORDER: ByteOrder;
 
-    /// Type name to use in the `Debug` impl on elements of this field.
-    const FIELD_ELEMENT_NAME: &'static str;
-
     /// Field modulus as a hexadecimal string.
     const MODULUS_HEX: &'static str;
 
@@ -725,7 +722,12 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let canonical = self.to_canonical();
-        write!(f, "{}(0x{:X})", MOD::FIELD_ELEMENT_NAME, &canonical)
+        write!(
+            f,
+            "MontyFieldElement<p={}>(0x{:X})",
+            MOD::MODULUS_HEX,
+            canonical
+        )
     }
 }
 
@@ -899,7 +901,6 @@ mod tests {
         uint: U256,
         byte_order: ByteOrder::BigEndian,
         multiplicative_generator: 6,
-        fe_name: "FieldElement",
         doc: "P-256 field modulus"
     );
 

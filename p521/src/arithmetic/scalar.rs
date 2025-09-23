@@ -62,8 +62,7 @@ primefield::monty_field_params!(
     uint: U576,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 3,
-    fe_name: "Scalar",
-    doc: "P-521 scalar modulus"
+    doc: "Montgomery parameters for the NIST P-521 scalar modulus `n`."
 );
 
 /// Scalars are elements in the finite field modulo `n`.
