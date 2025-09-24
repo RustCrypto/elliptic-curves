@@ -344,26 +344,36 @@ where
     ///
     /// **This operation is variable time with respect to the exponent `exp`.**
     ///
-    /// If the exponent is fixed, this operation is constant time.
+    /// If `exp` is fixed, this operation is constant time. Note that `exp` will still be branched
+    /// upon and should NOT be a secret.
     pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
-        let mut res = Self::ONE;
-        let mut i = RHS_LIMBS;
+        let mut i = RHS_LIMBS - 1;
 
-        while i > 0 {
+        // Ignore "leading" zeros (in little endian)
+        while i > 0 && exp.as_words()[i] == 0 {
             i -= 1;
+        }
 
+        let mut res = Self::ONE;
+
+        loop {
             let mut j = Limb::BITS;
+
             while j > 0 {
                 j -= 1;
                 res = res.square();
 
-                if ((exp.as_limbs()[i].0 >> j) & 1) == 1 {
+                if ((exp.as_words()[i] >> j) & 1) == 1 {
                     res = res.multiply(self);
                 }
             }
-        }
 
-        res
+            if i == 0 {
+                return res;
+            }
+
+            i -= 1;
+        }
     }
 
     /// Returns `self^(2^n) mod p`.
