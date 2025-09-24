@@ -22,7 +22,7 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, NistP521, ORDER_HEX, U576};
+use crate::{FieldBytes, NistP521, ORDER_HEX, Uint};
 use core::{
     cmp::Ordering,
     fmt::{self, Debug},
@@ -31,7 +31,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result,
-    bigint::{Integer, NonZero, modular::MontyParams},
+    bigint::{self, Integer, Limb, NonZero, modular::MontyParams},
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -44,7 +44,7 @@ use elliptic_curve::{
 };
 
 #[cfg(target_pointer_width = "32")]
-use super::util::{u32x18_to_u64x9, u64x9_to_u32x18};
+use super::util::{u32x17_to_u64x9, u64x9_to_u32x17};
 
 #[cfg(feature = "serde")]
 use {
@@ -54,12 +54,11 @@ use {
 
 #[cfg(doc)]
 use core::ops::Sub;
-use primefield::bigint::{Limb, Uint};
 
 primefield::monty_field_params!(
     name: ScalarParams,
     modulus: ORDER_HEX,
-    uint: U576,
+    uint: Uint,
     byte_order: primefield::ByteOrder::BigEndian,
     multiplicative_generator: 3,
     doc: "Montgomery parameters for the NIST P-521 scalar modulus `n`."
@@ -110,10 +109,10 @@ impl Scalar {
         Self::from_bytes(&field_bytes).into_option().ok_or(Error)
     }
 
-    /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form:
+    /// Decode [`Scalar`] from [`Uint`] converting it into Montgomery form:
     ///
     /// `w * R^2 * R^-1 mod p = wR mod p`
-    pub fn from_uint(uint: U576) -> CtOption<Self> {
+    pub fn from_uint(uint: Uint) -> CtOption<Self> {
         let is_some = uint.ct_lt(&NistP521::ORDER);
         CtOption::new(Self::from_uint_unchecked(uint), is_some)
     }
@@ -125,36 +124,36 @@ impl Scalar {
     /// This method is primarily intended for defining internal constants.
     #[allow(dead_code)]
     pub(crate) const fn from_hex_unchecked(hex: &str) -> Self {
-        Self::from_uint_unchecked(U576::from_be_hex(hex))
+        Self::from_uint_unchecked(Uint::from_be_hex(hex))
     }
 
     /// Convert a `u64` into a [`Scalar`].
     pub const fn from_u64(w: u64) -> Self {
-        Self::from_uint_unchecked(U576::from_u64(w))
+        Self::from_uint_unchecked(Uint::from_u64(w))
     }
 
-    /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form.
+    /// Decode [`Scalar`] from [`Uint`] converting it into Montgomery form.
     ///
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "32")]
-    pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
+    pub(crate) const fn from_uint_unchecked(w: Uint) -> Self {
         let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
         fiat_p521_scalar_to_montgomery(
             &mut out,
-            &fiat_p521_scalar_non_montgomery_domain_field_element(u32x18_to_u64x9(w.as_words())),
+            &fiat_p521_scalar_non_montgomery_domain_field_element(u32x17_to_u64x9(w.as_words())),
         );
         Self(out)
     }
 
-    /// Decode [`Scalar`] from [`U576`] converting it into Montgomery form.
+    /// Decode [`Scalar`] from [`Uint`] converting it into Montgomery form.
     ///
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// Used incorrectly this can lead to invalid results!
     #[cfg(target_pointer_width = "64")]
-    pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
+    pub(crate) const fn from_uint_unchecked(w: Uint) -> Self {
         let mut out = fiat_p521_scalar_montgomery_domain_field_element([0; 9]);
         fiat_p521_scalar_to_montgomery(
             &mut out,
@@ -168,24 +167,24 @@ impl Scalar {
         FieldBytesEncoding::<NistP521>::encode_field_bytes(&self.to_canonical())
     }
 
-    /// Translate [`Scalar`] out of the Montgomery domain, returning a [`U576`]
+    /// Translate [`Scalar`] out of the Montgomery domain, returning a [`Uint`]
     /// in canonical form.
     #[inline]
     #[cfg(target_pointer_width = "32")]
-    pub const fn to_canonical(self) -> U576 {
+    pub const fn to_canonical(self) -> Uint {
         let mut out = fiat_p521_scalar_non_montgomery_domain_field_element([0; 9]);
         fiat_p521_scalar_from_montgomery(&mut out, &self.0);
-        U576::from_words(u64x9_to_u32x18(&out.0))
+        Uint::from_words(u64x9_to_u32x17(&out.0))
     }
 
-    /// Translate [`Scalar`] out of the Montgomery domain, returning a [`U576`]
+    /// Translate [`Scalar`] out of the Montgomery domain, returning a [`Uint`]
     /// in canonical form.
     #[inline]
     #[cfg(target_pointer_width = "64")]
-    pub const fn to_canonical(self) -> U576 {
+    pub const fn to_canonical(self) -> Uint {
         let mut out = fiat_p521_scalar_non_montgomery_domain_field_element([0; 9]);
         fiat_p521_scalar_from_montgomery(&mut out, &self.0);
-        U576::from_words(out.0)
+        Uint::from_words(out.0)
     }
 
     /// Determine if this [`Scalar`] is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -302,7 +301,7 @@ impl Scalar {
     /// **This operation is variable time with respect to the exponent `exp`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
-    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
+    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &bigint::Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
         let mut i = RHS_LIMBS;
 
@@ -355,9 +354,9 @@ impl AsRef<fiat_p521_scalar_montgomery_domain_field_element> for Scalar {
     }
 }
 
-impl ConstMontyParams<{ U576::LIMBS }> for Scalar {
-    const LIMBS: usize = U576::LIMBS;
-    const PARAMS: MontyParams<{ U576::LIMBS }> = ScalarParams::PARAMS;
+impl ConstMontyParams<{ Uint::LIMBS }> for Scalar {
+    const LIMBS: usize = Uint::LIMBS;
+    const PARAMS: MontyParams<{ Uint::LIMBS }> = ScalarParams::PARAMS;
 }
 
 impl Debug for Scalar {
@@ -381,19 +380,19 @@ impl PartialEq for Scalar {
 
 impl From<u32> for Scalar {
     fn from(n: u32) -> Scalar {
-        Self::from_uint_unchecked(U576::from(n))
+        Self::from_uint_unchecked(Uint::from(n))
     }
 }
 
 impl From<u64> for Scalar {
     fn from(n: u64) -> Scalar {
-        Self::from_uint_unchecked(U576::from(n))
+        Self::from_uint_unchecked(Uint::from(n))
     }
 }
 
 impl From<u128> for Scalar {
     fn from(n: u128) -> Scalar {
-        Self::from_uint_unchecked(U576::from(n))
+        Self::from_uint_unchecked(Uint::from(n))
     }
 }
 
@@ -547,7 +546,7 @@ impl AsRef<Scalar> for Scalar {
 }
 
 impl FromUintUnchecked for Scalar {
-    type Uint = U576;
+    type Uint = Uint;
 
     fn from_uint_unchecked(uint: Self::Uint) -> Self {
         Self::from_uint_unchecked(uint)
@@ -564,7 +563,7 @@ impl Invert for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        const MODULUS_SHR1: U576 = NistP521::ORDER.as_ref().shr_vartime(1);
+        const MODULUS_SHR1: Uint = NistP521::ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
     }
 }
@@ -591,6 +590,11 @@ impl PrimeField for Scalar {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 3;
+    #[cfg(target_pointer_width = "32")]
+    const ROOT_OF_UNITY: Self = Self::from_hex_unchecked(
+        "0000009a0a650d44b28c17f3d708ad2fa8c4fbc7e6000d7c12dafa92fcc5673a3055276d535f79ff391dcdbcd998b7836647d3a72472b3da861ac810a7f9c7b7b63e2205",
+    );
+    #[cfg(target_pointer_width = "64")]
     const ROOT_OF_UNITY: Self = Self::from_hex_unchecked(
         "000000000000009a0a650d44b28c17f3d708ad2fa8c4fbc7e6000d7c12dafa92fcc5673a3055276d535f79ff391dcdbcd998b7836647d3a72472b3da861ac810a7f9c7b7b63e2205",
     );
@@ -613,33 +617,33 @@ impl PrimeField for Scalar {
     }
 }
 
-impl Reduce<U576> for Scalar {
-    fn reduce(w: &U576) -> Self {
+impl Reduce<Uint> for Scalar {
+    fn reduce(w: &Uint) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP521::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U576::conditional_select(w, &r, !underflow))
+        Self::from_uint_unchecked(Uint::conditional_select(w, &r, !underflow))
     }
 }
 impl Reduce<FieldBytes> for Scalar {
     #[inline]
     fn reduce(bytes: &FieldBytes) -> Self {
-        let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
+        let w = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
         Self::reduce(&w)
     }
 }
 
-impl ReduceNonZero<U576> for Scalar {
-    fn reduce_nonzero(w: &U576) -> Self {
-        const ORDER_MINUS_ONE: U576 = NistP521::ORDER.as_ref().wrapping_sub(&U576::ONE);
+impl ReduceNonZero<Uint> for Scalar {
+    fn reduce_nonzero(w: &Uint) -> Self {
+        const ORDER_MINUS_ONE: Uint = NistP521::ORDER.as_ref().wrapping_sub(&Uint::ONE);
         let r = w.rem(&NonZero::new(ORDER_MINUS_ONE).unwrap());
-        Self::from_uint_unchecked(r.wrapping_add(&U576::ONE))
+        Self::from_uint_unchecked(r.wrapping_add(&Uint::ONE))
     }
 }
 
 impl ReduceNonZero<FieldBytes> for Scalar {
     #[inline]
     fn reduce_nonzero(bytes: &FieldBytes) -> Self {
-        let w = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
+        let w = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(bytes);
         Self::reduce_nonzero(&w)
     }
 }
@@ -656,22 +660,22 @@ impl From<&Scalar> for FieldBytes {
     }
 }
 
-impl From<Scalar> for U576 {
-    fn from(scalar: Scalar) -> U576 {
-        U576::from(&scalar)
+impl From<Scalar> for Uint {
+    fn from(scalar: Scalar) -> Uint {
+        Uint::from(&scalar)
     }
 }
 
-impl From<&Scalar> for U576 {
-    fn from(scalar: &Scalar) -> U576 {
+impl From<&Scalar> for Uint {
+    fn from(scalar: &Scalar) -> Uint {
         scalar.to_canonical()
     }
 }
 
-impl TryFrom<U576> for Scalar {
+impl TryFrom<Uint> for Scalar {
     type Error = Error;
 
-    fn try_from(w: U576) -> Result<Self> {
+    fn try_from(w: Uint) -> Result<Self> {
         Option::from(Self::from_uint(w)).ok_or(Error)
     }
 }
@@ -700,7 +704,7 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use crate::{FieldBytes, NistP521, NonZeroScalar};
 
-    use super::{Scalar, U576};
+    use super::{Scalar, Uint};
     use elliptic_curve::{
         Curve,
         array::Array,
@@ -708,7 +712,7 @@ mod tests {
     };
     use proptest::{prelude::any, prop_compose, proptest};
 
-    primefield::test_primefield_constants!(Scalar, U576);
+    primefield::test_primefield_constants!(Scalar, Uint);
     primefield::test_field_identity!(Scalar);
     primefield::test_field_invert!(Scalar);
     //primefield::test_field_sqrt!(Scalar); // TODO(tarcieri): impl this
@@ -716,59 +720,59 @@ mod tests {
     #[test]
     fn reduce_nonzero() {
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(&Array::default())),
-            U576::ONE,
+            Uint::from(Scalar::reduce_nonzero(&Array::default())),
+            Uint::ONE,
         );
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(&U576::ONE)),
-            U576::from_u8(2),
+            Uint::from(Scalar::reduce_nonzero(&Uint::ONE)),
+            Uint::from_u8(2),
         );
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(&U576::from_u8(2))),
-            U576::from_u8(3),
-        );
-
-        assert_eq!(
-            U576::from(Scalar::reduce_nonzero(NistP521::ORDER.as_ref())),
-            U576::from_u8(2),
-        );
-        assert_eq!(
-            U576::from(Scalar::reduce_nonzero(
-                &NistP521::ORDER.wrapping_sub(&U576::from_u8(1))
-            )),
-            U576::ONE,
-        );
-        assert_eq!(
-            U576::from(Scalar::reduce_nonzero(
-                &NistP521::ORDER.wrapping_sub(&U576::from_u8(2))
-            )),
-            NistP521::ORDER.wrapping_sub(&U576::ONE),
-        );
-        assert_eq!(
-            U576::from(Scalar::reduce_nonzero(
-                &NistP521::ORDER.wrapping_sub(&U576::from_u8(3))
-            )),
-            NistP521::ORDER.wrapping_sub(&U576::from_u8(2)),
+            Uint::from(Scalar::reduce_nonzero(&Uint::from_u8(2))),
+            Uint::from_u8(3),
         );
 
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(
-                &NistP521::ORDER.wrapping_add(&U576::ONE)
-            )),
-            U576::from_u8(3),
+            Uint::from(Scalar::reduce_nonzero(NistP521::ORDER.as_ref())),
+            Uint::from_u8(2),
         );
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(
-                &NistP521::ORDER.wrapping_add(&U576::from_u8(2))
+            Uint::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_sub(&Uint::from_u8(1))
             )),
-            U576::from_u8(4),
+            Uint::ONE,
+        );
+        assert_eq!(
+            Uint::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_sub(&Uint::from_u8(2))
+            )),
+            NistP521::ORDER.wrapping_sub(&Uint::ONE),
+        );
+        assert_eq!(
+            Uint::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_sub(&Uint::from_u8(3))
+            )),
+            NistP521::ORDER.wrapping_sub(&Uint::from_u8(2)),
         );
 
         assert_eq!(
-            U576::from(Scalar::reduce_nonzero(
-                &NistP521::ORDER.wrapping_mul(&U576::from_u8(3))
+            Uint::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_add(&Uint::ONE)
             )),
-            U576::from_u8(4),
+            Uint::from_u8(3),
+        );
+        assert_eq!(
+            Uint::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_add(&Uint::from_u8(2))
+            )),
+            Uint::from_u8(4),
+        );
+
+        assert_eq!(
+            Uint::from(Scalar::reduce_nonzero(
+                &NistP521::ORDER.wrapping_mul(&Uint::from_u8(3))
+            )),
+            Uint::from_u8(4),
         );
     }
 

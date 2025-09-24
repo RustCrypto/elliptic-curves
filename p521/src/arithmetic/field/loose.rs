@@ -6,10 +6,15 @@ use core::ops::Mul;
 pub struct LooseFieldElement(pub(super) fiat_p521_loose_field_element);
 
 impl LooseFieldElement {
+    #[cfg(target_pointer_width = "32")]
+    const LIMBS: usize = 19;
+    #[cfg(target_pointer_width = "64")]
+    const LIMBS: usize = 9;
+
     /// Reduce field element.
     #[inline]
     pub const fn carry(&self) -> FieldElement {
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_carry(&mut out, &self.0);
         FieldElement(out)
     }
@@ -17,7 +22,7 @@ impl LooseFieldElement {
     /// Multiplies two field elements and reduces the result.
     #[inline]
     pub const fn multiply(&self, rhs: &Self) -> FieldElement {
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_carry_mul(&mut out, &self.0, &rhs.0);
         FieldElement(out)
     }
@@ -25,7 +30,7 @@ impl LooseFieldElement {
     /// Squares a field element and reduces the result.
     #[inline]
     pub const fn square(&self) -> FieldElement {
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_carry_square(&mut out, &self.0);
         FieldElement(out)
     }
