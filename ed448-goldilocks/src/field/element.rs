@@ -334,17 +334,23 @@ impl FieldElement {
     }
 
     pub fn is_square(&self) -> Choice {
-        const IS_SQUARE_EXP: U448 = U448::from_le_hex(
-            "ffffffffffffffffffffffffffffffffffffffffffffffffffffff7fffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
-        );
-        self.0.pow(&IS_SQUARE_EXP).ct_eq(&FieldElement::ONE.0)
+        !Choice::from(self.0.jacobi_symbol().is_minus_one())
     }
 
     pub fn sqrt(&self) -> FieldElement {
-        const SQRT_EXP: U448 = U448::from_be_hex(
-            "3fffffffffffffffffffffffffffffffffffffffffffffffffffffffc0000000000000000000000000000000000000000000000000000000",
-        );
-        Self(self.0.pow(&SQRT_EXP))
+        // Candidate root is y = x^((p+1)/4).
+        // We have: (p+1)/4 = 2^446 - 2^222
+        let z = *self;
+        let zp2 = z.square() * z;
+        let zp3 = zp2.square() * z;
+        let zp4 = zp3.square() * z;
+        let zp7 = zp4.square_n::<3>() * zp3;
+        let zp14 = zp7.square_n::<7>() * zp7;
+        let zp28 = zp14.square_n::<14>() * zp14;
+        let zp56 = zp28.square_n::<28>() * zp28;
+        let zp112 = zp56.square_n::<56>() * zp56;
+        let zp224 = zp112.square_n::<112>() * zp112;
+        zp224.square_n::<222>()
     }
 
     pub fn to_bytes(self) -> [u8; 56] {
