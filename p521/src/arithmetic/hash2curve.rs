@@ -78,7 +78,7 @@ impl MapToCurve for NistP521 {
 
 impl Reduce<Array<u8, U98>> for Scalar {
     fn reduce(value: &Array<u8, U98>) -> Self {
-        const F_2_392: Scalar = Scalar::from_hex_unchecked(
+        const F_2_392: Scalar = Scalar::from_hex_vartime(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
