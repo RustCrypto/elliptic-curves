@@ -1,8 +1,8 @@
 use super::FieldElement;
-use crate::{AffinePoint, NistP521, ProjectivePoint, Scalar};
+use crate::{AffinePoint, NistP521, ProjectivePoint, Scalar, Uint};
 use elliptic_curve::{
+    FieldBytesEncoding,
     array::Array,
-    bigint::{ArrayEncoding, U576},
     consts::{U32, U98},
     ops::Reduce,
     subtle::Choice,
@@ -20,17 +20,19 @@ impl hash2curve::GroupDigest for NistP521 {
 
 impl Reduce<Array<u8, U98>> for FieldElement {
     fn reduce(value: &Array<u8, U98>) -> Self {
-        const F_2_392: FieldElement = FieldElement::from_hex_unchecked(
-            "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        const F_2_392: FieldElement = FieldElement::from_hex(
+            "000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
         let mut d0 = Array::default();
-        d0[23..].copy_from_slice(&value[0..49]);
-        let d0 = FieldElement::from_uint_unchecked(U576::from_be_byte_array(d0));
+        d0[17..].copy_from_slice(&value[0..49]);
+        let u0 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d0);
+        let d0 = FieldElement::from_uint_unchecked(u0);
 
         let mut d1 = Array::default();
-        d1[23..].copy_from_slice(&value[49..]);
-        let d1 = FieldElement::from_uint_unchecked(U576::from_be_byte_array(d1));
+        d1[17..].copy_from_slice(&value[49..]);
+        let u1 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d1);
+        let d1 = FieldElement::from_uint_unchecked(u1);
 
         d0 * F_2_392 + d1
     }
@@ -55,12 +57,10 @@ impl OsswuMap for FieldElement {
             0xffff_ffff_ffff_ffff,
             0x0000_0000_0000_007f,
         ],
-        c2: FieldElement::from_hex_unchecked(
-            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002",
-        ),
+        c2: FieldElement::from_u64(2),
         map_a: FieldElement::from_u64(3).neg(),
-        map_b: FieldElement::from_hex_unchecked(
-            "0000000000000051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
+        map_b: FieldElement::from_hex(
+            "0051953eb9618e1c9a1f929a21a0b68540eea2da725b99b315f3b8b489918ef109e156193951ec7e937b1652c0bd3bb1bf073573df883d2c34f1ef451fd46b503f00",
         ),
         z: FieldElement::from_u64(4).neg(),
     };
@@ -78,17 +78,25 @@ impl MapToCurve for NistP521 {
 
 impl Reduce<Array<u8, U98>> for Scalar {
     fn reduce(value: &Array<u8, U98>) -> Self {
+        // TODO(tarcieri): make `Scalar::from_hex*` accept a `FieldBytes`-length hex input
+        #[cfg(target_pointer_width = "32")]
+        const F_2_392: Scalar = Scalar::from_hex_unchecked(
+            "0000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        );
+        #[cfg(target_pointer_width = "64")]
         const F_2_392: Scalar = Scalar::from_hex_unchecked(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
         let mut d0 = Array::default();
-        d0[23..].copy_from_slice(&value[0..49]);
-        let d0 = Scalar::reduce(&U576::from_be_byte_array(d0));
+        d0[17..].copy_from_slice(&value[0..49]);
+        let u0 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d0);
+        let d0 = Scalar::reduce(&u0);
 
         let mut d1 = Array::default();
-        d1[23..].copy_from_slice(&value[49..]);
-        let d1 = Scalar::reduce(&U576::from_be_byte_array(d1));
+        d1[17..].copy_from_slice(&value[49..]);
+        let u1 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d1);
+        let d1 = Scalar::reduce(&u1);
 
         d0 * F_2_392 + d1
     }
@@ -97,13 +105,13 @@ impl Reduce<Array<u8, U98>> for Scalar {
 #[cfg(test)]
 mod tests {
     use crate::{
-        NistP521, Scalar,
+        NistP521, Scalar, Uint,
         arithmetic::field::{FieldElement, MODULUS},
     };
     use elliptic_curve::{
         Curve,
         array::Array,
-        bigint::{ArrayEncoding, CheckedSub, NonZero, U576, U896},
+        bigint::{ArrayEncoding, CheckedSub, NonZero, U896},
         consts::U98,
         group::cofactor::CofactorGroup,
         ops::Reduce,
@@ -115,16 +123,22 @@ mod tests {
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
 
+    #[cfg(target_pointer_width = "32")]
+    use crate::arithmetic::util;
+
     #[test]
     fn params() {
         let params = <FieldElement as OsswuMap>::PARAMS;
 
-        let c1 = MODULUS.checked_sub(&U576::from_u8(3)).unwrap()
-            / NonZero::new(U576::from_u8(4)).unwrap();
-        assert_eq!(
-            Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
-            c1.to_be_byte_array()
-        );
+        let c1_expected = MODULUS.checked_sub(&Uint::from_u8(3)).unwrap()
+            / NonZero::new(Uint::from_u8(4)).unwrap();
+
+        #[cfg(target_pointer_width = "32")]
+        let c1_words = util::u32x17_to_u64x9(&c1_expected.as_words());
+        #[cfg(target_pointer_width = "64")]
+        let c1_words = c1_expected.to_words();
+
+        assert_eq!(c1_words, params.c1,);
 
         let c2 = FieldElement::from_u64(4).sqrt().unwrap();
         assert_eq!(params.c2, c2);
@@ -319,17 +333,27 @@ mod tests {
     #[test]
     fn from_okm_fuzz() {
         let mut wide_order = Array::default();
+
+        #[cfg(target_pointer_width = "32")]
+        wide_order[44..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
+        #[cfg(target_pointer_width = "64")]
         wide_order[40..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
+
         // TODO: This could be reduced to `U832` when `crypto-bigint` implements `ArrayEncoding`.
         let wide_order = NonZero::<U896>::from_be_byte_array(wide_order).unwrap();
 
         let simple_from_okm = move |data: Array<u8, U98>| -> Scalar {
             let mut wide_data = Array::default();
             wide_data[14..].copy_from_slice(data.as_slice());
+
             let wide_data = U896::from_be_byte_array(wide_data);
 
             let scalar = wide_data % wide_order;
-            let reduced_scalar = U576::from_be_slice(&scalar.to_be_byte_array()[40..]);
+
+            #[cfg(target_pointer_width = "32")]
+            let reduced_scalar = Uint::from_be_slice(&scalar.to_be_byte_array()[44..]);
+            #[cfg(target_pointer_width = "64")]
+            let reduced_scalar = Uint::from_be_slice(&scalar.to_be_byte_array()[40..]);
 
             Scalar::reduce(&reduced_scalar)
         };

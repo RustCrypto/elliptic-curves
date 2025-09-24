@@ -10,36 +10,42 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-// TODO(tarcieri): 32-bit backend?
-#[path = "field/p521_64.rs"]
+#[cfg_attr(target_pointer_width = "32", path = "field/p521_32.rs")]
+#[cfg_attr(target_pointer_width = "64", path = "field/p521_64.rs")]
 #[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
 #[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
+#[rustfmt::skip]
 mod field_impl;
 mod loose;
 
 pub(crate) use self::loose::LooseFieldElement;
 
 use self::field_impl::*;
-use crate::{FieldBytes, NistP521, U576};
+use crate::{FieldBytes, NistP521, Uint};
 use core::{
+    cmp::Ordering,
     fmt::{self, Debug},
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::ops::Invert;
 use elliptic_curve::{
     Error, FieldBytesEncoding,
+    bigint::Word,
     ff::{self, Field, PrimeField},
+    ops::Invert,
     rand_core::TryRngCore,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
-use primefield::bigint::{Limb, Uint};
+use primefield::bigint::{self, Limb};
 
+#[cfg(target_pointer_width = "32")]
+const MODULUS_HEX: &str = "000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+#[cfg(target_pointer_width = "64")]
 const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 
 /// Field modulus: p = 2^{521} − 1
-pub(crate) const MODULUS: U576 = U576::from_be_hex(MODULUS_HEX);
+pub(crate) const MODULUS: Uint = Uint::from_be_hex(MODULUS_HEX);
 
 /// Element of the secp521r1 base field used for curve coordinates.
 #[derive(Clone, Copy)]
@@ -52,9 +58,14 @@ impl FieldElement {
     /// Multiplicative identity.
     pub const ONE: Self = Self::from_u64(1);
 
+    #[cfg(target_pointer_width = "32")]
+    const LIMBS: usize = 19;
+    #[cfg(target_pointer_width = "64")]
+    const LIMBS: usize = 9;
+
     /// Create a [`FieldElement`] from a canonical big-endian representation.
     pub fn from_bytes(repr: &FieldBytes) -> CtOption<Self> {
-        let uint = <U576 as FieldBytesEncoding<NistP521>>::decode_field_bytes(repr);
+        let uint = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(repr);
         Self::from_uint(uint)
     }
 
@@ -64,33 +75,56 @@ impl FieldElement {
         Self::from_bytes(&field_bytes).into_option().ok_or(Error)
     }
 
-    /// Decode [`FieldElement`] from [`U576`].
-    pub fn from_uint(uint: U576) -> CtOption<Self> {
+    /// Decode [`FieldElement`] from [`Uint`].
+    pub fn from_uint(uint: Uint) -> CtOption<Self> {
         let is_some = uint.ct_lt(&MODULUS);
         CtOption::new(Self::from_uint_unchecked(uint), is_some)
     }
 
     /// Parse a [`FieldElement`] from big endian hex-encoded bytes.
     ///
-    /// Does *not* perform a check that the field element does not overflow the order.
-    ///
     /// This method is primarily intended for defining internal constants.
-    pub(crate) const fn from_hex_unchecked(hex: &str) -> Self {
-        Self::from_uint_unchecked(U576::from_be_hex(hex))
+    ///
+    /// # Panics
+    /// - if the input in hex is not the correct length
+    /// - if the given value when decoded from hex overflows the modulus
+    pub(crate) const fn from_hex(hex: &str) -> Self {
+        assert!(
+            hex.len() == 521usize.div_ceil(8) * 2,
+            "hex is the wrong length (expected 132 hex chars)"
+        );
+
+        // Build a hex string of the expected size, regardless of the size of `Uint`
+        let mut hex_bytes = [b'0'; { Uint::BITS as usize / 4 }];
+
+        let offset = hex_bytes.len() - hex.len();
+        let mut i = 0;
+        while i < hex.len() {
+            hex_bytes[i + offset] = hex.as_bytes()[i];
+            i += 1;
+        }
+
+        let uint = match core::str::from_utf8(&hex_bytes) {
+            Ok(padded_hex) => Uint::from_be_hex(padded_hex),
+            Err(_) => panic!("invalid hex string"),
+        };
+
+        assert!(matches!(uint.cmp_vartime(&MODULUS), Ordering::Less));
+        Self::from_uint_unchecked(uint)
     }
 
     /// Convert a `u64` into a [`FieldElement`].
     pub const fn from_u64(w: u64) -> Self {
-        Self::from_uint_unchecked(U576::from_u64(w))
+        Self::from_uint_unchecked(Uint::from_u64(w))
     }
 
-    /// Decode [`FieldElement`] from [`U576`].
+    /// Decode [`FieldElement`] from [`Uint`].
     ///
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// Used incorrectly this can lead to invalid results!
-    pub(crate) const fn from_uint_unchecked(w: U576) -> Self {
-        // Converts the saturated representation used by `U576` into a 66-byte array with a
+    pub(crate) const fn from_uint_unchecked(w: Uint) -> Self {
+        // Converts the saturated representation used by `Uint` into a 66-byte array with a
         // little-endian byte ordering.
         // TODO(tarcieri): use `FieldBytesEncoding::encode_field_bytes` when `const impl` is stable
         let le_bytes_wide = w.to_le_bytes();
@@ -106,7 +140,7 @@ impl FieldElement {
 
         // Decode the little endian serialization into the unsaturated big integer form used by
         // the fiat-crypto synthesized code.
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_from_bytes(&mut out, &le_bytes);
         Self(out)
     }
@@ -149,7 +183,7 @@ impl FieldElement {
     /// Add elements.
     #[inline]
     pub const fn add_loose(&self, rhs: &Self) -> LooseFieldElement {
-        let mut out = fiat_p521_loose_field_element([0; 9]);
+        let mut out = fiat_p521_loose_field_element([0; Self::LIMBS]);
         fiat_p521_add(&mut out, &self.0, &rhs.0);
         LooseFieldElement(out)
     }
@@ -164,7 +198,7 @@ impl FieldElement {
     /// Subtract elements, returning a loose field element.
     #[inline]
     pub const fn sub_loose(&self, rhs: &Self) -> LooseFieldElement {
-        let mut out = fiat_p521_loose_field_element([0; 9]);
+        let mut out = fiat_p521_loose_field_element([0; Self::LIMBS]);
         fiat_p521_sub(&mut out, &self.0, &rhs.0);
         LooseFieldElement(out)
     }
@@ -172,7 +206,7 @@ impl FieldElement {
     /// Negate element, returning a loose field element.
     #[inline]
     pub const fn neg_loose(&self) -> LooseFieldElement {
-        let mut out = fiat_p521_loose_field_element([0; 9]);
+        let mut out = fiat_p521_loose_field_element([0; Self::LIMBS]);
         fiat_p521_opp(&mut out, &self.0);
         LooseFieldElement(out)
     }
@@ -180,7 +214,7 @@ impl FieldElement {
     /// Add two field elements.
     #[inline]
     pub const fn add(&self, rhs: &Self) -> Self {
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_carry_add(&mut out, &self.0, &rhs.0);
         Self(out)
     }
@@ -188,7 +222,7 @@ impl FieldElement {
     /// Subtract field elements.
     #[inline]
     pub const fn sub(&self, rhs: &Self) -> Self {
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_carry_sub(&mut out, &self.0, &rhs.0);
         Self(out)
     }
@@ -196,7 +230,7 @@ impl FieldElement {
     /// Negate element.
     #[inline]
     pub const fn neg(&self) -> Self {
-        let mut out = fiat_p521_tight_field_element([0; 9]);
+        let mut out = fiat_p521_tight_field_element([0; Self::LIMBS]);
         fiat_p521_carry_opp(&mut out, &self.0);
         Self(out)
     }
@@ -236,7 +270,7 @@ impl FieldElement {
     /// **This operation is variable time with respect to the exponent `exp`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
-    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
+    pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &bigint::Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
         let mut i = RHS_LIMBS;
 
@@ -329,7 +363,7 @@ impl FieldElement {
     /// Relax a tight field element into a loose one.
     #[inline]
     pub const fn relax(&self) -> LooseFieldElement {
-        let mut out = fiat_p521_loose_field_element([0; 9]);
+        let mut out = fiat_p521_loose_field_element([0; Self::LIMBS]);
         fiat_p521_relax(&mut out, &self.0);
         LooseFieldElement(out)
     }
@@ -389,32 +423,25 @@ impl PartialEq for FieldElement {
 
 impl From<u32> for FieldElement {
     fn from(n: u32) -> FieldElement {
-        Self::from_uint_unchecked(U576::from(n))
+        Self::from_uint_unchecked(Uint::from(n))
     }
 }
 
 impl From<u64> for FieldElement {
     fn from(n: u64) -> FieldElement {
-        Self::from_uint_unchecked(U576::from(n))
+        Self::from_uint_unchecked(Uint::from(n))
     }
 }
 
 impl From<u128> for FieldElement {
     fn from(n: u128) -> FieldElement {
-        Self::from_uint_unchecked(U576::from(n))
+        Self::from_uint_unchecked(Uint::from(n))
     }
 }
 
 impl ConditionallySelectable for FieldElement {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut out = [0; 9];
-        let a = &a.0;
-        let b = &b.0;
-
-        for i in 0..out.len() {
-            out[i] = u64::conditional_select(&a[i], &b[i], choice);
-        }
-
+        let out = <[Word; Self::LIMBS]>::conditional_select(&a.0.0, &b.0.0, choice);
         Self(fiat_p521_tight_field_element(out))
     }
 }
@@ -479,8 +506,8 @@ impl PrimeField for FieldElement {
     const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self::from_hex_unchecked(
-        "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
+    const ROOT_OF_UNITY: Self = Self::from_hex(
+        "01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
     );
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
     const DELTA: Self = Self::from_u64(9);
@@ -675,10 +702,10 @@ impl Invert for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::{FieldElement, U576};
+    use super::{FieldElement, Uint};
     use hex_literal::hex;
 
-    primefield::test_primefield!(FieldElement, U576);
+    primefield::test_primefield!(FieldElement, Uint);
 
     /// Regression test for RustCrypto/elliptic-curves#965
     #[test]

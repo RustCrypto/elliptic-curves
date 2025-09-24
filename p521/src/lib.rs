@@ -44,28 +44,37 @@ pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
 
-pub use elliptic_curve::{self, bigint::U576};
+pub use elliptic_curve;
 
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::Odd, consts::U66};
 
+#[cfg(target_pointer_width = "32")]
+use elliptic_curve::bigint::U544 as Uint;
+#[cfg(target_pointer_width = "64")]
+use elliptic_curve::bigint::U576 as Uint;
+
+/// Order of NIST P-521's elliptic curve group (i.e. scalar modulus) in hexadecimal.
+#[cfg(target_pointer_width = "32")]
+const ORDER_HEX: &str = "000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
+#[cfg(target_pointer_width = "64")]
+const ORDER_HEX: &str = "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
+
 /// NIST P-521 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]
 pub struct NistP521;
-
-const ORDER_HEX: &str = "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
 
 impl elliptic_curve::Curve for NistP521 {
     /// 66-byte serialized field elements.
     type FieldBytesSize = U66;
 
     /// 521-bit integer type used for internally representing field elements.
-    type Uint = U576;
+    type Uint = Uint;
 
     /// Order of NIST P-521's elliptic curve group (i.e. scalar modulus).
-    const ORDER: Odd<U576> = Odd::<U576>::from_be_hex(ORDER_HEX);
+    const ORDER: Odd<Uint> = Odd::<Uint>::from_be_hex(ORDER_HEX);
 }
 
 impl elliptic_curve::PrimeCurve for NistP521 {}
@@ -97,7 +106,7 @@ pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP521>;
 
-impl FieldBytesEncoding<NistP521> for U576 {}
+impl FieldBytesEncoding<NistP521> for Uint {}
 
 /// Non-zero NIST P-521 scalar field element.
 #[cfg(feature = "arithmetic")]
