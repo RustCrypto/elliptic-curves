@@ -784,8 +784,7 @@ mod tests {
     use super::*;
     use elliptic_curve::Field;
     use hex_literal::hex;
-    use proptest::prelude::any;
-    use proptest::proptest;
+    use proptest::{prop_assert_eq, property_test};
     use rand_core::{OsRng, TryRngCore};
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
@@ -1116,14 +1115,19 @@ mod tests {
         }
     }
 
-    proptest! {
-        #[test]
-        fn fuzz_is_torsion_free(
-           bytes in any::<[u8; 57]>()
-        ) {
-            let scalar = EdwardsScalar::from_bytes_mod_order(&bytes.into());
-            let point = EdwardsPoint::mul_by_generator(&scalar);
-            assert_eq!(point.is_torsion_free().unwrap_u8(), 1);
+    #[property_test]
+    fn fuzz_is_torsion_free(bytes: [u8; 57]) {
+        let scalar = EdwardsScalar::from_bytes_mod_order(&bytes.into());
+        let mut point = EdwardsPoint::mul_by_generator(&scalar);
+        prop_assert_eq!(point.is_torsion_free().unwrap_u8(), 1);
+
+        let T4 = CompressedEdwardsY([0u8; 57])
+            .decompress_unchecked()
+            .unwrap();
+
+        for _ in 0..3 {
+            point += T4;
+            assert!(bool::from(!point.is_torsion_free()));
         }
     }
 }
