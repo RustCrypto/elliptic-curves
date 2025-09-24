@@ -100,12 +100,12 @@ impl PointCompression for Ed448 {
 
 impl FieldBytesEncoding<Ed448> for U448 {
     fn decode_field_bytes(field_bytes: &Ed448FieldBytes) -> Self {
-        U448::from_le_slice(field_bytes)
+        U448::from_le_slice(&field_bytes[..56])
     }
 
     fn encode_field_bytes(&self) -> Ed448FieldBytes {
         let mut data = Ed448FieldBytes::default();
-        data.copy_from_slice(&self.to_le_byte_array()[..]);
+        data[..56].copy_from_slice(&self.to_le_byte_array());
         data
     }
 }
