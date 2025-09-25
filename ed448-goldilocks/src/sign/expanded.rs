@@ -1,10 +1,12 @@
 use crate::{
-    EdwardsPoint, EdwardsScalar, EdwardsScalarBytes, SECRET_KEY_LENGTH, SecretKey, SigningError,
-    VerifyingKey, WideEdwardsScalarBytes,
+    EdwardsPoint, Scalar, SecretKey, SigningError, VerifyingKey,
     sign::{HASH_HEAD, InnerSignature},
 };
 use elliptic_curve::{
+    array::Array,
+    consts::{U57, U114},
     group::GroupEncoding,
+    ops::Reduce,
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
 use sha3::{
@@ -15,9 +17,9 @@ use sha3::{
 #[derive(Clone)]
 pub struct ExpandedSecretKey {
     pub(crate) seed: SecretKey,
-    pub(crate) scalar: EdwardsScalar,
+    pub(crate) scalar: Scalar,
     pub(crate) public_key: VerifyingKey,
-    pub(crate) hash_prefix: EdwardsScalarBytes,
+    pub(crate) hash_prefix: Array<u8, U57>,
 }
 
 impl Zeroize for ExpandedSecretKey {
@@ -44,23 +46,19 @@ impl ZeroizeOnDrop for ExpandedSecretKey {}
 
 impl ExpandedSecretKey {
     pub fn from_seed(seed: &SecretKey) -> Self {
-        let mut reader = Shake256::default().chain(seed).finalize_xof();
-        let mut bytes = WideEdwardsScalarBytes::default();
-        reader.read(&mut bytes);
-        let mut scalar_bytes = EdwardsScalarBytes::default();
-        scalar_bytes.copy_from_slice(&bytes[..SECRET_KEY_LENGTH]);
+        let mut bytes = Array::<u8, U114>::default();
+        Shake256::default()
+            .chain(seed)
+            .finalize_xof_into(&mut bytes);
+        let (mut scalar_bytes, hash_prefix) = bytes.split::<U57>();
 
         // The two least significant bits of the first byte are cleared
         // All eight most significant bits of the last byte are cleared
         // with the highest bit of the second byte set.
         scalar_bytes[0] &= 0xFC;
-        scalar_bytes[56] = 0;
         scalar_bytes[55] |= 0x80;
 
-        let scalar = EdwardsScalar::from_bytes_mod_order(&scalar_bytes);
-
-        let mut hash_prefix = EdwardsScalarBytes::default();
-        hash_prefix.copy_from_slice(&bytes[SECRET_KEY_LENGTH..]);
+        let scalar = Scalar::from_bytes_mod_order(scalar_bytes.split_ref().0);
 
         let point = EdwardsPoint::GENERATOR * scalar;
         let public_key = VerifyingKey {
@@ -121,9 +119,9 @@ impl ExpandedSecretKey {
             .chain(self.hash_prefix)
             .chain(m)
             .finalize_xof_reset();
-        let mut bytes = WideEdwardsScalarBytes::default();
+        let mut bytes = Array::<u8, U114>::default();
         reader.read(&mut bytes);
-        let r = EdwardsScalar::from_bytes_mod_order_wide(&bytes);
+        let r = Scalar::reduce(&bytes);
 
         // R = r*B
         let big_r = EdwardsPoint::GENERATOR * r;
@@ -140,7 +138,7 @@ impl ExpandedSecretKey {
             .chain(m)
             .finalize_xof();
         reader.read(&mut bytes);
-        let k = EdwardsScalar::from_bytes_mod_order_wide(&bytes);
+        let k = Scalar::reduce(&bytes);
         Ok(InnerSignature {
             r: big_r,
             s: r + k * self.scalar,

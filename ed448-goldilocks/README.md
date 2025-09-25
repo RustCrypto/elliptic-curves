@@ -17,27 +17,27 @@ It is intended to be portable, fast, and safe.
 ## Usage
 
 ```rust
-use ed448_goldilocks::{Ed448, EdwardsPoint, CompressedEdwardsY, EdwardsScalar, sha3::Shake256};
+use ed448_goldilocks::{Ed448, EdwardsPoint, CompressedEdwardsY, Scalar, sha3::Shake256};
 use elliptic_curve::consts::U84;
 use elliptic_curve::Field;
 use elliptic_curve::group::GroupEncoding;
 use hash2curve::{ExpandMsgXof, GroupDigest};
 use rand_core::OsRng;
 
-let secret_key = EdwardsScalar::TWO;
+let secret_key = Scalar::TWO;
 let public_key = EdwardsPoint::GENERATOR * &secret_key;
 
 assert_eq!(public_key, EdwardsPoint::GENERATOR + EdwardsPoint::GENERATOR);
 
-let secret_key = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
+let secret_key = Scalar::try_from_rng(&mut OsRng).unwrap();
 let public_key = EdwardsPoint::GENERATOR * &secret_key;
 let compressed_public_key = public_key.to_bytes();
 
 assert_eq!(compressed_public_key.len(), 57);
 
 let hashed_scalar = hash2curve::hash_to_scalar::<Ed448, <Ed448 as GroupDigest>::ExpandMsg, U84>(&[b"test"], &[b"test DST"]).unwrap();
-let input = hex_literal::hex!("8108d09ce4ea5707d44a6e52d75f290d0a0801cd5e366b9a0e6f72c75246ea5042963192c01703749adb0f5a4b1ab0586ccc6cf58cfd6d0e00");
-let expected_scalar = EdwardsScalar::from_canonical_bytes(&input.into()).unwrap();
+let input = hex_literal::hex!("8108d09ce4ea5707d44a6e52d75f290d0a0801cd5e366b9a0e6f72c75246ea5042963192c01703749adb0f5a4b1ab0586ccc6cf58cfd6d0e");
+let expected_scalar = Scalar::from_canonical_bytes(&input.into()).unwrap();
 assert_eq!(hashed_scalar, expected_scalar);
 
 let hashed_point = Ed448::hash_from_bytes(b"test", b"test DST").unwrap();

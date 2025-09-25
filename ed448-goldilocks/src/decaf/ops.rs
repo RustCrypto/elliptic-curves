@@ -1,32 +1,34 @@
-use crate::{DecafAffinePoint, DecafScalar, curve::scalar_mul::double_and_add};
+use crate::{Decaf448, DecafAffinePoint, Scalar, curve::scalar_mul::double_and_add};
 use core::{
     borrow::Borrow,
     iter::Sum,
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
-use elliptic_curve::CurveGroup;
+use elliptic_curve::{CurveGroup, scalar::FromUintUnchecked};
 
 use super::DecafPoint;
 
+elliptic_curve::scalar_impls!(Decaf448, Scalar);
+
 /// Scalar Mul Operations
-impl Mul<&DecafScalar> for &DecafPoint {
+impl Mul<&Scalar> for &DecafPoint {
     type Output = DecafPoint;
 
-    fn mul(self, scalar: &DecafScalar) -> DecafPoint {
+    fn mul(self, scalar: &Scalar) -> DecafPoint {
         // XXX: We can do better than double and add
         DecafPoint(double_and_add(&self.0, scalar.bits()).to_extended())
     }
 }
 
-define_mul_variants!(LHS = DecafPoint, RHS = DecafScalar, Output = DecafPoint);
+define_mul_variants!(LHS = DecafPoint, RHS = Scalar, Output = DecafPoint);
 
-impl<'s> MulAssign<&'s DecafScalar> for DecafPoint {
-    fn mul_assign(&mut self, scalar: &'s DecafScalar) {
+impl<'s> MulAssign<&'s Scalar> for DecafPoint {
+    fn mul_assign(&mut self, scalar: &'s Scalar) {
         *self = *self * scalar;
     }
 }
-impl MulAssign<DecafScalar> for DecafPoint {
-    fn mul_assign(&mut self, scalar: DecafScalar) {
+impl MulAssign<Scalar> for DecafPoint {
+    fn mul_assign(&mut self, scalar: Scalar) {
         *self = *self * scalar;
     }
 }
