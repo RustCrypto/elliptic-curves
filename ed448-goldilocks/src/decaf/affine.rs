@@ -1,7 +1,8 @@
 use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
 use crate::field::FieldElement;
-use crate::{Decaf448FieldBytes, DecafPoint, DecafScalar, ORDER};
+use crate::{Decaf448FieldBytes, DecafPoint, ORDER, Scalar};
 use core::ops::Mul;
+use elliptic_curve::scalar::FromUintUnchecked;
 use elliptic_curve::{
     Error,
     point::{AffineCoordinates, NonIdentity},
@@ -47,7 +48,8 @@ impl AffineCoordinates for AffinePoint {
 
         CtOption::new(
             point,
-            point.0.is_on_curve() & (point * DecafScalar::new(*ORDER)).ct_eq(&DecafPoint::IDENTITY),
+            point.0.is_on_curve()
+                & (point * Scalar::from_uint_unchecked(*ORDER)).ct_eq(&DecafPoint::IDENTITY),
         )
     }
 
@@ -105,13 +107,13 @@ impl From<NonIdentity<AffinePoint>> for AffinePoint {
     }
 }
 
-impl Mul<&DecafScalar> for &AffinePoint {
+impl Mul<&Scalar> for &AffinePoint {
     type Output = DecafPoint;
 
     #[inline]
-    fn mul(self, scalar: &DecafScalar) -> DecafPoint {
+    fn mul(self, scalar: &Scalar) -> DecafPoint {
         self.to_decaf() * scalar
     }
 }
 
-define_mul_variants!(LHS = AffinePoint, RHS = DecafScalar, Output = DecafPoint);
+define_mul_variants!(LHS = AffinePoint, RHS = Scalar, Output = DecafPoint);

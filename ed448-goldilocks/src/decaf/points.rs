@@ -167,7 +167,7 @@ impl TryFrom<&DecafPointBytes> for DecafPoint {
 }
 
 impl Group for DecafPoint {
-    type Scalar = DecafScalar;
+    type Scalar = Scalar;
 
     fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
@@ -239,9 +239,9 @@ impl CofactorGroup for DecafPoint {
 
 impl PrimeGroup for DecafPoint {}
 
-impl<const N: usize> LinearCombination<[(DecafPoint, DecafScalar); N]> for DecafPoint {}
+impl<const N: usize> LinearCombination<[(DecafPoint, Scalar); N]> for DecafPoint {}
 
-impl LinearCombination<[(DecafPoint, DecafScalar)]> for DecafPoint {}
+impl LinearCombination<[(DecafPoint, Scalar)]> for DecafPoint {}
 
 impl CurveGroup for DecafPoint {
     type AffineRepr = DecafAffinePoint;
@@ -599,7 +599,10 @@ impl From<NonIdentity<DecafPoint>> for DecafPoint {
 mod test {
     use super::*;
     use crate::TWISTED_EDWARDS_BASE_POINT;
+    use elliptic_curve::PrimeField;
+    use elliptic_curve::consts::U64;
     use hash2curve::ExpandMsgXof;
+    use hex_literal::hex;
     use sha3::Shake256;
 
     #[test]
@@ -759,6 +762,72 @@ mod test {
         assert_eq!(point.0.is_on_curve().unwrap_u8(), 1u8);
         assert_ne!(point, DecafPoint::IDENTITY);
         assert_ne!(point, DecafPoint::GENERATOR);
+    }
+
+    #[test]
+    fn scalar_hash() {
+        let msg = b"hello world";
+        let dst = b"decaf448_XOF:SHAKE256_D448MAP_RO_";
+        let res =
+            hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>, U64>(&[msg], &[dst])
+                .unwrap();
+        let expected: [u8; 56] = hex_literal::hex!(
+            "55e7b59aa035db959409c6b69b817a18c8133d9ad06687665f5720672924da0a84eab7fee415ef13e7aaebdd227291ee8e156f32c507ad2e"
+        );
+        assert_eq!(res.to_repr(), Array::from(expected));
+    }
+
+    /// Taken from <https://www.rfc-editor.org/rfc/rfc9497.html#name-decaf448-shake256>.
+    #[test]
+    fn hash_to_scalar_voprf() {
+        struct TestVector {
+            dst: &'static [u8],
+            sk_sm: &'static [u8],
+        }
+
+        const KEY_INFO: &[u8] = b"test key";
+        const SEED: &[u8] =
+            &hex!("a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3");
+
+        const TEST_VECTORS: &[TestVector] = &[
+            TestVector {
+                dst: b"DeriveKeyPairOPRFV1-\x00-decaf448-SHAKE256",
+                sk_sm: &hex!(
+                    "e8b1375371fd11ebeb224f832dcc16d371b4188951c438f751425699ed29ecc80c6c13e558ccd67634fd82eac94aa8d1f0d7fee990695d1e"
+                ),
+            },
+            TestVector {
+                dst: b"DeriveKeyPairOPRFV1-\x01-decaf448-SHAKE256",
+                sk_sm: &hex!(
+                    "e3c01519a076a326a0eb566343e9b21c115fa18e6e85577ddbe890b33104fcc2835ddfb14a928dc3f5d79b936e17c76b99e0bf6a1680930e"
+                ),
+            },
+            TestVector {
+                dst: b"DeriveKeyPairOPRFV1-\x02-decaf448-SHAKE256",
+                sk_sm: &hex!(
+                    "792a10dcbd3ba4a52a054f6f39186623208695301e7adb9634b74709ab22de402990eb143fd7c67ac66be75e0609705ecea800992aac8e19"
+                ),
+            },
+        ];
+
+        let key_info_len = u16::try_from(KEY_INFO.len()).unwrap().to_be_bytes();
+
+        'outer: for test_vector in TEST_VECTORS {
+            for counter in 0_u8..=u8::MAX {
+                let scalar = hash2curve::hash_to_scalar::<Decaf448, ExpandMsgXof<Shake256>, U64>(
+                    &[SEED, &key_info_len, KEY_INFO, &counter.to_be_bytes()],
+                    &[test_vector.dst],
+                )
+                .unwrap();
+
+                if !bool::from(scalar.is_zero()) {
+                    assert_eq!(scalar.to_bytes().as_slice(), test_vector.sk_sm);
+                    continue 'outer;
+                }
+            }
+
+            panic!("deriving key failed");
+        }
     }
 
     // TODO: uncomment once elliptic-curve-tools is updated to match elliptic-curve 0.14

@@ -3,10 +3,7 @@
 
 use crate::edwards::affine::PointBytes;
 use crate::sign::{HASH_HEAD, InnerSignature};
-use crate::{
-    CompressedEdwardsY, Context, EdwardsPoint, EdwardsScalar, PreHash, Signature, SigningError,
-    WideEdwardsScalarBytes,
-};
+use crate::{CompressedEdwardsY, Context, EdwardsPoint, PreHash, Scalar, Signature, SigningError};
 
 #[cfg(feature = "serde")]
 use crate::PUBLIC_KEY_LENGTH;
@@ -18,7 +15,7 @@ use core::{
     fmt::{self, Debug, Formatter},
     hash::{Hash, Hasher},
 };
-use elliptic_curve::Group;
+use elliptic_curve::{Group, array::Array, consts::U114, ops::Reduce};
 use sha3::{
     Shake256,
     digest::{Digest, ExtendableOutput, FixedOutput, HashMarker, Update, XofReader},
@@ -288,7 +285,7 @@ impl VerifyingKey {
         }
 
         // SHAKE256(dom4(F, C) || R || A || PH(M), 114) -> scalar k
-        let mut bytes = WideEdwardsScalarBytes::default();
+        let mut bytes = Array::<u8, U114>::default();
         let ctx_len = ctx.len() as u8;
         let mut reader = Shake256::default()
             .chain(HASH_HEAD)
@@ -300,7 +297,7 @@ impl VerifyingKey {
             .chain(m)
             .finalize_xof();
         reader.read(&mut bytes);
-        let k = EdwardsScalar::from_bytes_mod_order_wide(&bytes);
+        let k = Scalar::reduce(&bytes);
         // Check the verification equation [S]B = R + [k]A.
         let lhs = EdwardsPoint::GENERATOR * inner_signature.s;
         let rhs = inner_signature.r + (self.point * k);

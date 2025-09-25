@@ -4,7 +4,10 @@
 use crate::sign::expanded::ExpandedSecretKey;
 use crate::*;
 use core::fmt::{self, Debug, Formatter};
-use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
+use elliptic_curve::{
+    array::Array,
+    zeroize::{Zeroize, ZeroizeOnDrop},
+};
 use rand_core::CryptoRng;
 use sha3::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
@@ -18,8 +21,8 @@ use crate::{PUBLIC_KEY_LENGTH, edwards::affine::PointBytes};
 
 /// Ed448 secret key as defined in [RFC8032 § 5.2.5]
 ///
-/// The private key is 57 octets (448 bits, 56 bytes) long.
-pub type SecretKey = EdwardsScalarBytes;
+/// The private key is 57 octets (456 bits) long.
+pub type SecretKey = Array<u8, U57>;
 
 /// Signing hash trait for Ed448ph
 pub trait PreHash {
@@ -198,7 +201,7 @@ impl TryFrom<&[u8]> for SigningKey {
             return Err("Invalid length for a signing key");
         }
         Ok(Self::from(
-            EdwardsScalarBytes::try_from(value).expect("Invalid length"),
+            SecretKey::try_from(value).expect("Invalid length"),
         ))
     }
 }
@@ -470,11 +473,11 @@ impl SigningKey {
         &self.secret.seed
     }
 
-    /// Return the clamped [`EdwardsScalar`] for this [`SigningKey`].
+    /// Return the clamped [`Scalar`] for this [`SigningKey`].
     ///
     /// This is the scalar that is actually used for signing.
     /// Be warned, this is secret material that should be handled with care.
-    pub fn to_scalar(&self) -> EdwardsScalar {
+    pub fn to_scalar(&self) -> Scalar {
         self.secret.scalar
     }
 

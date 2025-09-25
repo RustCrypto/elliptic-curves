@@ -87,7 +87,7 @@ pub use signature;
 pub use signing_key::*;
 pub use verifying_key::*;
 
-use crate::{CompressedEdwardsY, EdwardsPoint, EdwardsScalar};
+use crate::{CompressedEdwardsY, EdwardsPoint, Scalar};
 use elliptic_curve::array::Array;
 use elliptic_curve::group::GroupEncoding;
 
@@ -118,7 +118,7 @@ pub const ALGORITHM_ID: pkcs8::AlgorithmIdentifierRef<'static> = pkcs8::Algorith
 impl From<InnerSignature> for Signature {
     fn from(inner: InnerSignature) -> Self {
         let mut s = [0u8; SECRET_KEY_LENGTH];
-        s.copy_from_slice(&inner.s.to_bytes_rfc_8032());
+        s[..56].copy_from_slice(&inner.s.to_bytes());
         Self::from_components(inner.r.to_bytes(), s)
     }
 }
@@ -128,7 +128,7 @@ impl TryFrom<&Signature> for InnerSignature {
 
     fn try_from(signature: &Signature) -> Result<Self, Self::Error> {
         let s_bytes: &Array<u8, _> = (signature.s_bytes()).into();
-        let s = Option::from(EdwardsScalar::from_canonical_bytes(s_bytes))
+        let s = Option::from(Scalar::from_rfc_8032_bytes(s_bytes))
             .ok_or(SigningError::InvalidSignatureSComponent)?;
         let r = CompressedEdwardsY::from(*signature.r_bytes())
             .decompress()
@@ -141,7 +141,7 @@ impl TryFrom<&Signature> for InnerSignature {
 
 pub(crate) struct InnerSignature {
     pub(crate) r: EdwardsPoint,
-    pub(crate) s: EdwardsScalar,
+    pub(crate) s: Scalar,
 }
 
 impl TryFrom<Signature> for InnerSignature {

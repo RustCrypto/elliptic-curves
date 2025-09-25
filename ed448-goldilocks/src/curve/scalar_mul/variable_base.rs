@@ -1,11 +1,11 @@
 #![allow(non_snake_case)]
 
 use super::window::wnaf::LookupTable;
-use crate::EdwardsScalar;
+use crate::Scalar;
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
 use subtle::{Choice, ConditionallyNegatable};
 
-pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtensiblePoint {
+pub fn variable_base(point: &ExtendedPoint, s: &Scalar) -> ExtensiblePoint {
     let mut result = ExtensiblePoint::IDENTITY;
 
     // Recode Scalar
@@ -40,12 +40,13 @@ mod test {
     use crate::TWISTED_EDWARDS_BASE_POINT;
     use crate::curve::scalar_mul::double_and_add;
     use elliptic_curve::bigint::U448;
+    use elliptic_curve::scalar::FromUintUnchecked;
 
     #[test]
     fn test_scalar_mul() {
         // XXX: In the future use known multiples from Sage in bytes form?
         let twisted_point = TWISTED_EDWARDS_BASE_POINT;
-        let scalar = EdwardsScalar::new(U448::from_be_hex(
+        let scalar = Scalar::from_uint_unchecked(U448::from_be_hex(
             "05ca185aee2e1b73def437f63c003777083f83043fe5bf1aab454c66b64629d1de8026c1307f665ead0b70151533427ce128ae786ee372b7",
         ));
 
@@ -66,11 +67,11 @@ mod test {
         let x = TWISTED_EDWARDS_BASE_POINT;
 
         // Test that 1 * P = P
-        let exp = variable_base(&x, &EdwardsScalar::from(1u8));
+        let exp = variable_base(&x, &Scalar::from(1u8));
         assert!(x == exp);
         // Test that 2 * (P + P) = 4 * P
         let expected_two_x = x.add_extended(&x).double();
-        let got = variable_base(&x, &EdwardsScalar::from(4u8));
+        let got = variable_base(&x, &Scalar::from(4u8));
         assert!(expected_two_x == got);
     }
 }
