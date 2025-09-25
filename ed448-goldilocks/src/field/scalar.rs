@@ -44,6 +44,8 @@ pub type WideScalarBytes<C> = Array<u8, Prod<<C as CurveWithScalar>::ReprSize, U
 pub trait CurveWithScalar: 'static + CurveArithmetic + Send + Sync {
     type ReprSize: ArraySize<ArrayType<u8>: Copy> + Mul<U2, Output: ArraySize<ArrayType<u8>: Copy>>;
 
+    const NUM_BITS: u32;
+
     fn from_bytes_mod_order_wide(input: &WideScalarBytes<Self>) -> Scalar<Self>;
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> CtOption<Scalar<Self>>;
@@ -339,7 +341,7 @@ impl<C: CurveWithScalar> PrimeField for Scalar<C> {
         Choice::from((self.scalar.to_words()[0] & 1) as u8)
     }
     const MODULUS: &'static str = "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3";
-    const NUM_BITS: u32 = 448;
+    const NUM_BITS: u32 = C::NUM_BITS;
     const CAPACITY: u32 = Self::NUM_BITS - 1;
     const TWO_INV: Self = Self::new(U448::from_be_hex(
         "1fffffffffffffffffffffffffffffffffffffffffffffffffffffffbe6511f4e2276da4d76b1b4810b6613946e2c7aa91bc614955ac227a",
@@ -430,7 +432,7 @@ impl<C: CurveWithScalar> serdect::serde::Serialize for Scalar<C> {
     where
         S: serdect::serde::Serializer,
     {
-        serdect::slice::serialize_hex_lower_or_bin(&self.to_bytes(), s)
+        serdect::slice::serialize_hex_lower_or_bin(&self.to_repr(), s)
     }
 }
 
@@ -441,7 +443,7 @@ impl<'de, C: CurveWithScalar> serdect::serde::Deserialize<'de> for Scalar<C> {
         D: serdect::serde::Deserializer<'de>,
     {
         let mut buffer = ScalarBytes::<C>::default();
-        serdect::array::deserialize_hex_or_bin(&mut buffer[..56], d)?;
+        serdect::array::deserialize_hex_or_bin(&mut buffer, d)?;
         Option::from(Self::from_canonical_bytes(&buffer)).ok_or(serdect::serde::de::Error::custom(
             "scalar was not canonically encoded",
         ))

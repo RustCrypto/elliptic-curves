@@ -11,6 +11,8 @@ use subtle::{Choice, ConstantTimeEq, CtOption};
 impl CurveWithScalar for Ed448 {
     type ReprSize = U57;
 
+    const NUM_BITS: u32 = 456;
+
     fn from_bytes_mod_order_wide(input: &WideScalarBytes<Self>) -> Scalar<Self> {
         // top multiplier = 2^896 mod ℓ
         const TOP_MULTIPLIER: U448 = U448::from_be_hex(
@@ -297,7 +299,7 @@ mod test {
         let res = serde_bare::to_vec(&EdwardsScalar::TWO_INV);
         assert!(res.is_ok());
         let sb = res.unwrap();
-        assert_eq!(sb.len(), 57);
+        assert_eq!(sb.len(), 58);
 
         let res = serde_bare::from_slice::<EdwardsScalar>(&sb);
         assert!(res.is_ok());

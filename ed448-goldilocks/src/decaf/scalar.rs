@@ -11,6 +11,8 @@ use subtle::{Choice, ConstantTimeEq, CtOption};
 impl CurveWithScalar for Decaf448 {
     type ReprSize = U56;
 
+    const NUM_BITS: u32 = 448;
+
     fn from_bytes_mod_order_wide(input: &WideScalarBytes<Self>) -> Scalar<Self> {
         let value = (
             U448::from_le_slice(&input[..56]),
