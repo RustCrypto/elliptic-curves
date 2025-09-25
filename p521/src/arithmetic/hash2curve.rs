@@ -80,11 +80,11 @@ impl Reduce<Array<u8, U98>> for Scalar {
     fn reduce(value: &Array<u8, U98>) -> Self {
         // TODO(tarcieri): make `Scalar::from_hex*` accept a `FieldBytes`-length hex input
         #[cfg(target_pointer_width = "32")]
-        const F_2_392: Scalar = Scalar::from_hex_unchecked(
+        const F_2_392: Scalar = Scalar::from_hex_vartime(
             "0000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
         #[cfg(target_pointer_width = "64")]
-        const F_2_392: Scalar = Scalar::from_hex_unchecked(
+        const F_2_392: Scalar = Scalar::from_hex_vartime(
             "000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         );
 
@@ -104,14 +104,11 @@ impl Reduce<Array<u8, U98>> for Scalar {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        NistP521, Scalar, Uint,
-        arithmetic::field::{FieldElement, MODULUS},
-    };
+    use crate::{NistP521, Scalar, Uint, arithmetic::FieldElement};
     use elliptic_curve::{
         Curve,
         array::Array,
-        bigint::{ArrayEncoding, CheckedSub, NonZero, U896},
+        bigint::{ArrayEncoding, NonZero, U896},
         consts::U98,
         group::cofactor::CofactorGroup,
         ops::Reduce,
@@ -119,26 +116,22 @@ mod tests {
     };
     use hash2curve::{self, ExpandMsgXmd, MapToCurve};
     use hex_literal::hex;
-    use primeorder::osswu::OsswuMap;
     use proptest::{num, prelude::ProptestConfig, proptest};
     use sha2::Sha512;
 
-    #[cfg(target_pointer_width = "32")]
-    use crate::arithmetic::util;
-
     #[test]
+    #[cfg(target_pointer_width = "64")] // TODO(tarcieri): test 32-bit
     fn params() {
+        use crate::arithmetic::field::MODULUS;
+        use elliptic_curve::bigint::CheckedSub;
+        use primeorder::osswu::OsswuMap;
+
         let params = <FieldElement as OsswuMap>::PARAMS;
 
         let c1_expected = MODULUS.checked_sub(&Uint::from_u8(3)).unwrap()
             / NonZero::new(Uint::from_u8(4)).unwrap();
 
-        #[cfg(target_pointer_width = "32")]
-        let c1_words = util::u32x17_to_u64x9(&c1_expected.as_words());
-        #[cfg(target_pointer_width = "64")]
-        let c1_words = c1_expected.to_words();
-
-        assert_eq!(c1_words, params.c1,);
+        assert_eq!(c1_expected.to_words(), params.c1);
 
         let c2 = FieldElement::from_u64(4).sqrt().unwrap();
         assert_eq!(params.c2, c2);
