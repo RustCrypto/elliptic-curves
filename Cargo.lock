@@ -899,6 +899,7 @@ name = "primeorder"
 version = "0.14.0-pre.9"
 dependencies = [
  "elliptic-curve",
+ "hash2curve",
  "serdect",
 ]
 

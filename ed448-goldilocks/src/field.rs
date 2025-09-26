@@ -2,6 +2,7 @@ mod element;
 mod scalar;
 
 pub(crate) use element::*;
+pub use element::{Decaf448Map, Elligator2};
 pub(crate) use scalar::CurveWithScalar;
 pub use scalar::{MODULUS_LIMBS, ORDER, Scalar, ScalarBytes, WIDE_ORDER, WideScalarBytes};
 
