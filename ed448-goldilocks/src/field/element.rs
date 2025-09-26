@@ -4,7 +4,7 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::{ConstMontyType, MODULUS};
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
+    Decaf448, DecafPoint, Ed448, EdwardsPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::ops::Reduce;
@@ -196,7 +196,7 @@ impl MapToCurve for Ed448 {
     type Length = U84;
 
     fn map_to_curve(element: FieldElement) -> EdwardsPoint {
-        element.map_to_curve_elligator2().isogeny().to_edwards()
+        element.map_to_curve_elligator2_edwards448()
     }
 }
 
@@ -304,6 +304,11 @@ impl FieldElement {
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
     )));
     pub const ZERO: Self = Self(ConstMontyType::new(&U448::ZERO));
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    // 1. c1 = (q - 3) / 4         # Integer arithmetic
+    const C1: U448 = U448::from_be_hex(
+        "3fffffffffffffffffffffffffffffffffffffffffffffffffffffffbfffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    );
 
     pub fn is_negative(&self) -> Choice {
         self.0.retrieve().is_odd()
@@ -436,27 +441,153 @@ impl FieldElement {
         Self(self.0.div_by_2())
     }
 
-    pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
-        let mut t1 = self.square(); // 1.   t1 = u^2
-        t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
-        let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
-        t1.conditional_assign(&Self::ZERO, e1); // 4.   t1 = CMOV(t1, 0, e1)     // if t1 == -1, set t1 = 0
-        let mut x1 = t1 + Self::ONE; // 5.   x1 = t1 + 1
-        x1 = x1.invert(); // 6.   x1 = inv0(x1)
-        x1 *= -Self::J; // 7.   x1 = -A * x1             // x1 = -A / (1 + Z * u^2)
-        let mut gx1 = x1 + Self::J; // 8.  gx1 = x1 + A
-        gx1 *= x1; // 9.  gx1 = gx1 * x1
-        gx1 += Self::ONE; // 10. gx1 = gx1 + B
-        gx1 *= x1; // 11. gx1 = gx1 * x1            // gx1 = x1^3 + A * x1^2 + B * x1
-        let x2 = -x1 - Self::J; // 12.  x2 = -x1 - A
-        let gx2 = t1 * gx1; // 13. gx2 = t1 * gx1
-        let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
-        let x = Self::conditional_select(&x2, &x1, e2); // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
-        let y2 = Self::conditional_select(&gx2, &gx1, e2); // 16.  y2 = CMOV(gx2, gx1, e2)  // If is_square(gx1), y2 = gx1, else y2 = gx2
-        let mut y = y2.sqrt(); // 17.   y = sqrt(y2)
-        let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
-        y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
-        AffinePoint { x, y }
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    pub(crate) fn map_to_curve_elligator2_curve448(
+        &self,
+    ) -> (FieldElement, FieldElement, FieldElement) {
+        // 1.  tv1 = u^2
+        let mut tv1 = self.square();
+        // 2.   e1 = tv1 == 1
+        let e1 = tv1.ct_eq(&FieldElement::ONE);
+        // 3.  tv1 = CMOV(tv1, 0, e1)  # If Z * u^2 == -1, set tv1 = 0
+        tv1.conditional_assign(&FieldElement::ZERO, e1);
+        // 4.   xd = 1 - tv1
+        let xd = FieldElement::ONE - tv1;
+        // 5.  x1n = -J
+        let x1n = -Self::J;
+        // 6.  tv2 = xd^2
+        let tv2 = xd.square();
+        // 7.  gxd = tv2 * xd          # gxd = xd^3
+        let gxd = tv2 * xd;
+        // 8.  gx1 = -J * tv1          # x1n + J * xd
+        let mut gx1 = x1n * tv1;
+        // 9.  gx1 = gx1 * x1n         # x1n^2 + J * x1n * xd
+        gx1 *= x1n;
+        // 10. gx1 = gx1 + tv2         # x1n^2 + J * x1n * xd + xd^2
+        gx1 += tv2;
+        // 11. gx1 = gx1 * x1n         # x1n^3 + J * x1n^2 * xd + x1n * xd^2
+        gx1 *= x1n;
+        // 12. tv3 = gxd^2
+        let tv3 = gxd.square();
+        // 13. tv2 = gx1 * gxd         # gx1 * gxd
+        let tv2 = gx1 * gxd;
+        // 14. tv3 = tv3 * tv2         # gx1 * gxd^3
+        let tv3 = tv3 * tv2;
+        // 15.  y1 = tv3^c1            # (gx1 * gxd^3)^((p - 3) / 4)
+        let mut y1 = FieldElement(tv3.0.pow(&Self::C1));
+        // 16.  y1 = y1 * tv2          # gx1 * gxd * (gx1 * gxd^3)^((p - 3) / 4)
+        y1 *= tv2;
+        // 17. x2n = -tv1 * x1n        # x2 = x2n / xd = -1 * u^2 * x1n / xd
+        let x2n = -tv1 * x1n;
+        // 18.  y2 = y1 * u
+        let mut y2 = y1 * self;
+        // 19.  y2 = CMOV(y2, 0, e1)
+        y2.conditional_assign(&FieldElement::ZERO, e1);
+        // 20. tv2 = y1^2
+        let mut tv2 = y1.square();
+        // 21. tv2 = tv2 * gxd
+        tv2 *= gxd;
+        // 22.  e2 = tv2 == gx1
+        let e2 = tv2.ct_eq(&gx1);
+        // 23.  xn = CMOV(x2n, x1n, e2)  # If e2, x = x1, else x = x2
+        let xn = FieldElement::conditional_select(&x2n, &x1n, e2);
+        // 24.   y = CMOV(y2, y1, e2)    # If e2, y = y1, else y = y2
+        let mut y = FieldElement::conditional_select(&y2, &y1, e2);
+        // 25.  e3 = sgn0(y) == 1        # Fix sign of y
+        let e3 = y.is_negative();
+        // 26.   y = CMOV(y, -y, e2 XOR e3)
+        y.conditional_negate(e2 ^ e3);
+        // 27. return (xn, xd, y, 1)
+
+        (xn, xd, y)
+    }
+
+    fn map_to_curve_elligator2_edwards448(&self) -> EdwardsPoint {
+        // 1. (xn, xd, yn, yd) = map_to_curve_elligator2_curve448(u)
+        let (xn, xd, yn) = self.map_to_curve_elligator2_curve448();
+        // 2.  xn2 = xn^2
+        let xn2 = xn.square();
+        // 3.  xd2 = xd^2
+        let xd2 = xd.square();
+        // 4.  xd4 = xd2^2
+        let xd4 = xd2.square();
+        // 5.  yn2 = yn^2
+        let yn2 = yn.square();
+        // 6.  yd2 = yd^2
+        let yd2 = FieldElement::ONE;
+        // 7.  xEn = xn2 - xd2
+        let mut xEn = xn2 - xd2;
+        // 8.  tv2 = xEn - xd2
+        let mut tv2 = xEn - xd2;
+        // 9.  xEn = xEn * xd2
+        xEn *= xd2;
+        // 10. xEn = xEn * yd
+        // SKIP: yd = 1
+        // 11. xEn = xEn * yn
+        xEn *= yn;
+        // 12. xEn = xEn * 4
+        xEn = xEn.double().double();
+        // 13. tv2 = tv2 * xn2
+        tv2 *= xn2;
+        // 14. tv2 = tv2 * yd2
+        // SKIP: yd2 = 1
+        // 15. tv3 = 4 * yn2
+        let tv3 = yn2.double().double();
+        // 16. tv1 = tv3 + yd2
+        let mut tv1 = tv3 + yd2;
+        // 17. tv1 = tv1 * xd4
+        tv1 *= xd4;
+        // 18. xEd = tv1 + tv2
+        let mut xEd = tv1 + tv2;
+        // 19. tv2 = tv2 * xn
+        tv2 *= xn;
+        // 20. tv4 = xn * xd4
+        let tv4 = xn * xd4;
+        // 21. yEn = tv3 - yd2
+        let mut yEn = tv3 - yd2;
+        // 22. yEn = yEn * tv4
+        yEn *= tv4;
+        // 23. yEn = yEn - tv2
+        yEn -= tv2;
+        // 24. tv1 = xn2 + xd2
+        let mut tv1 = xn2 + xd2;
+        // 25. tv1 = tv1 * xd2
+        tv1 *= xd2;
+        // 26. tv1 = tv1 * xd
+        tv1 *= xd;
+        // 27. tv1 = tv1 * yn2
+        tv1 *= yn2;
+        // 28. tv1 = -2 * tv1
+        tv1 *= -FieldElement::TWO;
+        // 29. yEd = tv2 + tv1
+        let mut yEd = tv2 + tv1;
+        // 30. tv4 = tv4 * yd2
+        // SKIP: yd2 = 1
+        // 31. yEd = yEd + tv4
+        yEd += tv4;
+        // 32. tv1 = xEd * yEd
+        let tv1 = xEd * yEd;
+        // 33.   e = tv1 == 0
+        let e = tv1.ct_eq(&FieldElement::ZERO);
+        // 34. xEn = CMOV(xEn, 0, e)
+        xEn.conditional_assign(&FieldElement::ZERO, e);
+        // 35. xEd = CMOV(xEd, 1, e)
+        xEd.conditional_assign(&FieldElement::ONE, e);
+        // 36. yEn = CMOV(yEn, 1, e)
+        yEn.conditional_assign(&FieldElement::ONE, e);
+        // 37. yEd = CMOV(yEd, 1, e)
+        yEd.conditional_assign(&FieldElement::ONE, e);
+        // 38. return (xEn, xEd, yEn, yEd)
+
+        // Output: (xn, xd, yn, yd) such that (xn / xd, yn / yd) is a
+        // point on edwards448.
+
+        EdwardsPoint {
+            X: xEn * yEd,
+            Y: xEd * yEn,
+            Z: xEd * yEd,
+            T: xEn * yEn,
+        }
     }
 
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
