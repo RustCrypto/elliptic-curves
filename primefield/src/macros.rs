@@ -176,9 +176,35 @@ macro_rules! monty_field_element {
             /// - When input is the wrong length
             /// - If input overflows the modulus
             pub const fn from_hex_vartime(hex: &str) -> Self {
-                Self(
-                    $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_hex_vartime(hex),
-                )
+                use $crate::array::typenum::Unsigned;
+
+                assert!(
+                    hex.len() == <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::ByteSize::USIZE * 2,
+                    "hex is the wrong length"
+                );
+
+                // Build a hex string of the expected size, regardless of the size of `Uint`
+                let mut hex_bytes = [b'0'; { <$uint>::BITS as usize / 4 }];
+
+                let offset = match <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::BYTE_ORDER {
+                    $crate::ByteOrder::BigEndian => hex_bytes.len() - hex.len(),
+                    $crate::ByteOrder::LittleEndian => 0
+                };
+
+                let mut i = 0;
+                while i < hex.len() {
+                    hex_bytes[i + offset] = hex.as_bytes()[i];
+                    i += 1;
+                }
+
+                match core::str::from_utf8(&hex_bytes) {
+                    Ok(padded_hex) => Self(
+                        $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_hex_vartime(padded_hex),
+                    ),
+                    Err(_) => panic!("invalid hex string"),
+                }
+
+
             }
 
             /// Decode [`
