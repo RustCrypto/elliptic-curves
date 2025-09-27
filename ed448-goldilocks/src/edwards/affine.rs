@@ -1,8 +1,14 @@
 use crate::field::FieldElement;
 use crate::*;
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
-use core::ops::Mul;
-use elliptic_curve::{Error, point::NonIdentity, zeroize::DefaultIsZeroes};
+use core::ops::{Mul, Neg};
+use elliptic_curve::{
+    Error,
+    array::Array,
+    group::{GroupEncoding, prime::PrimeCurveAffine},
+    point::NonIdentity,
+    zeroize::DefaultIsZeroes,
+};
 use rand_core::TryRngCore;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -73,11 +79,71 @@ impl elliptic_curve::point::AffineCoordinates for AffinePoint {
 
 impl DefaultIsZeroes for AffinePoint {}
 
+impl GroupEncoding for AffinePoint {
+    type Repr = Array<u8, U57>;
+
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        Self::from_bytes_unchecked(bytes)
+            .and_then(|pt| CtOption::new(pt, pt.is_on_curve() & pt.to_edwards().is_torsion_free()))
+    }
+
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        let (y_bytes, sign) = bytes.split_ref::<U56>();
+
+        // Recover x using y
+        let y = FieldElement::from_bytes(&y_bytes.0);
+        let yy = y.square();
+        let dyy = FieldElement::EDWARDS_D * yy;
+        let numerator = FieldElement::ONE - yy;
+        let denominator = FieldElement::ONE - dyy;
+
+        let (mut x, is_res) = FieldElement::sqrt_ratio(&numerator, &denominator);
+
+        // Compute correct sign of x
+        let compressed_sign_bit = Choice::from(sign[0] >> 7);
+        let is_negative = x.is_negative();
+        x.conditional_negate(compressed_sign_bit ^ is_negative);
+
+        CtOption::new(AffinePoint { x, y }, is_res)
+    }
+
+    fn to_bytes(&self) -> Self::Repr {
+        self.compress().0.into()
+    }
+}
+
+impl PrimeCurveAffine for AffinePoint {
+    type Scalar = EdwardsScalar;
+    type Curve = EdwardsPoint;
+
+    fn identity() -> Self {
+        Self::IDENTITY
+    }
+
+    fn generator() -> Self {
+        Self::GENERATOR
+    }
+
+    fn is_identity(&self) -> Choice {
+        self.ct_eq(&Self::IDENTITY)
+    }
+
+    fn to_curve(&self) -> Self::Curve {
+        self.to_edwards()
+    }
+}
+
 impl AffinePoint {
     /// The identity point
     pub const IDENTITY: AffinePoint = AffinePoint {
         x: FieldElement::ZERO,
         y: FieldElement::ONE,
+    };
+
+    /// The identity point
+    pub const GENERATOR: AffinePoint = AffinePoint {
+        x: GOLDILOCKS_BASE_POINT.X,
+        y: GOLDILOCKS_BASE_POINT.Y,
     };
 
     /// Generate a random [`AffinePoint`].
@@ -202,6 +268,17 @@ define_mul_variants!(
     RHS = EdwardsScalar,
     Output = EdwardsPoint
 );
+
+impl Neg for AffinePoint {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Self {
+            x: -self.x,
+            y: self.y,
+        }
+    }
+}
 
 /// The compressed internal representation of a point on the Twisted Edwards Curve
 pub type PointBytes = [u8; 57];
@@ -389,27 +466,7 @@ impl CompressedEdwardsY {
     /// Returns `None` if the input is not the \\(y\\)-coordinate of a
     /// curve point.
     pub fn decompress_unchecked(&self) -> CtOption<AffinePoint> {
-        // Safe to unwrap here as the underlying data structure is a slice
-        let (sign, b) = self.0.split_last().expect("slice is non-empty");
-
-        let mut y_bytes: [u8; 56] = [0; 56];
-        y_bytes.copy_from_slice(b);
-
-        // Recover x using y
-        let y = FieldElement::from_bytes(&y_bytes);
-        let yy = y.square();
-        let dyy = FieldElement::EDWARDS_D * yy;
-        let numerator = FieldElement::ONE - yy;
-        let denominator = FieldElement::ONE - dyy;
-
-        let (mut x, is_res) = FieldElement::sqrt_ratio(&numerator, &denominator);
-
-        // Compute correct sign of x
-        let compressed_sign_bit = Choice::from(sign >> 7);
-        let is_negative = x.is_negative();
-        x.conditional_negate(compressed_sign_bit ^ is_negative);
-
-        CtOption::new(AffinePoint { x, y }, is_res)
+        AffinePoint::from_bytes_unchecked((&self.0).into())
     }
 
     /// Attempt to decompress to an `AffinePoint`.
@@ -419,8 +476,7 @@ impl CompressedEdwardsY {
     /// - if the input point is not on the curve.
     /// - if the input point has nonzero torsion component.
     pub fn decompress(&self) -> CtOption<AffinePoint> {
-        self.decompress_unchecked()
-            .and_then(|pt| CtOption::new(pt, pt.is_on_curve() & pt.to_edwards().is_torsion_free()))
+        AffinePoint::from_bytes((&self.0).into())
     }
 
     /// View this `CompressedEdwardsY` as an array of bytes.
@@ -431,5 +487,16 @@ impl CompressedEdwardsY {
     /// Copy this `CompressedEdwardsY` to an array of bytes.
     pub const fn to_bytes(&self) -> PointBytes {
         self.0
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn generator() {
+        assert_eq!(AffinePoint::GENERATOR.to_edwards(), EdwardsPoint::GENERATOR);
+        assert_eq!(EdwardsPoint::GENERATOR.to_affine(), AffinePoint::GENERATOR);
     }
 }
