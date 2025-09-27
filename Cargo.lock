@@ -1501,6 +1501,7 @@ dependencies = [
  "ed448-goldilocks",
  "rand",
  "rand_core",
+ "serdect",
  "zeroize",
 ]
 

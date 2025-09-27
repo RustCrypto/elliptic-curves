@@ -17,6 +17,8 @@ description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellma
 ed448-goldilocks = { version = "0.14.0-pre.4", default-features = false }
 rand_core = { version = "0.9", default-features = false }
 
+serdect = { version = "0.4", optional = true }
+
 [dependencies.zeroize]
 version = "1"
 default-features = false
@@ -24,3 +26,7 @@ features = ["zeroize_derive"]
 
 [dev-dependencies]
 rand = "0.9"
+
+[features]
+static_secrets = []
+serde = ["dep:serdect", "ed448-goldilocks/serde"]
