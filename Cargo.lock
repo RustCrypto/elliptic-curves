@@ -636,7 +636,6 @@ dependencies = [
  "hex-literal",
  "num-bigint 0.4.6",
  "num-traits",
- "once_cell",
  "primeorder",
  "proptest",
  "rand_core",
