@@ -12,6 +12,9 @@
 #[macro_use]
 extern crate alloc;
 
+#[cfg(feature = "std")]
+extern crate std;
+
 #[cfg(feature = "hash2curve")]
 pub mod osswu;
 pub mod point_arithmetic;
@@ -19,9 +22,14 @@ pub mod point_arithmetic;
 mod affine;
 #[cfg(feature = "dev")]
 mod dev;
+mod lookup_table;
 mod projective;
 
-pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
+pub use crate::{
+    affine::AffinePoint,
+    lookup_table::{BasepointTable, LookupTable},
+    projective::ProjectivePoint,
+};
 pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField, array, point::Double};
 
 use elliptic_curve::{CurveArithmetic, ops::Invert, subtle::CtOption};

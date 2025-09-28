@@ -634,7 +634,6 @@ dependencies = [
  "hex-literal",
  "num-bigint 0.4.6",
  "num-traits",
- "once_cell",
  "primeorder",
  "proptest",
  "rand_core",
@@ -899,6 +898,7 @@ name = "primeorder"
 version = "0.14.0-pre.9"
 dependencies = [
  "elliptic-curve",
+ "once_cell",
  "serdect",
 ]
 
