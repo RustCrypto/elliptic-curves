@@ -34,71 +34,20 @@
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
-#[cfg(all(
-    feature = "precomputed-tables",
-    not(any(feature = "critical-section", feature = "std"))
-))]
-compile_error!("`precomputed-tables` feature requires either `critical-section` or `std`");
-
 use crate::arithmetic::{
     ProjectivePoint,
     scalar::{Scalar, WideScalar},
 };
 
 use core::ops::{Mul, MulAssign};
-use elliptic_curve::{
-    ops::LinearCombination,
-    scalar::IsHigh,
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
-};
+use elliptic_curve::{ops::LinearCombination, scalar::IsHigh, subtle::ConditionallySelectable};
 
-#[cfg(all(feature = "precomputed-tables", feature = "critical-section"))]
-use once_cell::sync::Lazy as LazyLock;
-#[cfg(all(
-    feature = "precomputed-tables",
-    all(feature = "std", not(feature = "critical-section"))
-))]
-use std::sync::LazyLock;
+/// Lookup table for multiples of a given point.
+type LookupTable = elliptic_curve::point::LookupTable<ProjectivePoint>;
 
-/// Lookup table containing precomputed values `[p, 2p, 3p, ..., 8p]`
-#[derive(Copy, Clone, Default)]
-struct LookupTable([ProjectivePoint; 8]);
-
-impl From<&ProjectivePoint> for LookupTable {
-    fn from(p: &ProjectivePoint) -> Self {
-        let mut points = [*p; 8];
-        for j in 0..7 {
-            points[j + 1] = p + &points[j];
-        }
-        LookupTable(points)
-    }
-}
-
-impl LookupTable {
-    /// Given -8 <= x <= 8, returns x * p in constant time.
-    fn select(&self, x: i8) -> ProjectivePoint {
-        debug_assert!(x >= -8);
-        debug_assert!(x <= 8);
-
-        // Compute xabs = |x|
-        let xmask = x >> 7;
-        let xabs = (x + xmask) ^ xmask;
-
-        // Get an array element in constant time
-        let mut t = ProjectivePoint::IDENTITY;
-        for j in 1..9 {
-            let c = (xabs as u8).ct_eq(&(j as u8));
-            t.conditional_assign(&self.0[j - 1], c);
-        }
-        // Now t == |x| * p.
-
-        let neg_mask = Choice::from((xmask & 1) as u8);
-        t.conditional_assign(&-t, neg_mask);
-        // Now t == x * p.
-
-        t
-    }
-}
+/// Basepoint table for multiples of secp256k1's generator.
+#[cfg(feature = "precomputed-tables")]
+type BasepointTable = elliptic_curve::point::BasepointTable<ProjectivePoint, 33>;
 
 const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,
@@ -329,8 +278,8 @@ fn lincomb(
         );
 
         tables[i] = (
-            LookupTable::from(&ProjectivePoint::conditional_select(x, &-*x, r1_sign)),
-            LookupTable::from(&ProjectivePoint::conditional_select(
+            LookupTable::new(ProjectivePoint::conditional_select(x, &-*x, r1_sign)),
+            LookupTable::new(ProjectivePoint::conditional_select(
                 &x_beta, &-x_beta, r2_sign,
             )),
         );
@@ -368,23 +317,7 @@ fn lincomb(
 
 /// Lazily computed basepoint table.
 #[cfg(feature = "precomputed-tables")]
-static GEN_LOOKUP_TABLE: LazyLock<[LookupTable; 33]> = LazyLock::new(precompute_gen_lookup_table);
-
-#[cfg(feature = "precomputed-tables")]
-fn precompute_gen_lookup_table() -> [LookupTable; 33] {
-    let mut generator = ProjectivePoint::GENERATOR;
-    let mut res = [LookupTable::default(); 33];
-
-    for i in 0..33 {
-        res[i] = LookupTable::from(&generator);
-        // We are storing tables spaced by two radix steps,
-        // to decrease the size of the precomputed data.
-        for _ in 0..8 {
-            generator = generator.double();
-        }
-    }
-    res
-}
+static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
 
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
@@ -397,7 +330,7 @@ impl ProjectivePoint {
     #[cfg(feature = "precomputed-tables")]
     pub(super) fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
         let digits = Radix16Decomposition::<65>::new(k);
-        let table = *GEN_LOOKUP_TABLE;
+        let table = *BASEPOINT_TABLE;
         let mut acc = table[32].select(digits.0[64]);
         let mut acc2 = ProjectivePoint::IDENTITY;
         for i in (0..32).rev() {
