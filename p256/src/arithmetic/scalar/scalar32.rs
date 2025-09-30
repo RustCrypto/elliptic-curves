@@ -25,13 +25,13 @@ const MU: [Limb; 9] = [
 /// The general algorithm is:
 /// ```text
 /// p = n = order of group
-/// b = 2^64 = 64bit machine word
-/// k = 4
+/// b = 2^32 = 32bit machine word
+/// k = 8
 /// a \in [0, 2^512]
 /// mu := floor(b^{2k} / p)
 /// q1 := floor(a / b^{k - 1})
 /// q2 := q1 * mu
-/// q3 := <- floor(a / b^{k - 1})
+/// q3 := floor(q2 / b^{k + 1})
 /// r1 := a mod b^{k + 1}
 /// r2 := q3 * m mod b^{k + 1}
 /// r := r1 - r2
