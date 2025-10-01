@@ -319,7 +319,7 @@ impl DecafPoint {
 
     /// Subtract two points
     pub fn sub(&self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.sub_extended(&other.0).to_extended())
+        DecafPoint(self.0.add_extended(&other.0.negate()).to_extended())
     }
 
     /// Compress this point
