@@ -1,7 +1,7 @@
 #![no_std]
 
 use ed448_goldilocks::{
-    MontgomeryPoint,
+    MontgomeryPoint, Scalar,
     elliptic_curve::{
         array::{Array, typenum::U56},
         bigint::U448,
@@ -10,8 +10,6 @@ use ed448_goldilocks::{
 };
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
-
-type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
 
 /// Given an [`EphemeralSecret`] Key, compute the corresponding public key
 /// using the generator specified in RFC7748
@@ -107,9 +105,9 @@ impl EphemeralSecret {
     }
 
     /// Views an Secret as a Scalar
-    fn as_scalar(&self) -> MontgomeryScalar {
+    fn as_scalar(&self) -> Scalar {
         let secret = U448::from_le_slice(&self.0);
-        MontgomeryScalar::from_uint_unchecked(secret)
+        Scalar::from_uint_unchecked(secret)
     }
 
     /// Performs a Diffie-hellman key exchange between the secret key and an external public key

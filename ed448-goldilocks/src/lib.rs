@@ -49,15 +49,9 @@ pub(crate) mod sign;
 
 pub(crate) use field::{GOLDILOCKS_BASE_POINT, TWISTED_EDWARDS_BASE_POINT};
 
-pub use decaf::{
-    AffinePoint as DecafAffinePoint, CompressedDecaf, DecafPoint, DecafScalar, DecafScalarBytes,
-    WideDecafScalarBytes,
-};
-pub use edwards::{
-    AffinePoint, CompressedEdwardsY, EdwardsPoint, EdwardsScalar, EdwardsScalarBytes,
-    WideEdwardsScalarBytes,
-};
-pub use field::{MODULUS_LIMBS, ORDER, Scalar, WIDE_ORDER};
+pub use decaf::{AffinePoint as DecafAffinePoint, CompressedDecaf, DecafPoint};
+pub use edwards::{AffinePoint, CompressedEdwardsY, EdwardsPoint};
+pub use field::{MODULUS_LIMBS, ORDER, Scalar, ScalarBytes, WIDE_ORDER, WideScalarBytes};
 pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 #[cfg(feature = "signing")]
 pub use sign::*;
@@ -86,7 +80,7 @@ pub type Ed448ScalarBits = elliptic_curve::scalar::ScalarBits<Ed448>;
 pub type Ed448NonZeroScalar = elliptic_curve::NonZeroScalar<Ed448>;
 
 impl Curve for Ed448 {
-    type FieldBytesSize = U57;
+    type FieldBytesSize = U56;
     type Uint = U448;
 
     const ORDER: Odd<U448> = ORDER;
@@ -113,7 +107,7 @@ impl FieldBytesEncoding<Ed448> for U448 {
 impl elliptic_curve::CurveArithmetic for Ed448 {
     type AffinePoint = AffinePoint;
     type ProjectivePoint = EdwardsPoint;
-    type Scalar = EdwardsScalar;
+    type Scalar = Scalar;
 }
 
 impl GroupDigest for Ed448 {
@@ -165,7 +159,7 @@ impl FieldBytesEncoding<Decaf448> for U448 {
 impl elliptic_curve::CurveArithmetic for Decaf448 {
     type AffinePoint = DecafAffinePoint;
     type ProjectivePoint = DecafPoint;
-    type Scalar = DecafScalar;
+    type Scalar = Scalar;
 }
 
 impl GroupDigest for Decaf448 {

@@ -47,19 +47,19 @@ impl elliptic_curve::point::AffineCoordinates for AffinePoint {
 
     fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
         let point = Self {
-            x: FieldElement::from_bytes_extended(&x.0),
-            y: FieldElement::from_bytes_extended(&y.0),
+            x: FieldElement::from_bytes(&x.0),
+            y: FieldElement::from_bytes(&y.0),
         };
 
         CtOption::new(point, point.is_on_curve())
     }
 
     fn x(&self) -> Self::FieldRepr {
-        Ed448FieldBytes::from(self.x.to_bytes_extended())
+        Ed448FieldBytes::from(self.x.to_bytes())
     }
 
     fn y(&self) -> Self::FieldRepr {
-        Ed448FieldBytes::from(self.y.to_bytes_extended())
+        Ed448FieldBytes::from(self.y.to_bytes())
     }
 
     fn x_is_odd(&self) -> Choice {
@@ -188,20 +188,16 @@ impl TryFrom<AffinePoint> for NonIdentity<AffinePoint> {
     }
 }
 
-impl Mul<&EdwardsScalar> for &AffinePoint {
+impl Mul<&Scalar> for &AffinePoint {
     type Output = EdwardsPoint;
 
     #[inline]
-    fn mul(self, scalar: &EdwardsScalar) -> Self::Output {
+    fn mul(self, scalar: &Scalar) -> Self::Output {
         self.to_edwards() * scalar
     }
 }
 
-define_mul_variants!(
-    LHS = AffinePoint,
-    RHS = EdwardsScalar,
-    Output = EdwardsPoint
-);
+define_mul_variants!(LHS = AffinePoint, RHS = Scalar, Output = EdwardsPoint);
 
 /// The compressed internal representation of a point on the Twisted Edwards Curve
 pub type PointBytes = [u8; 57];
