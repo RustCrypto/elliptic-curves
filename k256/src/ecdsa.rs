@@ -274,8 +274,6 @@ mod tests {
 
         #[test]
         fn wycheproof() {
-            use blobby::Blob5Iterator;
-
             // Build a field element but allow for too-short input (left pad with zeros)
             // or too-long input (check excess leftmost bytes are zeros).
             fn element_from_padded_slice<C: elliptic_curve::Curve>(
@@ -334,38 +332,66 @@ mod tests {
                 }
             }
 
-            fn run(data: &[u8], p1363_sig: bool) {
-                for (i, row) in Blob5Iterator::new(data).unwrap().enumerate() {
-                    let [wx, wy, msg, sig, status] = row.unwrap();
-                    let pass = match status[0] {
-                        0 => false,
-                        1 => true,
-                        _ => panic!("invalid value for pass flag"),
-                    };
-                    if let Some(desc) = run_test(wx, wy, msg, sig, pass, p1363_sig) {
-                        panic!(
-                            "\n\
-                                     Failed test №{}: {}\n\
-                                     wx:\t{:?}\n\
-                                     wy:\t{:?}\n\
-                                     msg:\t{:?}\n\
-                                     sig:\t{:?}\n\
-                                     pass:\t{}\n",
-                            i,
-                            desc,
-                            hex::encode(wx),
-                            hex::encode(wy),
-                            hex::encode(msg),
-                            hex::encode(sig),
-                            pass,
+            #[derive(Debug, Clone, Copy)]
+            struct TestVector {
+                /// X coordinates of the public key
+                pub wx: &'static [u8],
+                /// Y coordinates of the public key
+                pub wy: &'static [u8],
+                /// Payload to verify
+                pub msg: &'static [u8],
+                /// Der encoding of the signature
+                pub sig: &'static [u8],
+                /// Whether the signature should verify (`[1]`) or fail (`[0]`)
+                pub pass_: &'static [u8],
+            }
+
+            impl TestVector {
+                pub fn pass(&self) -> bool {
+                    self.pass_[0] == 1
+                }
+            }
+
+            macro_rules! run_test {
+                ($blob: expr, $p1363_sig: expr) => {
+                    {
+                        ecdsa_core::dev::blobby::parse_into_structs!(
+                            include_bytes!($blob);
+                            static TEST_VECTORS: &[
+                                TestVector { wx, wy, msg, sig, pass_ }
+                            ];
                         );
+
+
+                        for (i, tv) in TEST_VECTORS.iter().enumerate() {
+                            if let Some(desc) = run_test(tv.wx, tv.wy, tv.msg, tv.sig, tv.pass(), $p1363_sig) {
+                                panic!(
+                                    "\n\
+                                             Failed test №{}: {}\n\
+                                             wx:\t{:?}\n\
+                                             wy:\t{:?}\n\
+                                             msg:\t{:?}\n\
+                                             sig:\t{:?}\n\
+                                             pass:\t{}\n",
+                                    i,
+                                    desc,
+                                    hex::encode(tv.wx),
+                                    hex::encode(tv.wy),
+                                    hex::encode(tv.msg),
+                                    hex::encode(tv.sig),
+                                    tv.pass(),
+                                );
+                            }
+                        }
                     }
                 }
             }
-            let data = include_bytes!(concat!("test_vectors/data/", "wycheproof", ".blb"));
-            run(data, false);
-            let data2 = include_bytes!(concat!("test_vectors/data/", "wycheproof-p1316", ".blb"));
-            run(data2, true);
+
+            run_test!(concat!("test_vectors/data/", "wycheproof", ".blb"), false);
+            run_test!(
+                concat!("test_vectors/data/", "wycheproof-p1316", ".blb"),
+                true
+            );
         }
     }
 }
