@@ -26,3 +26,6 @@ ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
+
+ecdsa = { git = "https://github.com/RustCrypto/signatures.git" }
+rfc6979 = { git = "https://github.com/RustCrypto/signatures.git" }

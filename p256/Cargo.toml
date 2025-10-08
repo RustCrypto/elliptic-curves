@@ -30,7 +30,6 @@ serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.2", optional = true, default-features = false }
 
 [dev-dependencies]
-blobby = "0.3"
 criterion = "0.7"
 ecdsa-core = { version = "0.17.0-rc.7", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
@@ -48,7 +47,7 @@ arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
-ecdsa = ["arithmetic", "ecdsa-core/signing", "ecdsa-core/verifying", "sha256"]
+ecdsa = ["arithmetic", "ecdsa-core/algorithm", "sha256"]
 expose-field = ["arithmetic"]
 hash2curve = ["arithmetic", "dep:hash2curve", "primeorder/hash2curve"]
 group-digest = ["hash2curve", "sha2"]
