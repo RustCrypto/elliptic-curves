@@ -23,7 +23,7 @@ use super::{Cipher, Mode, encrypting::EncryptingKey, kdf, vec};
 #[derive(Clone)]
 pub struct DecryptingKey {
     secret_scalar: NonZeroScalar,
-    encryting_key: EncryptingKey,
+    encrypting_key: EncryptingKey,
     mode: Mode,
 }
 
@@ -37,7 +37,7 @@ impl DecryptingKey {
     pub fn new_with_mode(secret_scalar: NonZeroScalar, mode: Mode) -> Self {
         Self {
             secret_scalar,
-            encryting_key: EncryptingKey::new_with_mode(
+            encrypting_key: EncryptingKey::new_with_mode(
                 PublicKey::from_secret_scalar(&secret_scalar),
                 mode,
             ),
@@ -80,7 +80,7 @@ impl DecryptingKey {
 
     /// Get the [`EncryptingKey`] which corresponds to this [`DecryptingKey`].
     pub fn encrypting_key(&self) -> &EncryptingKey {
-        &self.encryting_key
+        &self.encrypting_key
     }
 
     /// Decrypts a ciphertext in-place using the default digest algorithm (`Sm3`).
@@ -126,7 +126,7 @@ impl DecryptingKey {
 
 impl AsRef<EncryptingKey> for DecryptingKey {
     fn as_ref(&self) -> &EncryptingKey {
-        &self.encryting_key
+        &self.encrypting_key
     }
 }
 
