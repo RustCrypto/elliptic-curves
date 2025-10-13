@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use crate::TWISTED_EDWARDS_BASE_POINT;
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
 use crate::field::FieldElement;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
@@ -28,6 +29,12 @@ impl AffinePoint {
     pub(crate) const IDENTITY: AffinePoint = AffinePoint {
         x: FieldElement::ZERO,
         y: FieldElement::ONE,
+    };
+
+    /// Identity element
+    pub(crate) const GENERATOR: AffinePoint = AffinePoint {
+        x: TWISTED_EDWARDS_BASE_POINT.X,
+        y: TWISTED_EDWARDS_BASE_POINT.Y,
     };
 
     /// Checks if the AffinePoint is on the TwistedEdwards curve
@@ -140,7 +147,6 @@ mod tests {
 
     #[test]
     fn test_negation() {
-        use crate::TWISTED_EDWARDS_BASE_POINT;
         let a = TWISTED_EDWARDS_BASE_POINT.to_extensible().to_affine();
         assert_eq!(a.is_on_curve().unwrap_u8(), 1);
 

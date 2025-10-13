@@ -12,7 +12,11 @@ use crate::*;
 use elliptic_curve::{
     BatchNormalize, CurveGroup, Error,
     array::Array,
-    group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
+    group::{
+        Group, GroupEncoding,
+        cofactor::CofactorGroup,
+        prime::{PrimeCurve, PrimeGroup},
+    },
     ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
 };
@@ -135,19 +139,11 @@ impl GroupEncoding for EdwardsPoint {
     type Repr = Array<u8, U57>;
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        let mut value = [0u8; 57];
-        value.copy_from_slice(bytes);
-        CompressedEdwardsY(value)
-            .decompress()
-            .map(|point| point.to_edwards())
+        AffinePoint::from_bytes(bytes).map(|pt| pt.to_edwards())
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
-        let mut value = [0u8; 57];
-        value.copy_from_slice(bytes);
-        CompressedEdwardsY(value)
-            .decompress()
-            .map(|point| point.to_edwards())
+        AffinePoint::from_bytes_unchecked(bytes).map(|pt| pt.to_edwards())
     }
 
     fn to_bytes(&self) -> Self::Repr {
@@ -298,6 +294,10 @@ impl CurveGroup for EdwardsPoint {
         let mut zs = alloc::vec![FieldElement::ONE; projective.len()];
         batch_normalize_generic(projective, zs.as_mut_slice(), affine);
     }
+}
+
+impl PrimeCurve for EdwardsPoint {
+    type Affine = AffinePoint;
 }
 
 impl EdwardsPoint {
