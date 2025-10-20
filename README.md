@@ -61,7 +61,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (crates)
 
-[`bign256`]: ./bign256
+[`bignp256`]: ./bignp256
 [`bp256`]: ./bp256
 [`bp384`]: ./bp384
 [`hash2curve`]: ./hash2curve
