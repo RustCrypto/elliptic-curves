@@ -70,7 +70,7 @@ dependencies = [
 
 [[package]]
 name = "bignp256"
-version = "0.14.0-pre.0"
+version = "0.14.0-rc.0"
 dependencies = [
  "belt-hash",
  "criterion",
@@ -1230,7 +1230,7 @@ dependencies = [
 
 [[package]]
 name = "sm2"
-version = "0.14.0-pre.0"
+version = "0.14.0-rc.0"
 dependencies = [
  "der",
  "elliptic-curve",
