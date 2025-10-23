@@ -741,7 +741,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "p192"
-version = "0.14.0-pre"
+version = "0.14.0-rc.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -753,7 +753,7 @@ dependencies = [
 
 [[package]]
 name = "p224"
-version = "0.14.0-pre"
+version = "0.14.0-rc.0"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -767,7 +767,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-pre.11"
+version = "0.14.0-rc.0"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -784,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-pre.11"
+version = "0.14.0-rc.0"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -802,7 +802,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-pre.11"
+version = "0.14.0-rc.0"
 dependencies = [
  "base16ct",
  "criterion",
