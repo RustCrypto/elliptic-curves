@@ -126,9 +126,9 @@ dependencies = [
 
 [[package]]
 name = "blobby"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "847495c209977a90e8aad588b959d0ca9f5dc228096d29a6bd3defd53f35eaec"
+checksum = "89af0b093cc13baa4e51e64e65ec2422f7e73aea0e612e5ad3872986671622f1"
 
 [[package]]
 name = "block-buffer"
@@ -364,6 +364,7 @@ version = "0.11.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dac89f8a64533a9b0eaa73a68e424db0fb1fd6271c74cc0125336a05f090568d"
 dependencies = [
+ "blobby",
  "block-buffer",
  "const-oid",
  "crypto-common",
@@ -373,8 +374,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4ab355ec063f7a110eb627471058093aba00eb7f4e70afbd15e696b79d1077b"
+source = "git+https://github.com/RustCrypto/signatures.git#305bad5a0067712634089e2aa948aaf1f75bd023"
 dependencies = [
  "der",
  "digest",
@@ -626,7 +626,6 @@ dependencies = [
 name = "k256"
 version = "0.14.0-pre.11"
 dependencies = [
- "blobby",
  "cfg-if",
  "criterion",
  "ecdsa",
@@ -755,7 +754,6 @@ dependencies = [
 name = "p224"
 version = "0.14.0-pre"
 dependencies = [
- "blobby",
  "ecdsa",
  "elliptic-curve",
  "hex-literal",
@@ -770,7 +768,6 @@ dependencies = [
 name = "p256"
 version = "0.14.0-pre.11"
 dependencies = [
- "blobby",
  "criterion",
  "ecdsa",
  "elliptic-curve",
@@ -788,7 +785,6 @@ dependencies = [
 name = "p384"
 version = "0.14.0-pre.11"
 dependencies = [
- "blobby",
  "criterion",
  "ecdsa",
  "elliptic-curve",
@@ -808,7 +804,6 @@ name = "p521"
 version = "0.14.0-pre.11"
 dependencies = [
  "base16ct",
- "blobby",
  "criterion",
  "ecdsa",
  "elliptic-curve",
@@ -1062,8 +1057,7 @@ checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 [[package]]
 name = "rfc6979"
 version = "0.5.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d369f9c4f79388704648e7bcb92749c0d6cf4397039293a9b747694fa4fb4bae"
+source = "git+https://github.com/RustCrypto/signatures.git#305bad5a0067712634089e2aa948aaf1f75bd023"
 dependencies = [
  "hmac",
  "subtle",
