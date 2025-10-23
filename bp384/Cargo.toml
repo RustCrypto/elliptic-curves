@@ -36,4 +36,3 @@ sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]

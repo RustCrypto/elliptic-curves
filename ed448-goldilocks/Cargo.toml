@@ -50,3 +50,6 @@ serde_json = "1.0"
 [[bench]]
 harness = false
 name = "bench"
+
+[package.metadata.docs.rs]
+all-features = true

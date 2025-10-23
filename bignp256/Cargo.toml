@@ -64,3 +64,6 @@ harness = false
 [[bench]]
 name = "scalar"
 harness = false
+
+[package.metadata.docs.rs]
+all-features = true

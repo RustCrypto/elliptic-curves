@@ -25,12 +25,11 @@ serdect = { version = "0.4", optional = true, default-features = false }
 
 [features]
 alloc = ["elliptic-curve/alloc"]
-hash2curve = []
 std = ["alloc", "elliptic-curve/std"]
 
 dev = []
+hash2curve = []
 serde = ["elliptic-curve/serde", "serdect"]
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]

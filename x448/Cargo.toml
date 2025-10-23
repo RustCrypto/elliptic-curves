@@ -30,3 +30,6 @@ rand = "0.9"
 [features]
 static_secrets = []
 serde = ["dep:serdect", "ed448-goldilocks/serde"]
+
+[package.metadata.docs.rs]
+all-features = true
