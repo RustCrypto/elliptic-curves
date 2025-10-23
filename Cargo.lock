@@ -546,7 +546,7 @@ dependencies = [
 
 [[package]]
 name = "hash2curve"
-version = "0.14.0-rc.2"
+version = "0.14.0-rc.3"
 dependencies = [
  "digest",
  "elliptic-curve",
@@ -893,7 +893,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-pre.9"
+version = "0.14.0-rc.0"
 dependencies = [
  "elliptic-curve",
  "serdect",
