@@ -294,7 +294,6 @@ mod tests {
     #[test]
     fn hash_to_curve() {
         use hash2curve::{self, ExpandMsgXmd};
-        use hex_literal::hex;
         use sha2::Sha256;
 
         struct TestVector {
