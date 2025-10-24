@@ -22,22 +22,13 @@
 //! [AKE]: https://en.wikipedia.org/wiki/Authenticated_Key_Exchange
 //! [SIGMA]: https://www.iacr.org/cryptodb/archive/2003/CRYPTO/1495/1495.pdf
 
-// use crate::{
-//     point::AffineCoordinates, AffinePoint, Curve, CurveArithmetic, FieldBytes, NonZeroScalar,
-//     ProjectivePoint, PublicKey,
-// };
-// use core::borrow::Borrow;
-// use digest::{crypto_common::BlockSizeUser, Digest};
-// use group::Curve as _;
-// use hkdf::{hmac::SimpleHmac, Hkdf};
-// use rand_core::CryptoRngCore;
-// use zeroize::{Zeroize, ZeroizeOnDrop};
-
 use crate::{AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey};
-use belt_hash::BeltHash;
 use core::borrow::Borrow;
-use elliptic_curve::point::AffineCoordinates;
-use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
+use digest::{Digest, block_api::BlockSizeUser};
+use elliptic_curve::{
+    point::AffineCoordinates,
+    zeroize::{Zeroize, ZeroizeOnDrop},
+};
 use hkdf::Hkdf;
 use hmac::SimpleHmac;
 use rand_core::CryptoRng;
@@ -161,7 +152,7 @@ impl SharedSecret {
     /// random values which are suitable as key material.
     ///
     /// The `D` type parameter is a cryptographic digest function.
-    /// `sha2::Sha256` is a common choice for use with HKDF.
+    /// `belt_hash::BeltHash` is a common choice for use with HKDF.
     ///
     /// The `salt` parameter can be used to supply additional randomness.
     /// Some examples include:
@@ -174,7 +165,10 @@ impl SharedSecret {
     /// material.
     ///
     /// [HKDF]: https://en.wikipedia.org/wiki/HKDF
-    pub fn extract(&self, salt: Option<&[u8]>) -> Hkdf<BeltHash, SimpleHmac<BeltHash>> {
+    pub fn extract<D>(&self, salt: Option<&[u8]>) -> Hkdf<D, SimpleHmac<D>>
+    where
+        D: BlockSizeUser + Clone + Digest,
+    {
         Hkdf::new(salt, &self.secret_bytes)
     }
 
