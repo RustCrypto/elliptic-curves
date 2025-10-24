@@ -34,6 +34,7 @@ primefield = { version = "0.14.0-rc.0", optional = true }
 primeorder = { version = "0.14.0-rc.0", optional = true }
 sec1 = { version = "0.8.0-rc.9", optional = true }
 signature = { version = "3.0.0-rc.4", optional = true }
+subtle = { version = "2.6", default-features = false, optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
@@ -50,7 +51,7 @@ std = ["alloc", "elliptic-curve/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
-ecdsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:belt-hash"]
+ecdsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:belt-hash", "dep:subtle"]
 pem = ["pkcs8/pem", "sec1/pem"]
 pkcs8 = ["dep:pkcs8"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh", "dep:digest", "dep:hkdf", "dep:hmac", "dep:belt-hash", "alloc"]
