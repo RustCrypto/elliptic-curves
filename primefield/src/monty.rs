@@ -181,7 +181,7 @@ where
 
     /// Create [`MontyFieldElement`] from a [`Uint`] which is already in Montgomery form.
     ///
-    /// #⚠️Warning
+    /// # ⚠️ Warning
     ///
     /// This value is expected to be in Montgomery form and reduced. Failure to maintain these
     /// invariants will lead to miscomputation and potential security issues!
@@ -202,7 +202,7 @@ where
 
     /// Borrow the inner [`Uint`] type which is in Montgomery form.
     ///
-    /// #⚠️Warning
+    /// # ⚠️ Warning
     ///
     /// Make sure you are actually expecting a value in Montgomery form! This is not the correct
     /// function for converting *out* of Montgomery form: that would be
