@@ -16,7 +16,7 @@ use crate::edwards::extended::EdwardsPoint;
 use crate::field::FieldElement;
 use core::fmt;
 use core::ops::Mul;
-use subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq};
 
 impl MontgomeryPoint {
     /// First low order point on Curve448 and it's twist
@@ -130,7 +130,69 @@ impl MontgomeryPoint {
     pub fn to_edwards(&self, _sign: u8) -> Option<EdwardsPoint> {
         // We use the 4-isogeny to map to the Ed448.
         // This is different to Curve25519, where we use a birational map.
-        todo!()
+        let u = FieldElement::from_bytes(&self.0);
+        let one = FieldElement::ONE;
+        let d = FieldElement::EDWARDS_D;
+
+        let one_plus_u = one + u;
+        let four = FieldElement::TWO.double();
+        let delta = one_plus_u.square() - (d * u) * four;
+
+        let sqrt_delta = delta.sqrt();
+        if !(sqrt_delta.square().ct_eq(&delta)).into() {
+            return None;
+        }
+
+        let inv_2d = (FieldElement::TWO * d).invert();
+
+        let t_candidates = [
+            (one_plus_u - sqrt_delta) * inv_2d,
+            (one_plus_u + sqrt_delta) * inv_2d,
+        ];
+
+        for t in t_candidates {
+            let den_x = one - d * t;
+            let den_y = one - t;
+
+            if den_x.is_zero().into() || den_y.is_zero().into() {
+                continue;
+            }
+
+            let x2 = den_y * den_x.invert();
+            let y2 = t;
+
+            let x = {
+                let r = x2.sqrt();
+                if !(r.square().ct_eq(&x2)).into() {
+                    continue;
+                }
+                r
+            };
+
+            let mut y = {
+                let r = y2.sqrt();
+                if !(r.square().ct_eq(&y2)).into() {
+                    continue;
+                }
+                r
+            };
+
+            y.conditional_negate(y.is_negative());
+
+            let mut X = x;
+            let want = Choice::from((_sign & 1) as u8);
+            let flip = X.is_negative() ^ want;
+            X.conditional_negate(flip);
+
+            let Y = y;
+            let Z = FieldElement::ONE;
+            let T = X * Y;
+
+            let point = EdwardsPoint { X, Y, Z, T };
+            return Some(point);
+        }
+
+        None
     }
 
     /// Returns true if the point is one of the low order points
@@ -236,5 +298,37 @@ mod tests {
         // Goldilocks scalar mul
         let goldilocks_point = bp.scalar_mul(&scalar);
         assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
+    }
+
+    #[test]
+    fn test_montgomery_to_edwards_roundtrip_base() {
+        use crate::GOLDILOCKS_BASE_POINT as bp;
+
+        let u = bp.to_montgomery();
+        let recovered = u
+            .to_edwards(0)
+            .expect("failed to recover edwards point from montgomery u");
+
+        assert_eq!(recovered.to_montgomery(), u);
+    }
+
+    #[test]
+    fn test_montgomery_to_edwards_roundtrip_multiples() {
+        use crate::GOLDILOCKS_BASE_POINT as bp;
+
+        let scalars = [1u32, 2, 3, 5, 7, 11, 200, 255, 512, 1024];
+        for s in scalars.iter().copied() {
+            let P = bp.scalar_mul(&EdwardsScalar::from(s));
+            let u = P.to_montgomery();
+            let recovered = u
+                .to_edwards(0)
+                .expect("failed to recover edwards point from montgomery u");
+            assert_eq!(
+                recovered.to_montgomery(),
+                u,
+                "roundtrip failed for scalar {}",
+                s
+            );
+        }
     }
 }
