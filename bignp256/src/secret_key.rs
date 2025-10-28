@@ -90,8 +90,7 @@ impl SecretKey {
     /// sidechannel, always ensure that the input has been pre-padded to `C::FieldBytesSize`.
     pub fn from_slice(slice: &[u8]) -> Result<Self> {
         if slice.len() == <BignP256 as elliptic_curve::Curve>::FieldBytesSize::USIZE {
-            #[allow(deprecated)]
-            Self::from_bytes(FieldBytes::from_slice(slice))
+            Self::from_bytes(&FieldBytes::try_from(slice).map_err(|_| Error)?)
         } else if (Self::MIN_SIZE..<BignP256 as elliptic_curve::Curve>::FieldBytesSize::USIZE)
             .contains(&slice.len())
         {
