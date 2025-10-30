@@ -129,8 +129,11 @@ impl From<&AffineMontgomeryPoint> for AffinePoint {
         t4 = t1 * t2; // 2x^2y^2+2y^2
         let yDen = t5 - t4; // yDen = x^5-2x^3+x-2x^2y^2-2y^2
 
-        let x = xNum * xDen.invert();
-        let y = yNum * yDen.invert();
+        let commonDen = xDen * yDen;
+        let invDen = commonDen.invert();
+
+        let x = xNum * yDen * invDen;
+        let y = yNum * xDen * invDen;
 
         AffinePoint::conditional_select(
             &AffinePoint { x, y },

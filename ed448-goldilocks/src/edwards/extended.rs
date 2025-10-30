@@ -333,12 +333,14 @@ impl EdwardsPoint {
 
         let affine = self.to_affine();
 
-        // TODO: optimize to a single inversion.
         let xx = affine.x.square();
         let yy = affine.y.square();
 
-        let u = yy * xx.invert();
-        let v = (FieldElement::TWO - xx - yy) * affine.y * (xx * affine.x).invert();
+        let v_den = xx * affine.x;
+        let den = (xx * v_den).invert();
+
+        let u = yy * v_den * den;
+        let v = (FieldElement::TWO - xx - yy) * affine.y * xx * den;
 
         AffineMontgomeryPoint::conditional_select(
             &AffineMontgomeryPoint::new(u, v),
