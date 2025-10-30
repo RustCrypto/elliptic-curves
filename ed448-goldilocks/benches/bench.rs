@@ -1,7 +1,5 @@
 use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
-use ed448_goldilocks::{
-    Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
-};
+use ed448_goldilocks::{Decaf448, DecafPoint, Ed448, EdwardsPoint, MontgomeryPoint, Scalar};
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
 use hash2curve::GroupDigest;
@@ -14,7 +12,7 @@ pub fn ed448(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let point = EdwardsPoint::try_from_rng(&mut OsRng).unwrap();
-                let scalar = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
+                let scalar = Scalar::try_from_rng(&mut OsRng).unwrap();
                 (point, scalar)
             },
             |(point, scalar)| point * scalar,
@@ -72,7 +70,7 @@ pub fn decaf448(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let point = DecafPoint::try_from_rng(&mut OsRng).unwrap();
-                let scalar = DecafScalar::try_from_rng(&mut OsRng).unwrap();
+                let scalar = Scalar::try_from_rng(&mut OsRng).unwrap();
                 (point, scalar)
             },
             |(point, scalar)| point * scalar,
@@ -131,7 +129,7 @@ pub fn x448(c: &mut Criterion) {
             || {
                 let mut point = MontgomeryPoint::default();
                 OsRng.try_fill_bytes(&mut point.0).unwrap();
-                let scalar = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
+                let scalar = Scalar::try_from_rng(&mut OsRng).unwrap();
                 (point, scalar)
             },
             |(point, scalar)| &point * &scalar,
