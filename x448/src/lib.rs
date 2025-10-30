@@ -1,7 +1,7 @@
 #![no_std]
 
 use ed448_goldilocks::{
-    MontgomeryPoint,
+    MontgomeryScalar, MontgomeryXpoint,
     elliptic_curve::{
         array::{Array, typenum::U56},
         bigint::U448,
@@ -11,21 +11,19 @@ use ed448_goldilocks::{
 use rand_core::{CryptoRng, RngCore};
 use zeroize::Zeroize;
 
-type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
-
 /// Given an [`EphemeralSecret`] Key, compute the corresponding public key
 /// using the generator specified in RFC7748
 impl From<&EphemeralSecret> for PublicKey {
     fn from(secret: &EphemeralSecret) -> PublicKey {
         let secret = secret.as_scalar();
-        let point = &MontgomeryPoint::GENERATOR * &secret;
-        PublicKey(point)
+        let point = &MontgomeryXpoint::GENERATOR * &secret;
+        PublicKey(point.to_affine())
     }
 }
 
 /// A PublicKey is a point on Curve448.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub struct PublicKey(MontgomeryPoint);
+pub struct PublicKey(MontgomeryXpoint);
 
 /// An [`EphemeralSecret`] is a Scalar on Curve448.
 #[derive(Clone, Zeroize)]
@@ -36,7 +34,7 @@ pub struct EphemeralSecret(Array<u8, U56>);
 /// This point is the result of a Diffie-Hellman key exchange.
 #[derive(Zeroize)]
 #[zeroize(drop)]
-pub struct SharedSecret(MontgomeryPoint);
+pub struct SharedSecret(MontgomeryXpoint);
 
 impl PublicKey {
     /// Converts a bytes slice into a Public key
@@ -62,7 +60,7 @@ impl PublicKey {
 
         // Check if the point has low order
         let arr = slice_to_array(bytes);
-        let point = MontgomeryPoint(arr);
+        let point = MontgomeryXpoint(arr);
 
         Some(PublicKey(point))
     }
@@ -117,7 +115,7 @@ impl EphemeralSecret {
         // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
         // created.
         let shared_key = &public_key.0 * &self.as_scalar();
-        SharedSecret(shared_key)
+        SharedSecret(shared_key.to_affine())
     }
 
     /// Converts a secret into a byte array
@@ -141,17 +139,17 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
     let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
-    Some((&point.0 * &scalar).0)
+    Some((&point.0 * &scalar).to_affine().0)
 }
 /// An unchecked version of the x448 function defined in RFC448
 /// No checks are made on the points.
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
-    let point = MontgomeryPoint(point_bytes);
+    let point = MontgomeryXpoint(point_bytes);
     let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
-    (&point * &scalar).0
+    (&point * &scalar).to_affine().0
 }
 
-pub const X448_BASEPOINT_BYTES: [u8; 56] = MontgomeryPoint::GENERATOR.0;
+pub const X448_BASEPOINT_BYTES: [u8; 56] = MontgomeryXpoint::GENERATOR.0;
 
 /// A Diffie-Hellman secret key that can be used to compute multiple [`SharedSecret`]s.
 ///
@@ -205,7 +203,7 @@ impl StaticSecret {
         // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
         // created.
         let shared_key = &their_public.0 * &self.as_scalar();
-        SharedSecret(shared_key)
+        SharedSecret(shared_key.to_affine())
     }
 
     /// View this key as a byte array.
@@ -228,8 +226,8 @@ impl From<&StaticSecret> for PublicKey {
     /// Given an x448 [`StaticSecret`] key, compute its corresponding [`PublicKey`].
     fn from(secret: &StaticSecret) -> PublicKey {
         let secret = secret.as_scalar();
-        let point = &MontgomeryPoint::GENERATOR * &secret;
-        PublicKey(point)
+        let point = &MontgomeryXpoint::GENERATOR * &secret;
+        PublicKey(point.to_affine())
     }
 }
 
@@ -456,8 +454,8 @@ mod test {
             0xda, 0x8d, 0x52, 0x4d, 0xe3, 0xd6, 0x9b, 0xd9, 0xd9, 0xd6, 0x6b, 0x99, 0x7e, 0x37,
         ];
 
-        let mut point = MontgomeryPoint::GENERATOR.0;
-        let mut scalar = MontgomeryPoint::GENERATOR.0;
+        let mut point = MontgomeryXpoint::GENERATOR.0;
+        let mut scalar = MontgomeryXpoint::GENERATOR.0;
         let mut result = [0u8; 56];
 
         // Iterate 1 time then check value on 1st iteration
