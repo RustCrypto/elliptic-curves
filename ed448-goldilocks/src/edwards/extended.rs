@@ -460,7 +460,7 @@ impl EdwardsPoint {
         let u2 = u.double().double();
         let w2 = w.double();
 
-        let mut w1 = u2.sqrt();
+        let mut w1 = u2.unchecked_sqrt();
         let mut ok = w1.square().ct_eq(&u2);
         let u1 = (u2 - A1 * ee - w1 * w2).div_by_2();
 
@@ -475,7 +475,7 @@ impl EdwardsPoint {
         // Then:
         //   w = sqrt(u2) = sqrt(-B1)*(e^2)*sqrt(-u1)
         //   u = (w^2 - A*e^2 - w*w1)/2
-        let mut w = u1.sqrt();
+        let mut w = u1.unchecked_sqrt();
         let u1_is_square = w.square().ct_eq(&u1);
         w1.conditional_assign(&-(w1 * u1), !u1_is_square);
         e.conditional_assign(&(e * u1), !u1_is_square);
