@@ -262,7 +262,7 @@ impl Field for FieldElement {
     }
 
     fn sqrt(&self) -> CtOption<Self> {
-        let sqrt = self.sqrt();
+        let sqrt = self.unchecked_sqrt();
         CtOption::new(sqrt, sqrt.square().ct_eq(self))
     }
 
@@ -337,7 +337,7 @@ impl FieldElement {
         !Choice::from(self.0.jacobi_symbol().is_minus_one())
     }
 
-    pub fn sqrt(&self) -> FieldElement {
+    pub fn unchecked_sqrt(&self) -> FieldElement {
         // Candidate root is y = x^((p+1)/4).
         // We have: (p+1)/4 = 2^446 - 2^222
         let z = *self;
@@ -453,7 +453,7 @@ impl FieldElement {
         let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
         let x = Self::conditional_select(&x2, &x1, e2); // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
         let y2 = Self::conditional_select(&gx2, &gx1, e2); // 16.  y2 = CMOV(gx2, gx1, e2)  // If is_square(gx1), y2 = gx1, else y2 = gx2
-        let mut y = y2.sqrt(); // 17.   y = sqrt(y2)
+        let mut y = y2.unchecked_sqrt(); // 17.   y = sqrt(y2)
         let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
         y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
         AffinePoint { x, y }
@@ -599,6 +599,6 @@ mod tests {
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
-        assert_eq!(three, nine.sqrt());
+        assert_eq!(three, nine.unchecked_sqrt());
     }
 }
