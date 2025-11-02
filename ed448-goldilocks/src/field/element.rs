@@ -4,8 +4,8 @@ use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use super::{ConstMontyType, MODULUS};
 use crate::{
-    AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
-    curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
+    AffineMontgomeryPoint, AffinePoint, Curve448, Decaf448, DecafPoint, Ed448, EdwardsPoint,
+    ProjectiveMontgomeryPoint, curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
 use elliptic_curve::ops::Reduce;
 use elliptic_curve::{
@@ -196,7 +196,7 @@ impl MapToCurve for Ed448 {
     type Length = U84;
 
     fn map_to_curve(element: FieldElement) -> EdwardsPoint {
-        element.map_to_curve_elligator2().isogeny().to_edwards()
+        AffinePoint::from(element.map_to_curve_elligator2_curve448()).to_edwards()
     }
 }
 
@@ -269,6 +269,16 @@ impl Field for FieldElement {
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
         let (result, is_square) = Self::sqrt_ratio(num, div);
         (is_square, result)
+    }
+}
+
+impl MapToCurve for Curve448 {
+    type SecurityLevel = U28;
+    type FieldElement = FieldElement;
+    type Length = U84;
+
+    fn map_to_curve(element: FieldElement) -> ProjectiveMontgomeryPoint {
+        element.map_to_curve_elligator2_curve448().into()
     }
 }
 
@@ -383,6 +393,10 @@ impl FieldElement {
         Self(self.0.double())
     }
 
+    pub fn triple(&self) -> Self {
+        self.double() + self
+    }
+
     /// Computes the inverse square root of a field element
     /// Returns the result and a boolean to indicate whether self
     /// was a Quadratic residue
@@ -436,7 +450,7 @@ impl FieldElement {
         Self(self.0.div_by_2())
     }
 
-    pub(crate) fn map_to_curve_elligator2(&self) -> AffinePoint {
+    pub(crate) fn map_to_curve_elligator2_curve448(&self) -> AffineMontgomeryPoint {
         let mut t1 = self.square(); // 1.   t1 = u^2
         t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
         let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
@@ -456,7 +470,26 @@ impl FieldElement {
         let mut y = y2.unchecked_sqrt(); // 17.   y = sqrt(y2)
         let e3 = y.is_negative(); // 18.  e3 = sgn0(y) == 1
         y.conditional_negate(e2 ^ e3); //       y = CMOV(-y, y, e2 xor e3)
-        AffinePoint { x, y }
+        AffineMontgomeryPoint::new(x, y)
+    }
+
+    // See https://www.rfc-editor.org/rfc/rfc9380.html#name-curve448-q-3-mod-4-k-1.
+    // Without y-coordinate.
+    pub(crate) fn map_to_curve_elligator2_curve448_x(&self) -> FieldElement {
+        let mut t1 = self.square(); // 1.   t1 = u^2
+        t1 *= Self::Z; // 2.   t1 = Z * t1              // Z * u^2
+        let e1 = t1.ct_eq(&Self::MINUS_ONE); // 3.   e1 = t1 == -1            // exceptional case: Z * u^2 == -1
+        t1.conditional_assign(&Self::ZERO, e1); // 4.   t1 = CMOV(t1, 0, e1)     // if t1 == -1, set t1 = 0
+        let mut x1 = t1 + Self::ONE; // 5.   x1 = t1 + 1
+        x1 = x1.invert(); // 6.   x1 = inv0(x1)
+        x1 *= -Self::J; // 7.   x1 = -A * x1             // x1 = -A / (1 + Z * u^2)
+        let mut gx1 = x1 + Self::J; // 8.  gx1 = x1 + A
+        gx1 *= x1; // 9.  gx1 = gx1 * x1
+        gx1 += Self::ONE; // 10. gx1 = gx1 + B
+        gx1 *= x1; // 11. gx1 = gx1 * x1            // gx1 = x1^3 + A * x1^2 + B * x1
+        let x2 = -x1 - Self::J; // 12.  x2 = -x1 - A
+        let e2 = gx1.is_square(); // 14.  e2 = is_square(gx1)
+        Self::conditional_select(&x2, &x1, e2) // 15.   x = CMOV(x2, x1, e2)    // If is_square(gx1), x = x1, else x = x2
     }
 
     // See https://www.shiftleft.org/papers/decaf/decaf.pdf#section.A.3.
@@ -533,7 +566,6 @@ mod tests {
             .unwrap();
             let mut data = Array::<u8, U84>::default();
             expander.fill_bytes(&mut data).unwrap();
-            // TODO: This should be `Curve448FieldElement`.
             let u0 = FieldElement::reduce(&data);
             let mut e_u0 = *expected_u0;
             e_u0.reverse();
@@ -541,7 +573,6 @@ mod tests {
             e_u1.reverse();
             assert_eq!(u0.to_bytes(), e_u0);
             expander.fill_bytes(&mut data).unwrap();
-            // TODO: This should be `Curve448FieldElement`.
             let u1 = FieldElement::reduce(&data);
             assert_eq!(u1.to_bytes(), e_u1);
         }
