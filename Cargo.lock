@@ -89,6 +89,7 @@ dependencies = [
  "rfc6979",
  "sec1",
  "signature",
+ "subtle",
 ]
 
 [[package]]
