@@ -339,7 +339,7 @@ impl<C: CurveWithScalar> PrimeField for Scalar<C> {
         Choice::from((self.scalar.to_words()[0] & 1) as u8)
     }
     const MODULUS: &'static str = "3fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3";
-    const NUM_BITS: u32 = 448;
+    const NUM_BITS: u32 = 446;
     const CAPACITY: u32 = Self::NUM_BITS - 1;
     const TWO_INV: Self = Self::new(U448::from_be_hex(
         "1fffffffffffffffffffffffffffffffffffffffffffffffffffffffbe6511f4e2276da4d76b1b4810b6613946e2c7aa91bc614955ac227a",
