@@ -62,7 +62,7 @@ impl UpperHex for DecafPoint {
 
 impl ConstantTimeEq for DecafPoint {
     fn ct_eq(&self, other: &DecafPoint) -> Choice {
-        (self.0.X * other.0.Y).ct_eq(&(self.0.Y * other.0.X))
+        self.compress().ct_eq(&other.compress())
     }
 }
 
@@ -797,4 +797,27 @@ mod test {
     //         assert_eq!(rhs, expected);
     //     }
     // }
+
+    #[test]
+    fn test_decaf_class_equality_roundtrip() {
+        let p = hash2curve::hash_from_bytes::<Decaf448, ExpandMsgXof<Shake256>>(
+            &[b"ct_eq_roundtrip"],
+            &[b"dst_ct_eq_roundtrip"],
+        )
+        .unwrap();
+        let pr = p.compress().decompress().unwrap();
+        assert!(<Choice as Into<bool>>::into(p.ct_eq(&pr)));
+    }
+
+    #[test]
+    fn test_decaf_rep_independence_after_ops() {
+        let p = hash2curve::hash_from_bytes::<Decaf448, ExpandMsgXof<Shake256>>(
+            &[b"ct_eq_ops"],
+            &[b"dst_ct_eq_ops"],
+        )
+        .unwrap();
+        let q = p + p;
+        let qc = q.compress().decompress().unwrap();
+        assert!(<Choice as Into<bool>>::into(q.ct_eq(&qc)));
+    }
 }
