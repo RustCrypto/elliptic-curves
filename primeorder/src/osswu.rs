@@ -1,6 +1,6 @@
 //! Optimized simplified Shallue-van de Woestijne-Ulas methods.
 //!
-//! <hhttps://www.rfc-editor.org/rfc/rfc9380.html#name-simplified-swu-method>
+//! <https://www.rfc-editor.org/rfc/rfc9380.html#name-simplified-swu-method>
 
 use elliptic_curve::Field;
 use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
@@ -16,7 +16,6 @@ pub trait AffineOsswuMap<C: PrimeCurveParams<FieldElement: OsswuMap>> {
 impl<C: PrimeCurveParams<FieldElement: OsswuMap>> AffineOsswuMap<C> for AffinePoint<C> {
     fn osswu(u: &<C as PrimeCurveParams>::FieldElement) -> Self {
         let (x, y) = u.osswu();
-
         Self { x, y, infinity: 0 }
     }
 }
