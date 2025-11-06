@@ -35,7 +35,7 @@ impl AffinePoint {
         let xx = self.x.square();
         let yy = self.y.square();
 
-        (yy - xx).ct_eq(&(FieldElement::ONE + (FieldElement::TWISTED_D * xx * yy)))
+        (yy - xx).ct_eq(&(FieldElement::ONE - (FieldElement::TWISTED_D * xx * yy)))
     }
 
     // Negates an AffinePoint
