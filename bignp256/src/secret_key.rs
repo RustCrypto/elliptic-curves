@@ -1,8 +1,10 @@
 //! Bign256 secret key.
+// TODO(tarcieri): replace with `elliptic_curve::SecretKey`
 
 use core::str::FromStr;
 use der::{SecretDocument, asn1::OctetStringRef};
 
+use crate::{ALGORITHM_OID, PublicKey, ScalarValue};
 use elliptic_curve::{Error, array::typenum::Unsigned, zeroize::Zeroizing};
 use pkcs8::{
     AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
@@ -10,13 +12,17 @@ use pkcs8::{
 };
 
 #[cfg(feature = "arithmetic")]
-use crate::FieldBytes;
-use crate::{ALGORITHM_OID, PublicKey, ScalarValue, SecretKey};
-#[cfg(feature = "arithmetic")]
 use crate::{
-    BignP256, NonZeroScalar, Result,
+    BignP256, FieldBytes, NonZeroScalar, Result,
     elliptic_curve::rand_core::{CryptoRng, TryCryptoRng},
 };
+
+/// Elliptic curve BignP256 Secret Key
+#[cfg(feature = "arithmetic")]
+#[derive(Copy, Clone, Debug)]
+pub struct SecretKey {
+    inner: ScalarValue,
+}
 
 impl SecretKey {
     const MIN_SIZE: usize = 24;

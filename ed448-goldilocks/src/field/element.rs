@@ -587,6 +587,15 @@ mod tests {
 
     #[test]
     fn sqrt() {
+        for &n in &[1u8, 4, 9, 16, 25, 36, 49, 64] {
+            let mut bytes = [0u8; 56];
+            bytes[0] = n;
+
+            let fe = FieldElement::from_bytes(&bytes);
+            let sqrt = fe.sqrt().unwrap();
+            assert_eq!(sqrt.square(), fe);
+        }
+
         let nine = FieldElement::from_bytes(&[
             0x09, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

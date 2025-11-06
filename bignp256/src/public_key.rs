@@ -1,11 +1,10 @@
 //! Public key types and traits
+// TODO(tarcieri): replace with `elliptic_curve::PublicKey`
 
-#[cfg(feature = "alloc")]
-use alloc::{boxed::Box, fmt};
+use crate::{ALGORITHM_OID, AffinePoint, BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint};
 use core::{fmt::Display, str::FromStr};
-
 use elliptic_curve::{
-    AffinePoint, CurveArithmetic, Error, Group,
+    CurveArithmetic, Error, Group,
     array::Array,
     point::NonIdentity,
     sec1::{FromEncodedPoint, ToEncodedPoint},
@@ -15,11 +14,19 @@ use pkcs8::{
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 
-use crate::{ALGORITHM_OID, BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint, PublicKey};
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, fmt};
+
+/// Elliptic curve BignP256 public key.
+#[cfg(feature = "arithmetic")]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PublicKey {
+    point: AffinePoint,
+}
 
 impl PublicKey {
     /// Convert an [`AffinePoint`] into a [`PublicKey`]
-    pub fn from_affine(point: AffinePoint<BignP256>) -> Result<Self, Error> {
+    pub fn from_affine(point: AffinePoint) -> Result<Self, Error> {
         if ProjectivePoint::from(point).is_identity().into() {
             Err(Error)
         } else {
@@ -41,7 +48,7 @@ impl PublicKey {
     /// Borrow the inner [`AffinePoint`] from this [`PublicKey`].
     ///
     /// In ECC, public keys are elliptic curve points.
-    pub fn as_affine(&self) -> &AffinePoint<BignP256> {
+    pub fn as_affine(&self) -> &AffinePoint {
         &self.point
     }
 
@@ -51,7 +58,7 @@ impl PublicKey {
     }
 
     /// Convert this [`PublicKey`] to a [`NonIdentity`] of the inner [`AffinePoint`]
-    pub fn to_nonidentity(&self) -> NonIdentity<AffinePoint<BignP256>> {
+    pub fn to_nonidentity(&self) -> NonIdentity<AffinePoint> {
         NonIdentity::new(self.point).unwrap()
     }
 
@@ -64,7 +71,7 @@ impl PublicKey {
         bytes[32..].reverse();
 
         let point = EncodedPoint::from_untagged_bytes(&bytes);
-        let affine = AffinePoint::<BignP256>::from_encoded_point(&point);
+        let affine = AffinePoint::from_encoded_point(&point);
         if affine.is_none().into() {
             Err(Error)
         } else {
@@ -76,7 +83,7 @@ impl PublicKey {
 
     /// Get [`PublicKey`] from encoded point
     pub fn from_encoded_point(point: EncodedPoint) -> Result<Self, Error> {
-        let affine = AffinePoint::<BignP256>::from_encoded_point(&point);
+        let affine = AffinePoint::from_encoded_point(&point);
         if affine.is_none().into() {
             Err(Error)
         } else {
@@ -102,35 +109,42 @@ impl PublicKey {
     }
 }
 
-impl AsRef<AffinePoint<BignP256>> for PublicKey {
-    fn as_ref(&self) -> &AffinePoint<BignP256> {
+impl AsRef<AffinePoint> for PublicKey {
+    fn as_ref(&self) -> &AffinePoint {
         self.as_affine()
     }
 }
 impl Copy for PublicKey {}
-impl From<NonIdentity<AffinePoint<BignP256>>> for PublicKey {
-    fn from(value: NonIdentity<AffinePoint<BignP256>>) -> Self {
+impl From<NonIdentity<AffinePoint>> for PublicKey {
+    fn from(value: NonIdentity<AffinePoint>) -> Self {
         Self::from(&value)
     }
 }
 
-impl From<&NonIdentity<AffinePoint<BignP256>>> for PublicKey {
-    fn from(value: &NonIdentity<AffinePoint<BignP256>>) -> Self {
+impl From<&NonIdentity<AffinePoint>> for PublicKey {
+    fn from(value: &NonIdentity<AffinePoint>) -> Self {
         Self {
             point: value.to_point(),
         }
     }
 }
 
-impl From<PublicKey> for NonIdentity<AffinePoint<BignP256>> {
+impl From<PublicKey> for NonIdentity<AffinePoint> {
     fn from(value: PublicKey) -> Self {
         Self::from(&value)
     }
 }
 
-impl From<&PublicKey> for NonIdentity<AffinePoint<BignP256>> {
+impl From<&PublicKey> for NonIdentity<AffinePoint> {
     fn from(value: &PublicKey) -> Self {
         PublicKey::to_nonidentity(value)
+    }
+}
+
+impl From<PublicKey> for elliptic_curve::PublicKey<BignP256> {
+    fn from(value: PublicKey) -> Self {
+        elliptic_curve::PublicKey::<BignP256>::from_affine(value.point)
+            .expect("should be non-identity")
     }
 }
 

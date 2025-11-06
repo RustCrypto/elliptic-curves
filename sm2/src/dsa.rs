@@ -8,7 +8,7 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand_core::{OsRng, TryRngCore}; // requires 'os_rng` feature
+//! use rand::{rngs::OsRng, TryRngCore};
 //! use sm2::{
 //!     dsa::{Signature, SigningKey, signature::Signer},
 //!     SecretKey

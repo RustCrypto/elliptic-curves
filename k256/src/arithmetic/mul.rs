@@ -391,10 +391,8 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::{
-        Field, Group,
-        rand_core::{OsRng, TryRngCore},
-    };
+    use elliptic_curve::{Field, Group};
+    use rand::{TryRngCore, rngs::OsRng};
 
     #[test]
     fn test_lincomb() {

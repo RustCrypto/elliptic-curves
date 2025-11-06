@@ -10,11 +10,9 @@
 //!
 //! ```
 //! use ed448_goldilocks::*;
-//! use rand_core::SeedableRng;
-//! use rand_chacha::ChaChaRng;
+//! use rand::{rngs::OsRng, TryRngCore};
 //!
-//! let mut rng = ChaChaRng::from_os_rng();
-//! let signing_key = SigningKey::generate(&mut rng);
+//! let signing_key = SigningKey::generate(&mut OsRng.unwrap_err());
 //! let signature = signing_key.sign_raw(b"Hello, world!");
 //! let verifying_key = signing_key.verifying_key();
 //!
@@ -58,19 +56,22 @@
 //! ```
 //! use ed448_goldilocks::*;
 //! use sha3::{Shake256, digest::Update};
-//! use rand_chacha::ChaChaRng;
-//! use rand_core::SeedableRng;
+//! use rand::{rngs::OsRng, TryRngCore};
 //!
-//! let mut rng = ChaChaRng::from_os_rng();
 //! let msg = b"Hello World";
-//! let signing_key = SigningKey::generate(&mut rng);
+//!
+//! let signing_key = SigningKey::generate(&mut OsRng.unwrap_err());
 //! let signature = signing_key.sign_prehashed::<PreHasherXof<Shake256>>(
-//!                        None,
-//!                        Shake256::default().chain(msg).into(),
-//!                    ).unwrap();
+//!     None,
+//!     Shake256::default().chain(msg).into(),
+//! ).unwrap();
+//!
 //! let verifying_key = signing_key.verifying_key();
 //! assert!(verifying_key.verify_prehashed::<PreHasherXof<Shake256>>(
-//!                    &signature, None, Shake256::default().chain(msg).into()).is_ok());
+//!    &signature,
+//!    None,
+//!    Shake256::default().chain(msg).into()
+//! ).is_ok());
 //! ```
 mod context;
 mod error;

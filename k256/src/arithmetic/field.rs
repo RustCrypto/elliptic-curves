@@ -513,7 +513,7 @@ mod tests {
     use elliptic_curve::ops::BatchInvert;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
-    use rand_core::{OsRng, TryRngCore};
+    use rand::{TryRngCore, rngs::OsRng};
 
     use super::FieldElement;
     use crate::{

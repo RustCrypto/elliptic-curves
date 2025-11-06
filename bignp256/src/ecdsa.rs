@@ -7,7 +7,7 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand_core::{OsRng, TryRngCore}; // requires 'getrandom` feature
+//! use rand::{rngs::OsRng, TryRngCore};
 //! use bignp256::{
 //!     ecdsa::{Signature, SigningKey, signature::Signer},
 //!     SecretKey

@@ -34,7 +34,6 @@ use elliptic_curve::{
 use signature::{Error, MultipartVerifier, Result, Verifier, hazmat::PrehashVerifier};
 
 use elliptic_curve::sec1::ToEncodedPoint;
-use subtle::ConstantTimeEq;
 
 /// Bign256 public key used for verifying signatures are valid for a given
 /// message.
@@ -153,7 +152,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         s0.reverse();
 
         // 8. If 𝑆0 != 𝑡, return NO.
-        if s0.ct_eq(&t.as_slice()[..16]).into() {
+        if s0 == &t.as_slice()[..16] {
             // 9. Return YES.
             Ok(())
         } else {

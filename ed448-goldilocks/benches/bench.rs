@@ -5,7 +5,7 @@ use ed448_goldilocks::{
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
 use hash2curve::GroupDigest;
-use rand_core::{OsRng, TryRngCore};
+use rand::{TryRngCore, rngs::OsRng};
 
 pub fn ed448(c: &mut Criterion) {
     let mut group = c.benchmark_group("Ed448");

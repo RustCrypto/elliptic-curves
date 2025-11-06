@@ -727,7 +727,7 @@ mod tests {
     use elliptic_curve::BatchNormalize;
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
     use elliptic_curve::{CurveGroup, Field};
-    use rand_core::{OsRng, TryRngCore};
+    use rand::{TryRngCore, rngs::OsRng};
 
     #[cfg(feature = "alloc")]
     use alloc::vec::Vec;
