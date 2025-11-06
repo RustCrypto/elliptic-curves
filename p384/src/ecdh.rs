@@ -10,7 +10,7 @@
 //!
 //! ```
 //! use p384::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
-//! use rand_core::OsRng; // requires 'os_rng' feature
+//! use rand::rngs::OsRng;
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::try_from_rng(&mut OsRng).unwrap();

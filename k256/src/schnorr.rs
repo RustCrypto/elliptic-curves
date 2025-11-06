@@ -35,7 +35,7 @@
 //!     signature::{Signer, Verifier},
 //!     SigningKey, VerifyingKey
 //! };
-//! use rand_core::OsRng; // requires 'os_rng' feature
+//! use rand::rngs::OsRng;
 //!
 //! //
 //! // Signing

@@ -437,7 +437,7 @@ mod tests {
     #[cfg(feature = "serde")]
     #[test]
     fn serialization() {
-        use rand_chacha::ChaCha8Rng;
+        use chacha20::ChaCha8Rng;
         use rand_core::SeedableRng;
 
         let mut rng = ChaCha8Rng::from_seed([0u8; 32]);

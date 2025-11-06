@@ -3,7 +3,7 @@
 use elliptic_curve::{NonZeroScalar, ops::Reduce};
 use hex_literal::hex;
 use proptest::prelude::*;
-use rand_core::OsRng;
+use rand::rngs::OsRng;
 
 use sm2::{FieldBytes, Scalar, Sm2, pke::DecryptingKey};
 

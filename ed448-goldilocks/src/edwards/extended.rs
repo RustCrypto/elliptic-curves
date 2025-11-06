@@ -785,7 +785,7 @@ mod tests {
     use elliptic_curve::Field;
     use hex_literal::hex;
     use proptest::{prop_assert_eq, property_test};
-    use rand_core::{OsRng, TryRngCore};
+    use rand::{TryRngCore, rngs::OsRng};
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -966,7 +966,7 @@ mod tests {
     fn hash_fuzzing() {
         for _ in 0..25 {
             let mut msg = [0u8; 64];
-            rand_core::OsRng.try_fill_bytes(&mut msg).unwrap();
+            OsRng.try_fill_bytes(&mut msg).unwrap();
             let p = Ed448::hash_from_bytes(&msg, b"test DST").unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             assert_eq!(p.is_torsion_free().unwrap_u8(), 1u8);
@@ -1027,7 +1027,7 @@ mod tests {
     //
     //     const TESTS: usize = 5;
     //     const CHUNKS: usize = 10;
-    //     let mut rng = rand_chacha::ChaCha8Rng::from_seed([3u8; 32]);
+    //     let mut rng = chacha20::ChaCha8Rng::from_seed([3u8; 32]);
     //
     //     for _ in 0..TESTS {
     //         let scalars = (0..CHUNKS)
@@ -1057,7 +1057,7 @@ mod tests {
     fn test_pow_add_mul() {
         use rand_core::SeedableRng;
 
-        let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(0);
+        let mut rng = chacha20::ChaCha8Rng::seed_from_u64(0);
         let x = EdwardsScalar::random(&mut rng);
         let b = EdwardsScalar::random(&mut rng);
 

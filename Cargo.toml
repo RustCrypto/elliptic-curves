@@ -26,3 +26,9 @@ ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
+
+elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
+crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint", branch = "rand_core/v0.10.0-rc-2" }
+ecdsa = { git = "https://github.com/RustCrypto/signatures" }
+ff = { git = "https://github.com/tarcieri/ff", branch = "rand_core/v0.10.0-rc-2" }
+group = { git = "https://github.com/tarcieri/group", branch = "rand_core/v0.10.0-rc-2" }

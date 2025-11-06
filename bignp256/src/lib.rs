@@ -37,7 +37,11 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "arithmetic")]
-pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
+pub use {
+    arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar},
+    public_key::PublicKey,
+    secret_key::SecretKey,
+};
 
 /// Bign256 result type
 pub type Result<T> = core::result::Result<T, Error>;
@@ -143,20 +147,6 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BignP256>;
 /// Generic scalar type with primitive functionality.#
 #[cfg(feature = "arithmetic")]
 pub type ScalarValue = elliptic_curve::ScalarValue<BignP256>;
-
-/// Elliptic curve BignP256 public key.
-#[cfg(feature = "arithmetic")]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PublicKey {
-    point: elliptic_curve::AffinePoint<BignP256>,
-}
-
-/// Elliptic curve BignP256 Secret Key
-#[cfg(feature = "arithmetic")]
-#[derive(Copy, Clone, Debug)]
-pub struct SecretKey {
-    inner: ScalarValue,
-}
 
 /// Bit representation of a BIGN P-256 scalar field element.
 #[cfg(feature = "bits")]

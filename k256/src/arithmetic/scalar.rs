@@ -906,7 +906,7 @@ mod tests {
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
-    use rand_core::{OsRng, TryRngCore};
+    use rand::{TryRngCore, rngs::OsRng};
 
     use elliptic_curve::ops::BatchInvert;
 

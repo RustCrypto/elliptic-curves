@@ -28,7 +28,7 @@
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
 //!     SecretKey,
 //! };
-//! use rand_core::OsRng; // requires 'os_rng' feature
+//! use rand::rngs::OsRng;
 //!
 //! // Signing
 //! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
