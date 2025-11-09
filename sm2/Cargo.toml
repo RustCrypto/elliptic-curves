@@ -37,13 +37,14 @@ proptest = "1"
 rand = "0.10.0-rc.1"
 
 [features]
-default = ["arithmetic", "dsa", "pke", "pem", "std"]
+default = ["arithmetic", "dsa", "getrandom", "pke", "pem", "std"]
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]
+getrandom = ["elliptic-curve/getrandom"]
 pke = ["arithmetic", "dep:sm3"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "der"]

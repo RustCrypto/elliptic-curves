@@ -36,7 +36,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
-      - run: cargo build --target ${{ matrix.target }} --release
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features
 
   test:
     runs-on: ubuntu-latest

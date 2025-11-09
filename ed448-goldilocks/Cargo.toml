@@ -40,9 +40,10 @@ serde_json = "1.0"
 [features]
 default = ["std", "signing", "pkcs8"]
 alloc = ["ed448?/alloc", "elliptic-curve/alloc", "serdect?/alloc", "signature?/alloc"]
-std = ["alloc"]
+std = ["alloc", "getrandom"]
 
 bits = ["elliptic-curve/bits"]
+getrandom = ["elliptic-curve/getrandom"]
 pkcs8 = ["ed448?/pkcs8", "elliptic-curve/pkcs8"]
 signing = ["dep:ed448", "dep:signature"]
 serde = ["dep:serdect", "ed448?/serde_bytes"]

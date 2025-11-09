@@ -398,7 +398,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.8"
-source = "git+https://github.com/RustCrypto/signatures#e68b77acbdfa628b750713906e736d3ad057772e"
+source = "git+https://github.com/RustCrypto/signatures#9fe087a8e90156e08cc8a1b68872f123fb2ee189"
 dependencies = [
  "der",
  "digest",
@@ -453,12 +453,13 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.16"
-source = "git+https://github.com/RustCrypto/traits#e8af70d7513422157590f3f764ddc8f8ca55bf72"
+source = "git+https://github.com/RustCrypto/traits#a8701a4463d78a5fbb3cc8bb7f2c6af37a5d4f69"
 dependencies = [
  "base16ct",
  "crypto-bigint",
  "digest",
  "ff",
+ "getrandom",
  "group",
  "hex-literal",
  "hkdf",

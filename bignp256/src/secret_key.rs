@@ -12,10 +12,7 @@ use pkcs8::{
 };
 
 #[cfg(feature = "arithmetic")]
-use crate::{
-    BignP256, FieldBytes, NonZeroScalar, Result,
-    elliptic_curve::rand_core::{CryptoRng, TryCryptoRng},
-};
+use crate::{BignP256, FieldBytes, NonZeroScalar, Result, elliptic_curve::rand_core::TryCryptoRng};
 
 /// Elliptic curve BignP256 Secret Key
 #[cfg(feature = "arithmetic")]
@@ -28,10 +25,14 @@ impl SecretKey {
     const MIN_SIZE: usize = 24;
 
     /// Generate a random [`SecretKey`].
-    #[cfg(feature = "arithmetic")]
-    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
+    ///
+    /// # Panics
+    ///
+    /// If the system's cryptographically secure RNG has an internal error.
+    #[cfg(feature = "getrandom")]
+    pub fn generate() -> Self {
         Self {
-            inner: NonZeroScalar::random(rng).into(),
+            inner: NonZeroScalar::generate().into(),
         }
     }
 

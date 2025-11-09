@@ -47,10 +47,10 @@ mod tests {
     }
 
     #[test]
-    fn generate_secret_key() {
+    fn try_from_rng() {
         use crate::SecretKey;
-        use rand::{TryRngCore, rngs::OsRng};
-        let key = SecretKey::random(&mut OsRng.unwrap_mut());
+        use rand::rngs::OsRng;
+        let key = SecretKey::try_from_rng(&mut OsRng).unwrap();
 
         // Sanity check
         assert!(!key.to_bytes().iter().all(|b| *b == 0))
