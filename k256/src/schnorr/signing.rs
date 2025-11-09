@@ -35,9 +35,14 @@ pub struct SigningKey {
 }
 
 impl SigningKey {
-    /// Generate a cryptographically random [`SigningKey`].
-    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
-        NonZeroScalar::random(rng).into()
+    /// Generate a random [`SigningKey`].
+    ///
+    /// # Panics
+    ///
+    /// If the system's cryptographically secure RNG has an internal error.
+    #[cfg(feature = "getrandom")]
+    pub fn generate() -> Self {
+        NonZeroScalar::generate().into()
     }
 
     /// Generate a cryptographically random [`SigningKey`].
@@ -45,6 +50,13 @@ impl SigningKey {
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
         Ok(NonZeroScalar::try_from_rng(rng)?.into())
+    }
+
+    /// Deprecated: Generate a cryptographically random [`SigningKey`].
+    #[deprecated(since = "0.14.0", note = "use `generate` or `try_from_rng` instead")]
+    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
+        let Ok(sk) = Self::try_from_rng(rng);
+        sk
     }
 
     /// Parse signing key from big endian-encoded bytes.

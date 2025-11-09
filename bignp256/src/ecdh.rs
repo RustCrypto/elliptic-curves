@@ -8,16 +8,18 @@
 //! This usage example is from the perspective of two participants in the
 //! exchange, nicknamed "Alice" and "Bob".
 //!
-//! ```
+#![cfg_attr(feature = "getrandom", doc = "```")]
+#![cfg_attr(not(feature = "getrandom"), doc = "```ignore")]
+//! // NOTE: requires 'getrandom' feature is enabled
+//!
 //! use bignp256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
-//! use rand::{rngs::OsRng, TryRngCore}; // requires 'os_rng' feature
 //!
 //! // Alice
-//! let alice_secret = EphemeralSecret::random(&mut OsRng.unwrap_mut());
+//! let alice_secret = EphemeralSecret::generate();
 //! let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
 //!
 //! // Bob
-//! let bob_secret = EphemeralSecret::random(&mut OsRng.unwrap_mut());
+//! let bob_secret = EphemeralSecret::generate();
 //! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
 //!
 //! // Alice decodes Bob's serialized public key and computes a shared secret from it

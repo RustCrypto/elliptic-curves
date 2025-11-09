@@ -29,6 +29,8 @@ features = ["zeroize_derive"]
 rand = "0.10.0-rc.1"
 
 [features]
+default = ["getrandom"]
+getrandom = ["ed448-goldilocks/getrandom"]
 static_secrets = []
 serde = ["dep:serdect", "ed448-goldilocks/serde"]
 

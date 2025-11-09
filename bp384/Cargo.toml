@@ -25,10 +25,11 @@ sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 [features]
 default = ["pkcs8", "std"]
 alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
-std = ["alloc", "ecdsa?/std", "elliptic-curve/std"]
+std = ["alloc", "ecdsa?/std", "elliptic-curve/std", "getrandom"]
 
 arithmetic = ["dep:primefield", "dep:primeorder"]
 bits = ["arithmetic", "elliptic-curve/bits"]
+getrandom = ["ecdsa?/getrandom", "elliptic-curve/getrandom"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
