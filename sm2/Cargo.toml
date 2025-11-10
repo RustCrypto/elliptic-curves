@@ -29,7 +29,7 @@ rfc6979 = { version = "0.5.0-rc.3", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 signature = { version = "3.0.0-rc.5", optional = true, features = ["rand_core"] }
 sm3 = { version = "0.5.0-rc.3", optional = true, default-features = false }
-der = { version = "0.8.0-rc.9", optional = true }
+der = { version = "0.8.0-rc.10", optional = true }
 
 [dev-dependencies]
 hex-literal = "1"
