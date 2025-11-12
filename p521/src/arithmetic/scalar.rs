@@ -122,7 +122,6 @@ impl Scalar {
     /// Does *not* perform a check that the field element does not overflow the order.
     ///
     /// This method is primarily intended for defining internal constants.
-    #[allow(dead_code)]
     pub(crate) const fn from_hex_unchecked(hex: &str) -> Self {
         Self::from_uint_unchecked(Uint::from_be_hex(hex))
     }
