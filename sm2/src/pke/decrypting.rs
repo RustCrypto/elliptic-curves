@@ -116,7 +116,7 @@ impl DecryptingKey {
             Mode::C1C3C2 => [prefix, &x, &y, cipher.digest, cipher.cipher].concat(),
         };
 
-        Ok(self.decrypt_digest::<D>(&cipher)?.to_vec())
+        self.decrypt_digest::<D>(&cipher)
     }
 }
 
@@ -212,5 +212,5 @@ fn decrypt(
     }
 
     // B7: output the plaintext 𝑀′.
-    Ok(c2.to_vec())
+    Ok(c2)
 }
