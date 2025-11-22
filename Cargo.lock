@@ -397,8 +397,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.8"
-source = "git+https://github.com/RustCrypto/signatures#9fe087a8e90156e08cc8a1b68872f123fb2ee189"
+version = "0.17.0-rc.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e914ecb8e11a02f42cc05f6b43675d1e5aa4d446cd207f9f818903a1ab34f19f"
 dependencies = [
  "der",
  "digest",
@@ -452,15 +453,14 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.16"
-source = "git+https://github.com/RustCrypto/traits#a8701a4463d78a5fbb3cc8bb7f2c6af37a5d4f69"
+version = "0.14.0-rc.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39ecd2903524729de5d0cba7589121744513feadd56d71980cb480c48caceb11"
 dependencies = [
  "base16ct",
  "crypto-bigint",
  "digest",
- "ff",
  "getrandom",
- "group",
  "hex-literal",
  "hkdf",
  "hybrid-array",
@@ -468,6 +468,8 @@ dependencies = [
  "pem-rfc7468",
  "pkcs8",
  "rand_core 0.10.0-rc-2",
+ "rustcrypto-ff",
+ "rustcrypto-group",
  "sec1",
  "serdect",
  "subtle",
@@ -493,26 +495,11 @@ checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
 [[package]]
 name = "ff"
 version = "0.14.0-pre.0"
-source = "git+https://github.com/tarcieri/ff?branch=rand_core%2Fv0.10.0-rc-2#80d58e19c3649824c009b3c77cd15f969bb58ca0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d42dd26f5790eda47c1a2158ea4120e32c35ddc9a7743c98a292accc01b54ef3"
 dependencies = [
- "bitvec",
- "ff_derive",
- "rand_core 0.10.0-rc-2",
+ "rand_core 0.9.3",
  "subtle",
-]
-
-[[package]]
-name = "ff_derive"
-version = "0.14.0-pre.0"
-source = "git+https://github.com/tarcieri/ff?branch=rand_core%2Fv0.10.0-rc-2#80d58e19c3649824c009b3c77cd15f969bb58ca0"
-dependencies = [
- "addchain",
- "num-bigint 0.3.3",
- "num-integer",
- "num-traits",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -543,16 +530,6 @@ dependencies = [
  "libc",
  "r-efi",
  "wasi",
-]
-
-[[package]]
-name = "group"
-version = "0.14.0-pre.0"
-source = "git+https://github.com/tarcieri/group?branch=rand_core%2Fv0.10.0-rc-2#642bee5b41b93c11496ca667fd99eacb6eb4a147"
-dependencies = [
- "ff",
- "rand_core 0.10.0-rc-2",
- "subtle",
 ]
 
 [[package]]
@@ -910,8 +887,8 @@ name = "primefield"
 version = "0.14.0-rc.0"
 dependencies = [
  "crypto-bigint",
- "ff",
  "rand_core 0.10.0-rc-2",
+ "rustcrypto-ff",
  "subtle",
  "zeroize",
 ]
@@ -1103,6 +1080,44 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "63b8e2323084c987a72875b2fd682b7307d5cf14d47e3875bb5e89948e8809d4"
 dependencies = [
  "hmac",
+ "subtle",
+]
+
+[[package]]
+name = "rustcrypto-ff"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa9cd37111549306f79b09aa2618e15b1e8241b7178c286821e3dd71579db4db"
+dependencies = [
+ "bitvec",
+ "rand_core 0.10.0-rc-2",
+ "rustcrypto-ff_derive",
+ "subtle",
+]
+
+[[package]]
+name = "rustcrypto-ff_derive"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2aef88cb4ddb3b1c83beff963f9197607dac780cc39a09f19c041dacbb0b6a5"
+dependencies = [
+ "addchain",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "rustcrypto-group"
+version = "0.14.0-pre.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e394cd734b5f97dfc3484fa42aad7acd912961c2bcd96c99aa05b3d6cab7cafd"
+dependencies = [
+ "rand_core 0.10.0-rc-2",
+ "rustcrypto-ff",
  "subtle",
 ]
 
