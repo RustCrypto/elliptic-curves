@@ -23,7 +23,7 @@ fiat-crypto = { version = "0.3", default-features = false }
 
 # optional dependencies
 ecdsa-core = { version = "0.17.0-rc.9", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
-hash2curve = { version = "0.14.0-rc.3", optional = true }
+hash2curve = { version = "0.14.0-rc.4", optional = true }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "0.14.0-rc.0", optional = true }
 primeorder = { version = "0.14.0-rc.0", optional = true }
