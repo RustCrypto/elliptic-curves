@@ -15,7 +15,7 @@ rust-version = "1.85"
 
 [dependencies]
 digest = { version = "0.11.0-rc.4" }
-elliptic-curve = { version = "0.14.0-rc.16", default-features = false, features = ["arithmetic"] }
+elliptic-curve = { version = "0.14.0-rc.17", default-features = false, features = ["arithmetic"] }
 ff = { version = "=0.14.0-pre.0", default-features = false }
 subtle = { version = "2.6", default-features = false }
 
