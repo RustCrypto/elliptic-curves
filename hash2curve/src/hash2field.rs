@@ -29,7 +29,7 @@ pub fn hash_to_field<const N: usize, E, K, T, L>(
 ) -> Result<[T; N], E::Error>
 where
     E: ExpandMsg<K>,
-    T: Reduce<Array<u8, L>> + Default,
+    T: Reduce<Array<u8, L>>,
     L: ArraySize + NonZero,
 {
     // Completely degenerate case; `N` and `L` would need to be extremely large.
