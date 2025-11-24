@@ -260,7 +260,7 @@ impl<'de> serdect::serde::Deserialize<'de> for StaticSecret {
     {
         let mut bytes = Array::default();
         serdect::array::deserialize_hex_or_bin(&mut bytes, d)?;
-        Ok(Self(bytes))
+        Ok(StaticSecret::new(bytes))
     }
 }
 
