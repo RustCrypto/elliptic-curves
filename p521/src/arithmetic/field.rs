@@ -256,13 +256,7 @@ impl FieldElement {
 
     /// Returns self^(2^n) mod p
     const fn sqn(&self, n: usize) -> Self {
-        let mut x = self.square();
-        let mut i = 1;
-        while i < n {
-            x = x.square();
-            i += 1;
-        }
-        x
+        self.sqn_vartime(n)
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -715,5 +709,13 @@ mod tests {
         );
         let ct_option = FieldElement::from_bytes(&overflowing_bytes.into());
         assert!(bool::from(ct_option.is_none()));
+    }
+
+    #[test]
+    fn sqn_edge_cases() {
+        let a = FieldElement::from_u64(5);
+        assert_eq!(a.sqn(0), a);
+        assert_eq!(a.sqn(1), a.square());
+        assert_eq!(a.sqn(2), a.square().square());
     }
 }
