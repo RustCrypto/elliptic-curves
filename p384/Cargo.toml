@@ -19,7 +19,6 @@ rust-version = "1.85"
 
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.17", default-features = false, features = ["sec1"] }
-fiat-crypto = { version = "0.3", default-features = false }
 
 # optional dependencies
 ecdsa-core = { version = "0.17.0-rc.9", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
@@ -29,6 +28,9 @@ primefield = { version = "0.14.0-rc.1", optional = true }
 primeorder = { version = "0.14.0-rc.1", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
+
+[target.'cfg(not(p384_backend = "bignum"))'.dependencies]
+fiat-crypto = { version = "0.3", default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
@@ -75,3 +77,7 @@ required-features = ["expose-field"]
 [[bench]]
 name = "scalar"
 harness = false
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(p384_backend, values("bignum", "fiat"))'] # default: "fiat"

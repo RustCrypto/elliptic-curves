@@ -10,9 +10,9 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg(target_pointer_width = "32")]
+#[cfg(all(not(p384_backend = "bignum"), target_pointer_width = "32"))]
 use fiat_crypto::p384_scalar_32::*;
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(not(p384_backend = "bignum"), target_pointer_width = "64"))]
 use fiat_crypto::p384_scalar_64::*;
 
 use crate::{FieldBytes, NistP384, ORDER_HEX, U384};
@@ -50,6 +50,14 @@ primefield::monty_field_element! {
     doc: "Element in the NIST P-384 scalar field modulo `n`."
 }
 
+#[cfg(p384_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U384
+}
+
+#[cfg(not(p384_backend = "bignum"))]
 primefield::monty_field_fiat_arithmetic! {
     name: Scalar,
     params: ScalarParams,
