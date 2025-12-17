@@ -103,30 +103,7 @@ impl FieldElement {
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
-    }
-
-    /// Returns the multiplicative inverse of self.
-    ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
-        // field, we can apply Fermat's Little Theorem:
-        //
-        //    a^p         ≡ a mod p
-        //    a^(p-1)     ≡ 1 mod p
-        //    a^(p-2) * a ≡ 1 mod p
-        //
-        // Thus inversion can be implemented with a single exponentiation.
-        let t111 = self.multiply(&self.multiply(&self.square()).square());
-        let t111111 = t111.multiply(&t111.sqn(3));
-        let x15 = t111111.sqn(6).multiply(&t111111).sqn(3).multiply(&t111);
-        let x16 = x15.square().multiply(self);
-        let i53 = x16.sqn(16).multiply(&x16).sqn(15);
-        let x47 = x15.multiply(&i53);
-        x47.multiply(&i53.sqn(17).multiply(self).sqn(143).multiply(&x47).sqn(47))
-            .sqn(2)
-            .multiply(self)
+        self.0.invert().map(Self)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
