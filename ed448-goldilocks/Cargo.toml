@@ -28,7 +28,7 @@ serdect = { version = "0.4", optional = true }
 signature = { version = "3.0.0-rc.5", optional = true, default-features = false, features = ["digest", "rand_core"] }
 
 [dev-dependencies]
-criterion = { version = "0.7", default-features = false, features = ["cargo_bench_support"] }
+criterion = { version = "0.8", default-features = false, features = ["cargo_bench_support"] }
 hex-literal = "1"
 hex = "0.4"
 proptest = { version = "1", features = ["attr-macro"] }
