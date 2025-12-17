@@ -37,6 +37,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    bigint::U256,
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::TryRngCore,
@@ -46,6 +47,20 @@ use elliptic_curve::{
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
+
+/// Constant representing the modulus: p = 2^{256} - 2^{32} - 2^{9} - 2^{8} - 2^{7} - 2^{6} - 2^{4} - 1
+const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
+
+primefield::monty_field_params!(
+    name: MontyFieldParams,
+    modulus: MODULUS_HEX,
+    uint: U256,
+    byte_order: primefield::ByteOrder::BigEndian,
+    multiplicative_generator: 3,
+    doc: "Montgomery parameters for the secp256k1 field modulus: p = 2^{256} - 2^{32} - 2^{9} - 2^{8} - 2^{7} - 2^{6} - 2^{4} - 1."
+);
+
+type MontyFieldElement = primefield::MontyFieldElement<MontyFieldParams, { U256::LIMBS }>;
 
 /// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -171,34 +186,7 @@ impl FieldElement {
     /// Returns the multiplicative inverse of self, if self is non-zero.
     /// The result has magnitude 1, but is not normalized.
     pub fn invert(&self) -> CtOption<Self> {
-        // The binary representation of (p - 2) has 5 blocks of 1s, with lengths in
-        // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
-        // [1], [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
-
-        let x2 = self.pow2k(1).mul(self);
-        let x3 = x2.pow2k(1).mul(self);
-        let x6 = x3.pow2k(3).mul(&x3);
-        let x9 = x6.pow2k(3).mul(&x3);
-        let x11 = x9.pow2k(2).mul(&x2);
-        let x22 = x11.pow2k(11).mul(&x11);
-        let x44 = x22.pow2k(22).mul(&x22);
-        let x88 = x44.pow2k(44).mul(&x44);
-        let x176 = x88.pow2k(88).mul(&x88);
-        let x220 = x176.pow2k(44).mul(&x44);
-        let x223 = x220.pow2k(3).mul(&x3);
-
-        // The final result is then assembled using a sliding window over the blocks.
-        let res = x223
-            .pow2k(23)
-            .mul(&x22)
-            .pow2k(5)
-            .mul(self)
-            .pow2k(3)
-            .mul(&x2)
-            .pow2k(2)
-            .mul(self);
-
-        CtOption::new(res, !self.normalizes_to_zero())
+        self.to_primefield().invert().map(Self::from_primefield)
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
@@ -244,6 +232,18 @@ impl FieldElement {
     #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
         Self::ONE.negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
+    }
+
+    /// Convert from [`primefield::MontyFieldElement`] into a [`FieldElement`].
+    #[inline]
+    fn from_primefield(fe: MontyFieldElement) -> Self {
+        Self::from_bytes(&fe.to_bytes()).expect("should be < p")
+    }
+
+    /// Convert this field element to a [`primefield::MontyFieldElement`].
+    #[inline]
+    fn to_primefield(self) -> MontyFieldElement {
+        MontyFieldElement::from_bytes(&self.normalize().to_bytes()).expect("should be < p")
     }
 }
 
@@ -294,8 +294,7 @@ impl Field for FieldElement {
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
-    const MODULUS: &'static str =
-        "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
+    const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
     const TWO_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
@@ -689,10 +688,10 @@ mod tests {
         let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
-        assert_eq!(
-            <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap(),
-            expected
-        );
+        let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
+
+        assert_eq!(expected[0], actual[0].normalize());
+        assert_eq!(expected[1], actual[1].normalize());
     }
 
     #[test]
@@ -701,10 +700,12 @@ mod tests {
         let k: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
         let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
 
-        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let field_elements = vec![k, l];
-        let res = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
-        assert_eq!(res, expected);
+        let expected = [k.invert().unwrap(), l.invert().unwrap()];
+        let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`
+        let actual = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
+
+        assert_eq!(expected[0], actual[0].normalize());
+        assert_eq!(expected[1], actual[1].normalize());
     }
 
     #[test]
@@ -756,7 +757,6 @@ mod tests {
     }
 
     proptest! {
-
         #[test]
         fn fuzzy_add(
             a in field_element(),
@@ -833,6 +833,22 @@ mod tests {
             let inv_bi = inv.to_biguint().unwrap();
             let m = FieldElement::modulus_as_biguint();
             assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
+        }
+
+        #[test]
+        fn from_primefield(
+            a in field_element()
+        ) {
+            let b = FieldElement::from_primefield(a.to_primefield());
+            assert_eq!(a, b);
+        }
+
+        #[test]
+        fn to_primefield(
+            a in field_element()
+        ) {
+            let b = a.to_primefield();
+            assert_eq!(a.to_bytes(), b.to_bytes());
         }
     }
 }

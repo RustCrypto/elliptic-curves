@@ -632,6 +632,7 @@ dependencies = [
  "hex-literal",
  "num-bigint 0.4.6",
  "num-traits",
+ "primefield",
  "primeorder",
  "proptest",
  "rand 0.10.0-rc.5",
