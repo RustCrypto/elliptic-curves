@@ -1,5 +1,6 @@
 //! secp384r1 field element benchmarks
 
+use core::hint::black_box;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
@@ -7,10 +8,10 @@ use hex_literal::hex;
 use p384::{FieldElement, elliptic_curve::ff::Field};
 
 fn test_field_element_x() -> FieldElement {
-    FieldElement::from_bytes(
+    black_box(FieldElement::from_bytes(
         &hex!("c2b47944fb5de342d03285880177ca5f7d0f2fcad7678cce4229d6e1932fcac11bfc3c3e97d942a3c56bf34123013dbf").into()
     )
-    .unwrap()
+    .unwrap())
 }
 
 fn test_field_element_y() -> FieldElement {
