@@ -51,7 +51,7 @@ impl FieldElement10x26 {
     }
 
     #[inline(always)]
-    pub const fn to_u256(&self) -> U256 {
+    pub const fn to_u256(self) -> U256 {
         let words = &self.0;
         let mut out = [0u32; 8];
         out[0] = words[0] | (words[1] << 26); // 26 bits | 6 bits
