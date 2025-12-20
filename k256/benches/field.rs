@@ -63,6 +63,19 @@ fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a,
     group.bench_function("invert", |b| b.iter(|| black_box(x).invert()));
 }
 
+fn bench_field_element_to_bytes<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+    let x = test_field_element_x();
+    group.bench_function("to_bytes", |b| b.iter(|| black_box(x).to_bytes()));
+}
+
+fn bench_field_element_from_bytes<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
+    let x = test_field_element_x();
+    let bytes = x.to_bytes();
+    group.bench_function("from_bytes", |b| {
+        b.iter(|| FieldElement::from_bytes(black_box(&bytes)))
+    });
+}
+
 fn bench_field_element(c: &mut Criterion) {
     let mut group = c.benchmark_group("field element operations");
     bench_field_element_normalize_weak(&mut group);
@@ -71,6 +84,8 @@ fn bench_field_element(c: &mut Criterion) {
     bench_field_element_square(&mut group);
     bench_field_element_invert(&mut group);
     bench_field_element_sqrt(&mut group);
+    bench_field_element_to_bytes(&mut group);
+    bench_field_element_from_bytes(&mut group);
     group.finish();
 }
 
