@@ -3,6 +3,7 @@
 
 use crate::FieldBytes;
 use elliptic_curve::{
+    bigint::U256,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::Zeroize,
 };
@@ -25,46 +26,7 @@ impl FieldElement5x52 {
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        let w0 = (bytes[31] as u64)
-            | ((bytes[30] as u64) << 8)
-            | ((bytes[29] as u64) << 16)
-            | ((bytes[28] as u64) << 24)
-            | ((bytes[27] as u64) << 32)
-            | ((bytes[26] as u64) << 40)
-            | (((bytes[25] & 0xFu8) as u64) << 48);
-
-        let w1 = ((bytes[25] >> 4) as u64)
-            | ((bytes[24] as u64) << 4)
-            | ((bytes[23] as u64) << 12)
-            | ((bytes[22] as u64) << 20)
-            | ((bytes[21] as u64) << 28)
-            | ((bytes[20] as u64) << 36)
-            | ((bytes[19] as u64) << 44);
-
-        let w2 = (bytes[18] as u64)
-            | ((bytes[17] as u64) << 8)
-            | ((bytes[16] as u64) << 16)
-            | ((bytes[15] as u64) << 24)
-            | ((bytes[14] as u64) << 32)
-            | ((bytes[13] as u64) << 40)
-            | (((bytes[12] & 0xFu8) as u64) << 48);
-
-        let w3 = ((bytes[12] >> 4) as u64)
-            | ((bytes[11] as u64) << 4)
-            | ((bytes[10] as u64) << 12)
-            | ((bytes[9] as u64) << 20)
-            | ((bytes[8] as u64) << 28)
-            | ((bytes[7] as u64) << 36)
-            | ((bytes[6] as u64) << 44);
-
-        let w4 = (bytes[5] as u64)
-            | ((bytes[4] as u64) << 8)
-            | ((bytes[3] as u64) << 16)
-            | ((bytes[2] as u64) << 24)
-            | ((bytes[1] as u64) << 32)
-            | ((bytes[0] as u64) << 40);
-
-        Self([w0, w1, w2, w3, w4])
+        Self::from_u256_unchecked(U256::from_be_slice(bytes))
     }
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
@@ -73,9 +35,7 @@ impl FieldElement5x52 {
     /// [0, p).
     #[inline]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        let res = Self::from_bytes_unchecked(bytes.as_ref());
-        let overflow = res.get_overflow();
-        CtOption::new(res, !overflow)
+        Self::from_u256(U256::from_be_slice(bytes))
     }
 
     pub const fn from_u64(val: u64) -> Self {
@@ -86,40 +46,37 @@ impl FieldElement5x52 {
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
-        let mut ret = FieldBytes::default();
-        ret[0] = (self.0[4] >> 40) as u8;
-        ret[1] = (self.0[4] >> 32) as u8;
-        ret[2] = (self.0[4] >> 24) as u8;
-        ret[3] = (self.0[4] >> 16) as u8;
-        ret[4] = (self.0[4] >> 8) as u8;
-        ret[5] = self.0[4] as u8;
-        ret[6] = (self.0[3] >> 44) as u8;
-        ret[7] = (self.0[3] >> 36) as u8;
-        ret[8] = (self.0[3] >> 28) as u8;
-        ret[9] = (self.0[3] >> 20) as u8;
-        ret[10] = (self.0[3] >> 12) as u8;
-        ret[11] = (self.0[3] >> 4) as u8;
-        ret[12] = ((self.0[2] >> 48) as u8 & 0xFu8) | ((self.0[3] as u8 & 0xFu8) << 4);
-        ret[13] = (self.0[2] >> 40) as u8;
-        ret[14] = (self.0[2] >> 32) as u8;
-        ret[15] = (self.0[2] >> 24) as u8;
-        ret[16] = (self.0[2] >> 16) as u8;
-        ret[17] = (self.0[2] >> 8) as u8;
-        ret[18] = self.0[2] as u8;
-        ret[19] = (self.0[1] >> 44) as u8;
-        ret[20] = (self.0[1] >> 36) as u8;
-        ret[21] = (self.0[1] >> 28) as u8;
-        ret[22] = (self.0[1] >> 20) as u8;
-        ret[23] = (self.0[1] >> 12) as u8;
-        ret[24] = (self.0[1] >> 4) as u8;
-        ret[25] = ((self.0[0] >> 48) as u8 & 0xFu8) | ((self.0[1] as u8 & 0xFu8) << 4);
-        ret[26] = (self.0[0] >> 40) as u8;
-        ret[27] = (self.0[0] >> 32) as u8;
-        ret[28] = (self.0[0] >> 24) as u8;
-        ret[29] = (self.0[0] >> 16) as u8;
-        ret[30] = (self.0[0] >> 8) as u8;
-        ret[31] = self.0[0] as u8;
-        ret
+        self.to_u256().to_be_bytes().into()
+    }
+
+    #[inline(always)]
+    pub const fn to_u256(self) -> U256 {
+        let words = &self.0;
+        let mut out = [0u64; 4];
+        out[0] = words[0] | (words[1] << 52); // 52 bits | 12 bits
+        out[1] = (words[1] >> 12) | (words[2] << 40); // 40 bits | 24 bits
+        out[2] = (words[2] >> 24) | (words[3] << 28); // 28 bits | 36 bits
+        out[3] = (words[3] >> 36) | (words[4] << 16); // 16 bits | 48 bits
+        U256::from_words(out)
+    }
+
+    #[inline(always)]
+    pub const fn from_u256_unchecked(value: U256) -> Self {
+        const WORD_MASK: u64 = u64::MAX >> 12;
+        let words = value.as_words();
+        let mut out = [0u64; 5];
+        out[0] = words[0] & WORD_MASK;
+        out[1] = ((words[0] >> 52) | (words[1] << 12)) & WORD_MASK;
+        out[2] = ((words[1] >> 40) | (words[2] << 24)) & WORD_MASK;
+        out[3] = ((words[2] >> 28) | (words[3] << 36)) & WORD_MASK;
+        out[4] = words[3] >> 16;
+        Self(out)
+    }
+
+    pub fn from_u256(value: U256) -> CtOption<Self> {
+        let res = Self::from_u256_unchecked(value);
+        let overflow = res.get_overflow();
+        CtOption::new(res, !overflow)
     }
 
     /// Adds `x * (2^256 - modulus)`.
@@ -533,5 +490,22 @@ mod tests {
         let z_reference = FieldElement5x52([0x1000003d1, 0, 0, 0, 0]);
 
         assert_eq!(z_normalized.0, z_reference.0);
+    }
+
+    #[test]
+    fn u256_roundtrip() {
+        let a = FieldElement5x52::from_bytes_unchecked(&[
+            0x7f, 0xf0, 0xff, 0xff, 0xff, 0xf1, 0xff, 0xff, 0xff, 0xf2, 0xff, 0xff, 0xff, 0xf3,
+            0xff, 0xf3, 0xff, 0xff, 0xff, 0xf4, 0xff, 0xff, 0xff, 0xf5, 0xff, 0xff, 0xff, 0xf6,
+            0x7f, 0xff, 0xfe, 0x18,
+        ]);
+
+        assert_eq!(FieldElement5x52::from_u256_unchecked(a.to_u256()).0, a.0);
+
+        let bs = a.to_bytes();
+        assert_eq!(
+            FieldElement5x52::from_bytes(&bs).expect("decode error").0,
+            a.0
+        );
     }
 }

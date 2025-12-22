@@ -3,6 +3,7 @@
 
 use crate::FieldBytes;
 use elliptic_curve::{
+    bigint::U256,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::Zeroize,
 };
@@ -25,47 +26,7 @@ impl FieldElement10x26 {
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        let w0 = (bytes[31] as u32)
-            | ((bytes[30] as u32) << 8)
-            | ((bytes[29] as u32) << 16)
-            | (((bytes[28] & 0x3) as u32) << 24);
-        let w1 = (((bytes[28] >> 2) as u32) & 0x3f)
-            | ((bytes[27] as u32) << 6)
-            | ((bytes[26] as u32) << 14)
-            | (((bytes[25] & 0xf) as u32) << 22);
-        let w2 = (((bytes[25] >> 4) as u32) & 0xf)
-            | ((bytes[24] as u32) << 4)
-            | ((bytes[23] as u32) << 12)
-            | (((bytes[22] & 0x3f) as u32) << 20);
-        let w3 = (((bytes[22] >> 6) as u32) & 0x3)
-            | ((bytes[21] as u32) << 2)
-            | ((bytes[20] as u32) << 10)
-            | ((bytes[19] as u32) << 18);
-        let w4 = (bytes[18] as u32)
-            | ((bytes[17] as u32) << 8)
-            | ((bytes[16] as u32) << 16)
-            | (((bytes[15] & 0x3) as u32) << 24);
-        let w5 = (((bytes[15] >> 2) as u32) & 0x3f)
-            | ((bytes[14] as u32) << 6)
-            | ((bytes[13] as u32) << 14)
-            | (((bytes[12] & 0xf) as u32) << 22);
-        let w6 = (((bytes[12] >> 4) as u32) & 0xf)
-            | ((bytes[11] as u32) << 4)
-            | ((bytes[10] as u32) << 12)
-            | (((bytes[9] & 0x3f) as u32) << 20);
-        let w7 = (((bytes[9] >> 6) as u32) & 0x3)
-            | ((bytes[8] as u32) << 2)
-            | ((bytes[7] as u32) << 10)
-            | ((bytes[6] as u32) << 18);
-        let w8 = (bytes[5] as u32)
-            | ((bytes[4] as u32) << 8)
-            | ((bytes[3] as u32) << 16)
-            | (((bytes[2] & 0x3) as u32) << 24);
-        let w9 = (((bytes[2] >> 2) as u32) & 0x3f)
-            | ((bytes[1] as u32) << 6)
-            | ((bytes[0] as u32) << 14);
-
-        Self([w0, w1, w2, w3, w4, w5, w6, w7, w8, w9])
+        Self::from_u256_unchecked(U256::from_be_slice(bytes))
     }
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
@@ -73,10 +34,7 @@ impl FieldElement10x26 {
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        let res = Self::from_bytes_unchecked(bytes.as_ref());
-        let overflow = res.get_overflow();
-
-        CtOption::new(res, !overflow)
+        Self::from_u256(U256::from_be_slice(bytes))
     }
 
     pub const fn from_u64(val: u64) -> Self {
@@ -89,40 +47,46 @@ impl FieldElement10x26 {
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
-        let mut r = FieldBytes::default();
-        r[0] = (self.0[9] >> 14) as u8;
-        r[1] = (self.0[9] >> 6) as u8;
-        r[2] = ((self.0[9] as u8 & 0x3Fu8) << 2) | ((self.0[8] >> 24) as u8 & 0x3);
-        r[3] = (self.0[8] >> 16) as u8;
-        r[4] = (self.0[8] >> 8) as u8;
-        r[5] = self.0[8] as u8;
-        r[6] = (self.0[7] >> 18) as u8;
-        r[7] = (self.0[7] >> 10) as u8;
-        r[8] = (self.0[7] >> 2) as u8;
-        r[9] = ((self.0[7] as u8 & 0x3u8) << 6) | ((self.0[6] >> 20) as u8 & 0x3fu8);
-        r[10] = (self.0[6] >> 12) as u8;
-        r[11] = (self.0[6] >> 4) as u8;
-        r[12] = ((self.0[6] as u8 & 0xfu8) << 4) | ((self.0[5] >> 22) as u8 & 0xfu8);
-        r[13] = (self.0[5] >> 14) as u8;
-        r[14] = (self.0[5] >> 6) as u8;
-        r[15] = ((self.0[5] as u8 & 0x3fu8) << 2) | ((self.0[4] >> 24) as u8 & 0x3u8);
-        r[16] = (self.0[4] >> 16) as u8;
-        r[17] = (self.0[4] >> 8) as u8;
-        r[18] = self.0[4] as u8;
-        r[19] = (self.0[3] >> 18) as u8;
-        r[20] = (self.0[3] >> 10) as u8;
-        r[21] = (self.0[3] >> 2) as u8;
-        r[22] = ((self.0[3] as u8 & 0x3u8) << 6) | ((self.0[2] >> 20) as u8 & 0x3fu8);
-        r[23] = (self.0[2] >> 12) as u8;
-        r[24] = (self.0[2] >> 4) as u8;
-        r[25] = ((self.0[2] as u8 & 0xfu8) << 4) | ((self.0[1] >> 22) as u8 & 0xfu8);
-        r[26] = (self.0[1] >> 14) as u8;
-        r[27] = (self.0[1] >> 6) as u8;
-        r[28] = ((self.0[1] as u8 & 0x3fu8) << 2) | ((self.0[0] >> 24) as u8 & 0x3u8);
-        r[29] = (self.0[0] >> 16) as u8;
-        r[30] = (self.0[0] >> 8) as u8;
-        r[31] = self.0[0] as u8;
-        r
+        self.to_u256().to_be_bytes().into()
+    }
+
+    #[inline(always)]
+    pub const fn to_u256(self) -> U256 {
+        let words = &self.0;
+        let mut out = [0u32; 8];
+        out[0] = words[0] | (words[1] << 26); // 26 bits | 6 bits
+        out[1] = (words[1] >> 6) | (words[2] << 20); // 20 bits | 12 bits
+        out[2] = (words[2] >> 12) | (words[3] << 14); // 14 bits | 18 bits
+        out[3] = (words[3] >> 18) | (words[4] << 8); // 8 bits | 24 bits
+        out[4] = (words[4] >> 24) | (words[5] << 2) | (words[6] << 28); // 2 bits | 26 bits | 4 bits
+        out[5] = (words[6] >> 4) | (words[7] << 22); // 22 bits | 10 bits
+        out[6] = (words[7] >> 10) | (words[8] << 16); // 16 bits | 16 bits
+        out[7] = (words[8] >> 16) | (words[9] << 10); // 10 bits | 22 bits
+        U256::from_words(out)
+    }
+
+    #[inline(always)]
+    pub const fn from_u256_unchecked(value: U256) -> Self {
+        const WORD_MASK: u32 = u32::MAX >> 6;
+        let words = value.as_words();
+        let mut out = [0u32; 10];
+        out[0] = words[0] & WORD_MASK;
+        out[1] = ((words[0] >> 26) | (words[1] << 6)) & WORD_MASK;
+        out[2] = ((words[1] >> 20) | (words[2] << 12)) & WORD_MASK;
+        out[3] = ((words[2] >> 14) | (words[3] << 18)) & WORD_MASK;
+        out[4] = ((words[3] >> 8) | (words[4] << 24)) & WORD_MASK;
+        out[5] = (words[4] >> 2) & WORD_MASK;
+        out[6] = ((words[4] >> 28) | (words[5] << 4)) & WORD_MASK;
+        out[7] = ((words[5] >> 22) | (words[6] << 10)) & WORD_MASK;
+        out[8] = ((words[6] >> 16) | (words[7] << 16)) & WORD_MASK;
+        out[9] = words[7] >> 10;
+        Self(out)
+    }
+
+    pub fn from_u256(value: U256) -> CtOption<Self> {
+        let res = Self::from_u256_unchecked(value);
+        let overflow = res.get_overflow();
+        CtOption::new(res, !overflow)
     }
 
     /// Adds `x * (2^256 - modulus)`.
@@ -753,5 +717,22 @@ mod tests {
         let z_reference = FieldElement10x26([0x3d1, 0x40, 0, 0, 0, 0, 0, 0, 0, 0]);
 
         assert_eq!(z_normalized.0, z_reference.0);
+    }
+
+    #[test]
+    fn u256_roundtrip() {
+        let a = FieldElement10x26::from_bytes_unchecked(&[
+            0x7f, 0xf0, 0xff, 0xff, 0xff, 0xf1, 0xff, 0xff, 0xff, 0xf2, 0xff, 0xff, 0xff, 0xf3,
+            0xff, 0xf3, 0xff, 0xff, 0xff, 0xf4, 0xff, 0xff, 0xff, 0xf5, 0xff, 0xff, 0xff, 0xf6,
+            0x7f, 0xff, 0xfe, 0x18,
+        ]);
+
+        assert_eq!(FieldElement10x26::from_u256_unchecked(a.to_u256()).0, a.0);
+
+        let bs = a.to_bytes();
+        assert_eq!(
+            FieldElement10x26::from_bytes(&bs).expect("decode error").0,
+            a.0
+        );
     }
 }
