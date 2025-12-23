@@ -17,5 +17,5 @@ rust-version = "1.85"
 bigint = { package = "crypto-bigint", version = "0.7.0-rc.10", default-features = false, features = ["hybrid-array"] }
 ff = { version = "=0.14.0-pre.0", package = "rustcrypto-ff", default-features = false }
 subtle = { version = "2.6", default-features = false, features = ["const-generics"] }
-rand_core = { version = "0.10.0-rc-2", default-features = false }
+rand_core = { version = "0.10.0-rc-3", default-features = false }
 zeroize = { version = "1.7", default-features = false }
