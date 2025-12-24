@@ -4,6 +4,7 @@
 
 use crate::FieldBytes;
 use elliptic_curve::{
+    bigint::U256,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::Zeroize,
 };
@@ -75,9 +76,23 @@ impl FieldElementImpl {
         CtOption::map(value, |x| Self::new_normalized(&x))
     }
 
+    pub const fn from_u256_unchecked(value: U256) -> Self {
+        Self {
+            value: FieldElementUnsafeImpl::from_u256_unchecked(value),
+            magnitude: 1,
+            normalized: true,
+        }
+    }
+
     pub fn to_bytes(self) -> FieldBytes {
         debug_assert!(self.normalized);
         self.value.to_bytes()
+    }
+
+    #[inline]
+    pub const fn to_u256(self) -> U256 {
+        debug_assert!(self.normalized);
+        self.value.to_u256()
     }
 
     pub fn normalize_weak(&self) -> Self {
