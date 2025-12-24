@@ -37,6 +37,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    bigint::Odd,
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::TryRngCore,
@@ -46,6 +47,9 @@ use elliptic_curve::{
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
+
+/// Constant representing the modulus: p = 2^{256} - 2^{32} - 2^{9} - 2^{8} - 2^{7} - 2^{6} - 2^{4} - 1
+const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
 
 /// An element in the finite field used for curve coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -169,36 +173,27 @@ impl FieldElement {
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
-    /// The result has magnitude 1, but is not normalized.
+    /// The result has magnitude 1 and is normalized.
     pub fn invert(&self) -> CtOption<Self> {
-        // The binary representation of (p - 2) has 5 blocks of 1s, with lengths in
-        // { 1, 2, 22, 223 }. Use an addition chain to calculate 2^n - 1 for each block:
-        // [1], [2], 3, 6, 9, 11, [22], 44, 88, 176, 220, [223]
+        CtOption::from(
+            self.0
+                .normalize()
+                .to_u256()
+                .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) }),
+        )
+        .map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
+    }
 
-        let x2 = self.pow2k(1).mul(self);
-        let x3 = x2.pow2k(1).mul(self);
-        let x6 = x3.pow2k(3).mul(&x3);
-        let x9 = x6.pow2k(3).mul(&x3);
-        let x11 = x9.pow2k(2).mul(&x2);
-        let x22 = x11.pow2k(11).mul(&x11);
-        let x44 = x22.pow2k(22).mul(&x22);
-        let x88 = x44.pow2k(44).mul(&x44);
-        let x176 = x88.pow2k(88).mul(&x88);
-        let x220 = x176.pow2k(44).mul(&x44);
-        let x223 = x220.pow2k(3).mul(&x3);
-
-        // The final result is then assembled using a sliding window over the blocks.
-        let res = x223
-            .pow2k(23)
-            .mul(&x22)
-            .pow2k(5)
-            .mul(self)
-            .pow2k(3)
-            .mul(&x2)
-            .pow2k(2)
-            .mul(self);
-
-        CtOption::new(res, !self.normalizes_to_zero())
+    /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
+    /// The result has magnitude 1 and is normalized.
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        CtOption::from(
+            self.0
+                .normalize()
+                .to_u256()
+                .invert_odd_mod_vartime(const { &Odd::from_be_hex(MODULUS_HEX) }),
+        )
+        .map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
@@ -252,6 +247,10 @@ impl Invert for FieldElement {
 
     fn invert(&self) -> CtOption<Self> {
         self.invert()
+    }
+
+    fn invert_vartime(&self) -> CtOption<Self> {
+        self.invert_vartime()
     }
 }
 
@@ -684,15 +683,27 @@ mod tests {
     }
 
     #[test]
+    fn invert_vartime() {
+        assert!(bool::from(FieldElement::ZERO.invert().is_none()));
+
+        let one = FieldElement::ONE;
+        assert_eq!(one.invert_vartime().unwrap().normalize(), one);
+
+        let two = one + &one;
+        let inv_two = two.invert_vartime().unwrap();
+        assert_eq!((two * &inv_two).normalize(), one);
+    }
+
+    #[test]
     fn batch_invert_array() {
         let k: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
         let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
-        assert_eq!(
-            <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap(),
-            expected
-        );
+        let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
+
+        assert_eq!(expected[0], actual[0].normalize());
+        assert_eq!(expected[1], actual[1].normalize());
     }
 
     #[test]
@@ -702,9 +713,11 @@ mod tests {
         let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let field_elements = vec![k, l];
-        let res = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
-        assert_eq!(res, expected);
+        let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`
+        let actual = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
+
+        assert_eq!(expected[0], actual[0].normalize());
+        assert_eq!(expected[1], actual[1].normalize());
     }
 
     #[test]
