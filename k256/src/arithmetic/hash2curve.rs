@@ -257,9 +257,7 @@ fn isogeny(x: FieldElement, y: FieldElement) -> (FieldElement, FieldElement) {
     xs[0] = FieldElement::ONE;
     xs[1] = x;
     xs[2] = x.square();
-    for i in 3..4 {
-        xs[i] = xs[i - 1] * x;
-    }
+    xs[3] = xs[2] * x;
     let x_num = compute_iso(&xs, &XNUM);
     let x_den = compute_iso(&xs, &XDEN).invert().unwrap();
     let y_num = compute_iso(&xs, &YNUM) * y;
