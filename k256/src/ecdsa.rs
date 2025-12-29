@@ -28,10 +28,10 @@
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
 //!     SecretKey,
 //! };
-//! use rand::rngs::OsRng;
+//! use rand::rngs::SysRng;
 //!
 //! // Signing
-//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //!
 //! // Note: The signature type must be annotated or otherwise inferable as

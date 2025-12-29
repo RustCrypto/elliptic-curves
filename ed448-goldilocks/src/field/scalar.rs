@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Integer, Limb, U448, U896, Word, Zero},
+    bigint::{CtSelect, Integer, Limb, U448, U896, Word},
     consts::U2,
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -655,7 +655,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Is this scalar equal to zero?
     pub fn is_zero(&self) -> Choice {
-        self.scalar.is_zero()
+        self.scalar.is_zero().into()
     }
 
     // This method was modified from Curve25519-Dalek codebase. [scalar.rs]
@@ -774,7 +774,7 @@ impl<C: CurveWithScalar> Scalar<C> {
     pub fn div_by_2(&self) -> Self {
         let is_odd = self.scalar.is_odd();
         let if_odd = self.scalar + *ORDER;
-        let scalar = U448::conditional_select(&self.scalar, &if_odd, is_odd);
+        let scalar = U448::ct_select(&self.scalar, &if_odd, is_odd);
 
         Self::new(scalar >> 1)
     }

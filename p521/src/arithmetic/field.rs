@@ -134,7 +134,7 @@ impl FieldElement {
 
         // Extract the first 66-bytes of the 72-byte (576-bit) little endian serialized value
         while i < le_bytes.len() {
-            le_bytes[i] = le_bytes_wide[i];
+            le_bytes[i] = le_bytes_wide.as_slice()[i];
             i += 1;
         }
 

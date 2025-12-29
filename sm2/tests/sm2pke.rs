@@ -3,7 +3,7 @@
 use elliptic_curve::{NonZeroScalar, ops::Reduce};
 use hex_literal::hex;
 use proptest::prelude::*;
-use rand::rngs::OsRng;
+use rand::rngs::SysRng;
 
 use sm2::{FieldBytes, Scalar, Sm2, pke::DecryptingKey};
 
@@ -70,21 +70,21 @@ proptest! {
     #[test]
     fn encrypt_and_decrypt_der(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt_der(&mut OsRng, MSG).unwrap();
+        let cipher_bytes = ek.encrypt_der(&mut SysRng, MSG).unwrap();
         prop_assert!(dk.decrypt_der(&cipher_bytes).is_ok());
     }
 
     #[test]
     fn encrypt_and_decrypt(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt(&mut OsRng, MSG).unwrap();
+        let cipher_bytes = ek.encrypt(&mut SysRng, MSG).unwrap();
         assert_eq!(dk.decrypt(&cipher_bytes).unwrap(), MSG);
     }
 
     #[test]
     fn encrypt_and_decrypt_mode(dk in decrypting_key_c1c2c3()) {
         let ek = dk.encrypting_key();
-        let cipher_bytes = ek.encrypt(&mut OsRng, MSG).unwrap();
+        let cipher_bytes = ek.encrypt(&mut SysRng, MSG).unwrap();
         assert_eq!(
             dk.decrypt(&cipher_bytes)
                 .unwrap(),

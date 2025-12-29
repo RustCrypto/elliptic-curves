@@ -7,14 +7,14 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand::{rngs::OsRng, TryRngCore};
+//! use rand::{rngs::SysRng, TryRngCore};
 //! use bignp256::{
 //!     ecdsa::{Signature, SigningKey, signature::Signer},
 //!     SecretKey
 //! };
 //!
 //! // Signing
-//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `::to_bytes()`
 //! let signing_key = SigningKey::new(&secret_key)?;
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes();
 //! let message = b"test message";

@@ -5,7 +5,7 @@ use ed448_goldilocks::{
 use elliptic_curve::group::GroupEncoding;
 use elliptic_curve::{Field, Group};
 use hash2curve::GroupDigest;
-use rand::{TryRngCore, rngs::OsRng};
+use rand::{TryRngCore, rngs::SysRng};
 
 pub fn ed448(c: &mut Criterion) {
     let mut group = c.benchmark_group("Ed448");
@@ -13,8 +13,8 @@ pub fn ed448(c: &mut Criterion) {
     group.bench_function("scalar multiplication", |b| {
         b.iter_batched(
             || {
-                let point = EdwardsPoint::try_from_rng(&mut OsRng).unwrap();
-                let scalar = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
+                let point = EdwardsPoint::try_from_rng(&mut SysRng).unwrap();
+                let scalar = EdwardsScalar::try_from_rng(&mut SysRng).unwrap();
                 (point, scalar)
             },
             |(point, scalar)| point * scalar,
@@ -25,8 +25,8 @@ pub fn ed448(c: &mut Criterion) {
     group.bench_function("point addition", |b| {
         b.iter_batched(
             || {
-                let p1 = EdwardsPoint::try_from_rng(&mut OsRng).unwrap();
-                let p2 = EdwardsPoint::try_from_rng(&mut OsRng).unwrap();
+                let p1 = EdwardsPoint::try_from_rng(&mut SysRng).unwrap();
+                let p2 = EdwardsPoint::try_from_rng(&mut SysRng).unwrap();
                 (p1, p2)
             },
             |(p1, p2)| p1 + p2,
@@ -38,7 +38,7 @@ pub fn ed448(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let mut msg = [0; 64];
-                OsRng.try_fill_bytes(&mut msg).unwrap();
+                SysRng.try_fill_bytes(&mut msg).unwrap();
                 msg
             },
             |msg| Ed448::encode_from_bytes(&msg, b"test DST"),
@@ -48,7 +48,7 @@ pub fn ed448(c: &mut Criterion) {
 
     group.bench_function("compress", |b| {
         b.iter_batched(
-            || EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            || EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
             |point| point.to_bytes(),
             BatchSize::SmallInput,
         )
@@ -56,7 +56,7 @@ pub fn ed448(c: &mut Criterion) {
 
     group.bench_function("decompress", |b| {
         b.iter_batched(
-            || EdwardsPoint::try_from_rng(&mut OsRng).unwrap().to_bytes(),
+            || EdwardsPoint::try_from_rng(&mut SysRng).unwrap().to_bytes(),
             |bytes| EdwardsPoint::from_bytes(&bytes).unwrap(),
             BatchSize::SmallInput,
         )
@@ -71,8 +71,8 @@ pub fn decaf448(c: &mut Criterion) {
     group.bench_function("scalar multiplication", |b| {
         b.iter_batched(
             || {
-                let point = DecafPoint::try_from_rng(&mut OsRng).unwrap();
-                let scalar = DecafScalar::try_from_rng(&mut OsRng).unwrap();
+                let point = DecafPoint::try_from_rng(&mut SysRng).unwrap();
+                let scalar = DecafScalar::try_from_rng(&mut SysRng).unwrap();
                 (point, scalar)
             },
             |(point, scalar)| point * scalar,
@@ -83,8 +83,8 @@ pub fn decaf448(c: &mut Criterion) {
     group.bench_function("point addition", |b| {
         b.iter_batched(
             || {
-                let p1 = DecafPoint::try_from_rng(&mut OsRng).unwrap();
-                let p2 = DecafPoint::try_from_rng(&mut OsRng).unwrap();
+                let p1 = DecafPoint::try_from_rng(&mut SysRng).unwrap();
+                let p2 = DecafPoint::try_from_rng(&mut SysRng).unwrap();
                 (p1, p2)
             },
             |(p1, p2)| p1 + p2,
@@ -96,7 +96,7 @@ pub fn decaf448(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let mut msg = [0; 64];
-                OsRng.try_fill_bytes(&mut msg).unwrap();
+                SysRng.try_fill_bytes(&mut msg).unwrap();
                 msg
             },
             |msg| Decaf448::encode_from_bytes(&msg, b"test DST"),
@@ -106,7 +106,7 @@ pub fn decaf448(c: &mut Criterion) {
 
     group.bench_function("encode", |b| {
         b.iter_batched(
-            || DecafPoint::try_from_rng(&mut OsRng).unwrap(),
+            || DecafPoint::try_from_rng(&mut SysRng).unwrap(),
             |point| point.to_bytes(),
             BatchSize::SmallInput,
         )
@@ -114,7 +114,7 @@ pub fn decaf448(c: &mut Criterion) {
 
     group.bench_function("decode", |b| {
         b.iter_batched(
-            || DecafPoint::try_from_rng(&mut OsRng).unwrap().to_bytes(),
+            || DecafPoint::try_from_rng(&mut SysRng).unwrap().to_bytes(),
             |bytes| DecafPoint::from_bytes(&bytes).unwrap(),
             BatchSize::SmallInput,
         )
@@ -130,8 +130,8 @@ pub fn x448(c: &mut Criterion) {
         b.iter_batched(
             || {
                 let mut point = MontgomeryPoint::default();
-                OsRng.try_fill_bytes(&mut point.0).unwrap();
-                let scalar = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
+                SysRng.try_fill_bytes(&mut point.0).unwrap();
+                let scalar = EdwardsScalar::try_from_rng(&mut SysRng).unwrap();
                 (point, scalar)
             },
             |(point, scalar)| &point * &scalar,

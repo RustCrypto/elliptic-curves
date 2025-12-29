@@ -22,10 +22,10 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p384::ecdsa::{signature::Signer, Signature, SigningKey};
-//! use rand::{rngs::OsRng, TryRngCore};
+//! use rand::{rngs::SysRng, TryRngCore};
 //!
 //! // Signing
-//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!

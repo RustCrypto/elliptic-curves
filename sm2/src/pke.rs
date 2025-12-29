@@ -9,18 +9,18 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand::rngs::OsRng;
+//! use rand::rngs::SysRng;
 //! use sm2::{
 //!     pke::{EncryptingKey, Mode},
 //!     {SecretKey, PublicKey}
 //! };
 //!
 //! // Encrypting
-//! let secret_key = SecretKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `::to_bytes()`
 //! let public_key = secret_key.public_key();
 //! let encrypting_key = EncryptingKey::new_with_mode(public_key, Mode::C1C2C3);
 //! let plaintext = b"plaintext";
-//! let ciphertext = encrypting_key.encrypt(&mut OsRng, plaintext)?;
+//! let ciphertext = encrypting_key.encrypt(&mut SysRng, plaintext)?;
 //!
 //! use sm2::pke::DecryptingKey;
 //! // Decrypting
@@ -28,7 +28,7 @@
 //! assert_eq!(decrypting_key.decrypt(&ciphertext)?, plaintext);
 //!
 //! // Encrypting ASN.1 DER
-//! let ciphertext = encrypting_key.encrypt_der(&mut OsRng, plaintext)?;
+//! let ciphertext = encrypting_key.encrypt_der(&mut SysRng, plaintext)?;
 //!
 //! // Decrypting ASN.1 DER
 //! assert_eq!(decrypting_key.decrypt_der(&ciphertext)?, plaintext);
@@ -47,16 +47,14 @@ use crate::AffinePoint;
 #[cfg(feature = "alloc")]
 use alloc::vec;
 
-use elliptic_curve::{
-    bigint::{Encoding, U256, Uint},
-    pkcs8::der::{
-        Decode, DecodeValue, Encode, Length, Reader, Sequence, Tag, Writer, asn1::UintRef,
-    },
-};
-
+use crate::FieldBytes;
 use elliptic_curve::{
     Result,
-    pkcs8::der::{EncodeValue, asn1::OctetStringRef},
+    bigint::{ArrayEncoding, U256, Uint},
+    pkcs8::der::{
+        Decode, DecodeValue, Encode, EncodeValue, Length, Reader, Sequence, Tag, Writer,
+        asn1::OctetStringRef, asn1::UintRef,
+    },
     sec1::ToEncodedPoint,
 };
 use sm3::digest::DynDigest;
@@ -120,8 +118,8 @@ impl<'a> DecodeValue<'a> for Cipher<'a> {
             let digest = <&'a OctetStringRef>::decode(nr)?.into();
             let cipher = <&'a OctetStringRef>::decode(nr)?.into();
             Ok(Cipher {
-                x: Uint::from_be_bytes(zero_pad_byte_slice(x)?),
-                y: Uint::from_be_bytes(zero_pad_byte_slice(y)?),
+                x: Uint::from_be_byte_array(zero_pad_byte_slice(x)?),
+                y: Uint::from_be_byte_array(zero_pad_byte_slice(y)?),
                 digest,
                 cipher,
             })
@@ -163,13 +161,13 @@ fn xor(c2: &mut [u8], ha: &[u8], offset: usize, xor_len: usize) {
 }
 
 /// Converts a byte slice to a fixed-size array, padding with leading zeroes if necessary.
-pub(crate) fn zero_pad_byte_slice<const N: usize>(bytes: &[u8]) -> der::Result<[u8; N]> {
-    let num_zeroes = N
+pub(crate) fn zero_pad_byte_slice(bytes: &[u8]) -> der::Result<FieldBytes> {
+    let num_zeroes = size_of::<FieldBytes>()
         .checked_sub(bytes.len())
         .ok_or_else(|| Tag::Integer.length_error())?;
 
     // Copy input into `N`-sized output buffer with leading zeroes
-    let mut output = [0u8; N];
+    let mut output = FieldBytes::default();
     output[num_zeroes..].copy_from_slice(bytes);
     Ok(output)
 }

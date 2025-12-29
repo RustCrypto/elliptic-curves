@@ -727,7 +727,7 @@ mod tests {
     use elliptic_curve::BatchNormalize;
     use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
     use elliptic_curve::{CurveGroup, Field};
-    use rand::{TryRngCore, rngs::OsRng};
+    use rand::{TryRngCore, rngs::SysRng};
 
     #[cfg(feature = "alloc")]
     use alloc::vec::Vec;
@@ -751,8 +751,8 @@ mod tests {
 
     #[test]
     fn batch_normalize_array() {
-        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
-        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let k: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 
@@ -768,7 +768,7 @@ mod tests {
 
         let mut res = [AffinePoint::IDENTITY; 3];
         let non_normalized_identity =
-            ProjectivePoint::IDENTITY * Scalar::random(&mut OsRng.unwrap_mut());
+            ProjectivePoint::IDENTITY * Scalar::random(&mut SysRng.unwrap_mut());
         let expected = [g.to_affine(), AffinePoint::IDENTITY, AffinePoint::IDENTITY];
         assert_eq!(
             <ProjectivePoint as BatchNormalize<_>>::batch_normalize(&[
@@ -789,8 +789,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_normalize_slice() {
-        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
-        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let k: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 
