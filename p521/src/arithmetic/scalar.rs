@@ -192,7 +192,7 @@ impl Scalar {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        self.to_canonical().is_odd()
+        self.to_canonical().is_odd().into()
     }
 
     /// Determine if this [`Scalar`] is even in the SEC1 sense: `self mod 2 == 0`.

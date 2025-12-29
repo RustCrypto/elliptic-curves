@@ -8,7 +8,7 @@ use crate::{
 use alloc::{borrow::ToOwned, vec::Vec};
 use elliptic_curve::{
     Error, Group, Result,
-    bigint::U256,
+    bigint::{ArrayEncoding, U256},
     ops::Reduce,
     pkcs8::der::Decode,
     sec1::{FromEncodedPoint, ToEncodedPoint},
@@ -109,8 +109,8 @@ impl DecryptingKey {
     {
         let cipher = Cipher::from_der(ciphertext).map_err(elliptic_curve::pkcs8::Error::from)?;
         let prefix: &[u8] = &[0x04];
-        let x: [u8; 32] = cipher.x.to_be_bytes();
-        let y: [u8; 32] = cipher.y.to_be_bytes();
+        let x: [u8; 32] = cipher.x.to_be_byte_array().into();
+        let y: [u8; 32] = cipher.y.to_be_byte_array().into();
         let cipher = match self.mode {
             Mode::C1C2C3 => [prefix, &x, &y, cipher.cipher, cipher.digest].concat(),
             Mode::C1C3C2 => [prefix, &x, &y, cipher.digest, cipher.cipher].concat(),

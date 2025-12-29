@@ -158,7 +158,7 @@ impl Scalar {
 
     /// Is integer representing equivalence class odd?
     pub fn is_odd(&self) -> Choice {
-        self.0.is_odd()
+        self.0.is_odd().into()
     }
 
     /// Is integer representing equivalence class even?
@@ -236,7 +236,7 @@ impl Field for Scalar {
                 let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
                 tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
                 let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
-                j_less_than_v &= !j.ct_eq(&v);
+                j_less_than_v &= !ConstantTimeEq::ct_eq(&j, &v);
                 k = u32::conditional_select(&j, &k, tmp_is_one);
                 z = Self::conditional_select(&z, &new_z, j_less_than_v);
             }
@@ -277,7 +277,10 @@ impl PrimeField for Scalar {
     /// [0, p).
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         let inner = U256::from_be_byte_array(bytes);
-        CtOption::new(Self(inner), inner.ct_lt(&NistP256::ORDER))
+        CtOption::new(
+            Self(inner),
+            ConstantTimeLess::ct_lt(&inner, &NistP256::ORDER),
+        )
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -285,7 +288,7 @@ impl PrimeField for Scalar {
     }
 
     fn is_odd(&self) -> Choice {
-        self.0.is_odd()
+        self.0.is_odd().into()
     }
 }
 
@@ -386,7 +389,7 @@ impl Invert for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        self.0.ct_gt(&FRAC_MODULUS_2.0)
+        ConstantTimeGreater::ct_gt(&self.0, &FRAC_MODULUS_2.0)
     }
 }
 
@@ -675,7 +678,7 @@ impl ConditionallySelectable for Scalar {
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&other.0)
+        ConstantTimeEq::ct_eq(&self.0, &other.0)
     }
 }
 

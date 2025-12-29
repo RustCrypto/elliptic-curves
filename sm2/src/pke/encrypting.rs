@@ -10,7 +10,7 @@ use crate::{
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use elliptic_curve::{
     Curve, Error, Group, Result,
-    bigint::{RandomBits, U256, Uint, Zero},
+    bigint::{RandomBits, U256, Uint},
     ops::Reduce,
     pkcs8::der::Encode,
     rand_core::TryCryptoRng,

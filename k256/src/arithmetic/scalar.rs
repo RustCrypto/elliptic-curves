@@ -87,7 +87,7 @@ impl Scalar {
 
     /// Checks if the scalar is zero.
     pub fn is_zero(&self) -> Choice {
-        self.0.is_zero()
+        self.0.is_zero().into()
     }
 
     /// Returns the SEC1 encoding of this scalar.
@@ -278,7 +278,7 @@ impl Field for Scalar {
                 let squared = Self::conditional_select(&tmp, &z, tmp_is_one).square();
                 tmp = Self::conditional_select(&squared, &tmp, tmp_is_one);
                 let new_z = Self::conditional_select(&z, &squared, tmp_is_one);
-                j_less_than_v &= !j.ct_eq(&v);
+                j_less_than_v &= !ConstantTimeEq::ct_eq(&j, &v);
                 k = u32::conditional_select(&j, &k, tmp_is_one);
                 z = Self::conditional_select(&z, &new_z, j_less_than_v);
             }
@@ -331,7 +331,10 @@ impl PrimeField for Scalar {
     /// [0, p).
     fn from_repr(bytes: FieldBytes) -> CtOption<Self> {
         let inner = U256::from_be_byte_array(bytes);
-        CtOption::new(Self(inner), inner.ct_lt(&Secp256k1::ORDER))
+        CtOption::new(
+            Self(inner),
+            ConstantTimeLess::ct_lt(&inner, &Secp256k1::ORDER),
+        )
     }
 
     fn to_repr(&self) -> FieldBytes {
@@ -339,7 +342,7 @@ impl PrimeField for Scalar {
     }
 
     fn is_odd(&self) -> Choice {
-        self.0.is_odd()
+        self.0.is_odd().into()
     }
 }
 
@@ -507,7 +510,7 @@ impl Invert for Scalar {
 
 impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
-        self.0.ct_gt(&FRAC_MODULUS_2)
+        ConstantTimeGreater::ct_gt(&self.0, &FRAC_MODULUS_2)
     }
 }
 
@@ -541,13 +544,13 @@ impl ConditionallySelectable for Scalar {
 
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&(other.0))
+        ConstantTimeEq::ct_eq(&self.0, &other.0)
     }
 }
 
 impl PartialEq for Scalar {
     fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
+        ConstantTimeEq::ct_eq(self, other).into()
     }
 }
 
@@ -906,7 +909,7 @@ mod tests {
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
-    use rand::{TryRngCore, rngs::OsRng};
+    use rand::{TryRngCore, rngs::SysRng};
 
     use elliptic_curve::ops::BatchInvert;
 
@@ -1058,8 +1061,8 @@ mod tests {
 
     #[test]
     fn batch_invert_array() {
-        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
-        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let k: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         assert_eq!(
@@ -1071,8 +1074,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        let k: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
-        let l: Scalar = Scalar::random(&mut OsRng.unwrap_mut());
+        let k: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
+        let l: Scalar = Scalar::random(&mut SysRng.unwrap_mut());
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let scalars = vec![k, l];
@@ -1121,7 +1124,7 @@ mod tests {
     #[allow(clippy::op_ref)]
     #[test]
     fn generate_biased() {
-        let a = Scalar::generate_biased(&mut OsRng.unwrap_mut());
+        let a = Scalar::generate_biased(&mut SysRng.unwrap_mut());
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
@@ -1129,7 +1132,7 @@ mod tests {
     #[allow(clippy::op_ref)]
     #[test]
     fn generate_vartime() {
-        let a = Scalar::generate_vartime(&mut OsRng).unwrap();
+        let a = Scalar::generate_vartime(&mut SysRng).unwrap();
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }

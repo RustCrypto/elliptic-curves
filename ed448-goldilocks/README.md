@@ -20,14 +20,14 @@ It is intended to be portable, fast, and safe.
 use ed448_goldilocks::{Ed448, EdwardsPoint, CompressedEdwardsY, EdwardsScalar, sha3::Shake256};
 use elliptic_curve::{consts::U84, Field, group::GroupEncoding};
 use hash2curve::{ExpandMsgXof, GroupDigest};
-use rand::rngs::OsRng;
+use rand::rngs::SysRng;
 
 let secret_key = EdwardsScalar::TWO;
 let public_key = EdwardsPoint::GENERATOR * &secret_key;
 
 assert_eq!(public_key, EdwardsPoint::GENERATOR + EdwardsPoint::GENERATOR);
 
-let secret_key = EdwardsScalar::try_from_rng(&mut OsRng).unwrap();
+let secret_key = EdwardsScalar::try_from_rng(&mut SysRng).unwrap();
 let public_key = EdwardsPoint::GENERATOR * &secret_key;
 let compressed_public_key = public_key.to_bytes();
 

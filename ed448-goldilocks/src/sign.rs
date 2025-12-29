@@ -10,9 +10,9 @@
 //!
 //! ```
 //! use ed448_goldilocks::*;
-//! use rand::{rngs::OsRng, TryRngCore};
+//! use rand::{rngs::SysRng, TryRngCore};
 //!
-//! let signing_key = SigningKey::generate(&mut OsRng.unwrap_err());
+//! let signing_key = SigningKey::generate(&mut SysRng.unwrap_err());
 //! let signature = signing_key.sign_raw(b"Hello, world!");
 //! let verifying_key = signing_key.verifying_key();
 //!
@@ -56,11 +56,11 @@
 //! ```
 //! use ed448_goldilocks::*;
 //! use sha3::{Shake256, digest::Update};
-//! use rand::{rngs::OsRng, TryRngCore};
+//! use rand::{rngs::SysRng, TryRngCore};
 //!
 //! let msg = b"Hello World";
 //!
-//! let signing_key = SigningKey::generate(&mut OsRng.unwrap_err());
+//! let signing_key = SigningKey::generate(&mut SysRng.unwrap_err());
 //! let signature = signing_key.sign_prehashed::<PreHasherXof<Shake256>>(
 //!     None,
 //!     Shake256::default().chain(msg).into(),

@@ -785,7 +785,7 @@ mod tests {
     use elliptic_curve::Field;
     use hex_literal::hex;
     use proptest::{prop_assert_eq, property_test};
-    use rand::{TryRngCore, rngs::OsRng};
+    use rand::{TryRngCore, rngs::SysRng};
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -966,7 +966,7 @@ mod tests {
     fn hash_fuzzing() {
         for _ in 0..25 {
             let mut msg = [0u8; 64];
-            OsRng.try_fill_bytes(&mut msg).unwrap();
+            SysRng.try_fill_bytes(&mut msg).unwrap();
             let p = Ed448::hash_from_bytes(&msg, b"test DST").unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             assert_eq!(p.is_torsion_free().unwrap_u8(), 1u8);
@@ -1089,8 +1089,8 @@ mod tests {
     #[test]
     fn batch_normalize() {
         let points: [EdwardsPoint; 2] = [
-            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
-            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
         ];
 
         let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(&points);
@@ -1104,8 +1104,8 @@ mod tests {
     #[cfg(feature = "alloc")]
     fn batch_normalize_alloc() {
         let points = alloc::vec![
-            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
-            EdwardsPoint::try_from_rng(&mut OsRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
+            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
         ];
 
         let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(points.as_slice());

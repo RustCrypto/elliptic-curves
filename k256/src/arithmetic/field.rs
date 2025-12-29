@@ -512,7 +512,7 @@ mod tests {
     use elliptic_curve::ops::BatchInvert;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
-    use rand::{TryRngCore, rngs::OsRng};
+    use rand::{TryRngCore, rngs::SysRng};
 
     use super::FieldElement;
     use crate::{
@@ -696,8 +696,8 @@ mod tests {
 
     #[test]
     fn batch_invert_array() {
-        let k: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
-        let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
+        let k: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
+        let l: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
@@ -709,8 +709,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        let k: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
-        let l: FieldElement = FieldElement::random(&mut OsRng.unwrap_mut());
+        let k: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
+        let l: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`

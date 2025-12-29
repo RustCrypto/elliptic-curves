@@ -3,7 +3,7 @@
 
 use crate::FieldBytes;
 use elliptic_curve::{
-    bigint::U256,
+    bigint::{ArrayEncoding, U256},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::Zeroize,
 };
@@ -35,7 +35,7 @@ impl FieldElement5x52 {
     /// [0, p).
     #[inline]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        Self::from_u256(U256::from_be_slice(bytes))
+        Self::from_u256(U256::from_be_byte_array(*bytes))
     }
 
     pub const fn from_u64(val: u64) -> Self {
@@ -46,7 +46,7 @@ impl FieldElement5x52 {
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
-        self.to_u256().to_be_bytes().into()
+        self.to_u256().to_be_byte_array()
     }
 
     #[inline(always)]

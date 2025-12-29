@@ -10,6 +10,7 @@ use core::{
 use elliptic_curve::{
     Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
     array::ArraySize,
+    bigint::CtGt,
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
@@ -18,7 +19,7 @@ use elliptic_curve::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
     },
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
 
@@ -72,7 +73,7 @@ where
 
         Self {
             x: self.x,
-            y: C::FieldElement::conditional_select(&self.y, &neg_self.y, choice),
+            y: C::FieldElement::conditional_select(&self.y, &neg_self.y, choice.into()),
             infinity: self.infinity,
         }
     }

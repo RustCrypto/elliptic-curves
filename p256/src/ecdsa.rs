@@ -24,10 +24,10 @@
 //! use p256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
 //! };
-//! use rand::rngs::OsRng;
+//! use rand::rngs::SysRng;
 //!
 //! // Signing
-//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // Serialize with `::to_bytes()`
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!

@@ -18,22 +18,22 @@ This crate also includes signing and verifying of Ed448 signatures.
 [dependencies]
 elliptic-curve = { version = "0.14.0-rc.17", features = ["arithmetic", "pkcs8"] }
 hash2curve = "0.14.0-rc.4"
-rand_core = { version = "0.10.0-rc-2", default-features = false }
+rand_core = { version = "0.10.0-rc-3", default-features = false }
 sha3 = { version = "0.11.0-rc.3", default-features = false }
 subtle = { version = "2.6", default-features = false }
 
 # optional dependencies
 ed448 = { version = "0.5.0-rc.2", optional = true, default-features = false }
 serdect = { version = "0.4", optional = true }
-signature = { version = "3.0.0-rc.5", optional = true, default-features = false, features = ["digest", "rand_core"] }
+signature = { version = "3.0.0-rc.6", optional = true, default-features = false, features = ["digest", "rand_core"] }
 
 [dev-dependencies]
 criterion = { version = "0.7", default-features = false, features = ["cargo_bench_support"] }
 hex-literal = "1"
 hex = "0.4"
 proptest = { version = "1", features = ["attr-macro"] }
-rand = "0.10.0-rc.1"
-chacha20 = "0.10.0-rc.3"
+rand = "0.10.0-rc.5"
+chacha20 = "0.10.0-rc.6"
 serde_bare = "0.5"
 serde_json = "1.0"
 

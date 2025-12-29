@@ -306,16 +306,16 @@ impl FieldElement {
     pub const ZERO: Self = Self(ConstMontyType::new(&U448::ZERO));
 
     pub fn is_negative(&self) -> Choice {
-        self.0.retrieve().is_odd()
+        self.0.retrieve().is_odd().into()
     }
 
     pub fn is_zero(&self) -> Choice {
-        self.0.is_zero()
+        self.0.is_zero().into()
     }
 
     /// Inverts a field element
     pub fn invert(&self) -> Self {
-        Self(self.0.invert().unwrap_or(ConstMontyType::default()))
+        Self(self.0.invert().unwrap_or_default())
     }
 
     pub fn square(&self) -> Self {

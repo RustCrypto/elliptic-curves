@@ -5,7 +5,7 @@ mod sqrt;
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, Integer, Invert, Limb, Reduce, Uint, Word,
+    ArrayEncoding, ByteArray, CtLt, Integer, Invert, Limb, Reduce, Uint, Word,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams},
 };
@@ -159,10 +159,10 @@ where
     /// The `CtOption` equivalent of `None` if the input overflows the modulus.
     #[inline]
     pub fn from_uint(uint: &Uint<LIMBS>) -> CtOption<Self> {
-        let is_some = uint.ct_lt(MOD::PARAMS.modulus());
+        let is_some = CtLt::ct_lt(uint, MOD::PARAMS.modulus());
 
         // TODO(tarcieri): avoid unnecessary reduction here
-        CtOption::new(Self::from_uint_reduced(uint), is_some)
+        CtOption::new(Self::from_uint_reduced(uint), is_some.into())
     }
 
     /// Convert a `u64` into a [`MontyFieldElement`].
@@ -250,7 +250,7 @@ where
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     #[inline]
     pub fn is_odd(&self) -> Choice {
-        self.inner.retrieve().is_odd()
+        self.inner.retrieve().is_odd().into()
     }
 
     /// Determine if this field element is even: `self mod 2 == 0`.
@@ -339,7 +339,7 @@ where
             inner: self
                 .inner
                 .invert()
-                .expect("input to invert should be non-zero"),
+                .expect_copied("input to invert should be non-zero"),
         }
     }
 
@@ -724,7 +724,7 @@ where
 {
     fn ct_lt(&self, other: &Self) -> Choice {
         // TODO(tarcieri): impl `ConstantTimeLess` for `ConstMontyForm`
-        self.inner.retrieve().ct_lt(&other.inner.retrieve())
+        CtLt::ct_lt(&self.inner.retrieve(), &other.inner.retrieve()).into()
     }
 }
 

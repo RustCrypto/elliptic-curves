@@ -35,12 +35,12 @@
 //!     signature::{Signer, Verifier},
 //!     SigningKey, VerifyingKey
 //! };
-//! use rand::rngs::OsRng;
+//! use rand::rngs::SysRng;
 //!
 //! //
 //! // Signing
 //! //
-//! let signing_key = SigningKey::try_from_rng(&mut OsRng).unwrap(); // serialize with `.to_bytes()`
+//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `.to_bytes()`
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes(); // 32-bytes
 //!
 //! let message = b"Schnorr signatures prove knowledge of a secret in the random oracle model";
