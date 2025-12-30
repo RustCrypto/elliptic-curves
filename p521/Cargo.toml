@@ -1,6 +1,6 @@
 [package]
 name = "p521"
-version = "0.14.0-rc.1"
+version = "0.14.0-rc.2"
 description = """
 Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve
 as defined in SP 800-186
@@ -24,8 +24,8 @@ elliptic-curve = { version = "0.14.0-rc.18", default-features = false, features 
 ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hash2curve = { version = "0.14.0-rc.4", optional = true }
 hex-literal = { version = "1", optional = true }
-primefield = { version = "0.14.0-rc.1", optional = true }
-primeorder = { version = "0.14.0-rc.1", optional = true }
+primefield = { version = "0.14.0-rc.2", optional = true }
+primeorder = { version = "0.14.0-rc.2", optional = true }
 rand_core = { version = "0.10.0-rc-3", optional = true, default-features = false }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
@@ -34,7 +34,7 @@ sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 criterion = "0.7"
 ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "0.14.0-rc.1", features = ["dev"] }
+primeorder = { version = "0.14.0-rc.2", features = ["dev"] }
 proptest = "1.9"
 getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
