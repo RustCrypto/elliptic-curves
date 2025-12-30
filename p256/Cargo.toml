@@ -1,6 +1,6 @@
 [package]
 name = "p256"
-version = "0.14.0-rc.1"
+version = "0.14.0-rc.2"
 description = """
 Pure Rust implementation of the NIST P-256 (a.k.a. secp256r1, prime256v1)
 elliptic curve as defined in SP 800-186, with support for ECDH, ECDSA
@@ -24,8 +24,8 @@ elliptic-curve = { version = "0.14.0-rc.18", default-features = false, features 
 ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hash2curve = { version = "0.14.0-rc.4", optional = true }
 hex-literal = { version = "1", optional = true }
-primefield = { version = "0.14.0-rc.1", optional = true }
-primeorder = { version = "0.14.0-rc.1", optional = true }
+primefield = { version = "0.14.0-rc.2", optional = true }
+primeorder = { version = "0.14.0-rc.2", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 
@@ -33,8 +33,8 @@ sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 criterion = "0.7"
 ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primefield = { version = "0.14.0-rc.1" }
-primeorder = { version = "0.14.0-rc.1", features = ["dev"] }
+primefield = { version = "0.14.0-rc.2" }
+primeorder = { version = "0.14.0-rc.2", features = ["dev"] }
 proptest = "1"
 getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 

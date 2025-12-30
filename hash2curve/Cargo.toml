@@ -1,6 +1,6 @@
 [package]
 name = "hash2curve"
-version = "0.14.0-rc.4"
+version = "0.14.0-rc.5"
 description = "hash2curve algorithm implementation"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -14,7 +14,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-digest = { version = "0.11.0-rc.4" }
+digest = { version = "0.11.0-rc.5" }
 elliptic-curve = { version = "0.14.0-rc.18", default-features = false, features = ["arithmetic"] }
 
 [dev-dependencies]

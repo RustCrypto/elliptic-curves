@@ -1,6 +1,6 @@
 [package]
 name = "p192"
-version = "0.14.0-rc.1"
+version = "0.14.0-rc.2"
 description = """
 Pure Rust implementation of the NIST P-192 (a.k.a. secp192r1) elliptic curve
 as defined in SP 800-186
@@ -22,14 +22,14 @@ elliptic-curve = { version = "0.14.0-rc.18", default-features = false, features 
 # optional dependencies
 ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
-primefield = { version = "0.14.0-rc.1", optional = true }
-primeorder = { version = "0.14.0-rc.1", optional = true }
+primefield = { version = "0.14.0-rc.2", optional = true }
+primeorder = { version = "0.14.0-rc.2", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 
 [dev-dependencies]
 ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "0.14.0-rc.1", features = ["dev"] }
+primeorder = { version = "0.14.0-rc.2", features = ["dev"] }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]
