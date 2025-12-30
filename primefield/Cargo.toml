@@ -1,7 +1,10 @@
 [package]
 name = "primefield"
 version = "0.14.0-rc.1"
-description = "Macros for generating prime field implementations"
+description = """
+Generic implementation of prime fields built on `crypto-bigint`, along with macros for writing
+field element newtypes including ones with formally verified arithmetic using `fiat-crypto`
+"""
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
 documentation = "https://docs.rs/primefield"
@@ -14,7 +17,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-bigint = { package = "crypto-bigint", version = "0.7.0-rc.12", default-features = false, features = ["hybrid-array", "subtle"] }
+bigint = { package = "crypto-bigint", version = "0.7.0-rc.13", default-features = false, features = ["hybrid-array", "subtle"] }
 ff = { version = "=0.14.0-pre.0", package = "rustcrypto-ff", default-features = false }
 subtle = { version = "2.6", default-features = false, features = ["const-generics"] }
 rand_core = { version = "0.10.0-rc-3", default-features = false }

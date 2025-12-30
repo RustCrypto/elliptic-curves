@@ -8,7 +8,7 @@
 [![Project Chat][chat-image]][chat-link]
 
 Generic implementation of prime fields built on [`crypto-bigint`], along with macros for writing
-field element newtypes including ones with arithmetic backed by [`fiat-crypto`].
+field element newtypes including ones with formally verified arithmetic using [`fiat-crypto`].
 
 [Documentation][docs-link]
 
