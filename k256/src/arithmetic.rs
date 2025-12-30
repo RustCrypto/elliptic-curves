@@ -49,7 +49,7 @@ mod tests {
     #[test]
     fn try_from_rng() {
         use crate::SecretKey;
-        use rand::rngs::SysRng;
+        use getrandom::SysRng;
         let key = SecretKey::try_from_rng(&mut SysRng).unwrap();
 
         // Sanity check

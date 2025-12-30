@@ -783,9 +783,9 @@ where
 mod tests {
     use super::*;
     use elliptic_curve::Field;
+    use getrandom::{SysRng, rand_core::TryRngCore};
     use hex_literal::hex;
     use proptest::{prop_assert_eq, property_test};
-    use rand::{TryRngCore, rngs::SysRng};
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);

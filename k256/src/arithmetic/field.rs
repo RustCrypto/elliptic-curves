@@ -510,9 +510,9 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 mod tests {
     use elliptic_curve::ff::{Field, PrimeField};
     use elliptic_curve::ops::BatchInvert;
+    use getrandom::{SysRng, rand_core::TryRngCore};
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
-    use rand::{TryRngCore, rngs::SysRng};
 
     use super::FieldElement;
     use crate::{

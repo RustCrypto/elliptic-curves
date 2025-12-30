@@ -2,10 +2,9 @@ use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use ed448_goldilocks::{
     Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
 };
-use elliptic_curve::group::GroupEncoding;
-use elliptic_curve::{Field, Group};
+use elliptic_curve::{Field, Group, group::GroupEncoding};
+use getrandom::{SysRng, rand_core::TryRngCore};
 use hash2curve::GroupDigest;
-use rand::{TryRngCore, rngs::SysRng};
 
 pub fn ed448(c: &mut Criterion) {
     let mut group = c.benchmark_group("Ed448");

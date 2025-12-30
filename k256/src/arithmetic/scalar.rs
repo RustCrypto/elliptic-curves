@@ -906,10 +906,10 @@ mod tests {
         ops::{Invert, Reduce},
         scalar::IsHigh,
     };
+    use getrandom::{SysRng, rand_core::TryRngCore};
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
-    use rand::{TryRngCore, rngs::SysRng};
 
     use elliptic_curve::ops::BatchInvert;
 

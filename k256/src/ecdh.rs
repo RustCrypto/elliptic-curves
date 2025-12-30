@@ -10,7 +10,7 @@
 //!
 //! ```
 //! use k256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
-//! use rand::{rngs::SysRng, TryRngCore};
+//! use getrandom::{SysRng, rand_core::TryRngCore};
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::try_from_rng(&mut SysRng).unwrap();
