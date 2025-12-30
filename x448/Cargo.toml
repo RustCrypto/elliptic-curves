@@ -26,7 +26,7 @@ default-features = false
 features = ["zeroize_derive"]
 
 [dev-dependencies]
-rand = "0.10.0-rc.1"
+getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
 [features]
 default = ["getrandom"]

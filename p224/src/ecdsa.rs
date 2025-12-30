@@ -22,7 +22,7 @@
 //! # #[cfg(feature = "ecdsa")]
 //! # {
 //! use p224::ecdsa::{signature::Signer, Signature, SigningKey};
-//! use rand::{rngs::SysRng, TryRngCore};
+//! use getrandom::{SysRng, rand_core::TryRngCore};
 //!
 //! // Signing
 //! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // Serialize with `::to_bytes()`

@@ -392,7 +392,7 @@ mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::{Field, Group};
-    use rand::{TryRngCore, rngs::SysRng};
+    use getrandom::{SysRng, rand_core::TryRngCore};
 
     #[test]
     fn test_lincomb() {

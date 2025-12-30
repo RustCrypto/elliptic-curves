@@ -35,7 +35,7 @@
 //!     signature::{Signer, Verifier},
 //!     SigningKey, VerifyingKey
 //! };
-//! use rand::rngs::SysRng;
+//! use getrandom::SysRng;
 //!
 //! //
 //! // Signing

@@ -1,9 +1,9 @@
 #![cfg(feature = "pke")]
 
 use elliptic_curve::{NonZeroScalar, ops::Reduce};
+use getrandom::SysRng;
 use hex_literal::hex;
 use proptest::prelude::*;
-use rand::rngs::SysRng;
 
 use sm2::{FieldBytes, Scalar, Sm2, pke::DecryptingKey};
 

@@ -271,6 +271,7 @@ mod test {
     use super::*;
     use alloc::vec;
     use core::array::TryFromSliceError;
+    use rand_core::TryRngCore;
 
     /// Helpers to test properties of EphemeralSecret. Those `From` and `TryFrom` are not meant to
     /// be exposed outside tests.
@@ -290,7 +291,7 @@ mod test {
 
     #[test]
     fn test_random_dh() {
-        let mut rng = rand::rng();
+        let mut rng = getrandom::SysRng.unwrap_err();
         let alice_priv = EphemeralSecret::random_from_rng(&mut rng);
         let alice_pub = PublicKey::from(&alice_priv);
 

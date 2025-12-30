@@ -9,7 +9,7 @@
 #![cfg_attr(feature = "std", doc = "```")]
 #![cfg_attr(not(feature = "std"), doc = "```ignore")]
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use rand::rngs::SysRng;
+//! use getrandom::SysRng;
 //! use sm2::{
 //!     pke::{EncryptingKey, Mode},
 //!     {SecretKey, PublicKey}

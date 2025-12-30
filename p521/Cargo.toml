@@ -36,7 +36,7 @@ ecdsa-core = { version = "0.17.0-rc.10", package = "ecdsa", default-features = f
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.1", features = ["dev"] }
 proptest = "1.9"
-rand = "0.10.0-rc.1"
+getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]

@@ -10,7 +10,7 @@
 //!
 //! ```
 //! use ed448_goldilocks::*;
-//! use rand::{rngs::SysRng, TryRngCore};
+//! use getrandom::{SysRng, rand_core::TryRngCore};
 //!
 //! let signing_key = SigningKey::generate(&mut SysRng.unwrap_err());
 //! let signature = signing_key.sign_raw(b"Hello, world!");
@@ -56,7 +56,7 @@
 //! ```
 //! use ed448_goldilocks::*;
 //! use sha3::{Shake256, digest::Update};
-//! use rand::{rngs::SysRng, TryRngCore};
+//! use getrandom::{SysRng, rand_core::TryRngCore};
 //!
 //! let msg = b"Hello World";
 //!

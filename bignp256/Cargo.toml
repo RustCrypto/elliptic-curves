@@ -37,11 +37,11 @@ signature = { version = "3.0.0-rc.6", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
+getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
+hex = { version = "0.4" }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.1", features = ["dev"] }
 proptest = "1"
-rand = "0.10.0-rc.1"
-hex = { version = "0.4" }
 
 [features]
 default = ["ecdh", "ecdsa", "pem", "std"]
