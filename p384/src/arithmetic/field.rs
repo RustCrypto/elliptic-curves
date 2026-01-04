@@ -72,5 +72,22 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U384};
+    #[cfg(not(p384_backend = "bignum"))]
+    use super::{
+        FieldParams, fiat_p384_montgomery_domain_field_element, fiat_p384_msat,
+        fiat_p384_non_montgomery_domain_field_element, fiat_p384_to_montgomery,
+    };
+
     primefield::test_primefield!(FieldElement, U384);
+
+    #[cfg(not(p384_backend = "bignum"))]
+    primefield::test_fiat_monty_field_arithmetic!(
+        name: FieldElement,
+        params: FieldParams,
+        uint: U384,
+        non_mont: fiat_p384_non_montgomery_domain_field_element,
+        mont: fiat_p384_montgomery_domain_field_element,
+        to_mont: fiat_p384_to_montgomery,
+        msat: fiat_p384_msat
+    );
 }

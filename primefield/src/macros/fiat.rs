@@ -272,3 +272,56 @@ macro_rules! fiat_bernstein_yang_invert {
         out.0
     }};
 }
+
+/// Test that the wrapper generated for a `word-by-word-montgomery` fiat-crypto implementation
+/// matches the internal representation used by `MontyField`, e.g. do they represent the modulus
+/// the same and agree on the value of `R`.
+///
+/// If these tests do not pass, the fiat-crypto synthesized implementation is incompatible with
+/// `MontyField`.
+///
+/// See also:
+#[macro_export]
+macro_rules! test_fiat_monty_field_arithmetic {
+    (
+        name: $fe:tt,
+        params: $params:ty,
+        uint: $uint:ty,
+        non_mont: $non_mont_type:expr,
+        mont: $mont_type:expr,
+        to_mont: $to_mont:ident,
+        msat: $msat:ident
+    ) => {
+        use $crate::bigint::modular::ConstMontyParams as _;
+
+        /// Compute `fiat-crypto`'s selection of `R` by converting `1` into Montgomery form using
+        /// `$to_mont`, and then compare it to `ConstMontyParams::PARAMS.one()` as computed by
+        /// `crypto_bigint::modular` to ensure they're equal.
+        #[test]
+        fn fiat_montgomery_r_constant() {
+            let mut one = $non_mont_type([0; <$uint>::LIMBS]);
+            one[0] = 1;
+
+            let mut R = $mont_type([0; <$uint>::LIMBS]);
+            $to_mont(&mut R, &one);
+
+            assert_eq!(<$params>::PARAMS.one().as_words(), &R.0)
+        }
+
+        /// Compute `fiat-crypto`'s saturated modulus representation using `$msat`, and then compare
+        /// it to `ConstMontyParams::PARAMS.modulus()` as computed by `crypto_bigint::modular`
+        /// to ensure they're equal.
+        #[test]
+        fn fiat_msat_constant() {
+            use $crate::bigint::Word;
+
+            let mut out = [0 as Word; <$uint>::LIMBS + 1];
+            $msat(&mut out);
+            assert_eq!(out[<$uint>::LIMBS], 0);
+            assert_eq!(
+                <$params>::PARAMS.modulus().as_words(),
+                &out[..<$uint>::LIMBS]
+            );
+        }
+    };
+}
