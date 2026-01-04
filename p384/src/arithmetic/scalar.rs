@@ -156,6 +156,11 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U384};
+    #[cfg(not(p384_backend = "bignum"))]
+    use super::{
+        ScalarParams, fiat_p384_scalar_montgomery_domain_field_element, fiat_p384_scalar_msat,
+        fiat_p384_scalar_non_montgomery_domain_field_element, fiat_p384_scalar_to_montgomery,
+    };
     use crate::{FieldBytes, NistP384, NonZeroScalar};
     use elliptic_curve::{
         Curve,
@@ -166,6 +171,17 @@ mod tests {
     use proptest::{prelude::any, prop_compose, proptest};
 
     primefield::test_primefield!(Scalar, U384);
+
+    #[cfg(not(p384_backend = "bignum"))]
+    primefield::test_fiat_monty_field_arithmetic!(
+        name: Scalar,
+        params: ScalarParams,
+        uint: U384,
+        non_mont: fiat_p384_scalar_non_montgomery_domain_field_element,
+        mont: fiat_p384_scalar_montgomery_domain_field_element,
+        to_mont: fiat_p384_scalar_to_montgomery,
+        msat: fiat_p384_scalar_msat
+    );
 
     #[test]
     fn from_to_bytes_roundtrip() {
