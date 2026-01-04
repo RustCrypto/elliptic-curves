@@ -73,5 +73,19 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, Uint};
+    use super::{
+        FieldParams, fiat_p224_montgomery_domain_field_element, fiat_p224_msat,
+        fiat_p224_non_montgomery_domain_field_element, fiat_p224_to_montgomery,
+    };
+
     primefield::test_primefield!(FieldElement, Uint);
+    primefield::test_fiat_monty_field_arithmetic!(
+        name: FieldElement,
+        params: FieldParams,
+        uint: Uint,
+        non_mont: fiat_p224_non_montgomery_domain_field_element,
+        mont: fiat_p224_montgomery_domain_field_element,
+        to_mont: fiat_p224_to_montgomery,
+        msat: fiat_p224_msat
+    );
 }

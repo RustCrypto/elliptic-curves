@@ -111,5 +111,19 @@ impl Reduce<FieldBytes> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U256};
+    use super::{
+        ScalarParams, fiat_bp256_scalar_montgomery_domain_field_element, fiat_bp256_scalar_msat,
+        fiat_bp256_scalar_non_montgomery_domain_field_element, fiat_bp256_scalar_to_montgomery,
+    };
+
     primefield::test_primefield!(Scalar, U256);
+    primefield::test_fiat_monty_field_arithmetic!(
+        name: Scalar,
+        params: ScalarParams,
+        uint: U256,
+        non_mont: fiat_bp256_scalar_non_montgomery_domain_field_element,
+        mont: fiat_bp256_scalar_montgomery_domain_field_element,
+        to_mont: fiat_bp256_scalar_to_montgomery,
+        msat: fiat_bp256_scalar_msat
+    );
 }
