@@ -643,7 +643,7 @@ macro_rules! monty_field_element {
 /// e.g. `add`, `double`, `sub`, `multiply`, `neg`.
 ///
 /// This macro wraps a generic field implementation provided by the `crypto-bigint` crate, which is
-/// exposed as the [`primefield::MontyFieldElement`] type.
+/// exposed as the [`primefield::MontyFieldElement`][`crate::MontyFieldElement`] type.
 #[macro_export]
 macro_rules! monty_field_arithmetic {
     (

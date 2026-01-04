@@ -40,7 +40,7 @@ primefield::monty_field_element! {
     doc: "Element in the SM2 finite field modulo `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
 }
 
-primefield::monty_field_fiat_arithmetic! {
+primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: U256,

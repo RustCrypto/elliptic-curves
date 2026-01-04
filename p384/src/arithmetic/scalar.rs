@@ -58,7 +58,7 @@ primefield::monty_field_arithmetic! {
 }
 
 #[cfg(not(p384_backend = "bignum"))]
-primefield::monty_field_fiat_arithmetic! {
+primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
     uint: U384,

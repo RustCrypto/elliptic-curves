@@ -47,7 +47,7 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP256 finite field modulo p"
 }
 
-primefield::monty_field_fiat_arithmetic! {
+primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: U256,
