@@ -138,5 +138,19 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U192};
+    use super::{
+        ScalarParams, fiat_p192_scalar_montgomery_domain_field_element, fiat_p192_scalar_msat,
+        fiat_p192_scalar_non_montgomery_domain_field_element, fiat_p192_scalar_to_montgomery,
+    };
+
     primefield::test_primefield!(Scalar, U192);
+    primefield::test_fiat_monty_field_arithmetic!(
+        name: Scalar,
+        params: ScalarParams,
+        uint: U192,
+        non_mont: fiat_p192_scalar_non_montgomery_domain_field_element,
+        mont: fiat_p192_scalar_montgomery_domain_field_element,
+        to_mont: fiat_p192_scalar_to_montgomery,
+        msat: fiat_p192_scalar_msat
+    );
 }

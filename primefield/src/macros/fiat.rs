@@ -280,7 +280,7 @@ macro_rules! fiat_bernstein_yang_invert {
 /// If these tests do not pass, the fiat-crypto synthesized implementation is incompatible with
 /// `MontyField`.
 ///
-/// See also:
+/// See also: mit-plv/fiat-crypto#2166
 #[macro_export]
 macro_rules! test_fiat_monty_field_arithmetic {
     (
