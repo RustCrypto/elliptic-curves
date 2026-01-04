@@ -26,7 +26,7 @@ primefield::monty_field_params! {
     modulus: ORDER_HEX,
     uint: Uint,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 2,
+    multiplicative_generator: 3,
     doc: "Montgomery parameters for the NIST P-521 scalar modulus `n`."
 }
 
@@ -105,8 +105,5 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::{Scalar, Uint};
     use elliptic_curve::ff::PrimeField;
-    primefield::test_primefield_constants!(Scalar, Uint);
-    primefield::test_field_identity!(Scalar);
-    primefield::test_field_invert!(Scalar);
-    //primefield::test_field_sqrt!(Scalar); TODO(tarcieri): working sqrt impl
+    primefield::test_primefield!(Scalar, Uint);
 }
