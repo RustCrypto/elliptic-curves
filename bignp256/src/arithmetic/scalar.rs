@@ -46,7 +46,7 @@ primefield::monty_field_element! {
     doc: "Element in the bign-curve256v1 scalar field modulo n"
 }
 
-primefield::monty_field_fiat_arithmetic! {
+primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
     uint: U256,

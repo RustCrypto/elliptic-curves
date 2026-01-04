@@ -51,7 +51,7 @@ primefield::monty_field_element! {
     doc: "Element in the finite field modulo `p = 2^{224} − 2^{96} + 1`."
 }
 
-primefield::monty_field_fiat_arithmetic! {
+primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: Uint,

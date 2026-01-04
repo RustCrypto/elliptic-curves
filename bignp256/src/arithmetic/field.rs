@@ -53,7 +53,7 @@ primefield::monty_field_element! {
     doc: "Element in the bign-curve256v1 finite field modulo p = 2^{256} − 189"
 }
 
-primefield::monty_field_fiat_arithmetic! {
+primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: U256,
