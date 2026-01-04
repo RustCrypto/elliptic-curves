@@ -142,6 +142,24 @@ where
     }
 }
 
+impl<C> ctutils::CtEq for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl<C> ctutils::CtSelect for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
+    }
+}
+
 impl<C> Default for ProjectivePoint<C>
 where
     C: PrimeCurveParams,

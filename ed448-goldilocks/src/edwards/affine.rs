@@ -2,7 +2,7 @@ use crate::field::FieldElement;
 use crate::*;
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::ops::Mul;
-use elliptic_curve::{Error, point::NonIdentity, zeroize::DefaultIsZeroes};
+use elliptic_curve::{Error, ctutils, point::NonIdentity, zeroize::DefaultIsZeroes};
 use rand_core::TryRngCore;
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -30,6 +30,21 @@ impl ConditionallySelectable for AffinePoint {
         Self {
             x: FieldElement::conditional_select(&a.x, &b.x, choice),
             y: FieldElement::conditional_select(&a.y, &b.y, choice),
+        }
+    }
+}
+
+impl ctutils::CtEq for AffinePoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        (self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)).into()
+    }
+}
+
+impl ctutils::CtSelect for AffinePoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        Self {
+            x: FieldElement::conditional_select(&self.x, &other.x, choice.into()),
+            y: FieldElement::conditional_select(&self.y, &other.y, choice.into()),
         }
     }
 }

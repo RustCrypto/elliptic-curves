@@ -12,6 +12,7 @@ use crate::*;
 use elliptic_curve::{
     BatchNormalize, CurveGroup, Error,
     array::Array,
+    ctutils,
     group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
@@ -88,6 +89,18 @@ impl ConstantTimeEq for EdwardsPoint {
         let ZY = self.Z * other.Y;
 
         (XZ.ct_eq(&ZX)) & (YZ.ct_eq(&ZY))
+    }
+}
+
+impl ctutils::CtEq for EdwardsPoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for EdwardsPoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 

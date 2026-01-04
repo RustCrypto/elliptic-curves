@@ -388,6 +388,18 @@ impl ConstantTimeEq for ProjectivePoint {
     }
 }
 
+impl ctutils::CtEq for ProjectivePoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for ProjectivePoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
+    }
+}
+
 impl Default for ProjectivePoint {
     fn default() -> Self {
         Self::IDENTITY

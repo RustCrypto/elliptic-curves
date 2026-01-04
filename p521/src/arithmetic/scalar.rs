@@ -32,6 +32,7 @@ use core::{
 use elliptic_curve::{
     Curve as _, Error, FieldBytesEncoding, Result,
     bigint::{self, Integer, Limb, NonZero, modular::MontyParams},
+    ctutils,
     ff::{self, Field, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::TryRngCore,
@@ -412,6 +413,18 @@ impl ConditionallySelectable for Scalar {
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.as_limbs().ct_eq(other.as_limbs())
+    }
+}
+
+impl ctutils::CtEq for Scalar {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for Scalar {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 

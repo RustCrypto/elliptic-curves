@@ -16,7 +16,8 @@ use core::{
 };
 use elliptic_curve::{
     Curve, Error, ScalarValue,
-    bigint::{Limb, U256, U512, Word, prelude::*},
+    bigint::{ArrayEncoding, Integer, Limb, U256, U512, Word},
+    ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
     rand_core::{CryptoRng, TryCryptoRng, TryRngCore},
@@ -545,6 +546,18 @@ impl ConditionallySelectable for Scalar {
 impl ConstantTimeEq for Scalar {
     fn ct_eq(&self, other: &Self) -> Choice {
         ConstantTimeEq::ct_eq(&self.0, &other.0)
+    }
+}
+
+impl ctutils::CtEq for Scalar {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for Scalar {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 

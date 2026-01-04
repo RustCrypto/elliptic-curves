@@ -13,8 +13,9 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{CtSelect, Integer, Limb, U448, U896, Word},
+    bigint::{Integer, Limb, U448, U896, Word},
     consts::U2,
+    ctutils::{self, CtSelect},
     ff::{Field, helpers},
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
@@ -109,6 +110,18 @@ impl<C: CurveWithScalar> ConstantTimeEq for Scalar<C> {
 impl<C: CurveWithScalar> ConditionallySelectable for Scalar<C> {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         Self::new(U448::conditional_select(&a.scalar, &b.scalar, choice))
+    }
+}
+
+impl<C: CurveWithScalar> ctutils::CtEq for Scalar<C> {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl<C: CurveWithScalar> ctutils::CtSelect for Scalar<C> {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 
