@@ -100,6 +100,8 @@ macro_rules! monty_field_params_with_root_of_unity {
 /// - `ConstantTimeEq`
 /// - `ConstantTimeGreater`
 /// - `ConstantTimeLess`
+/// - `CtEq`
+/// - `CtSelect`
 /// - `Default`
 /// - `DefaultIsZeroes`
 /// - `Eq`
@@ -602,6 +604,34 @@ macro_rules! monty_field_element {
         impl $crate::subtle::ConstantTimeLess for $fe {
             fn ct_lt(&self, other: &Self) -> $crate::subtle::Choice {
                 self.0.ct_lt(&other.0)
+            }
+        }
+
+        impl $crate::bigint::ctutils::CtSelect for $fe {
+            fn ct_select(&self, other: &Self, choice: $crate::bigint::ctutils::Choice) -> Self {
+                Self(
+                    $crate::bigint::ctutils::CtSelect::ct_select(
+                        &self.0, &other.0, choice,
+                    ),
+                )
+            }
+        }
+
+        impl $crate::bigint::ctutils::CtEq for $fe {
+            fn ct_eq(&self, other: &Self) -> $crate::bigint::ctutils::Choice {
+                $crate::bigint::ctutils::CtEq::ct_eq(&self.0, &other.0)
+            }
+        }
+
+        impl $crate::bigint::ctutils::CtGt for $fe {
+            fn ct_gt(&self, other: &Self) -> $crate::bigint::ctutils::Choice {
+                $crate::bigint::ctutils::CtGt::ct_gt(&self.0, &other.0)
+            }
+        }
+
+        impl $crate::bigint::ctutils::CtLt for $fe {
+            fn ct_lt(&self, other: &Self) -> $crate::bigint::ctutils::Choice {
+                $crate::bigint::ctutils::CtLt::ct_lt(&self.0, &other.0)
             }
         }
 

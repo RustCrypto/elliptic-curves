@@ -6,8 +6,7 @@ use super::{CURVE_EQUATION_B, FieldElement, ProjectivePoint};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
-    Error, Result,
-    ctutils::{self, CtSelect},
+    Error, Result, ctutils,
     ff::PrimeField,
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
@@ -179,6 +178,18 @@ impl ConstantTimeEq for AffinePoint {
     }
 }
 
+impl ctutils::CtEq for AffinePoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for AffinePoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
+    }
+}
+
 impl Default for AffinePoint {
     fn default() -> Self {
         Self::IDENTITY
@@ -303,7 +314,7 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
 
 impl ToEncodedPoint<Secp256k1> for AffinePoint {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        EncodedPoint::ct_select(
+        ctutils::CtSelect::ct_select(
             &EncodedPoint::from_affine_coordinates(&self.x.to_repr(), &self.y.to_repr(), compress),
             &EncodedPoint::identity(),
             self.is_identity().into(),

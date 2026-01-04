@@ -3,7 +3,7 @@ use crate::field::FieldElement;
 use crate::{Decaf448FieldBytes, DecafPoint, DecafScalar, ORDER};
 use core::ops::Mul;
 use elliptic_curve::{
-    Error,
+    Error, ctutils,
     point::{AffineCoordinates, NonIdentity},
     zeroize::DefaultIsZeroes,
 };
@@ -25,6 +25,18 @@ impl ConditionallySelectable for AffinePoint {
             x: FieldElement::conditional_select(&a.0.x, &b.0.x, choice),
             y: FieldElement::conditional_select(&a.0.y, &b.0.y, choice),
         })
+    }
+}
+
+impl ctutils::CtEq for AffinePoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for AffinePoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 

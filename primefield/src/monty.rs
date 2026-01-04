@@ -5,7 +5,7 @@ mod sqrt;
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, CtLt, Integer, Invert, Limb, Reduce, Uint, Word,
+    ArrayEncoding, ByteArray, Integer, Invert, Limb, Reduce, Uint, Word, ctutils,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams},
 };
@@ -159,7 +159,7 @@ where
     /// The `CtOption` equivalent of `None` if the input overflows the modulus.
     #[inline]
     pub fn from_uint(uint: &Uint<LIMBS>) -> CtOption<Self> {
-        let is_some = CtLt::ct_lt(uint, MOD::PARAMS.modulus());
+        let is_some = ctutils::CtLt::ct_lt(uint, MOD::PARAMS.modulus());
 
         // TODO(tarcieri): avoid unnecessary reduction here
         CtOption::new(Self::from_uint_reduced(uint), is_some.into())
@@ -724,7 +724,49 @@ where
 {
     fn ct_lt(&self, other: &Self) -> Choice {
         // TODO(tarcieri): impl `ConstantTimeLess` for `ConstMontyForm`
-        CtLt::ct_lt(&self.inner.retrieve(), &other.inner.retrieve()).into()
+        ctutils::CtLt::ct_lt(&self.inner.retrieve(), &other.inner.retrieve()).into()
+    }
+}
+
+//
+// `ctutils` trait impls
+//
+
+impl<MOD, const LIMBS: usize> ctutils::CtEq for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl<MOD, const LIMBS: usize> ctutils::CtSelect for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
+    }
+}
+
+impl<MOD, const LIMBS: usize> ctutils::CtGt for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn ct_gt(&self, other: &Self) -> ctutils::Choice {
+        // TODO(tarcieri): impl `ConstantTimeGreater` for `ConstMontyForm`
+        ctutils::CtGt::ct_gt(&self.inner.retrieve(), &other.inner.retrieve())
+    }
+}
+
+impl<MOD, const LIMBS: usize> ctutils::CtLt for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
+    fn ct_lt(&self, other: &Self) -> ctutils::Choice {
+        // TODO(tarcieri): impl `ConstantTimeLess` for `ConstMontyForm`
+        ctutils::CtLt::ct_lt(&self.inner.retrieve(), &other.inner.retrieve())
     }
 }
 

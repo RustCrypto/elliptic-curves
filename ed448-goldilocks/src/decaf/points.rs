@@ -6,6 +6,7 @@ use elliptic_curve::{
     CurveGroup, Error, Group,
     array::Array,
     consts::U56,
+    ctutils,
     group::{GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     ops::LinearCombination,
     point::NonIdentity,
@@ -74,6 +75,18 @@ impl ConditionallySelectable for DecafPoint {
             Z: FieldElement::conditional_select(&a.0.Z, &b.0.Z, choice),
             T: FieldElement::conditional_select(&a.0.T, &b.0.T, choice),
         })
+    }
+}
+
+impl ctutils::CtEq for DecafPoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl ctutils::CtSelect for DecafPoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 

@@ -421,9 +421,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.10"
+version = "0.17.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6378f4db5c3e64d1c0bbde7948849ec7aaa231632a7c0ba1cfca7543e34ce9f5"
+checksum = "569a1f3377df19ab839b2811061095ff7d9fb7ea3c0e500b7a4724343cf6ee3d"
 dependencies = [
  "der",
  "digest",
@@ -477,8 +477,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.18"
-source = "git+https://github.com/RustCrypto/traits#443d4ee719c8a10fa3dedd3878a57fe9074496fc"
+version = "0.14.0-rc.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6bfae4ab886ff791e2119cc79402281e35408f22b6b7322acef371d01061054b"
 dependencies = [
  "base16ct 1.0.0",
  "crypto-bigint",
@@ -824,7 +825,7 @@ dependencies = [
 name = "p521"
 version = "0.14.0-rc.2"
 dependencies = [
- "base16ct 0.3.0",
+ "base16ct 1.0.0",
  "criterion",
  "ecdsa",
  "elliptic-curve",
@@ -1186,6 +1187,7 @@ dependencies = [
  "der",
  "hybrid-array",
  "serdect",
+ "subtle",
  "zeroize",
 ]
 

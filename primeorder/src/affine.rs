@@ -10,7 +10,7 @@ use core::{
 use elliptic_curve::{
     Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
     array::ArraySize,
-    ctutils::{self, CtGt, CtSelect},
+    ctutils::{self, CtGt as _, CtSelect as _},
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
@@ -155,6 +155,24 @@ where
 {
     fn ct_eq(&self, other: &Self) -> Choice {
         self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y) & self.infinity.ct_eq(&other.infinity)
+    }
+}
+
+impl<C> ctutils::CtEq for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        ConstantTimeEq::ct_eq(self, other).into()
+    }
+}
+
+impl<C> ctutils::CtSelect for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        ConditionallySelectable::conditional_select(self, other, choice.into())
     }
 }
 
