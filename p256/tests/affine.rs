@@ -131,6 +131,6 @@ fn noncompatible_is_none() {
         .as_affine()
         .to_compact_encoded_point()
         .is_some()
-        .unwrap_u8();
-    assert_eq!(is_compactable, 0);
+        .to_bool();
+    assert!(!is_compactable);
 }

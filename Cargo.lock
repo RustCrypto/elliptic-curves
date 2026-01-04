@@ -47,6 +47,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8b59d472eab27ade8d770dcb11da7201c11234bef9f82ce7aa517be028d462b"
 
 [[package]]
+name = "base16ct"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd307490d624467aa6f74b0eabb77633d1f758a7b25f12bceb0b22e08d9726f6"
+
+[[package]]
 name = "base64ct"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -472,10 +478,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8119dc256cd897f759f5b9d45dfd9b066af1c79e71688b7f0a6be989e8fbfbf"
+source = "git+https://github.com/RustCrypto/traits#443d4ee719c8a10fa3dedd3878a57fe9074496fc"
 dependencies = [
- "base16ct",
+ "base16ct 1.0.0",
  "crypto-bigint",
  "digest",
  "getrandom 0.4.0-rc.0",
@@ -819,7 +824,7 @@ dependencies = [
 name = "p521"
 version = "0.14.0-rc.2"
 dependencies = [
- "base16ct",
+ "base16ct 0.3.0",
  "criterion",
  "ecdsa",
  "elliptic-curve",
@@ -1172,15 +1177,15 @@ dependencies = [
 
 [[package]]
 name = "sec1"
-version = "0.8.0-rc.10"
+version = "0.8.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dff52f6118bc9f0ac974a54a639d499ac26a6cad7a6e39bc0990c19625e793b"
+checksum = "2568531a8ace88b848310caa98fb2115b151ef924d54aa523e659c21b9d32d71"
 dependencies = [
- "base16ct",
+ "base16ct 1.0.0",
+ "ctutils",
  "der",
  "hybrid-array",
  "serdect",
- "subtle",
  "zeroize",
 ]
 
@@ -1252,7 +1257,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3ef0e35b322ddfaecbc60f34ab448e157e48531288ee49fafbb053696b8ffe2"
 dependencies = [
- "base16ct",
+ "base16ct 0.3.0",
  "serde",
 ]
 

@@ -9,7 +9,7 @@ use core::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, Result,
+    BatchNormalize, CurveGroup, Error, Result, ctutils,
     group::{
         Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -340,7 +340,7 @@ impl From<&ProjectivePoint> for AffinePoint {
 }
 
 impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn from_encoded_point(p: &EncodedPoint) -> CtOption<Self> {
+    fn from_encoded_point(p: &EncodedPoint) -> ctutils::CtOption<Self> {
         AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
     }
 }

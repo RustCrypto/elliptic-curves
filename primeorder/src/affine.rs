@@ -10,7 +10,7 @@ use core::{
 use elliptic_curve::{
     Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
     array::ArraySize,
-    bigint::CtGt,
+    ctutils::{self, CtGt, CtSelect},
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
@@ -217,14 +217,14 @@ where
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp384r1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint<C>) -> CtOption<Self> {
+    fn from_encoded_point(encoded_point: &EncodedPoint<C>) -> ctutils::CtOption<Self> {
         match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => CtOption::new(Self::IDENTITY, 1.into()),
-            sec1::Coordinates::Compact { x } => Self::decompact(x),
+            sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
+            sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
-                Self::decompress(x, Choice::from(y_is_odd as u8))
+                Self::decompress(x, Choice::from(y_is_odd as u8)).into()
             }
-            sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y),
+            sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y).into(),
         }
     }
 }
@@ -299,14 +299,16 @@ where
     /// NOTE: not constant-time with respect to identity point
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
         EncodedPoint::<C>::from_bytes(bytes)
-            .map(|point| CtOption::new(point, Choice::from(1)))
+            .map(ctutils::CtOption::some)
             .unwrap_or_else(|_| {
                 // SEC1 identity encoding is technically 1-byte 0x00, but the
                 // `GroupEncoding` API requires a fixed-width `Repr`
-                let is_identity = bytes.ct_eq(&Self::Repr::default());
-                CtOption::new(EncodedPoint::<C>::identity(), is_identity)
+                let is_identity =
+                    ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
+                ctutils::CtOption::new(EncodedPoint::<C>::identity(), is_identity)
             })
             .and_then(|point| Self::from_encoded_point(&point))
+            .into()
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
@@ -369,7 +371,7 @@ where
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
-    fn to_compact_encoded_point(&self) -> CtOption<EncodedPoint<C>> {
+    fn to_compact_encoded_point(&self) -> ctutils::CtOption<EncodedPoint<C>> {
         let point = self.to_compact();
 
         let mut bytes = CompressedPoint::<C>::default();
@@ -377,8 +379,9 @@ where
         bytes[1..].copy_from_slice(&point.x.to_repr());
 
         let encoded = EncodedPoint::<C>::from_bytes(bytes);
-        let is_some = point.y.ct_eq(&self.y);
-        CtOption::new(encoded.unwrap_or_default(), is_some)
+        let is_some =
+            ctutils::CtEq::ct_eq(point.y.to_repr().as_slice(), self.y.to_repr().as_slice());
+        ctutils::CtOption::new(encoded.unwrap_or_default(), is_some)
     }
 }
 
@@ -390,14 +393,14 @@ where
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint<C> {
-        EncodedPoint::<C>::conditional_select(
+        EncodedPoint::<C>::ct_select(
             &EncodedPoint::<C>::from_affine_coordinates(
                 &self.x.to_repr(),
                 &self.y.to_repr(),
                 compress,
             ),
             &EncodedPoint::<C>::identity(),
-            self.is_identity(),
+            self.is_identity().into(),
         )
     }
 }

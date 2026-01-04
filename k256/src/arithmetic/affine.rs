@@ -7,6 +7,8 @@ use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp25
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     Error, Result,
+    ctutils::{self, CtSelect},
+    ff::PrimeField,
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
     rand_core::TryRngCore,
@@ -255,14 +257,17 @@ impl GroupEncoding for AffinePoint {
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
         EncodedPoint::from_bytes(bytes)
-            .map(|point| CtOption::new(point, Choice::from(1)))
+            .map(ctutils::CtOption::some)
             .unwrap_or_else(|_| {
                 // SEC1 identity encoding is technically 1-byte 0x00, but the
                 // `GroupEncoding` API requires a fixed-width `Repr`
-                let is_identity = bytes.ct_eq(&Self::Repr::default());
-                CtOption::new(EncodedPoint::identity(), is_identity)
+                let is_identity =
+                    ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
+
+                ctutils::CtOption::new(EncodedPoint::identity(), is_identity)
             })
             .and_then(|point| Self::from_encoded_point(&point))
+            .into()
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
@@ -284,28 +289,24 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> CtOption<Self> {
+    fn from_encoded_point(encoded_point: &EncodedPoint) -> ctutils::CtOption<Self> {
         match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => CtOption::new(Self::IDENTITY, 1.into()),
-            sec1::Coordinates::Compact { x } => Self::decompact(x),
+            sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
+            sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8))
+                AffinePoint::decompress(x, Choice::from(y_is_odd as u8)).into()
             }
-            sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y),
+            sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y).into(),
         }
     }
 }
 
 impl ToEncodedPoint<Secp256k1> for AffinePoint {
     fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        EncodedPoint::conditional_select(
-            &EncodedPoint::from_affine_coordinates(
-                &self.x.to_bytes(),
-                &self.y.to_bytes(),
-                compress,
-            ),
+        EncodedPoint::ct_select(
+            &EncodedPoint::from_affine_coordinates(&self.x.to_repr(), &self.y.to_repr(), compress),
             &EncodedPoint::identity(),
-            self.is_identity(),
+            self.is_identity().into(),
         )
     }
 }
