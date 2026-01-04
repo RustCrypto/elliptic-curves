@@ -1,6 +1,6 @@
 [package]
 name = "hash2curve"
-version = "0.14.0-rc.5"
+version = "0.14.0-rc.6"
 description = "hash2curve algorithm implementation"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
