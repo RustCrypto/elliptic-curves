@@ -14,6 +14,7 @@ use elliptic_curve::{
     Scalar,
     array::ArraySize,
     bigint::{ArrayEncoding, ByteArray},
+    ctutils,
     group::{
         Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -217,7 +218,7 @@ where
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
-    fn from_encoded_point(p: &EncodedPoint<C>) -> CtOption<Self> {
+    fn from_encoded_point(p: &EncodedPoint<C>) -> ctutils::CtOption<Self> {
         AffinePoint::<C>::from_encoded_point(p).map(Self::from)
     }
 }
