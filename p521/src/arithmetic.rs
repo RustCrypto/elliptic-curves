@@ -5,10 +5,10 @@
 //! [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 
 pub(crate) mod field;
+pub(crate) mod scalar;
+
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
-pub(crate) mod scalar;
-mod util;
 
 pub use self::scalar::Scalar;
 
