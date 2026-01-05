@@ -24,13 +24,13 @@ impl Reduce<Array<u8, U48>> for FieldElement {
             "00000000000000030000000200000000fffffffffffffffefffffffeffffffff",
         ));
 
-        let mut d0_bytes = FieldBytes::default();
-        d0_bytes[8..].copy_from_slice(&value[..24]);
-        let d0 = FieldElement::from_uint_unchecked(U256::from_be_byte_array(d0_bytes));
+        let mut d0 = FieldBytes::default();
+        d0[8..].copy_from_slice(&value[..24]);
+        let d0 = FieldElement::from_uint_unchecked(U256::from_be_byte_array(d0));
 
-        let mut d1_bytes = FieldBytes::default();
-        d1_bytes[8..].copy_from_slice(&value[24..]);
-        let d1 = FieldElement::from_uint_unchecked(U256::from_be_byte_array(d1_bytes));
+        let mut d1 = FieldBytes::default();
+        d1[8..].copy_from_slice(&value[24..]);
+        let d1 = FieldElement::from_uint_unchecked(U256::from_be_byte_array(d1));
 
         d0 * F_2_192 + d1
     }
