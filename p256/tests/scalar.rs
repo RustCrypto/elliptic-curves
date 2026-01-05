@@ -2,7 +2,7 @@
 
 #![cfg(feature = "arithmetic")]
 
-use elliptic_curve::ops::{Invert, Reduce};
+use elliptic_curve::ops::Reduce;
 use p256::{FieldBytes, Scalar};
 use proptest::prelude::*;
 
