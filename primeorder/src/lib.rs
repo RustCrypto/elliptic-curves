@@ -22,7 +22,10 @@ mod dev;
 mod projective;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
-pub use elliptic_curve::{self, Field, FieldBytes, PrimeCurve, PrimeField, array, point::Double};
+pub use elliptic_curve::{
+    self, Field, FieldBytes, PrimeCurve, PrimeField, array, bigint::modular::Retrieve,
+    point::Double,
+};
 
 use elliptic_curve::{CurveArithmetic, ops::Invert, subtle::CtOption};
 
@@ -36,7 +39,8 @@ pub trait PrimeCurveParams:
 {
     /// Base field element type.
     type FieldElement: PrimeField<Repr = FieldBytes<Self>>
-        + Invert<Output = CtOption<Self::FieldElement>>;
+        + Invert<Output = CtOption<Self::FieldElement>>
+        + Retrieve<Output = Self::Uint>;
 
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
     type PointArithmetic: point_arithmetic::PointArithmetic<Self>;
