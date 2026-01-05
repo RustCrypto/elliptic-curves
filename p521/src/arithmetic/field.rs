@@ -30,6 +30,7 @@ use core::{
 };
 use elliptic_curve::{
     Error, FieldBytesEncoding,
+    array::Array,
     bigint::{Word, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
@@ -37,7 +38,7 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
-use primefield::bigint::{self, Limb};
+use primefield::bigint::{self, Limb, Odd};
 
 #[cfg(target_pointer_width = "32")]
 const MODULUS_HEX: &str = "000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
@@ -146,11 +147,24 @@ impl FieldElement {
     }
 
     /// Returns the big-endian encoding of this [`FieldElement`].
-    pub fn to_bytes(self) -> FieldBytes {
-        let mut ret = [0u8; 66];
+    pub const fn to_bytes(self) -> FieldBytes {
+        const BYTES: usize = 66;
+
+        let mut ret = [0u8; BYTES];
         fiat_p521_to_bytes(&mut ret, &self.0);
-        ret.reverse();
-        ret.into()
+
+        // TODO(tarcieri): use `reverse` when const-stable (MSRV 1.90)
+        // ret.reverse();
+        let mut i = 0;
+        while i < (BYTES / 2) {
+            let j = BYTES - i - 1;
+            let tmp = ret[i];
+            ret[i] = ret[j];
+            ret[j] = tmp;
+            i += 1;
+        }
+
+        Array(ret)
     }
 
     /// Determine if this [`FieldElement`] is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -302,40 +316,30 @@ impl FieldElement {
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
+        self.to_uint()
+            .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) })
+            .map(Self::from_uint_unchecked)
+            .into()
+    }
+
+    /// Compute [`FieldElement`] inversion: `1 / self` in variable-time.
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        self.to_uint()
+            .invert_odd_mod_vartime(const { &Odd::from_be_hex(MODULUS_HEX) })
+            .map(Self::from_uint_unchecked)
+            .into()
     }
 
     /// Returns the multiplicative inverse of self.
     ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        // Adapted from addchain: github.com/mmcloughlin/addchain
-        let z = self.square();
-        let z = self.multiply(&z);
-        let t0 = z.sqn(2);
-        let z = z.multiply(&t0);
-        let t0 = z.sqn(4);
-        let z = z.multiply(&t0);
-        let t0 = z.sqn(8);
-        let z = z.multiply(&t0);
-        let t0 = z.sqn(16);
-        let z = z.multiply(&t0);
-        let t0 = z.sqn(32);
-        let z = z.multiply(&t0);
-        let t0 = z.square();
-        let t0 = self.multiply(&t0);
-        let t0 = t0.sqn(64);
-        let z = z.multiply(&t0);
-        let t0 = z.square();
-        let t0 = self.multiply(&t0);
-        let t0 = t0.sqn(129);
-        let z = z.multiply(&t0);
-        let t0 = z.square();
-        let t0 = self.multiply(&t0);
-        let t0 = t0.sqn(259);
-        let z = z.multiply(&t0);
-        let z = z.sqn(2);
-        self.multiply(&z)
+    /// # Panics
+    /// Will panic in the event `self` is zero
+    const fn invert_unwrap(&self) -> Self {
+        Self::from_uint_unchecked(
+            self.to_uint()
+                .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) })
+                .expect_copied("input should be non-zero"),
+        )
     }
 
     /// Returns the square root of self mod p, or `None` if no square root
@@ -360,6 +364,22 @@ impl FieldElement {
         let mut out = fiat_p521_loose_field_element([0; Self::LIMBS]);
         fiat_p521_relax(&mut out, &self.0);
         LooseFieldElement(out)
+    }
+
+    /// Raise this field element into a canonical integer representative.
+    #[inline]
+    pub(crate) const fn to_uint(self) -> Uint {
+        let field_bytes = self.to_bytes();
+        let mut uint_bytes = [0u8; Uint::LIMBS * Limb::BYTES];
+
+        let offset = uint_bytes.len() - field_bytes.0.len();
+        let mut i = 0;
+        while i < field_bytes.0.len() {
+            uint_bytes[i + offset] = field_bytes.0[i];
+            i += 1
+        }
+
+        Uint::from_be_slice(&uint_bytes)
     }
 }
 
@@ -497,13 +517,13 @@ impl PrimeField for FieldElement {
     const MODULUS: &'static str = MODULUS_HEX;
     const NUM_BITS: u32 = 521;
     const CAPACITY: u32 = 520;
-    const TWO_INV: Self = Self::from_u64(2).invert_unchecked();
+    const TWO_INV: Self = Self::from_u64(2).invert_unwrap();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
     const ROOT_OF_UNITY: Self = Self::from_hex(
         "01fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
     );
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unwrap();
     const DELTA: Self = Self::from_u64(9);
 
     #[inline]
@@ -694,14 +714,17 @@ impl Invert for FieldElement {
     fn invert(&self) -> CtOption<Self> {
         self.invert()
     }
+
+    fn invert_vartime(&self) -> CtOption<Self> {
+        self.invert_vartime()
+    }
 }
 
 impl Retrieve for FieldElement {
     type Output = Uint;
 
     fn retrieve(&self) -> Uint {
-        // TODO(tarcieri): more optimized conversion
-        FieldBytesEncoding::<NistP521>::decode_field_bytes(&self.to_bytes())
+        self.to_uint()
     }
 }
 
