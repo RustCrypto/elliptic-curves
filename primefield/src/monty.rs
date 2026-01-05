@@ -40,9 +40,6 @@ pub trait MontyFieldParams<const LIMBS: usize>: ConstMontyParams<LIMBS> {
 
     /// `T = (modulus - 1) >> S`, where `S = (modulus - 1).trailing_zeros()`
     const T: Uint<LIMBS>;
-
-    /// Optional precomputed `ROOT_OF_UNITY`, otherwise will be computed at compile-time.
-    const ROOT_OF_UNITY: Option<Uint<LIMBS>>;
 }
 
 /// Serialized representation of a field element.
@@ -464,10 +461,7 @@ where
     const TWO_INV: Self = Self::from_u64(2).const_invert();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(MOD::MULTIPLICATIVE_GENERATOR);
     const S: u32 = compute_s(MOD::PARAMS.modulus().as_ref());
-    const ROOT_OF_UNITY: Self = match MOD::ROOT_OF_UNITY {
-        Some(root_of_unity) => Self::from_uint_reduced(&root_of_unity),
-        None => Self::MULTIPLICATIVE_GENERATOR.pow_vartime(&MOD::T),
-    };
+    const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(&MOD::T);
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.const_invert();
     const DELTA: Self = Self::MULTIPLICATIVE_GENERATOR.sqn_vartime(Self::S as usize);
 

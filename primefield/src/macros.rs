@@ -35,30 +35,6 @@ macro_rules! monty_field_params {
         multiplicative_generator: $multiplicative_generator:expr,
         doc: $doc:expr
     ) => {
-        $crate::monty_field_params_with_root_of_unity! {
-            name: $name,
-            modulus: $modulus_hex,
-            uint: $uint,
-            byte_order: $byte_order,
-            multiplicative_generator: $multiplicative_generator,
-            root_of_unity: None,
-            doc: $doc
-        }
-    };
-}
-
-/// Same as [`monty_field_params!`], but with a precomputed `ROOT_OF_UNITY` constant.
-#[macro_export]
-macro_rules! monty_field_params_with_root_of_unity {
-    (
-        name: $name:ident,
-        modulus: $modulus_hex:expr,
-        uint: $uint:ty,
-        byte_order: $byte_order:expr,
-        multiplicative_generator: $multiplicative_generator:expr,
-        root_of_unity: $root_of_unity:expr,
-        doc: $doc:expr
-    ) => {
         use $crate::bigint::modular::ConstMontyParams;
 
         $crate::bigint::const_monty_params!($name, $uint, $modulus_hex, $doc);
@@ -71,7 +47,6 @@ macro_rules! monty_field_params_with_root_of_unity {
             const MODULUS_HEX: &'static str = $modulus_hex;
             const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
             const T: $uint = $crate::compute_t($name::PARAMS.modulus().as_ref());
-            const ROOT_OF_UNITY: Option<$uint> = $root_of_unity;
         }
     };
 }
