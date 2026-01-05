@@ -42,12 +42,6 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "base16ct"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8b59d472eab27ade8d770dcb11da7201c11234bef9f82ce7aa517be028d462b"
-
-[[package]]
-name = "base16ct"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd307490d624467aa6f74b0eabb77633d1f758a7b25f12bceb0b22e08d9726f6"
@@ -481,7 +475,7 @@ version = "0.14.0-rc.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f4874d0de0bf58704a6917f26154afcdd49ebc11cae10b6d53950217aee9408"
 dependencies = [
- "base16ct 1.0.0",
+ "base16ct",
  "crypto-bigint",
  "digest",
  "getrandom 0.4.0-rc.0",
@@ -825,7 +819,7 @@ dependencies = [
 name = "p521"
 version = "0.14.0-rc.3"
 dependencies = [
- "base16ct 1.0.0",
+ "base16ct",
  "criterion",
  "ecdsa",
  "elliptic-curve",
@@ -1182,7 +1176,7 @@ version = "0.8.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2568531a8ace88b848310caa98fb2115b151ef924d54aa523e659c21b9d32d71"
 dependencies = [
- "base16ct 1.0.0",
+ "base16ct",
  "ctutils",
  "der",
  "hybrid-array",
@@ -1255,11 +1249,11 @@ dependencies = [
 
 [[package]]
 name = "serdect"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3ef0e35b322ddfaecbc60f34ab448e157e48531288ee49fafbb053696b8ffe2"
+checksum = "9af4a3e75ebd5599b30d4de5768e00b5095d518a79fefc3ecbaf77e665d1ec06"
 dependencies = [
- "base16ct 0.3.0",
+ "base16ct",
  "serde",
 ]
 
