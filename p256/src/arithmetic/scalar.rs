@@ -92,28 +92,32 @@ impl Scalar {
         Self(self.0.wrapping_shr_vartime(shift))
     }
 
-    /// Returns the multiplicative inverse of self, if self is non-zero
+    /// Compute [`FieldElement`] inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
-        CtOption::new(self.invert_unchecked(), !self.is_zero())
+        self.0
+            .invert_odd_mod(const { &Odd::from_be_hex(ORDER_HEX) })
+            .map(Self)
+            .into()
+    }
+
+    /// Compute [`FieldElement`] inversion: `1 / self` in variable-time.
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        self.0
+            .invert_odd_mod_vartime(const { &Odd::from_be_hex(ORDER_HEX) })
+            .map(Self)
+            .into()
     }
 
     /// Returns the multiplicative inverse of self.
     ///
-    /// Does not check that self is non-zero.
-    const fn invert_unchecked(&self) -> Self {
-        // We need to find b such that b * a ≡ 1 mod p. As we are in a prime
-        // field, we can apply Fermat's Little Theorem:
-        //
-        //    a^p         ≡ a mod p
-        //    a^(p-1)     ≡ 1 mod p
-        //    a^(p-2) * a ≡ 1 mod p
-        //
-        // Thus inversion can be implemented with a single exponentiation.
-        //
-        // This is `n - 2`, so the top right two digits are `4f` instead of `51`.
-        const EXP: U256 =
-            U256::from_be_hex("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc63254f");
-        self.pow_vartime(&EXP)
+    /// # Panics
+    /// Will panic in the event `self` is zero
+    const fn invert_unwrap(&self) -> Self {
+        Self(
+            self.0
+                .invert_odd_mod(const { &Odd::from_be_hex(ORDER_HEX) })
+                .expect_copied("input should be non-zero"),
+        )
     }
 
     /// Returns `self^exp`, where `exp` is a little-endian integer exponent.
@@ -263,13 +267,13 @@ impl PrimeField for Scalar {
     const MODULUS: &'static str = ORDER_HEX;
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self(U256::from_u8(2)).invert_unchecked();
+    const TWO_INV: Self = Self(U256::from_u8(2)).invert_unwrap();
     const MULTIPLICATIVE_GENERATOR: Self = Self(U256::from_u8(7));
     const S: u32 = 4;
     const ROOT_OF_UNITY: Self = Self(U256::from_be_hex(
         "ffc97f062a770992ba807ace842a3dfc1546cad004378daf0592d7fbb41e6602",
     ));
-    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unchecked();
+    const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.invert_unwrap();
     const DELTA: Self = Self(U256::from_u64(33232930569601));
 
     /// Attempts to parse the given byte array as an SEC1-encoded scalar.
@@ -337,62 +341,8 @@ impl Invert for Scalar {
         self.invert()
     }
 
-    /// Fast variable-time inversion using Stein's algorithm.
-    ///
-    /// Returns none if the scalar is zero.
-    ///
-    /// <https://link.springer.com/article/10.1007/s13389-016-0135-4>
-    ///
-    /// ⚠️ WARNING!
-    ///
-    /// This method should not be used with (unblinded) secret scalars, as its
-    /// variable-time operation can potentially leak secrets through
-    /// sidechannels.
-    #[allow(non_snake_case)]
     fn invert_vartime(&self) -> CtOption<Self> {
-        let mut u = *self;
-        let mut v = Self(*MODULUS);
-        let mut A = Self::ONE;
-        let mut C = Self::ZERO;
-
-        while !bool::from(u.is_zero()) {
-            // u-loop
-            while bool::from(u.is_even()) {
-                u >>= 1;
-
-                let was_odd: bool = A.is_odd().into();
-                A >>= 1;
-
-                if was_odd {
-                    A += FRAC_MODULUS_2;
-                    A += Self::ONE;
-                }
-            }
-
-            // v-loop
-            while bool::from(v.is_even()) {
-                v >>= 1;
-
-                let was_odd: bool = C.is_odd().into();
-                C >>= 1;
-
-                if was_odd {
-                    C += FRAC_MODULUS_2;
-                    C += Self::ONE;
-                }
-            }
-
-            // sub-step
-            if u >= v {
-                u -= &v;
-                A -= &C;
-            } else {
-                v -= &u;
-                C -= &A;
-            }
-        }
-
-        CtOption::new(C, !self.is_zero())
+        self.invert_vartime()
     }
 }
 
