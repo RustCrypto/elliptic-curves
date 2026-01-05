@@ -37,7 +37,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    bigint::Odd,
+    bigint::{Odd, U256, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::TryRngCore,
@@ -326,6 +326,14 @@ impl PrimeField for FieldElement {
 
     fn is_odd(&self) -> Choice {
         self.is_odd()
+    }
+}
+
+impl Retrieve for FieldElement {
+    type Output = U256;
+
+    fn retrieve(&self) -> U256 {
+        self.normalize().0.to_u256()
     }
 }
 
