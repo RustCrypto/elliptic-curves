@@ -284,6 +284,11 @@ macro_rules! monty_field_element {
             pub const fn sqn_vartime(&self, n: usize) -> Self {
                 Self(self.0.sqn_vartime(n))
             }
+
+            /// Returns the square root of self mod p, or `None` if no square root exists.
+            pub fn sqrt(&self) -> CtOption<Self> {
+                self.0.sqrt().map(Self)
+            }
         }
 
         impl $crate::bigint::modular::ConstMontyParams<{ <$params>::LIMBS }> for $fe {
@@ -320,7 +325,7 @@ macro_rules! monty_field_element {
             }
 
             fn sqrt(&self) -> CtOption<Self> {
-                self.0.sqrt().map(Self)
+                self.sqrt()
             }
 
             fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
@@ -714,7 +719,7 @@ macro_rules! monty_field_arithmetic {
             /// Negate element.
             #[inline]
             pub const fn neg(&self) -> Self {
-                Self(self.0.neg())
+                Self($crate::MontyFieldElement::neg(&self.0))
             }
 
             /// Compute modular square.
