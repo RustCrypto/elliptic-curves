@@ -16,7 +16,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve, Error, ScalarValue,
-    bigint::{ArrayEncoding, Integer, Limb, U256, U512, Word},
+    bigint::{ArrayEncoding, Integer, Limb, U256, U512, Word, modular::Retrieve},
     ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -827,6 +827,14 @@ impl ReduceNonZero<WideBytes> for Scalar {
     #[inline]
     fn reduce_nonzero(bytes: &WideBytes) -> Self {
         Self::reduce_nonzero(&U512::from_be_byte_array(*bytes))
+    }
+}
+
+impl Retrieve for Scalar {
+    type Output = U256;
+
+    fn retrieve(&self) -> U256 {
+        U256::from_be_byte_array(self.to_bytes())
     }
 }
 

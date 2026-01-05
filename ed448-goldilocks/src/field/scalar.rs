@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Integer, Limb, U448, U896, Word},
+    bigint::{Integer, Limb, U448, U896, Word, modular::Retrieve},
     consts::U2,
     ctutils::{self, CtSelect},
     ff::{Field, helpers},
@@ -530,6 +530,14 @@ impl<C: CurveWithScalar> ReduceNonZero<U896> for Scalar<C> {
                 .1
                 .wrapping_add(&U448::ONE),
         )
+    }
+}
+
+impl<C: CurveWithScalar> Retrieve for Scalar<C> {
+    type Output = U448;
+
+    fn retrieve(&self) -> U448 {
+        U448::from_le_byte_array(self.to_bytes().into())
     }
 }
 
