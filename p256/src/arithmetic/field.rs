@@ -106,6 +106,11 @@ impl FieldElement {
         self.0.invert().map(Self)
     }
 
+    /// Returns the multiplicative inverse of self, if self is non-zero.
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        self.0.invert_vartime().map(Self)
+    }
+
     /// Returns the square root of self mod p, or `None` if no square root exists.
     pub fn sqrt(&self) -> CtOption<Self> {
         // We need to find alpha such that alpha^2 = beta mod p. For secp256r1,

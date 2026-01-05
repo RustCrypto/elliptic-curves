@@ -578,6 +578,10 @@ macro_rules! monty_field_element {
             fn invert(&self) -> CtOption<Self> {
                 self.invert()
             }
+
+            fn invert_vartime(&self) -> CtOption<Self> {
+                self.0.invert_vartime().map(Self)
+            }
         }
 
         impl $crate::bigint::modular::Retrieve for $fe {
@@ -729,7 +733,15 @@ macro_rules! monty_field_arithmetic {
             /// inversion: `1 / self`.
             #[inline]
             pub fn invert(&self) -> $crate::subtle::CtOption<Self> {
-                self.0.invert().map(|fe| Self(fe))
+                self.0.invert().map(Self)
+            }
+
+            /// Compute
+            #[doc = stringify!($fe)]
+            /// inversion: `1 / self` in variable-time.
+            #[inline]
+            pub fn invert_vartime(&self) -> $crate::subtle::CtOption<Self> {
+                self.0.invert_vartime().map(Self)
             }
 
             /// Compute field inversion as a `const fn`. Panics if `self` is zero.
