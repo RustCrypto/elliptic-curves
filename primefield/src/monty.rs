@@ -331,6 +331,12 @@ where
         CtOption::from(self.inner.invert()).map(|inner| Self { inner })
     }
 
+    /// Compute field inversion: `1 / self` in variable-time.
+    #[inline]
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        CtOption::from(self.inner.invert_vartime()).map(|inner| Self { inner })
+    }
+
     /// Compute field inversion as a `const fn`. Panics if `self` is zero.
     ///
     /// This is mainly intended for inverting constants at compile time.
@@ -655,6 +661,10 @@ where
 
     fn invert(&self) -> CtOption<Self> {
         Self::invert(self)
+    }
+
+    fn invert_vartime(&self) -> CtOption<Self> {
+        Self::invert_vartime(self)
     }
 }
 
