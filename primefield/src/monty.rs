@@ -7,7 +7,7 @@ use crate::ByteOrder;
 use bigint::{
     ArrayEncoding, ByteArray, Integer, Invert, Limb, Reduce, Uint, Word, ctutils,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
-    modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams},
+    modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams, Retrieve},
 };
 use core::{
     cmp::Ordering,
@@ -930,6 +930,14 @@ impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> PartialOrd
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+
+impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Retrieve for MontyFieldElement<MOD, LIMBS> {
+    type Output = Uint<LIMBS>;
+
+    fn retrieve(&self) -> Uint<LIMBS> {
+        self.to_canonical()
     }
 }
 

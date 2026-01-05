@@ -13,14 +13,28 @@ macro_rules! test_primefield {
 #[macro_export]
 macro_rules! test_primefield_constants {
     ($fe:tt, $uint:ident) => {
-        use $crate::ff::PrimeField as _;
+        use $crate::{bigint::modular::Retrieve as _, ff::PrimeField as _};
 
         // TODO(tarcieri): support for fields with little endian-encoded modulus
-        const T: $uint = $crate::compute_t(&$uint::from_be_hex($fe::MODULUS));
+        const MODULUS: $crate::bigint::Odd<$uint> = $crate::bigint::Odd::from_be_hex($fe::MODULUS);
+        const T: $uint = $crate::compute_t(MODULUS.as_ref());
 
         #[test]
-        fn two_inv_constant() {
-            assert_eq!($fe::from(2u32) * $fe::TWO_INV, $fe::ONE);
+        fn delta_constant() {
+            // DELTA^{t} mod m == 1
+            assert_eq!($fe::DELTA.pow_vartime(&T), $fe::ONE);
+        }
+
+        // TODO(tarcieri): check generator has order `modulus - 1`
+        #[test]
+        fn multiplicative_generator_constant() {
+            // Sanity-check that the generator is a quadratic non-residue
+            assert_eq!(
+                $fe::MULTIPLICATIVE_GENERATOR
+                    .retrieve()
+                    .jacobi_symbol(&MODULUS),
+                $crate::bigint::JacobiSymbol::MinusOne
+            );
         }
 
         #[test]
@@ -41,9 +55,8 @@ macro_rules! test_primefield_constants {
         }
 
         #[test]
-        fn delta_constant() {
-            // DELTA^{t} mod m == 1
-            assert_eq!($fe::DELTA.pow_vartime(&T), $fe::ONE);
+        fn two_inv_constant() {
+            assert_eq!($fe::from(2u32) * $fe::TWO_INV, $fe::ONE);
         }
     };
 }

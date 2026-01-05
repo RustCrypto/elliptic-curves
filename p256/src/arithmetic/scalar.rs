@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve,
-    bigint::{ArrayEncoding, Integer, Limb, Odd, U256, Uint},
+    bigint::{ArrayEncoding, Integer, Limb, Odd, U256, Uint, modular::Retrieve},
     ctutils,
     group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -307,6 +307,14 @@ impl PrimeFieldBits for Scalar {
 
     fn char_le_bits() -> ScalarBits {
         NistP256::ORDER.to_words().into()
+    }
+}
+
+impl Retrieve for Scalar {
+    type Output = U256;
+
+    fn retrieve(&self) -> U256 {
+        self.0
     }
 }
 
