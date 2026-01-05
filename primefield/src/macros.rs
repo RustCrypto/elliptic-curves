@@ -107,6 +107,7 @@ macro_rules! monty_field_params_with_root_of_unity {
 /// - `Eq`
 /// - `Field`
 /// - `PartialEq`
+/// - `Retrieve`
 ///
 /// ## Ops
 /// - `Add`
@@ -576,6 +577,14 @@ macro_rules! monty_field_element {
 
             fn invert(&self) -> CtOption<Self> {
                 self.invert()
+            }
+        }
+
+        impl $crate::bigint::modular::Retrieve for $fe {
+            type Output = $uint;
+
+            fn retrieve(&self) -> $uint {
+                $crate::bigint::modular::Retrieve::retrieve(&self.0)
             }
         }
 

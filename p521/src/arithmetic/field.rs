@@ -30,7 +30,7 @@ use core::{
 };
 use elliptic_curve::{
     Error, FieldBytesEncoding,
-    bigint::Word,
+    bigint::{Word, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::TryRngCore,
@@ -686,11 +686,22 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
     }
 }
 
+// `crypto-bigint` trait impls
+
 impl Invert for FieldElement {
     type Output = CtOption<Self>;
 
     fn invert(&self) -> CtOption<Self> {
         self.invert()
+    }
+}
+
+impl Retrieve for FieldElement {
+    type Output = Uint;
+
+    fn retrieve(&self) -> Uint {
+        // TODO(tarcieri): more optimized conversion
+        FieldBytesEncoding::<NistP521>::decode_field_bytes(&self.to_bytes())
     }
 }
 
