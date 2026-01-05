@@ -173,27 +173,25 @@ impl FieldElement {
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
+    ///
     /// The result has magnitude 1 and is normalized.
     pub fn invert(&self) -> CtOption<Self> {
-        CtOption::from(
-            self.0
-                .normalize()
-                .to_u256()
-                .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) }),
-        )
-        .map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
+        let inv = self
+            .retrieve()
+            .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) });
+
+        CtOption::from(inv).map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
     }
 
     /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
+    ///
     /// The result has magnitude 1 and is normalized.
     pub fn invert_vartime(&self) -> CtOption<Self> {
-        CtOption::from(
-            self.0
-                .normalize()
-                .to_u256()
-                .invert_odd_mod_vartime(const { &Odd::from_be_hex(MODULUS_HEX) }),
-        )
-        .map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
+        let inv = self
+            .retrieve()
+            .invert_odd_mod_vartime(const { &Odd::from_be_hex(MODULUS_HEX) });
+
+        CtOption::from(inv).map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.

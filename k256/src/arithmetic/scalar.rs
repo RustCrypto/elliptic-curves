@@ -14,6 +14,7 @@ use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
+use elliptic_curve::bigint::Odd;
 use elliptic_curve::{
     Curve, Error, ScalarValue,
     bigint::{ArrayEncoding, Integer, Limb, U256, U512, Word, modular::Retrieve},
@@ -28,7 +29,6 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
-
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
@@ -128,55 +128,22 @@ impl Scalar {
         Self(self.0.wrapping_shr_vartime(shift))
     }
 
-    /// Inverts the scalar.
+    /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
-        // Using an addition chain from
-        // https://briansmith.org/ecc-inversion-addition-chains-01#secp256k1_scalar_inversion
-        let x_1 = *self;
-        let x_10 = self.pow2k(1);
-        let x_11 = x_10.mul(&x_1);
-        let x_101 = x_10.mul(&x_11);
-        let x_111 = x_10.mul(&x_101);
-        let x_1001 = x_10.mul(&x_111);
-        let x_1011 = x_10.mul(&x_1001);
-        let x_1101 = x_10.mul(&x_1011);
+        let inv = self
+            .retrieve()
+            .invert_odd_mod(const { &Odd::from_be_hex(ORDER_HEX) });
 
-        let x6 = x_1101.pow2k(2).mul(&x_1011);
-        let x8 = x6.pow2k(2).mul(&x_11);
-        let x14 = x8.pow2k(6).mul(&x6);
-        let x28 = x14.pow2k(14).mul(&x14);
-        let x56 = x28.pow2k(28).mul(&x28);
+        CtOption::from(inv).map(Self::from_uint_unchecked)
+    }
 
-        #[rustfmt::skip]
-            let res = x56
-            .pow2k(56).mul(&x56)
-            .pow2k(14).mul(&x14)
-            .pow2k(3).mul(&x_101)
-            .pow2k(4).mul(&x_111)
-            .pow2k(4).mul(&x_101)
-            .pow2k(5).mul(&x_1011)
-            .pow2k(4).mul(&x_1011)
-            .pow2k(4).mul(&x_111)
-            .pow2k(5).mul(&x_111)
-            .pow2k(6).mul(&x_1101)
-            .pow2k(4).mul(&x_101)
-            .pow2k(3).mul(&x_111)
-            .pow2k(5).mul(&x_1001)
-            .pow2k(6).mul(&x_101)
-            .pow2k(10).mul(&x_111)
-            .pow2k(4).mul(&x_111)
-            .pow2k(9).mul(&x8)
-            .pow2k(5).mul(&x_1001)
-            .pow2k(6).mul(&x_1011)
-            .pow2k(4).mul(&x_1101)
-            .pow2k(5).mul(&x_11)
-            .pow2k(6).mul(&x_1101)
-            .pow2k(10).mul(&x_1101)
-            .pow2k(4).mul(&x_1001)
-            .pow2k(6).mul(&x_1)
-            .pow2k(8).mul(&x6);
+    /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
+    pub fn invert_vartime(&self) -> CtOption<Self> {
+        let inv = self
+            .retrieve()
+            .invert_odd_mod_vartime(const { &Odd::from_be_hex(ORDER_HEX) });
 
-        CtOption::new(res, !self.is_zero())
+        CtOption::from(inv).map(Self::from_uint_unchecked)
     }
 
     /// Returns the scalar modulus as a `BigUint` object.
@@ -203,15 +170,6 @@ impl Scalar {
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
         Self(U256::from_be_slice(bytes))
-    }
-
-    /// Raises the scalar to the power `2^k`.
-    fn pow2k(&self, k: usize) -> Self {
-        let mut x = *self;
-        for _j in 0..k {
-            x = x.square();
-        }
-        x
     }
 }
 
@@ -447,65 +405,11 @@ impl Invert for Scalar {
     type Output = CtOption<Self>;
 
     fn invert(&self) -> CtOption<Self> {
-        self.invert()
+        Scalar::invert(self)
     }
 
-    /// Fast variable-time inversion using Stein's algorithm.
-    ///
-    /// Returns none if the scalar is zero.
-    ///
-    /// <https://link.springer.com/article/10.1007/s13389-016-0135-4>
-    ///
-    /// ⚠️ WARNING!
-    ///
-    /// This method should not be used with (unblinded) secret scalars, as its
-    /// variable-time operation can potentially leak secrets through
-    /// sidechannels.
-    #[allow(non_snake_case)]
     fn invert_vartime(&self) -> CtOption<Self> {
-        let mut u = *self;
-        let mut v = Self::from_uint_unchecked(*Secp256k1::ORDER);
-        let mut A = Self::ONE;
-        let mut C = Self::ZERO;
-
-        while !bool::from(u.is_zero()) {
-            // u-loop
-            while bool::from(u.is_even()) {
-                u >>= 1;
-
-                let was_odd: bool = A.is_odd().into();
-                A >>= 1;
-
-                if was_odd {
-                    A += Self::from_uint_unchecked(FRAC_MODULUS_2);
-                    A += Self::ONE;
-                }
-            }
-
-            // v-loop
-            while bool::from(v.is_even()) {
-                v >>= 1;
-
-                let was_odd: bool = C.is_odd().into();
-                C >>= 1;
-
-                if was_odd {
-                    C += Self::from_uint_unchecked(FRAC_MODULUS_2);
-                    C += Self::ONE;
-                }
-            }
-
-            // sub-step
-            if u >= v {
-                u -= &v;
-                A -= &C;
-            } else {
-                v -= &u;
-                C -= &A;
-            }
-        }
-
-        CtOption::new(C, !self.is_zero())
+        Scalar::invert_vartime(self)
     }
 }
 
@@ -924,7 +828,7 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
-        ops::{Invert, Reduce},
+        ops::Reduce,
         scalar::IsHigh,
     };
     use getrandom::{SysRng, rand_core::TryRngCore};
