@@ -363,9 +363,9 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.0-rc.13"
+version = "0.7.0-rc.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2bb4138de6db76c8155b4423e967049fbef2cf84ad6af7f552f73a161941b72"
+checksum = "c9c6daa2049db6a5fad90a981b8c63f023dbaf75a0fae73db4dcf234556fc957"
 dependencies = [
  "ctutils",
  "getrandom 0.4.0-rc.0",
@@ -477,9 +477,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.19"
+version = "0.14.0-rc.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bfae4ab886ff791e2119cc79402281e35408f22b6b7322acef371d01061054b"
+checksum = "1f4874d0de0bf58704a6917f26154afcdd49ebc11cae10b6d53950217aee9408"
 dependencies = [
  "base16ct 1.0.0",
  "crypto-bigint",
