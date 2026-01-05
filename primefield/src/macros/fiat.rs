@@ -163,20 +163,20 @@ macro_rules! fiat_monty_field_arithmetic {
             /// Does not check that self is non-zero.
             const fn invert_unchecked(&self) -> Self {
                 let words = $crate::fiat_bernstein_yang_invert!(
-                    &$mont_type(self.0.to_montgomery_words()),
-                    &$mont_type(Self::ONE.0.to_montgomery_words()),
-                    <$fe as $crate::ff::PrimeField>::NUM_BITS as usize,
-                    <$uint>::LIMBS,
-                    $crate::bigint::Word,
-                    $non_mont_type,
-                    $mont_type,
-                    $from_mont,
-                    $mul,
-                    $neg,
-                    $divstep_precomp,
-                    $divstep,
-                    $msat,
-                    $selectznz
+                    a: &$mont_type(self.0.to_montgomery_words()),
+                    one: &$mont_type(Self::ONE.0.to_montgomery_words()),
+                    d: <$fe as $crate::ff::PrimeField>::NUM_BITS as usize,
+                    nlimbs: <$uint>::LIMBS,
+                    word: $crate::bigint::Word,
+                    non_mont: $non_mont_type,
+                    mont: $mont_type,
+                    from_mont: $from_mont,
+                    mul: $mul,
+                    neg: $neg,
+                    divstep_precomp: $divstep_precomp,
+                    divstep: $divstep,
+                    msat: $msat,
+                    selectnz: $selectznz
                 );
 
                 Self(
@@ -194,20 +194,20 @@ macro_rules! fiat_monty_field_arithmetic {
 #[macro_export]
 macro_rules! fiat_bernstein_yang_invert {
     (
-        $a:expr,
-        $one:expr,
-        $d:expr,
-        $nlimbs:expr,
-        $word:ty,
-        $non_mont_type: expr,
-        $mont_type: expr,
-        $from_mont:ident,
-        $mul:ident,
-        $neg:ident,
-        $divstep_precomp:ident,
-        $divstep:ident,
-        $msat:ident,
-        $selectznz:ident
+        a: $a:expr,
+        one: $one:expr,
+        d: $d:expr,
+        nlimbs: $nlimbs:expr,
+        word: $word:ty,
+        non_mont: $non_mont_type: expr,
+        mont: $mont_type: expr,
+        from_mont: $from_mont:ident,
+        mul: $mul:ident,
+        neg: $neg:ident,
+        divstep_precomp: $divstep_precomp:ident,
+        divstep: $divstep:ident,
+        msat: $msat:ident,
+        selectnz: $selectznz:ident
     ) => {{
         // See Bernstein-Yang 2019 p.366
         const ITERATIONS: usize = (49 * $d + 57) / 17;
@@ -274,11 +274,11 @@ macro_rules! fiat_bernstein_yang_invert {
 }
 
 /// Test that the wrapper generated for a `word-by-word-montgomery` fiat-crypto implementation
-/// matches the internal representation used by `MontyField`, e.g. do they represent the modulus
-/// the same and agree on the value of `R`.
+/// matches the internal representation used by `MontyField*`, e.g. do they have the same saturated
+/// modulus representation and agree on the value of `R`.
 ///
-/// If these tests do not pass, the fiat-crypto synthesized implementation is incompatible with
-/// `MontyField`.
+/// If these tests do not pass, the `fiat-crypto` synthesized implementation is incompatible with
+/// `MontyField*`.
 ///
 /// See also: mit-plv/fiat-crypto#2166
 #[macro_export]
