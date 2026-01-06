@@ -1,3 +1,74 @@
+/// Write a series of `criterion`-based benchmarks for a field implementation.
+#[macro_export]
+macro_rules! bench_field {
+    { $name:ident, $desc:expr, $fe_a:expr, $fe_b:expr } => {
+        fn bench_add<M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'_, M>,
+        ) {
+            let x = core::hint::black_box($fe_a);
+            let y = core::hint::black_box($fe_b);
+            group.bench_function("add", |b| b.iter(|| x + y));
+        }
+
+        fn bench_sub<M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'_, M>,
+        ) {
+            let x = core::hint::black_box($fe_a);
+            let y = core::hint::black_box($fe_b);
+            group.bench_function("sub", |b| b.iter(|| x - y));
+        }
+
+        fn bench_mul<M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'_, M>,
+        ) {
+            let x = core::hint::black_box($fe_a);
+            let y = core::hint::black_box($fe_b);
+            group.bench_function("mul", |b| b.iter(|| x * y));
+        }
+
+        fn bench_neg<M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'_, M>,
+        ) {
+            let x = core::hint::black_box($fe_a);
+            group.bench_function("neg", |b| b.iter(|| -x));
+        }
+
+        fn bench_invert<M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'_, M>,
+        ) {
+            let x = core::hint::black_box($fe_a);
+            group.bench_function("invert", |b| b.iter(|| x.invert()));
+        }
+
+        fn bench_square<'a, M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'a, M>,
+        ) {
+            let x = core::hint::black_box($fe_a);
+            group.bench_function("square", |b| b.iter(|| x.square()));
+        }
+
+        fn bench_sqrt<'a, M: ::criterion::measurement::Measurement>(
+            group: &mut ::criterion::BenchmarkGroup<'a, M>,
+        ) {
+            use ::primefield::ff::Field;
+            let x = core::hint::black_box($fe_a);
+            group.bench_function("sqrt", |b| b.iter(|| x.sqrt()));
+        }
+
+        fn $name(c: &mut Criterion) {
+            let mut group = c.benchmark_group($desc);
+            bench_add(&mut group);
+            bench_sub(&mut group);
+            bench_mul(&mut group);
+            bench_neg(&mut group);
+            bench_invert(&mut group);
+            bench_square(&mut group);
+            bench_sqrt(&mut group);
+            group.finish();
+        }
+    };
+}
+
 /// Implement all tests for a type which impls the `PrimeField` trait.
 #[macro_export]
 macro_rules! test_primefield {
