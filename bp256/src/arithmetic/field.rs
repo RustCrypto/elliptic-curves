@@ -10,6 +10,7 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
+#[cfg(not(bp256_backend = "bignum"))]
 #[cfg_attr(target_pointer_width = "32", path = "field/bp256_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "field/bp256_64.rs")]
 #[allow(
@@ -21,12 +22,14 @@
 #[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod field_impl;
 
-use self::field_impl::*;
 use crate::U256;
 use elliptic_curve::{
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
+
+#[cfg(not(bp256_backend = "bignum"))]
+use self::field_impl::*;
 
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5377";
@@ -47,6 +50,14 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP256 finite field modulo p"
 }
 
+#[cfg(bp256_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256
+}
+
+#[cfg(not(bp256_backend = "bignum"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -69,12 +80,15 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U256};
+    #[cfg(not(bp256_backend = "bignum"))]
     use super::{
         FieldParams, fiat_bp256_montgomery_domain_field_element, fiat_bp256_msat,
         fiat_bp256_non_montgomery_domain_field_element, fiat_bp256_to_montgomery,
     };
 
     primefield::test_primefield!(FieldElement, U256);
+
+    #[cfg(not(bp256_backend = "bignum"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,
