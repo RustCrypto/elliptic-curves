@@ -2,26 +2,25 @@
 //!
 //! ## Usage
 //!
-//! NOTE: requires the `dsa` crate feature enabled, and `rand_core` dependency
-//! with `getrandom` feature enabled.
-#![cfg_attr(feature = "std", doc = "```")]
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use getrandom::{SysRng, rand_core::TryRngCore};
+#![cfg_attr(all(feature = "ecdsa", feature = "getrandom"), doc = "```")]
+#![cfg_attr(not(all(feature = "ecdsa", feature = "getrandom")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `ecdsa` and `getrandom` crate features are enabled
 //! use bignp256::{
-//!     ecdsa::{Signature, SigningKey, signature::Signer},
-//!     SecretKey
+//!     ecdsa::{SigningKey, Signature, signature::Signer},
+//!     elliptic_curve::{Generate, sec1::ToEncodedPoint},
+//!     SecretKey,
 //! };
 //!
 //! // Signing
-//! let secret_key = SecretKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `::to_bytes()`
-//! let signing_key = SigningKey::new(&secret_key)?;
+//! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes();
+//!
 //! let message = b"test message";
 //! let signature: Signature = signing_key.sign(message);
 //!
-//! // Verifying
-//! use bignp256::ecdsa::{VerifyingKey, signature::Verifier};
+//! // Verification
+//! use bignp256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes)?;
 //! verifying_key.verify(message, &signature)?;

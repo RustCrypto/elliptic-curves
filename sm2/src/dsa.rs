@@ -2,20 +2,18 @@
 //!
 //! ## Usage
 //!
-//! NOTE: requires the `dsa` crate feature enabled, and `rand_core` dependency
-//! with `getrandom` feature enabled.
-//!
-#![cfg_attr(feature = "std", doc = "```")]
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use getrandom::{SysRng, rand_core::TryRngCore};
+#![cfg_attr(all(feature = "dsa", feature = "getrandom"), doc = "```")]
+#![cfg_attr(not(all(feature = "dsa", feature = "getrandom")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `dsa` and `getrandom` crate features are enabled
 //! use sm2::{
 //!     dsa::{Signature, SigningKey, signature::Signer},
+//!     elliptic_curve::Generate,
 //!     SecretKey
 //! };
 //!
 //! // Signing
-//! let secret_key = SecretKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::generate(); // serialize with `::to_bytes()`
 //! let distid = "example@rustcrypto.org"; // distinguishing identifier
 //! let signing_key = SigningKey::new(distid, &secret_key)?;
 //! let verifying_key_bytes = signing_key.verifying_key().to_sec1_bytes();

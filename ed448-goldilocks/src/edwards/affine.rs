@@ -2,8 +2,8 @@ use crate::field::FieldElement;
 use crate::*;
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::ops::Mul;
-use elliptic_curve::{Error, ctutils, point::NonIdentity, zeroize::DefaultIsZeroes};
-use rand_core::TryRngCore;
+use elliptic_curve::{Error, Generate, ctutils, point::NonIdentity, zeroize::DefaultIsZeroes};
+use rand_core::{TryCryptoRng, TryRngCore};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// Affine point on untwisted curve
@@ -13,133 +13,12 @@ pub struct AffinePoint {
     pub(crate) y: FieldElement,
 }
 
-impl Default for AffinePoint {
-    fn default() -> Self {
-        Self::IDENTITY
-    }
-}
-
-impl ConstantTimeEq for AffinePoint {
-    fn ct_eq(&self, other: &Self) -> Choice {
-        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
-    }
-}
-
-impl ConditionallySelectable for AffinePoint {
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self {
-            x: FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: FieldElement::conditional_select(&a.y, &b.y, choice),
-        }
-    }
-}
-
-impl ctutils::CtEq for AffinePoint {
-    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
-        (self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)).into()
-    }
-}
-
-impl ctutils::CtSelect for AffinePoint {
-    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
-        Self {
-            x: FieldElement::conditional_select(&self.x, &other.x, choice.into()),
-            y: FieldElement::conditional_select(&self.y, &other.y, choice.into()),
-        }
-    }
-}
-
-impl PartialEq for AffinePoint {
-    fn eq(&self, other: &Self) -> bool {
-        self.ct_eq(other).into()
-    }
-}
-
-impl Eq for AffinePoint {}
-
-impl elliptic_curve::point::AffineCoordinates for AffinePoint {
-    type FieldRepr = Ed448FieldBytes;
-
-    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
-        let point = Self {
-            x: FieldElement::from_bytes_extended(&x.0),
-            y: FieldElement::from_bytes_extended(&y.0),
-        };
-
-        CtOption::new(point, point.is_on_curve())
-    }
-
-    fn x(&self) -> Self::FieldRepr {
-        Ed448FieldBytes::from(self.x.to_bytes_extended())
-    }
-
-    fn y(&self) -> Self::FieldRepr {
-        Ed448FieldBytes::from(self.y.to_bytes_extended())
-    }
-
-    fn x_is_odd(&self) -> Choice {
-        self.x.is_negative()
-    }
-
-    fn y_is_odd(&self) -> Choice {
-        self.y.is_negative()
-    }
-}
-
-impl DefaultIsZeroes for AffinePoint {}
-
 impl AffinePoint {
     /// The identity point
     pub const IDENTITY: AffinePoint = AffinePoint {
         x: FieldElement::ZERO,
         y: FieldElement::ONE,
     };
-
-    /// Generate a random [`AffinePoint`].
-    pub fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
-    where
-        R: TryRngCore + ?Sized,
-    {
-        let mut bytes = CompressedEdwardsY::default();
-
-        loop {
-            rng.try_fill_bytes(&mut bytes.0)?;
-            if let Some(point) = bytes.decompress().into() {
-                return Ok(point);
-            }
-        }
-    }
-
-    pub(crate) fn isogeny(&self) -> Self {
-        let x = self.x;
-        let y = self.y;
-        let mut t0 = x.square(); // x^2
-        let t1 = t0 + FieldElement::ONE; // x^2+1
-        t0 -= FieldElement::ONE; // x^2-1
-        let mut t2 = y.square(); // y^2
-        t2 = t2.double(); // 2y^2
-        let t3 = x.double(); // 2x
-
-        let mut t4 = t0 * y; // y(x^2-1)
-        t4 = t4.double(); // 2y(x^2-1)
-        let xNum = t4.double(); // xNum = 4y(x^2-1)
-
-        let mut t5 = t0.square(); // x^4-2x^2+1
-        t4 = t5 + t2; // x^4-2x^2+1+2y^2
-        let xDen = t4 + t2; // xDen = x^4-2x^2+1+4y^2
-
-        t5 *= x; // x^5-2x^3+x
-        t4 = t2 * t3; // 4xy^2
-        let yNum = t4 - t5; // yNum = -(x^5-2x^3+x-4xy^2)
-
-        t4 = t1 * t2; // 2x^2y^2+2y^2
-        let yDen = t5 - t4; // yDen = x^5-2x^3+x-2x^2y^2-2y^2
-
-        Self {
-            x: xNum * xDen.invert(),
-            y: yNum * yDen.invert(),
-        }
-    }
 
     /// Standard compression; store Y and sign of X
     pub fn compress(&self) -> CompressedEdwardsY {
@@ -187,7 +66,136 @@ impl AffinePoint {
     pub fn y(&self) -> [u8; 56] {
         self.y.to_bytes()
     }
+
+    pub(crate) fn isogeny(&self) -> Self {
+        let x = self.x;
+        let y = self.y;
+        let mut t0 = x.square(); // x^2
+        let t1 = t0 + FieldElement::ONE; // x^2+1
+        t0 -= FieldElement::ONE; // x^2-1
+        let mut t2 = y.square(); // y^2
+        t2 = t2.double(); // 2y^2
+        let t3 = x.double(); // 2x
+
+        let mut t4 = t0 * y; // y(x^2-1)
+        t4 = t4.double(); // 2y(x^2-1)
+        let xNum = t4.double(); // xNum = 4y(x^2-1)
+
+        let mut t5 = t0.square(); // x^4-2x^2+1
+        t4 = t5 + t2; // x^4-2x^2+1+2y^2
+        let xDen = t4 + t2; // xDen = x^4-2x^2+1+4y^2
+
+        t5 *= x; // x^5-2x^3+x
+        t4 = t2 * t3; // 4xy^2
+        let yNum = t4 - t5; // yNum = -(x^5-2x^3+x-4xy^2)
+
+        t4 = t1 * t2; // 2x^2y^2+2y^2
+        let yDen = t5 - t4; // yDen = x^5-2x^3+x-2x^2y^2-2y^2
+
+        Self {
+            x: xNum * xDen.invert(),
+            y: yNum * yDen.invert(),
+        }
+    }
+
+    /// Generate a random [`AffinePoint`].
+    ///
+    /// Helper method that has `TryRngCore` bounds so `ProjectivePoint` can call it for its `group`
+    /// impls, otherwise end users should use the `Generate` trait.
+    pub(crate) fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
+    where
+        R: TryRngCore + ?Sized,
+    {
+        let mut bytes = CompressedEdwardsY::default();
+
+        loop {
+            rng.try_fill_bytes(&mut bytes.0)?;
+            if let Some(point) = bytes.decompress().into() {
+                return Ok(point);
+            }
+        }
+    }
 }
+
+impl Default for AffinePoint {
+    fn default() -> Self {
+        Self::IDENTITY
+    }
+}
+
+impl ConstantTimeEq for AffinePoint {
+    fn ct_eq(&self, other: &Self) -> Choice {
+        self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)
+    }
+}
+
+impl ConditionallySelectable for AffinePoint {
+    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
+        Self {
+            x: FieldElement::conditional_select(&a.x, &b.x, choice),
+            y: FieldElement::conditional_select(&a.y, &b.y, choice),
+        }
+    }
+}
+
+impl ctutils::CtEq for AffinePoint {
+    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
+        (self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y)).into()
+    }
+}
+
+impl ctutils::CtSelect for AffinePoint {
+    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
+        Self {
+            x: FieldElement::conditional_select(&self.x, &other.x, choice.into()),
+            y: FieldElement::conditional_select(&self.y, &other.y, choice.into()),
+        }
+    }
+}
+
+impl Eq for AffinePoint {}
+impl PartialEq for AffinePoint {
+    fn eq(&self, other: &Self) -> bool {
+        self.ct_eq(other).into()
+    }
+}
+
+impl Generate for AffinePoint {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
+    }
+}
+
+impl elliptic_curve::point::AffineCoordinates for AffinePoint {
+    type FieldRepr = Ed448FieldBytes;
+
+    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
+        let point = Self {
+            x: FieldElement::from_bytes_extended(&x.0),
+            y: FieldElement::from_bytes_extended(&y.0),
+        };
+
+        CtOption::new(point, point.is_on_curve())
+    }
+
+    fn x(&self) -> Self::FieldRepr {
+        Ed448FieldBytes::from(self.x.to_bytes_extended())
+    }
+
+    fn y(&self) -> Self::FieldRepr {
+        Ed448FieldBytes::from(self.y.to_bytes_extended())
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.x.is_negative()
+    }
+
+    fn y_is_odd(&self) -> Choice {
+        self.y.is_negative()
+    }
+}
+
+impl DefaultIsZeroes for AffinePoint {}
 
 impl From<NonIdentity<AffinePoint>> for AffinePoint {
     fn from(affine: NonIdentity<AffinePoint>) -> Self {

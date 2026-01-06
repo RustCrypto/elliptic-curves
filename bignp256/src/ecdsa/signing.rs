@@ -19,12 +19,13 @@ use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Sca
 use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    Curve, Field, FieldBytesEncoding, Group, PrimeField,
+    Curve, Field, FieldBytesEncoding, Generate, Group, PrimeField,
     array::{Array, sizes::U32, typenum::Unsigned},
     ops::Reduce,
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
 };
+use rand_core::TryCryptoRng;
 use signature::{Error, KeypairRef, MultipartSigner, Result, Signer, hazmat::PrehashSigner};
 
 /// BignP256 secret key used for signing messages and producing signatures.
@@ -46,12 +47,6 @@ pub struct SigningKey {
 }
 
 impl SigningKey {
-    /// Create signing key from a signer's distinguishing identifier and
-    /// secret key.
-    pub fn new(secret_key: &SecretKey) -> Result<Self> {
-        Self::from_nonzero_scalar(secret_key.to_nonzero_scalar())
-    }
-
     /// Parse signing key from big endian-encoded bytes.
     pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
         Self::from_slice(bytes)
@@ -60,18 +55,19 @@ impl SigningKey {
     /// Parse signing key from big endian-encoded byte slice containing a secret
     /// scalar value.
     pub fn from_slice(slice: &[u8]) -> Result<Self> {
-        let secret_scalar = NonZeroScalar::try_from(slice).map_err(|_| Error::new())?;
-        Self::from_nonzero_scalar(secret_scalar)
+        NonZeroScalar::try_from(slice)
+            .map(Into::into)
+            .map_err(|_| Error::new())
     }
 
     /// Create a signing key from a non-zero scalar.
-    pub fn from_nonzero_scalar(secret_scalar: NonZeroScalar) -> Result<Self> {
+    pub fn from_nonzero_scalar(secret_scalar: NonZeroScalar) -> Self {
         let public_key = PublicKey::from_secret_scalar(&secret_scalar);
-        let verifying_key = VerifyingKey::new(public_key)?;
-        Ok(Self {
+
+        Self {
             secret_scalar,
-            verifying_key,
-        })
+            verifying_key: public_key.into(),
+        }
     }
 
     /// Serialize as bytes.
@@ -93,6 +89,14 @@ impl SigningKey {
     /// Get the [`VerifyingKey`] which corresponds to this [`SigningKey`].
     pub fn verifying_key(&self) -> &VerifyingKey {
         &self.verifying_key
+    }
+}
+
+impl Generate for SigningKey {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        NonZeroScalar::try_generate_from_rng(rng).map(Into::into)
     }
 }
 
@@ -191,6 +195,24 @@ impl Eq for SigningKey {}
 impl PartialEq for SigningKey {
     fn eq(&self, other: &SigningKey) -> bool {
         self.ct_eq(other).into()
+    }
+}
+
+impl From<NonZeroScalar> for SigningKey {
+    fn from(secret_scalar: NonZeroScalar) -> Self {
+        Self::from_nonzero_scalar(secret_scalar)
+    }
+}
+
+impl From<SecretKey> for SigningKey {
+    fn from(secret_key: SecretKey) -> Self {
+        secret_key.to_nonzero_scalar().into()
+    }
+}
+
+impl From<SigningKey> for SecretKey {
+    fn from(signing_key: SigningKey) -> Self {
+        signing_key.secret_scalar.into()
     }
 }
 

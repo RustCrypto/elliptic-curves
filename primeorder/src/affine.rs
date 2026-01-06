@@ -8,13 +8,13 @@ use core::{
     ops::{Mul, Neg},
 };
 use elliptic_curve::{
-    Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, PublicKey, Result, Scalar,
+    Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, Generate, PublicKey, Result, Scalar,
     array::ArraySize,
     ctutils::{self, CtGt as _, CtSelect as _},
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
-    rand_core::TryRngCore,
+    rand_core::{TryCryptoRng, TryRngCore},
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
@@ -77,17 +77,16 @@ where
             infinity: self.infinity,
         }
     }
-}
 
-impl<C> AffinePoint<C>
-where
-    C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
-{
-    /// Generate a cryptographically random [`AffinePoint`].
-    pub fn try_from_rng<R: TryRngCore + ?Sized>(
+    /// Internal RNG that avoids a `TryCryptoRng` bound so we can use it with `group`.
+    ///
+    /// TODO(tarcieri): find some way to avoid this?
+    pub(crate) fn try_from_rng<R: TryRngCore + ?Sized>(
         rng: &mut R,
-    ) -> core::result::Result<Self, R::Error> {
+    ) -> core::result::Result<Self, R::Error>
+    where
+        FieldBytes<C>: Copy,
+    {
         let mut bytes = FieldBytes::<C>::default();
         let mut sign = 0;
 
@@ -301,6 +300,18 @@ where
 {
     fn from(affine: AffinePoint<C>) -> EncodedPoint<C> {
         affine.to_encoded_point(false)
+    }
+}
+
+impl<C> Generate for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+{
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        Self::try_from_rng(rng)
     }
 }
 

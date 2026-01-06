@@ -5,6 +5,7 @@ use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
 use elliptic_curve::{
+    Generate,
     ops::Reduce,
     rand_core::{CryptoRng, TryCryptoRng},
     subtle::ConditionallySelectable,
@@ -35,30 +36,6 @@ pub struct SigningKey {
 }
 
 impl SigningKey {
-    /// Generate a random [`SigningKey`].
-    ///
-    /// # Panics
-    ///
-    /// If the system's cryptographically secure RNG has an internal error.
-    #[cfg(feature = "getrandom")]
-    pub fn generate() -> Self {
-        NonZeroScalar::generate().into()
-    }
-
-    /// Generate a cryptographically random [`SigningKey`].
-    pub fn try_from_rng<R: TryCryptoRng + ?Sized>(
-        rng: &mut R,
-    ) -> core::result::Result<Self, R::Error> {
-        Ok(NonZeroScalar::try_from_rng(rng)?.into())
-    }
-
-    /// Deprecated: Generate a cryptographically random [`SigningKey`].
-    #[deprecated(since = "0.14.0", note = "use `generate` or `try_from_rng` instead")]
-    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
-        let Ok(sk) = Self::try_from_rng(rng);
-        sk
-    }
-
     /// Parse signing key from big endian-encoded bytes.
     pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
         NonZeroScalar::from_repr(*bytes)
@@ -142,6 +119,12 @@ impl SigningKey {
 
         Ok(sig)
     }
+
+    /// Deprecated: Generate a cryptographically random [`SigningKey`].
+    #[deprecated(since = "0.14.0", note = "use the `Generate` trait instead")]
+    pub fn random<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
+        Self::generate_from_rng(rng)
+    }
 }
 
 impl From<NonZeroScalar> for SigningKey {
@@ -176,6 +159,14 @@ impl From<SecretKey> for SigningKey {
 impl From<&SecretKey> for SigningKey {
     fn from(secret_key: &SecretKey) -> SigningKey {
         secret_key.to_nonzero_scalar().into()
+    }
+}
+
+impl Generate for SigningKey {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        Ok(NonZeroScalar::try_generate_from_rng(rng)?.into())
     }
 }
 

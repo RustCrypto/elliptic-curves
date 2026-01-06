@@ -267,6 +267,14 @@ macro_rules! monty_field_element {
                 <$params>::PARAMS;
         }
 
+        impl $crate::common::Generate for $fe {
+            fn try_generate_from_rng<R: $crate::rand_core::TryCryptoRng + ?Sized>(
+                rng: &mut R,
+            ) -> ::core::result::Result<Self, R::Error> {
+                <Self as $crate::ff::Field>::try_from_rng(rng)
+            }
+        }
+
         impl $crate::ff::Field for $fe {
             const ZERO: Self = Self::ZERO;
             const ONE: Self = Self::ONE;

@@ -28,19 +28,25 @@
 //!
 //! # Usage
 //!
-#![cfg_attr(feature = "std", doc = "```")]
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! use k256::schnorr::{
-//!     signature::{Signer, Verifier},
-//!     SigningKey, VerifyingKey
+#![cfg_attr(all(feature = "getrandom", feature = "schnorr"), doc = "```")]
+#![cfg_attr(
+    not(all(feature = "getrandom", feature = "schnorr")),
+    doc = "```ignore"
+)]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `getrandom` and `schnorr` crate features are enabled
+//! use k256::{
+//!     elliptic_curve::Generate,
+//!     schnorr::{
+//!         signature::{Signer, Verifier},
+//!         SigningKey, VerifyingKey
+//!     }
 //! };
-//! use getrandom::SysRng;
 //!
 //! //
 //! // Signing
 //! //
-//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `.to_bytes()`
+//! let signing_key = SigningKey::generate(); // serialize with `.to_bytes()`
 //! let verifying_key_bytes = signing_key.verifying_key().to_bytes(); // 32-bytes
 //!
 //! let message = b"Schnorr signatures prove knowledge of a secret in the random oracle model";

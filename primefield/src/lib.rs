@@ -20,6 +20,7 @@ pub use crate::{
 pub use array::typenum::consts;
 pub use bigint;
 pub use bigint::hybrid_array as array;
+pub use common;
 pub use ff;
 pub use rand_core;
 pub use subtle;

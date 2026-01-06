@@ -45,14 +45,4 @@ mod tests {
     fn verify_constants() {
         assert_eq!(CURVE_EQUATION_B.to_bytes(), CURVE_EQUATION_B_BYTES);
     }
-
-    #[test]
-    fn try_from_rng() {
-        use crate::SecretKey;
-        use getrandom::SysRng;
-        let key = SecretKey::try_from_rng(&mut SysRng).unwrap();
-
-        // Sanity check
-        assert!(!key.to_bytes().iter().all(|b| *b == 0))
-    }
 }

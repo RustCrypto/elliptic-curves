@@ -10,8 +10,8 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, FieldBytes, FieldBytesSize, PrimeField, PublicKey, Result,
-    Scalar,
+    BatchNormalize, CurveGroup, Error, FieldBytes, FieldBytesSize, Generate, PrimeField, PublicKey,
+    Result, Scalar,
     array::ArraySize,
     bigint::{ArrayEncoding, ByteArray},
     ctutils,
@@ -22,7 +22,7 @@ use elliptic_curve::{
     },
     ops::{BatchInvert, LinearCombination},
     point::{Double, NonIdentity},
-    rand_core::TryRngCore,
+    rand_core::{TryCryptoRng, TryRngCore},
     sec1::{
         CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
         UncompressedPointSize,
@@ -238,6 +238,18 @@ where
 {
     fn from_encoded_point(p: &EncodedPoint<C>) -> ctutils::CtOption<Self> {
         AffinePoint::<C>::from_encoded_point(p).map(Self::from)
+    }
+}
+
+impl<C> Generate for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+{
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        AffinePoint::try_generate_from_rng(rng).map(Self::from)
     }
 }
 

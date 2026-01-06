@@ -2,21 +2,24 @@
 //!
 //! ## Usage
 //!
-//! NOTE: requires the `sm3` crate for digest functions and the `primeorder` crate for prime field operations.
+//! The `DecryptingKey` struct is used for decrypting messages that were encrypted using the SM2
+//! encryption algorithm.
 //!
-//! The `DecryptingKey` struct is used for decrypting messages that were encrypted using the SM2 encryption algorithm.
-//! It is initialized with a `SecretKey` or a non-zero scalar value and can decrypt ciphertexts using the specified decryption mode.
-#![cfg_attr(feature = "std", doc = "```")]
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! use getrandom::SysRng;
+//! It is initialized with a `SecretKey` or a non-zero scalar value and can decrypt ciphertexts
+//! using the specified decryption mode.
+//!
+#![cfg_attr(all(feature = "pke", feature = "getrandom"), doc = "```")]
+#![cfg_attr(not(all(feature = "pke", feature = "getrandom")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `pke` and `getrandom` crate features are enabled
 //! use sm2::{
+//!     elliptic_curve::{Generate, common::getrandom::SysRng},
 //!     pke::{EncryptingKey, Mode},
-//!     {SecretKey, PublicKey}
+//!     SecretKey, PublicKey
 //! };
 //!
 //! // Encrypting
-//! let secret_key = SecretKey::try_from_rng(&mut SysRng).unwrap(); // serialize with `::to_bytes()`
+//! let secret_key = SecretKey::generate(); // serialize with `::to_bytes()`
 //! let public_key = secret_key.public_key();
 //! let encrypting_key = EncryptingKey::new_with_mode(public_key, Mode::C1C2C3);
 //! let plaintext = b"plaintext";
@@ -36,9 +39,6 @@
 //! Ok(())
 //! # }
 //!  ```
-//!
-//!
-//!
 
 use core::cmp::min;
 

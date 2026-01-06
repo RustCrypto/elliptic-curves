@@ -29,7 +29,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Error, FieldBytesEncoding,
+    Error, FieldBytesEncoding, Generate,
     array::Array,
     bigint::{Word, modular::Retrieve},
     ff::{self, Field, PrimeField},
@@ -508,6 +508,12 @@ impl Field for FieldElement {
 
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
         ff::helpers::sqrt_ratio_generic(num, div)
+    }
+}
+
+impl Generate for FieldElement {
+    fn try_generate_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
     }
 }
 

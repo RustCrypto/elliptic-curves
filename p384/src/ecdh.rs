@@ -8,21 +8,26 @@
 //! This usage example is from the perspective of two participants in the
 //! exchange, nicknamed "Alice" and "Bob".
 //!
-//! ```
-//! use p384::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
-//! use getrandom::SysRng;
+#![cfg_attr(all(feature = "ecdh", feature = "getrandom"), doc = "```")]
+#![cfg_attr(not(all(feature = "ecdh", feature = "getrandom")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `ecdh` and `getrandom` crate features are enabled
+//! use p384::{
+//!     EncodedPoint, PublicKey,
+//!     elliptic_curve::Generate,
+//!     ecdh::EphemeralSecret
+//! };
 //!
 //! // Alice
-//! let alice_secret = EphemeralSecret::try_from_rng(&mut SysRng).unwrap();
+//! let alice_secret = EphemeralSecret::generate();
 //! let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
 //!
 //! // Bob
-//! let bob_secret = EphemeralSecret::try_from_rng(&mut SysRng).unwrap();
+//! let bob_secret = EphemeralSecret::generate();
 //! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
 //!
 //! // Alice decodes Bob's serialized public key and computes a shared secret from it
-//! let bob_public = PublicKey::from_sec1_bytes(bob_pk_bytes.as_ref())
-//!     .expect("bob's public key is invalid!"); // In real usage, don't panic, handle this!
+//! let bob_public = PublicKey::from_sec1_bytes(bob_pk_bytes.as_ref())?;
 //!
 //! let alice_shared = alice_secret.diffie_hellman(&bob_public);
 //!
@@ -34,6 +39,8 @@
 //!
 //! // Both participants arrive on the same shared secret
 //! assert_eq!(alice_shared.raw_secret_bytes(), bob_shared.raw_secret_bytes());
+//! # Ok(())
+//! # }
 //! ```
 
 pub use elliptic_curve::ecdh::diffie_hellman;

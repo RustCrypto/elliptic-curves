@@ -2,8 +2,9 @@ use crate::curve::twedwards::extended::ExtendedPoint;
 use crate::field::FieldElement;
 use crate::*;
 
+use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use elliptic_curve::{
-    CurveGroup, Error, Group,
+    CurveGroup, Error, Generate, Group,
     array::Array,
     consts::U56,
     ctutils,
@@ -11,9 +12,7 @@ use elliptic_curve::{
     ops::LinearCombination,
     point::NonIdentity,
 };
-
-use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
-use rand_core::{CryptoRng, TryRngCore};
+use rand_core::{CryptoRng, TryCryptoRng, TryRngCore};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// The bytes representation of a compressed point
@@ -24,6 +23,84 @@ pub type DecafPointRepr = Array<u8, U56>;
 /// A Decaf point in the Twisted Edwards curve
 #[derive(Copy, Clone, Debug)]
 pub struct DecafPoint(pub(crate) ExtendedPoint);
+
+impl DecafPoint {
+    /// The generator point
+    pub const GENERATOR: DecafPoint = DecafPoint(TWISTED_EDWARDS_BASE_POINT);
+    /// The identity point
+    pub const IDENTITY: DecafPoint = DecafPoint(ExtendedPoint::IDENTITY);
+
+    /// Check if the point is the identity
+    pub fn is_identity(&self) -> Choice {
+        self.ct_eq(&DecafPoint::IDENTITY)
+    }
+
+    /// Add two points
+    pub fn add(&self, other: &DecafPoint) -> DecafPoint {
+        DecafPoint(self.0.add_extended(&other.0).to_extended())
+    }
+
+    /// Subtract two points
+    pub fn sub(&self, other: &DecafPoint) -> DecafPoint {
+        DecafPoint(self.0.sub_extended(&other.0).to_extended())
+    }
+
+    /// Compress this point
+    pub fn compress(&self) -> CompressedDecaf {
+        let X = self.0.X;
+        // let Y = self.0.Y;
+        let Z = self.0.Z;
+        let T = self.0.T;
+
+        let XX_TT = (X + T) * (X - T);
+
+        let (isr, _) = (X.square() * XX_TT * FieldElement::NEG_EDWARDS_D).inverse_square_root();
+        let mut ratio = isr * XX_TT;
+        let altx = ratio * FieldElement::DECAF_FACTOR; // Sign choice
+        ratio.conditional_negate(altx.is_negative());
+        let k = ratio * Z - T;
+
+        let mut s = k * FieldElement::NEG_EDWARDS_D * isr * X;
+        s.conditional_negate(s.is_negative());
+
+        CompressedDecaf(s.to_bytes())
+    }
+
+    /// Construct a `DecafPoint` from 112 bytes of data.
+    ///
+    /// If the input bytes are uniformly distributed, the resulting
+    /// point will be uniformly distributed over the group, and its
+    /// discrete log with respect to other points is unknown.
+    ///
+    /// Implements map to curve according
+    /// see <https://datatracker.ietf.org/doc/rfc9380/>
+    /// section 5.3.4 by splitting the input into two 56-byte halves,
+    /// then applies the decaf448_map to each, and adds the results.
+    pub fn from_uniform_bytes(bytes: &[u8; 112]) -> Self {
+        let lo: [u8; 56] = (&bytes[..56])
+            .try_into()
+            .expect("how does the slice have an incorrect length");
+        let hi: [u8; 56] = (&bytes[56..])
+            .try_into()
+            .expect("how does the slice have an incorrect length");
+
+        let u0 = FieldElement::from_bytes(&lo);
+        let u1 = FieldElement::from_bytes(&hi);
+        let q0 = u0.map_to_curve_decaf448();
+        let q1 = u1.map_to_curve_decaf448();
+        Self(q0.add_extended(&q1).to_extended())
+    }
+
+    /// DEPRECATED: Return a `DecafPoint` chosen uniformly at random using a user-provided RNG.
+    ///
+    /// Use the [`Generate`] trait instead.
+    #[deprecated(since = "0.14.0", note = "use the `Generate` trait instead")]
+    pub fn random(mut rng: impl CryptoRng) -> Self {
+        let mut uniform_bytes = [0u8; 112];
+        rng.fill_bytes(&mut uniform_bytes);
+        Self::from_uniform_bytes(&uniform_bytes)
+    }
+}
 
 impl Default for DecafPoint {
     fn default() -> Self {
@@ -90,13 +167,12 @@ impl ctutils::CtSelect for DecafPoint {
     }
 }
 
+impl Eq for DecafPoint {}
 impl PartialEq for DecafPoint {
     fn eq(&self, other: &DecafPoint) -> bool {
         self.ct_eq(other).into()
     }
 }
-
-impl Eq for DecafPoint {}
 
 impl From<DecafPoint> for DecafPointBytes {
     fn from(point: DecafPoint) -> DecafPointBytes {
@@ -176,6 +252,14 @@ impl TryFrom<&DecafPointBytes> for DecafPoint {
 
     fn try_from(bytes: &DecafPointBytes) -> Result<Self, Self::Error> {
         Self::try_from(*bytes)
+    }
+}
+
+impl Generate for DecafPoint {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        let mut uniform_bytes = [0u8; 112];
+        rng.try_fill_bytes(&mut uniform_bytes)?;
+        Ok(Self::from_uniform_bytes(&uniform_bytes))
     }
 }
 
@@ -313,85 +397,6 @@ impl From<&DecafPoint> for DecafAffinePoint {
 }
 
 impl elliptic_curve::zeroize::DefaultIsZeroes for DecafPoint {}
-
-impl DecafPoint {
-    /// The generator point
-    pub const GENERATOR: DecafPoint = DecafPoint(TWISTED_EDWARDS_BASE_POINT);
-    /// The identity point
-    pub const IDENTITY: DecafPoint = DecafPoint(ExtendedPoint::IDENTITY);
-
-    /// Check if the point is the identity
-    pub fn is_identity(&self) -> Choice {
-        self.ct_eq(&DecafPoint::IDENTITY)
-    }
-
-    /// Add two points
-    pub fn add(&self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.add_extended(&other.0).to_extended())
-    }
-
-    /// Subtract two points
-    pub fn sub(&self, other: &DecafPoint) -> DecafPoint {
-        DecafPoint(self.0.sub_extended(&other.0).to_extended())
-    }
-
-    /// Compress this point
-    pub fn compress(&self) -> CompressedDecaf {
-        let X = self.0.X;
-        // let Y = self.0.Y;
-        let Z = self.0.Z;
-        let T = self.0.T;
-
-        let XX_TT = (X + T) * (X - T);
-
-        let (isr, _) = (X.square() * XX_TT * FieldElement::NEG_EDWARDS_D).inverse_square_root();
-        let mut ratio = isr * XX_TT;
-        let altx = ratio * FieldElement::DECAF_FACTOR; // Sign choice
-        ratio.conditional_negate(altx.is_negative());
-        let k = ratio * Z - T;
-
-        let mut s = k * FieldElement::NEG_EDWARDS_D * isr * X;
-        s.conditional_negate(s.is_negative());
-
-        CompressedDecaf(s.to_bytes())
-    }
-
-    /// Return a `DecafPoint` chosen uniformly at random using a user-provided RNG.
-    ///
-    /// Uses the Decaf448 map, so that the discrete log
-    /// of the output point with respect to any other point
-    /// is unknown.
-    pub fn random(mut rng: impl CryptoRng) -> Self {
-        let mut uniform_bytes = [0u8; 112];
-        rng.fill_bytes(&mut uniform_bytes);
-        Self::from_uniform_bytes(&uniform_bytes)
-    }
-
-    /// Construct a `DecafPoint` from 112 bytes of data.
-    ///
-    /// If the input bytes are uniformly distributed, the resulting
-    /// point will be uniformly distributed over the group, and its
-    /// discrete log with respect to other points is unknown.
-    ///
-    /// Implements map to curve according
-    /// see <https://datatracker.ietf.org/doc/rfc9380/>
-    /// section 5.3.4 by splitting the input into two 56-byte halves,
-    /// then applies the decaf448_map to each, and adds the results.
-    pub fn from_uniform_bytes(bytes: &[u8; 112]) -> Self {
-        let lo: [u8; 56] = (&bytes[..56])
-            .try_into()
-            .expect("how does the slice have an incorrect length");
-        let hi: [u8; 56] = (&bytes[56..])
-            .try_into()
-            .expect("how does the slice have an incorrect length");
-
-        let u0 = FieldElement::from_bytes(&lo);
-        let u1 = FieldElement::from_bytes(&hi);
-        let q0 = u0.map_to_curve_decaf448();
-        let q1 = u1.map_to_curve_decaf448();
-        Self(q0.add_extended(&q1).to_extended())
-    }
-}
 
 /// A compressed decaf point
 #[derive(Copy, Clone, Debug)]

@@ -1,17 +1,39 @@
-use crate::curve::twedwards::affine::AffinePoint as InnerAffinePoint;
-use crate::field::FieldElement;
-use crate::{Decaf448FieldBytes, DecafPoint, DecafScalar, ORDER};
+use crate::{
+    Decaf448FieldBytes, DecafPoint, DecafScalar, ORDER,
+    curve::twedwards::affine::AffinePoint as InnerAffinePoint, field::FieldElement,
+};
 use core::ops::Mul;
 use elliptic_curve::{
-    Error, ctutils,
+    Error, Generate, ctutils,
     point::{AffineCoordinates, NonIdentity},
     zeroize::DefaultIsZeroes,
 };
+use rand_core::TryCryptoRng;
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// Affine point on the twisted curve
 #[derive(Copy, Clone, Debug, Default)]
 pub struct AffinePoint(pub(crate) InnerAffinePoint);
+
+impl AffinePoint {
+    /// The identity point
+    pub const IDENTITY: Self = Self(InnerAffinePoint::IDENTITY);
+
+    /// Convert to DecafPoint
+    pub fn to_decaf(&self) -> DecafPoint {
+        DecafPoint(self.0.to_extended())
+    }
+
+    /// The X coordinate
+    pub fn x(&self) -> [u8; 56] {
+        self.0.x.to_bytes()
+    }
+
+    /// The Y coordinate
+    pub fn y(&self) -> [u8; 56] {
+        self.0.y.to_bytes()
+    }
+}
 
 impl ConstantTimeEq for AffinePoint {
     fn ct_eq(&self, other: &Self) -> Choice {
@@ -82,23 +104,9 @@ impl AffineCoordinates for AffinePoint {
 
 impl DefaultIsZeroes for AffinePoint {}
 
-impl AffinePoint {
-    /// The identity point
-    pub const IDENTITY: Self = Self(InnerAffinePoint::IDENTITY);
-
-    /// Convert to DecafPoint
-    pub fn to_decaf(&self) -> DecafPoint {
-        DecafPoint(self.0.to_extended())
-    }
-
-    /// The X coordinate
-    pub fn x(&self) -> [u8; 56] {
-        self.0.x.to_bytes()
-    }
-
-    /// The Y coordinate
-    pub fn y(&self) -> [u8; 56] {
-        self.0.y.to_bytes()
+impl Generate for AffinePoint {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        DecafPoint::try_generate_from_rng(rng).map(Into::into)
     }
 }
 

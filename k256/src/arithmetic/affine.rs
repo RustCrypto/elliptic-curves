@@ -6,11 +6,11 @@ use super::{CURVE_EQUATION_B, FieldElement, ProjectivePoint};
 use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
-    Error, Result, ctutils,
+    Error, Generate, Result, ctutils,
     ff::PrimeField,
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
-    rand_core::TryRngCore,
+    rand_core::{TryCryptoRng, TryRngCore},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -77,7 +77,10 @@ impl AffinePoint {
     };
 
     /// Generate a random [`AffinePoint`].
-    pub fn try_from_rng<R: TryRngCore + ?Sized>(
+    ///
+    /// This internal method avoids the `TryCryptoRng` bounds so it can be used in `group` impls for
+    /// `ProjectivePoint`.
+    pub(crate) fn try_from_rng<R: TryRngCore + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
@@ -205,6 +208,14 @@ impl PartialEq for AffinePoint {
 }
 
 impl Eq for AffinePoint {}
+
+impl Generate for AffinePoint {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        Self::try_from_rng(rng)
+    }
+}
 
 impl Mul<Scalar> for AffinePoint {
     type Output = ProjectivePoint;

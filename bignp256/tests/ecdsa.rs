@@ -37,7 +37,7 @@ prop_compose! {
         loop {
             let scalar = <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into());
             if let Some(scalar) = Option::from(NonZeroScalar::new(scalar)) {
-                return SigningKey::from_nonzero_scalar(scalar).unwrap();
+                return SigningKey::from_nonzero_scalar(scalar);
             }
         }
     }
