@@ -354,20 +354,6 @@ macro_rules! monty_field_element {
             }
         }
 
-        // TODO(tarcieri): write `Reduce` impls
-        // impl $crate::bigint::Reduce<$uint> for $fe {
-        //     fn reduce(w: &$uint) -> Self {
-        //         Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(w))
-        //     }
-        // }
-        //
-        // impl $crate::bigint::Reduce<$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>> for $fe {
-        //     #[inline]
-        //     fn reduce(bytes: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>) -> Self {
-        //         Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(bytes))
-        //     }
-        // }
-
         $crate::field_op!($fe, Add, add, add);
         $crate::field_op!($fe, Sub, sub, sub);
         $crate::field_op!($fe, Mul, mul, multiply);
@@ -724,6 +710,32 @@ macro_rules! monty_field_arithmetic {
             /// This is mainly intended for inverting constants at compile time.
             pub const fn const_invert(&self) -> Self {
                 Self(self.0.const_invert())
+            }
+        }
+    };
+}
+
+/// Write `Reduce` impls for a particular field implementation which delegate to
+/// `MontyFieldElement`.
+#[macro_export]
+macro_rules! monty_field_reduce {
+    (
+        name: $fe:tt,
+        params: $params:ty,
+        uint: $uint:path,
+    ) => {
+        impl $crate::bigint::Reduce<$uint> for $fe {
+            fn reduce(w: &$uint) -> Self {
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(w))
+            }
+        }
+
+        impl $crate::bigint::Reduce<$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>>
+            for $fe
+        {
+            #[inline]
+            fn reduce(bytes: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>) -> Self {
+                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(bytes))
             }
         }
     };

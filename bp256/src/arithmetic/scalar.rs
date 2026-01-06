@@ -22,13 +22,11 @@
 #[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod scalar_impl;
 
-use crate::{BrainpoolP256r1, BrainpoolP256t1, FieldBytes, ORDER, ORDER_HEX, U256};
+use crate::{BrainpoolP256r1, BrainpoolP256t1, ORDER, ORDER_HEX, U256};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
-    ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 
 #[cfg(not(bp256_backend = "bignum"))]
@@ -80,6 +78,12 @@ primefield::fiat_monty_field_arithmetic! {
     selectnz: fiat_bp256_scalar_selectznz
 }
 
+primefield::monty_field_reduce! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U256,
+}
+
 elliptic_curve::scalar_impls!(BrainpoolP256r1, Scalar);
 elliptic_curve::scalar_impls!(BrainpoolP256t1, Scalar);
 
@@ -101,21 +105,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U256 = ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Reduce<U256> for Scalar {
-    fn reduce(w: &U256) -> Self {
-        let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U256::conditional_select(w, &r, !underflow))
-    }
-}
-
-impl Reduce<FieldBytes> for Scalar {
-    #[inline]
-    fn reduce(bytes: &FieldBytes) -> Self {
-        Self::reduce(&U256::from_be_byte_array(*bytes))
     }
 }
 

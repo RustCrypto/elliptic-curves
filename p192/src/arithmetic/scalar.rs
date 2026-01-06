@@ -22,14 +22,12 @@
 mod scalar_impl;
 
 use self::scalar_impl::*;
-use crate::{FieldBytes, FieldBytesEncoding, NistP192, ORDER_HEX, U192};
+use crate::{NistP192, ORDER_HEX, U192};
 use elliptic_curve::{
     Curve as _,
-    bigint::Limb,
     ff::PrimeField,
-    ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 
 #[cfg(feature = "serde")]
@@ -76,6 +74,12 @@ primefield::fiat_monty_field_arithmetic! {
     selectnz: fiat_p192_scalar_selectznz
 }
 
+primefield::monty_field_reduce! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U192,
+}
+
 elliptic_curve::scalar_impls!(NistP192, Scalar);
 
 impl AsRef<Scalar> for Scalar {
@@ -96,22 +100,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U192 = NistP192::ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Reduce<U192> for Scalar {
-    fn reduce(w: &U192) -> Self {
-        let (r, underflow) = w.borrowing_sub(&NistP192::ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U192::conditional_select(w, &r, !underflow))
-    }
-}
-
-impl Reduce<FieldBytes> for Scalar {
-    #[inline]
-    fn reduce(bytes: &FieldBytes) -> Self {
-        let w = <U192 as FieldBytesEncoding<NistP192>>::decode_field_bytes(bytes);
-        Self::reduce(&w)
     }
 }
 
