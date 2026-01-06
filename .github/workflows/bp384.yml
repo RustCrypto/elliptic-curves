@@ -68,3 +68,7 @@ jobs:
       - run: cargo test --no-default-features
       - run: cargo test
       - run: cargo test --all-features
+      - env:
+          RUSTFLAGS: '--cfg bp384_backend="bignum"'
+          RUSTDOCFLAGS: '--cfg bp384_backend="bignum"'
+        run: cargo test --release --all-features

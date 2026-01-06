@@ -10,6 +10,7 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
+#[cfg(not(bp384_backend = "bignum"))]
 #[cfg_attr(target_pointer_width = "32", path = "scalar/bp384_scalar_32.rs")]
 #[cfg_attr(target_pointer_width = "64", path = "scalar/bp384_scalar_64.rs")]
 #[allow(
@@ -21,7 +22,6 @@
 #[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod scalar_impl;
 
-use self::scalar_impl::*;
 use crate::{BrainpoolP384r1, BrainpoolP384t1, FieldBytes, ORDER, ORDER_HEX, U384};
 use elliptic_curve::{
     bigint::{ArrayEncoding, Limb},
@@ -30,6 +30,9 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+
+#[cfg(not(bp384_backend = "bignum"))]
+use self::scalar_impl::*;
 
 #[cfg(doc)]
 use core::ops::{Add, Mul, Sub};
@@ -50,6 +53,14 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP256 scalar field modulo n"
 }
 
+#[cfg(bp384_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U384
+}
+
+#[cfg(not(bp384_backend = "bignum"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -111,12 +122,15 @@ impl Reduce<FieldBytes> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U384};
+    #[cfg(not(bp384_backend = "bignum"))]
     use super::{
         ScalarParams, fiat_bp384_scalar_montgomery_domain_field_element, fiat_bp384_scalar_msat,
         fiat_bp384_scalar_non_montgomery_domain_field_element, fiat_bp384_scalar_to_montgomery,
     };
 
     primefield::test_primefield!(Scalar, U384);
+
+    #[cfg(not(bp384_backend = "bignum"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,
