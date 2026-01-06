@@ -22,13 +22,11 @@
 #[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 mod scalar_impl;
 
-use crate::{BrainpoolP384r1, BrainpoolP384t1, FieldBytes, ORDER, ORDER_HEX, U384};
+use crate::{BrainpoolP384r1, BrainpoolP384t1, ORDER, ORDER_HEX, U384};
 use elliptic_curve::{
-    bigint::{ArrayEncoding, Limb},
     ff::PrimeField,
-    ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 
 #[cfg(not(bp384_backend = "bignum"))]
@@ -50,7 +48,7 @@ primefield::monty_field_element! {
     name: Scalar,
     params: ScalarParams,
     uint: U384,
-    doc: "Element in the brainpoolP256 scalar field modulo n"
+    doc: "Element in the brainpoolP384 scalar field modulo n"
 }
 
 #[cfg(bp384_backend = "bignum")]
@@ -80,6 +78,12 @@ primefield::fiat_monty_field_arithmetic! {
     selectnz: fiat_bp384_scalar_selectznz
 }
 
+primefield::monty_field_reduce! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U384,
+}
+
 elliptic_curve::scalar_impls!(BrainpoolP384r1, Scalar);
 elliptic_curve::scalar_impls!(BrainpoolP384t1, Scalar);
 
@@ -101,21 +105,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U384 = ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Reduce<U384> for Scalar {
-    fn reduce(w: &U384) -> Self {
-        let (r, underflow) = w.borrowing_sub(&ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U384::conditional_select(w, &r, !underflow))
-    }
-}
-
-impl Reduce<FieldBytes> for Scalar {
-    #[inline]
-    fn reduce(bytes: &FieldBytes) -> Self {
-        Self::reduce(&U384::from_be_byte_array(*bytes))
     }
 }
 

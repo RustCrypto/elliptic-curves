@@ -15,14 +15,12 @@ use fiat_crypto::sm2_scalar_32::*;
 #[cfg(target_pointer_width = "64")]
 use fiat_crypto::sm2_scalar_64::*;
 
-use crate::{FieldBytes, FieldBytesEncoding, ORDER_HEX, Sm2, U256};
+use crate::{ORDER_HEX, Sm2, U256};
 use elliptic_curve::{
     Curve as _,
-    bigint::Limb,
     ff::PrimeField,
-    ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 
 #[cfg(feature = "serde")]
@@ -69,6 +67,12 @@ primefield::fiat_monty_field_arithmetic! {
     selectnz: fiat_sm2_scalar_selectznz
 }
 
+primefield::monty_field_reduce! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U256,
+}
+
 elliptic_curve::scalar_impls!(Sm2, Scalar);
 
 impl AsRef<Scalar> for Scalar {
@@ -89,22 +93,6 @@ impl IsHigh for Scalar {
     fn is_high(&self) -> Choice {
         const MODULUS_SHR1: U256 = Sm2::ORDER.as_ref().shr_vartime(1);
         self.to_canonical().ct_gt(&MODULUS_SHR1)
-    }
-}
-
-impl Reduce<U256> for Scalar {
-    fn reduce(w: &U256) -> Self {
-        let (r, underflow) = w.borrowing_sub(&Sm2::ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::from_uint_unchecked(U256::conditional_select(w, &r, !underflow))
-    }
-}
-
-impl Reduce<FieldBytes> for Scalar {
-    #[inline]
-    fn reduce(bytes: &FieldBytes) -> Self {
-        let w = <U256 as FieldBytesEncoding<Sm2>>::decode_field_bytes(bytes);
-        Self::reduce(&w)
     }
 }
 
