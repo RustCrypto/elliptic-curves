@@ -10,9 +10,14 @@
 //!
 #![cfg_attr(feature = "getrandom", doc = "```")]
 #![cfg_attr(not(feature = "getrandom"), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! // NOTE: requires 'getrandom' feature is enabled
 //!
-//! use bignp256::{EncodedPoint, PublicKey, ecdh::EphemeralSecret};
+//! use bignp256::{
+//!     EncodedPoint, PublicKey,
+//!     ecdh::EphemeralSecret,
+//!     elliptic_curve::Generate
+//! };
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::generate();
@@ -23,15 +28,11 @@
 //! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
 //!
 //! // Alice decodes Bob's serialized public key and computes a shared secret from it
-//! let bob_public =
-//!     PublicKey::from_encoded_point(bob_pk_bytes).expect("bob's public key is invalid!"); // In real usage, don't panic, handle this!
-//!
+//! let bob_public = PublicKey::from_encoded_point(bob_pk_bytes)?;
 //! let alice_shared = alice_secret.diffie_hellman(&bob_public.into());
 //!
 //! // Bob decodes Alice's serialized public key and computes the same shared secret
-//! let alice_public =
-//!     PublicKey::from_encoded_point(alice_pk_bytes).expect("alice's public key is invalid!"); // In real usage, don't panic, handle this!
-//!
+//! let alice_public = PublicKey::from_encoded_point(alice_pk_bytes)?;
 //! let bob_shared = bob_secret.diffie_hellman(&alice_public.into());
 //!
 //! // Both participants arrive on the same shared secret
@@ -39,6 +40,8 @@
 //!     alice_shared.raw_secret_bytes(),
 //!     bob_shared.raw_secret_bytes()
 //! );
+//! # Ok(())
+//! # }
 //! ```
 
 pub use elliptic_curve::ecdh::diffie_hellman;

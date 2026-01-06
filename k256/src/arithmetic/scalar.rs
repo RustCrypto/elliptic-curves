@@ -16,7 +16,7 @@ use core::{
 };
 use elliptic_curve::bigint::Odd;
 use elliptic_curve::{
-    Curve, Error, ScalarValue,
+    Curve, Error, Generate, ScalarValue,
     bigint::{ArrayEncoding, Integer, Limb, U256, U512, Word, modular::Retrieve},
     ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
@@ -78,6 +78,12 @@ const FRAC_MODULUS_2: U256 = ORDER.as_ref().shr_vartime(1);
 /// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug, Default, PartialOrd, Ord)]
 pub struct Scalar(pub(crate) U256);
+
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
+    }
+}
 
 impl Scalar {
     /// Zero scalar.
@@ -153,17 +159,20 @@ impl Scalar {
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
-    pub fn generate_biased<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
+    pub fn generate_biased_from_rng<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
+        let Ok(scalar) = Self::try_generate_biased_from_rng(rng);
+        scalar
+    }
+
+    /// Returns a (nearly) uniformly-random scalar, generated in constant time.
+    pub fn try_generate_biased_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> Result<Self, R::Error> {
         // We reduce a random 512-bit value into a 256-bit field, which results in a
         // negligible bias from the uniform distribution, but the process is constant-time.
         let mut buf = [0u8; 64];
-        rng.fill_bytes(&mut buf);
-        WideScalar::from_bytes(&buf).reduce()
-    }
-
-    /// Returns a uniformly-random scalar, generated using rejection sampling.
-    pub fn generate_vartime<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        rng.try_fill_bytes(&mut buf)?;
+        Ok(WideScalar::from_bytes(&buf).reduce())
     }
 
     /// Attempts to parse the given byte array as a scalar.
@@ -257,9 +266,9 @@ impl Field for Scalar {
     }
 }
 
-impl AsRef<Scalar> for Scalar {
-    fn as_ref(&self) -> &Scalar {
-        self
+impl Generate for Scalar {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
     }
 }
 
@@ -828,7 +837,7 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
-        ops::Reduce,
+        ops::{BatchInvert, Reduce},
         scalar::IsHigh,
     };
     use getrandom::{SysRng, rand_core::TryRngCore};
@@ -836,7 +845,8 @@ mod tests {
     use num_traits::Zero;
     use proptest::prelude::*;
 
-    use elliptic_curve::ops::BatchInvert;
+    #[cfg(feature = "getrandom")]
+    use elliptic_curve::Generate;
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
@@ -1048,16 +1058,16 @@ mod tests {
 
     #[allow(clippy::op_ref)]
     #[test]
-    fn generate_biased() {
-        let a = Scalar::generate_biased(&mut SysRng.unwrap_mut());
+    fn try_generate_biased_from_rng() {
+        let a = Scalar::try_generate_biased_from_rng(&mut SysRng).unwrap();
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
-    #[allow(clippy::op_ref)]
+    #[cfg(feature = "getrandom")]
     #[test]
-    fn generate_vartime() {
-        let a = Scalar::generate_vartime(&mut SysRng).unwrap();
+    fn try_generate_from_rng() {
+        let a = Scalar::generate();
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }

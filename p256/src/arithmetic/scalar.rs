@@ -12,7 +12,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Curve,
+    Curve, Generate,
     bigint::{ArrayEncoding, Integer, Limb, Odd, U256, Uint, modular::Retrieve},
     ctutils,
     group::ff::{self, Field, FromUniformBytes, PrimeField},
@@ -258,6 +258,12 @@ impl Field for Scalar {
 
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
         ff::helpers::sqrt_ratio_generic(num, div)
+    }
+}
+
+impl Generate for Scalar {
+    fn try_generate_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
     }
 }
 

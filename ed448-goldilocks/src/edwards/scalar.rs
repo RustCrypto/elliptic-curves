@@ -1,11 +1,13 @@
 use crate::Ed448;
 use crate::field::{CurveWithScalar, ORDER, Scalar, ScalarBytes, WideScalarBytes};
 
-use elliptic_curve::array::Array;
-use elliptic_curve::bigint::{Limb, NonZero, U448, U704};
-use elliptic_curve::consts::{U57, U84, U88};
-use elliptic_curve::ops::Reduce;
-use elliptic_curve::scalar::FromUintUnchecked;
+use elliptic_curve::{
+    array::Array,
+    bigint::{Limb, NonZero, U448, U704},
+    consts::{U57, U84, U88},
+    ops::Reduce,
+    scalar::FromUintUnchecked,
+};
 use subtle::{Choice, ConstantTimeEq, CtOption};
 
 impl CurveWithScalar for Ed448 {

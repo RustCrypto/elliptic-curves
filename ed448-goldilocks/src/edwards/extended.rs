@@ -3,22 +3,34 @@ use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::iter::Sum;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-use crate::curve::scalar_mul::variable_base;
-use crate::curve::twedwards::extensible::ExtensiblePoint as TwistedExtensiblePoint;
-use crate::curve::twedwards::{IsogenyMap, IsogenyMapResult};
-use crate::edwards::affine::PointBytes;
-use crate::field::{ConstMontyType, FieldElement};
-use crate::*;
+use crate::{
+    GOLDILOCKS_BASE_POINT, MontgomeryPoint, U57, U448,
+    curve::{
+        scalar_mul::variable_base,
+        twedwards::{
+            IsogenyMap, IsogenyMapResult, extensible::ExtensiblePoint as TwistedExtensiblePoint,
+        },
+    },
+    edwards::{
+        CompressedEdwardsY,
+        affine::{AffinePoint, PointBytes},
+        scalar::EdwardsScalar,
+    },
+    field::{ConstMontyType, FieldElement},
+};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error,
+    BatchNormalize, CurveGroup, Error, Generate,
     array::Array,
     ctutils,
     group::{Group, GroupEncoding, cofactor::CofactorGroup, prime::PrimeGroup},
     ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
 };
-use rand_core::TryRngCore;
+use rand_core::{TryCryptoRng, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
+
+#[cfg(feature = "alloc")]
+use alloc::{boxed::Box, vec::Vec};
 
 /// Represent points on the (untwisted) edwards curve using Extended Homogenous Projective Co-ordinates
 /// (x, y) -> (X/Z, Y/Z, Z, T)
@@ -104,13 +116,18 @@ impl ctutils::CtSelect for EdwardsPoint {
     }
 }
 
+impl Eq for EdwardsPoint {}
 impl PartialEq for EdwardsPoint {
     fn eq(&self, other: &EdwardsPoint) -> bool {
         self.ct_eq(other).into()
     }
 }
 
-impl Eq for EdwardsPoint {}
+impl Generate for EdwardsPoint {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
+    }
+}
 
 impl Group for EdwardsPoint {
     type Scalar = EdwardsScalar;
@@ -795,8 +812,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Ed448;
     use elliptic_curve::Field;
     use getrandom::{SysRng, rand_core::TryRngCore};
+    use hash2curve::{ExpandMsgXof, GroupDigest};
     use hex_literal::hex;
     use proptest::{prop_assert_eq, property_test};
 

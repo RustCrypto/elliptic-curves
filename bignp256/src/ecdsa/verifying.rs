@@ -54,26 +54,28 @@ use elliptic_curve::sec1::ToEncodedPoint;
 ///
 /// The serialization leverages the encoding used by the [`PublicKey`] type,
 /// which is a binary-oriented ASN.1 DER encoding.
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct VerifyingKey {
     /// Signer's public key.
     public_key: PublicKey,
 }
 
 impl VerifyingKey {
-    /// Initialize [`VerifyingKey`] from a signer's distinguishing identifier
-    /// and public key.
-    pub fn new(public_key: PublicKey) -> Result<Self> {
-        Ok(Self { public_key })
-    }
-
     /// Initialize [`VerifyingKey`] from an affine point.
     ///
     /// Returns an [`Error`] if the given affine point is the additive identity
     /// (a.k.a. point at infinity).
     pub fn from_affine(affine: AffinePoint) -> Result<Self> {
-        let public_key = PublicKey::from_affine(affine).map_err(|_| Error::new())?;
-        Self::new(public_key)
+        Ok(Self {
+            public_key: PublicKey::from_affine(affine).map_err(|_| Error::new())?,
+        })
+    }
+
+    /// Parse a [`VerifyingKey`] from a byte slice.
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
+        Ok(Self {
+            public_key: PublicKey::from_bytes(bytes).map_err(|_| Error::new())?,
+        })
     }
 
     /// Borrow the inner [`AffinePoint`] for this public key.
@@ -88,12 +90,6 @@ impl VerifyingKey {
         let mut hasher = BeltHash::new();
         msg.iter().for_each(|slice| hasher.update(slice));
         hasher.finalize_fixed()
-    }
-
-    /// Parse a [`VerifyingKey`] from a byte slice.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self> {
-        let public_key = PublicKey::from_bytes(bytes).map_err(|_| Error::new())?;
-        Self::new(public_key)
     }
 
     /// Serialize the [`VerifyingKey`] as a byte array.
@@ -185,6 +181,18 @@ impl AsRef<AffinePoint> for VerifyingKey {
     }
 }
 
+impl From<PublicKey> for VerifyingKey {
+    fn from(public_key: PublicKey) -> VerifyingKey {
+        VerifyingKey { public_key }
+    }
+}
+
+impl From<&PublicKey> for VerifyingKey {
+    fn from(public_key: &PublicKey) -> VerifyingKey {
+        VerifyingKey::from(*public_key)
+    }
+}
+
 impl From<VerifyingKey> for PublicKey {
     fn from(verifying_key: VerifyingKey) -> PublicKey {
         verifying_key.public_key
@@ -193,7 +201,7 @@ impl From<VerifyingKey> for PublicKey {
 
 impl From<&VerifyingKey> for PublicKey {
     fn from(verifying_key: &VerifyingKey) -> PublicKey {
-        verifying_key.public_key
+        PublicKey::from(*verifying_key)
     }
 }
 

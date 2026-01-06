@@ -9,7 +9,7 @@ use core::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, Result, ctutils,
+    BatchNormalize, CurveGroup, Error, Generate, Result, ctutils,
     group::{
         Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -17,7 +17,7 @@ use elliptic_curve::{
     },
     ops::BatchInvert,
     point::NonIdentity,
-    rand_core::TryRngCore,
+    rand_core::{TryCryptoRng, TryRngCore},
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -254,6 +254,14 @@ impl From<AffinePoint> for ProjectivePoint {
             z: FieldElement::ONE,
         };
         Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
+    }
+}
+
+impl Generate for ProjectivePoint {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        AffinePoint::try_generate_from_rng(rng).map(Into::into)
     }
 }
 

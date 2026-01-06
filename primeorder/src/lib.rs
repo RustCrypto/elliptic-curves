@@ -27,7 +27,7 @@ pub use elliptic_curve::{
     point::Double,
 };
 
-use elliptic_curve::{CurveArithmetic, ops::Invert, subtle::CtOption};
+use elliptic_curve::{CurveArithmetic, Generate, ops::Invert, subtle::CtOption};
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
@@ -38,8 +38,9 @@ pub trait PrimeCurveParams:
     + CurveArithmetic<ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
-    type FieldElement: PrimeField<Repr = FieldBytes<Self>>
+    type FieldElement: Generate
         + Invert<Output = CtOption<Self::FieldElement>>
+        + PrimeField<Repr = FieldBytes<Self>>
         + Retrieve<Output = Self::Uint>;
 
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve

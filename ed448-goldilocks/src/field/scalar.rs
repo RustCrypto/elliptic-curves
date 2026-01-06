@@ -8,7 +8,7 @@ use core::ops::{
     Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign,
 };
 use elliptic_curve::{
-    CurveArithmetic, PrimeField,
+    CurveArithmetic, Generate, PrimeField,
     array::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
@@ -20,7 +20,7 @@ use elliptic_curve::{
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
 };
-use rand_core::{CryptoRng, RngCore, TryRngCore};
+use rand_core::{CryptoRng, RngCore, TryCryptoRng, TryRngCore};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
 
 #[cfg(feature = "bits")]
@@ -369,6 +369,12 @@ impl<C: CurveWithScalar> PrimeField for Scalar<C> {
     ));
 
     const DELTA: Self = Self::new(U448::from_u8(49));
+}
+
+impl<C: CurveWithScalar> Generate for Scalar<C> {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
+    }
 }
 
 #[cfg(feature = "alloc")]

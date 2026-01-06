@@ -14,36 +14,31 @@
 //!   [`VerifyingKey`] types which natively implement ECDSA/secp256k1 signing and
 //!   verification.
 //!
-//! Most users of this library who want to sign/verify signatures will want to
-//! enable the `ecdsa` and `sha256` Cargo features.
+//! ## Signing/Verification Example
 //!
-//! ## Signing and Verifying Signatures
-//!
-//! This example requires the `ecdsa` and `sha256` Cargo features are enabled:
-//!
-//! ```
-//! # #[cfg(all(feature = "ecdsa", feature = "sha256"))]
-//! # {
+#![cfg_attr(all(feature = "ecdsa", feature = "getrandom"), doc = "```")]
+#![cfg_attr(not(all(feature = "ecdsa", feature = "getrandom")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `ecdsa` and `getrandom` crate features are enabled
 //! use k256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
+//!     elliptic_curve::Generate,
 //!     SecretKey,
 //! };
-//! use getrandom::SysRng;
 //!
 //! // Signing
-//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // Serialize with `::to_bytes()`
-//! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
+//! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
+//! let verifying_key_bytes = signing_key.verifying_key().to_encoded_point(true); // 33-bytes
 //!
-//! // Note: The signature type must be annotated or otherwise inferable as
-//! // `Signer` has many impls of the `Signer` trait (for both regular and
-//! // recoverable signature types).
+//! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
 //! use k256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
-//! let verifying_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
-//! assert!(verifying_key.verify(message, &signature).is_ok());
+//! let verifying_key = VerifyingKey::from_sec1_bytes(verifying_key_bytes.as_ref())?;
+//! verifying_key.verify(message, &signature)?;
+//! # Ok(())
 //! # }
 //! ```
 //!
@@ -60,9 +55,8 @@
 //!
 //! ### Recovering a [`VerifyingKey`] from a signature
 //!
-#![cfg_attr(feature = "std", doc = "```")]
-#![cfg_attr(not(feature = "std"), doc = "```ignore")]
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! ```
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! use hex_literal::hex;
 //! use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 //! use sha3::{Keccak256, Digest};

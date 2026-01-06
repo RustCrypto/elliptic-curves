@@ -9,6 +9,7 @@ use bigint::{
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams, Retrieve},
 };
+use common::Generate;
 use core::{
     cmp::Ordering,
     fmt,
@@ -16,6 +17,7 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use ff::{Field, PrimeField};
+use rand_core::TryCryptoRng;
 use subtle::{
     Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
     CtOption,
@@ -924,20 +926,38 @@ where
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Ord for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Generate for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+    MontyFieldBytes<MOD, LIMBS>: Copy,
+    Uint<LIMBS>: ArrayEncoding,
+{
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
+    }
+}
+
+impl<MOD, const LIMBS: usize> Ord for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     fn cmp(&self, other: &Self) -> Ordering {
         self.to_canonical().cmp(&other.to_canonical())
     }
 }
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> PartialOrd
-    for MontyFieldElement<MOD, LIMBS>
+impl<MOD, const LIMBS: usize> PartialOrd for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
 {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<MOD: MontyFieldParams<LIMBS>, const LIMBS: usize> Retrieve for MontyFieldElement<MOD, LIMBS> {
+impl<MOD, const LIMBS: usize> Retrieve for MontyFieldElement<MOD, LIMBS>
+where
+    MOD: MontyFieldParams<LIMBS>,
+{
     type Output = Uint<LIMBS>;
 
     fn retrieve(&self) -> Uint<LIMBS> {

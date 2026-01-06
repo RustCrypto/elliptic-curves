@@ -5,7 +5,7 @@ use core::str::FromStr;
 use der::{SecretDocument, asn1::OctetStringRef};
 
 use crate::{ALGORITHM_OID, PublicKey, ScalarValue};
-use elliptic_curve::{Error, array::typenum::Unsigned, zeroize::Zeroizing};
+use elliptic_curve::{Error, Generate, array::typenum::Unsigned, zeroize::Zeroizing};
 use pkcs8::{
     AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
@@ -23,28 +23,6 @@ pub struct SecretKey {
 
 impl SecretKey {
     const MIN_SIZE: usize = 24;
-
-    /// Generate a random [`SecretKey`].
-    ///
-    /// # Panics
-    ///
-    /// If the system's cryptographically secure RNG has an internal error.
-    #[cfg(feature = "getrandom")]
-    pub fn generate() -> Self {
-        Self {
-            inner: NonZeroScalar::generate().into(),
-        }
-    }
-
-    /// Generate a random [`SecretKey`].
-    #[cfg(feature = "arithmetic")]
-    pub fn try_from_rng<R: TryCryptoRng + ?Sized>(
-        rng: &mut R,
-    ) -> core::result::Result<Self, R::Error> {
-        Ok(Self {
-            inner: NonZeroScalar::try_from_rng(rng)?.into(),
-        })
-    }
 
     /// Borrow the inner secret [`elliptic_curve::ScalarValue`] value.
     ///
@@ -117,6 +95,14 @@ impl SecretKey {
     }
 }
 
+impl AssociatedAlgorithmIdentifier for SecretKey {
+    type Params = ObjectIdentifier;
+    const ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> = AlgorithmIdentifier {
+        oid: ALGORITHM_OID,
+        parameters: Some(BignP256::OID),
+    };
+}
+
 impl From<SecretKey> for NonZeroScalar {
     fn from(secret_key: SecretKey) -> NonZeroScalar {
         secret_key.to_nonzero_scalar()
@@ -139,12 +125,14 @@ impl From<&NonZeroScalar> for SecretKey {
     }
 }
 
-impl AssociatedAlgorithmIdentifier for SecretKey {
-    type Params = ObjectIdentifier;
-    const ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> = AlgorithmIdentifier {
-        oid: ALGORITHM_OID,
-        parameters: Some(BignP256::OID),
-    };
+impl Generate for SecretKey {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        Ok(Self {
+            inner: ScalarValue::try_generate_from_rng(rng)?,
+        })
+    }
 }
 
 impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for SecretKey {

@@ -16,26 +16,29 @@
 //!
 //! ## Signing/Verification Example
 //!
-//! This example requires the `ecdsa` Cargo feature is enabled:
-//!
-//! ```
-//! # #[cfg(feature = "ecdsa")]
-//! # {
+#![cfg_attr(all(feature = "ecdsa", feature = "getrandom"), doc = "```")]
+#![cfg_attr(not(all(feature = "ecdsa", feature = "getrandom")), doc = "```ignore")]
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! // NOTE: requires the `ecdsa` and `getrandom` crate features are enabled
 //! use p256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
+//!     elliptic_curve::Generate,
+//!     SecretKey,
 //! };
-//! use getrandom::SysRng;
 //!
 //! // Signing
-//! let signing_key = SigningKey::try_from_rng(&mut SysRng).unwrap(); // Serialize with `::to_bytes()`
+//! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
+//! let verifying_key_bytes = signing_key.verifying_key().to_encoded_point(false); // 65-bytes
+//!
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use p256::ecdsa::{VerifyingKey, signature::Verifier};
+//! use p256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
-//! let verifying_key = VerifyingKey::from(&signing_key); // Serialize with `::to_encoded_point()`
-//! assert!(verifying_key.verify(message, &signature).is_ok());
+//! let verifying_key = VerifyingKey::from_sec1_bytes(verifying_key_bytes.as_ref())?;
+//! verifying_key.verify(message, &signature)?;
+//! # Ok(())
 //! # }
 //! ```
 
