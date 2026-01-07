@@ -22,6 +22,10 @@ primefield = { version = "0.14.0-rc.3", optional = true }
 primeorder = { version = "0.14.0-rc.3", optional = true }
 sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 
+[dev-dependencies]
+criterion = "0.7"
+elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["dev"] }
+
 [features]
 default = ["pkcs8", "std"]
 alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
@@ -34,6 +38,21 @@ pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+
+[[bench]]
+name = "field"
+harness = false
+required-features = ["arithmetic"]
+
+[[bench]]
+name = "point"
+harness = false
+required-features = ["arithmetic"]
+
+[[bench]]
+name = "scalar"
+harness = false
+required-features = ["arithmetic"]
 
 [package.metadata.docs.rs]
 all-features = true

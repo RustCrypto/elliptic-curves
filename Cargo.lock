@@ -156,6 +156,7 @@ dependencies = [
 name = "bp384"
 version = "0.14.0-rc.3"
 dependencies = [
+ "criterion",
  "ecdsa",
  "elliptic-curve",
  "primefield",
