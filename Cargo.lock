@@ -374,7 +374,7 @@ dependencies = [
 [[package]]
 name = "crypto-common"
 version = "0.2.0-rc.9"
-source = "git+https://github.com/RustCrypto/traits#ded0d2297fba206939bfb5f47b4fd823c4bccae8"
+source = "git+https://github.com/RustCrypto/traits#f3f7feb394e9ced9e77ec7cd9ff5e4c832efbeb0"
 dependencies = [
  "getrandom 0.4.0-rc.0",
  "hybrid-array",
@@ -473,7 +473,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.20"
-source = "git+https://github.com/RustCrypto/traits#ded0d2297fba206939bfb5f47b4fd823c4bccae8"
+source = "git+https://github.com/RustCrypto/traits#f3f7feb394e9ced9e77ec7cd9ff5e4c832efbeb0"
 dependencies = [
  "base16ct",
  "crypto-bigint",

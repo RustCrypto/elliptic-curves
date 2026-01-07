@@ -55,7 +55,7 @@ macro_rules! bench_field {
             group.bench_function("sqrt", |b| b.iter(|| x.sqrt()));
         }
 
-        fn $name(c: &mut Criterion) {
+        fn $name(c: &mut ::criterion::Criterion) {
             let mut group = c.benchmark_group($desc);
             bench_add(&mut group);
             bench_sub(&mut group);

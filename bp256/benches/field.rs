@@ -1,7 +1,7 @@
 //! bp256 `FieldElement` benchmarks
 
 use bp256::BrainpoolP256r1;
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main};
 use primeorder::PrimeCurveParams;
 
 type FieldElement = <BrainpoolP256r1 as PrimeCurveParams>::FieldElement;
