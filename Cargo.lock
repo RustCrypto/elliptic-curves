@@ -78,7 +78,6 @@ dependencies = [
  "digest",
  "elliptic-curve",
  "getrandom 0.4.0-rc.0",
- "hex",
  "hex-literal",
  "hkdf",
  "hmac",
