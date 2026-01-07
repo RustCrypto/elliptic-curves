@@ -419,7 +419,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.11"
-source = "git+https://github.com/RustCrypto/signatures#d669c66b4ab443c0b7b82b2ab449ee7b15704a66"
+source = "git+https://github.com/RustCrypto/signatures#47379ade8c5954d0b786ed70286c6c180d47caf8"
 dependencies = [
  "der",
  "digest",

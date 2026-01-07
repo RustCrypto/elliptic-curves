@@ -13,6 +13,6 @@ const FE_B: FieldElement = FieldElement::from_hex_vartime(
     "547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c72f046997",
 );
 
-primefield::bench_field!(bench_field_element, "FieldElement", FE_A, FE_B);
-criterion_group!(benches, bench_field_element);
+primefield::bench_field!(bench_ecdsa, "FieldElement", FE_A, FE_B);
+criterion_group!(benches, bench_ecdsa);
 criterion_main!(benches);

@@ -1,7 +1,7 @@
 /// Write a series of `criterion`-based benchmarks for a field implementation.
 #[macro_export]
 macro_rules! bench_field {
-    { $name:ident, $desc:expr, $fe_a:expr, $fe_b:expr } => {
+    ($name:ident, $desc:expr, $fe_a:expr, $fe_b:expr) => {
         fn bench_add<M: ::criterion::measurement::Measurement>(
             group: &mut ::criterion::BenchmarkGroup<'_, M>,
         ) {
