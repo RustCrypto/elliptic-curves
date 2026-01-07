@@ -37,8 +37,8 @@ signature = { version = "3.0.0-rc.6", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
+elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["dev"] }
 getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
-hex = { version = "0.4" }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.3", features = ["dev"] }
 proptest = "1"
@@ -61,10 +61,17 @@ test-vectors = ["dep:hex-literal"]
 [[bench]]
 name = "field"
 harness = false
+required-features = ["arithmetic"]
+
+[[bench]]
+name = "point"
+harness = false
+required-features = ["arithmetic"]
 
 [[bench]]
 name = "scalar"
 harness = false
+required-features = ["arithmetic"]
 
 [package.metadata.docs.rs]
 all-features = true

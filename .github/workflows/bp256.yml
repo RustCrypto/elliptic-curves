@@ -28,16 +28,11 @@ concurrency:
 jobs:
   benches:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - 1.85.0 # MSRV
-          - stable
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ matrix.rust }}
+          toolchain: 1.85.0 # MSRV
       - run: cargo build --all-features --benches
 
   build:
