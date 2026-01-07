@@ -63,6 +63,11 @@ test-vectors = ["dep:hex-literal"]
 all-features = true
 
 [[bench]]
+name = "ecdsa"
+harness = false
+required-features = ["ecdsa"]
+
+[[bench]]
 name = "field"
 harness = false
 required-features = ["expose-field"]
