@@ -1,7 +1,7 @@
 //! bp256 `Scalar` benchmarks
 
 use bp256::Scalar;
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main};
 
 const SCALAR_A: Scalar =
     Scalar::from_hex_vartime("9bb0d8b72602b70dd5cfed99607a2e2c021dd0fe3b3af842df02c06f8c1a0f4e");
