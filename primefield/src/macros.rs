@@ -92,8 +92,6 @@ macro_rules! monty_field_params {
 /// - `Mul`
 /// - `MulAssign`
 /// - `Neg`
-/// - `Shr`
-/// - `ShrAssign`
 /// - `Invert`
 #[macro_export]
 macro_rules! monty_field_element {
@@ -120,7 +118,7 @@ macro_rules! monty_field_element {
 
             /// Create a [`
             #[doc = stringify!($fe)]
-            /// `] from a canonical big-endian representation.
+            /// `] from a canonical byte representation using the field's configured byte order.
             pub fn from_bytes(
                 repr: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>,
             ) -> $crate::subtle::CtOption<Self> {
@@ -129,7 +127,7 @@ macro_rules! monty_field_element {
 
             /// Decode [`
             #[doc = stringify!($fe)]
-            /// `] from a big endian byte slice.
+            /// `] from a byte slice using the field's configured byte order.
             pub fn from_slice(slice: &[u8]) -> Option<Self> {
                 $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_slice(slice)
                     .map(Self)
@@ -137,7 +135,7 @@ macro_rules! monty_field_element {
 
             /// Decode a [`
             #[doc = stringify!($fe)]
-            /// `] from big endian hex-encoded bytes.
+            /// `] from hex-encoded bytes using the field's configured byte order.
             ///
             /// This is primarily intended for defining constants using hex literals.
             ///
