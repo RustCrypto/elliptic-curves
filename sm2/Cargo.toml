@@ -1,6 +1,6 @@
 [package]
 name = "sm2"
-version = "0.14.0-rc.3"
+version = "0.14.0-rc.4"
 description = """
 Pure Rust implementation of the SM2 elliptic curve as defined in the Chinese
 national standard GM/T 0003-2012 as well as ISO/IEC 14888. Includes support for
@@ -18,13 +18,13 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["sec1"] }
 fiat-crypto = { version = "0.3", default-features = false }
 rand_core = { version = "0.10.0-rc-3", default-features = false }
 
 # optional dependencies
-primefield = { version = "0.14.0-rc.3", optional = true }
-primeorder = { version = "0.14.0-rc.3", optional = true }
+primefield = { version = "0.14.0-rc.4", optional = true }
+primeorder = { version = "0.14.0-rc.4", optional = true }
 rfc6979 = { version = "0.5.0-rc.3", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 signature = { version = "3.0.0-rc.6", optional = true, features = ["rand_core"] }
@@ -33,7 +33,7 @@ der = { version = "0.8.0-rc.10", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["dev"] }
 getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 hex-literal = "1"
 proptest = "1"
