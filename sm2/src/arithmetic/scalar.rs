@@ -10,9 +10,10 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg(target_pointer_width = "32")]
+// Default backend: fiat-crypto
+#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "32"))]
 use fiat_crypto::sm2_scalar_32::*;
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "64"))]
 use fiat_crypto::sm2_scalar_64::*;
 
 use crate::{ORDER_HEX, Sm2, U256};
@@ -48,6 +49,14 @@ primefield::monty_field_element! {
     doc: "Element in the SM2 scalar field modulo `n`."
 }
 
+#[cfg(sm2_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U256
+}
+
+#[cfg(not(sm2_backend = "bignum"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -119,12 +128,14 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U256};
+    #[cfg(not(sm2_backend = "bignum"))]
     use super::{
         ScalarParams, fiat_sm2_scalar_montgomery_domain_field_element, fiat_sm2_scalar_msat,
         fiat_sm2_scalar_non_montgomery_domain_field_element, fiat_sm2_scalar_to_montgomery,
     };
 
     primefield::test_primefield!(Scalar, U256);
+    #[cfg(not(sm2_backend = "bignum"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,

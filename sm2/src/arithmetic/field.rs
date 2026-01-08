@@ -10,9 +10,10 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg(target_pointer_width = "32")]
+// Default backend: fiat-crypto
+#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "32"))]
 use fiat_crypto::sm2_32::*;
-#[cfg(target_pointer_width = "64")]
+#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "64"))]
 use fiat_crypto::sm2_64::*;
 
 use crate::U256;
@@ -40,6 +41,14 @@ primefield::monty_field_element! {
     doc: "Element in the SM2 finite field modulo `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
 }
 
+#[cfg(sm2_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256
+}
+
+#[cfg(not(sm2_backend = "bignum"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -62,12 +71,15 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U256};
+    #[cfg(not(sm2_backend = "bignum"))]
     use super::{
         FieldParams, fiat_sm2_montgomery_domain_field_element, fiat_sm2_msat,
         fiat_sm2_non_montgomery_domain_field_element, fiat_sm2_to_montgomery,
     };
 
     primefield::test_primefield!(FieldElement, U256);
+
+    #[cfg(not(sm2_backend = "bignum"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,
