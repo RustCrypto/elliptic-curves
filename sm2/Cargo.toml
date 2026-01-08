@@ -74,3 +74,7 @@ required-features = ["arithmetic"]
 
 [package.metadata.docs.rs]
 all-features = true
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(sm2_backend, values("bignum", "fiat"))'] # default: "fiat"

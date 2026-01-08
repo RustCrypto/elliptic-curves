@@ -87,3 +87,7 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }} --no-default-features
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
+      - env:
+          RUSTFLAGS: '--cfg sm2_backend="bignum"'
+          RUSTDOCFLAGS: '--cfg sm2_backend="bignum"'
+        run: cargo test --release --target ${{ matrix.target }} --all-features
