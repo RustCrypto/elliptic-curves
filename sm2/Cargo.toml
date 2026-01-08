@@ -53,6 +53,11 @@ pkcs8 = ["elliptic-curve/pkcs8", "der"]
 serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
 
 [[bench]]
+name = "dsa"
+harness = false
+required-features = ["dsa"]
+
+[[bench]]
 name = "field"
 harness = false
 required-features = ["arithmetic"]
