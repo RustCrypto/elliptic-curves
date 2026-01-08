@@ -1,6 +1,6 @@
 [package]
 name = "bp256"
-version = "0.14.0-rc.3"
+version = "0.14.0-rc.4"
 description = "Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -14,17 +14,17 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["sec1"] }
 
 # optional dependencies
-ecdsa = { version = "0.17.0-rc.11", optional = true, default-features = false, features = ["der"] }
-primefield = { version = "0.14.0-rc.3", optional = true }
-primeorder = { version = "0.14.0-rc.3", optional = true }
+ecdsa = { version = "0.17.0-rc.12", optional = true, default-features = false, features = ["der"] }
+primefield = { version = "0.14.0-rc.4", optional = true }
+primeorder = { version = "0.14.0-rc.4", optional = true }
 sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["dev"] }
 
 [features]
 default = ["pkcs8", "std"]

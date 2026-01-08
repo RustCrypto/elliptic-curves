@@ -1,6 +1,6 @@
 [package]
 name = "x448"
-version = "0.14.0-pre.3"
+version = "0.14.0-pre.4"
 authors = ["RustCrypto Developers"]
 categories = ["cryptography"]
 keywords = ["cryptography", "crypto", "x448", "diffie-hellman", "curve448", ]
@@ -14,7 +14,7 @@ readme = "README.md"
 description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellman function"
 
 [dependencies]
-ed448-goldilocks = { version = "0.14.0-pre.6", default-features = false }
+ed448-goldilocks = { version = "0.14.0-pre.7", default-features = false }
 rand_core = { version = "0.10.0-rc-3", default-features = false }
 
 # optional dependencies

@@ -1,6 +1,6 @@
 [package]
 name = "ed448-goldilocks"
-version = "0.14.0-pre.6"
+version = "0.14.0-pre.7"
 authors = ["RustCrypto Developers"]
 categories = ["cryptography"]
 keywords = ["cryptography", "decaf", "ed448", "ed448-goldilocks"]
@@ -16,8 +16,8 @@ This crate also includes signing and verifying of Ed448 signatures.
 """
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.20", features = ["arithmetic", "pkcs8"] }
-hash2curve = "0.14.0-rc.6"
+elliptic-curve = { version = "0.14.0-rc.21", features = ["arithmetic", "pkcs8"] }
+hash2curve = "0.14.0-rc.7"
 rand_core = { version = "0.10.0-rc-3", default-features = false }
 sha3 = { version = "0.11.0-rc.3", default-features = false }
 subtle = { version = "2.6", default-features = false }

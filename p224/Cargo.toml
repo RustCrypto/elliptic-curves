@@ -1,6 +1,6 @@
 [package]
 name = "p224"
-version = "0.14.0-rc.3"
+version = "0.14.0-rc.4"
 description = """
 Pure Rust implementation of the NIST P-224 (a.k.a. secp224r1) elliptic curve
 as defined in SP 800-186
@@ -17,20 +17,20 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.17.0-rc.11", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.17.0-rc.12", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
-primefield = { version = "0.14.0-rc.3", optional = true }
-primeorder = { version = "0.14.0-rc.3", optional = true }
+primefield = { version = "0.14.0-rc.4", optional = true }
+primeorder = { version = "0.14.0-rc.4", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 
 [dev-dependencies]
-ecdsa-core = { version = "0.17.0-rc.11", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.17.0-rc.12", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "0.14.0-rc.3", features = ["dev"] }
+primeorder = { version = "0.14.0-rc.4", features = ["dev"] }
 getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
 [features]
