@@ -1,16 +1,16 @@
-//! bp256 `FieldElement` benchmarks
+//! sm2 `FieldElement` benchmarks
 
-use bp256::BrainpoolP256r1;
 use criterion::{criterion_group, criterion_main};
 use primeorder::PrimeCurveParams;
+use sm2::Sm2;
 
-type FieldElement = <BrainpoolP256r1 as PrimeCurveParams>::FieldElement;
+type FieldElement = <Sm2 as PrimeCurveParams>::FieldElement;
 
 const FE_A: FieldElement = FieldElement::from_hex_vartime(
-    "8bd2aeb9cb7e57cb2c4b482ffc81b7afb9de27e1e3bd23c23a4453bd9ace3262",
+    "32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7",
 );
 const FE_B: FieldElement = FieldElement::from_hex_vartime(
-    "547ef835c3dac4fd97f8461a14611dc9c27745132ded8e545c1d54c72f046997",
+    "BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0",
 );
 
 primefield::bench_field!(bench_field, "FieldElement", FE_A, FE_B);

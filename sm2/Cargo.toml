@@ -32,9 +32,11 @@ sm3 = { version = "0.5.0-rc.3", optional = true, default-features = false }
 der = { version = "0.8.0-rc.10", optional = true }
 
 [dev-dependencies]
+criterion = "0.7"
+elliptic-curve = { version = "0.14.0-rc.20", default-features = false, features = ["dev"] }
+getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 hex-literal = "1"
 proptest = "1"
-getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
 [features]
 default = ["arithmetic", "dsa", "getrandom", "pke", "pem", "std"]
@@ -49,6 +51,21 @@ pke = ["arithmetic", "dep:sm3"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "der"]
 serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
+
+[[bench]]
+name = "field"
+harness = false
+required-features = ["arithmetic"]
+
+[[bench]]
+name = "point"
+harness = false
+required-features = ["arithmetic"]
+
+[[bench]]
+name = "scalar"
+harness = false
+required-features = ["arithmetic"]
 
 [package.metadata.docs.rs]
 all-features = true

@@ -26,6 +26,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  benches:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.85.0 # MSRV
+      - run: cargo build --all-features --benches
+
   build:
     runs-on: ubuntu-latest
     strategy:
