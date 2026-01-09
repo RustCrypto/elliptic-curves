@@ -75,9 +75,9 @@ pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
     FieldBytesEncoding,
-    array::{Array, typenum::U33},
+    array::Array,
     bigint::{ArrayEncoding, Odd},
-    consts::U32,
+    consts::{U32, U33, U65},
 };
 
 #[cfg(feature = "dsa")]
@@ -120,6 +120,9 @@ impl pkcs8::AssociatedOid for Sm2 {
 
 /// Compressed SEC1-encoded curve point.
 pub type CompressedPoint = Array<u8, U33>;
+
+/// Uncompressed SEC1-encoded curve point.
+pub type UncompressedPoint = Array<u8, U65>;
 
 /// SEC1 encoded point.
 pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Sm2>;
