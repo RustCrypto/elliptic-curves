@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use crate::{
-    AffinePoint, ProjectivePoint, PublicKey, Scalar, Sm2,
+    AffinePoint, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, Sm2,
     arithmetic::field::FieldElement,
     pke::{kdf, vec},
 };
@@ -9,8 +9,8 @@ use crate::{
 #[cfg(feature = "alloc")]
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use elliptic_curve::{
-    Curve, Error, Group, Result,
-    bigint::{RandomBits, U256, Uint},
+    Curve, Error, Generate, Group, Result,
+    bigint::{U256, Uint},
     ops::Reduce,
     pkcs8::der::Encode,
     rand_core::TryCryptoRng,
@@ -158,7 +158,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
     let mut hpb: AffinePoint;
     loop {
         // A1: generate a random number 𝑘 ∈ [1, 𝑛 − 1] with the random number generator
-        let k = Scalar::from_uint(&next_k(rng, N_BYTES)?).unwrap();
+        let k = NonZeroScalar::try_generate_from_rng(rng).map_err(|_| Error)?;
 
         // A2: compute point 𝐶1 = [𝑘]𝐺 = (𝑥1, 𝑦1)
         let kg = ProjectivePoint::mul_by_generator(&k).to_affine();
@@ -171,7 +171,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
         }
 
         // A4: compute point [𝑘]𝑃𝐵 = (𝑥2, 𝑦2)
-        hpb = (s * k).to_affine();
+        hpb = (s * *k).to_affine();
 
         // A5: compute 𝑡 = 𝐾𝐷𝐹(𝑥2||𝑦2, 𝑘𝑙𝑒𝑛)
         // A6: compute 𝐶2 = 𝑀 ⊕ t
@@ -199,13 +199,4 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
         Mode::C1C2C3 => [c1.as_slice(), &c2, &c3].concat(),
         Mode::C1C3C2 => [c1.as_slice(), &c3, &c2].concat(),
     })
-}
-
-fn next_k<R: TryCryptoRng + ?Sized>(rng: &mut R, bit_length: u32) -> Result<U256> {
-    loop {
-        let k = U256::try_random_bits(rng, bit_length).map_err(|_| Error)?;
-        if !bool::from(k.is_zero()) && k < *Sm2::ORDER {
-            return Ok(k);
-        }
-    }
 }
