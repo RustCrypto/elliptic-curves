@@ -584,7 +584,7 @@ where
     type Error = Error;
 
     fn try_from(point: ProjectivePoint<C>) -> Result<PublicKey<C>> {
-        AffinePoint::<C>::from(point).try_into()
+        PublicKey::try_from(&point)
     }
 }
 
