@@ -135,18 +135,14 @@ impl Scalar {
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
-        let inv = self
-            .retrieve()
-            .invert_odd_mod(&ORDER);
+        let inv = self.retrieve().invert_odd_mod(&ORDER);
 
         CtOption::from(inv).map(Self::from_uint_unchecked)
     }
 
     /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
     pub fn invert_vartime(&self) -> CtOption<Self> {
-        let inv = self
-            .retrieve()
-            .invert_odd_mod_vartime(&ORDER);
+        let inv = self.retrieve().invert_odd_mod_vartime(&ORDER);
 
         CtOption::from(inv).map(Self::from_uint_unchecked)
     }
