@@ -14,7 +14,6 @@ use core::{
     iter::{Product, Sum},
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
 };
-use elliptic_curve::bigint::Odd;
 use elliptic_curve::{
     Curve, Error, Generate, ScalarValue,
     bigint::{ArrayEncoding, Integer, Limb, U256, U512, Word, modular::Retrieve},
@@ -136,18 +135,14 @@ impl Scalar {
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
     pub fn invert(&self) -> CtOption<Self> {
-        let inv = self
-            .retrieve()
-            .invert_odd_mod(const { &Odd::from_be_hex(ORDER_HEX) });
+        let inv = self.retrieve().invert_odd_mod(&ORDER);
 
         CtOption::from(inv).map(Self::from_uint_unchecked)
     }
 
     /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
     pub fn invert_vartime(&self) -> CtOption<Self> {
-        let inv = self
-            .retrieve()
-            .invert_odd_mod_vartime(const { &Odd::from_be_hex(ORDER_HEX) });
+        let inv = self.retrieve().invert_odd_mod_vartime(&ORDER);
 
         CtOption::from(inv).map(Self::from_uint_unchecked)
     }
