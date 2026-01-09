@@ -157,13 +157,13 @@ fn decrypt(
     secret_scalar: &Scalar,
     mode: Mode,
     hasher: &mut dyn DynDigest,
-    cipher: &[u8],
+    ciphertext: &[u8],
 ) -> Result<Vec<u8>> {
     let q = U256::from_be_hex(FieldElement::MODULUS);
     let c1_len = q.bits().div_ceil(8) * 2 + 1;
 
     // B1: get 𝐶1 from 𝐶
-    let (c1, c) = cipher.split_at(c1_len as usize);
+    let (c1, c) = ciphertext.split_at_checked(c1_len as usize).ok_or(Error)?;
     let encoded_c1 = EncodedPoint::from_bytes(c1).map_err(Error::from)?;
 
     // verify that point c1 satisfies the elliptic curve
@@ -182,10 +182,10 @@ fn decrypt(
     let digest_size = hasher.output_size();
     let (c2, c3) = match mode {
         Mode::C1C3C2 => {
-            let (c3, c2) = c.split_at(digest_size);
+            let (c3, c2) = c.split_at_checked(digest_size).ok_or(Error)?;
             (c2, c3)
         }
-        Mode::C1C2C3 => c.split_at(c.len() - digest_size),
+        Mode::C1C2C3 => c.split_at_checked(c.len() - digest_size).ok_or(Error)?,
     };
 
     // B4: compute 𝑡 = 𝐾𝐷𝐹(𝑥2 ∥ 𝑦2, 𝑘𝑙𝑒𝑛)
