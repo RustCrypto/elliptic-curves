@@ -167,7 +167,9 @@ fn decrypt(
     let encoded_c1 = EncodedPoint::from_bytes(c1).map_err(Error::from)?;
 
     // verify that point c1 satisfies the elliptic curve
-    let mut c1_point = AffinePoint::from_encoded_point(&encoded_c1).unwrap();
+    let mut c1_point = AffinePoint::from_encoded_point(&encoded_c1)
+        .into_option()
+        .ok_or(Error)?;
 
     // B2: compute point 𝑆 = [ℎ]𝐶1
     let s = c1_point * Scalar::reduce(&U256::from_u32(FieldElement::S));
