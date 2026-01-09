@@ -1,7 +1,7 @@
 use core::fmt::Debug;
 
 use crate::{
-    AffinePoint, FieldBytesSize, NonZeroScalar, ProjectivePoint, PublicKey, Scalar,
+    AffinePoint, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, UncompressedPoint,
     arithmetic::field::FieldElement,
     pke::{kdf, vec},
 };
@@ -10,7 +10,6 @@ use crate::{
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use elliptic_curve::{
     Error, Generate, Group, Result,
-    array::typenum::Unsigned,
     bigint::{U256, Uint},
     ops::Reduce,
     pkcs8::der::Encode,
@@ -153,7 +152,7 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
     digest: &mut dyn DynDigest,
     msg: &[u8],
 ) -> Result<Vec<u8>> {
-    let mut c1 = [0; FieldBytesSize::USIZE * 2 + 1];
+    let mut c1 = [0; size_of::<UncompressedPoint>()];
     let mut c2 = msg.to_owned();
     let mut hpb: AffinePoint;
     loop {
