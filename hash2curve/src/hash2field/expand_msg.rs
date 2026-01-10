@@ -72,9 +72,11 @@ impl<'a, L: ArraySize> Domain<'a, L> {
         X: Default + ExtendableOutput + Update,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
-        if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
+        let dst_len = dst.iter().map(|slice| slice.len()).sum::<usize>();
+
+        if dst_len == 0 {
             Err(ExpandMsgXofError::EmptyDst)
-        } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
+        } else if dst_len > MAX_DST_LEN {
             if L::USIZE > u8::MAX.into() {
                 return Err(ExpandMsgXofError::DstSecurityLevel);
             }
@@ -99,9 +101,11 @@ impl<'a, L: ArraySize> Domain<'a, L> {
         X: Digest<OutputSize = L>,
     {
         // https://www.rfc-editor.org/rfc/rfc9380.html#section-3.1-4.2
-        if dst.iter().map(|slice| slice.len()).sum::<usize>() == 0 {
+        let dst_len = dst.iter().map(|slice| slice.len()).sum::<usize>();
+
+        if dst_len == 0 {
             Err(ExpandMsgXmdError::EmptyDst)
-        } else if dst.iter().map(|slice| slice.len()).sum::<usize>() > MAX_DST_LEN {
+        } else if dst_len > MAX_DST_LEN {
             if L::USIZE > u8::MAX.into() {
                 return Err(ExpandMsgXmdError::DstHash);
             }
