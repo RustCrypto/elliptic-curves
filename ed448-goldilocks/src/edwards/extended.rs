@@ -157,7 +157,7 @@ impl Group for EdwardsPoint {
     }
 
     fn double(&self) -> Self {
-        self.double()
+        Self::double(self)
     }
 }
 
@@ -197,7 +197,7 @@ impl CofactorGroup for EdwardsPoint {
     }
 
     fn is_torsion_free(&self) -> Choice {
-        self.is_torsion_free()
+        Self::is_torsion_free(self)
     }
 }
 
@@ -318,7 +318,7 @@ impl CurveGroup for EdwardsPoint {
     type AffineRepr = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {
-        self.to_affine()
+        Self::to_affine(self)
     }
 
     #[cfg(feature = "alloc")]
