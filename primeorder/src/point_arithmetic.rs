@@ -29,6 +29,25 @@ mod sealed {
 /// Allow crate-local visibility
 pub(crate) use sealed::PointArithmetic;
 
+// Debug-only checks to ensure we don't accidentally use formulas specialized for a different `a`.
+#[inline(always)]
+fn debug_assert_equation_a_is_minus_three<C: PrimeCurveParams>() {
+    debug_assert_eq!(
+        C::EQUATION_A,
+        -C::FieldElement::from(3),
+        "this implementation is only valid for C::EQUATION_A = -3"
+    );
+}
+
+#[inline(always)]
+fn debug_assert_equation_a_is_zero<C: PrimeCurveParams>() {
+    debug_assert_eq!(
+        C::EQUATION_A,
+        C::FieldElement::ZERO,
+        "this implementation is only valid for C::EQUATION_A = 0"
+    );
+}
+
 /// The 𝒂-coefficient of the short Weierstrass equation does not have specific
 /// properties which allow for an optimized implementation.
 pub struct EquationAIsGeneric {}
@@ -207,11 +226,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
     fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C> {
-        debug_assert_eq!(
-            C::EQUATION_A,
-            -C::FieldElement::from(3),
-            "this implementation is only valid for C::EQUATION_A = -3"
-        );
+        debug_assert_equation_a_is_minus_three::<C>();
 
         let xx = lhs.x * rhs.x; // 1
         let yy = lhs.y * rhs.y; // 2
@@ -245,11 +260,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
     fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C> {
-        debug_assert_eq!(
-            C::EQUATION_A,
-            -C::FieldElement::from(3),
-            "this implementation is only valid for C::EQUATION_A = -3"
-        );
+        debug_assert_equation_a_is_minus_three::<C>();
 
         let xx = lhs.x * rhs.x; // 1
         let yy = lhs.y * rhs.y; // 2
@@ -284,11 +295,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
     fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C> {
-        debug_assert_eq!(
-            C::EQUATION_A,
-            -C::FieldElement::from(3),
-            "this implementation is only valid for C::EQUATION_A = -3"
-        );
+        debug_assert_equation_a_is_minus_three::<C>();
 
         let xx = point.x.square(); // 1
         let yy = point.y.square(); // 2
@@ -329,11 +336,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
     fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C> {
-        debug_assert_eq!(
-            C::EQUATION_A,
-            C::FieldElement::ZERO,
-            "this implementation is only valid for C::EQUATION_A = 0"
-        );
+        debug_assert_equation_a_is_zero::<C>();
 
         let b3 = C::FieldElement::from(3) * C::EQUATION_B;
 
@@ -386,11 +389,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
     fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C> {
-        debug_assert_eq!(
-            C::EQUATION_A,
-            C::FieldElement::ZERO,
-            "this implementation is only valid for C::EQUATION_A = 0"
-        );
+        debug_assert_equation_a_is_zero::<C>();
 
         let b3 = C::EQUATION_B * C::FieldElement::from(3);
 
@@ -438,11 +437,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
     fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C> {
-        debug_assert_eq!(
-            C::EQUATION_A,
-            C::FieldElement::ZERO,
-            "this implementation is only valid for C::EQUATION_A = 0"
-        );
+        debug_assert_equation_a_is_zero::<C>();
 
         let b3 = C::EQUATION_B * C::FieldElement::from(3);
 
