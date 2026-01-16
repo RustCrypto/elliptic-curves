@@ -513,6 +513,34 @@ mod tests {
     use hex_literal::hex;
     use sha3::Shake256;
 
+    fn assert_from_okm(
+        dst: &[u8],
+        msgs: &[(&[u8], [u8; 56], [u8; 56])],
+    ) {
+        for (msg, expected_u0, expected_u1) in msgs {
+            let mut expander = <ExpandMsgXof<Shake256> as ExpandMsg<U32>>::expand_message(
+                &[*msg],
+                &[dst],
+                (84 * 2).try_into().unwrap(),
+            )
+            .unwrap();
+
+            let mut data = Array::<u8, U84>::default();
+            expander.fill_bytes(&mut data).unwrap();
+            let u0 = FieldElement::reduce(&data);
+
+            let mut e_u0 = *expected_u0;
+            e_u0.reverse();
+            let mut e_u1 = *expected_u1;
+            e_u1.reverse();
+
+            assert_eq!(u0.to_bytes(), e_u0);
+            expander.fill_bytes(&mut data).unwrap();
+            let u1 = FieldElement::reduce(&data);
+            assert_eq!(u1.to_bytes(), e_u1);
+        }
+    }
+
     #[test]
     fn from_okm_curve448() {
         const DST: &[u8] = b"QUUX-V01-CS02-with-curve448_XOF:SHAKE256_ELL2_RO_";
@@ -524,27 +552,8 @@ mod tests {
             (b"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", hex!("8cba93a007bb2c801b1769e026b1fa1640b14a34cf3029db3c7fd6392745d6fec0f7870b5071d6da4402cedbbde28ae4e50ab30e1049a238"), hex!("4223746145069e4b8a981acc3404259d1a2c3ecfed5d864798a89d45f81a2c59e2d40eb1d5f0fe11478cbb2bb30246dd388cb932ad7bb330")),
         ];
 
-        for (msg, expected_u0, expected_u1) in MSGS {
-            let mut expander = <ExpandMsgXof<Shake256> as ExpandMsg<U32>>::expand_message(
-                &[msg],
-                &[DST],
-                (84 * 2).try_into().unwrap(),
-            )
-            .unwrap();
-            let mut data = Array::<u8, U84>::default();
-            expander.fill_bytes(&mut data).unwrap();
-            // TODO: This should be `Curve448FieldElement`.
-            let u0 = FieldElement::reduce(&data);
-            let mut e_u0 = *expected_u0;
-            e_u0.reverse();
-            let mut e_u1 = *expected_u1;
-            e_u1.reverse();
-            assert_eq!(u0.to_bytes(), e_u0);
-            expander.fill_bytes(&mut data).unwrap();
-            // TODO: This should be `Curve448FieldElement`.
-            let u1 = FieldElement::reduce(&data);
-            assert_eq!(u1.to_bytes(), e_u1);
-        }
+        // TODO: This should be `Curve448FieldElement`.
+        assert_from_okm(DST, MSGS);
     }
 
     #[test]
@@ -558,25 +567,7 @@ mod tests {
             (b"a512_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", hex!("163c79ab0210a4b5e4f44fb19437ea965bf5431ab233ef16606f0b03c5f16a3feb7d46a5a675ce8f606e9c2bf74ee5336c54a1e54919f13f"), hex!("f99666bde4995c4088333d6c2734687e815f80a99c6da02c47df4b51f6c9d9ed466b4fecf7d9884990a8e0d0be6907fa437e0b1a27f49265")),
         ];
 
-        for (msg, expected_u0, expected_u1) in MSGS {
-            let mut expander = <ExpandMsgXof<Shake256> as ExpandMsg<U32>>::expand_message(
-                &[msg],
-                &[DST],
-                (84 * 2).try_into().unwrap(),
-            )
-            .unwrap();
-            let mut data = Array::<u8, U84>::default();
-            expander.fill_bytes(&mut data).unwrap();
-            let u0 = FieldElement::reduce(&data);
-            let mut e_u0 = *expected_u0;
-            e_u0.reverse();
-            let mut e_u1 = *expected_u1;
-            e_u1.reverse();
-            assert_eq!(u0.to_bytes(), e_u0);
-            expander.fill_bytes(&mut data).unwrap();
-            let u1 = FieldElement::reduce(&data);
-            assert_eq!(u1.to_bytes(), e_u1);
-        }
+        assert_from_okm(DST, MSGS);
     }
 
     #[test]
