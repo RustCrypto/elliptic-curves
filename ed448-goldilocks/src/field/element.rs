@@ -513,10 +513,7 @@ mod tests {
     use hex_literal::hex;
     use sha3::Shake256;
 
-    fn assert_from_okm(
-        dst: &[u8],
-        msgs: &[(&[u8], [u8; 56], [u8; 56])],
-    ) {
+    fn assert_from_okm(dst: &[u8], msgs: &[(&[u8], [u8; 56], [u8; 56])]) {
         for (msg, expected_u0, expected_u1) in msgs {
             let mut expander = <ExpandMsgXof<Shake256> as ExpandMsg<U32>>::expand_message(
                 &[*msg],
