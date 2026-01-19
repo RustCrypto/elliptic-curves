@@ -15,7 +15,7 @@ description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellma
 
 [dependencies]
 ed448-goldilocks = { version = "0.14.0-pre.7", default-features = false }
-rand_core = { version = "0.10.0-rc-3", default-features = false }
+rand_core = { version = "0.10.0-rc-4", default-features = false }
 
 # optional dependencies
 serdect = { version = "0.4", optional = true }
