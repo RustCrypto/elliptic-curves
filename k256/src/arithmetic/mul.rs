@@ -391,15 +391,15 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
-    use elliptic_curve::{Field, Group};
-    use getrandom::{SysRng, rand_core::TryRngCore};
+    use elliptic_curve::Generate;
+    use getrandom::SysRng;
 
     #[test]
     fn test_lincomb() {
-        let x = ProjectivePoint::random(&mut SysRng.unwrap_mut());
-        let y = ProjectivePoint::random(&mut SysRng.unwrap_mut());
-        let k = Scalar::random(&mut SysRng.unwrap_mut());
-        let l = Scalar::random(&mut SysRng.unwrap_mut());
+        let x = ProjectivePoint::try_generate_from_rng(&mut SysRng).unwrap();
+        let y = ProjectivePoint::try_generate_from_rng(&mut SysRng).unwrap();
+        let k = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
+        let l = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
 
         let reference = x * k + y * l;
         let test = ProjectivePoint::lincomb(&[(x, k), (y, l)]);
@@ -408,7 +408,7 @@ mod tests {
 
     #[test]
     fn test_mul_by_generator() {
-        let k = Scalar::random(&mut SysRng.unwrap_mut());
+        let k = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
         let reference = ProjectivePoint::GENERATOR * k;
         let test = ProjectivePoint::mul_by_generator(&k);
         assert_eq!(reference, test);
@@ -417,10 +417,10 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn test_lincomb_slice() {
-        let x = ProjectivePoint::random(&mut SysRng.unwrap_mut());
-        let y = ProjectivePoint::random(&mut SysRng.unwrap_mut());
-        let k = Scalar::random(&mut SysRng.unwrap_mut());
-        let l = Scalar::random(&mut SysRng.unwrap_mut());
+        let x = ProjectivePoint::try_generate_from_rng(&mut SysRng).unwrap();
+        let y = ProjectivePoint::try_generate_from_rng(&mut SysRng).unwrap();
+        let k = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
+        let l = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
 
         let reference = x * k + y * l;
         let points_and_scalars = vec![(x, k), (y, l)];

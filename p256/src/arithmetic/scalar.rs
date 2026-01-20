@@ -13,7 +13,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve, Generate,
-    bigint::{ArrayEncoding, Integer, Limb, Odd, U256, Uint, modular::Retrieve},
+    bigint::{ArrayEncoding, Limb, Odd, U256, Uint, modular::Retrieve},
     ctutils,
     group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},

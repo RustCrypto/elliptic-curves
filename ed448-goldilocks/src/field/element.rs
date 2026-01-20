@@ -12,7 +12,7 @@ use elliptic_curve::{
     Field,
     array::Array,
     bigint::{
-        Integer, NonZero, U448, U704, Zero,
+        NonZero, U448, U704, Zero,
         consts::{U28, U56, U84, U88},
         modular::ConstMontyParams,
     },
