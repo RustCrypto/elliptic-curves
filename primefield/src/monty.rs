@@ -425,7 +425,7 @@ where
     }
 
     fn is_zero(&self) -> Choice {
-        Self::ZERO.ct_eq(self)
+        MontyFieldElement::<MOD, LIMBS>::is_zero(self)
     }
 
     fn square(&self) -> Self {
