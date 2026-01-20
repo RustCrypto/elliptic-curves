@@ -20,7 +20,7 @@ rust-version = "1.85"
 
 [dependencies]
 cfg-if = "1.0"
-elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.22", default-features = false, features = ["sec1"] }
 hash2curve = { version = "0.14.0-rc.7", optional = true }
 
 # optional dependencies

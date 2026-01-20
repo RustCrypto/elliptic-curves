@@ -18,7 +18,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.22", default-features = false, features = ["sec1"] }
 fiat-crypto = { version = "0.3", default-features = false }
 rand_core = { version = "0.10.0-rc-3", default-features = false }
 
@@ -33,7 +33,7 @@ der = { version = "0.8.0-rc.10", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.22", default-features = false, features = ["dev"] }
 getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 hex-literal = "1"
 proptest = "1"
