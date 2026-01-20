@@ -34,12 +34,12 @@ dual licensed as above, without any additional terms or conditions.
 
 [//]: # (badges)
 
-[crate-image]: https://img.shields.io/crates/v/ed448-goldilocks?logo=rust
-[crate-link]: https://crates.io/crates/ed448-goldilocks
-[docs-image]: https://docs.rs/ed448-goldilocks/badge.svg
-[docs-link]: https://docs.rs/ed448-goldilocks/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml/badge.svg
-[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml
+[crate-image]: https://img.shields.io/crates/v/x448?logo=rust
+[crate-link]: https://crates.io/crates/x448
+[docs-image]: https://docs.rs/x448/badge.svg
+[docs-link]: https://docs.rs/x448/
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/x448.yml/badge.svg
+[build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/x448.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
@@ -48,4 +48,4 @@ dual licensed as above, without any additional terms or conditions.
 [//]: # (links)
 
 [RustCrypto]: https://github.com/RustCrypto
-[`ed448-goldilocks`]: https://docs.rs/ed448-goldilocks/
+[`ed448-goldilocks`]: https://docs.rs/ed448-goldilocks

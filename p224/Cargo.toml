@@ -31,7 +31,6 @@ sha2 = { version = "0.11.0-rc.3", optional = true, default-features = false }
 ecdsa-core = { version = "0.17.0-rc.13", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.4", features = ["dev"] }
-getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]

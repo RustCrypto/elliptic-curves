@@ -1,11 +1,13 @@
 //! Much of this code is borrowed from Thomas Pornin's [CRRL Project](https://github.com/pornin/crrl/blob/main/src/ed448.rs)
 //! and adapted to mirror `ed25519-dalek`'s API.
 
-use crate::sign::expanded::ExpandedSecretKey;
-use crate::*;
+use crate::{sign::expanded::ExpandedSecretKey, *};
 use core::fmt::{self, Debug, Formatter};
-use elliptic_curve::zeroize::{Zeroize, ZeroizeOnDrop};
-use rand_core::CryptoRng;
+use elliptic_curve::{
+    common::Generate,
+    rand_core::TryCryptoRng,
+    zeroize::{Zeroize, ZeroizeOnDrop},
+};
 use sha3::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
     consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
@@ -127,6 +129,17 @@ impl Debug for SigningKey {
         f.debug_struct("SigningKey")
             .field("verifying_key", &self.secret.public_key)
             .finish_non_exhaustive()
+    }
+}
+
+impl Generate for SigningKey {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        let mut secret_scalar = SecretKey::default();
+        rng.try_fill_bytes(secret_scalar.as_mut())?;
+        assert!(!secret_scalar.iter().all(|&v| v == 0));
+        Ok(Self {
+            secret: ExpandedSecretKey::from(&secret_scalar),
+        })
     }
 }
 
@@ -450,16 +463,6 @@ impl<'de> serdect::serde::Deserialize<'de> for SigningKey {
 }
 
 impl SigningKey {
-    /// Generate a cryptographically random [`SigningKey`].
-    pub fn generate<R: CryptoRng + ?Sized>(rng: &mut R) -> Self {
-        let mut secret_scalar = SecretKey::default();
-        rng.fill_bytes(secret_scalar.as_mut());
-        assert!(!secret_scalar.iter().all(|&v| v == 0));
-        Self {
-            secret: ExpandedSecretKey::from(&secret_scalar),
-        }
-    }
-
     /// Serialize this [`SigningKey`] as bytes.
     pub fn to_bytes(&self) -> SecretKey {
         self.secret.seed
@@ -527,14 +530,11 @@ impl SigningKey {
         Ok(sig.into())
     }
 }
-#[cfg(feature = "serde")]
+
+#[cfg(all(feature = "getrandom", feature = "serde"))]
 #[test]
 fn serialization() {
-    use chacha20::ChaCha8Rng;
-    use rand_core::SeedableRng;
-
-    let mut rng = ChaCha8Rng::from_seed([0u8; 32]);
-    let signing_key = SigningKey::generate(&mut rng);
+    let signing_key = SigningKey::generate();
 
     let bytes = serde_bare::to_vec(&signing_key).unwrap();
     let signing_key2: SigningKey = serde_bare::from_slice(&bytes).unwrap();

@@ -34,7 +34,6 @@ der = { version = "0.8.0-rc.10", optional = true }
 [dev-dependencies]
 criterion = "0.7"
 elliptic-curve = { version = "0.14.0-rc.23", default-features = false, features = ["dev"] }
-getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 hex-literal = "1"
 proptest = "1"
 

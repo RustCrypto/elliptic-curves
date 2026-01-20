@@ -77,7 +77,6 @@ dependencies = [
  "der",
  "digest",
  "elliptic-curve",
- "getrandom 0.4.0-rc.0",
  "hex-literal",
  "hkdf",
  "hmac",
@@ -264,9 +263,9 @@ checksum = "df1888fb431ee159b513b5c2f249e03f1c9d788f7bd842927619dbeb88764039"
 
 [[package]]
 name = "const-oid"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0dabb6555f92fb9ee4140454eb5dcd14c7960e1225c6d1a6cc361f032947713e"
+checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
 
 [[package]]
 name = "convert_case"
@@ -662,7 +661,6 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "getrandom 0.4.0-rc.0",
  "hash2curve",
  "hex",
  "hex-literal",
@@ -776,7 +774,6 @@ version = "0.14.0-rc.4"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
- "getrandom 0.4.0-rc.0",
  "hex-literal",
  "primefield",
  "primeorder",
@@ -791,7 +788,6 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "getrandom 0.4.0-rc.0",
  "hash2curve",
  "hex-literal",
  "primefield",
@@ -809,7 +805,6 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "fiat-crypto",
- "getrandom 0.4.0-rc.0",
  "hash2curve",
  "hex-literal",
  "primefield",
@@ -827,7 +822,6 @@ dependencies = [
  "criterion",
  "ecdsa",
  "elliptic-curve",
- "getrandom 0.4.0-rc.0",
  "hash2curve",
  "hex-literal",
  "primefield",
@@ -1301,7 +1295,6 @@ dependencies = [
  "der",
  "elliptic-curve",
  "fiat-crypto",
- "getrandom 0.4.0-rc.0",
  "hex-literal",
  "primefield",
  "primeorder",
@@ -1540,8 +1533,6 @@ name = "x448"
 version = "0.14.0-pre.4"
 dependencies = [
  "ed448-goldilocks",
- "getrandom 0.4.0-rc.0",
- "rand_core 0.10.0-rc-5",
  "serdect",
  "zeroize",
 ]

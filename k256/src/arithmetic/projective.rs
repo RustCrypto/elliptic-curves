@@ -744,9 +744,10 @@ mod tests {
         Scalar,
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     };
-    use elliptic_curve::BatchNormalize;
-    use elliptic_curve::group::{ff::PrimeField, prime::PrimeCurveAffine};
-    use elliptic_curve::{CurveGroup, Generate};
+    use elliptic_curve::{
+        BatchNormalize, CurveGroup, Generate,
+        group::{ff::PrimeField, prime::PrimeCurveAffine},
+    };
 
     #[cfg(feature = "alloc")]
     use alloc::vec::Vec;

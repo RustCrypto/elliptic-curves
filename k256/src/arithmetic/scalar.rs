@@ -835,13 +835,12 @@ mod tests {
         ops::{BatchInvert, Reduce},
         scalar::IsHigh,
     };
-    use getrandom::SysRng;
     use num_bigint::{BigUint, ToBigUint};
     use num_traits::Zero;
     use proptest::prelude::*;
 
     #[cfg(feature = "getrandom")]
-    use elliptic_curve::Generate;
+    use elliptic_curve::{Generate, common::getrandom::SysRng};
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {

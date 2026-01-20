@@ -1,6 +1,9 @@
 #![no_std]
 #![cfg_attr(docsrs, feature(doc_cfg))]
-#![doc = include_str!("../README.md")]
+#![cfg_attr(
+    feature = "getrandom",
+    doc = include_str!("../README.md")
+)]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg"
@@ -21,6 +24,20 @@
     unused_mut,
     unused_must_use
 )]
+
+//! ## `serde` support
+//!
+//! When the `serde` feature of this crate is enabled, `Serialize` and
+//! `Deserialize` are impl'd for the following types:
+//!
+//! - [`CompressedDecaf`]
+//! - [`CompressedEdwardsY`]
+//! - [`EdwardsPoint`]
+//! - [`Scalar`]
+//! - [`SigningKey`]
+//! - [`VerifyingKey`]
+//!
+//! Please see type-specific documentation for more information.
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

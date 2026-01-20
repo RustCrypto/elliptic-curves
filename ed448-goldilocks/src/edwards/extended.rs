@@ -814,10 +814,12 @@ mod tests {
     use super::*;
     use crate::Ed448;
     use elliptic_curve::Field;
-    use getrandom::{SysRng, rand_core::TryRngCore};
     use hash2curve::{ExpandMsgXof, GroupDigest};
     use hex_literal::hex;
     use proptest::{prop_assert_eq, property_test};
+
+    #[cfg(feature = "getrandom")]
+    use elliptic_curve::common::getrandom::SysRng;
 
     fn hex_to_field(hex: &'static str) -> FieldElement {
         assert_eq!(hex.len(), 56 * 2);
@@ -995,6 +997,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn hash_fuzzing() {
         for _ in 0..25 {
             let mut msg = [0u8; 64];
@@ -1118,13 +1121,11 @@ mod tests {
         assert_eq!(computed_commitment, expected_commitment);
     }
 
+    // TODO(tarcieri): use proptest
     #[test]
+    #[cfg(feature = "getrandom")]
     fn batch_normalize() {
-        let points: [EdwardsPoint; 2] = [
-            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
-            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
-        ];
-
+        let points: [EdwardsPoint; 2] = [EdwardsPoint::generate(), EdwardsPoint::generate()];
         let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(&points);
 
         for (point, affine_point) in points.into_iter().zip(affine_points) {
@@ -1132,14 +1133,11 @@ mod tests {
         }
     }
 
+    // TODO(tarcieri): use proptest
     #[test]
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
     fn batch_normalize_alloc() {
-        let points = alloc::vec![
-            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
-            EdwardsPoint::try_from_rng(&mut SysRng).unwrap(),
-        ];
-
+        let points = alloc::vec![EdwardsPoint::generate(), EdwardsPoint::generate(),];
         let affine_points = <EdwardsPoint as BatchNormalize<_>>::batch_normalize(points.as_slice());
 
         for (point, affine_point) in points.into_iter().zip(affine_points) {
