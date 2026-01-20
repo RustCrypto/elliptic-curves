@@ -37,10 +37,11 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
+    Generate,
     bigint::{Odd, U256, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
-    rand_core::TryRngCore,
+    rand_core::{TryCryptoRng, TryRngCore},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -288,6 +289,12 @@ impl Field for FieldElement {
     }
 }
 
+impl Generate for FieldElement {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+        Self::try_from_rng(rng)
+    }
+}
+
 impl PrimeField for FieldElement {
     type Repr = FieldBytes;
 
@@ -514,9 +521,10 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 
 #[cfg(test)]
 mod tests {
+    use elliptic_curve::Generate;
     use elliptic_curve::ff::{Field, PrimeField};
     use elliptic_curve::ops::BatchInvert;
-    use getrandom::{SysRng, rand_core::TryRngCore};
+    use getrandom::SysRng;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -702,8 +710,8 @@ mod tests {
 
     #[test]
     fn batch_invert_array() {
-        let k: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
-        let l: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
+        let k: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
+        let l: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
@@ -715,8 +723,8 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn batch_invert() {
-        let k: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
-        let l: FieldElement = FieldElement::random(&mut SysRng.unwrap_mut());
+        let k: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
+        let l: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`

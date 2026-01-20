@@ -5,7 +5,7 @@ mod sqrt;
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, Integer, Invert, Limb, Reduce, Uint, Word, ctutils,
+    ArrayEncoding, ByteArray, Invert, Limb, Reduce, Uint, Word, ctutils,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams, Retrieve},
 };

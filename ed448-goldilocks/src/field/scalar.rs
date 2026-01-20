@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Integer, Limb, U448, U896, Word, modular::Retrieve},
+    bigint::{Limb, U448, U896, Word, modular::Retrieve},
     consts::U2,
     ctutils::{self, CtSelect},
     ff::{Field, helpers},
