@@ -524,7 +524,6 @@ mod tests {
     use elliptic_curve::Generate;
     use elliptic_curve::ff::{Field, PrimeField};
     use elliptic_curve::ops::BatchInvert;
-    use getrandom::SysRng;
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
 
@@ -709,9 +708,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn batch_invert_array() {
-        let k: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
-        let l: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
+        let k: FieldElement = FieldElement::generate();
+        let l: FieldElement = FieldElement::generate();
 
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
@@ -721,10 +721,10 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
     fn batch_invert() {
-        let k: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
-        let l: FieldElement = FieldElement::try_generate_from_rng(&mut SysRng).unwrap();
+        let k: FieldElement = FieldElement::generate();
+        let l: FieldElement = FieldElement::generate();
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
         let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`
