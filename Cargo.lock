@@ -405,9 +405,9 @@ dependencies = [
 
 [[package]]
 name = "digest"
-version = "0.11.0-rc.5"
+version = "0.11.0-rc.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebf9423bafb058e4142194330c52273c343f8a5beb7176d052f0e73b17dd35b9"
+checksum = "ca14c221bd9052fd2da7c34a2eeb5ae54732db28be47c35937be71793d675422"
 dependencies = [
  "blobby",
  "block-buffer",
@@ -418,9 +418,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.12"
+version = "0.17.0-rc.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a18ccb2afbad0782e073b602a7d59dd08966d2b1173e08f96ebffb5446f8446d"
+checksum = "9b41c78c24288ec2644aeb00ebc58bf8cd5ff7e9a6e2a2081ed80fa7e1262dc7"
 dependencies = [
  "der",
  "digest",
@@ -474,9 +474,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.21"
+version = "0.14.0-rc.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ee4530cd12af66979d89bf0e555c66d04ed1dc58479d7a69d93c98a650fb738"
+checksum = "660a2eb4d46d49d4c0b122a8cad1fa7926b0e3e99913796243a7dc280021eadc"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -849,9 +849,9 @@ dependencies = [
 
 [[package]]
 name = "pkcs8"
-version = "0.11.0-rc.8"
+version = "0.11.0-rc.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "77089aec8290d0b7bb01b671b091095cf1937670725af4fd73d47249f03b12c0"
+checksum = "80f8fa6196ede5a9f9ee95b44ca134bddc9b70e8913f9297bd58c909f5889a09"
 dependencies = [
  "der",
  "spki",
@@ -1285,9 +1285,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "3.0.0-rc.6"
+version = "3.0.0-rc.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "597a96996ccff7dfa16f052bd995b4cecc72af22c35138738dc029f0ead6608d"
+checksum = "c04b70a14ee5f15e2e0c785a5fdb2e9a51138dfe13ba3cf8eab037a9e60b1879"
 dependencies = [
  "digest",
  "rand_core 0.10.0-rc-5",

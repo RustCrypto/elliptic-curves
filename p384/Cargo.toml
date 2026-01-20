@@ -18,10 +18,10 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.23", default-features = false, features = ["sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.17.0-rc.12", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.17.0-rc.13", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hash2curve = { version = "0.14.0-rc.7", optional = true }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "0.14.0-rc.4", optional = true }
@@ -34,7 +34,7 @@ fiat-crypto = { version = "0.3", default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
-ecdsa-core = { version = "0.17.0-rc.12", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.17.0-rc.13", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.4", features = ["dev"] }
 proptest = "1.9"
