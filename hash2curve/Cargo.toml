@@ -14,8 +14,8 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-digest = { version = "0.11.0-rc.5" }
-elliptic-curve = { version = "0.14.0-rc.21", default-features = false, features = ["arithmetic"] }
+digest = { version = "0.11.0-rc.7" }
+elliptic-curve = { version = "0.14.0-rc.23", default-features = false, features = ["arithmetic"] }
 
 [dev-dependencies]
 hex-literal = "1"
