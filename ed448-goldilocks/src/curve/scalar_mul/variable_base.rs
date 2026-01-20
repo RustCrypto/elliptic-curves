@@ -14,10 +14,7 @@ pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtensiblePoin
     let lookup = LookupTable::from(point);
 
     for i in (0..113).rev() {
-        result = result.double();
-        result = result.double();
-        result = result.double();
-        result = result.double();
+        result = result.double().double().double().double();
 
         // The mask is the top bit, will be 1 for negative numbers, 0 for positive numbers
         let mask = scalar[i] >> 7;
