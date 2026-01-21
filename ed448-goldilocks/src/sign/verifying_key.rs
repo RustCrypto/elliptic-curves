@@ -434,14 +434,11 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "serde")]
+    #[cfg(all(feature = "getrandom", feature = "serde"))]
     #[test]
     fn serialization() {
-        use chacha20::ChaCha8Rng;
-        use rand_core::SeedableRng;
-
-        let mut rng = ChaCha8Rng::from_seed([0u8; 32]);
-        let signing_key = SigningKey::generate(&mut rng);
+        use elliptic_curve::Generate;
+        let signing_key = SigningKey::generate();
         let verifying_key = signing_key.verifying_key();
 
         let bytes = serde_bare::to_vec(&verifying_key).unwrap();

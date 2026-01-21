@@ -36,7 +36,6 @@ hex-literal = "1"
 primefield = { version = "0.14.0-rc.4" }
 primeorder = { version = "0.14.0-rc.4", features = ["dev"] }
 proptest = "1"
-getrandom = { version = "0.4.0-rc.0", features = ["sys_rng"] }
 
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]

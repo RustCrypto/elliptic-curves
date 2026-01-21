@@ -1,7 +1,6 @@
-#![cfg(feature = "pke")]
+#![cfg(all(feature = "getrandom", feature = "pke"))]
 
-use elliptic_curve::{NonZeroScalar, ops::Reduce};
-use getrandom::SysRng;
+use elliptic_curve::{NonZeroScalar, common::getrandom::SysRng, ops::Reduce};
 use hex_literal::hex;
 use proptest::prelude::*;
 

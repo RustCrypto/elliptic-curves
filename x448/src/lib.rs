@@ -1,15 +1,22 @@
 #![no_std]
+#![cfg_attr(docsrs, feature(doc_cfg))]
+#![doc = include_str!("../README.md")]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
+    html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg"
+)]
 
 use ed448_goldilocks::{
     MontgomeryPoint,
     elliptic_curve::{
+        Generate,
         array::{Array, typenum::U56},
         bigint::U448,
+        rand_core::{CryptoRng, TryCryptoRng},
         scalar::FromUintUnchecked,
+        zeroize::Zeroize,
     },
 };
-use rand_core::{CryptoRng, RngCore};
-use zeroize::Zeroize;
 
 type MontgomeryScalar = ed448_goldilocks::Scalar<ed448_goldilocks::Ed448>;
 
@@ -26,17 +33,6 @@ impl From<&EphemeralSecret> for PublicKey {
 /// A PublicKey is a point on Curve448.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct PublicKey(MontgomeryPoint);
-
-/// An [`EphemeralSecret`] is a Scalar on Curve448.
-#[derive(Clone, Zeroize)]
-#[zeroize(drop)]
-pub struct EphemeralSecret(Array<u8, U56>);
-
-/// A SharedSecret is a point on Curve448.
-/// This point is the result of a Diffie-Hellman key exchange.
-#[derive(Zeroize)]
-#[zeroize(drop)]
-pub struct SharedSecret(MontgomeryPoint);
 
 impl PublicKey {
     /// Converts a bytes slice into a Public key
@@ -73,6 +69,12 @@ impl PublicKey {
     }
 }
 
+/// A SharedSecret is a point on Curve448.
+/// This point is the result of a Diffie-Hellman key exchange.
+#[derive(Zeroize)]
+#[zeroize(drop)]
+pub struct SharedSecret(MontgomeryPoint);
+
 impl SharedSecret {
     /// Converts a shared secret into a byte slice
     pub fn as_bytes(&self) -> &[u8; 56] {
@@ -80,30 +82,21 @@ impl SharedSecret {
     }
 }
 
+/// An [`EphemeralSecret`] is a Scalar on Curve448.
+#[derive(Clone, Zeroize)]
+#[zeroize(drop)]
+pub struct EphemeralSecret(EphemeralSecretBytes);
+
+type EphemeralSecretBytes = Array<u8, U56>;
+
 impl EphemeralSecret {
-    fn new(value: Array<u8, U56>) -> Self {
-        let mut out = Self(value);
-        out.clamp();
-        out
-    }
-
-    /// Generate a x448 `Secret` key.
-    // Taken from dalek-x25519
-    pub fn random_from_rng<T>(csprng: &mut T) -> Self
+    /// DEPRECATED: Generate a new ephemeral secret from the given RNG.
+    #[deprecated(since = "0.14.0", note = "use the `Generate` trait instead")]
+    pub fn new<R>(csprng: &mut R) -> Self
     where
-        T: RngCore + CryptoRng + ?Sized,
+        R: CryptoRng + ?Sized,
     {
-        let mut bytes = Array::default();
-
-        csprng.fill_bytes(bytes.as_mut_slice());
-
-        Self::new(bytes)
-    }
-
-    /// Clamps the secret key according to RFC7748
-    fn clamp(&mut self) {
-        self.0[0] &= 252;
-        self.0[55] |= 128;
+        Self::generate_from_rng(csprng)
     }
 
     /// Views an Secret as a Scalar
@@ -124,6 +117,24 @@ impl EphemeralSecret {
     pub fn as_bytes(&self) -> &[u8; 56] {
         self.0.as_ref()
     }
+
+    /// Construct an [`EphemeralSecret`] by the secret key according to RFC7748.
+    fn clamp(mut bytes: EphemeralSecretBytes) -> Self {
+        bytes[0] &= 252;
+        bytes[55] |= 128;
+        Self(bytes)
+    }
+}
+
+impl Generate for EphemeralSecret {
+    fn try_generate_from_rng<R>(csprng: &mut R) -> Result<Self, R::Error>
+    where
+        R: TryCryptoRng + ?Sized,
+    {
+        let mut bytes = Array::default();
+        csprng.try_fill_bytes(bytes.as_mut_slice())?;
+        Ok(EphemeralSecret::clamp(bytes))
+    }
 }
 
 fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
@@ -140,14 +151,14 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
 /// [1]: https://github.com/rust-lang/nomicon/issues/59
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
-    let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
+    let scalar = EphemeralSecret::clamp(scalar_bytes.into()).as_scalar();
     Some((&point.0 * &scalar).0)
 }
 /// An unchecked version of the x448 function defined in RFC448
 /// No checks are made on the points.
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
     let point = MontgomeryPoint(point_bytes);
-    let scalar = EphemeralSecret::new(scalar_bytes.into()).as_scalar();
+    let scalar = EphemeralSecret::clamp(scalar_bytes.into()).as_scalar();
     (&point * &scalar).0
 }
 
@@ -271,13 +282,12 @@ mod test {
     use super::*;
     use alloc::vec;
     use core::array::TryFromSliceError;
-    use rand_core::TryRngCore;
 
     /// Helpers to test properties of EphemeralSecret. Those `From` and `TryFrom` are not meant to
     /// be exposed outside tests.
     impl From<[u8; 56]> for EphemeralSecret {
         fn from(arr: [u8; 56]) -> Self {
-            Self::new(arr.into())
+            Self::clamp(arr.into())
         }
     }
 
@@ -285,17 +295,17 @@ mod test {
         type Error = TryFromSliceError;
 
         fn try_from(bytes: &[u8]) -> Result<Self, TryFromSliceError> {
-            Ok(Self::new(Array::try_from(bytes)?))
+            Ok(Self::clamp(Array::try_from(bytes)?))
         }
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn test_random_dh() {
-        let mut rng = getrandom::SysRng.unwrap_err();
-        let alice_priv = EphemeralSecret::random_from_rng(&mut rng);
+        let alice_priv = EphemeralSecret::generate();
         let alice_pub = PublicKey::from(&alice_priv);
 
-        let bob_priv = EphemeralSecret::random_from_rng(&mut rng);
+        let bob_priv = EphemeralSecret::generate();
         let bob_pub = PublicKey::from(&bob_priv);
 
         // Since Alice and Bob are both using the API correctly

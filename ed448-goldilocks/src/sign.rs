@@ -8,11 +8,11 @@
 //! to produce a [`Signature`]. Then verify the signature using the corresponding
 //! [`VerifyingKey`].
 //!
-//! ```
-//! use ed448_goldilocks::*;
-//! use getrandom::{SysRng, rand_core::TryRngCore};
+#![cfg_attr(feature = "getrandom", doc = "```")]
+#![cfg_attr(not(feature = "getrandom"), doc = "```ignore")]
+//! use ed448_goldilocks::{SigningKey, elliptic_curve::Generate};
 //!
-//! let signing_key = SigningKey::generate(&mut SysRng.unwrap_err());
+//! let signing_key = SigningKey::generate();
 //! let signature = signing_key.sign_raw(b"Hello, world!");
 //! let verifying_key = signing_key.verifying_key();
 //!
@@ -53,14 +53,15 @@
 //! # Example
 //! This is an example of using the SHAKE-256 algorithm to sign and verify a message
 //! which is the normal default anyway but performed explicitly.
-//! ```
-//! use ed448_goldilocks::*;
+//!
+#![cfg_attr(feature = "getrandom", doc = "```")]
+#![cfg_attr(not(feature = "getrandom"), doc = "```ignore")]
+//! use ed448_goldilocks::{SigningKey, PreHasherXof, elliptic_curve::Generate};
 //! use sha3::{Shake256, digest::Update};
-//! use getrandom::{SysRng, rand_core::TryRngCore};
 //!
 //! let msg = b"Hello World";
 //!
-//! let signing_key = SigningKey::generate(&mut SysRng.unwrap_err());
+//! let signing_key = SigningKey::generate();
 //! let signature = signing_key.sign_prehashed::<PreHasherXof<Shake256>>(
 //!     None,
 //!     Shake256::default().chain(msg).into(),
@@ -89,8 +90,7 @@ pub use signing_key::*;
 pub use verifying_key::*;
 
 use crate::{CompressedEdwardsY, EdwardsPoint, EdwardsScalar};
-use elliptic_curve::array::Array;
-use elliptic_curve::group::GroupEncoding;
+use elliptic_curve::{array::Array, group::GroupEncoding};
 
 /// Length of a secret key in bytes
 pub const SECRET_KEY_LENGTH: usize = 57;
