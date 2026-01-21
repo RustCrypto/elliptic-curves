@@ -1,6 +1,6 @@
 [package]
 name = "bignp256"
-version = "0.14.0-rc.4"
+version = "0.14.0-rc.5"
 description = """
 Pure Rust implementation of the Bign P-256 (a.k.a. bign-curve256v1)
 elliptic curve as defined in STB 34.101.45-2013, with
@@ -30,8 +30,8 @@ hmac = { version = "0.13.0-rc.3", optional = true }
 rand_core = "0.10.0-rc-5"
 rfc6979 = { version = "0.5.0-rc.3", optional = true }
 pkcs8 = { version = "0.11.0-rc.9", optional = true }
-primefield = { version = "0.14.0-rc.4", optional = true }
-primeorder = { version = "0.14.0-rc.4", optional = true }
+primefield = { version = "0.14.0-rc.5", optional = true }
+primeorder = { version = "0.14.0-rc.5", optional = true }
 sec1 = { version = "0.8.0-rc.12", optional = true }
 signature = { version = "3.0.0-rc.8", optional = true }
 
@@ -39,7 +39,7 @@ signature = { version = "3.0.0-rc.8", optional = true }
 criterion = "0.7"
 elliptic-curve = { version = "0.14.0-rc.23", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "0.14.0-rc.4", features = ["dev"] }
+primeorder = { version = "0.14.0-rc.5", features = ["dev"] }
 proptest = "1"
 
 [features]
