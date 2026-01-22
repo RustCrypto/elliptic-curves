@@ -370,7 +370,9 @@ mod tests {
                 for (chunk, block) in chunks.by_ref().zip(blocks.iter()) {
                     chunk.copy_from_slice(&block.to_be_bytes());
                 }
-                chunks.remainder().copy_from_slice(&b12.to_be_bytes());
+                chunks
+                    .into_remainder()
+                    .copy_from_slice(&b12.to_be_bytes());
 
                 let from_okm = Scalar::reduce(&data);
                 let simple_from_okm = simple_from_okm(data);
