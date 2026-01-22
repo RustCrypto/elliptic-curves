@@ -364,19 +364,13 @@ mod tests {
                 b12 in num::u16::ANY,
             )| {
                 let mut data = Array::default();
-                data[..8].copy_from_slice(&b0.to_be_bytes());
-                data[8..16].copy_from_slice(&b1.to_be_bytes());
-                data[16..24].copy_from_slice(&b2.to_be_bytes());
-                data[24..32].copy_from_slice(&b3.to_be_bytes());
-                data[32..40].copy_from_slice(&b4.to_be_bytes());
-                data[40..48].copy_from_slice(&b5.to_be_bytes());
-                data[48..56].copy_from_slice(&b6.to_be_bytes());
-                data[56..64].copy_from_slice(&b7.to_be_bytes());
-                data[64..72].copy_from_slice(&b8.to_be_bytes());
-                data[72..80].copy_from_slice(&b9.to_be_bytes());
-                data[80..88].copy_from_slice(&b10.to_be_bytes());
-                data[88..96].copy_from_slice(&b11.to_be_bytes());
-                data[96..].copy_from_slice(&b12.to_be_bytes());
+
+                let blocks = [b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11];
+                let mut chunks = data.chunks_exact_mut(8);
+                for (chunk, block) in chunks.by_ref().zip(blocks.iter()) {
+                    chunk.copy_from_slice(&block.to_be_bytes());
+                }
+                chunks.remainder().copy_from_slice(&b12.to_be_bytes());
 
                 let from_okm = Scalar::reduce(&data);
                 let simple_from_okm = simple_from_okm(data);
