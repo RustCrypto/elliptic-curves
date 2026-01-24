@@ -1,6 +1,6 @@
 [package]
 name = "k256"
-version = "0.14.0-rc.5"
+version = "0.14.0-rc.6"
 description = """
 secp256k1 elliptic curve library written in pure Rust with support for ECDSA
 signing/verification/public-key recovery, Taproot Schnorr signatures (BIP340),
@@ -21,12 +21,12 @@ rust-version = "1.85"
 [dependencies]
 cfg-if = "1.0"
 elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["sec1"] }
-hash2curve = { version = "0.14.0-rc.8", optional = true }
+hash2curve = { version = "0.14.0-rc.9", optional = true }
 
 # optional dependencies
 ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
-primeorder = { version = "0.14.0-rc.5", optional = true }
+primeorder = { version = "0.14.0-rc.6", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.4", optional = true, default-features = false }
 signature = { version = "3.0.0-rc.9", optional = true }

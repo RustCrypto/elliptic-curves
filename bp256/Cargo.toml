@@ -1,6 +1,6 @@
 [package]
 name = "bp256"
-version = "0.14.0-rc.5"
+version = "0.14.0-rc.6"
 description = "Brainpool P-256 (brainpoolP256r1 and brainpoolP256t1) elliptic curves"
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
@@ -18,8 +18,8 @@ elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features 
 
 # optional dependencies
 ecdsa = { version = "0.17.0-rc.14", optional = true, default-features = false, features = ["der"] }
-primefield = { version = "0.14.0-rc.5", optional = true }
-primeorder = { version = "0.14.0-rc.5", optional = true }
+primefield = { version = "0.14.0-rc.6", optional = true }
+primeorder = { version = "0.14.0-rc.6", optional = true }
 sha2 = { version = "0.11.0-rc.4", optional = true, default-features = false }
 
 [dev-dependencies]
