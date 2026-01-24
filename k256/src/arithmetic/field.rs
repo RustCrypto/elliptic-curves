@@ -41,7 +41,7 @@ use elliptic_curve::{
     bigint::{Odd, U256, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
-    rand_core::{TryCryptoRng, TryRngCore},
+    rand_core::{TryCryptoRng, TryRng},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -257,7 +257,7 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
 
         loop {

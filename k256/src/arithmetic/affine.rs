@@ -10,7 +10,7 @@ use elliptic_curve::{
     ff::PrimeField,
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
-    rand_core::{TryCryptoRng, TryRngCore},
+    rand_core::{TryCryptoRng, TryRng},
     sec1::{self, FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -80,7 +80,7 @@ impl AffinePoint {
     ///
     /// This internal method avoids the `TryCryptoRng` bounds so it can be used in `group` impls for
     /// `ProjectivePoint`.
-    pub(crate) fn try_from_rng<R: TryRngCore + ?Sized>(
+    pub(crate) fn try_from_rng<R: TryRng + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();

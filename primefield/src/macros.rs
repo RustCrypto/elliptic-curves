@@ -261,7 +261,7 @@ macro_rules! monty_field_element {
 
         impl $crate::bigint::modular::ConstMontyParams<{ <$params>::LIMBS }> for $fe {
             const LIMBS: usize = <$params>::LIMBS;
-            const PARAMS: $crate::bigint::modular::MontyParams<{ <$uint>::LIMBS }> =
+            const PARAMS: $crate::bigint::modular::FixedMontyParams<{ <$uint>::LIMBS }> =
                 <$params>::PARAMS;
         }
 
@@ -277,7 +277,7 @@ macro_rules! monty_field_element {
             const ZERO: Self = Self::ZERO;
             const ONE: Self = Self::ONE;
 
-            fn try_from_rng<R: $crate::rand_core::TryRngCore + ?Sized>(
+            fn try_from_rng<R: $crate::rand_core::TryRng + ?Sized>(
                 rng: &mut R,
             ) -> ::core::result::Result<Self, R::Error> {
                 $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::try_from_rng(rng)

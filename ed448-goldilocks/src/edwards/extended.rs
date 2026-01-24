@@ -26,7 +26,7 @@ use elliptic_curve::{
     ops::{BatchInvert, LinearCombination},
     point::NonIdentity,
 };
-use rand_core::{TryCryptoRng, TryRngCore};
+use rand_core::{TryCryptoRng, TryRng};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 #[cfg(feature = "alloc")]
@@ -134,7 +134,7 @@ impl Group for EdwardsPoint {
 
     fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
-        R: TryRngCore + ?Sized,
+        R: TryRng + ?Sized,
     {
         loop {
             let point = AffinePoint::try_from_rng(rng)?;

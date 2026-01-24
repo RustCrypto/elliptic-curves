@@ -7,7 +7,7 @@ use crate::ByteOrder;
 use bigint::{
     ArrayEncoding, ByteArray, Invert, Limb, Reduce, Uint, Word, ctutils,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
-    modular::{ConstMontyForm as MontyForm, ConstMontyParams, MontyParams, Retrieve},
+    modular::{ConstMontyForm as MontyForm, ConstMontyParams, FixedMontyParams, Retrieve},
 };
 use common::Generate;
 use core::{
@@ -413,7 +413,7 @@ where
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: rand_core::TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_from_rng<R: rand_core::TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = MontyFieldBytes::<MOD, LIMBS>::default();
 
         loop {
@@ -840,7 +840,7 @@ where
     MOD: MontyFieldParams<LIMBS>,
 {
     const LIMBS: usize = LIMBS;
-    const PARAMS: MontyParams<LIMBS> = MOD::PARAMS;
+    const PARAMS: FixedMontyParams<LIMBS> = MOD::PARAMS;
 }
 
 impl<MOD, const LIMBS: usize> Default for MontyFieldElement<MOD, LIMBS>
