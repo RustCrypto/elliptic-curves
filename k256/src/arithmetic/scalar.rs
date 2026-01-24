@@ -20,7 +20,7 @@ use elliptic_curve::{
     ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
-    rand_core::{CryptoRng, TryCryptoRng, TryRngCore},
+    rand_core::{CryptoRng, TryCryptoRng, TryRng},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
         Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, ConstantTimeLess,
@@ -181,7 +181,7 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
         //

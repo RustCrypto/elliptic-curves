@@ -34,7 +34,7 @@ use elliptic_curve::{
     bigint::{Word, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
-    rand_core::TryRngCore,
+    rand_core::TryRng,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -474,7 +474,7 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // NOTE: can't use ScalarValue::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
@@ -512,7 +512,7 @@ impl Field for FieldElement {
 }
 
 impl Generate for FieldElement {
-    fn try_generate_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_generate_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         Self::try_from_rng(rng)
     }
 }

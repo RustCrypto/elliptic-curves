@@ -12,7 +12,7 @@ use elliptic_curve::{
     ops::LinearCombination,
     point::NonIdentity,
 };
-use rand_core::{CryptoRng, TryCryptoRng, TryRngCore};
+use rand_core::{CryptoRng, TryCryptoRng, TryRng};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// The bytes representation of a compressed point
@@ -268,7 +268,7 @@ impl Group for DecafPoint {
 
     fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
-        R: TryRngCore + ?Sized,
+        R: TryRng + ?Sized,
     {
         let mut bytes = DecafPointRepr::default();
 

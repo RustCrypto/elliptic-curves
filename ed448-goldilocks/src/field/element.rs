@@ -19,7 +19,7 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::MapToCurve;
-use rand_core::TryRngCore;
+use rand_core::TryRng;
 use subtle::{
     Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess,
     CtOption,
@@ -238,7 +238,7 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = [0; 56];
 
         loop {

@@ -3,7 +3,7 @@ use crate::*;
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
 use core::ops::Mul;
 use elliptic_curve::{Error, Generate, ctutils, point::NonIdentity, zeroize::DefaultIsZeroes};
-use rand_core::{TryCryptoRng, TryRngCore};
+use rand_core::{TryCryptoRng, TryRng};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
 /// Affine point on untwisted curve
@@ -100,11 +100,11 @@ impl AffinePoint {
 
     /// Generate a random [`AffinePoint`].
     ///
-    /// Helper method that has `TryRngCore` bounds so `ProjectivePoint` can call it for its `group`
+    /// Helper method that has `TryRng` bounds so `ProjectivePoint` can call it for its `group`
     /// impls, otherwise end users should use the `Generate` trait.
     pub(crate) fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
     where
-        R: TryRngCore + ?Sized,
+        R: TryRng + ?Sized,
     {
         let mut bytes = CompressedEdwardsY::default();
 

@@ -3,7 +3,7 @@ use ed448_goldilocks::{
     Decaf448, DecafPoint, DecafScalar, Ed448, EdwardsPoint, EdwardsScalar, MontgomeryPoint,
     elliptic_curve::{Generate, group::GroupEncoding},
 };
-use getrandom::{SysRng, rand_core::TryRngCore};
+use getrandom::{SysRng, rand_core::TryRng};
 use hash2curve::GroupDigest;
 
 pub fn ed448(c: &mut Criterion) {

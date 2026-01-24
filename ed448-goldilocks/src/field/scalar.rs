@@ -20,7 +20,7 @@ use elliptic_curve::{
     ops::{Invert, Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
 };
-use rand_core::{CryptoRng, RngCore, TryCryptoRng, TryRngCore};
+use rand_core::{CryptoRng, Rng, TryCryptoRng, TryRng};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
 
 #[cfg(feature = "bits")]
@@ -316,7 +316,7 @@ impl<C: CurveWithScalar> Field for Scalar<C> {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut seed = WideScalarBytes::<C>::default();
         rng.try_fill_bytes(&mut seed)?;
         Ok(C::from_bytes_mod_order_wide(&seed))
@@ -827,12 +827,12 @@ impl<C: CurveWithScalar> Scalar<C> {
     ///
     /// # Inputs
     ///
-    /// * `rng`: any RNG which implements the `RngCore + CryptoRng` interface.
+    /// * `rng`: any RNG which implements the `Rng + CryptoRng` interface.
     ///
     /// # Returns
     ///
     /// A random scalar within ℤ/lℤ.
-    pub fn random<R: RngCore + CryptoRng>(rng: &mut R) -> Self {
+    pub fn random<R: Rng + CryptoRng>(rng: &mut R) -> Self {
         let mut scalar_bytes = WideScalarBytes::<C>::default();
         rng.fill_bytes(&mut scalar_bytes);
         C::from_bytes_mod_order_wide(&scalar_bytes)

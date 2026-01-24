@@ -22,7 +22,7 @@ use elliptic_curve::{
     },
     ops::{BatchInvert, LinearCombination},
     point::{Double, NonIdentity},
-    rand_core::{TryCryptoRng, TryRngCore},
+    rand_core::{TryCryptoRng, TryRng},
     sec1::{
         CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
         UncompressedPointSize,
@@ -309,7 +309,7 @@ where
 {
     type Scalar = Scalar<C>;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
         AffinePoint::try_from_rng(rng).map(Self::from)
     }
 

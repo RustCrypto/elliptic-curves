@@ -14,7 +14,7 @@ use elliptic_curve::{
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
-    rand_core::{TryCryptoRng, TryRngCore},
+    rand_core::{TryCryptoRng, TryRng},
     sec1::{
         self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
         ToEncodedPoint, UncompressedPointSize,
@@ -81,7 +81,7 @@ where
     /// Internal RNG that avoids a `TryCryptoRng` bound so we can use it with `group`.
     ///
     /// TODO(tarcieri): find some way to avoid this?
-    pub(crate) fn try_from_rng<R: TryRngCore + ?Sized>(
+    pub(crate) fn try_from_rng<R: TryRng + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error>
     where

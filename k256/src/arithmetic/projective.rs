@@ -17,7 +17,7 @@ use elliptic_curve::{
     },
     ops::BatchInvert,
     point::NonIdentity,
-    rand_core::{TryCryptoRng, TryRngCore},
+    rand_core::{TryCryptoRng, TryRng},
     sec1::{FromEncodedPoint, ToEncodedPoint},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -476,7 +476,7 @@ impl CurveGroup for ProjectivePoint {
 impl Group for ProjectivePoint {
     type Scalar = Scalar;
 
-    fn try_from_rng<R: TryRngCore + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
+    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
         AffinePoint::try_from_rng(rng).map(Self::from)
     }
 
