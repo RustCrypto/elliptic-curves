@@ -964,8 +964,8 @@ mod tests {
             "13b6714c7a5f53101bbec88f2f17cd30f42e37fae363a5474efb4197ed6005df5861ae178a0c2c16ad378b7befed0d0904b7ced35e9f674180"
         );
         let compressed = CompressedEdwardsY(bytes);
-        let decompressed = compressed.decompress();
-        assert_eq!(decompressed.is_none().unwrap_u8(), 1u8);
+        let decompressed = compressed.decompress().unwrap();
+        assert_eq!(decompressed.to_edwards().is_torsion_free().unwrap_u8(), 0u8);
     }
 
     #[test]
