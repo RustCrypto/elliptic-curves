@@ -237,4 +237,18 @@ mod tests {
         let goldilocks_point = bp.scalar_mul(&scalar);
         assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
     }
+
+    #[test]
+    fn test_montgomery_edwards_affine() {
+        let scalar = EdwardsScalar::from(200u32);
+        use crate::GOLDILOCKS_BASE_POINT as bp;
+
+        // Montgomery scalar mul
+        let montgomery_bp = bp.to_affine().to_montgomery();
+        let montgomery_res = &montgomery_bp * &scalar;
+
+        // Goldilocks scalar mul
+        let goldilocks_point = bp.scalar_mul(&scalar).to_affine();
+        assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
+    }
 }
