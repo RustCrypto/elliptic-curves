@@ -11,6 +11,10 @@ Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve.
 
 [Documentation][docs-link]
 
+## Security hardening fork
+
+This repository is a **fork** of [RustCrypto/elliptic-curves](https://github.com/RustCrypto/elliptic-curves) with additional **security hardening** applied to the **p521** crate only. The goal is to improve constant-time and side-channel resistance for P-521 operations (ECDSA signing/verification, scalar and field arithmetic). The public API is unchanged. See **[SECURITY.md](SECURITY.md)** and **[HARDENING.md](HARDENING.md)** for details. This fork is consumed by **Veritru** (via the sad-p521 wrapper).
+
 ## ⚠️ Security Warning
 
 The elliptic curve arithmetic contained in this crate has never been

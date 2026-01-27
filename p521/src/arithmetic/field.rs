@@ -2,6 +2,14 @@
 //!
 //! Arithmetic implementations have been synthesized using fiat-crypto.
 //!
+//! # Constant-time
+//!
+//! Comparison, selection, decoding, inversion, and square root use constant-time
+//! primitives (`ConstantTimeEq`, `ConditionallySelectable`, `CtOption`, constant-time
+//! `invert_odd_mod`) so that control flow does not depend on secret field elements.
+//! Exponents in `pow_vartime` and `sqn_vartime` must not be secret; `sqrt` uses
+//! a fixed exponent (519) and is constant-time.
+//!
 //! # License
 //!
 //! Copyright (c) 2015-2020 the fiat-crypto authors
@@ -314,7 +322,7 @@ impl FieldElement {
         x
     }
 
-    /// Compute [`FieldElement`] inversion: `1 / self`.
+    /// Compute [`FieldElement`] inversion: `1 / self`. Constant-time in the value of `self`.
     pub fn invert(&self) -> CtOption<Self> {
         self.to_uint()
             .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) })
@@ -344,6 +352,8 @@ impl FieldElement {
 
     /// Returns the square root of self mod p, or `None` if no square root
     /// exists.
+    ///
+    /// Constant-time in the value of `self` (fixed exponent used internally).
     ///
     /// # Implementation details
     /// If _x_ has a sqrt, then due to Euler's criterion this implies x<sup>(p - 1)/2</sup> = 1.
@@ -737,9 +747,21 @@ impl Retrieve for FieldElement {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, Uint};
+    use elliptic_curve::subtle::ConstantTimeEq;
     use hex_literal::hex;
 
     primefield::test_primefield!(FieldElement, Uint);
+
+    /// Constant-time equality: same value must yield Choice(1), different values Choice(0).
+    #[test]
+    fn field_ct_eq() {
+        let z = FieldElement::ZERO;
+        let o = FieldElement::ONE;
+        assert!(bool::from(z.ct_eq(&z)));
+        assert!(bool::from(o.ct_eq(&o)));
+        assert!(!bool::from(z.ct_eq(&o)));
+        assert!(!bool::from(o.ct_eq(&z)));
+    }
 
     /// Regression test for RustCrypto/elliptic-curves#965
     #[test]
