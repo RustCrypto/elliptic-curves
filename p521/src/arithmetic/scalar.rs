@@ -1,6 +1,14 @@
 //! secp521r1 scalar field elements.
 //!
 //! Arithmetic implementations are provided by `primefield` and `crypto-bigint`.
+//!
+//! # Constant-time
+//!
+//! Operations in this module that operate on secret scalars (e.g. private keys,
+//! ECDSA nonces) are intended to be constant-time: comparisons use
+//! `ConstantTimeEq`/`ct_eq`, selection uses `ConditionallySelectable`, and
+//! reduction uses `conditional_select` so that control flow does not depend on
+//! secret data.
 
 use crate::{FieldBytes, FieldBytesEncoding, NistP521, ORDER_HEX, Uint};
 use elliptic_curve::{
@@ -67,6 +75,7 @@ impl IsHigh for Scalar {
 }
 
 impl Reduce<Uint> for Scalar {
+    /// Reduce an integer modulo the curve order. Constant-time in the value `w`.
     fn reduce(w: &Uint) -> Self {
         let (r, underflow) = w.borrowing_sub(&NistP521::ORDER, Limb::ZERO);
         let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
@@ -105,5 +114,17 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::{Scalar, Uint};
     use elliptic_curve::ff::PrimeField;
+    use elliptic_curve::subtle::ConstantTimeEq;
     primefield::test_primefield!(Scalar, Uint);
+
+    /// Constant-time equality: same value must yield Choice(1), different values Choice(0).
+    #[test]
+    fn scalar_ct_eq() {
+        let z = Scalar::ZERO;
+        let o = Scalar::ONE;
+        assert!(bool::from(z.ct_eq(&z)));
+        assert!(bool::from(o.ct_eq(&o)));
+        assert!(!bool::from(z.ct_eq(&o)));
+        assert!(!bool::from(o.ct_eq(&z)));
+    }
 }

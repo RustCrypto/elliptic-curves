@@ -4,14 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Fork notice (security hardening)
+
+This fork (sadco-io/elliptic-curves) is based on **RustCrypto/elliptic-curves**. Security hardening of the **p521** crate was applied in this fork; the upstream tree was used as of the 0.14.0 development line (see upstream repository and tags for exact commit). The hardening pass focused on constant-time and side-channel resistance; see [SECURITY.md](SECURITY.md) and [HARDENING.md](HARDENING.md). No formal audit has been performed.
+
 ## 0.14.0 (UNRELEASED)
 ### Added
 - `elliptic_curve::ops::Invert` implementation ([#971])
 - make `LooseFieldElement` pub ([#978])
+- **Fork (p521 hardening):** SECURITY.md and HARDENING.md describing constant-time hardening and audit checklist.
+- **Fork (p521 hardening):** Constant-time equality tests for `Scalar` and `FieldElement` (`ct_eq` behavior).
+- **Fork (p521 hardening):** CI step for `cargo clippy -p p521 -- -D warnings`.
 
 ### Changed
 - merge `u576_to_le_bytes` into `FieldBytes::from_uint_unchecked` ([#969])
 - switch to upstream RFC6979-based ECDSA ([#1016])
+- **Fork (p521 hardening):** README updated with security-hardening fork notice and links to SECURITY.md and HARDENING.md.
+- **Fork (p521 hardening):** Module- and function-level comments in `arithmetic/scalar.rs` and `arithmetic/field.rs` stating constant-time (or variable-time) intent for operations that touch secret or public data.
 - Update to `elliptic-curve` v0.14 ([#1011])
 - Update to `ecdsa` v0.17 ([#1011])
 - Update to `sec1` v0.8 ([#1011])
