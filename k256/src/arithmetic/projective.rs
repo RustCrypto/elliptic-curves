@@ -57,18 +57,7 @@ impl ProjectivePoint {
         z: FieldElement::ONE,
     };
 
-    /// Returns the additive identity of SECP256k1, also known as the "neutral element" or
-    /// "point at infinity".
-    #[deprecated(since = "0.10.2", note = "use `ProjectivePoint::IDENTITY` instead")]
-    pub const fn identity() -> ProjectivePoint {
-        Self::IDENTITY
-    }
 
-    /// Returns the base point of SECP256k1.
-    #[deprecated(since = "0.10.2", note = "use `ProjectivePoint::GENERATOR` instead")]
-    pub fn generator() -> ProjectivePoint {
-        Self::GENERATOR
-    }
 
     /// Returns the affine representation of this point.
     pub fn to_affine(&self) -> AffinePoint {
