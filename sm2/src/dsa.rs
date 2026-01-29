@@ -60,13 +60,14 @@ use alloc::vec::Vec;
 
 #[cfg(feature = "pkcs8")]
 use crate::pkcs8::{
-    AlgorithmIdentifierRef, ObjectIdentifier,
-    der::{self as der_core, AnyRef, asn1::BitString},
-    spki::AssociatedAlgorithmIdentifier,
+    AlgorithmIdentifierRef, ObjectIdentifier, der::AnyRef, spki::AssociatedAlgorithmIdentifier,
 };
 
 #[cfg(all(feature = "alloc", feature = "pkcs8"))]
-use crate::pkcs8::spki::SignatureBitStringEncoding;
+use crate::pkcs8::{
+    der::{self as der_core, asn1::BitString},
+    spki::SignatureBitStringEncoding,
+};
 
 /// SM2DSA signature size.
 pub type SignatureSize = <FieldBytesSize as Add>::Output;
@@ -238,7 +239,7 @@ impl SignatureBitStringEncoding for Signature {
     }
 }
 
-#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+#[cfg(feature = "pkcs8")]
 impl AssociatedAlgorithmIdentifier for Signature {
     type Params = AnyRef<'static>;
 
