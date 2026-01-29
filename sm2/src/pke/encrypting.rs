@@ -6,7 +6,6 @@ use crate::{
     pke::{kdf, vec},
 };
 
-#[cfg(feature = "alloc")]
 use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
 use elliptic_curve::{
     Error, Generate, Group, Result,
@@ -68,7 +67,6 @@ impl EncryptingKey {
     /// (page 10).
     ///
     /// <http://www.secg.org/sec1-v2.pdf>
-    #[cfg(feature = "alloc")]
     pub fn to_sec1_bytes(&self) -> Box<[u8]> {
         self.public_key.to_sec1_bytes()
     }
