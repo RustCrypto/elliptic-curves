@@ -1394,9 +1394,9 @@ dependencies = [
 
 [[package]]
 name = "sm3"
-version = "0.5.0-rc.3"
+version = "0.5.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30ff18c123c240b3941d71fdddab04932ac4ba772e60d38a9c8e4522c6296b32"
+checksum = "c54461d696ddf0d51a2eb6a0d138ea6144d02c4af7b186d4a2ac954df0cb0d50"
 dependencies = [
  "digest",
 ]
