@@ -4,7 +4,7 @@
 
 use elliptic_curve::{
     group::ff::PrimeField,
-    sec1::{self, ToEncodedPoint},
+    sec1::{self, ToSec1Point},
 };
 use p192::{
     AffinePoint, ProjectivePoint, Scalar,

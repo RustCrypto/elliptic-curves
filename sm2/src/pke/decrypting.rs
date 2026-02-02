@@ -1,7 +1,7 @@
 use core::fmt::{self, Debug};
 
 use crate::{
-    AffinePoint, EncodedPoint, FieldBytes, NonZeroScalar, PublicKey, Scalar, SecretKey,
+    AffinePoint, FieldBytes, NonZeroScalar, PublicKey, Scalar, Sec1Point, SecretKey,
     UncompressedPoint, arithmetic::field::FieldElement,
 };
 
@@ -11,7 +11,7 @@ use elliptic_curve::{
     bigint::{ArrayEncoding, U256},
     ops::Reduce,
     pkcs8::der::Decode,
-    sec1::{FromEncodedPoint, ToEncodedPoint},
+    sec1::{FromSec1Point, ToSec1Point},
     subtle::{Choice, ConstantTimeEq},
 };
 use primeorder::PrimeField;
@@ -164,10 +164,10 @@ fn decrypt(
         .split_at_checked(size_of::<UncompressedPoint>())
         .ok_or(Error)?;
 
-    let encoded_c1 = EncodedPoint::from_bytes(c1).map_err(Error::from)?;
+    let encoded_c1 = Sec1Point::from_bytes(c1).map_err(Error::from)?;
 
     // verify that point c1 satisfies the elliptic curve
-    let mut c1_point = AffinePoint::from_encoded_point(&encoded_c1)
+    let mut c1_point = AffinePoint::from_sec1_point(&encoded_c1)
         .into_option()
         .ok_or(Error)?;
 
@@ -195,7 +195,7 @@ fn decrypt(
 
     // compute 𝑢 = 𝐻𝑎𝑠ℎ(𝑥2 ∥ 𝑀′∥ 𝑦2).
     let mut u = vec![0u8; digest_size];
-    let encode_point = c1_point.to_encoded_point(false);
+    let encode_point = c1_point.to_sec1_point(false);
     hasher.update(encode_point.x().ok_or(Error)?);
     hasher.update(&c2);
     hasher.update(encode_point.y().ok_or(Error)?);

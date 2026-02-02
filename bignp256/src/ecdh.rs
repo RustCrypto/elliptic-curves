@@ -14,25 +14,25 @@
 //! // NOTE: requires 'getrandom' feature is enabled
 //!
 //! use bignp256::{
-//!     EncodedPoint, PublicKey,
+//!     Sec1Point, PublicKey,
 //!     ecdh::EphemeralSecret,
 //!     elliptic_curve::Generate
 //! };
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::generate();
-//! let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
+//! let alice_pk_bytes = Sec1Point::from(alice_secret.public_key());
 //!
 //! // Bob
 //! let bob_secret = EphemeralSecret::generate();
-//! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
+//! let bob_pk_bytes = Sec1Point::from(bob_secret.public_key());
 //!
 //! // Alice decodes Bob's serialized public key and computes a shared secret from it
-//! let bob_public = PublicKey::from_encoded_point(bob_pk_bytes)?;
+//! let bob_public = PublicKey::from_sec1_point(bob_pk_bytes)?;
 //! let alice_shared = alice_secret.diffie_hellman(&bob_public.into());
 //!
 //! // Bob decodes Alice's serialized public key and computes the same shared secret
-//! let alice_public = PublicKey::from_encoded_point(alice_pk_bytes)?;
+//! let alice_public = PublicKey::from_sec1_point(alice_pk_bytes)?;
 //! let bob_shared = bob_secret.diffie_hellman(&alice_public.into());
 //!
 //! // Both participants arrive on the same shared secret

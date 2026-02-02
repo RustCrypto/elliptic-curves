@@ -10,7 +10,7 @@ use elliptic_curve::{
 };
 use sha3::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
-    consts::U64, crypto_common::BlockSizeUser, typenum::IsEqual,
+    common::BlockSizeUser, consts::U64, typenum::IsEqual,
 };
 use signature::Error;
 use subtle::{Choice, ConstantTimeEq};

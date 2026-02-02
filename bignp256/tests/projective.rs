@@ -8,7 +8,7 @@ use bignp256::{
 };
 use elliptic_curve::{
     group::{GroupEncoding, ff::PrimeField},
-    sec1::{self, ToEncodedPoint},
+    sec1::{self, ToSec1Point},
 };
 use primeorder::{Double, test_projective_arithmetic};
 

@@ -109,7 +109,7 @@ impl pkcs8::AssociatedOid for NistP521 {
 pub type CompressedPoint = Array<u8, U66>;
 
 /// NIST P-521 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP521>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP521>;
 
 /// NIST P-521 field element serialized as bytes.
 ///

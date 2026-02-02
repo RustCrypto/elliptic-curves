@@ -1,13 +1,13 @@
 //! Public key types and traits
 // TODO(tarcieri): replace with `elliptic_curve::PublicKey`
 
-use crate::{ALGORITHM_OID, AffinePoint, BignP256, EncodedPoint, NonZeroScalar, ProjectivePoint};
+use crate::{ALGORITHM_OID, AffinePoint, BignP256, NonZeroScalar, ProjectivePoint, Sec1Point};
 use core::{fmt::Display, str::FromStr};
 use elliptic_curve::{
     CurveArithmetic, Error, Group,
     array::Array,
     point::NonIdentity,
-    sec1::{FromEncodedPoint, ToEncodedPoint},
+    sec1::{FromSec1Point, ToSec1Point},
 };
 use pkcs8::{
     AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
@@ -70,8 +70,8 @@ impl PublicKey {
         bytes[..32].reverse();
         bytes[32..].reverse();
 
-        let point = EncodedPoint::from_untagged_bytes(&bytes);
-        let affine = AffinePoint::from_encoded_point(&point);
+        let point = Sec1Point::from_untagged_bytes(&bytes);
+        let affine = AffinePoint::from_sec1_point(&point);
         if affine.is_none().into() {
             Err(Error)
         } else {
@@ -82,8 +82,8 @@ impl PublicKey {
     }
 
     /// Get [`PublicKey`] from encoded point
-    pub fn from_encoded_point(point: EncodedPoint) -> Result<Self, Error> {
-        let affine = AffinePoint::from_encoded_point(&point);
+    pub fn from_sec1_point(point: Sec1Point) -> Result<Self, Error> {
+        let affine = AffinePoint::from_sec1_point(&point);
         if affine.is_none().into() {
             Err(Error)
         } else {
@@ -96,7 +96,7 @@ impl PublicKey {
     #[cfg(feature = "alloc")]
     /// Get bytes from [`PublicKey`]
     pub fn to_bytes(&self) -> Box<[u8]> {
-        let mut bytes = self.point.to_encoded_point(false).to_bytes();
+        let mut bytes = self.point.to_sec1_point(false).to_bytes();
         bytes[1..32 + 1].reverse();
         bytes[33..].reverse();
         bytes[1..].to_vec().into_boxed_slice()
@@ -104,8 +104,8 @@ impl PublicKey {
 
     #[cfg(feature = "alloc")]
     /// Get encoded point from [`PublicKey`]
-    pub fn to_encoded_point(&self) -> EncodedPoint {
-        self.point.to_encoded_point(false)
+    pub fn to_sec1_point(&self) -> Sec1Point {
+        self.point.to_sec1_point(false)
     }
 }
 
@@ -197,9 +197,9 @@ impl EncodePublicKey for PublicKey {
     }
 }
 
-impl From<PublicKey> for EncodedPoint {
+impl From<PublicKey> for Sec1Point {
     fn from(value: PublicKey) -> Self {
-        value.point.to_encoded_point(false)
+        value.point.to_sec1_point(false)
     }
 }
 

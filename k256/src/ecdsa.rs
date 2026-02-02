@@ -28,13 +28,13 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
-//! let verifying_key_bytes = signing_key.verifying_key().to_encoded_point(true); // 33-bytes
+//! let verifying_key_bytes = signing_key.verifying_key().to_sec1_point(true); // 33-bytes
 //!
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use k256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
+//! use k256::{Sec1Point, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from_sec1_bytes(verifying_key_bytes.as_ref())?;
 //! verifying_key.verify(message, &signature)?;
@@ -60,7 +60,7 @@
 //! use hex_literal::hex;
 //! use k256::ecdsa::{RecoveryId, Signature, VerifyingKey};
 //! use sha3::{Keccak256, Digest};
-//! use elliptic_curve::sec1::ToEncodedPoint;
+//! use elliptic_curve::sec1::ToSec1Point;
 //!
 //! let msg = b"example message";
 //!
@@ -171,7 +171,7 @@ mod tests {
     #[cfg(feature = "sha256")]
     mod recovery {
         use crate::{
-            EncodedPoint,
+            Sec1Point,
             ecdsa::{
                 RecoveryId, Signature, SigningKey, VerifyingKey, signature::hazmat::PrehashVerifier,
             },
@@ -218,7 +218,7 @@ mod tests {
                 let sig = Signature::try_from(vector.sig.as_slice()).unwrap();
                 let recid = vector.recid;
                 let pk = VerifyingKey::recover_from_digest(digest, &sig, recid).unwrap();
-                assert_eq!(&vector.pk[..], EncodedPoint::from(&pk).as_bytes());
+                assert_eq!(&vector.pk[..], Sec1Point::from(&pk).as_bytes());
             }
         }
 
@@ -262,7 +262,7 @@ mod tests {
     }
 
     mod wycheproof {
-        use crate::{EncodedPoint, Secp256k1};
+        use crate::{Sec1Point, Secp256k1};
         use ecdsa_core::{Signature, signature::Verifier};
         use elliptic_curve::array::typenum::Unsigned;
 
@@ -300,9 +300,8 @@ mod tests {
                 let x = element_from_padded_slice::<Secp256k1>(wx);
                 let y = element_from_padded_slice::<Secp256k1>(wy);
                 let q_encoded =
-                    EncodedPoint::from_affine_coordinates(&x, &y, /* compress= */ false);
-                let verifying_key =
-                    ecdsa_core::VerifyingKey::from_encoded_point(&q_encoded).unwrap();
+                    Sec1Point::from_affine_coordinates(&x, &y, /* compress= */ false);
+                let verifying_key = ecdsa_core::VerifyingKey::from_sec1_point(&q_encoded).unwrap();
 
                 let sig = if p1363_sig {
                     match Signature::<Secp256k1>::from_slice(sig) {

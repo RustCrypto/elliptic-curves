@@ -16,7 +16,7 @@ macro_rules! test_projective_arithmetic {
             ($actual:expr, $expected:expr) => {
                 let (expected_x, expected_y) = $expected;
 
-                let point = $actual.to_affine().to_encoded_point(false);
+                let point = $actual.to_affine().to_sec1_point(false);
                 let (actual_x, actual_y) = match point.coordinates() {
                     sec1::Coordinates::Uncompressed { x, y } => (x, y),
                     _ => unreachable!(),

@@ -72,7 +72,7 @@ impl pkcs8::AssociatedOid for NistP192 {
 pub type CompressedPoint = Array<u8, U25>;
 
 /// NIST P-192 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP192>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP192>;
 
 /// NIST P-192 field element serialized as bytes.
 ///

@@ -118,7 +118,7 @@ impl pkcs8::AssociatedOid for Secp256k1 {
 pub type CompressedPoint = Array<u8, U33>;
 
 /// SEC1-encoded secp256k1 (K-256) curve point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Secp256k1>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<Secp256k1>;
 
 /// secp256k1 (K-256) field element serialized as bytes.
 ///

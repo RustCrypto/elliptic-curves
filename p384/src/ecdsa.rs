@@ -28,13 +28,13 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
-//! let verifying_key_bytes = signing_key.verifying_key().to_encoded_point(false); // 97-bytes
+//! let verifying_key_bytes = signing_key.verifying_key().to_sec1_point(false); // 97-bytes
 //!
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use p384::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
+//! use p384::{Sec1Point, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from_sec1_bytes(verifying_key_bytes.as_ref())?;
 //! verifying_key.verify(message, &signature)?;
@@ -73,7 +73,7 @@ impl ecdsa_core::hazmat::DigestAlgorithm for NistP384 {
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        AffinePoint, EncodedPoint, SecretKey,
+        AffinePoint, Sec1Point, SecretKey,
         ecdsa::{
             Signature, SigningKey, VerifyingKey,
             signature::Signer,
@@ -81,7 +81,7 @@ mod tests {
         },
     };
 
-    use elliptic_curve::sec1::FromEncodedPoint;
+    use elliptic_curve::sec1::FromSec1Point;
     use hex_literal::hex;
     use sha2::Digest;
 
@@ -137,8 +137,8 @@ mod tests {
         // (P-384, SHA-256, from `SigGen.txt` in `186-4ecdsatestvectors.zip`)
         // <https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/digital-signatures>
         let verifier = VerifyingKey::from_affine(
-            AffinePoint::from_encoded_point(
-                &EncodedPoint::from_affine_coordinates(
+            AffinePoint::from_sec1_point(
+                &Sec1Point::from_affine_coordinates(
                     &hex!("0400193b21f07cd059826e9453d3e96dd145041c97d49ff6b7047f86bb0b0439e909274cb9c282bfab88674c0765bc75").into(),
                     &hex! ("f70d89c52acbc70468d2c5ae75c76d7f69b76af62dcf95e99eba5dd11adf8f42ec9a425b0c5ec98e2f234a926b82a147").into(),
                     false,

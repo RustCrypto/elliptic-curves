@@ -124,7 +124,7 @@ impl pkcs8::AssociatedOid for BignP256 {
 pub type FieldBytes = elliptic_curve::FieldBytes<BignP256>;
 
 /// SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<BignP256>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<BignP256>;
 
 impl FieldBytesEncoding<BignP256> for U256 {
     fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {

@@ -106,7 +106,7 @@ mod tests {
         consts::U98,
         group::cofactor::CofactorGroup,
         ops::Reduce,
-        sec1::{self, ToEncodedPoint},
+        sec1::{self, ToSec1Point},
     };
     use hash2curve::{self, ExpandMsgXmd, MapToCurve};
     use hex_literal::hex;
@@ -225,7 +225,7 @@ mod tests {
             // TODO(tarcieri): use coordinate APIs. See zkcrypto/group#30
             macro_rules! assert_point_eq {
                 ($actual:expr, $expected_x:expr, $expected_y:expr) => {
-                    let point = $actual.to_affine().to_encoded_point(false);
+                    let point = $actual.to_affine().to_sec1_point(false);
                     let (actual_x, actual_y) = match point.coordinates() {
                         sec1::Coordinates::Uncompressed { x, y } => (x, y),
                         _ => unreachable!(),

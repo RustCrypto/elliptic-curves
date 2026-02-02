@@ -28,13 +28,13 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
-//! let verifying_key_bytes = signing_key.verifying_key().to_encoded_point(false); // 65-bytes
+//! let verifying_key_bytes = signing_key.verifying_key().to_sec1_point(false); // 65-bytes
 //!
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use p256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
+//! use p256::{Sec1Point, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from_sec1_bytes(verifying_key_bytes.as_ref())?;
 //! verifying_key.verify(message, &signature)?;
@@ -75,14 +75,14 @@ impl ecdsa_core::hazmat::DigestAlgorithm for NistP256 {
 #[cfg(all(test, feature = "ecdsa"))]
 mod tests {
     use crate::{
-        AffinePoint, EncodedPoint,
+        AffinePoint, Sec1Point,
         ecdsa::{
             Signature, SigningKey, VerifyingKey,
             signature::Signer,
             signature::hazmat::{PrehashSigner, PrehashVerifier},
         },
     };
-    use elliptic_curve::sec1::FromEncodedPoint;
+    use elliptic_curve::sec1::FromSec1Point;
     use hex_literal::hex;
     use sha2::Digest;
 
@@ -133,7 +133,7 @@ mod tests {
         // (P-256, SHA-384, from `SigGen.txt` in `186-4ecdsatestvectors.zip`)
         // <https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/digital-signatures>
         let verifier = VerifyingKey::from_affine(
-            AffinePoint::from_encoded_point(&EncodedPoint::from_affine_coordinates(
+            AffinePoint::from_sec1_point(&Sec1Point::from_affine_coordinates(
                 &hex!("e0e7b99bc62d8dd67883e39ed9fa0657789c5ff556cc1fd8dd1e2a55e9e3f243").into(),
                 &hex!("63fbfd0232b95578075c903a4dbf85ad58f8350516e1ec89b0ee1f5e1362da69").into(),
                 false,

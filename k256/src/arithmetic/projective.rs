@@ -3,7 +3,7 @@
 #![allow(clippy::op_ref)]
 
 use super::{AffinePoint, CURVE_EQUATION_B_SINGLE, FieldElement, Scalar};
-use crate::{CompressedPoint, EncodedPoint, PublicKey, Secp256k1};
+use crate::{CompressedPoint, PublicKey, Sec1Point, Secp256k1};
 use core::{
     iter::Sum,
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
@@ -18,7 +18,7 @@ use elliptic_curve::{
     ops::BatchInvert,
     point::NonIdentity,
     rand_core::{TryCryptoRng, TryRng},
-    sec1::{FromEncodedPoint, ToEncodedPoint},
+    sec1::{FromSec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -347,15 +347,15 @@ impl From<&ProjectivePoint> for AffinePoint {
     }
 }
 
-impl FromEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn from_encoded_point(p: &EncodedPoint) -> ctutils::CtOption<Self> {
-        AffinePoint::from_encoded_point(p).map(ProjectivePoint::from)
+impl FromSec1Point<Secp256k1> for ProjectivePoint {
+    fn from_sec1_point(p: &Sec1Point) -> ctutils::CtOption<Self> {
+        AffinePoint::from_sec1_point(p).map(ProjectivePoint::from)
     }
 }
 
-impl ToEncodedPoint<Secp256k1> for ProjectivePoint {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.to_affine().to_encoded_point(compress)
+impl ToSec1Point<Secp256k1> for ProjectivePoint {
+    fn to_sec1_point(&self, compress: bool) -> Sec1Point {
+        self.to_affine().to_sec1_point(compress)
     }
 }
 

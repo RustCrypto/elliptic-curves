@@ -125,7 +125,7 @@ pub type CompressedPoint = Array<u8, U33>;
 pub type UncompressedPoint = Array<u8, U65>;
 
 /// SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<Sm2>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<Sm2>;
 
 /// SM2 field element serialized as bytes.
 ///

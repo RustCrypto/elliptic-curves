@@ -10,7 +10,7 @@ use sm2::pkcs8::DecodePublicKey;
 
 #[cfg(all(feature = "arithmetic", feature = "pem"))]
 use {
-    elliptic_curve::sec1::ToEncodedPoint,
+    elliptic_curve::sec1::ToSec1Point,
     sm2::elliptic_curve::pkcs8::{EncodePrivateKey, EncodePublicKey},
 };
 
@@ -61,7 +61,7 @@ fn decode_pkcs8_private_key_from_der() {
 
     #[cfg(feature = "arithmetic")]
     assert_eq!(
-        secret_key.public_key().to_encoded_point(false).as_bytes(),
+        secret_key.public_key().to_sec1_point(false).as_bytes(),
         &SEC1_PUBLIC_KEY[..]
     );
 }
@@ -72,7 +72,7 @@ fn decode_pkcs8_public_key_from_der() {
     let public_key = sm2::PublicKey::from_public_key_der(&PKCS8_PUBLIC_KEY_DER[..]).unwrap();
 
     assert_eq!(
-        public_key.to_encoded_point(false).as_bytes(),
+        public_key.to_sec1_point(false).as_bytes(),
         &SEC1_PUBLIC_KEY[..]
     );
 }

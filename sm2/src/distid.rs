@@ -3,7 +3,7 @@
 use crate::{AffinePoint, Hash, Sm2};
 use elliptic_curve::{
     Error, Result,
-    sec1::{self, ToEncodedPoint},
+    sec1::{self, ToSec1Point},
 };
 use primeorder::PrimeCurveParams;
 use sm3::{Digest, Sm3};
@@ -33,7 +33,7 @@ pub(crate) fn hash_z(distid: &DistId, public_key: &impl AsRef<AffinePoint>) -> R
     sm3.update(Sm2::GENERATOR.0.to_bytes());
     sm3.update(Sm2::GENERATOR.1.to_bytes());
 
-    match public_key.as_ref().to_encoded_point(false).coordinates() {
+    match public_key.as_ref().to_sec1_point(false).coordinates() {
         sec1::Coordinates::Uncompressed { x, y } => {
             sm3.update(x);
             sm3.update(y);

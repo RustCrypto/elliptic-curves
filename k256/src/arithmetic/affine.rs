@@ -3,7 +3,7 @@
 #![allow(clippy::op_ref)]
 
 use super::{CURVE_EQUATION_B, FieldElement, ProjectivePoint};
-use crate::{CompressedPoint, EncodedPoint, FieldBytes, PublicKey, Scalar, Secp256k1};
+use crate::{CompressedPoint, FieldBytes, PublicKey, Scalar, Sec1Point, Secp256k1};
 use core::ops::{Mul, Neg};
 use elliptic_curve::{
     Error, Generate, Result, ctutils,
@@ -11,7 +11,7 @@ use elliptic_curve::{
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
-    sec1::{self, FromEncodedPoint, ToEncodedPoint},
+    sec1::{self, FromSec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -278,7 +278,7 @@ impl GroupEncoding for AffinePoint {
     type Repr = CompressedPoint;
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        EncodedPoint::from_bytes(bytes)
+        Sec1Point::from_bytes(bytes)
             .map(ctutils::CtOption::some)
             .unwrap_or_else(|_| {
                 // SEC1 identity encoding is technically 1-byte 0x00, but the
@@ -286,9 +286,9 @@ impl GroupEncoding for AffinePoint {
                 let is_identity =
                     ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
 
-                ctutils::CtOption::new(EncodedPoint::identity(), is_identity)
+                ctutils::CtOption::new(Sec1Point::identity(), is_identity)
             })
-            .and_then(|point| Self::from_encoded_point(&point))
+            .and_then(|point| Self::from_sec1_point(&point))
             .into()
     }
 
@@ -298,20 +298,20 @@ impl GroupEncoding for AffinePoint {
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        let encoded = self.to_encoded_point(true);
+        let encoded = self.to_sec1_point(true);
         let mut result = CompressedPoint::default();
         result[..encoded.len()].copy_from_slice(encoded.as_bytes());
         result
     }
 }
 
-impl FromEncodedPoint<Secp256k1> for AffinePoint {
-    /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded [`AffinePoint`].
+impl FromSec1Point<Secp256k1> for AffinePoint {
+    /// Attempts to parse the given [`Sec1Point`] as an SEC1-encoded [`AffinePoint`].
     ///
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp256k1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint) -> ctutils::CtOption<Self> {
+    fn from_sec1_point(encoded_point: &Sec1Point) -> ctutils::CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
             sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
@@ -323,41 +323,41 @@ impl FromEncodedPoint<Secp256k1> for AffinePoint {
     }
 }
 
-impl ToEncodedPoint<Secp256k1> for AffinePoint {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
+impl ToSec1Point<Secp256k1> for AffinePoint {
+    fn to_sec1_point(&self, compress: bool) -> Sec1Point {
         ctutils::CtSelect::ct_select(
-            &EncodedPoint::from_affine_coordinates(&self.x.to_repr(), &self.y.to_repr(), compress),
-            &EncodedPoint::identity(),
+            &Sec1Point::from_affine_coordinates(&self.x.to_repr(), &self.y.to_repr(), compress),
+            &Sec1Point::identity(),
             self.is_identity().into(),
         )
     }
 }
 
-impl TryFrom<EncodedPoint> for AffinePoint {
+impl TryFrom<Sec1Point> for AffinePoint {
     type Error = Error;
 
-    fn try_from(point: EncodedPoint) -> Result<AffinePoint> {
+    fn try_from(point: Sec1Point) -> Result<AffinePoint> {
         AffinePoint::try_from(&point)
     }
 }
 
-impl TryFrom<&EncodedPoint> for AffinePoint {
+impl TryFrom<&Sec1Point> for AffinePoint {
     type Error = Error;
 
-    fn try_from(point: &EncodedPoint) -> Result<AffinePoint> {
-        Option::from(AffinePoint::from_encoded_point(point)).ok_or(Error)
+    fn try_from(point: &Sec1Point) -> Result<AffinePoint> {
+        Option::from(AffinePoint::from_sec1_point(point)).ok_or(Error)
     }
 }
 
-impl From<AffinePoint> for EncodedPoint {
-    fn from(affine_point: AffinePoint) -> EncodedPoint {
-        EncodedPoint::from(&affine_point)
+impl From<AffinePoint> for Sec1Point {
+    fn from(affine_point: AffinePoint) -> Sec1Point {
+        Sec1Point::from(&affine_point)
     }
 }
 
-impl From<&AffinePoint> for EncodedPoint {
-    fn from(affine_point: &AffinePoint) -> EncodedPoint {
-        affine_point.to_encoded_point(true)
+impl From<&AffinePoint> for Sec1Point {
+    fn from(affine_point: &AffinePoint) -> Sec1Point {
+        affine_point.to_sec1_point(true)
     }
 }
 
@@ -410,7 +410,7 @@ impl Serialize for AffinePoint {
     where
         S: ser::Serializer,
     {
-        self.to_encoded_point(true).serialize(serializer)
+        self.to_sec1_point(true).serialize(serializer)
     }
 }
 
@@ -420,7 +420,7 @@ impl<'de> Deserialize<'de> for AffinePoint {
     where
         D: de::Deserializer<'de>,
     {
-        EncodedPoint::deserialize(deserializer)?
+        Sec1Point::deserialize(deserializer)?
             .try_into()
             .map_err(de::Error::custom)
     }
@@ -429,10 +429,10 @@ impl<'de> Deserialize<'de> for AffinePoint {
 #[cfg(test)]
 mod tests {
     use super::AffinePoint;
-    use crate::EncodedPoint;
+    use crate::Sec1Point;
     use elliptic_curve::{
         group::{GroupEncoding, prime::PrimeCurveAffine},
-        sec1::{FromEncodedPoint, ToEncodedPoint},
+        sec1::{FromSec1Point, ToSec1Point},
     };
     use hex_literal::hex;
 
@@ -445,42 +445,42 @@ mod tests {
 
     #[test]
     fn uncompressed_round_trip() {
-        let pubkey = EncodedPoint::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
-        let res: EncodedPoint = AffinePoint::from_encoded_point(&pubkey)
+        let pubkey = Sec1Point::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
+        let res: Sec1Point = AffinePoint::from_sec1_point(&pubkey)
             .unwrap()
-            .to_encoded_point(false);
+            .to_sec1_point(false);
 
         assert_eq!(res, pubkey);
     }
 
     #[test]
     fn compressed_round_trip() {
-        let pubkey = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
-        let res: EncodedPoint = AffinePoint::from_encoded_point(&pubkey)
+        let pubkey = Sec1Point::from_bytes(COMPRESSED_BASEPOINT).unwrap();
+        let res: Sec1Point = AffinePoint::from_sec1_point(&pubkey)
             .unwrap()
-            .to_encoded_point(true);
+            .to_sec1_point(true);
 
         assert_eq!(res, pubkey);
     }
 
     #[test]
     fn uncompressed_to_compressed() {
-        let encoded = EncodedPoint::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
+        let encoded = Sec1Point::from_bytes(UNCOMPRESSED_BASEPOINT).unwrap();
 
-        let res = AffinePoint::from_encoded_point(&encoded)
+        let res = AffinePoint::from_sec1_point(&encoded)
             .unwrap()
-            .to_encoded_point(true);
+            .to_sec1_point(true);
 
         assert_eq!(res.as_bytes(), COMPRESSED_BASEPOINT);
     }
 
     #[test]
     fn compressed_to_uncompressed() {
-        let encoded = EncodedPoint::from_bytes(COMPRESSED_BASEPOINT).unwrap();
+        let encoded = Sec1Point::from_bytes(COMPRESSED_BASEPOINT).unwrap();
 
-        let res = AffinePoint::from_encoded_point(&encoded)
+        let res = AffinePoint::from_sec1_point(&encoded)
             .unwrap()
-            .to_encoded_point(false);
+            .to_sec1_point(false);
 
         assert_eq!(res.as_bytes(), UNCOMPRESSED_BASEPOINT);
     }
