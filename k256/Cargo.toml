@@ -19,21 +19,21 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-cfg-if = "1.0"
-elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["sec1"] }
+cpubits = "0.1.0-rc.3"
+elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["sec1"] }
 hash2curve = { version = "0.14.0-rc.9", optional = true }
 
 # optional dependencies
-ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.17.0-rc.15", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
 primeorder = { version = "0.14.0-rc.6", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11.0-rc.4", optional = true, default-features = false }
-signature = { version = "3.0.0-rc.9", optional = true }
+signature = { version = "3.0.0-rc.10", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
-ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.17.0-rc.15", package = "ecdsa", default-features = false, features = ["dev"] }
 hex = "0.4.3"
 hex-literal = "1"
 num-bigint = "0.4"
@@ -64,8 +64,9 @@ serde = ["ecdsa-core/serde", "elliptic-curve/serde", "pkcs8", "serdect"]
 sha256 = ["digest", "sha2"]
 test-vectors = ["hex-literal"]
 
-[package.metadata.docs.rs]
-features = ["ecdh", "ecdsa", "schnorr"]
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(cpubits, values("16", "32", "64"))']
 
 [[bench]]
 name = "ecdsa"
@@ -80,3 +81,6 @@ required-features = ["expose-field"]
 [[bench]]
 name = "scalar"
 harness = false
+
+[package.metadata.docs.rs]
+features = ["ecdh", "ecdsa", "schnorr"]

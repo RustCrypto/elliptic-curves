@@ -10,23 +10,40 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg(not(bp256_backend = "bignum"))]
-#[cfg_attr(target_pointer_width = "32", path = "field/bp256_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/bp256_64.rs")]
-#[allow(
-    clippy::identity_op,
-    clippy::needless_lifetimes,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments
-)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-mod field_impl;
-
 use crate::U256;
 use elliptic_curve::{
+    bigint::cpubits,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
+
+// TODO(tarcieri): remove this when we can use `const _` to silence warnings
+cpubits! {
+    32 => {
+        #[cfg(not(bp256_backend = "bignum"))]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        #[path = "field/bp256_32.rs"]
+        mod field_impl;
+    }
+    64 => {
+        #[cfg(not(bp256_backend = "bignum"))]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        #[path = "field/bp256_64.rs"]
+        mod field_impl;
+    }
+}
 
 #[cfg(not(bp256_backend = "bignum"))]
 use self::field_impl::*;

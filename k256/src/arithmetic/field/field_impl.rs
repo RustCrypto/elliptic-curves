@@ -9,11 +9,10 @@ use elliptic_curve::{
     zeroize::Zeroize,
 };
 
-#[cfg(target_pointer_width = "32")]
-use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl;
-
-#[cfg(target_pointer_width = "64")]
-use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl;
+cpubits::cpubits! {
+    32 => { use super::field_10x26::FieldElement10x26 as FieldElementUnsafeImpl; }
+    64 => { use super::field_5x52::FieldElement5x52 as FieldElementUnsafeImpl; }
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElementImpl {

@@ -1,15 +1,16 @@
 use super::{FieldElement, field_impl::*};
 use core::ops::Mul;
+use elliptic_curve::bigint::cpubits;
 
 /// "Loose" field element: unreduced and intended to be followed by an
 /// additional operation which will perform a reduction.
 pub struct LooseFieldElement(pub(super) fiat_p521_loose_field_element);
 
 impl LooseFieldElement {
-    #[cfg(target_pointer_width = "32")]
-    const LIMBS: usize = 19;
-    #[cfg(target_pointer_width = "64")]
-    const LIMBS: usize = 9;
+    cpubits! {
+        32 => { const LIMBS: usize = 19; }
+        64 => { const LIMBS: usize = 9; }
+    }
 
     /// Reduce field element.
     #[inline]

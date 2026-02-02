@@ -1,9 +1,5 @@
 //! Scalar field arithmetic modulo n = 115792089210356248762697446949407573529996955224135760342422259061068512044369
 
-#[cfg_attr(target_pointer_width = "32", path = "scalar/scalar32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/scalar64.rs")]
-mod scalar_impl;
-
 use self::scalar_impl::barrett_reduce;
 use crate::{FieldBytes, NistP256, ORDER_HEX};
 use core::{
@@ -13,7 +9,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve, Generate,
-    bigint::{ArrayEncoding, Limb, Odd, U256, Uint, modular::Retrieve},
+    bigint::{ArrayEncoding, Limb, Odd, U256, Uint, cpubits, modular::Retrieve},
     ctutils,
     group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -25,6 +21,17 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
+
+cpubits! {
+    32 => {
+        #[path = "scalar/scalar32.rs"]
+        mod scalar_impl;
+    }
+    64 => {
+        #[path = "scalar/scalar64.rs"]
+        mod scalar_impl;
+    }
+}
 
 #[cfg(feature = "bits")]
 use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
@@ -89,7 +96,7 @@ impl Scalar {
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
     pub const fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(self.0.wrapping_shr_vartime(shift))
+        Self(self.0.unbounded_shr_vartime(shift))
     }
 
     /// Compute [`FieldElement`] inversion: `1 / self`.
@@ -303,13 +310,20 @@ impl PrimeField for Scalar {
     }
 }
 
+// Detect mismatch between our word size and bitvec's word size
+cpubits! {
+    64 => {
+        #[cfg(all(feature = "bits", target_pointer_width = "32"))]
+        compile_error!("the 'bits' feature is not supported on this target");
+    }
+}
+
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    #[cfg(target_pointer_width = "32")]
-    type ReprBits = [u32; 8];
-
-    #[cfg(target_pointer_width = "64")]
-    type ReprBits = [u64; 4];
+    cpubits! {
+        32 => { type ReprBits = [u32; 8]; }
+        64 => { type ReprBits = [u64; 4]; }
+    }
 
     fn to_le_bits(&self) -> ScalarBits {
         self.into()
@@ -692,6 +706,7 @@ mod tests {
     use elliptic_curve::{
         Curve,
         array::Array,
+        bigint::cpubits,
         group::ff::PrimeField,
         ops::{BatchInvert, ReduceNonZero},
     };
@@ -735,24 +750,28 @@ mod tests {
         assert_eq!(scalar.0, rederived_scalar.0);
     }
 
-    #[test]
-    #[cfg(all(feature = "bits", target_pointer_width = "32"))]
-    fn scalar_into_scalarbits() {
-        use crate::ScalarBits;
+    cpubits! {
+        32 => {
+            #[test]
+            #[cfg(feature = "bits")]
+            fn scalar_into_scalarbits() {
+                use crate::ScalarBits;
 
-        let minus_one = ScalarBits::from([
-            0xfc63_2550,
-            0xf3b9_cac2,
-            0xa717_9e84,
-            0xbce6_faad,
-            0xffff_ffff,
-            0xffff_ffff,
-            0x0000_0000,
-            0xffff_ffff,
-        ]);
+                let minus_one = ScalarBits::from([
+                    0xfc63_2550,
+                    0xf3b9_cac2,
+                    0xa717_9e84,
+                    0xbce6_faad,
+                    0xffff_ffff,
+                    0xffff_ffff,
+                    0x0000_0000,
+                    0xffff_ffff,
+                ]);
 
-        let scalar_bits = ScalarBits::from(&-Scalar::from(1u32));
-        assert_eq!(minus_one, scalar_bits);
+                let scalar_bits = ScalarBits::from(&-Scalar::from(1u32));
+                assert_eq!(minus_one, scalar_bits);
+            }
+        }
     }
 
     #[test]

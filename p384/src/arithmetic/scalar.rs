@@ -10,20 +10,26 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg(all(not(p384_backend = "bignum"), target_pointer_width = "32"))]
-use fiat_crypto::p384_scalar_32::*;
-#[cfg(all(not(p384_backend = "bignum"), target_pointer_width = "64"))]
-use fiat_crypto::p384_scalar_64::*;
-
 use crate::{FieldBytes, NistP384, ORDER_HEX, U384};
 use elliptic_curve::{
     Curve as _,
-    bigint::{ArrayEncoding, Limb},
+    bigint::{ArrayEncoding, Limb, cpubits},
     ff::PrimeField,
     ops::{Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+
+cpubits! {
+    32 => {
+        #[cfg(not(p384_backend = "bignum"))]
+        use fiat_crypto::p384_scalar_32::*;
+    }
+    64 => {
+        #[cfg(not(p384_backend = "bignum"))]
+        use fiat_crypto::p384_scalar_64::*;
+    }
+}
 
 #[cfg(feature = "serde")]
 use {

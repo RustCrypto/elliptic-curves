@@ -18,26 +18,26 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.24", features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.27", features = ["sec1"] }
 
 # optional dependencies
 belt-hash = { version = "0.2.0-rc.0", optional = true, default-features = false }
 der = { version = "0.8.0-rc.10" }
-digest = { version = "0.11.0-rc.7", optional = true }
+digest = { version = "0.11.0-rc.10", optional = true }
 hex-literal = { version = "1", optional = true }
 hkdf = { version = "0.13.0-rc.4", optional = true }
 hmac = { version = "0.13.0-rc.4", optional = true }
-rand_core = "0.10.0-rc-6"
+rand_core = "0.10"
 rfc6979 = { version = "0.5.0-rc.4", optional = true }
 pkcs8 = { version = "0.11.0-rc.10", optional = true }
 primefield = { version = "0.14.0-rc.6", optional = true }
 primeorder = { version = "0.14.0-rc.6", optional = true }
 sec1 = { version = "0.8.0-rc.13", optional = true }
-signature = { version = "3.0.0-rc.9", optional = true }
+signature = { version = "3.0.0-rc.10", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.6", features = ["dev"] }
 proptest = "1"
@@ -56,6 +56,10 @@ pkcs8 = ["dep:pkcs8"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh", "dep:digest", "dep:hkdf", "dep:hmac", "dep:belt-hash", "alloc"]
 serde = ["elliptic-curve/serde", "primeorder?/serde"]
 test-vectors = ["dep:hex-literal"]
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(cpubits, values("16", "32", "64"))']
 
 [[bench]]
 name = "field"

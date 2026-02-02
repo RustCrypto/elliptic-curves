@@ -1,11 +1,5 @@
 //! Scalar field arithmetic.
 
-#[cfg_attr(not(target_pointer_width = "64"), path = "scalar/wide32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/wide64.rs")]
-mod wide;
-
-pub(crate) use self::wide::WideScalar;
-
 use crate::{
     FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes,
     arithmetic::{AffinePoint, ProjectivePoint},
@@ -16,7 +10,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve, Error, Generate, ScalarValue,
-    bigint::{ArrayEncoding, Limb, U256, U512, Word, modular::Retrieve},
+    bigint::{ArrayEncoding, Limb, U256, U512, Word, cpubits, modular::Retrieve},
     ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -28,11 +22,23 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
-#[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
+
+cpubits! {
+    32 => {
+        #[path = "scalar/wide32.rs"]
+        mod wide;
+    }
+    64 => {
+         #[path = "scalar/wide64.rs"]
+        mod wide;
+    }
+}
+pub(crate) use self::wide::WideScalar;
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
+#[cfg(feature = "bits")]
+use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -130,7 +136,7 @@ impl Scalar {
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
     pub fn shr_vartime(&self, shift: u32) -> Scalar {
-        Self(self.0.wrapping_shr_vartime(shift))
+        Self(self.0.unbounded_shr_vartime(shift))
     }
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
@@ -309,13 +315,20 @@ impl PrimeField for Scalar {
     }
 }
 
+// Detect mismatch between our word size and bitvec's word size
+cpubits! {
+    64 => {
+        #[cfg(all(feature = "bits", target_pointer_width = "32"))]
+        compile_error!("the 'bits' feature is not supported on this target");
+    }
+}
+
 #[cfg(feature = "bits")]
 impl PrimeFieldBits for Scalar {
-    #[cfg(target_pointer_width = "32")]
-    type ReprBits = [u32; 8];
-
-    #[cfg(target_pointer_width = "64")]
-    type ReprBits = [u64; 4];
+    cpubits! {
+        32 => { type ReprBits = [u32; 8]; }
+        64 => { type ReprBits = [u64; 4]; }
+    }
 
     fn to_le_bits(&self) -> ScalarBits {
         self.into()
@@ -1051,6 +1064,7 @@ mod tests {
         assert_eq!(res, res_ref);
     }
 
+    #[cfg(feature = "getrandom")]
     #[allow(clippy::op_ref)]
     #[test]
     fn try_generate_biased_from_rng() {
@@ -1059,6 +1073,7 @@ mod tests {
         assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
     }
 
+    #[cfg(feature = "getrandom")]
     #[test]
     fn try_generate_from_rng() {
         let a = Scalar::try_generate_from_rng(&mut SysRng).unwrap();

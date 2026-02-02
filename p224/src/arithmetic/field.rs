@@ -10,30 +10,52 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg_attr(target_pointer_width = "32", path = "field/p224_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/p224_64.rs")]
-#[allow(
-    clippy::identity_op,
-    clippy::needless_lifetimes,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments
-)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-mod field_impl;
-
-use self::field_impl::*;
 use crate::Uint;
 use elliptic_curve::{
+    bigint::cpubits,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
+// TODO(tarcieri): remove this when we can use `const _` to silence warnings
+cpubits! {
+    32 => {
+        #[cfg(not(p224_backend = "bignum"))]
+        #[path = "field/p224_32.rs"]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        mod field_impl;
+    }
+    64 => {
+        #[cfg(not(p224_backend = "bignum"))]
+        #[path = "field/p224_64.rs"]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        mod field_impl;
+    }
+}
+
+#[cfg(not(p224_backend = "bignum"))]
+use self::field_impl::*;
+
 /// Constant representing the modulus serialized as hex.
 /// p = 2^{224} − 2^{96} + 1
-#[cfg(target_pointer_width = "32")]
-const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffff000000000000000000000001";
-#[cfg(target_pointer_width = "64")]
-const MODULUS_HEX: &str = "00000000ffffffffffffffffffffffffffffffff000000000000000000000001";
+const MODULUS_HEX: &str = {
+    cpubits! {
+        32 => { "ffffffffffffffffffffffffffffffff000000000000000000000001" }
+        64 => { "00000000ffffffffffffffffffffffffffffffff000000000000000000000001" }
+    }
+};
 
 primefield::monty_field_params! {
     name: FieldParams,
@@ -51,6 +73,14 @@ primefield::monty_field_element! {
     doc: "Element in the finite field modulo `p = 2^{224} − 2^{96} + 1`."
 }
 
+#[cfg(p224_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: Uint
+}
+
+#[cfg(not(p224_backend = "bignum"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -73,12 +103,16 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, Uint};
+
+    #[cfg(not(p224_backend = "bignum"))]
     use super::{
         FieldParams, fiat_p224_montgomery_domain_field_element, fiat_p224_msat,
         fiat_p224_non_montgomery_domain_field_element, fiat_p224_to_montgomery,
     };
 
     primefield::test_primefield!(FieldElement, Uint);
+
+    #[cfg(not(p224_backend = "bignum"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,

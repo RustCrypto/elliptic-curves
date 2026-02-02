@@ -38,20 +38,22 @@ pub use elliptic_curve::pkcs8;
 use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
-    bigint::Odd,
+    bigint::{Odd, cpubits},
     consts::{U28, U29},
 };
 
-#[cfg(target_pointer_width = "32")]
-use elliptic_curve::bigint::U224 as Uint;
-#[cfg(target_pointer_width = "64")]
-use elliptic_curve::bigint::U256 as Uint;
+cpubits! {
+    32 => { use elliptic_curve::bigint::U224 as Uint; }
+    64 => { use elliptic_curve::bigint::U256 as Uint; }
+}
 
 /// Order of NIST P-224's elliptic curve group (i.e. scalar modulus) in hexadecimal.
-#[cfg(target_pointer_width = "32")]
-const ORDER_HEX: &str = "ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d";
-#[cfg(target_pointer_width = "64")]
-const ORDER_HEX: &str = "00000000ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d";
+const ORDER_HEX: &str = {
+    cpubits! {
+        32 => { "ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d" }
+        64 => { "00000000ffffffffffffffffffffffffffff16a2e0b8f03e13dd29455c5c2a3d" }
+    }
+};
 
 /// NIST P-224 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]

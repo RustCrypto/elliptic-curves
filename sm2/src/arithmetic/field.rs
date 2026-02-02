@@ -10,17 +10,24 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-// Default backend: fiat-crypto
-#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "32"))]
-use fiat_crypto::sm2_32::*;
-#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "64"))]
-use fiat_crypto::sm2_64::*;
-
 use crate::U256;
 use elliptic_curve::{
+    bigint::cpubits,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
+
+// Default backend: fiat-crypto
+cpubits! {
+    32 => {
+        #[cfg(not(sm2_backend = "bignum"))]
+        use fiat_crypto::sm2_32::*;
+    }
+    64 => {
+        #[cfg(not(sm2_backend = "bignum"))]
+        use fiat_crypto::sm2_64::*;
+    }
+}
 
 /// Constant representing the modulus serialized as hex.
 const MODULUS_HEX: &str = "fffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff";

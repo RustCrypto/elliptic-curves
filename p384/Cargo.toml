@@ -18,10 +18,10 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.17.0-rc.15", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hash2curve = { version = "0.14.0-rc.9", optional = true }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "0.14.0-rc.6", optional = true }
@@ -34,7 +34,7 @@ fiat-crypto = { version = "0.3", default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
-ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.17.0-rc.15", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.6", features = ["dev"] }
 proptest = "1.9"
@@ -65,8 +65,12 @@ serde = ["ecdsa-core?/serde", "elliptic-curve/serde", "primeorder?/serde", "serd
 sha384 = ["digest", "sha2"]
 test-vectors = ["hex-literal"]
 
-[package.metadata.docs.rs]
-all-features = true
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = [
+    'cfg(p384_backend, values("bignum", "fiat"))', # default: "fiat"
+    'cfg(cpubits, values("16", "32", "64"))'
+]
 
 [[bench]]
 name = "field"
@@ -77,6 +81,5 @@ required-features = ["expose-field"]
 name = "scalar"
 harness = false
 
-[lints.rust.unexpected_cfgs]
-level = "warn"
-check-cfg = ['cfg(p384_backend, values("bignum", "fiat"))'] # default: "fiat"
+[package.metadata.docs.rs]
+all-features = true

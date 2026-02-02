@@ -2,16 +2,11 @@
 
 #![allow(clippy::assign_op_pattern, clippy::op_ref)]
 
-use cfg_if::cfg_if;
+use cpubits::{cfg_if, cpubits};
 
-cfg_if! {
-    if #[cfg(target_pointer_width = "32")] {
-        mod field_10x26;
-    } else if #[cfg(target_pointer_width = "64")] {
-        mod field_5x52;
-    } else {
-        compile_error!("unsupported target word size (i.e. target_pointer_width)");
-    }
+cpubits! {
+    32 => { mod field_10x26; }
+    64 => { mod field_5x52; }
 }
 
 cfg_if! {
@@ -19,14 +14,9 @@ cfg_if! {
         mod field_impl;
         use field_impl::FieldElementImpl;
     } else {
-        cfg_if! {
-            if #[cfg(target_pointer_width = "32")] {
-                use field_10x26::FieldElement10x26 as FieldElementImpl;
-            } else if #[cfg(target_pointer_width = "64")] {
-                use field_5x52::FieldElement5x52 as FieldElementImpl;
-            } else {
-                compile_error!("unsupported target word size (i.e. target_pointer_width)");
-            }
+        cpubits! {
+            32 => { use field_10x26::FieldElement10x26 as FieldElementImpl; }
+            64 => { use field_5x52::FieldElement5x52 as FieldElementImpl; }
         }
     }
 }

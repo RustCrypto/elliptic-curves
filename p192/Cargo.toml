@@ -17,17 +17,17 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["sec1"] }
 
 # optional dependencies
-ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
+ecdsa-core = { version = "0.17.0-rc.15", package = "ecdsa", optional = true, default-features = false, features = ["der"] }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "0.14.0-rc.6", optional = true }
 primeorder = { version = "0.14.0-rc.6", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 
 [dev-dependencies]
-ecdsa-core = { version = "0.17.0-rc.14", package = "ecdsa", default-features = false, features = ["dev"] }
+ecdsa-core = { version = "0.17.0-rc.15", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.6", features = ["dev"] }
 
@@ -45,6 +45,13 @@ pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
 test-vectors = ["hex-literal"]
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = [
+    'cfg(p192_backend, values("bignum", "fiat"))', # default: "fiat"
+    'cfg(cpubits, values("16", "32", "64"))'
+]
 
 [package.metadata.docs.rs]
 all-features = true

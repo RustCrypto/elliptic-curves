@@ -10,24 +10,41 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg(not(bp384_backend = "bignum"))]
-#[cfg_attr(target_pointer_width = "32", path = "scalar/bp384_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/bp384_scalar_64.rs")]
-#[allow(
-    clippy::identity_op,
-    clippy::needless_lifetimes,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments
-)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-mod scalar_impl;
-
 use crate::{BrainpoolP384r1, BrainpoolP384t1, ORDER, ORDER_HEX, U384};
 use elliptic_curve::{
+    bigint::cpubits,
     ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+
+// TODO(tarcieri): remove this when we can use `const _` to silence warnings
+cpubits! {
+    32 => {
+        #[cfg(not(bp384_backend = "bignum"))]
+        #[path = "scalar/bp384_scalar_32.rs"]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        mod scalar_impl;
+    }
+    64 => {
+        #[cfg(not(bp384_backend = "bignum"))]
+        #[path = "scalar/bp384_scalar_64.rs"]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        mod scalar_impl;
+    }
+}
 
 #[cfg(not(bp384_backend = "bignum"))]
 use self::scalar_impl::*;
