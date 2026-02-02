@@ -446,9 +446,9 @@ dependencies = [
 
 [[package]]
 name = "ed448"
-version = "0.5.0-rc.2"
+version = "0.5.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fca586ed223f9d5ecdfe636576d2d284fd26ddfbfb8b5289b527c736293c7926"
+checksum = "24e146ca535b09cd2a2546e3eed9237e0b7f837b1c84c763fdfb20394fbcac20"
 dependencies = [
  "pkcs8",
  "serde",
