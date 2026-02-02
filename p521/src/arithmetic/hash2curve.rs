@@ -102,7 +102,7 @@ mod tests {
     use elliptic_curve::{
         Curve,
         array::Array,
-        bigint::{ArrayEncoding, NonZero, U896},
+        bigint::{ArrayEncoding, NonZero, U896, cpubits},
         consts::U98,
         group::cofactor::CofactorGroup,
         ops::Reduce,
@@ -114,23 +114,26 @@ mod tests {
     use sha2::Sha512;
 
     // TODO(tarcieri): fix test on 32-bit platforms
-    #[cfg(target_pointer_width = "64")]
-    #[test]
-    fn params() {
-        use crate::arithmetic::field::MODULUS;
-        use elliptic_curve::bigint::CheckedSub;
-        use primeorder::osswu::OsswuMap;
+    cpubits! {
+        64 => {
+            #[test]
+            fn params() {
+                use crate::arithmetic::field::MODULUS;
+                use elliptic_curve::bigint::CheckedSub;
+                use primeorder::osswu::OsswuMap;
 
-        let params = <FieldElement as OsswuMap>::PARAMS;
+                let params = <FieldElement as OsswuMap>::PARAMS;
 
-        let c1_expected = MODULUS.checked_sub(&Uint::from_u8(3)).unwrap()
-            / NonZero::new(Uint::from_u8(4)).unwrap();
+                let c1_expected = MODULUS.checked_sub(&Uint::from_u8(3)).unwrap()
+                    / NonZero::new(Uint::from_u8(4)).unwrap();
 
-        let c1_words = c1_expected.to_words();
-        assert_eq!(c1_words, params.c1);
+                let c1_words = c1_expected.to_words();
+                assert_eq!(c1_words, params.c1);
 
-        let c2 = FieldElement::from_u64(4).sqrt().unwrap();
-        assert_eq!(params.c2, c2);
+                let c2 = FieldElement::from_u64(4).sqrt().unwrap();
+                assert_eq!(params.c2, c2);
+            }
+        }
     }
 
     #[test]
@@ -323,10 +326,14 @@ mod tests {
     fn from_okm_fuzz() {
         let mut wide_order = Array::default();
 
-        #[cfg(target_pointer_width = "32")]
-        wide_order[44..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
-        #[cfg(target_pointer_width = "64")]
-        wide_order[40..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
+        cpubits! {
+            32 => {
+                wide_order[44..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
+            }
+            64 => {
+                wide_order[40..].copy_from_slice(NistP521::ORDER.to_be_byte_array().as_slice());
+            }
+        }
 
         // TODO: This could be reduced to `U832` when `crypto-bigint` implements `ArrayEncoding`.
         let wide_order = NonZero::<U896>::from_be_byte_array(wide_order).unwrap();
@@ -338,11 +345,14 @@ mod tests {
             let wide_data = U896::from_be_byte_array(wide_data);
             let scalar = wide_data % wide_order;
 
-            #[cfg(target_pointer_width = "32")]
-            let reduced_scalar = Uint::from_be_slice(&scalar.to_be_byte_array()[44..]);
-            #[cfg(target_pointer_width = "64")]
-            let reduced_scalar = Uint::from_be_slice(&scalar.to_be_byte_array()[40..]);
+            let offset = {
+                cpubits! {
+                    32 => { 44 }
+                    64 => { 40 }
+                }
+            };
 
+            let reduced_scalar = Uint::from_be_slice(&scalar.to_be_byte_array()[offset..]);
             Scalar::reduce(&reduced_scalar)
         };
 

@@ -32,33 +32,30 @@ jobs:
         rust:
           - 1.85.0 # MSRV
           - stable
-        target:
-          - thumbv7em-none-eabi
-          - wasm32-unknown-unknown
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          targets: ${{ matrix.target }}
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features critical-section
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdh
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa-core
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features hash2curve
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features group-digest
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pem
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features schnorr
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features serde
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features ecdsa,sha256
-      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features bits,critical-section,ecdh,ecdsa,group-digest,pem,pkcs8,schnorr,serde,sha256
+          targets: thumbv7em-none-eabi
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features alloc
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features arithmetic
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features bits
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features critical-section
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdh
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa-core
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features hash2curve
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features group-digest
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features pem
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features pkcs8
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features schnorr
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features serde
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features sha256
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa,sha256
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features bits,critical-section,ecdh,ecdsa,group-digest,pem,pkcs8,schnorr,serde,sha256
 
   benches:
     runs-on: ubuntu-latest

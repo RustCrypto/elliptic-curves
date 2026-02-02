@@ -10,17 +10,23 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-// Default backend: fiat-crypto
-#[cfg(all(not(p384_backend = "bignum"), target_pointer_width = "32"))]
-use fiat_crypto::p384_32::*;
-#[cfg(all(not(p384_backend = "bignum"), target_pointer_width = "64"))]
-use fiat_crypto::p384_64::*;
-
 use elliptic_curve::{
-    bigint::U384,
+    bigint::{U384, cpubits},
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
+
+// Default backend: fiat-crypto
+cpubits! {
+    32 => {
+        #[cfg(not(p384_backend = "bignum"))]
+        use fiat_crypto::p384_32::*;
+    }
+    64 => {
+        #[cfg(not(p384_backend = "bignum"))]
+        use fiat_crypto::p384_64::*;
+    }
+}
 
 /// Constant representing the modulus
 /// p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1

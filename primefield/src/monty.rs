@@ -974,7 +974,7 @@ const fn compute_s<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> u32 {
 pub const fn compute_t<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> Uint<LIMBS> {
     modulus
         .wrapping_sub(&Uint::ONE)
-        .wrapping_shr(compute_s(modulus))
+        .unbounded_shr(compute_s(modulus))
 }
 
 #[cfg(test)]

@@ -10,17 +10,6 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg_attr(target_pointer_width = "32", path = "field/p521_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/p521_64.rs")]
-#[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-#[rustfmt::skip]
-mod field_impl;
-mod loose;
-
-pub(crate) use self::loose::LooseFieldElement;
-
-use self::field_impl::*;
 use crate::{FieldBytes, NistP521, Uint};
 use core::{
     cmp::Ordering,
@@ -31,7 +20,7 @@ use core::{
 use elliptic_curve::{
     Error, FieldBytesEncoding, Generate,
     array::Array,
-    bigint::{Word, modular::Retrieve},
+    bigint::{Word, cpubits, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::TryRng,
@@ -40,10 +29,39 @@ use elliptic_curve::{
 };
 use primefield::bigint::{self, Limb, Odd};
 
-#[cfg(target_pointer_width = "32")]
-const MODULUS_HEX: &str = "000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-#[cfg(target_pointer_width = "64")]
-const MODULUS_HEX: &str = "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+// TODO(tarcieri): remove `allow(dead_code)` when we can use `const _` to silence warnings
+cpubits! {
+    32 => {
+        #[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
+        #[allow(dead_code)]
+        #[rustfmt::skip]
+        #[path = "field/p521_32.rs"]
+        mod field_impl;
+    }
+    64 => {
+        #[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
+        #[allow(dead_code)]
+        #[rustfmt::skip]
+        #[path = "field/p521_64.rs"]
+        mod field_impl;
+    }
+}
+
+mod loose;
+
+use self::field_impl::*;
+pub(crate) use self::loose::LooseFieldElement;
+
+const MODULUS_HEX: &str = {
+    cpubits! {
+        32 => {
+            "000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
+        64 => {
+            "00000000000001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        }
+    }
+};
 
 /// Field modulus: p = 2^{521} − 1
 pub(crate) const MODULUS: Uint = Uint::from_be_hex(MODULUS_HEX);
@@ -59,10 +77,10 @@ impl FieldElement {
     /// Multiplicative identity.
     pub const ONE: Self = Self::from_u64(1);
 
-    #[cfg(target_pointer_width = "32")]
-    const LIMBS: usize = 19;
-    #[cfg(target_pointer_width = "64")]
-    const LIMBS: usize = 9;
+    cpubits! {
+        32 => { const LIMBS: usize = 19; }
+        64 => { const LIMBS: usize = 9; }
+    }
 
     /// Create a [`FieldElement`] from a canonical big-endian representation.
     pub fn from_bytes(repr: &FieldBytes) -> CtOption<Self> {

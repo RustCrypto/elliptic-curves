@@ -49,18 +49,29 @@ pub use elliptic_curve;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::Odd, consts::U66};
+use elliptic_curve::{
+    FieldBytesEncoding,
+    array::Array,
+    bigint::{Odd, cpubits},
+    consts::U66,
+};
 
-#[cfg(target_pointer_width = "32")]
-use elliptic_curve::bigint::U544 as Uint;
-#[cfg(target_pointer_width = "64")]
-use elliptic_curve::bigint::U576 as Uint;
+cpubits! {
+    32 => { use elliptic_curve::bigint::U544 as Uint; }
+    64 => { use elliptic_curve::bigint::U576 as Uint; }
+}
 
 /// Order of NIST P-521's elliptic curve group (i.e. scalar modulus) in hexadecimal.
-#[cfg(target_pointer_width = "32")]
-const ORDER_HEX: &str = "000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
-#[cfg(target_pointer_width = "64")]
-const ORDER_HEX: &str = "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409";
+const ORDER_HEX: &str = {
+    cpubits! {
+        32 => {
+            "000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409"
+        }
+        64 => {
+            "00000000000001fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409"
+        }
+    }
+};
 
 /// NIST P-521 elliptic curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, PartialOrd, Ord)]

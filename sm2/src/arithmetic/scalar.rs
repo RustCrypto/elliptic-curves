@@ -10,19 +10,26 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-// Default backend: fiat-crypto
-#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "32"))]
-use fiat_crypto::sm2_scalar_32::*;
-#[cfg(all(not(sm2_backend = "bignum"), target_pointer_width = "64"))]
-use fiat_crypto::sm2_scalar_64::*;
-
 use crate::{ORDER_HEX, Sm2, U256};
 use elliptic_curve::{
     Curve as _,
+    bigint::cpubits,
     ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+
+// Default backend: fiat-crypto
+cpubits! {
+    32 => {
+        #[cfg(not(sm2_backend = "bignum"))]
+        use fiat_crypto::sm2_scalar_32::*;
+    }
+    64 => {
+        #[cfg(not(sm2_backend = "bignum"))]
+        use fiat_crypto::sm2_scalar_64::*;
+    }
+}
 
 #[cfg(feature = "serde")]
 use {

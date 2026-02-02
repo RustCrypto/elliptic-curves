@@ -10,27 +10,47 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-#[cfg_attr(target_pointer_width = "32", path = "scalar/p224_scalar_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "scalar/p224_scalar_64.rs")]
-#[allow(
-    clippy::identity_op,
-    clippy::needless_lifetimes,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments
-)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-mod scalar_impl;
-
-use self::scalar_impl::*;
 use crate::{FieldBytes, FieldBytesEncoding, NistP224, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
-    bigint::Limb,
+    bigint::{Limb, cpubits},
     ff::PrimeField,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+
+// TODO(tarcieri): remove this when we can use `const _` to silence warnings
+cpubits! {
+    32 => {
+        #[cfg(not(p224_backend = "bignum"))]
+        #[path = "scalar/p224_scalar_32.rs"]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        mod scalar_impl;
+    }
+    64 => {
+        #[cfg(not(p224_backend = "bignum"))]
+        #[path = "scalar/p224_scalar_64.rs"]
+        #[allow(
+            dead_code,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast,
+            clippy::too_many_arguments
+        )]
+        mod scalar_impl;
+    }
+}
+
+#[cfg(not(p224_backend = "bignum"))]
+use self::scalar_impl::*;
+
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarValue,
@@ -56,6 +76,14 @@ primefield::monty_field_element! {
     doc: "Element in the NIST P-224 scalar field modulo `n`."
 }
 
+#[cfg(p224_backend = "bignum")]
+primefield::monty_field_arithmetic! {
+    name: Scalar,
+    params: Scalar,
+    uint: Uint
+}
+
+#[cfg(not(p224_backend = "bignum"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -137,12 +165,16 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, Uint};
+
+    #[cfg(not(p224_backend = "bignum"))]
     use super::{
         ScalarParams, fiat_p224_scalar_montgomery_domain_field_element, fiat_p224_scalar_msat,
         fiat_p224_scalar_non_montgomery_domain_field_element, fiat_p224_scalar_to_montgomery,
     };
 
     primefield::test_primefield!(Scalar, Uint);
+
+    #[cfg(not(p224_backend = "bignum"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,

@@ -14,17 +14,17 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["sec1"] }
 
 # optional dependencies
-ecdsa = { version = "0.17.0-rc.14", optional = true, default-features = false, features = ["der"] }
+ecdsa = { version = "0.17.0-rc.15", optional = true, default-features = false, features = ["der"] }
 primefield = { version = "0.14.0-rc.6", optional = true }
 primeorder = { version = "0.14.0-rc.6", optional = true }
 sha2 = { version = "0.11.0-rc.4", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.24", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["dev"] }
 
 [features]
 default = ["pkcs8", "std"]
@@ -38,6 +38,13 @@ pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
 sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = [
+    'cfg(bp384_backend, values("bignum", "fiat"))', # default: "fiat"
+    'cfg(cpubits, values("16", "32", "64"))'
+]
 
 [[bench]]
 name = "field"
@@ -56,7 +63,3 @@ required-features = ["arithmetic"]
 
 [package.metadata.docs.rs]
 all-features = true
-
-[lints.rust.unexpected_cfgs]
-level = "warn"
-check-cfg = ['cfg(bp384_backend, values("bignum", "fiat"))'] # default: "fiat"

@@ -2,9 +2,18 @@
 
 #![allow(clippy::assign_op_pattern, clippy::op_ref)]
 
-#[cfg_attr(target_pointer_width = "32", path = "field/field32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/field64.rs")]
-mod field_impl;
+use elliptic_curve::bigint::cpubits;
+
+cpubits! {
+    32 => {
+        #[path = "field/field32.rs"]
+        mod field_impl;
+    }
+    64 => {
+        #[path = "field/field64.rs"]
+        mod field_impl;
+    }
+}
 
 use core::ops::Mul;
 use elliptic_curve::{
@@ -157,12 +166,13 @@ impl FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use super::{FieldElement, FieldParams};
+    use super::{FieldElement, FieldParams, cpubits};
     use crate::{FieldBytes, U256, test_vectors::field::DBL_TEST_VECTORS};
     use elliptic_curve::{array::Array, bigint::modular::ConstMontyParams};
 
-    #[cfg(target_pointer_width = "64")]
-    use proptest::{num::u64::ANY, prelude::*};
+    cpubits! {
+        64 => { use proptest::{num::u64::ANY, prelude::*}; }
+    }
 
     primefield::test_primefield!(FieldElement, U256);
 
@@ -251,22 +261,25 @@ mod tests {
         assert_eq!(two.pow_vartime(&U256::from_u64(2)), four);
     }
 
-    #[cfg(target_pointer_width = "64")]
-    proptest! {
-        /// This checks behaviour well within the field ranges, because it doesn't set the
-        /// highest limb.
-        #[test]
-        fn add_then_sub(
-            a0 in ANY,
-            a1 in ANY,
-            a2 in ANY,
-            b0 in ANY,
-            b1 in ANY,
-            b2 in ANY,
-        ) {
-            let a = FieldElement::from_montgomery(U256::from_words([a0, a1, a2, 0]));
-            let b = FieldElement::from_montgomery(U256::from_words([b0, b1, b2, 0]));
-            assert_eq!(a.add(&b).sub(&a), b);
+    cpubits! {
+        64 => {
+            proptest! {
+                /// This checks behaviour well within the field ranges, because it doesn't set the
+                /// highest limb.
+                #[test]
+                fn add_then_sub(
+                    a0 in ANY,
+                    a1 in ANY,
+                    a2 in ANY,
+                    b0 in ANY,
+                    b1 in ANY,
+                    b2 in ANY,
+                ) {
+                    let a = FieldElement::from_montgomery(U256::from_words([a0, a1, a2, 0]));
+                    let b = FieldElement::from_montgomery(U256::from_words([b0, b1, b2, 0]));
+                    assert_eq!(a.add(&b).sub(&a), b);
+                }
+            }
         }
     }
 }

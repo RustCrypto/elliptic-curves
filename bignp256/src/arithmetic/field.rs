@@ -13,26 +13,46 @@
 
 #![allow(clippy::arithmetic_side_effects)]
 
-#[cfg_attr(target_pointer_width = "32", path = "field/bignp256_32.rs")]
-#[cfg_attr(target_pointer_width = "64", path = "field/bignp256_64.rs")]
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_possible_wrap,
-    clippy::cast_sign_loss,
-    clippy::identity_op,
-    clippy::needless_lifetimes,
-    clippy::unnecessary_cast,
-    clippy::too_many_arguments
-)]
-#[allow(dead_code)] // TODO(tarcieri): remove this when we can use `const _` to silence warnings
-mod field_impl;
-
-use self::field_impl::*;
 use crate::U256;
 use elliptic_curve::{
+    bigint::cpubits,
     ff::PrimeField,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
+
+// TODO(tarcieri): remove this when we can use `const _` to silence warnings
+cpubits! {
+    32 => {
+        #[path = "field/bignp256_32.rs"]
+        #[allow(
+            dead_code,
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            clippy::cast_sign_loss,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::too_many_arguments,
+            clippy::unnecessary_cast
+        )]
+        mod field_impl;
+    }
+    64 => {
+        #[path = "field/bignp256_64.rs"]
+        #[allow(
+            dead_code,
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            clippy::cast_sign_loss,
+            clippy::identity_op,
+            clippy::needless_lifetimes,
+            clippy::too_many_arguments,
+            clippy::unnecessary_cast
+        )]
+        mod field_impl;
+    }
+}
+
+use self::field_impl::*;
 
 /// Constant representing the modulus: p = 2^{256} − 189
 const MODULUS_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43";
