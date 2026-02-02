@@ -18,22 +18,22 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.28", default-features = false, features = ["sec1"] }
 fiat-crypto = { version = "0.3", default-features = false }
 rand_core = { version = "0.10", default-features = false }
 
 # optional dependencies
+der = { version = "0.8.0-rc.10", optional = true }
 primefield = { version = "0.14.0-rc.6", optional = true }
 primeorder = { version = "0.14.0-rc.6", optional = true }
-rfc6979 = { version = "0.5.0-rc.4", optional = true }
+rfc6979 = { version = "0.5.0-rc.5", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 signature = { version = "3.0.0-rc.10", optional = true, features = ["rand_core"] }
-sm3 = { version = "0.5.0-rc.3", optional = true, default-features = false }
-der = { version = "0.8.0-rc.10", optional = true }
+sm3 = { version = "0.5.0-rc.5", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.27", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.28", default-features = false, features = ["dev"] }
 hex-literal = "1"
 proptest = "1"
 

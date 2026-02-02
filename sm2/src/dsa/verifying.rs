@@ -14,7 +14,7 @@
 
 use super::Signature;
 use crate::{
-    AffinePoint, DistId, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar, Sm2,
+    AffinePoint, DistId, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar, Sec1Point, Sm2,
     distid::hash_z,
 };
 use elliptic_curve::{
@@ -22,7 +22,7 @@ use elliptic_curve::{
     array::typenum::Unsigned,
     ops::{LinearCombination, Reduce},
     point::AffineCoordinates,
-    sec1::ToEncodedPoint,
+    sec1::ToSec1Point,
 };
 use signature::{Error, MultipartVerifier, Result, Verifier, hazmat::PrehashVerifier};
 use sm3::{Sm3, digest::Digest};
@@ -210,9 +210,9 @@ impl From<&VerifyingKey> for PublicKey {
     }
 }
 
-impl ToEncodedPoint<Sm2> for VerifyingKey {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.as_affine().to_encoded_point(compress)
+impl ToSec1Point<Sm2> for VerifyingKey {
+    fn to_sec1_point(&self, compress: bool) -> Sec1Point {
+        self.as_affine().to_sec1_point(compress)
     }
 }
 

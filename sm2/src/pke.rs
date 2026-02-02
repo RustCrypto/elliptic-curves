@@ -55,7 +55,7 @@ use elliptic_curve::{
         Decode, DecodeValue, Encode, EncodeValue, Length, Reader, Sequence, Tag, Writer,
         asn1::OctetStringRef, asn1::UintRef,
     },
-    sec1::ToEncodedPoint,
+    sec1::ToSec1Point,
 };
 use sm3::digest::DynDigest;
 
@@ -134,7 +134,7 @@ fn kdf(hasher: &mut dyn DynDigest, kpb: AffinePoint, c2: &mut [u8]) -> Result<()
     let mut offset = 0;
     let digest_size = hasher.output_size();
     let mut ha = vec![0u8; digest_size];
-    let encode_point = kpb.to_encoded_point(false);
+    let encode_point = kpb.to_sec1_point(false);
 
     while offset < klen {
         hasher.update(encode_point.x().ok_or(elliptic_curve::Error)?);

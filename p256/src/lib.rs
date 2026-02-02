@@ -137,7 +137,7 @@ pub type BlindedScalar = elliptic_curve::scalar::BlindedScalar<NistP256>;
 pub type CompressedPoint = Array<u8, U33>;
 
 /// NIST P-256 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP256>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP256>;
 
 /// NIST P-256 field element serialized as bytes.
 ///

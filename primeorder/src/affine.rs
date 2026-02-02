@@ -16,8 +16,8 @@ use elliptic_curve::{
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{
-        self, CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToCompactEncodedPoint,
-        ToEncodedPoint, UncompressedPointSize,
+        self, CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToCompactSec1Point,
+        ToSec1Point, UncompressedPointSize,
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -221,20 +221,20 @@ where
 
 impl<C> Eq for AffinePoint<C> where C: PrimeCurveParams {}
 
-impl<C> FromEncodedPoint<C> for AffinePoint<C>
+impl<C> FromSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
-    /// Attempts to parse the given [`EncodedPoint`] as an SEC1-encoded
+    /// Attempts to parse the given [`Sec1Point`] as an SEC1-encoded
     /// [`AffinePoint`].
     ///
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp384r1 curve.
-    fn from_encoded_point(encoded_point: &EncodedPoint<C>) -> ctutils::CtOption<Self> {
+    fn from_sec1_point(encoded_point: &Sec1Point<C>) -> ctutils::CtOption<Self> {
         match encoded_point.coordinates() {
             sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
             sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
@@ -291,15 +291,15 @@ where
     }
 }
 
-impl<C> From<AffinePoint<C>> for EncodedPoint<C>
+impl<C> From<AffinePoint<C>> for Sec1Point<C>
 where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    fn from(affine: AffinePoint<C>) -> EncodedPoint<C> {
-        affine.to_encoded_point(false)
+    fn from(affine: AffinePoint<C>) -> Sec1Point<C> {
+        affine.to_sec1_point(false)
     }
 }
 
@@ -327,16 +327,16 @@ where
 
     /// NOTE: not constant-time with respect to identity point
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        EncodedPoint::<C>::from_bytes(bytes)
+        Sec1Point::<C>::from_bytes(bytes)
             .map(ctutils::CtOption::some)
             .unwrap_or_else(|_| {
                 // SEC1 identity encoding is technically 1-byte 0x00, but the
                 // `GroupEncoding` API requires a fixed-width `Repr`
                 let is_identity =
                     ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
-                ctutils::CtOption::new(EncodedPoint::<C>::identity(), is_identity)
+                ctutils::CtOption::new(Sec1Point::<C>::identity(), is_identity)
             })
-            .and_then(|point| Self::from_encoded_point(&point))
+            .and_then(|point| Self::from_sec1_point(&point))
             .into()
     }
 
@@ -346,7 +346,7 @@ where
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        let encoded = self.to_encoded_point(true);
+        let encoded = self.to_sec1_point(true);
         let mut result = CompressedPoint::<C>::default();
         result[..encoded.len()].copy_from_slice(encoded.as_bytes());
         result
@@ -392,43 +392,43 @@ where
     }
 }
 
-impl<C> ToCompactEncodedPoint<C> for AffinePoint<C>
+impl<C> ToCompactSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    /// Serialize this value as a  SEC1 compact [`EncodedPoint`]
-    fn to_compact_encoded_point(&self) -> ctutils::CtOption<EncodedPoint<C>> {
+    /// Serialize this value as a  SEC1 compact [`Sec1Point`]
+    fn to_compact_encoded_point(&self) -> ctutils::CtOption<Sec1Point<C>> {
         let point = self.to_compact();
 
         let mut bytes = CompressedPoint::<C>::default();
         bytes[0] = sec1::Tag::Compact.into();
         bytes[1..].copy_from_slice(&point.x.to_repr());
 
-        let encoded = EncodedPoint::<C>::from_bytes(bytes);
+        let encoded = Sec1Point::<C>::from_bytes(bytes);
         let is_some =
             ctutils::CtEq::ct_eq(point.y.to_repr().as_slice(), self.y.to_repr().as_slice());
         ctutils::CtOption::new(encoded.unwrap_or_default(), is_some)
     }
 }
 
-impl<C> ToEncodedPoint<C> for AffinePoint<C>
+impl<C> ToSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint<C> {
-        EncodedPoint::<C>::ct_select(
-            &EncodedPoint::<C>::from_affine_coordinates(
+    fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
+        Sec1Point::<C>::ct_select(
+            &Sec1Point::<C>::from_affine_coordinates(
                 &self.x.to_repr(),
                 &self.y.to_repr(),
                 compress,
             ),
-            &EncodedPoint::<C>::identity(),
+            &Sec1Point::<C>::identity(),
             self.is_identity().into(),
         )
     }
@@ -446,7 +446,7 @@ where
     }
 }
 
-impl<C> TryFrom<EncodedPoint<C>> for AffinePoint<C>
+impl<C> TryFrom<Sec1Point<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
@@ -455,12 +455,12 @@ where
 {
     type Error = Error;
 
-    fn try_from(point: EncodedPoint<C>) -> Result<AffinePoint<C>> {
+    fn try_from(point: Sec1Point<C>) -> Result<AffinePoint<C>> {
         AffinePoint::try_from(&point)
     }
 }
 
-impl<C> TryFrom<&EncodedPoint<C>> for AffinePoint<C>
+impl<C> TryFrom<&Sec1Point<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
@@ -469,8 +469,8 @@ where
 {
     type Error = Error;
 
-    fn try_from(point: &EncodedPoint<C>) -> Result<AffinePoint<C>> {
-        Option::from(AffinePoint::<C>::from_encoded_point(point)).ok_or(Error)
+    fn try_from(point: &Sec1Point<C>) -> Result<AffinePoint<C>> {
+        Option::from(AffinePoint::<C>::from_sec1_point(point)).ok_or(Error)
     }
 }
 
@@ -572,7 +572,7 @@ where
     where
         S: ser::Serializer,
     {
-        self.to_encoded_point(true).serialize(serializer)
+        self.to_sec1_point(true).serialize(serializer)
     }
 }
 
@@ -588,7 +588,7 @@ where
     where
         D: de::Deserializer<'de>,
     {
-        EncodedPoint::<C>::deserialize(deserializer)?
+        Sec1Point::<C>::deserialize(deserializer)?
             .try_into()
             .map_err(de::Error::custom)
     }

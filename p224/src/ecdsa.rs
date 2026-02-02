@@ -28,13 +28,13 @@
 //!
 //! // Signing
 //! let signing_key = SigningKey::generate(); // Serialize with `::to_bytes()`
-//! let verifying_key_bytes = signing_key.verifying_key().to_encoded_point(false); // 57-bytes
+//! let verifying_key_bytes = signing_key.verifying_key().to_sec1_point(false); // 57-bytes
 //!
 //! let message = b"ECDSA proves knowledge of a secret number in the context of a single message";
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use p224::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
+//! use p224::{Sec1Point, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from_sec1_bytes(verifying_key_bytes.as_ref())?;
 //! verifying_key.verify(message, &signature)?;

@@ -13,18 +13,18 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! // NOTE: requires the `ecdh` and `getrandom` crate features are enabled
 //! use p224::{
-//!     EncodedPoint, PublicKey,
+//!     Sec1Point, PublicKey,
 //!     elliptic_curve::Generate,
 //!     ecdh::EphemeralSecret
 //! };
 //!
 //! // Alice
 //! let alice_secret = EphemeralSecret::generate();
-//! let alice_pk_bytes = EncodedPoint::from(alice_secret.public_key());
+//! let alice_pk_bytes = Sec1Point::from(alice_secret.public_key());
 //!
 //! // Bob
 //! let bob_secret = EphemeralSecret::generate();
-//! let bob_pk_bytes = EncodedPoint::from(bob_secret.public_key());
+//! let bob_pk_bytes = Sec1Point::from(bob_secret.public_key());
 //!
 //! // Alice decodes Bob's serialized public key and computes a shared secret from it
 //! let bob_public = PublicKey::from_sec1_bytes(bob_pk_bytes.as_ref())?;

@@ -19,7 +19,7 @@ use alloc::boxed::Box;
 
 use super::{BELT_OID, Signature};
 use crate::{
-    AffinePoint, BignP256, EncodedPoint, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar,
+    AffinePoint, BignP256, FieldBytes, Hash, ProjectivePoint, PublicKey, Scalar, Sec1Point,
 };
 use belt_hash::{
     BeltHash,
@@ -33,7 +33,7 @@ use elliptic_curve::{
 };
 use signature::{Error, MultipartVerifier, Result, Verifier, hazmat::PrehashVerifier};
 
-use elliptic_curve::sec1::ToEncodedPoint;
+use elliptic_curve::sec1::ToSec1Point;
 
 /// Bign256 public key used for verifying signatures are valid for a given
 /// message.
@@ -205,8 +205,8 @@ impl From<&VerifyingKey> for PublicKey {
     }
 }
 
-impl ToEncodedPoint<BignP256> for VerifyingKey {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint {
-        self.as_affine().to_encoded_point(compress)
+impl ToSec1Point<BignP256> for VerifyingKey {
+    fn to_sec1_point(&self, compress: bool) -> Sec1Point {
+        self.as_affine().to_sec1_point(compress)
     }
 }

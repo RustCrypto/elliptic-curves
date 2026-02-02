@@ -13,7 +13,7 @@ use elliptic_curve::{
     ops::Reduce,
     pkcs8::der::Encode,
     rand_core::TryCryptoRng,
-    sec1::ToEncodedPoint,
+    sec1::ToSec1Point,
 };
 
 use primeorder::PrimeField;
@@ -177,12 +177,12 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
         // // If 𝑡 is an all-zero bit string, go to A1.
         // if all of t are 0, xor(c2) == c2
         if c2.iter().zip(msg).any(|(pre, cur)| pre != cur) {
-            let uncompress_kg = kg.to_encoded_point(false);
+            let uncompress_kg = kg.to_sec1_point(false);
             c1.copy_from_slice(uncompress_kg.as_bytes());
             break;
         }
     }
-    let encode_point = hpb.to_encoded_point(false);
+    let encode_point = hpb.to_sec1_point(false);
 
     // A7: compute 𝐶3 = 𝐻𝑎𝑠ℎ(𝑥2||𝑀||𝑦2)
     let mut c3 = vec![0; digest.output_size()];

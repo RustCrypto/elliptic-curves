@@ -9,7 +9,7 @@ use elliptic_curve::{
     group::{GroupEncoding, ff::PrimeField},
     ops::{LinearCombination, Reduce, ReduceNonZero},
     point::NonIdentity,
-    sec1::{self, ToEncodedPoint},
+    sec1::{self, ToSec1Point},
 };
 use p256::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,

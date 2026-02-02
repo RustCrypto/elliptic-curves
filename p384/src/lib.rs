@@ -114,7 +114,7 @@ impl pkcs8::AssociatedOid for NistP384 {
 pub type CompressedPoint = Array<u8, U49>;
 
 /// NIST P-384 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<NistP384>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP384>;
 
 /// NIST P-384 field element serialized as bytes.
 ///

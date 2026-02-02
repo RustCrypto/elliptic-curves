@@ -8,7 +8,7 @@
 //! // NOTE: requires the `ecdsa` and `getrandom` crate features are enabled
 //! use bignp256::{
 //!     ecdsa::{SigningKey, Signature, signature::Signer},
-//!     elliptic_curve::{Generate, sec1::ToEncodedPoint},
+//!     elliptic_curve::{Generate, sec1::ToSec1Point},
 //!     SecretKey,
 //! };
 //!
@@ -20,7 +20,7 @@
 //! let signature: Signature = signing_key.sign(message);
 //!
 //! // Verification
-//! use bignp256::{EncodedPoint, ecdsa::{VerifyingKey, signature::Verifier}};
+//! use bignp256::{Sec1Point, ecdsa::{VerifyingKey, signature::Verifier}};
 //!
 //! let verifying_key = VerifyingKey::from_bytes(&verifying_key_bytes)?;
 //! verifying_key.verify(message, &signature)?;

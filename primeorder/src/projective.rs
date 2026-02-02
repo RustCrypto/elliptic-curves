@@ -24,8 +24,7 @@ use elliptic_curve::{
     point::{Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{
-        CompressedPoint, EncodedPoint, FromEncodedPoint, ModulusSize, ToEncodedPoint,
-        UncompressedPointSize,
+        CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point, UncompressedPointSize,
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -229,15 +228,15 @@ where
     }
 }
 
-impl<C> FromEncodedPoint<C> for ProjectivePoint<C>
+impl<C> FromSec1Point<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
-    fn from_encoded_point(p: &EncodedPoint<C>) -> ctutils::CtOption<Self> {
-        AffinePoint::<C>::from_encoded_point(p).map(Self::from)
+    fn from_sec1_point(p: &Sec1Point<C>) -> ctutils::CtOption<Self> {
+        AffinePoint::<C>::from_sec1_point(p).map(Self::from)
     }
 }
 
@@ -553,15 +552,15 @@ where
     }
 }
 
-impl<C> ToEncodedPoint<C> for ProjectivePoint<C>
+impl<C> ToSec1Point<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
     CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    fn to_encoded_point(&self, compress: bool) -> EncodedPoint<C> {
-        self.to_affine().to_encoded_point(compress)
+    fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
+        self.to_affine().to_sec1_point(compress)
     }
 }
 

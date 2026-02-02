@@ -50,7 +50,7 @@ impl pkcs8::AssociatedOid for BrainpoolP384r1 {
 }
 
 /// brainpoolP384r1 SEC1 encoded point.
-pub type EncodedPoint = elliptic_curve::sec1::EncodedPoint<BrainpoolP384r1>;
+pub type Sec1Point = elliptic_curve::sec1::Sec1Point<BrainpoolP384r1>;
 
 /// brainpoolP384r1 field element serialized as bytes.
 ///
