@@ -375,7 +375,7 @@ checksum = "cba9eeeb213f7fd29353032f71f7c173e5f6d95d85151cb3a47197b0ea7e8be7"
 dependencies = [
  "cpubits",
  "ctutils",
- "getrandom 0.4.0",
+ "getrandom 0.4.1",
  "hybrid-array",
  "num-traits",
  "rand_core 0.10.0",
@@ -389,7 +389,7 @@ version = "0.2.0-rc.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f8441110cea75afde0b89a8d796e2bc67b23432f5a9566cb15d9d365d91a2b0"
 dependencies = [
- "getrandom 0.4.0",
+ "getrandom 0.4.1",
  "hybrid-array",
  "rand_core 0.10.0",
 ]
@@ -464,7 +464,7 @@ dependencies = [
  "criterion",
  "ed448",
  "elliptic-curve",
- "getrandom 0.4.0",
+ "getrandom 0.4.1",
  "hash2curve",
  "hex",
  "hex-literal",
@@ -569,9 +569,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd66c162c2a0609c0507f49814877c621d00cb85978e6fbbf04e88b8048c07c8"
+checksum = "139ef39800118c7683f2fd3c98c1b23c09ae076556b435f8e9064ae108aaeeec"
 dependencies = [
  "cfg-if",
  "libc",
