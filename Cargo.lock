@@ -188,9 +188,9 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 
 [[package]]
 name = "chacha20"
-version = "0.10.0-rc.10"
+version = "0.10.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c536927023d1c432e6e23a25ef45f6756094eac2ab460db5fb17a772acdfd312"
+checksum = "14f3c04cdd19f5ed3271e460267fb1d94b7899ae1f7bb10ac3dfc3afb749d659"
 dependencies = [
  "cfg-if",
  "cipher",
@@ -227,9 +227,9 @@ dependencies = [
 
 [[package]]
 name = "cipher"
-version = "0.5.0-rc.7"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf7e48717e58fd82d6470086ab1c0e12f56426b4ef96c84bb84b9c3fefc6d9c7"
+checksum = "64727038c8c5e2bb503a15b9f5b9df50a1da9a33e83e1f93067d914f2c6604a5"
 dependencies = [
  "block-buffer",
  "crypto-common",
@@ -385,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-common"
-version = "0.2.0-rc.15"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f8441110cea75afde0b89a8d796e2bc67b23432f5a9566cb15d9d365d91a2b0"
+checksum = "211f05e03c7d03754740fd9e585de910a095d6b99f8bcfffdef8319fa02a8331"
 dependencies = [
  "getrandom 0.4.0",
  "hybrid-array",
@@ -656,9 +656,9 @@ dependencies = [
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b41fb3dc24fe72c2e3a4685eed55917c2fb228851257f4a8f2d985da9443c3e5"
+checksum = "e1b229d73f5803b562cc26e4da0396c8610a4ee209f4fac8fa4f8d709166dc45"
 dependencies = [
  "subtle",
  "typenum",
