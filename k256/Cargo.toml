@@ -38,7 +38,7 @@ hex = "0.4.3"
 hex-literal = "1"
 num-bigint = "0.4"
 num-traits = "0.2"
-proptest = "1.9"
+proptest = "1.10"
 sha3 = { version = "0.11.0-rc.7", default-features = false }
 
 [features]
