@@ -43,11 +43,14 @@ pub use {
     secret_key::SecretKey,
 };
 
+#[cfg(feature = "arithmetic")]
+pub use arithmetic::FieldElement;
+
 /// Bign256 result type
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[cfg(feature = "arithmetic")]
-pub mod arithmetic;
+pub(crate) mod arithmetic;
 
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
