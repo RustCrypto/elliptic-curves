@@ -26,3 +26,5 @@ ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
+
+#rustcrypto-group = { git = "https://github.com/RustCrypto/group", branch = "dense-wnaf" }

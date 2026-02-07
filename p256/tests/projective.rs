@@ -8,7 +8,7 @@ use elliptic_curve::{
     consts::U32,
     group::{GroupEncoding, ff::PrimeField},
     ops::{LinearCombination, Reduce, ReduceNonZero},
-    point::NonIdentity,
+    point::{AffineCoordinates, NonIdentity},
     sec1::{self, ToSec1Point},
 };
 use p256::{
@@ -16,7 +16,10 @@ use p256::{
     test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
 };
 use primeorder::test_projective_arithmetic;
-use proptest::{prelude::any, prop_compose, proptest};
+use proptest::{prelude::*, prop_compose, proptest};
+
+#[cfg(feature = "alloc")]
+use elliptic_curve::group::Wnaf;
 
 test_projective_arithmetic!(
     AffinePoint,
@@ -25,6 +28,26 @@ test_projective_arithmetic!(
     ADD_TEST_VECTORS,
     MUL_TEST_VECTORS
 );
+
+#[cfg(feature = "alloc")]
+#[test]
+fn wnaf() {
+    for (k, coords) in ADD_TEST_VECTORS.iter().enumerate() {
+        let scalar = Scalar::from(k as u64 + 1);
+        dbg!(&scalar, coords);
+
+        let mut wnaf = Wnaf::new();
+        let p = wnaf
+            .scalar(&scalar)
+            .base(ProjectivePoint::GENERATOR)
+            .to_affine();
+        // let mut wnaf_base = wnaf.base(ProjectivePoint::GENERATOR, 1);
+        // let p = wnaf_base.scalar(&scalar).to_affine();
+
+        let (x, _y) = (p.x(), p.y());
+        assert_eq!(x.0, coords.0);
+    }
+}
 
 #[test]
 fn projective_identity_to_bytes() {
@@ -52,6 +75,17 @@ prop_compose! {
 
 // TODO: move to `primeorder::test_projective_arithmetic`.
 proptest! {
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn wnaf_proptest(
+        point in projective(),
+        scalar in scalar(),
+    ) {
+        let result = point * scalar;
+        let wnaf_result = Wnaf::new().scalar(&scalar).base(point);
+        prop_assert_eq!(result.to_affine(), wnaf_result.to_affine());
+    }
+
     #[test]
     fn batch_normalize(
         a in non_identity(),

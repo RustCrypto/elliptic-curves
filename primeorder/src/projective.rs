@@ -31,7 +31,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+use {alloc::vec::Vec, elliptic_curve::group::WnafGroup};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
@@ -595,6 +595,17 @@ where
 
     fn try_from(point: &ProjectivePoint<C>) -> Result<PublicKey<C>> {
         AffinePoint::<C>::from(point).try_into()
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<C> WnafGroup for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+{
+    fn recommended_wnaf_for_num_scalars(num_scalars: usize) -> usize {
+        todo!()
     }
 }
 

@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e19ee42c127b7289fbe7e42df47abf141eb644afcbd13ac141e39b9960362174 # shrinks to point = ProjectivePoint { x: FieldElement(0x823CD15F6DD3C71933565064513A6B2BD183E554C6A08622F713EBBBFACE98BE), y: FieldElement(0x55DF5D5850F47BAD82149139979369FE498A9022A412B5E0BEDD2CFC21C3ED91), z: FieldElement(0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5) }, scalar = Scalar(0x0000000000000000000000000000000000000000000000000000000000000001)
