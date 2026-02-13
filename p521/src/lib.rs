@@ -53,7 +53,7 @@ use elliptic_curve::{
     FieldBytesEncoding,
     array::Array,
     bigint::{Odd, cpubits},
-    consts::U66,
+    consts::{U66, U67},
 };
 
 cpubits! {
@@ -106,7 +106,7 @@ impl pkcs8::AssociatedOid for NistP521 {
 }
 
 /// Compressed SEC1-encoded NIST P-521 curve point.
-pub type CompressedPoint = Array<u8, U66>;
+pub type CompressedPoint = Array<u8, U67>;
 
 /// NIST P-521 SEC1 encoded point.
 pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP521>;
@@ -134,4 +134,20 @@ pub type SecretKey = elliptic_curve::SecretKey<NistP521>;
 impl hash2curve::OprfParameters for NistP521 {
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.5-1>.
     const ID: &'static [u8] = b"P521-SHA512";
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CompressedPoint, NistP521};
+    use core::mem::size_of;
+    use elliptic_curve::sec1::CompressedPoint as Sec1Compressed;
+
+    #[test]
+    fn compressed_point_size_matches_sec1() {
+        assert_eq!(size_of::<CompressedPoint>(), 67);
+        assert_eq!(
+            size_of::<CompressedPoint>(),
+            size_of::<Sec1Compressed<NistP521>>(),
+        );
+    }
 }
