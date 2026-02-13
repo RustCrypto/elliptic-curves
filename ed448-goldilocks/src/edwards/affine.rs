@@ -414,25 +414,24 @@ impl CompressedEdwardsY {
     pub fn decompress_unchecked(&self) -> CtOption<AffinePoint> {
         // Safe to unwrap here as the underlying data structure is a slice
         let (sign, b) = self.0.split_last().expect("slice is non-empty");
+        let b_bytes = b.try_into().expect("slice is the right size");
 
-        let mut y_bytes: [u8; 56] = [0; 56];
-        y_bytes.copy_from_slice(b);
+        FieldElement::from_repr(b_bytes).and_then(|y| {
+            // Recover x using y
+            let yy = y.square();
+            let dyy = FieldElement::EDWARDS_D * yy;
+            let numerator = FieldElement::ONE - yy;
+            let denominator = FieldElement::ONE - dyy;
 
-        // Recover x using y
-        let y = FieldElement::from_bytes(&y_bytes);
-        let yy = y.square();
-        let dyy = FieldElement::EDWARDS_D * yy;
-        let numerator = FieldElement::ONE - yy;
-        let denominator = FieldElement::ONE - dyy;
+            let (mut x, is_res) = FieldElement::sqrt_ratio(&numerator, &denominator);
 
-        let (mut x, is_res) = FieldElement::sqrt_ratio(&numerator, &denominator);
+            // Compute correct sign of x
+            let compressed_sign_bit = Choice::from(sign >> 7);
+            let is_negative = x.is_negative();
+            x.conditional_negate(compressed_sign_bit ^ is_negative);
 
-        // Compute correct sign of x
-        let compressed_sign_bit = Choice::from(sign >> 7);
-        let is_negative = x.is_negative();
-        x.conditional_negate(compressed_sign_bit ^ is_negative);
-
-        CtOption::new(AffinePoint { x, y }, is_res)
+            CtOption::new(AffinePoint { x, y }, is_res)
+        })
     }
 
     /// Attempt to decompress to an `AffinePoint`.
