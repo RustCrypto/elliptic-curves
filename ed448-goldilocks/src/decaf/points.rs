@@ -553,43 +553,32 @@ impl CompressedDecaf {
 
     /// Decompress a point if it is valid
     pub fn decompress(&self) -> CtOption<DecafPoint> {
-        let s = FieldElement::from_bytes(&self.0);
-        //XX: Check for canonical encoding and sign,
-        // Copied this check from Dalek: The From_bytes function does not throw an error, if the bytes exceed the prime.
-        // However, to_bytes reduces the Field element before serialising
-        // So we can use to_bytes -> from_bytes and if the representations are the same, then the element was already in reduced form
-        let s_bytes_check = s.to_bytes();
-        let s_encoding_is_canonical = s_bytes_check[..].ct_eq(&self.0);
-        let s_is_negative = s.is_negative();
-        // if s_encoding_is_canonical.unwrap_u8() == 0u8 || s.is_negative().unwrap_u8() == 1u8 {
-        //     return None;
-        // }
+        FieldElement::from_repr(&self.0).and_then(|s| {
+            let s_is_negative = s.is_negative();
 
-        let ss = s.square();
-        let u1 = FieldElement::ONE - ss;
-        let u2 = FieldElement::ONE + ss;
-        let u1_sqr = u1.square();
+            let ss = s.square();
+            let u1 = FieldElement::ONE - ss;
+            let u2 = FieldElement::ONE + ss;
+            let u1_sqr = u1.square();
 
-        let v = ss * (FieldElement::NEG_FOUR_TIMES_TWISTED_D) + u1_sqr; // XXX: constantify please
+            let v = ss * (FieldElement::NEG_FOUR_TIMES_TWISTED_D) + u1_sqr; // XXX: constantify please
 
-        let (I, ok) = (v * u1_sqr).inverse_square_root();
+            let (I, ok) = (v * u1_sqr).inverse_square_root();
 
-        let Dx = I * u1;
-        let Dxs = s.double() * Dx;
+            let Dx = I * u1;
+            let Dxs = s.double() * Dx;
 
-        let mut X = (Dxs * I) * v;
-        let k = Dxs * FieldElement::DECAF_FACTOR;
-        X.conditional_negate(k.is_negative());
+            let mut X = (Dxs * I) * v;
+            let k = Dxs * FieldElement::DECAF_FACTOR;
+            X.conditional_negate(k.is_negative());
 
-        let Y = Dx * u2;
-        let Z = FieldElement::ONE;
-        let T = X * Y;
-        let pt = ExtendedPoint { X, Y, Z, T };
+            let Y = Dx * u2;
+            let Z = FieldElement::ONE;
+            let T = X * Y;
+            let pt = ExtendedPoint { X, Y, Z, T };
 
-        CtOption::new(
-            DecafPoint(pt),
-            ok & pt.is_on_curve() & s_encoding_is_canonical & !s_is_negative,
-        )
+            CtOption::new(DecafPoint(pt), ok & pt.is_on_curve() & !s_is_negative)
+        })
     }
 
     /// Get the bytes of this compressed point
