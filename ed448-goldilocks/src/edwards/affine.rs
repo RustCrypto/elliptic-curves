@@ -411,39 +411,37 @@ impl CompressedEdwardsY {
     ///
     /// Returns `None` if the input is not the \\(y\\)-coordinate of a
     /// curve point.
+    // See https://www.rfc-editor.org/rfc/rfc8032.html#section-5.2.3.
     pub fn decompress_unchecked(&self) -> CtOption<AffinePoint> {
         // Safe to unwrap here as the underlying data structure is a slice
         let (sign, b) = self.0.split_last().expect("slice is non-empty");
 
         let mut y_bytes: [u8; 56] = [0; 56];
         y_bytes.copy_from_slice(b);
-
-        // Recover x using y
+        // TODO: this should fail if unreduced.
         let y = FieldElement::from_bytes(&y_bytes);
-        let yy = y.square();
-        let dyy = FieldElement::EDWARDS_D * yy;
-        let numerator = FieldElement::ONE - yy;
-        let denominator = FieldElement::ONE - dyy;
 
-        let (mut x, is_res) = FieldElement::sqrt_ratio(&numerator, &denominator);
+        // x^2 = (y^2 - 1) / (d y^2 - 1)
+        let yy = y.square();
+        let u = yy - FieldElement::ONE;
+        let v = FieldElement::EDWARDS_D * yy - FieldElement::ONE;
+        let (mut x, is_square) = FieldElement::sqrt_ratio(&u, &v);
 
         // Compute correct sign of x
         let compressed_sign_bit = Choice::from(sign >> 7);
         let is_negative = x.is_negative();
         x.conditional_negate(compressed_sign_bit ^ is_negative);
 
-        CtOption::new(AffinePoint { x, y }, is_res)
+        CtOption::new(AffinePoint { x, y }, is_square)
     }
 
     /// Attempt to decompress to an `AffinePoint`.
     ///
     /// Returns `None`:
     /// - if the input is not the \\(y\\)-coordinate of a curve point.
-    /// - if the input point is not on the curve.
     /// - if the input point has nonzero torsion component.
     pub fn decompress(&self) -> CtOption<AffinePoint> {
         self.decompress_unchecked()
-            .and_then(|pt| CtOption::new(pt, pt.is_on_curve() & pt.to_edwards().is_torsion_free()))
     }
 
     /// View this `CompressedEdwardsY` as an array of bytes.
