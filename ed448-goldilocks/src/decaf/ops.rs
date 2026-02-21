@@ -1,4 +1,5 @@
-use crate::{DecafAffinePoint, DecafScalar, curve::scalar_mul::double_and_add};
+use crate::curve::scalar_mul::variable_base;
+use crate::{DecafAffinePoint, DecafScalar};
 use core::{
     borrow::Borrow,
     iter::Sum,
@@ -13,8 +14,7 @@ impl Mul<&DecafScalar> for &DecafPoint {
     type Output = DecafPoint;
 
     fn mul(self, scalar: &DecafScalar) -> DecafPoint {
-        // XXX: We can do better than double and add
-        DecafPoint(double_and_add(&self.0, scalar.bits()).to_extended())
+        DecafPoint(variable_base(&self.0, scalar).to_extended())
     }
 }
 

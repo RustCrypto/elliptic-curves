@@ -1,11 +1,12 @@
 #![allow(non_snake_case)]
 
 use super::window::wnaf::LookupTable;
-use crate::EdwardsScalar;
+use crate::Scalar;
 use crate::curve::twedwards::{extended::ExtendedPoint, extensible::ExtensiblePoint};
+use crate::field::CurveWithScalar;
 use subtle::{Choice, ConditionallyNegatable};
 
-pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtensiblePoint {
+pub fn variable_base<C: CurveWithScalar>(point: &ExtendedPoint, s: &Scalar<C>) -> ExtensiblePoint {
     let mut result = ExtensiblePoint::IDENTITY;
 
     // Recode Scalar
@@ -34,12 +35,30 @@ pub fn variable_base(point: &ExtendedPoint, s: &EdwardsScalar) -> ExtensiblePoin
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::EdwardsScalar;
     use crate::TWISTED_EDWARDS_BASE_POINT;
-    use crate::curve::scalar_mul::double_and_add;
     use elliptic_curve::bigint::U448;
+    use subtle::ConditionallySelectable;
 
     #[test]
     fn test_scalar_mul() {
+        /// Traditional double and add algorithm
+        fn double_and_add(point: &ExtendedPoint, s_bits: [bool; 448]) -> ExtensiblePoint {
+            let mut result = ExtensiblePoint::IDENTITY;
+
+            // NB, we reverse here, so we are going from MSB to LSB
+            // XXX: Would be great if subtle had a From<u32> for Choice. But maybe that is not it's purpose?
+            for bit in s_bits.into_iter().rev() {
+                result = result.double();
+                result.conditional_assign(
+                    &result.to_extended().add_extended(point),
+                    Choice::from(u8::from(bit)),
+                );
+            }
+
+            result
+        }
+
         // XXX: In the future use known multiples from Sage in bytes form?
         let twisted_point = TWISTED_EDWARDS_BASE_POINT;
         let scalar = EdwardsScalar::new(U448::from_be_hex(
