@@ -75,6 +75,10 @@ pub enum Mode {
     /// new mode
     C1C3C2,
 }
+
+/// The standard data layout used for SM2 encryption/decryption.
+/// C1C3C2 is the default per modern specifications.
+const DEFAULT_MODE: Mode = Mode::C1C3C2;
 /// Represents a cipher structure containing encryption-related data (asn.1 format).
 ///
 /// The `Cipher` structure includes the coordinates of the elliptic curve point (`x`, `y`),
