@@ -18,7 +18,7 @@ use primeorder::PrimeField;
 
 use sm3::{Digest, Sm3, digest::DynDigest};
 
-use super::{Cipher, Mode, encrypting::EncryptingKey, kdf, vec};
+use super::{Cipher, DEFAULT_MODE, Mode, encrypting::EncryptingKey, kdf, vec};
 /// Represents a decryption key used for decrypting messages using elliptic curve cryptography.
 #[derive(Clone)]
 pub struct DecryptingKey {
@@ -30,7 +30,7 @@ pub struct DecryptingKey {
 impl DecryptingKey {
     /// Creates a new `DecryptingKey` from a `SecretKey` with the default decryption mode (`C1C3C2`).
     pub fn new(secret_key: SecretKey) -> Self {
-        Self::new_with_mode(secret_key.to_nonzero_scalar(), Mode::C1C3C2)
+        Self::new_with_mode(secret_key.to_nonzero_scalar(), DEFAULT_MODE)
     }
 
     /// Creates a new `DecryptingKey` from a non-zero scalar and sets the decryption mode.
@@ -59,7 +59,7 @@ impl DecryptingKey {
 
     /// Create a signing key from a non-zero scalar.
     pub fn from_nonzero_scalar(secret_scalar: NonZeroScalar) -> Result<Self> {
-        Ok(Self::new_with_mode(secret_scalar, Mode::C1C3C2))
+        Ok(Self::new_with_mode(secret_scalar, DEFAULT_MODE))
     }
 
     /// Serialize as bytes.
