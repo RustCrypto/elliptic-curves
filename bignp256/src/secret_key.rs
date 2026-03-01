@@ -4,8 +4,11 @@
 use core::str::FromStr;
 use der::{SecretDocument, asn1::OctetStringRef};
 
-use crate::{ALGORITHM_OID, PublicKey, ScalarValue};
+#[cfg(feature = "pkcs8")]
+use crate::ALGORITHM_OID;
+use crate::{PublicKey, ScalarValue};
 use elliptic_curve::{Error, Generate, array::typenum::Unsigned, zeroize::Zeroizing};
+#[cfg(feature = "pkcs8")]
 use pkcs8::{
     AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
@@ -95,6 +98,7 @@ impl SecretKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl AssociatedAlgorithmIdentifier for SecretKey {
     type Params = ObjectIdentifier;
     const ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> = AlgorithmIdentifier {
@@ -135,6 +139,7 @@ impl Generate for SecretKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for SecretKey {
     type Error = pkcs8::Error;
 
@@ -155,6 +160,7 @@ impl FromStr for SecretKey {
     }
 }
 
+#[cfg(feature = "pkcs8")]
 impl EncodePrivateKey for SecretKey {
     fn to_pkcs8_der(&self) -> pkcs8::Result<SecretDocument> {
         let algorithm_identifier = pkcs8::AlgorithmIdentifierRef {
