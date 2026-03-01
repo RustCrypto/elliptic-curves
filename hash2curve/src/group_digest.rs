@@ -111,8 +111,8 @@ where
     X: ExpandMsg<C::SecurityLevel>,
 {
     let [u] = hash_to_field::<1, X, _, C::FieldElement, C::Length>(msg, dst)?;
-    let q0 = C::map_to_curve(u);
-    Ok(q0.clear_cofactor())
+    let q = C::map_to_curve(u);
+    Ok(q.clear_cofactor())
 }
 
 /// Computes the hash to field routine according to
