@@ -37,7 +37,7 @@ macro_rules! monty_field_params {
     ) => {
         use $crate::bigint::modular::ConstMontyParams;
 
-        $crate::bigint::const_monty_params!($name, $uint, $modulus_hex, $doc);
+        $crate::bigint::const_prime_monty_params!($name, $uint, $modulus_hex, $doc);
 
         impl $crate::MontyFieldParams<{ <$uint>::LIMBS }> for $name {
             type ByteSize = $crate::bigint::hybrid_array::typenum::U<

@@ -676,7 +676,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Square this scalar
     pub const fn square(&self) -> Self {
-        let value = self.scalar.square_wide();
+        let value = self.scalar.widening_square();
         Self::new(U448::rem_wide_vartime(value, ORDER.as_nz_ref()))
     }
 
