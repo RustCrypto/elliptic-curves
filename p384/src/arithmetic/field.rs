@@ -37,7 +37,6 @@ primefield::monty_field_params! {
     modulus: MODULUS_HEX,
     uint: U384,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 19,
     doc: "Montgomery parameters for the NIST P-384 field modulus: `p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1`."
 }
 

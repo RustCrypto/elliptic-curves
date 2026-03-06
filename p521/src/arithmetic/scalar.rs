@@ -26,7 +26,6 @@ primefield::monty_field_params! {
     modulus: ORDER_HEX,
     uint: Uint,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 3,
     doc: "Montgomery parameters for the NIST P-521 scalar modulus `n`."
 }
 

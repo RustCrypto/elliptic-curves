@@ -21,7 +21,6 @@ mod fiat;
 ///     modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
 ///     uint: U256,
 ///     byte_order: ByteOrder::BigEndian,
-///     multiplicative_generator: 6,
 ///     doc: "P-256 field modulus"
 /// );
 /// ```
@@ -32,7 +31,6 @@ macro_rules! monty_field_params {
         modulus: $modulus_hex:expr,
         uint: $uint:ty,
         byte_order: $byte_order:expr,
-        multiplicative_generator: $multiplicative_generator:expr,
         doc: $doc:expr
     ) => {
         use $crate::bigint::modular::ConstMontyParams;
@@ -45,7 +43,6 @@ macro_rules! monty_field_params {
             >;
             const BYTE_ORDER: $crate::ByteOrder = $byte_order;
             const MODULUS_HEX: &'static str = $modulus_hex;
-            const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
             const T: $uint = $crate::compute_t($name::PARAMS.modulus().as_ref());
         }
     };
