@@ -463,7 +463,7 @@ where
     const CAPACITY: u32 = Self::NUM_BITS - 1;
     const TWO_INV: Self = Self::from_u64(2).const_invert();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(MOD::MULTIPLICATIVE_GENERATOR);
-    const S: u32 = compute_s(MOD::PARAMS.modulus().as_ref());
+    const S: u32 = MOD::PRIME_PARAMS.s().get();
     const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(&MOD::T);
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.const_invert();
     const DELTA: Self = Self::MULTIPLICATIVE_GENERATOR.sqn_vartime(Self::S as usize);
@@ -966,16 +966,10 @@ where
     }
 }
 
-/// Compute `S = (modulus - 1).trailing_zeros()`
-const fn compute_s<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> u32 {
-    modulus.wrapping_sub(&Uint::ONE).trailing_zeros()
-}
-
 /// Compute `t = (modulus - 1) >> S`
 pub const fn compute_t<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> Uint<LIMBS> {
-    modulus
-        .wrapping_sub(&Uint::ONE)
-        .unbounded_shr(compute_s(modulus))
+    let s = modulus.wrapping_sub(&Uint::ONE).trailing_zeros();
+    modulus.wrapping_sub(&Uint::ONE).unbounded_shr(s)
 }
 
 #[cfg(test)]
