@@ -379,8 +379,7 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 [[package]]
 name = "crypto-bigint"
 version = "0.7.0-rc.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96dacf199529fb801ae62a9aafdc01b189e9504c0d1ee1512a4c16bcd8666a93"
+source = "git+https://github.com/RustCrypto/crypto-bigint#49d5ef25b65a5d550f17cae3e972d609a085581a"
 dependencies = [
  "cpubits",
  "ctutils",

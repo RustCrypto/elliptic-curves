@@ -1,8 +1,6 @@
 //! Field elements which use an internal Montgomery form representation, implemented using
 //! `crypto-bigint`'s [`MontyForm`].
 
-mod sqrt;
-
 use crate::ByteOrder;
 use bigint::{
     ArrayEncoding, ByteArray, Invert, Limb, Reduce, Uint, Word, ctutils,
@@ -444,7 +442,7 @@ where
     }
 
     fn sqrt(&self) -> CtOption<Self> {
-        self.sqrt()
+        self.inner.sqrt().map(|inner| Self { inner }).into()
     }
 
     fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
