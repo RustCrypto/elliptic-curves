@@ -22,7 +22,7 @@ use sm3::{
     digest::{Digest, DynDigest},
 };
 
-use super::{Cipher, Mode};
+use super::{Cipher, DEFAULT_MODE, Mode};
 /// Represents an encryption key used for encrypting messages using elliptic curve cryptography.
 #[derive(Clone, Debug)]
 pub struct EncryptingKey {
@@ -31,9 +31,9 @@ pub struct EncryptingKey {
 }
 
 impl EncryptingKey {
-    /// Initialize [`EncryptingKey`] from PublicKey
+    /// Initialize [`EncryptingKey`] from PublicKey with the default encryption mode (`C1C3C2`).
     pub fn new(public_key: PublicKey) -> Self {
-        Self::new_with_mode(public_key, Mode::C1C2C3)
+        Self::new_with_mode(public_key, DEFAULT_MODE)
     }
 
     /// Initialize [`EncryptingKey`] from PublicKey and set Encryption mode
