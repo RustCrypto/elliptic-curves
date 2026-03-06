@@ -7,7 +7,10 @@ use crate::ByteOrder;
 use bigint::{
     ArrayEncoding, ByteArray, Invert, Limb, Reduce, Uint, Word, ctutils,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
-    modular::{ConstMontyForm as MontyForm, ConstMontyParams, FixedMontyParams, Retrieve},
+    modular::{
+        ConstMontyForm as MontyForm, ConstMontyParams, ConstPrimeMontyParams, FixedMontyParams,
+        Retrieve,
+    },
 };
 use common::Generate;
 use core::{
@@ -25,7 +28,7 @@ use subtle::{
 
 /// Extension trait for defining additional field parameters beyond the ones provided by
 /// [`ConstMontyParams`].
-pub trait MontyFieldParams<const LIMBS: usize>: ConstMontyParams<LIMBS> {
+pub trait MontyFieldParams<const LIMBS: usize>: ConstPrimeMontyParams<LIMBS> {
     /// Size of a field element when serialized as bytes.
     type ByteSize: ArraySize;
 
