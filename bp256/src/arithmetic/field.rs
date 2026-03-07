@@ -56,7 +56,6 @@ primefield::monty_field_params! {
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 11,
     doc: "Montgomery parameters for brainpoolP256's field modulus"
 }
 

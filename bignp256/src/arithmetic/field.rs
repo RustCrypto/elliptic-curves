@@ -62,7 +62,6 @@ primefield::monty_field_params! {
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 2,
     doc: "Montgomery parameters for the bign-curve256v1 field modulus p = 2^{256} − 189"
 }
 

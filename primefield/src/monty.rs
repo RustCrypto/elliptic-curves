@@ -36,11 +36,6 @@ pub trait MontyFieldParams<const LIMBS: usize>: ConstPrimeMontyParams<LIMBS> {
     /// Field modulus as a hexadecimal string.
     const MODULUS_HEX: &'static str;
 
-    /// A fixed multiplicative generator of `modulus - 1` order.
-    ///
-    /// This element must also be a quadratic nonresidue.
-    const MULTIPLICATIVE_GENERATOR: u64;
-
     /// `T = (modulus - 1) >> S`, where `S = (modulus - 1).trailing_zeros()`
     const T: Uint<LIMBS>;
 }
@@ -165,6 +160,20 @@ where
         CtOption::new(Self::from_uint_reduced(uint), is_some.into())
     }
 
+    /// Convert a `u32` into a [`MontyFieldElement`].
+    ///
+    /// # Panics
+    ///
+    /// If the modulus is 32-bits or smaller.
+    #[inline]
+    pub const fn from_u32(w: u32) -> Self {
+        assert!(
+            MOD::PARAMS.modulus().as_ref().bits() > 32,
+            "modulus is too small to ensure all `u32`s are in range"
+        );
+        Self::from_uint_reduced(&Uint::from_u32(w))
+    }
+
     /// Convert a `u64` into a [`MontyFieldElement`].
     ///
     /// # Panics
@@ -172,10 +181,10 @@ where
     /// If the modulus is 64-bits or smaller.
     #[inline]
     pub const fn from_u64(w: u64) -> Self {
-        if MOD::PARAMS.modulus().as_ref().bits() <= 64 {
-            panic!("modulus is too small to ensure all u64s are in range");
-        }
-
+        assert!(
+            MOD::PARAMS.modulus().as_ref().bits() > 64,
+            "modulus is too small to ensure all `u64`s are in range"
+        );
         Self::from_uint_reduced(&Uint::from_u64(w))
     }
 
@@ -462,7 +471,7 @@ where
     const NUM_BITS: u32 = MOD::PARAMS.modulus().as_ref().bits();
     const CAPACITY: u32 = Self::NUM_BITS - 1;
     const TWO_INV: Self = Self::from_u64(2).const_invert();
-    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(MOD::MULTIPLICATIVE_GENERATOR);
+    const MULTIPLICATIVE_GENERATOR: Self = Self::from_u32(MOD::PRIME_PARAMS.generator().get());
     const S: u32 = MOD::PRIME_PARAMS.s().get();
     const ROOT_OF_UNITY: Self = Self::MULTIPLICATIVE_GENERATOR.pow_vartime(&MOD::T);
     const ROOT_OF_UNITY_INV: Self = Self::ROOT_OF_UNITY.const_invert();
@@ -985,7 +994,6 @@ mod tests {
         modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
         uint: U256,
         byte_order: ByteOrder::BigEndian,
-        multiplicative_generator: 6,
         doc: "P-256 field modulus"
     );
 
@@ -1006,6 +1014,6 @@ mod tests {
 
     #[test]
     fn computed_delta_constant() {
-        assert_eq!(FieldElement::DELTA, FieldElement::from_u64(36));
+        assert_eq!(FieldElement::DELTA, FieldElement::from_u64(9));
     }
 }

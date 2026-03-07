@@ -42,7 +42,6 @@ primefield::monty_field_params!(
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 6,
     doc: "Montgomery parameters for the NIST P-256 field modulus: p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1."
 );
 

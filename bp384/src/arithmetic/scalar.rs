@@ -57,7 +57,6 @@ primefield::monty_field_params! {
     modulus: ORDER_HEX,
     uint: U384,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 2,
     doc: "Montgomery parameters for brainpoolP384's scalar modulus"
 }
 

@@ -37,7 +37,6 @@ primefield::monty_field_params! {
     modulus: MODULUS_HEX,
     uint: U256,
     byte_order: primefield::ByteOrder::BigEndian,
-    multiplicative_generator: 13,
     doc: "Montgomery parameters for SM2's field modulus `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
 }
 
