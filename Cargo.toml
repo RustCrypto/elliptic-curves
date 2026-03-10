@@ -26,5 +26,3 @@ ed448-goldilocks = { path = "ed448-goldilocks" }
 hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
-
-crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint" }
