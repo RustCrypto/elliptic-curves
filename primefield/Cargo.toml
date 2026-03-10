@@ -17,7 +17,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies.bigint]
-version = "0.7.0-rc.28"
+version = "0.7.1"
 package = "crypto-bigint"
 default-features = false
 features = ["rand_core", "hybrid-array", "subtle"]
