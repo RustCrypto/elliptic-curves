@@ -37,7 +37,13 @@ macro_rules! monty_field_params {
     ) => {
         use $crate::bigint::modular::ConstMontyParams;
 
-        $crate::bigint::const_prime_monty_params!($name, $uint, $modulus_hex, $doc);
+        $crate::bigint::const_prime_monty_params!(
+            $name,
+            $uint,
+            $modulus_hex,
+            $multiplicative_generator,
+            $doc
+        );
 
         impl $crate::MontyFieldParams<{ <$uint>::LIMBS }> for $name {
             type ByteSize = $crate::bigint::hybrid_array::typenum::U<
@@ -45,7 +51,6 @@ macro_rules! monty_field_params {
             >;
             const BYTE_ORDER: $crate::ByteOrder = $byte_order;
             const MODULUS_HEX: &'static str = $modulus_hex;
-            const MULTIPLICATIVE_GENERATOR: u64 = $multiplicative_generator;
             const T: $uint = $crate::compute_t($name::PARAMS.modulus().as_ref());
         }
     };
