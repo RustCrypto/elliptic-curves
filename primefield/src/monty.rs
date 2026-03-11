@@ -86,7 +86,12 @@ where
                 Uint::from_be_byte_array(byte_array)
             }
             ByteOrder::LittleEndian => {
-                byte_array[..offset].copy_from_slice(repr);
+                // For little-endian encoding we place the serialized bytes starting
+                // from the least-significant end of the buffer.
+                //
+                // `repr` is at most as large as the underlying `Uint` byte size
+                // (see `MontyFieldParams::ByteSize`), so this slice is valid.
+                byte_array[..repr.len()].copy_from_slice(repr);
                 Uint::from_le_byte_array(byte_array)
             }
         };
@@ -247,7 +252,10 @@ where
             }
             ByteOrder::LittleEndian => {
                 let padded = self.inner.retrieve().to_le_byte_array();
-                repr.copy_from_slice(&padded[..offset]);
+                // For little-endian encoding we expose the least-significant bytes
+                // at the beginning of the representation.
+                let len = repr.len();
+                repr.copy_from_slice(&padded[..len]);
             }
         }
 
@@ -1018,5 +1026,30 @@ mod tests {
     #[test]
     fn computed_delta_constant() {
         assert_eq!(FieldElement::DELTA, FieldElement::from_u64(36));
+    }
+
+    #[test]
+    fn little_endian_encoding() {
+        // Regression test for little-endian byte order fix
+        // Tests that from_bytes and to_bytes correctly handle little-endian encoding
+        // https://github.com/RustCrypto/elliptic-curves/pull/1685
+        monty_field_params!(
+            name: LEParams,
+            modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            uint: U256,
+            byte_order: ByteOrder::LittleEndian,
+            multiplicative_generator: 6,
+            doc: "P-256 field with little-endian"
+        );
+
+        type LEElement = MontyFieldElement<LEParams, { U256::LIMBS }>;
+
+        let value = LEElement::from_u64(0x0123456789ABCDEF);
+        let bytes = value.to_bytes();
+        assert_eq!(bytes[0], 0xEF); // LSB
+        assert_eq!(bytes[1], 0xCD);
+
+        let recovered = LEElement::from_bytes(&bytes).unwrap();
+        assert_eq!(value, recovered);
     }
 }
