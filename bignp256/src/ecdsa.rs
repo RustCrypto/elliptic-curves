@@ -75,6 +75,7 @@ impl Signature {
     /// Parse an BignP256 signature from a byte array.
     pub fn from_bytes(bytes: &SignatureBytes) -> Result<Self> {
         let (s0, s1) = bytes.split_at(Self::BYTE_SIZE / 3);
+
         let mut s0_bytes: Array<u8, U32> = Default::default();
         s0_bytes[..16].copy_from_slice(s0);
 
@@ -99,11 +100,8 @@ impl Signature {
     /// which comprise the signature.
     #[inline]
     pub fn from_scalars(s0: impl Into<FieldBytes>, s1: impl Into<FieldBytes>) -> Result<Self> {
-        let s0 = &mut s0.into()[16..];
-        let mut s1 = s1.into();
-
-        s0.reverse();
-        s1.reverse();
+        let s0 = &mut s0.into()[..16];
+        let s1 = s1.into();
 
         let mut s: Array<u8, U48> = Default::default();
         s[..Self::BYTE_SIZE / 3].copy_from_slice(s0);
@@ -142,15 +140,13 @@ impl Signature {
 impl Signature {
     /// Get the `s0` word component of this signature
     pub fn s0(&self) -> NonZeroScalar {
-        let mut s0 = self.s0.to_bytes();
-        s0.reverse();
+        let s0 = self.s0.to_bytes();
         NonZeroScalar::new(Scalar::from_bytes(&s0).unwrap()).unwrap()
     }
 
     /// Get the `s1` word component of this signature
     pub fn s1(&self) -> NonZeroScalar {
-        let mut s1 = self.s1.to_bytes();
-        s1.reverse();
+        let s1 = self.s1.to_bytes();
         NonZeroScalar::new(Scalar::from_bytes(&s1).unwrap()).unwrap()
     }
 

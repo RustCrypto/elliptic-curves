@@ -86,7 +86,12 @@ where
                 Uint::from_be_byte_array(byte_array)
             }
             ByteOrder::LittleEndian => {
-                byte_array[..offset].copy_from_slice(repr);
+                // For little-endian encoding we place the serialized bytes starting
+                // from the least-significant end of the buffer.
+                //
+                // `repr` is at most as large as the underlying `Uint` byte size
+                // (see `MontyFieldParams::ByteSize`), so this slice is valid.
+                byte_array[..repr.len()].copy_from_slice(repr);
                 Uint::from_le_byte_array(byte_array)
             }
         };
@@ -247,7 +252,10 @@ where
             }
             ByteOrder::LittleEndian => {
                 let padded = self.inner.retrieve().to_le_byte_array();
-                repr.copy_from_slice(&padded[..offset]);
+                // For little-endian encoding we expose the least-significant bytes
+                // at the beginning of the representation.
+                let len = repr.len();
+                repr.copy_from_slice(&padded[..len]);
             }
         }
 

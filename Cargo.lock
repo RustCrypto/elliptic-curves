@@ -65,20 +65,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9aa1eef3994e2ccd304a78fe3fea4a73e5792007f85f09b79bb82143ca5f82b"
 
 [[package]]
+name = "belt-block"
+version = "0.2.0-rc.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e3b1e9d1ad19c345095575076767febd525013fc5782276a21069901815ea45"
+dependencies = [
+ "cipher",
+]
+
+[[package]]
 name = "belt-hash"
 version = "0.2.0-rc.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c56883a45783acff1ccdf0903f38b8688363e633d3c9a199c2063f0cc946832b"
 dependencies = [
- "belt-block",
+ "belt-block 0.1.2",
  "digest",
+]
+
+[[package]]
+name = "bign-genk"
+version = "0.5.0-rc.3"
+source = "git+https://github.com/makavity/signatures.git#d341f946ec8c85e13761094a4284e06386f3b43f"
+dependencies = [
+ "cipher",
+ "digest",
+ "subtle",
 ]
 
 [[package]]
 name = "bignp256"
 version = "0.14.0-rc.8"
 dependencies = [
+ "belt-block 0.2.0-rc.3",
  "belt-hash",
+ "bign-genk",
  "criterion",
  "der",
  "digest",
@@ -91,7 +112,6 @@ dependencies = [
  "primeorder",
  "proptest",
  "rand_core 0.10.0",
- "rfc6979",
  "sec1",
  "signature",
 ]

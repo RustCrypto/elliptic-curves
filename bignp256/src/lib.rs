@@ -128,21 +128,17 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<BignP256>;
 
 impl FieldBytesEncoding<BignP256> for U256 {
     fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U256::from_be_byte_array(*field_bytes)
+        U256::from_le_byte_array(*field_bytes)
     }
 
     fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
+        self.to_le_byte_array()
     }
 }
 
 /// Non-zero scalar field element.
 #[cfg(feature = "arithmetic")]
 pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BignP256>;
-
-// /// BIGN P-256 public key.
-// #[cfg(feature = "arithmetic")]
-// pub type PublicKey = elliptic_curve::PublicKey<BignP256>;
 
 /// Generic scalar type with primitive functionality.#
 #[cfg(feature = "arithmetic")]

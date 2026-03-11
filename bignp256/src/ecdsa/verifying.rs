@@ -28,12 +28,11 @@ use belt_hash::{
 use elliptic_curve::{
     Curve, Field, Group,
     array::{Array, sizes::U32, typenum::Unsigned},
-    group::GroupEncoding,
     ops::{LinearCombination, Reduce},
+    point::AffineCoordinates,
+    sec1::ToSec1Point,
 };
 use signature::{Error, MultipartVerifier, Result, Verifier, hazmat::PrehashVerifier};
-
-use elliptic_curve::sec1::ToSec1Point;
 
 /// Bign256 public key used for verifying signatures are valid for a given
 /// message.
@@ -114,8 +113,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         // 3. If 𝑆1 ⩾ 𝑞, return NO.
         let s1 = signature.s1();
 
-        let mut hash: Array<u8, U32> = Array::clone_from_slice(prehash);
-        hash.reverse();
+        let hash: Array<u8, U32> = Array::clone_from_slice(prehash);
 
         let hw = Scalar::reduce(FieldBytes::from_slice(&hash));
         let left = s1.add(&hw);
@@ -133,19 +131,18 @@ impl PrehashVerifier<Signature> for VerifyingKey {
             return Err(Error::new());
         }
 
-        let mut r_bytes = r.to_bytes();
-        r_bytes.reverse();
+        let r = r.to_affine();
+        let rx = r.x();
 
         let mut hasher = BeltHash::new();
         hasher.update(BELT_OID);
-        hasher.update(&r_bytes[0..32]);
+        hasher.update(rx);
         hasher.update(prehash);
 
         // 7. Set 𝑡 ← ⟨︀belt-hash(OID(ℎ) ‖ ⟨𝑅⟩^2𝑙 ‖ 𝐻) ⟩︀^𝑙.
         let t = hasher.finalize();
 
-        let s0 = &mut s0.to_bytes()[16..];
-        s0.reverse();
+        let s0 = &mut s0.to_bytes()[..16];
 
         // 8. If 𝑆0 != 𝑡, return NO.
         if s0 == &t.as_slice()[..16] {
