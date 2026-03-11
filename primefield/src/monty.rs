@@ -3,7 +3,7 @@
 
 use crate::ByteOrder;
 use bigint::{
-    ArrayEncoding, ByteArray, Invert, Limb, Reduce, Uint, Word, ctutils,
+    ArrayEncoding, ByteArray, Invert, Reduce, Uint, Word, ctutils,
     hybrid_array::{Array, ArraySize, typenum::Unsigned},
     modular::{
         ConstMontyForm as MontyForm, ConstMontyParams, ConstPrimeMontyParams, FixedMontyParams,
@@ -302,7 +302,9 @@ where
     #[inline]
     #[must_use]
     pub const fn double(&self) -> Self {
-        self.add(self)
+        Self {
+            inner: MontyForm::double(&self.inner),
+        }
     }
 
     /// Subtract elements.
@@ -333,7 +335,9 @@ where
     #[inline]
     #[must_use]
     pub const fn square(&self) -> Self {
-        self.multiply(self)
+        Self {
+            inner: MontyForm::square(&self.inner),
+        }
     }
 
     /// Compute field inversion: `1 / self`.
@@ -367,32 +371,8 @@ where
     /// If `exp` is fixed, this operation is constant time. Note that `exp` will still be branched
     /// upon and should NOT be a secret.
     pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
-        let mut i = RHS_LIMBS - 1;
-
-        // Ignore "leading" zeros (in little endian)
-        while i > 0 && exp.as_words()[i] == 0 {
-            i -= 1;
-        }
-
-        let mut res = Self::ONE;
-
-        loop {
-            let mut j = Limb::BITS;
-
-            while j > 0 {
-                j -= 1;
-                res = res.square();
-
-                if ((exp.as_words()[i] >> j) & 1) == 1 {
-                    res = res.multiply(self);
-                }
-            }
-
-            if i == 0 {
-                return res;
-            }
-
-            i -= 1;
+        Self {
+            inner: self.inner.pow_vartime(exp),
         }
     }
 
@@ -470,7 +450,7 @@ where
     type Repr = MontyFieldBytes<MOD, LIMBS>;
 
     const MODULUS: &'static str = MOD::MODULUS_HEX;
-    const NUM_BITS: u32 = MOD::PARAMS.modulus().as_ref().bits();
+    const NUM_BITS: u32 = MOD::PARAMS.modulus().as_ref().bits_vartime();
     const CAPACITY: u32 = Self::NUM_BITS - 1;
     const TWO_INV: Self = Self::from_u64(2).const_invert();
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u32(MOD::PRIME_PARAMS.generator().get());
