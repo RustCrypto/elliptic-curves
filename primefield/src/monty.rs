@@ -1043,14 +1043,14 @@ mod tests {
             doc: "BIGNP-256 field modulus"
         );
 
-        type BignElement = MontyFieldElement<BignParams, { U256::LIMBS }>;
+        type BignP256Element = MontyFieldElement<BignParams, { U256::LIMBS }>;
 
-        test_primefield!(BignElement, U256);
+        test_primefield!(BignP256Element, U256);
 
         #[test]
         fn byte_order() {
             // Verify LSB comes first in little-endian encoding
-            let value = BignElement::from_u64(0x0123456789ABCDEF);
+            let value = BignP256Element::from_u64(0x0123456789ABCDEF);
             let bytes = value.to_bytes();
 
             assert_eq!(bytes[0], 0xEF); // LSB
@@ -1061,9 +1061,9 @@ mod tests {
 
         #[test]
         fn roundtrip() {
-            let value = BignElement::from_u64(0x0123456789ABCDEF);
+            let value = BignP256Element::from_u64(0x0123456789ABCDEF);
             let bytes = value.to_bytes();
-            let recovered = BignElement::from_bytes(&bytes).unwrap();
+            let recovered = BignP256Element::from_bytes(&bytes).unwrap();
             assert_eq!(value, recovered);
         }
     }
