@@ -72,8 +72,9 @@ pub trait GroupDigest: MapToCurve {
 /// Computes the hash to curve routine.
 /// See [`GroupDigest::hash_from_bytes()`] for more details.
 ///
-/// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length * 2`.
-/// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
+/// For the `expand_message` call in the underlying [`hash_to_field`] routine,
+/// `len_in_bytes = C::Length * 2` (see [`MapToCurve::Length`]). This value must be
+/// less than `u16::MAX` or otherwise a compiler error will occur.
 ///
 /// # Errors
 ///
@@ -96,7 +97,8 @@ where
 /// Computes the encode to curve routine.
 /// See [`GroupDigest::encode_from_bytes()`] for more details.
 ///
-/// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
+/// For the `expand_message` call in the underlying [`hash_to_field`] routine,
+/// `len_in_bytes = C::Length` (see [`MapToCurve::Length`]).
 ///
 /// # Errors
 ///
@@ -119,8 +121,9 @@ where
 /// <https://www.rfc-editor.org/rfc/rfc9380.html#section-5-4>
 /// and returns a scalar.
 ///   
-/// For the `expand_message` call, `len_in_bytes = <Self::FieldElement as FromOkm>::Length`.
-/// This value must be less than `u16::MAX` or otherwise a compiler error will occur.
+/// For the `expand_message` call in the underlying [`hash_to_field`] routine,
+/// `len_in_bytes = L`. This value must be less than `u16::MAX` or otherwise a
+/// compiler error will occur.
 ///
 /// # Errors
 ///
