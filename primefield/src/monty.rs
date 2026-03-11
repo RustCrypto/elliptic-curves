@@ -1066,5 +1066,20 @@ mod tests {
             let recovered = BignP256Element::from_bytes(&bytes).unwrap();
             assert_eq!(value, recovered);
         }
+
+        #[test]
+        fn modulus_bits_constant() {
+            assert_eq!(BignP256Element::NUM_BITS, 256);
+        }
+
+        #[test]
+        fn s_constant() {
+            assert_eq!(BignP256Element::S, 1);
+        }
+
+        #[test]
+        fn computed_delta_constant() {
+            assert_eq!(BignP256Element::DELTA, BignP256Element::from_u64(4));
+        }
     }
 }

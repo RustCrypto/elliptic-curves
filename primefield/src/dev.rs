@@ -84,6 +84,7 @@ macro_rules! test_primefield {
 #[macro_export]
 macro_rules! test_primefield_constants {
     ($fe:tt, $uint:ident) => {
+        #[allow(unused_imports)]
         use $crate::{bigint::modular::Retrieve as _, ff::PrimeField as _};
 
         // TODO(tarcieri): support for fields with little endian-encoded modulus
