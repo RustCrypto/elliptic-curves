@@ -1000,7 +1000,7 @@ mod tests {
     // Example modulus: P-256 base field.
     // p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
     monty_field_params!(
-        name: FieldParams,
+        name: P256Params,
         modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
         uint: U256,
         byte_order: ByteOrder::BigEndian,
@@ -1008,8 +1008,7 @@ mod tests {
         doc: "P-256 field modulus"
     );
 
-    /// P-256 field element
-    type FieldElement = MontyFieldElement<FieldParams, { U256::LIMBS }>;
+    type FieldElement = MontyFieldElement<P256Params, { U256::LIMBS }>;
 
     test_primefield!(FieldElement, U256);
 
@@ -1028,28 +1027,44 @@ mod tests {
         assert_eq!(FieldElement::DELTA, FieldElement::from_u64(36));
     }
 
-    #[test]
-    fn little_endian_encoding() {
-        // Regression test for little-endian byte order fix
-        // Tests that from_bytes and to_bytes correctly handle little-endian encoding
-        // https://github.com/RustCrypto/elliptic-curves/pull/1685
+    // Regression test for little-endian byte order fix
+    // Verifies that from_bytes/to_bytes correctly handle little-endian encoding
+    mod little_endian {
+        use super::*;
+
+        // Example modulus: BIGNP-256 base field.
+        // p = 2^{256} - 189
         monty_field_params!(
-            name: LEParams,
-            modulus: "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff",
+            name: BignParams,
+            modulus: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF43",
             uint: U256,
             byte_order: ByteOrder::LittleEndian,
-            multiplicative_generator: 6,
-            doc: "P-256 field with little-endian"
+            multiplicative_generator: 2,
+            doc: "BIGNP-256 field modulus"
         );
 
-        type LEElement = MontyFieldElement<LEParams, { U256::LIMBS }>;
+        type BignElement = MontyFieldElement<BignParams, { U256::LIMBS }>;
 
-        let value = LEElement::from_u64(0x0123456789ABCDEF);
-        let bytes = value.to_bytes();
-        assert_eq!(bytes[0], 0xEF); // LSB
-        assert_eq!(bytes[1], 0xCD);
+        test_primefield!(BignElement, U256);
 
-        let recovered = LEElement::from_bytes(&bytes).unwrap();
-        assert_eq!(value, recovered);
+        #[test]
+        fn byte_order() {
+            // Verify LSB comes first in little-endian encoding
+            let value = BignElement::from_u64(0x0123456789ABCDEF);
+            let bytes = value.to_bytes();
+
+            assert_eq!(bytes[0], 0xEF); // LSB
+            assert_eq!(bytes[1], 0xCD);
+            assert_eq!(bytes[2], 0xAB);
+            assert_eq!(bytes[3], 0x89);
+        }
+
+        #[test]
+        fn roundtrip() {
+            let value = BignElement::from_u64(0x0123456789ABCDEF);
+            let bytes = value.to_bytes();
+            let recovered = BignElement::from_bytes(&bytes).unwrap();
+            assert_eq!(value, recovered);
+        }
     }
 }
