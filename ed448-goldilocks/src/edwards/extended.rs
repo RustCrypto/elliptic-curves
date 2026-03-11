@@ -342,16 +342,19 @@ impl EdwardsPoint {
     };
 
     /// Convert this point to [`MontgomeryPoint`]
+    // See https://www.rfc-editor.org/rfc/rfc7748#section-4.2 4-isogeny maps
     pub fn to_montgomery(&self) -> MontgomeryPoint {
-        // u = y^2 * [(1-dy^2)/(1-y^2)]
+        // Affine map:
+        // (x, y) = (x/z, y/z)
+        // Edwards to montgomery:
+        // u = y^2/x^2
 
-        let affine = self.to_affine();
+        // Simplified to:
+        // u = (y/z)^2/(x/z)^2
+        // u = ((y/z)/(x/z))^2
+        // u = (y/x)^2
 
-        let yy = affine.y.square();
-        let dyy = FieldElement::EDWARDS_D * yy;
-
-        let u = yy * (FieldElement::ONE - dyy) * (FieldElement::ONE - yy).invert();
-
+        let u = (self.Y * self.X.invert()).square();
         MontgomeryPoint(u.to_bytes())
     }
 
