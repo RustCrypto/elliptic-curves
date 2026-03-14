@@ -98,7 +98,7 @@ where
     D: OutputSizeUser,
 {
     /// Convert lifetime to 'static.
-    /// 
+    ///
     /// Note: copying may occur.
     #[cfg(feature = "alloc")]
     pub fn cats_to_static(self) -> Cipher<'static, C, D> {
