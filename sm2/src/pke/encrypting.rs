@@ -1,28 +1,18 @@
+use crate::{AffinePoint, PublicKey};
+#[cfg(feature = "alloc")]
+use alloc::{borrow::Cow, boxed::Box, vec, vec::Vec};
 use core::fmt::Debug;
-
-use crate::{
-    AffinePoint, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, UncompressedPoint,
-    arithmetic::field::FieldElement,
-    pke::{kdf, vec},
-};
-
-use alloc::{borrow::ToOwned, boxed::Box, vec::Vec};
+#[cfg(feature = "alloc")]
+use elliptic_curve::pkcs8::der::Encode;
 use elliptic_curve::{
-    Error, Generate, Group, Result,
-    bigint::{U256, Uint},
+    CurveArithmetic, CurveGroup, Error, Generate, Group, NonZeroScalar, PrimeField, Result,
     ops::Reduce,
-    pkcs8::der::Encode,
     rand_core::TryCryptoRng,
-    sec1::ToSec1Point,
+    sec1::{Coordinates, ModulusSize, ToSec1Point},
 };
+use sm3::digest::{Digest, FixedOutputReset, Output, Update};
 
-use primeorder::PrimeField;
-use sm3::{
-    Sm3,
-    digest::{Digest, DynDigest},
-};
-
-use super::{Cipher, DEFAULT_MODE, Mode};
+use super::{Cipher, Mode};
 /// Represents an encryption key used for encrypting messages using elliptic curve cryptography.
 #[derive(Clone, Debug)]
 pub struct EncryptingKey {
@@ -33,7 +23,7 @@ pub struct EncryptingKey {
 impl EncryptingKey {
     /// Initialize [`EncryptingKey`] from PublicKey with the default encryption mode (`C1C3C2`).
     pub fn new(public_key: PublicKey) -> Self {
-        Self::new_with_mode(public_key, DEFAULT_MODE)
+        Self::new_with_mode(public_key, Default::default())
     }
 
     /// Initialize [`EncryptingKey`] from PublicKey and set Encryption mode
@@ -67,6 +57,7 @@ impl EncryptingKey {
     /// (page 10).
     ///
     /// <http://www.secg.org/sec1-v2.pdf>
+    #[cfg(feature = "alloc")]
     pub fn to_sec1_bytes(&self) -> Box<[u8]> {
         self.public_key.to_sec1_bytes()
     }
@@ -74,65 +65,93 @@ impl EncryptingKey {
     /// Encrypts a message using the encryption key.
     ///
     /// This method calculates the digest using the `Sm3` hash function and then performs encryption.
-    pub fn encrypt<R: TryCryptoRng + ?Sized>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>> {
-        self.encrypt_digest::<R, Sm3>(rng, msg)
+    #[cfg(feature = "alloc")]
+    pub fn encrypt<R: TryCryptoRng>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>> {
+        self.encrypt_digest::<R, sm3::Sm3>(rng, msg)
     }
 
     /// Encrypts a message and returns the result in ASN.1 format.
     ///
     /// This method calculates the digest using the `Sm3` hash function and performs encryption,
     /// then encodes the result in ASN.1 format.
-    pub fn encrypt_der<R: TryCryptoRng + ?Sized>(
-        &self,
-        rng: &mut R,
-        msg: &[u8],
-    ) -> Result<Vec<u8>> {
-        self.encrypt_der_digest::<R, Sm3>(rng, msg)
+    #[cfg(feature = "alloc")]
+    pub fn encrypt_der<R: TryCryptoRng>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>> {
+        self.encrypt_der_digest::<R, sm3::Sm3>(rng, msg)
     }
 
     /// Encrypts a message using a specified digest algorithm.
-    pub fn encrypt_digest<R: TryCryptoRng + ?Sized, D>(
-        &self,
-        rng: &mut R,
-        msg: &[u8],
-    ) -> Result<Vec<u8>>
+    #[cfg(feature = "alloc")]
+    pub fn encrypt_digest<R: TryCryptoRng, D>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + FixedOutputReset,
     {
-        let mut digest = D::new();
-        encrypt(rng, &self.public_key, self.mode, &mut digest, msg)
+        let cipher = self.encrypt_cipher::<R, D>(rng, msg)?;
+        Ok(cipher.to_vec(self.mode, true))
     }
 
     /// Encrypts a message using a specified digest algorithm and returns the result in ASN.1 format.
-    pub fn encrypt_der_digest<R: TryCryptoRng + ?Sized, D>(
+    #[cfg(feature = "alloc")]
+    pub fn encrypt_der_digest<R: TryCryptoRng, D>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>>
+    where
+        D: Digest + FixedOutputReset,
+    {
+        let cipher = self.encrypt_cipher::<R, D>(rng, msg)?;
+
+        Ok(cipher
+            .to_der()
+            .map_err(elliptic_curve::pkcs8::Error::from)?)
+    }
+
+    /// Encrypts a message using a specified digest algorithm and returns a Cipher object.
+    #[cfg(feature = "alloc")]
+    pub fn encrypt_cipher<R, D>(
         &self,
         rng: &mut R,
         msg: &[u8],
-    ) -> Result<Vec<u8>>
+    ) -> Result<Cipher<'static, crate::Sm2, D>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + FixedOutputReset,
+        R: TryCryptoRng,
     {
-        let mut digest = D::new();
-        let cipher = encrypt(rng, &self.public_key, self.mode, &mut digest, msg)?;
-        let digest_size = digest.output_size();
-        let (_, cipher) = cipher.split_at(1);
-        let (x, cipher) = cipher.split_at(32);
-        let (y, cipher) = cipher.split_at(32);
-        let (digest, cipher) = match self.mode {
-            Mode::C1C2C3 => {
-                let (cipher, digest) = cipher.split_at(cipher.len() - digest_size);
-                (digest, cipher)
-            }
-            Mode::C1C3C2 => cipher.split_at(digest_size),
-        };
+        use alloc::borrow::Cow;
+
+        let mut c2_buf = vec![0; msg.len()];
+        let Cipher { c1, c2: _, c3 } =
+            self.encrypt_cipher_with_buf::<R, D>(rng, msg, &mut c2_buf)?;
+
         Ok(Cipher {
-            x: Uint::from_be_slice(x),
-            y: Uint::from_be_slice(y),
-            digest,
-            cipher,
+            c1,
+            c2: Cow::Owned(c2_buf),
+            c3,
+        })
+    }
+
+    /// Encrypts a message using a specified digest algorithm,
+    /// storing the ciphertext in the provided buffer and returning a `Cipher` that references the buffer.
+    pub fn encrypt_cipher_with_buf<'a, R, D>(
+        &self,
+        rng: &mut R,
+        msg: &[u8],
+        buf: &'a mut [u8],
+    ) -> Result<Cipher<'a, crate::Sm2, D>>
+    where
+        D: Digest + FixedOutputReset,
+        R: TryCryptoRng,
+    {
+        if buf.len() < msg.len() {
+            return Err(Error);
         }
-        .to_der()
-        .map_err(elliptic_curve::pkcs8::Error::from)?)
+
+        let mut c1 = AffinePoint::default();
+        let mut c3 = Output::<D>::default();
+        let size = encrypt::<crate::Sm2, R, D>(self.as_affine(), rng, msg, &mut c1, buf, &mut c3)?;
+
+        #[cfg(feature = "alloc")]
+        let c2 = Cow::Borrowed(&buf[..size]);
+        #[cfg(not(feature = "alloc"))]
+        let c2 = &buf[..size];
+
+        Ok(Cipher { c1, c2, c3 })
     }
 }
 
@@ -143,26 +162,38 @@ impl From<PublicKey> for EncryptingKey {
 }
 
 /// Encrypts a message using the specified public key, mode, and digest algorithm.
-fn encrypt<R: TryCryptoRng + ?Sized>(
+fn encrypt<C, R, D>(
+    affine_point: &C::AffinePoint,
     rng: &mut R,
-    public_key: &PublicKey,
-    mode: Mode,
-    digest: &mut dyn DynDigest,
     msg: &[u8],
-) -> Result<Vec<u8>> {
-    let mut c1 = [0; size_of::<UncompressedPoint>()];
-    let mut c2 = msg.to_owned();
-    let mut hpb: AffinePoint;
+    c1_out: &mut C::AffinePoint,
+    c2_out: &mut [u8],
+    c3_out: &mut Output<D>,
+) -> Result<usize>
+where
+    C: CurveArithmetic,
+    R: TryCryptoRng,
+    D: FixedOutputReset + Digest + Update,
+    C::AffinePoint: ToSec1Point<C>,
+    C::FieldBytesSize: ModulusSize,
+{
+    if c2_out.len() < msg.len() {
+        return Err(Error);
+    }
+    let c2_out = &mut c2_out[..msg.len()];
+
+    let mut digest = D::new();
+    let mut hpb: C::AffinePoint;
     loop {
         // A1: generate a random number 𝑘 ∈ [1, 𝑛 − 1] with the random number generator
-        let k = NonZeroScalar::try_generate_from_rng(rng).map_err(|_| Error)?;
+        let k = NonZeroScalar::<C>::try_generate_from_rng(rng).map_err(|_| Error)?;
 
         // A2: compute point 𝐶1 = [𝑘]𝐺 = (𝑥1, 𝑦1)
-        let kg = ProjectivePoint::mul_by_generator(&k).to_affine();
+        let kg: C::AffinePoint = C::ProjectivePoint::mul_by_generator(&k).into();
 
         // A3: compute point 𝑆 = [ℎ]𝑃𝐵 of the elliptic curve
-        let pb_point = public_key.as_affine();
-        let s = *pb_point * Scalar::reduce(&U256::from_u32(FieldElement::S));
+        let scalar: C::Scalar = Reduce::<C::Uint>::reduce(&C::Uint::from(C::Scalar::S));
+        let s: C::ProjectivePoint = C::ProjectivePoint::from(*affine_point) * scalar;
         if s.is_identity().into() {
             return Err(Error);
         }
@@ -172,28 +203,27 @@ fn encrypt<R: TryCryptoRng + ?Sized>(
 
         // A5: compute 𝑡 = 𝐾𝐷𝐹(𝑥2||𝑦2, 𝑘𝑙𝑒𝑛)
         // A6: compute 𝐶2 = 𝑀 ⊕ t
-        kdf(digest, hpb, &mut c2)?;
+        crate::pke::kdf::<D, C>(&mut digest, hpb, msg, c2_out)?;
 
         // // If 𝑡 is an all-zero bit string, go to A1.
         // if all of t are 0, xor(c2) == c2
-        if c2.iter().zip(msg).any(|(pre, cur)| pre != cur) {
-            let uncompress_kg = kg.to_sec1_point(false);
-            c1.copy_from_slice(uncompress_kg.as_bytes());
+        if c2_out.iter().zip(msg).any(|(pre, cur)| pre != cur) {
+            *c1_out = kg;
             break;
         }
     }
     let encode_point = hpb.to_sec1_point(false);
+    let (x, y) = match encode_point.coordinates() {
+        Coordinates::Uncompressed { x, y } => (x, y),
+        _ => unreachable!(),
+    };
 
     // A7: compute 𝐶3 = 𝐻𝑎𝑠ℎ(𝑥2||𝑀||𝑦2)
-    let mut c3 = vec![0; digest.output_size()];
-    digest.update(encode_point.x().ok_or(Error)?);
-    digest.update(msg);
-    digest.update(encode_point.y().ok_or(Error)?);
-    digest.finalize_into_reset(&mut c3).map_err(|_e| Error)?;
+    Digest::reset(&mut digest);
+    Digest::update(&mut digest, x);
+    Digest::update(&mut digest, msg);
+    Digest::update(&mut digest, y);
+    Digest::finalize_into_reset(&mut digest, c3_out);
 
-    // A8: output the ciphertext 𝐶 = 𝐶1||𝐶2||𝐶3.
-    Ok(match mode {
-        Mode::C1C2C3 => [c1.as_slice(), &c2, &c3].concat(),
-        Mode::C1C3C2 => [c1.as_slice(), &c3, &c2].concat(),
-    })
+    Ok(c2_out.len())
 }

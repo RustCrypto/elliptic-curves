@@ -40,24 +40,21 @@
 //! # }
 //!  ```
 
-use core::cmp::min;
-
-use crate::AffinePoint;
-
 #[cfg(feature = "alloc")]
-use alloc::vec;
+use alloc::{borrow::Cow, vec, vec::Vec};
 
-use crate::FieldBytes;
 use elliptic_curve::{
-    Result,
-    bigint::{ArrayEncoding, U256, Uint},
+    CurveArithmetic, Error, Group, PrimeField, Result,
+    array::{Array, typenum::Unsigned},
+    ops::Reduce,
     pkcs8::der::{
         Decode, DecodeValue, Encode, EncodeValue, Length, Reader, Sequence, Tag, Writer,
-        asn1::OctetStringRef, asn1::UintRef,
+        asn1::{OctetStringRef, UintRef},
     },
-    sec1::ToSec1Point,
+    sec1::{self, Coordinates, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point},
 };
-use sm3::digest::DynDigest;
+
+use sm3::digest::{FixedOutputReset, Output, OutputSizeUser, Update};
 
 #[cfg(feature = "arithmetic")]
 mod decrypting;
@@ -68,110 +65,287 @@ mod encrypting;
 pub use self::{decrypting::DecryptingKey, encrypting::EncryptingKey};
 
 /// Modes for the cipher encoding/decoding.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum Mode {
     /// old mode
     C1C2C3,
     /// new mode
+    /// The standard data layout used for SM2 encryption/decryption.
+    /// C1C3C2 is the default per modern specifications.
+    #[default]
     C1C3C2,
 }
 
-/// The standard data layout used for SM2 encryption/decryption.
-/// C1C3C2 is the default per modern specifications.
-const DEFAULT_MODE: Mode = Mode::C1C3C2;
 /// Represents a cipher structure containing encryption-related data (asn.1 format).
 ///
 /// The `Cipher` structure includes the coordinates of the elliptic curve point (`x`, `y`),
 /// the digest of the message, and the encrypted cipher text.
-pub struct Cipher<'a> {
-    x: U256,
-    y: U256,
-    digest: &'a [u8],
-    cipher: &'a [u8],
+#[derive(Debug)]
+pub struct Cipher<'a, C: CurveArithmetic = crate::Sm2, D: OutputSizeUser = sm3::Sm3> {
+    c1: C::AffinePoint,
+    #[cfg(feature = "alloc")]
+    c2: Cow<'a, [u8]>,
+    #[cfg(not(feature = "alloc"))]
+    c2: &'a [u8],
+    c3: Output<D>,
 }
 
-impl<'a> Sequence<'a> for Cipher<'a> {}
+impl<'a, C, D> Cipher<'a, C, D>
+where
+    C: CurveArithmetic,
+    C::AffinePoint: FromSec1Point<C> + ToSec1Point<C>,
+    C::FieldBytesSize: ModulusSize,
+    D: OutputSizeUser,
+{
+    /// Decode from slice
+    pub fn from_slice(cipher: &'a [u8], mode: Mode) -> Result<Self> {
+        let tag = sec1::Tag::from_u8(cipher.first().cloned().ok_or(Error)?)?;
+        let c1_len = tag.message_len(C::FieldBytesSize::USIZE);
+        let digest_size = D::output_size();
 
-impl EncodeValue for Cipher<'_> {
+        if cipher.len() < c1_len + digest_size {
+            return Err(Error);
+        }
+
+        // B1: get 𝐶1 from 𝐶
+        let (c1, c) = cipher.split_at(c1_len);
+        // verify that point c1 satisfies the elliptic curve
+        let encoded_c1 = Sec1Point::<C>::from_bytes(c1)?;
+        let c1: C::AffinePoint =
+            Option::from(FromSec1Point::from_sec1_point(&encoded_c1)).ok_or(Error)?;
+        // B2: compute point 𝑆 = [ℎ]𝐶1
+        let scalar: C::Scalar = Reduce::<C::Uint>::reduce(&C::Uint::from(C::Scalar::S));
+
+        let s: C::ProjectivePoint = C::ProjectivePoint::from(c1) * scalar;
+        if s.is_identity().into() {
+            return Err(Error);
+        }
+
+        let (c2, c3_buf) = match mode {
+            Mode::C1C3C2 => {
+                let (c3, c2) = c.split_at(digest_size);
+                (c2, c3)
+            }
+            Mode::C1C2C3 => c.split_at(c.len() - digest_size),
+        };
+
+        let mut c3 = Output::<D>::default();
+        c3.clone_from_slice(c3_buf);
+
+        #[cfg(feature = "alloc")]
+        let c2 = Cow::Borrowed(c2);
+
+        Ok(Self { c1, c2, c3 })
+    }
+
+    fn len(&self, compressed: bool) -> usize {
+        let point = self.c1.to_sec1_point(compressed);
+        point.len() + self.c2.len() + self.c3.len()
+    }
+
+    /// Encode to Vec
+    #[cfg(feature = "alloc")]
+    pub fn to_vec(&self, mode: Mode, compressed: bool) -> Vec<u8> {
+        let mut result = vec![0; self.len(compressed)];
+        // # Security
+        // * Currently, only length mismatch errors can be ignored.
+        self.to_slice(mode, &mut result, compressed)
+            .expect("encode to slice");
+        result
+    }
+
+    fn to_slice(&self, mode: Mode, buf: &mut [u8], compressed: bool) -> Result<usize> {
+        let point = self.c1.to_sec1_point(compressed);
+        let len = self.len(compressed);
+        if buf.len() < len {
+            return Err(Error);
+        }
+        match mode {
+            Mode::C1C2C3 => {
+                buf[..point.len()].clone_from_slice(point.as_bytes());
+                let buf = &mut buf[point.len()..];
+
+                buf[..self.c2.len()].clone_from_slice(self.c2.as_ref());
+                let buf = &mut buf[self.c2.len()..];
+
+                buf.clone_from_slice(&self.c3);
+            }
+            Mode::C1C3C2 => {
+                buf[..point.len()].clone_from_slice(point.as_bytes());
+                let buf = &mut buf[point.len()..];
+
+                buf[..self.c3.len()].clone_from_slice(&self.c3);
+                let buf = &mut buf[self.c3.len()..];
+
+                buf.clone_from_slice(self.c2.as_ref());
+            }
+        }
+
+        Ok(len)
+    }
+
+    /// Get C1
+    pub fn c1(&self) -> &C::AffinePoint {
+        &self.c1
+    }
+    /// Get C2
+    pub fn c2(&self) -> &[u8] {
+        #[cfg(feature = "alloc")]
+        return &self.c2;
+        #[cfg(not(feature = "alloc"))]
+        return self.c2;
+    }
+    /// Get C3
+    pub fn c3(&self) -> &Output<D> {
+        &self.c3
+    }
+}
+
+impl<'a, C, D> Sequence<'a> for Cipher<'a, C, D>
+where
+    C: CurveArithmetic,
+    D: OutputSizeUser,
+    C::AffinePoint: FromSec1Point<C> + ToSec1Point<C>,
+    C::FieldBytesSize: ModulusSize,
+{
+}
+
+impl<C, D> EncodeValue for Cipher<'_, C, D>
+where
+    C: CurveArithmetic,
+    D: OutputSizeUser,
+    C::AffinePoint: ToSec1Point<C>,
+    C::FieldBytesSize: ModulusSize,
+{
     fn value_len(&self) -> der::Result<Length> {
-        UintRef::new(&self.x.to_be_bytes())?.encoded_len()?
-            + UintRef::new(&self.y.to_be_bytes())?.encoded_len()?
-            + OctetStringRef::new(self.digest)?.encoded_len()?
-            + OctetStringRef::new(self.cipher)?.encoded_len()?
+        #[cfg(feature = "alloc")]
+        let c2 = self.c2.as_ref();
+        #[cfg(not(feature = "alloc"))]
+        let c2 = self.c2;
+
+        let point = self.c1.to_sec1_point(false);
+        let (x, y) = match point.coordinates() {
+            Coordinates::Uncompressed { x, y } => (x, y),
+            _ => unreachable!(),
+        };
+        UintRef::new(x)?.encoded_len()?
+            + UintRef::new(y)?.encoded_len()?
+            + OctetStringRef::new(&self.c3)?.encoded_len()?
+            + OctetStringRef::new(c2)?.encoded_len()?
     }
 
     fn encode_value(&self, writer: &mut impl Writer) -> der::Result<()> {
-        UintRef::new(&self.x.to_be_bytes())?.encode(writer)?;
-        UintRef::new(&self.y.to_be_bytes())?.encode(writer)?;
-        OctetStringRef::new(self.digest)?.encode(writer)?;
-        OctetStringRef::new(self.cipher)?.encode(writer)?;
+        #[cfg(feature = "alloc")]
+        let c2 = self.c2.as_ref();
+        #[cfg(not(feature = "alloc"))]
+        let c2 = self.c2;
+
+        let point = self.c1.to_sec1_point(false);
+        let (x, y) = match point.coordinates() {
+            Coordinates::Uncompressed { x, y } => (x, y),
+            _ => unreachable!(),
+        };
+        UintRef::new(x)?.encode(writer)?;
+        UintRef::new(y)?.encode(writer)?;
+        OctetStringRef::new(&self.c3)?.encode(writer)?;
+
+        OctetStringRef::new(c2)?.encode(writer)?;
         Ok(())
     }
 }
 
-impl<'a> DecodeValue<'a> for Cipher<'a> {
+#[cfg(feature = "pkcs8")]
+impl<'a, C, D> DecodeValue<'a> for Cipher<'a, C, D>
+where
+    C: CurveArithmetic,
+    D: OutputSizeUser,
+    C::AffinePoint: FromSec1Point<C>,
+    C::FieldBytesSize: ModulusSize,
+{
     type Error = der::Error;
-
     fn decode_value<R: Reader<'a>>(
         decoder: &mut R,
         header: der::Header,
     ) -> core::result::Result<Self, Self::Error> {
         decoder.read_nested(header.length(), |nr| {
+            use elliptic_curve::sec1::Sec1Point;
+
             let x = UintRef::decode(nr)?.as_bytes();
             let y = UintRef::decode(nr)?.as_bytes();
-            let digest = <&'a OctetStringRef>::decode(nr)?.into();
-            let cipher = <&'a OctetStringRef>::decode(nr)?.into();
-            Ok(Cipher {
-                x: Uint::from_be_byte_array(zero_pad_byte_slice(x)?),
-                y: Uint::from_be_byte_array(zero_pad_byte_slice(y)?),
-                digest,
-                cipher,
-            })
+            let digest = <&OctetStringRef>::decode(nr)?.as_bytes();
+
+            if digest.len() != D::OutputSize::USIZE {
+                return Err(Tag::OctetString.length_error().into());
+            }
+            let cipher = <&OctetStringRef>::decode(nr)?.as_bytes();
+
+            let size = C::FieldBytesSize::USIZE;
+
+            let num_zeroes = size
+                .checked_sub(x.len())
+                .ok_or_else(|| Tag::Integer.length_error())?;
+            let mut x_arr = Array::default();
+            x_arr[num_zeroes..].clone_from_slice(x);
+
+            let num_zeroes = size
+                .checked_sub(y.len())
+                .ok_or_else(|| Tag::Integer.length_error())?;
+            let mut y_arr = Array::default();
+            y_arr[num_zeroes..].clone_from_slice(y);
+
+            let point = Sec1Point::<C>::from_affine_coordinates(&x_arr, &y_arr, false);
+            let c1: C::AffinePoint = Option::from(C::AffinePoint::from_sec1_point(&point))
+                .ok_or_else(|| {
+                    der::Error::new(
+                        der::ErrorKind::Value { tag: Tag::Integer },
+                        Length::new(C::FieldBytesSize::U32 * 2),
+                    )
+                })?;
+
+            #[cfg(feature = "alloc")]
+            let c2 = Cow::Borrowed(cipher);
+            #[cfg(not(feature = "alloc"))]
+            let c2 = cipher;
+
+            let mut c3 = Output::<D>::default();
+            c3.clone_from_slice(digest);
+
+            Ok(Cipher { c1, c2, c3 })
         })
     }
 }
 
 /// Performs key derivation using a hash function and elliptic curve point.
-fn kdf(hasher: &mut dyn DynDigest, kpb: AffinePoint, c2: &mut [u8]) -> Result<()> {
-    let klen = c2.len();
-    let mut ct: i32 = 0x00000001;
-    let mut offset = 0;
-    let digest_size = hasher.output_size();
-    let mut ha = vec![0u8; digest_size];
+fn kdf<D, C>(hasher: &mut D, kpb: C::AffinePoint, msg: &[u8], c2_out: &mut [u8]) -> Result<()>
+where
+    D: Update + FixedOutputReset,
+    C: CurveArithmetic,
+    C::FieldBytesSize: ModulusSize,
+    C::AffinePoint: ToSec1Point<C>,
+{
+    let digest_size = D::output_size();
+    let mut ha = Output::<D>::default();
     let encode_point = kpb.to_sec1_point(false);
+    let (x, y) = match encode_point.coordinates() {
+        Coordinates::Uncompressed { x, y } => (x, y),
+        _ => unreachable!(),
+    };
 
-    while offset < klen {
-        hasher.update(encode_point.x().ok_or(elliptic_curve::Error)?);
-        hasher.update(encode_point.y().ok_or(elliptic_curve::Error)?);
-        hasher.update(&ct.to_be_bytes());
+    hasher.reset();
 
-        hasher
-            .finalize_into_reset(&mut ha)
-            .map_err(|_e| elliptic_curve::Error)?;
+    msg.chunks(digest_size)
+        .zip(c2_out.chunks_mut(digest_size))
+        .map(|(input, output)| input.iter().zip(output))
+        .enumerate()
+        .try_for_each(|(index, iter)| {
+            hasher.update(x);
+            hasher.update(y);
+            hasher.update(&(i32::try_from(index + 1).map_err(|_| Error)?).to_be_bytes());
+            hasher.finalize_into_reset(&mut ha);
 
-        let xor_len = min(digest_size, klen - offset);
-        xor(c2, &ha, offset, xor_len);
-        offset += xor_len;
-        ct += 1;
-    }
-    Ok(())
-}
+            iter.zip(&ha)
+                .for_each(|((input, output), ha)| *output = input ^ ha);
 
-/// XORs a portion of the buffer `c2` with a hash value.
-fn xor(c2: &mut [u8], ha: &[u8], offset: usize, xor_len: usize) {
-    for i in 0..xor_len {
-        c2[offset + i] ^= ha[i];
-    }
-}
-
-/// Converts a byte slice to a fixed-size array, padding with leading zeroes if necessary.
-pub(crate) fn zero_pad_byte_slice(bytes: &[u8]) -> der::Result<FieldBytes> {
-    let num_zeroes = size_of::<FieldBytes>()
-        .checked_sub(bytes.len())
-        .ok_or_else(|| Tag::Integer.length_error())?;
-
-    // Copy input into `N`-sized output buffer with leading zeroes
-    let mut output = FieldBytes::default();
-    output[num_zeroes..].copy_from_slice(bytes);
-    Ok(output)
+            Ok(())
+        })
 }
