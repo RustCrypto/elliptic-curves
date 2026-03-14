@@ -97,6 +97,19 @@ where
     C::FieldBytesSize: ModulusSize,
     D: OutputSizeUser,
 {
+    /// Convert lifetime to 'static.
+    /// 
+    /// Note: copying may occur.
+    #[cfg(feature = "alloc")]
+    pub fn cats_to_static(self) -> Cipher<'static, C, D> {
+        let Cipher { c1, c2, c3 } = self;
+        let c2 = match c2 {
+            Cow::Borrowed(v) => Cow::Owned(v.to_vec()),
+            Cow::Owned(v) => Cow::Owned(v),
+        };
+        Cipher { c1, c2, c3 }
+    }
+
     /// Decode from slice
     pub fn from_slice(cipher: &'a [u8], mode: Mode) -> Result<Self> {
         let tag = sec1::Tag::from_u8(cipher.first().cloned().ok_or(Error)?)?;
