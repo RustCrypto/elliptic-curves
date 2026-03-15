@@ -151,9 +151,14 @@ where
         Ok(Self { c1, c2, c3 })
     }
 
-    fn len(&self, compressed: bool) -> usize {
-        let point = self.c1.to_sec1_point(compressed);
-        point.len() + self.c2.len() + self.c3.len()
+    /// Length after conversion to standard ciphertext format
+    pub fn len(&self, compressed: bool) -> usize {
+        let tag = if compressed {
+            sec1::Tag::Compact
+        } else {
+            sec1::Tag::Uncompressed
+        };
+        tag.message_len(C::FieldBytesSize::USIZE) + self.c2.len() + self.c3.len()
     }
 
     /// Encode to Vec
@@ -167,7 +172,8 @@ where
         result
     }
 
-    fn to_slice(&self, mode: Mode, buf: &mut [u8], compressed: bool) -> Result<usize> {
+    /// Encode to slice
+    pub fn to_slice(&self, mode: Mode, buf: &mut [u8], compressed: bool) -> Result<usize> {
         let point = self.c1.to_sec1_point(compressed);
         let len = self.len(compressed);
         if buf.len() < len {
