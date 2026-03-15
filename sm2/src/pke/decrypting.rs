@@ -1,9 +1,10 @@
 #[cfg(feature = "alloc")]
 use alloc::{vec, vec::Vec};
 use core::fmt::{self, Debug};
+#[cfg(all(feature = "alloc", feature = "der"))]
+use der::Decode;
 use elliptic_curve::{
     CurveArithmetic, CurveGroup, Error, Result,
-    pkcs8::der::Decode,
     sec1::{Coordinates, ModulusSize, ToSec1Point},
     subtle::{Choice, ConstantTimeEq},
 };
@@ -19,6 +20,7 @@ use crate::{
 pub struct DecryptingKey {
     secret_scalar: NonZeroScalar,
     encrypting_key: EncryptingKey,
+    #[allow(unused)]
     mode: Mode,
 }
 
@@ -95,13 +97,13 @@ impl DecryptingKey {
     }
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the default digest algorithm (`Sm3`).
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "der"))]
     pub fn decrypt_der(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
         self.decrypt_der_digest::<sm3::Sm3>(ciphertext)
     }
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the specified digest algorithm.
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "der"))]
     pub fn decrypt_der_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
     where
         D: Digest + FixedOutputReset,

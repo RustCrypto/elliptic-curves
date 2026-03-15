@@ -2,8 +2,8 @@ use crate::{AffinePoint, PublicKey};
 #[cfg(feature = "alloc")]
 use alloc::{borrow::Cow, boxed::Box, vec, vec::Vec};
 use core::fmt::Debug;
-#[cfg(feature = "alloc")]
-use elliptic_curve::pkcs8::der::Encode;
+#[cfg(all(feature = "alloc", feature = "der"))]
+use der::Encode;
 use elliptic_curve::{
     CurveArithmetic, CurveGroup, Error, Generate, Group, NonZeroScalar, PrimeField, Result,
     ops::Reduce,
@@ -17,6 +17,7 @@ use super::{Cipher, Mode};
 #[derive(Clone, Debug)]
 pub struct EncryptingKey {
     public_key: PublicKey,
+    #[allow(unused)]
     mode: Mode,
 }
 
@@ -74,7 +75,7 @@ impl EncryptingKey {
     ///
     /// This method calculates the digest using the `Sm3` hash function and performs encryption,
     /// then encodes the result in ASN.1 format.
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "der"))]
     pub fn encrypt_der<R: TryCryptoRng>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>> {
         self.encrypt_der_digest::<R, sm3::Sm3>(rng, msg)
     }
@@ -90,7 +91,7 @@ impl EncryptingKey {
     }
 
     /// Encrypts a message using a specified digest algorithm and returns the result in ASN.1 format.
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "der"))]
     pub fn encrypt_der_digest<R: TryCryptoRng, D>(&self, rng: &mut R, msg: &[u8]) -> Result<Vec<u8>>
     where
         D: Digest + FixedOutputReset,

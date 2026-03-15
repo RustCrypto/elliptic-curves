@@ -35,6 +35,7 @@ fn decrypt_verify() {
 }
 
 #[test]
+#[cfg(feature = "der")]
 fn decrypt_der_verify() {
     let dk = DecryptingKey::new_with_mode(
         NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8]).unwrap(),
@@ -67,6 +68,7 @@ prop_compose! {
 
 proptest! {
     #[test]
+    #[cfg(feature = "der")]
     fn encrypt_and_decrypt_der(dk in decrypting_key()) {
         let ek = dk.encrypting_key();
         let cipher_bytes = ek.encrypt_der(&mut SysRng, MSG).unwrap();

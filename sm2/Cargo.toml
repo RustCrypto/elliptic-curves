@@ -46,7 +46,7 @@ arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 bits = ["arithmetic", "elliptic-curve/bits"]
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]
 getrandom = ["elliptic-curve/getrandom"]
-pke = ["arithmetic", "dep:sm3", "pkcs8"]
+pke = ["arithmetic", "dep:sm3"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["elliptic-curve/pkcs8", "der"]
 serde = ["elliptic-curve/serde", "primeorder?/serde", "serdect"]
@@ -78,5 +78,5 @@ all-features = true
 level = "warn"
 check-cfg = [
     'cfg(cpubits, values("16", "32", "64"))',
-    'cfg(sm2_backend, values("bignum", "fiat"))' # default: "fiat"
+    'cfg(sm2_backend, values("bignum", "fiat"))', # default: "fiat"
 ]

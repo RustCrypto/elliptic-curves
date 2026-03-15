@@ -8,8 +8,14 @@
 //! It is initialized with a `SecretKey` or a non-zero scalar value and can decrypt ciphertexts
 //! using the specified decryption mode.
 //!
-#![cfg_attr(all(feature = "pke", feature = "getrandom"), doc = "```")]
-#![cfg_attr(not(all(feature = "pke", feature = "getrandom")), doc = "```ignore")]
+#![cfg_attr(
+    all(feature = "pke", feature = "getrandom", feature = "der"),
+    doc = "```"
+)]
+#![cfg_attr(
+    not(all(feature = "pke", feature = "getrandom", feature = "der")),
+    doc = "```ignore"
+)]
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! // NOTE: requires the `pke` and `getrandom` crate features are enabled
 //! use sm2::{
@@ -43,17 +49,19 @@
 #[cfg(feature = "alloc")]
 use alloc::{borrow::Cow, vec, vec::Vec};
 
+#[cfg(feature = "der")]
+use der::{
+    Decode, DecodeValue, Encode, EncodeValue, Length, Reader, Sequence, Tag, Writer,
+    asn1::{OctetStringRef, UintRef},
+};
+#[cfg(feature = "der")]
+use elliptic_curve::array::Array;
 use elliptic_curve::{
     CurveArithmetic, Error, Group, PrimeField, Result,
-    array::{Array, typenum::Unsigned},
+    array::typenum::Unsigned,
     ops::Reduce,
-    pkcs8::der::{
-        Decode, DecodeValue, Encode, EncodeValue, Length, Reader, Sequence, Tag, Writer,
-        asn1::{OctetStringRef, UintRef},
-    },
     sec1::{self, Coordinates, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point},
 };
-
 use sm3::digest::{FixedOutputReset, Output, OutputSizeUser, Update};
 
 #[cfg(feature = "arithmetic")]
@@ -152,7 +160,7 @@ where
     }
 
     /// Length after conversion to standard ciphertext format
-    pub fn len(&self, compressed: bool) -> usize {
+    pub fn message_len(&self, compressed: bool) -> usize {
         let tag = if compressed {
             sec1::Tag::Compact
         } else {
@@ -164,7 +172,7 @@ where
     /// Encode to Vec
     #[cfg(feature = "alloc")]
     pub fn to_vec(&self, mode: Mode, compressed: bool) -> Vec<u8> {
-        let mut result = vec![0; self.len(compressed)];
+        let mut result = vec![0; self.message_len(compressed)];
         // # Security
         // * Currently, only length mismatch errors can be ignored.
         self.to_slice(mode, &mut result, compressed)
@@ -175,10 +183,11 @@ where
     /// Encode to slice
     pub fn to_slice(&self, mode: Mode, buf: &mut [u8], compressed: bool) -> Result<usize> {
         let point = self.c1.to_sec1_point(compressed);
-        let len = self.len(compressed);
+        let len = self.message_len(compressed);
         if buf.len() < len {
             return Err(Error);
         }
+        let buf = &mut buf[..len];
         match mode {
             Mode::C1C2C3 => {
                 buf[..point.len()].clone_from_slice(point.as_bytes());
@@ -219,7 +228,7 @@ where
         &self.c3
     }
 }
-
+#[cfg(feature = "der")]
 impl<'a, C, D> Sequence<'a> for Cipher<'a, C, D>
 where
     C: CurveArithmetic,
@@ -228,7 +237,7 @@ where
     C::FieldBytesSize: ModulusSize,
 {
 }
-
+#[cfg(feature = "der")]
 impl<C, D> EncodeValue for Cipher<'_, C, D>
 where
     C: CurveArithmetic,
@@ -273,7 +282,7 @@ where
     }
 }
 
-#[cfg(feature = "pkcs8")]
+#[cfg(feature = "der")]
 impl<'a, C, D> DecodeValue<'a> for Cipher<'a, C, D>
 where
     C: CurveArithmetic,
