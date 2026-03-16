@@ -171,23 +171,25 @@ where
 
     /// Encode to Vec
     #[cfg(feature = "alloc")]
-    pub fn to_vec(&self, mode: Mode, compressed: bool) -> Vec<u8> {
+    pub fn to_vec(&self, mode: Mode, compressed: bool) -> Result<Vec<u8>> {
         let mut result = vec![0; self.message_len(compressed)];
-        // # Security
-        // * Currently, only length mismatch errors can be ignored.
-        self.to_slice(mode, &mut result, compressed)
-            .expect("encode to slice");
-        result
+        self.to_slice(mode, &mut result, compressed)?;
+        Ok(result)
     }
 
     /// Encode to slice
-    pub fn to_slice(&self, mode: Mode, buf: &mut [u8], compressed: bool) -> Result<usize> {
+    pub fn to_slice<'b>(
+        &self,
+        mode: Mode,
+        out_buf: &'b mut [u8],
+        compressed: bool,
+    ) -> Result<&'b [u8]> {
         let point = self.c1.to_sec1_point(compressed);
         let len = self.message_len(compressed);
-        if buf.len() < len {
+        if out_buf.len() < len {
             return Err(Error);
         }
-        let buf = &mut buf[..len];
+        let buf = &mut out_buf[..len];
         match mode {
             Mode::C1C2C3 => {
                 buf[..point.len()].clone_from_slice(point.as_bytes());
@@ -209,7 +211,7 @@ where
             }
         }
 
-        Ok(len)
+        Ok(&out_buf[..len])
     }
 
     /// Get C1
