@@ -605,7 +605,25 @@ where
     FieldBytes<C>: Copy,
 {
     fn recommended_wnaf_for_num_scalars(num_scalars: usize) -> usize {
-        todo!()
+        // Empirical heuristic from the zcash/bellman implementation.
+        if num_scalars >= 32 {
+            3
+        } else if num_scalars >= 1 {
+            2
+        } else {
+            4
+        }
+    }
+
+    fn scalar_repr_to_le_bytes(
+        repr: &<Scalar<C> as PrimeField>::Repr,
+    ) -> Vec<u8> {
+        // SEC1/NIST curves use big-endian scalar representations;
+        // reverse to get little-endian for wNAF decomposition.
+        let mut le: Vec<u8> =
+            AsRef::<[u8]>::as_ref(repr).to_vec();
+        le.reverse();
+        le
     }
 }
 
