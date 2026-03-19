@@ -604,8 +604,12 @@ where
     C: PrimeCurveParams,
     FieldBytes<C>: Copy,
 {
-    fn recommended_wnaf_for_num_scalars(num_scalars: usize) -> usize {
-        todo!()
+    fn recommended_wnaf_for_num_scalars(_num_scalars: usize) -> usize {
+        // NOTE: The upstream `group::Wnaf` produces incorrect results
+        // for curves whose `Scalar::to_repr()` is big-endian (all
+        // SEC1/NIST curves). Use `primeorder::wnaf::WnafScalarMul`
+        // instead.
+        4
     }
 }
 
