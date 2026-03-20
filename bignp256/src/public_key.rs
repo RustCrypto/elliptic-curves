@@ -64,11 +64,7 @@ impl PublicKey {
 
     /// Get [`PublicKey`] from bytes
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let mut bytes = Array::try_from(bytes).map_err(|_| Error)?;
-
-        // It is because public_key in little endian
-        bytes[..32].reverse();
-        bytes[32..].reverse();
+        let bytes = Array::try_from(bytes).map_err(|_| Error)?;
 
         let point = Sec1Point::from_untagged_bytes(&bytes);
         let affine = AffinePoint::from_sec1_point(&point);
@@ -96,9 +92,7 @@ impl PublicKey {
     #[cfg(feature = "alloc")]
     /// Get bytes from [`PublicKey`]
     pub fn to_bytes(&self) -> Box<[u8]> {
-        let mut bytes = self.point.to_sec1_point(false).to_bytes();
-        bytes[1..32 + 1].reverse();
-        bytes[33..].reverse();
+        let bytes = self.point.to_sec1_point(false).to_bytes();
         bytes[1..].to_vec().into_boxed_slice()
     }
 

@@ -109,14 +109,13 @@ impl PrehashSigner<Signature> for SigningKey {
         if prehash.len() != <BignP256 as Curve>::FieldBytesSize::USIZE {
             return Err(Error::new());
         }
-        let mut h_word: Array<u8, U32> = Array::try_from(prehash).map_err(|_| Error::new())?;
-        h_word.reverse();
+        let h_word: Array<u8, U32> = Array::try_from(prehash).map_err(|_| Error::new())?;
 
         let h = Scalar::reduce(&h_word);
 
-        //2. Generate 𝑘 ← rand(1,..,𝑞-1)
-        let k = Scalar::from_repr(rfc6979::generate_k::<BeltHash, _>(
-            &self.secret_scalar.to_repr(),
+        // 2. Generate 𝑘 ← rand(1,..,𝑞-1)
+        let k = Scalar::from_repr(bign_genk::generate_k::<BeltHash, belt_block::BeltBlock, _>(
+            &self.secret_scalar.to_bytes(),
             &FieldBytesEncoding::<BignP256>::encode_field_bytes(BignP256::ORDER.as_ref()),
             &h.to_bytes(),
             &[],
@@ -124,24 +123,23 @@ impl PrehashSigner<Signature> for SigningKey {
         .unwrap();
 
         // 3. Set 𝑅 ← 𝑘𝐺.
-        let mut R: Array<u8, _> = ProjectivePoint::mul_by_generator(&k).to_affine().x();
-        R.reverse();
+        let R = ProjectivePoint::mul_by_generator(&k).to_affine();
+        let Rx = R.x();
 
         // 4. Set 𝑆0 ← ⟨︀belt-hash(OID(ℎ) ‖ ⟨𝑅⟩2𝑙 ‖ 𝐻)⟩︀_𝑙.
         let mut hasher = BeltHash::new();
         hasher.update(BELT_OID);
-        hasher.update(R);
+        hasher.update(Rx);
         hasher.update(prehash);
 
         let mut s0 = hasher.finalize();
         s0[16..].fill(0x00);
-        s0.reverse();
 
         let s0_scalar = Scalar::from_slice(&s0).ok_or_else(Error::new)?;
 
         let right = s0_scalar
             .add(&Scalar::from_u64(2).pow([128, 0, 0, 0]))
-            .multiply(self.as_nonzero_scalar());
+            .multiply(&self.secret_scalar);
 
         // 5. Set 𝑆1 ← ⟨︀(𝑘 − 𝐻 − (𝑆0 + 2^𝑙)𝑑) mod 𝑞⟩︀_2𝑙.
         let s1 = k.sub(&h).sub(&right);
