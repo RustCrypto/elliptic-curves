@@ -5,24 +5,29 @@ on:
       - .github/workflows/security-audit.yml
       - Cargo.lock
   push:
-    branches: master
+    branches: [master]
     paths: Cargo.lock
   schedule:
     - cron: "0 0 * * *"
+
+permissions:
+  contents: read
 
 jobs:
   security_audit:
     name: Security Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9  # master
         with:
           toolchain: stable
-      - uses: actions/cache@v5
+      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5
         with:
           path: ~/.cargo/bin
           key: ${{ runner.os }}-cargo-audit-v0.22.0
-      - uses: rustsec/audit-check@v2
+      - uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998  # v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
