@@ -120,13 +120,13 @@ impl DecryptingKey {
         D: Digest + FixedOutputReset,
     {
         let mut buf = vec![0; cipher.c2.len()];
-        let _size = self.decrypt_cipherr_with_buf::<D>(cipher, &mut buf)?;
+        let _size = self.decrypt_cipher_with_buf::<D>(cipher, &mut buf)?;
         Ok(buf)
     }
 
     /// Decrypts a message using a specified digest algorithm from a `Cipher` object,   
     /// storing the plaintext in the provided buffer and returning the number of bytes written.
-    pub fn decrypt_cipherr_with_buf<'a, D>(
+    pub fn decrypt_cipher_with_buf<'a, D>(
         &self,
         cipher: &Cipher<'a, crate::Sm2, D>,
         buf: &mut [u8],

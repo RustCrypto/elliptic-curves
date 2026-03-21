@@ -78,5 +78,5 @@ all-features = true
 level = "warn"
 check-cfg = [
     'cfg(cpubits, values("16", "32", "64"))',
-    'cfg(sm2_backend, values("bignum", "fiat"))', # default: "fiat"
+    'cfg(sm2_backend, values("bignum", "fiat"))' # default: "fiat"
 ]
