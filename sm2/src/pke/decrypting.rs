@@ -1,36 +1,33 @@
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
 use core::fmt::{self, Debug};
-
-use crate::{
-    AffinePoint, FieldBytes, NonZeroScalar, PublicKey, Scalar, Sec1Point, SecretKey,
-    UncompressedPoint, arithmetic::field::FieldElement,
-};
-
-use alloc::{borrow::ToOwned, vec::Vec};
+#[cfg(all(feature = "alloc", feature = "der"))]
+use der::Decode;
 use elliptic_curve::{
-    Error, Group, Result,
-    bigint::{ArrayEncoding, U256},
-    ops::Reduce,
-    pkcs8::der::Decode,
-    sec1::{FromSec1Point, ToSec1Point},
+    CurveArithmetic, CurveGroup, Error, Result,
+    sec1::{Coordinates, ModulusSize, ToSec1Point},
     subtle::{Choice, ConstantTimeEq},
 };
-use primeorder::PrimeField;
+use sm3::digest::{Digest, FixedOutputReset, Output, Update};
 
-use sm3::{Digest, Sm3, digest::DynDigest};
+use crate::{
+    FieldBytes, NonZeroScalar, PublicKey, SecretKey,
+    pke::{Cipher, EncryptingKey, Mode},
+};
 
-use super::{Cipher, DEFAULT_MODE, Mode, encrypting::EncryptingKey, kdf, vec};
 /// Represents a decryption key used for decrypting messages using elliptic curve cryptography.
 #[derive(Clone)]
 pub struct DecryptingKey {
     secret_scalar: NonZeroScalar,
     encrypting_key: EncryptingKey,
+    #[allow(unused)]
     mode: Mode,
 }
 
 impl DecryptingKey {
     /// Creates a new `DecryptingKey` from a `SecretKey` with the default decryption mode (`C1C3C2`).
     pub fn new(secret_key: SecretKey) -> Self {
-        Self::new_with_mode(secret_key.to_nonzero_scalar(), DEFAULT_MODE)
+        Self::new_with_mode(secret_key.to_nonzero_scalar(), Default::default())
     }
 
     /// Creates a new `DecryptingKey` from a non-zero scalar and sets the decryption mode.
@@ -59,7 +56,7 @@ impl DecryptingKey {
 
     /// Create a signing key from a non-zero scalar.
     pub fn from_nonzero_scalar(secret_scalar: NonZeroScalar) -> Result<Self> {
-        Ok(Self::new_with_mode(secret_scalar, DEFAULT_MODE))
+        Ok(Self::new_with_mode(secret_scalar, Default::default()))
     }
 
     /// Serialize as bytes.
@@ -84,39 +81,60 @@ impl DecryptingKey {
     }
 
     /// Decrypts a ciphertext in-place using the default digest algorithm (`Sm3`).
+    #[cfg(feature = "alloc")]
     pub fn decrypt(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        self.decrypt_digest::<Sm3>(ciphertext)
+        self.decrypt_digest::<sm3::Sm3>(ciphertext)
     }
 
     /// Decrypts a ciphertext in-place using the specified digest algorithm.
+    #[cfg(feature = "alloc")]
     pub fn decrypt_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + FixedOutputReset,
     {
-        let mut digest = D::new();
-        decrypt(&self.secret_scalar, self.mode, &mut digest, ciphertext)
+        let cipher = Cipher::<crate::Sm2, D>::from_slice(ciphertext, self.mode)?;
+        self.decrypt_cipher(&cipher)
     }
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the default digest algorithm (`Sm3`).
+    #[cfg(all(feature = "alloc", feature = "der"))]
     pub fn decrypt_der(&self, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        self.decrypt_der_digest::<Sm3>(ciphertext)
+        self.decrypt_der_digest::<sm3::Sm3>(ciphertext)
     }
 
     /// Decrypts a ciphertext in-place from ASN.1 format using the specified digest algorithm.
+    #[cfg(all(feature = "alloc", feature = "der"))]
     pub fn decrypt_der_digest<D>(&self, ciphertext: &[u8]) -> Result<Vec<u8>>
     where
-        D: 'static + Digest + DynDigest + Send + Sync,
+        D: Digest + FixedOutputReset,
     {
-        let cipher = Cipher::from_der(ciphertext).map_err(elliptic_curve::pkcs8::Error::from)?;
-        let prefix: &[u8] = &[0x04];
-        let x: [u8; 32] = cipher.x.to_be_byte_array().into();
-        let y: [u8; 32] = cipher.y.to_be_byte_array().into();
-        let cipher = match self.mode {
-            Mode::C1C2C3 => [prefix, &x, &y, cipher.cipher, cipher.digest].concat(),
-            Mode::C1C3C2 => [prefix, &x, &y, cipher.digest, cipher.cipher].concat(),
-        };
+        let cipher = Cipher::<crate::Sm2, D>::from_der(ciphertext)
+            .map_err(elliptic_curve::pkcs8::Error::from)?;
+        self.decrypt_cipher(&cipher)
+    }
 
-        self.decrypt_digest::<D>(&cipher)
+    /// Decrypts a message using a specified digest algorithm from a `Cipher` object.
+    #[cfg(feature = "alloc")]
+    pub fn decrypt_cipher<'a, D>(&self, cipher: &Cipher<'a, crate::Sm2, D>) -> Result<Vec<u8>>
+    where
+        D: Digest + FixedOutputReset,
+    {
+        let mut buf = vec![0; cipher.c2.len()];
+        let _size = self.decrypt_cipher_with_buf::<D>(cipher, &mut buf)?;
+        Ok(buf)
+    }
+
+    /// Decrypts a message using a specified digest algorithm from a `Cipher` object,   
+    /// storing the plaintext in the provided buffer and returning the number of bytes written.
+    pub fn decrypt_cipher_with_buf<'a, D>(
+        &self,
+        cipher: &Cipher<'a, crate::Sm2, D>,
+        buf: &mut [u8],
+    ) -> Result<usize>
+    where
+        D: Digest + FixedOutputReset,
+    {
+        decrypt::<crate::Sm2, D>(&self.secret_scalar, cipher, buf)
     }
 }
 
@@ -153,66 +171,52 @@ impl PartialEq for DecryptingKey {
     }
 }
 
-fn decrypt(
-    secret_scalar: &Scalar,
-    mode: Mode,
-    hasher: &mut dyn DynDigest,
-    ciphertext: &[u8],
-) -> Result<Vec<u8>> {
-    // B1: get 𝐶1 from 𝐶
-    let (c1, c) = ciphertext
-        .split_at_checked(size_of::<UncompressedPoint>())
-        .ok_or(Error)?;
-
-    let encoded_c1 = Sec1Point::from_bytes(c1).map_err(Error::from)?;
-
-    // verify that point c1 satisfies the elliptic curve
-    let mut c1_point = AffinePoint::from_sec1_point(&encoded_c1)
-        .into_option()
-        .ok_or(Error)?;
-
-    // B2: compute point 𝑆 = [ℎ]𝐶1
-    let s = c1_point * Scalar::reduce(&U256::from_u32(FieldElement::S));
-    if s.is_identity().into() {
+fn decrypt<C, D>(
+    secret_scalar: &C::Scalar,
+    cipher: &Cipher<'_, C, D>,
+    out: &mut [u8],
+) -> Result<usize>
+where
+    C: CurveArithmetic,
+    D: FixedOutputReset + Digest,
+    C::FieldBytesSize: ModulusSize,
+    C::AffinePoint: ToSec1Point<C>,
+{
+    if out.len() < cipher.c2.len() {
         return Err(Error);
     }
+    let out = &mut out[..cipher.c2.len()];
+
+    let mut digest = D::new();
 
     // B3: compute [𝑑𝐵]𝐶1 = (𝑥2, 𝑦2)
-    c1_point = (c1_point * secret_scalar).to_affine();
-    let digest_size = hasher.output_size();
-    let (c2, c3) = match mode {
-        Mode::C1C3C2 => {
-            let (c3, c2) = c.split_at_checked(digest_size).ok_or(Error)?;
-            (c2, c3)
-        }
-        Mode::C1C2C3 => c.split_at_checked(c.len() - digest_size).ok_or(Error)?,
-    };
+    let c1_point = (C::ProjectivePoint::from(cipher.c1) * secret_scalar).to_affine();
+
+    #[cfg(feature = "alloc")]
+    let c2 = &cipher.c2;
+    #[cfg(not(feature = "alloc"))]
+    let c2 = cipher.c2;
 
     // B4: compute 𝑡 = 𝐾𝐷𝐹(𝑥2 ∥ 𝑦2, 𝑘𝑙𝑒𝑛)
     // B5: get 𝐶2 from 𝐶 and compute 𝑀′ = 𝐶2 ⊕ t
-    let mut c2 = c2.to_owned();
-    kdf(hasher, c1_point, &mut c2)?;
+    crate::pke::kdf::<D, C>(&mut digest, c1_point, c2, out)?;
 
     // compute 𝑢 = 𝐻𝑎𝑠ℎ(𝑥2 ∥ 𝑀′∥ 𝑦2).
-    let mut u = vec![0u8; digest_size];
+    let mut u = Output::<D>::default();
     let encode_point = c1_point.to_sec1_point(false);
-    hasher.update(encode_point.x().ok_or(Error)?);
-    hasher.update(&c2);
-    hasher.update(encode_point.y().ok_or(Error)?);
-    hasher.finalize_into_reset(&mut u).map_err(|_e| Error)?;
-    let checked = u
-        .iter()
-        .zip(c3)
-        .fold(0, |mut check, (&c3_byte, &c3checked_byte)| {
-            check |= c3_byte ^ c3checked_byte;
-            check
-        });
+    let (x, y) = match encode_point.coordinates() {
+        Coordinates::Uncompressed { x, y } => (x, y),
+        _ => unreachable!(),
+    };
+    Update::update(&mut digest, x);
+    Update::update(&mut digest, out);
+    Update::update(&mut digest, y);
+    FixedOutputReset::finalize_into_reset(&mut digest, &mut u);
 
     // If 𝑢 ≠ 𝐶3, output “ERROR” and exit
-    if checked != 0 {
+    if cipher.c3 != u {
         return Err(Error);
     }
 
-    // B7: output the plaintext 𝑀′.
-    Ok(c2)
+    Ok(out.len())
 }
