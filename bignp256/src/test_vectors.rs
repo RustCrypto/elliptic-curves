@@ -1,4 +1,4 @@
-//! secp256r1 test vectors.
+//! bignp256 test vectors.
 
 #[cfg(test)]
 pub mod field;
