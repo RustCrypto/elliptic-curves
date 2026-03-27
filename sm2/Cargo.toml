@@ -29,7 +29,7 @@ primeorder = { version = "0.14.0-rc.8", optional = true }
 rfc6979 = { version = "0.5.0-rc.5", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 signature = { version = "3.0.0-rc.10", optional = true, features = ["rand_core"] }
-sm3 = { version = "0.5.0", optional = true, default-features = false }
+sm3 = { version = "0.5", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"
