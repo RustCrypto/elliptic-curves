@@ -22,7 +22,7 @@ elliptic-curve = { version = "0.14.0-rc.29", features = ["sec1"] }
 
 # optional dependencies
 belt-block = { version = "0.2.0-rc.3", optional = true}
-belt-hash = { version = "0.2.0-rc.5", optional = true, default-features = false }
+belt-hash = { version = "0.2", optional = true, default-features = false }
 der = "0.8"
 digest = { version = "0.11", optional = true }
 hex-literal = { version = "1", optional = true }
