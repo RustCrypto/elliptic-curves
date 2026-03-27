@@ -75,9 +75,9 @@ dependencies = [
 
 [[package]]
 name = "belt-hash"
-version = "0.2.0-rc.5"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c56883a45783acff1ccdf0903f38b8688363e633d3c9a199c2063f0cc946832b"
+checksum = "708822e7b2f678a17c1933aa32743e902906e4546614bb3f14f56212a8ab81f0"
 dependencies = [
  "belt-block 0.1.2",
  "digest",
@@ -1488,7 +1488,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.2",
  "once_cell",
  "rustix",
  "windows-sys",
