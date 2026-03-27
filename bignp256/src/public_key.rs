@@ -1,7 +1,9 @@
 //! Public key types and traits
 // TODO(tarcieri): replace with `elliptic_curve::PublicKey`
 
-use crate::{ALGORITHM_OID, AffinePoint, BignP256, NonZeroScalar, ProjectivePoint, Sec1Point};
+#[cfg(feature = "pkcs8")]
+use crate::ALGORITHM_OID;
+use crate::{AffinePoint, BignP256, NonZeroScalar, ProjectivePoint, Sec1Point};
 use core::{fmt::Display, str::FromStr};
 use elliptic_curve::{
     CurveArithmetic, Error, Group,
@@ -9,6 +11,7 @@ use elliptic_curve::{
     point::NonIdentity,
     sec1::{FromSec1Point, ToSec1Point},
 };
+#[cfg(feature = "pkcs8")]
 use pkcs8::{
     AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
