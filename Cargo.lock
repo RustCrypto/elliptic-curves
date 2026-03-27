@@ -86,7 +86,7 @@ dependencies = [
 [[package]]
 name = "bign-genk"
 version = "0.5.0-rc.3"
-source = "git+https://github.com/makavity/signatures.git#d341f946ec8c85e13761094a4284e06386f3b43f"
+source = "git+https://github.com/makavity/signatures.git#b344d941c858e92bb43d644d02727aadb0730966"
 dependencies = [
  "cipher",
  "digest",
@@ -1488,7 +1488,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.2",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys",
