@@ -9,7 +9,7 @@ on:
       - "primeorder/**"
       - "Cargo.*"
   push:
-    branches: master
+    branches: [master]
 
 defaults:
   run:
@@ -25,6 +25,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,8 +40,10 @@ jobs:
           - thumbv7em-none-eabi
           - wasm32-unknown-unknown
     steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9  # master
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
@@ -71,8 +76,10 @@ jobs:
             rust: stable
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@efa25f7f19611383d5b0ccf2d1c8914531636bf9  # master
         with:
           toolchain: ${{ matrix.rust }}
           targets: ${{ matrix.target }}
