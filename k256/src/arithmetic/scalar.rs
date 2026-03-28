@@ -755,7 +755,7 @@ impl Retrieve for Scalar {
     type Output = U256;
 
     fn retrieve(&self) -> U256 {
-        U256::from_be_byte_array(self.to_bytes())
+        self.0
     }
 }
 
