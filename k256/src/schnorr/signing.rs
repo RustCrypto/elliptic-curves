@@ -5,7 +5,7 @@ use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
 use elliptic_curve::{
-    Generate,
+    Generate, Group,
     ops::Reduce,
     rand_core::{CryptoRng, TryCryptoRng},
     subtle::ConditionallySelectable,
@@ -94,13 +94,14 @@ impl SigningKey {
             .chain_update(msg)
             .finalize();
 
-        let k = NonZeroScalar::try_from(&*rand)
-            .map(Self::from)
-            .map_err(|_| Error::new())?;
+        let mut k = NonZeroScalar::try_from(&*rand).map_err(|_| Error::new())?;
 
-        let secret_key = k.secret_key;
-        let verifying_point = AffinePoint::from(k.verifying_key);
-        let r = verifying_point.x.normalize();
+        // Compute R = k*G using precomputed tables, convert to affine once,
+        // and ensure R has even y (BIP340 requirement).
+        let R = ProjectivePoint::mul_by_generator(&k).to_affine();
+        let odd = R.y.normalize().is_odd();
+        k.conditional_assign(&-k, odd);
+        let r = R.x.normalize();
 
         let e = <Scalar as Reduce<FieldBytes>>::reduce(
             &tagged_hash(CHALLENGE_TAG)
@@ -110,7 +111,7 @@ impl SigningKey {
                 .finalize(),
         );
 
-        let s = *secret_key + e * *self.secret_key;
+        let s = *k + e * *self.secret_key;
         let s = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;
         let sig = Signature { r, s };
 
@@ -130,16 +131,18 @@ impl SigningKey {
 impl From<NonZeroScalar> for SigningKey {
     #[inline]
     fn from(mut secret_key: NonZeroScalar) -> SigningKey {
-        let odd = (ProjectivePoint::GENERATOR * *secret_key)
-            .to_affine()
-            .y
-            .normalize()
-            .is_odd();
+        // Compute the public key point once using precomputed generator tables,
+        // then conditionally negate to ensure even y.
+        let point = ProjectivePoint::mul_by_generator(&secret_key).to_affine();
+        let odd = point.y.normalize().is_odd();
 
         secret_key.conditional_assign(&-secret_key, odd);
+        let neg_point = -point;
+        let correct_point = AffinePoint::conditional_select(&point, &neg_point, odd);
 
         let verifying_key = VerifyingKey {
-            inner: PublicKey::from_secret_scalar(&secret_key),
+            inner: PublicKey::from_affine(correct_point)
+                .unwrap_or_else(|_| PublicKey::from_secret_scalar(&secret_key)),
         };
 
         SigningKey {
