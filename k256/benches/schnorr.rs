@@ -5,7 +5,7 @@ use k256::{
     elliptic_curve::Generate,
     schnorr::{
         SigningKey,
-        signature::{RandomizedSigner, Signer, Verifier},
+        signature::{Signer, Verifier},
     },
 };
 use std::hint::black_box;

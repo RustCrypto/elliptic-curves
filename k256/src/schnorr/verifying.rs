@@ -2,11 +2,12 @@
 
 use super::{CHALLENGE_TAG, Signature, tagged_hash};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
-use elliptic_curve::{
-    group::prime::PrimeCurveAffine,
-    ops::{LinearCombination, Reduce},
-    point::DecompactPoint,
-};
+#[cfg(feature = "precomputed-tables")]
+use elliptic_curve::Group;
+#[cfg(not(feature = "precomputed-tables"))]
+use elliptic_curve::ops::LinearCombination;
+use elliptic_curve::ops::Reduce;
+use elliptic_curve::{group::prime::PrimeCurveAffine, point::DecompactPoint};
 use sha2::{
     Digest, Sha256,
     digest::{Update, consts::U32},
@@ -71,6 +72,14 @@ impl VerifyingKey {
                 .finalize(),
         );
 
+        // When precomputed basepoint tables are available, split the computation
+        // to use them for s*G (zero doublings needed) and standard GLV for (-e)*P.
+        // Without tables, use Shamir's trick (lincomb) to share the doublings.
+        #[cfg(feature = "precomputed-tables")]
+        let R = (ProjectivePoint::mul_by_generator(&**s) + self.inner.to_projective() * (-e))
+            .to_affine();
+
+        #[cfg(not(feature = "precomputed-tables"))]
         let R = ProjectivePoint::lincomb(&[
             (ProjectivePoint::GENERATOR, **s),
             (self.inner.to_projective(), -e),
