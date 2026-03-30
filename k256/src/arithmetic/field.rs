@@ -29,7 +29,7 @@ use core::{
 use elliptic_curve::{
     Generate,
     bigint::{Odd, U256, modular::Retrieve},
-    ff::{self, Field, PrimeField},
+    ff::{self, Field, FromUniformBytes, PrimeField},
     ops::Invert,
     rand_core::{TryCryptoRng, TryRng},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -321,6 +321,17 @@ impl PrimeField for FieldElement {
 
     fn is_odd(&self) -> Choice {
         self.is_odd()
+    }
+}
+
+impl FromUniformBytes<64> for FieldElement {
+    fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
+        let hi = U256::from_be_slice(&bytes[..32]);
+        let lo = U256::from_be_slice(&bytes[32..]);
+        let modulus = const { *Odd::from_be_hex(MODULUS_HEX).as_nz_ref() };
+        Self(FieldElementImpl::from_u256_unchecked(
+            U256::rem_wide_vartime((lo, hi), &modulus),
+        ))
     }
 }
 
