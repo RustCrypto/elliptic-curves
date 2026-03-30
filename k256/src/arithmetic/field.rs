@@ -36,6 +36,9 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 
+#[cfg(feature = "bits")]
+use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
+
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
@@ -335,6 +338,22 @@ impl FromUniformBytes<64> for FieldElement {
     }
 }
 
+#[cfg(feature = "bits")]
+impl PrimeFieldBits for FieldElement {
+    cpubits! {
+        32 => { type ReprBits = [u32; 8]; }
+        64 => { type ReprBits = [u64; 4]; }
+    }
+
+    fn to_le_bits(&self) -> ScalarBits {
+        self.into()
+    }
+
+    fn char_le_bits() -> ScalarBits {
+        U256::from_be_hex(MODULUS_HEX).to_words().into()
+    }
+}
+
 impl Retrieve for FieldElement {
     type Output = U256;
 
@@ -517,6 +536,13 @@ impl Product for FieldElement {
 impl<'a> Product<&'a FieldElement> for FieldElement {
     fn product<I: Iterator<Item = &'a FieldElement>>(iter: I) -> Self {
         iter.copied().product()
+    }
+}
+
+#[cfg(feature = "bits")]
+impl From<&FieldElement> for ScalarBits {
+    fn from(scalar: &FieldElement) -> ScalarBits {
+        scalar.0.to_u256().to_words().into()
     }
 }
 
