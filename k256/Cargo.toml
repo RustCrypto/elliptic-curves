@@ -82,5 +82,10 @@ required-features = ["expose-field"]
 name = "scalar"
 harness = false
 
+[[bench]]
+name = "schnorr"
+harness = false
+required-features = ["schnorr"]
+
 [package.metadata.docs.rs]
 features = ["ecdh", "ecdsa", "schnorr"]
