@@ -73,6 +73,10 @@ harness = false
 required-features = ["expose-field"]
 
 [[bench]]
+name = "point"
+harness = false
+
+[[bench]]
 name = "scalar"
 harness = false
 
