@@ -3,9 +3,10 @@
 //! Support for formulas specialized to the short Weierstrass equation's
 //! 𝒂-coefficient.
 
-use elliptic_curve::{Field, subtle::ConditionallySelectable};
+use elliptic_curve::Field;
 
 use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
+use elliptic_curve::ctutils::CtAssign;
 
 mod sealed {
     use crate::{AffinePoint, PrimeCurveParams, ProjectivePoint};
@@ -160,7 +161,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
             y: y3,
             z: z3,
         };
-        ret.conditional_assign(lhs, rhs.is_identity());
+        ret.ct_assign(lhs, rhs.is_identity());
         ret
     }
 
@@ -283,7 +284,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
             y: (yy_p_bzz3 * yy_m_bzz3) + (xx3_m_zz3 * bxz3_part), // 29, 30, 31
             z: (yy_m_bzz3 * yz_pairs) + (xy_pairs * xx3_m_zz3), // 34, 35, 36
         };
-        ret.conditional_assign(lhs, rhs.is_identity());
+        ret.ct_assign(lhs, rhs.is_identity());
         ret
     }
 
@@ -425,7 +426,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
             y: y3,
             z: z3,
         };
-        ret.conditional_assign(lhs, rhs.is_identity());
+        ret.ct_assign(lhs, rhs.is_identity());
         ret
     }
 

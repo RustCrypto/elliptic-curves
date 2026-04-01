@@ -14,7 +14,7 @@ use elliptic_curve::{
     Result, Scalar,
     array::ArraySize,
     bigint::{ArrayEncoding, ByteArray},
-    ctutils,
+    ctutils::{Choice, CtAssign, CtAssignSlice, CtEq, CtEqSlice, CtOption, CtSelect},
     group::{
         Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -26,13 +26,11 @@ use elliptic_curve::{
     sec1::{
         CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point, UncompressedPointSize,
     },
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
 
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
-
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
 
@@ -118,21 +116,20 @@ where
     }
 }
 
-impl<C> ConditionallySelectable for ProjectivePoint<C>
+impl<C> CtAssign for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
-    #[inline(always)]
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self {
-            x: C::FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: C::FieldElement::conditional_select(&a.y, &b.y, choice),
-            z: C::FieldElement::conditional_select(&a.z, &b.z, choice),
-        }
+    #[inline]
+    fn ct_assign(&mut self, other: &Self, choice: Choice) {
+        self.x.ct_assign(&other.x, choice);
+        self.y.ct_assign(&other.y, choice);
+        self.z.ct_assign(&other.z, choice);
     }
 }
+impl<C: PrimeCurveParams> CtAssignSlice for ProjectivePoint<C> {}
 
-impl<C> ConstantTimeEq for ProjectivePoint<C>
+impl<C> CtEq for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
@@ -143,22 +140,35 @@ where
         x_eq & y_eq
     }
 }
+impl<C: PrimeCurveParams> CtEqSlice for ProjectivePoint<C> {}
 
-impl<C> ctutils::CtEq for ProjectivePoint<C>
+impl<C> CtSelect for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
-    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
-        ConstantTimeEq::ct_eq(self, other).into()
+    #[inline]
+    fn ct_select(&self, other: &Self, choice: Choice) -> Self {
+        let mut ret = *self;
+        ret.ct_assign(other, choice);
+        ret
     }
 }
 
-impl<C> ctutils::CtSelect for ProjectivePoint<C>
+impl<C> subtle::ConstantTimeEq for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
-    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
-        ConditionallySelectable::conditional_select(self, other, choice.into())
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
+        CtEq::ct_eq(self, other).into()
+    }
+}
+
+impl<C> subtle::ConditionallySelectable for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn conditional_select(a: &Self, b: &Self, choice: subtle::Choice) -> Self {
+        CtSelect::ct_select(a, b, choice.into())
     }
 }
 
@@ -191,7 +201,7 @@ where
             y: p.y,
             z: C::FieldElement::ONE,
         };
-        Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
+        Self::ct_select(&projective, &Self::IDENTITY, p.is_identity())
     }
 }
 
@@ -238,7 +248,7 @@ where
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
-    fn from_sec1_point(p: &Sec1Point<C>) -> ctutils::CtOption<Self> {
+    fn from_sec1_point(p: &Sec1Point<C>) -> CtOption<Self> {
         AffinePoint::<C>::from_sec1_point(p).map(Self::from)
     }
 }
@@ -275,12 +285,12 @@ where
         *self
     }
 
-    fn into_subgroup(self) -> CtOption<Self::Subgroup> {
-        CtOption::new(self, Choice::from(1))
+    fn into_subgroup(self) -> subtle::CtOption<Self::Subgroup> {
+        CtOption::new(self, Choice::TRUE).into()
     }
 
-    fn is_torsion_free(&self) -> Choice {
-        Choice::from(1)
+    fn is_torsion_free(&self) -> subtle::Choice {
+        Choice::TRUE.into()
     }
 }
 
@@ -323,8 +333,8 @@ where
         Self::GENERATOR
     }
 
-    fn is_identity(&self) -> Choice {
-        self.ct_eq(&Self::IDENTITY)
+    fn is_identity(&self) -> subtle::Choice {
+        self.ct_eq(&Self::IDENTITY).into()
     }
 
     fn double(&self) -> Self {
@@ -343,11 +353,11 @@ where
 {
     type Repr = CompressedPoint<C>;
 
-    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+    fn from_bytes(bytes: &Self::Repr) -> subtle::CtOption<Self> {
         <AffinePoint<C> as GroupEncoding>::from_bytes(bytes).map(Into::into)
     }
 
-    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> subtle::CtOption<Self> {
         // No unchecked conversion possible for compressed points
         Self::from_bytes(bytes)
     }
@@ -435,7 +445,7 @@ where
         // Even a single zero value will fail inversion for the entire batch.
         // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
         // and treat that case specially later-on.
-        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.ct_eq(&C::FieldElement::ZERO));
+        zs.as_mut()[i].ct_assign(&points[i].z, !points[i].z.ct_eq(&C::FieldElement::ZERO));
     }
 
     // This is safe to unwrap since we assured that all elements are non-zero
@@ -445,7 +455,7 @@ where
     for i in 0..out.len() {
         // If the `z` coordinate is non-zero, we can use it to invert;
         // otherwise it defaults to the `IDENTITY` value.
-        out[i] = C::AffinePoint::conditional_select(
+        out[i] = C::AffinePoint::ct_select(
             &points[i].to_affine_internal(zs_inverses.as_ref()[i]),
             &C::AffinePoint::IDENTITY,
             points[i].z.ct_eq(&C::FieldElement::ZERO),
@@ -536,7 +546,7 @@ impl<C: PrimeCurveParams> LookupTable<C> {
         let mut t = ProjectivePoint::IDENTITY;
 
         for i in 1..16 {
-            t.conditional_assign(
+            t.ct_assign(
                 &self.0[i],
                 Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
             );

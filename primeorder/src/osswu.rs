@@ -2,8 +2,10 @@
 //!
 //! <https://www.rfc-editor.org/rfc/rfc9380.html#name-simplified-swu-method>
 
-use elliptic_curve::Field;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use elliptic_curve::{
+    Field,
+    ctutils::{Choice, CtEq, CtSelect},
+};
 
 use crate::{AffinePoint, PrimeCurveParams};
 
@@ -48,7 +50,7 @@ pub trait Sgn0 {
 
 /// The optimized simplified Shallue-van de Woestijne-Ulas method
 /// for mapping elliptic curve scalars to affine points.
-pub trait OsswuMap: Field + Sgn0 {
+pub trait OsswuMap: Field + CtEq + CtSelect + Sgn0 {
     /// The OSSWU parameters for mapping the field to affine points.
     /// For Weierstrass curves having A==0 or B==0, the parameters
     /// should be for isogeny where A≠0 and B≠0.
@@ -73,9 +75,9 @@ pub trait OsswuMap: Field + Sgn0 {
         // 8. tv3 = tv3 * v
         let tv3 = tv3 * v;
         // 9. isQR = tv3 == u
-        let is_qr = tv3.ct_eq(&u);
+        let is_qr = CtEq::ct_eq(&tv3, &u);
         // 10. y = CMOV(y2, y1, isQR)
-        let y = ConditionallySelectable::conditional_select(&y2, &y1, is_qr);
+        let y = y2.ct_select(&y1, is_qr);
         // 11. return (isQR, y)
         (is_qr, y)
     }
@@ -97,11 +99,9 @@ pub trait OsswuMap: Field + Sgn0 {
         // 6.  tv3 = B * tv3
         let tv3 = Self::PARAMS.map_b * tv3;
         // 7.  tv4 = CMOV(Z, -tv2, tv2 != 0)
-        let tv4 = ConditionallySelectable::conditional_select(
-            &Self::PARAMS.z,
-            &-tv2,
-            !Field::is_zero(&tv2),
-        );
+        let tv4 = Self::PARAMS
+            .z
+            .ct_select(&-tv2, (!Field::is_zero(&tv2)).into());
         // 8.  tv4 = A * tv4
         let tv4 = Self::PARAMS.map_a * tv4;
         // 9.  tv2 = tv3^2
@@ -129,13 +129,13 @@ pub trait OsswuMap: Field + Sgn0 {
         // 20.   y = y * y1
         let y = y * y1;
         // 21.   x = CMOV(x, tv3, is_gx1_square)
-        let x = ConditionallySelectable::conditional_select(&x, &tv3, is_gx1_square);
+        let x = CtSelect::ct_select(&x, &tv3, is_gx1_square);
         // 22.   y = CMOV(y, y1, is_gx1_square)
-        let y = ConditionallySelectable::conditional_select(&y, &y1, is_gx1_square);
+        let y = CtSelect::ct_select(&y, &y1, is_gx1_square);
         // 23.  e1 = sgn0(u) == sgn0(y)
         let e1 = self.sgn0().ct_eq(&y.sgn0());
         // 24.   y = CMOV(-y, y, e1)
-        let y = ConditionallySelectable::conditional_select(&-y, &y, e1);
+        let y = CtSelect::ct_select(&-y, &y, e1);
         // 25.   x = x / tv4
         let x = x * tv4.invert().unwrap();
         // 26. return (x, y)
