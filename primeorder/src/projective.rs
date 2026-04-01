@@ -137,7 +137,10 @@ where
     C: PrimeCurveParams,
 {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.to_affine().ct_eq(&other.to_affine())
+        let x_eq = (self.x * other.z).ct_eq(&(other.x * self.z));
+        let y_eq = (self.y * other.z).ct_eq(&(other.y * self.z));
+
+        x_eq & y_eq
     }
 }
 
