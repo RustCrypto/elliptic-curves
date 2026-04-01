@@ -5,16 +5,10 @@ use p256::ProjectivePoint;
 use primefield::subtle::ConstantTimeEq;
 
 fn bench_projective(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Projective point operations");
+    let mut group = c.benchmark_group("ProjectivePoint constant time operations");
 
-    group.bench_function("generator_vs_generator", |b| {
+    group.bench_function("point_generator_ct_eq", |b| {
         b.iter(|| ProjectivePoint::GENERATOR.ct_eq(&ProjectivePoint::GENERATOR))
-    });
-    group.bench_function("identity_vs_identity", |b| {
-        b.iter(|| ProjectivePoint::IDENTITY.ct_eq(&ProjectivePoint::IDENTITY))
-    });
-    group.bench_function("generator_vs_identity", |b| {
-        b.iter(|| ProjectivePoint::GENERATOR.ct_eq(&ProjectivePoint::IDENTITY))
     });
 
     group.finish();
