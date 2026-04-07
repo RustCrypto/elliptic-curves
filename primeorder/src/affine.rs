@@ -10,7 +10,7 @@ use core::{
 use elliptic_curve::{
     Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, Generate, PublicKey, Result, Scalar,
     array::ArraySize,
-    ctutils::{self, CtGt as _, CtSelect as _},
+    ctutils::{Choice, CtAssign, CtAssignSlice, CtEq, CtEqSlice, CtGt, CtOption, CtSelect},
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
@@ -19,10 +19,8 @@ use elliptic_curve::{
         self, CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToCompactSec1Point,
         ToSec1Point, UncompressedPointSize,
     },
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
-
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
 
@@ -73,7 +71,7 @@ where
 
         Self {
             x: self.x,
-            y: C::FieldElement::conditional_select(&self.y, &neg_self.y, choice.into()),
+            y: C::FieldElement::ct_select(&self.y, &neg_self.y, choice.into()),
             infinity: self.infinity,
         }
     }
@@ -108,13 +106,15 @@ where
     type FieldRepr = FieldBytes<C>;
 
     fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
-        C::FieldElement::from_repr(*y).and_then(|y| {
-            C::FieldElement::from_repr(*x).and_then(|x| {
-                let lhs = y * &y;
-                let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
-                CtOption::new(Self { x, y, infinity: 0 }, lhs.ct_eq(&rhs))
+        C::FieldElement::from_repr(*y)
+            .and_then(|y| {
+                C::FieldElement::from_repr(*x).and_then(|x| {
+                    let lhs = y * &y;
+                    let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
+                    subtle::CtOption::new(Self { x, y, infinity: 0 }, lhs.ct_eq(&rhs).into())
+                })
             })
-        })
+            .into()
     }
 
     fn x(&self) -> FieldBytes<C> {
@@ -126,29 +126,28 @@ where
     }
 
     fn x_is_odd(&self) -> Choice {
-        self.x.is_odd()
+        self.x.is_odd().into()
     }
 
     fn y_is_odd(&self) -> Choice {
-        self.y.is_odd()
+        self.y.is_odd().into()
     }
 }
 
-impl<C> ConditionallySelectable for AffinePoint<C>
+impl<C> CtAssign for AffinePoint<C>
 where
     C: PrimeCurveParams,
 {
-    #[inline(always)]
-    fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self {
-            x: C::FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: C::FieldElement::conditional_select(&a.y, &b.y, choice),
-            infinity: u8::conditional_select(&a.infinity, &b.infinity, choice),
-        }
+    #[inline]
+    fn ct_assign(&mut self, other: &Self, choice: Choice) {
+        self.x.ct_assign(&other.x, choice);
+        self.y.ct_assign(&other.y, choice);
+        self.infinity.ct_assign(&other.infinity, choice);
     }
 }
+impl<C: PrimeCurveParams> CtAssignSlice for AffinePoint<C> {}
 
-impl<C> ConstantTimeEq for AffinePoint<C>
+impl<C> CtEq for AffinePoint<C>
 where
     C: PrimeCurveParams,
 {
@@ -156,22 +155,35 @@ where
         self.x.ct_eq(&other.x) & self.y.ct_eq(&other.y) & self.infinity.ct_eq(&other.infinity)
     }
 }
+impl<C: PrimeCurveParams> CtEqSlice for AffinePoint<C> {}
 
-impl<C> ctutils::CtEq for AffinePoint<C>
+impl<C> CtSelect for AffinePoint<C>
 where
     C: PrimeCurveParams,
 {
-    fn ct_eq(&self, other: &Self) -> ctutils::Choice {
-        ConstantTimeEq::ct_eq(self, other).into()
+    #[inline]
+    fn ct_select(&self, other: &Self, choice: Choice) -> Self {
+        let mut ret = *self;
+        ret.ct_assign(other, choice);
+        ret
     }
 }
 
-impl<C> ctutils::CtSelect for AffinePoint<C>
+impl<C> subtle::ConstantTimeEq for AffinePoint<C>
 where
     C: PrimeCurveParams,
 {
-    fn ct_select(&self, other: &Self, choice: ctutils::Choice) -> Self {
-        ConditionallySelectable::conditional_select(self, other, choice.into())
+    fn ct_eq(&self, other: &Self) -> subtle::Choice {
+        CtEq::ct_eq(self, other).into()
+    }
+}
+
+impl<C> subtle::ConditionallySelectable for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn conditional_select(a: &Self, b: &Self, choice: subtle::Choice) -> Self {
+        CtSelect::ct_select(a, b, choice.into())
     }
 }
 
@@ -192,20 +204,17 @@ where
     FieldBytes<C>: Copy,
 {
     fn decompress(x_bytes: &FieldBytes<C>, y_is_odd: Choice) -> CtOption<Self> {
-        C::FieldElement::from_repr(*x_bytes).and_then(|x| {
-            let alpha = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
-            let beta = alpha.sqrt();
+        C::FieldElement::from_repr(*x_bytes)
+            .and_then(|x| {
+                let alpha = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
+                let beta = alpha.sqrt();
 
-            beta.map(|beta| {
-                let y = C::FieldElement::conditional_select(
-                    &-beta,
-                    &beta,
-                    beta.is_odd().ct_eq(&y_is_odd),
-                );
-
-                Self { x, y, infinity: 0 }
+                beta.map(|beta| {
+                    let y = (-beta).ct_select(&beta, beta.is_odd().ct_eq(&y_is_odd.into()));
+                    Self { x, y, infinity: 0 }
+                })
             })
-        })
+            .into()
     }
 }
 
@@ -215,7 +224,7 @@ where
     FieldBytes<C>: Copy,
 {
     fn decompact(x_bytes: &FieldBytes<C>) -> CtOption<Self> {
-        Self::decompress(x_bytes, Choice::from(0)).map(|point| point.to_compact())
+        Self::decompress(x_bytes, Choice::FALSE).map(|point| point.to_compact())
     }
 }
 
@@ -234,9 +243,9 @@ where
     /// # Returns
     ///
     /// `None` value if `encoded_point` is not on the secp384r1 curve.
-    fn from_sec1_point(encoded_point: &Sec1Point<C>) -> ctutils::CtOption<Self> {
+    fn from_sec1_point(encoded_point: &Sec1Point<C>) -> CtOption<Self> {
         match encoded_point.coordinates() {
-            sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
+            sec1::Coordinates::Identity => CtOption::some(Self::IDENTITY),
             sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
                 Self::decompress(x, Choice::from(y_is_odd as u8)).into()
@@ -326,21 +335,20 @@ where
     type Repr = CompressedPoint<C>;
 
     /// NOTE: not constant-time with respect to identity point
-    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+    fn from_bytes(bytes: &Self::Repr) -> subtle::CtOption<Self> {
         Sec1Point::<C>::from_bytes(bytes)
-            .map(ctutils::CtOption::some)
+            .map(CtOption::some)
             .unwrap_or_else(|_| {
                 // SEC1 identity encoding is technically 1-byte 0x00, but the
                 // `GroupEncoding` API requires a fixed-width `Repr`
-                let is_identity =
-                    ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
-                ctutils::CtOption::new(Sec1Point::<C>::identity(), is_identity)
+                let is_identity = CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
+                CtOption::new(Sec1Point::<C>::identity(), is_identity)
             })
             .and_then(|point| Self::from_sec1_point(&point))
             .into()
     }
 
-    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> subtle::CtOption<Self> {
         // No unchecked conversion possible for compressed points
         Self::from_bytes(bytes)
     }
@@ -383,8 +391,8 @@ where
         Self::GENERATOR
     }
 
-    fn is_identity(&self) -> Choice {
-        self.is_identity()
+    fn is_identity(&self) -> subtle::Choice {
+        self.is_identity().into()
     }
 
     fn to_curve(&self) -> ProjectivePoint<C> {
@@ -400,7 +408,7 @@ where
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     /// Serialize this value as a  SEC1 compact [`Sec1Point`]
-    fn to_compact_encoded_point(&self) -> ctutils::CtOption<Sec1Point<C>> {
+    fn to_compact_encoded_point(&self) -> CtOption<Sec1Point<C>> {
         let point = self.to_compact();
 
         let mut bytes = CompressedPoint::<C>::default();
@@ -408,9 +416,8 @@ where
         bytes[1..].copy_from_slice(&point.x.to_repr());
 
         let encoded = Sec1Point::<C>::from_bytes(bytes);
-        let is_some =
-            ctutils::CtEq::ct_eq(point.y.to_repr().as_slice(), self.y.to_repr().as_slice());
-        ctutils::CtOption::new(encoded.unwrap_or_default(), is_some)
+        let is_some = CtEq::ct_eq(point.y.to_repr().as_slice(), self.y.to_repr().as_slice());
+        CtOption::new(encoded.unwrap_or_default(), is_some)
     }
 }
 
