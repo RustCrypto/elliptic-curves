@@ -31,7 +31,10 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+use {
+    alloc::vec::Vec,
+    elliptic_curve::group::{Wnaf, WnafGroup},
+};
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
@@ -115,6 +118,15 @@ where
         let mut pc = LookupTable::new(*self);
 
         lincomb(array::from_mut(&mut k), array::from_mut(&mut pc))
+    }
+
+    /// Obtain a wNAF context for this group.
+    #[cfg(feature = "alloc")]
+    pub fn wnaf() -> Wnaf<(), Vec<Self>, Vec<i64>>
+    where
+        FieldBytes<C>: Copy,
+    {
+        Wnaf::new()
     }
 }
 
@@ -598,6 +610,19 @@ where
 
     fn try_from(point: &ProjectivePoint<C>) -> Result<PublicKey<C>> {
         AffinePoint::<C>::from(point).try_into()
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl<C> WnafGroup for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    FieldBytes<C>: Copy,
+{
+    fn recommended_wnaf_for_num_scalars(_num_scalars: usize) -> usize {
+        // TODO(tarcieri): provide a way for individual curves to configure this
+        // Returns a number between 2 and 22, inclusive.
+        4 // This seems to be a common starting point?
     }
 }
 

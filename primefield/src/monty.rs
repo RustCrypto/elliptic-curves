@@ -475,6 +475,17 @@ where
         self.to_bytes()
     }
 
+    fn to_le_repr(&self) -> Self::Repr {
+        match MOD::BYTE_ORDER {
+            ByteOrder::BigEndian => {
+                let mut bytes = self.to_bytes();
+                bytes.reverse();
+                bytes
+            }
+            ByteOrder::LittleEndian => self.to_bytes(),
+        }
+    }
+
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }

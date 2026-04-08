@@ -347,6 +347,11 @@ macro_rules! monty_field_element {
             }
 
             #[inline]
+            fn to_le_repr(&self) -> Self::Repr {
+                self.0.to_le_repr()
+            }
+
+            #[inline]
             fn is_odd(&self) -> $crate::subtle::Choice {
                 self.0.is_odd()
             }

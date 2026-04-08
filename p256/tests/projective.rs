@@ -18,6 +18,9 @@ use p256::{
 use primeorder::test_projective_arithmetic;
 use proptest::{prelude::any, prop_compose, proptest};
 
+#[cfg(feature = "alloc")]
+use elliptic_curve::point::AffineCoordinates;
+
 test_projective_arithmetic!(
     AffinePoint,
     ProjectivePoint,
@@ -30,6 +33,21 @@ test_projective_arithmetic!(
 fn projective_identity_to_bytes() {
     // This is technically an invalid SEC1 encoding, but is preferable to panicking.
     assert_eq!([0; 33], ProjectivePoint::IDENTITY.to_bytes().as_slice());
+}
+
+#[cfg(feature = "alloc")]
+#[test]
+fn wnaf() {
+    for (k, coords) in ADD_TEST_VECTORS.iter().enumerate() {
+        let scalar = Scalar::from(k as u64 + 1);
+        let mut wnaf = ProjectivePoint::wnaf();
+        let mut wnaf_base = wnaf.base(ProjectivePoint::GENERATOR, 1);
+        let p = wnaf_base.scalar(&scalar).to_affine();
+
+        let (x, y) = (p.x(), p.y());
+        assert_eq!(x.0, coords.0);
+        assert_eq!(y.0, coords.1);
+    }
 }
 
 prop_compose! {

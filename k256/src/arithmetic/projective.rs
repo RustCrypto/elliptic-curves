@@ -24,7 +24,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use alloc::vec::Vec;
+use {alloc::vec::Vec, elliptic_curve::group::WnafGroup};
 
 #[rustfmt::skip]
 const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
@@ -523,6 +523,15 @@ impl PrimeCurve for ProjectivePoint {
 }
 
 impl PrimeGroup for ProjectivePoint {}
+
+#[cfg(feature = "alloc")]
+impl WnafGroup for ProjectivePoint {
+    fn recommended_wnaf_for_num_scalars(_num_scalars: usize) -> usize {
+        // TODO(tarcieri): provide a way for individual curves to configure this
+        // Returns a number between 2 and 22, inclusive.
+        4 // This seems to be a common starting point?
+    }
+}
 
 //
 // `core::ops` trait impls
