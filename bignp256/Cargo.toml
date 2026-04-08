@@ -18,7 +18,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-elliptic-curve = { version = "0.14.0-rc.29", features = ["sec1"] }
+elliptic-curve = { version = "0.14.0-rc.30", features = ["sec1"] }
 
 # optional dependencies
 belt-block = { version = "0.2.0-rc.3", optional = true }
@@ -38,7 +38,7 @@ signature = { version = "3.0.0-rc.10", optional = true }
 
 [dev-dependencies]
 criterion = "0.7"
-elliptic-curve = { version = "0.14.0-rc.29", default-features = false, features = ["dev"] }
+elliptic-curve = { version = "0.14.0-rc.30", default-features = false, features = ["dev"] }
 hex-literal = "1"
 primeorder = { version = "0.14.0-rc.8", features = ["dev"] }
 proptest = "1"

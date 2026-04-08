@@ -305,6 +305,10 @@ impl PrimeField for Scalar {
         self.to_bytes()
     }
 
+    fn to_le_repr(&self) -> FieldBytes {
+        self.0.to_le_byte_array()
+    }
+
     fn is_odd(&self) -> Choice {
         self.0.is_odd().into()
     }

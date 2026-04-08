@@ -28,14 +28,13 @@ use core::{
 };
 use elliptic_curve::{
     Generate,
-    bigint::{Odd, U256, modular::Retrieve},
+    bigint::{ArrayEncoding, Odd, U256, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::{TryCryptoRng, TryRng},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
-
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
 
@@ -317,6 +316,10 @@ impl PrimeField for FieldElement {
 
     fn to_repr(&self) -> Self::Repr {
         self.to_bytes()
+    }
+
+    fn to_le_repr(&self) -> Self::Repr {
+        self.0.normalize().to_u256().to_le_byte_array()
     }
 
     fn is_odd(&self) -> Choice {

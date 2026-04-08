@@ -561,6 +561,13 @@ impl PrimeField for FieldElement {
     }
 
     #[inline]
+    fn to_le_repr(&self) -> FieldBytes {
+        let mut ret = [0u8; 66];
+        fiat_p521_to_bytes(&mut ret, &self.0); // natively little-endian
+        ret.into()
+    }
+
+    #[inline]
     fn is_odd(&self) -> Choice {
         self.is_odd()
     }
