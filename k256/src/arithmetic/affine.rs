@@ -4,11 +4,11 @@
 
 use super::{CURVE_EQUATION_B, FieldElement, ProjectivePoint};
 use crate::{CompressedPoint, FieldBytes, PublicKey, Scalar, Sec1Point, Secp256k1};
-use core::ops::{Mul, Neg};
 use elliptic_curve::{
     Error, Generate, Result, ctutils,
     ff::PrimeField,
     group::{GroupEncoding, prime::PrimeCurveAffine},
+    ops::{Mul, MulVartime, Neg},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{self, FromSec1Point, ToSec1Point},
@@ -230,6 +230,18 @@ impl Mul<&Scalar> for AffinePoint {
 
     fn mul(self, scalar: &Scalar) -> ProjectivePoint {
         ProjectivePoint::from(self) * scalar
+    }
+}
+
+impl MulVartime<Scalar> for AffinePoint {
+    fn mul_vartime(self, scalar: Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self).mul_vartime(scalar)
+    }
+}
+
+impl MulVartime<&Scalar> for AffinePoint {
+    fn mul_vartime(self, scalar: &Scalar) -> ProjectivePoint {
+        ProjectivePoint::from(self).mul_vartime(scalar)
     }
 }
 

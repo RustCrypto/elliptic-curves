@@ -3,12 +3,7 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
-use core::{
-    array,
-    borrow::Borrow,
-    iter::Sum,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-};
+use core::{array, borrow::Borrow, iter::Sum};
 use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, FieldBytes, FieldBytesSize, Generate, PrimeField, PublicKey,
     Result, Scalar,
@@ -20,7 +15,10 @@ use elliptic_curve::{
         cofactor::CofactorGroup,
         prime::{PrimeCurve, PrimeGroup},
     },
-    ops::{BatchInvert, LinearCombination},
+    ops::{
+        Add, AddAssign, BatchInvert, LinearCombination, Mul, MulAssign, MulVartime, Neg, Sub,
+        SubAssign,
+    },
     point::{Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{
@@ -118,6 +116,15 @@ where
         let mut pc = LookupTable::new(*self);
 
         lincomb(array::from_mut(&mut k), array::from_mut(&mut pc))
+    }
+
+    /// Returns `[k] self` computed in variable time.
+    fn mul_vartime(&self, k: &Scalar<C>) -> Self
+    where
+        Self: Double,
+    {
+        // TODO(tarcieri): use wNAF for variable-time scalar multiplication when available
+        self.mul(k)
     }
 
     /// Obtain a wNAF context for this group.
@@ -887,6 +894,38 @@ where
 
     fn mul(self, scalar: &Scalar<C>) -> ProjectivePoint<C> {
         ProjectivePoint::mul(self, scalar)
+    }
+}
+
+impl<C, S> MulVartime<S> for ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+    S: Borrow<Scalar<C>>,
+{
+    fn mul_vartime(self, scalar: S) -> Self {
+        ProjectivePoint::mul_vartime(&self, scalar.borrow())
+    }
+}
+
+impl<C, S> MulVartime<S> for &ProjectivePoint<C>
+where
+    Self: Double,
+    C: PrimeCurveParams,
+    S: Borrow<Scalar<C>>,
+{
+    fn mul_vartime(self, scalar: S) -> ProjectivePoint<C> {
+        ProjectivePoint::mul_vartime(self, scalar.borrow())
+    }
+}
+
+impl<C> MulVartime<&Scalar<C>> for &ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    ProjectivePoint<C>: Double,
+{
+    fn mul_vartime(self, scalar: &Scalar<C>) -> ProjectivePoint<C> {
+        ProjectivePoint::mul_vartime(self, scalar)
     }
 }
 

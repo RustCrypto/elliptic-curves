@@ -2,9 +2,9 @@ use crate::{
     Decaf448FieldBytes, DecafPoint, DecafScalar, ORDER,
     curve::twedwards::affine::AffinePoint as InnerAffinePoint, field::FieldElement,
 };
-use core::ops::Mul;
 use elliptic_curve::{
     Error, Generate, ctutils,
+    ops::{Mul, MulVartime},
     point::{AffineCoordinates, NonIdentity},
     zeroize::DefaultIsZeroes,
 };
@@ -131,6 +131,28 @@ impl Mul<&DecafScalar> for &AffinePoint {
     #[inline]
     fn mul(self, scalar: &DecafScalar) -> DecafPoint {
         self.to_decaf() * scalar
+    }
+}
+
+impl MulVartime<DecafScalar> for AffinePoint {
+    #[inline]
+    fn mul_vartime(self, scalar: DecafScalar) -> DecafPoint {
+        self.mul_vartime(&scalar)
+    }
+}
+
+impl MulVartime<&DecafScalar> for AffinePoint {
+    #[inline]
+    fn mul_vartime(self, scalar: &DecafScalar) -> DecafPoint {
+        // TODO(tarcieri): optimized vartime implementation
+        self.to_decaf() * scalar
+    }
+}
+
+impl MulVartime<&DecafScalar> for &AffinePoint {
+    #[inline]
+    fn mul_vartime(self, scalar: &DecafScalar) -> DecafPoint {
+        (*self).mul_vartime(scalar)
     }
 }
 

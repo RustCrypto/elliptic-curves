@@ -1,11 +1,11 @@
 use crate::*;
 
-use core::cmp::Ordering;
-use core::fmt::{Debug, Display, Formatter, Result as FmtResult};
-use core::iter::{Product, Sum};
-use core::marker::PhantomData;
-use core::ops::{
-    Add, AddAssign, Index, IndexMut, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign,
+use core::{
+    cmp::Ordering,
+    fmt::{Debug, Display, Formatter, Result as FmtResult},
+    iter::{Product, Sum},
+    marker::PhantomData,
+    ops::{Index, IndexMut},
 };
 use elliptic_curve::{
     CurveArithmetic, Generate, PrimeField,
@@ -17,7 +17,10 @@ use elliptic_curve::{
     consts::U2,
     ctutils::{self, CtSelect},
     ff::{Field, helpers},
-    ops::{Invert, Reduce, ReduceNonZero},
+    ops::{
+        Add, AddAssign, Invert, Mul, MulAssign, Neg, Reduce, ReduceNonZero, Shr, ShrAssign, Sub,
+        SubAssign,
+    },
     scalar::{FromUintUnchecked, IsHigh},
 };
 use rand_core::{CryptoRng, Rng, TryCryptoRng, TryRng};
