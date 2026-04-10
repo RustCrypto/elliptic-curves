@@ -1,7 +1,9 @@
-use core::borrow::Borrow;
-use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
-use core::iter::Sum;
-use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::{
+    borrow::Borrow,
+    fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex},
+    iter::Sum,
+};
+use elliptic_curve::ops::{Add, AddAssign, Mul, MulAssign, MulVartime, Neg, Sub, SubAssign};
 
 use crate::{
     GOLDILOCKS_BASE_POINT, MontgomeryPoint, U57, U448,
@@ -717,6 +719,25 @@ impl Mul<&EdwardsScalar> for &EdwardsPoint {
 
     /// Scalar multiplication: compute `scalar * self`.
     fn mul(self, scalar: &EdwardsScalar) -> EdwardsPoint {
+        self.scalar_mul(scalar)
+    }
+}
+
+impl MulVartime<EdwardsScalar> for EdwardsPoint {
+    fn mul_vartime(self, scalar: EdwardsScalar) -> EdwardsPoint {
+        self.mul_vartime(&scalar)
+    }
+}
+
+impl MulVartime<&EdwardsScalar> for EdwardsPoint {
+    fn mul_vartime(self, scalar: &EdwardsScalar) -> EdwardsPoint {
+        MulVartime::mul_vartime(&self, scalar)
+    }
+}
+
+impl MulVartime<&EdwardsScalar> for &EdwardsPoint {
+    fn mul_vartime(self, scalar: &EdwardsScalar) -> EdwardsPoint {
+        // TODO(tarcieri): optimized vartime implementation
         self.scalar_mul(scalar)
     }
 }

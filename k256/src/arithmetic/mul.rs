@@ -38,16 +38,25 @@ use crate::arithmetic::{
     ProjectivePoint,
     scalar::{Scalar, WideScalar},
 };
+use elliptic_curve::{
+    ops::{LinearCombination, Mul, MulAssign, MulVartime},
+    scalar::IsHigh,
+    subtle::ConditionallySelectable,
+};
 
-use core::ops::{Mul, MulAssign};
-use elliptic_curve::{ops::LinearCombination, scalar::IsHigh, subtle::ConditionallySelectable};
+#[cfg(feature = "precomputed-tables")]
+use elliptic_curve::point::PointWithBasepointTable;
 
-/// Lookup table for multiples of a given point.
-type LookupTable = elliptic_curve::point::LookupTable<ProjectivePoint>;
+/// Window size for the basepoint table.
+#[cfg(feature = "precomputed-tables")]
+const WINDOW_SIZE: usize = 33;
 
 /// Basepoint table for multiples of secp256k1's generator.
 #[cfg(feature = "precomputed-tables")]
-type BasepointTable = elliptic_curve::point::BasepointTable<ProjectivePoint, 33>;
+type BasepointTable = elliptic_curve::point::BasepointTable<ProjectivePoint, WINDOW_SIZE>;
+
+/// Lookup table for multiples of a given point.
+type LookupTable = elliptic_curve::point::LookupTable<ProjectivePoint>;
 
 const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,
@@ -319,6 +328,11 @@ fn lincomb(
 #[cfg(feature = "precomputed-tables")]
 static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
 
+#[cfg(feature = "precomputed-tables")]
+impl PointWithBasepointTable<WINDOW_SIZE> for ProjectivePoint {
+    const BASEPOINT_TABLE: &'static BasepointTable = &BASEPOINT_TABLE;
+}
+
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(not(feature = "precomputed-tables"))]
@@ -371,6 +385,27 @@ impl Mul<&Scalar> for ProjectivePoint {
     type Output = ProjectivePoint;
 
     fn mul(self, other: &Scalar) -> ProjectivePoint {
+        mul(&self, other)
+    }
+}
+
+impl MulVartime<Scalar> for ProjectivePoint {
+    fn mul_vartime(self, other: Scalar) -> ProjectivePoint {
+        // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
+        mul(&self, &other)
+    }
+}
+
+impl MulVartime<&Scalar> for &ProjectivePoint {
+    fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
+        // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
+        mul(self, other)
+    }
+}
+
+impl MulVartime<&Scalar> for ProjectivePoint {
+    // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
+    fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
         mul(&self, other)
     }
 }

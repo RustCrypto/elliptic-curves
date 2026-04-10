@@ -1,8 +1,11 @@
-use crate::field::FieldElement;
-use crate::*;
+use crate::{field::FieldElement, *};
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
-use core::ops::Mul;
-use elliptic_curve::{Error, Generate, ctutils, point::NonIdentity, zeroize::DefaultIsZeroes};
+use elliptic_curve::{
+    Error, Generate, ctutils,
+    ops::{Mul, MulVartime},
+    point::NonIdentity,
+    zeroize::DefaultIsZeroes,
+};
 use rand_core::{TryCryptoRng, TryRng};
 use subtle::{Choice, ConditionallyNegatable, ConditionallySelectable, ConstantTimeEq, CtOption};
 
@@ -217,6 +220,28 @@ impl Mul<&EdwardsScalar> for &AffinePoint {
     #[inline]
     fn mul(self, scalar: &EdwardsScalar) -> Self::Output {
         self.to_edwards() * scalar
+    }
+}
+
+impl MulVartime<EdwardsScalar> for AffinePoint {
+    #[inline]
+    fn mul_vartime(self, scalar: EdwardsScalar) -> Self::Output {
+        self.mul_vartime(&scalar)
+    }
+}
+
+impl MulVartime<&EdwardsScalar> for AffinePoint {
+    #[inline]
+    fn mul_vartime(self, scalar: &EdwardsScalar) -> Self::Output {
+        MulVartime::mul_vartime(&self, scalar)
+    }
+}
+
+impl MulVartime<&EdwardsScalar> for &AffinePoint {
+    #[inline]
+    fn mul_vartime(self, scalar: &EdwardsScalar) -> Self::Output {
+        // TODO(tarcieri): optimized vartime implementation
+        self * scalar
     }
 }
 

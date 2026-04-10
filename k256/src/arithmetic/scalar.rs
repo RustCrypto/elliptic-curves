@@ -1,19 +1,16 @@
 //! Scalar field arithmetic.
 
-use crate::{
-    FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes,
-    arithmetic::{AffinePoint, ProjectivePoint},
-};
-use core::{
-    iter::{Product, Sum},
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shr, ShrAssign, Sub, SubAssign},
-};
+use crate::{FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes};
+use core::iter::{Product, Sum};
 use elliptic_curve::{
     Curve, Error, Generate, ScalarValue,
     bigint::{ArrayEncoding, Limb, U256, U512, Word, cpubits, modular::Retrieve},
     ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
-    ops::{Invert, Reduce, ReduceNonZero},
+    ops::{
+        Add, AddAssign, Invert, Mul, MulAssign, Neg, Reduce, ReduceNonZero, Shr, ShrAssign, Sub,
+        SubAssign,
+    },
     rand_core::{CryptoRng, TryCryptoRng, TryRng},
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{
@@ -615,77 +612,7 @@ impl Mul<&Scalar> for Scalar {
     }
 }
 
-impl Mul<AffinePoint> for Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: AffinePoint) -> ProjectivePoint {
-        rhs * self
-    }
-}
-
-impl Mul<&AffinePoint> for Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: &AffinePoint) -> ProjectivePoint {
-        *rhs * self
-    }
-}
-
-impl Mul<AffinePoint> for &Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: AffinePoint) -> ProjectivePoint {
-        rhs * self
-    }
-}
-
-impl Mul<&AffinePoint> for &Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: &AffinePoint) -> ProjectivePoint {
-        *rhs * self
-    }
-}
-
-impl Mul<ProjectivePoint> for Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: ProjectivePoint) -> ProjectivePoint {
-        rhs * self
-    }
-}
-
-impl Mul<&ProjectivePoint> for Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: &ProjectivePoint) -> ProjectivePoint {
-        rhs * &self
-    }
-}
-
-impl Mul<ProjectivePoint> for &Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: ProjectivePoint) -> ProjectivePoint {
-        rhs * self
-    }
-}
-
-impl Mul<&ProjectivePoint> for &Scalar {
-    type Output = ProjectivePoint;
-
-    #[inline]
-    fn mul(self, rhs: &ProjectivePoint) -> ProjectivePoint {
-        rhs * self
-    }
-}
+elliptic_curve::scalar_mul_impls!(Secp256k1, Scalar);
 
 impl MulAssign<Scalar> for Scalar {
     fn mul_assign(&mut self, rhs: Scalar) {

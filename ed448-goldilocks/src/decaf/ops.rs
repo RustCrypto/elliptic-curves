@@ -1,10 +1,9 @@
 use crate::{DecafAffinePoint, DecafScalar, curve::scalar_mul::double_and_add};
-use core::{
-    borrow::Borrow,
-    iter::Sum,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+use core::{borrow::Borrow, iter::Sum};
+use elliptic_curve::{
+    CurveGroup,
+    ops::{Add, AddAssign, Mul, MulAssign, MulVartime, Neg, Sub, SubAssign},
 };
-use elliptic_curve::CurveGroup;
 
 use super::DecafPoint;
 
@@ -15,6 +14,25 @@ impl Mul<&DecafScalar> for &DecafPoint {
     fn mul(self, scalar: &DecafScalar) -> DecafPoint {
         // XXX: We can do better than double and add
         DecafPoint(double_and_add(&self.0, scalar.bits()).to_extended())
+    }
+}
+
+impl MulVartime<DecafScalar> for DecafPoint {
+    fn mul_vartime(self, scalar: DecafScalar) -> DecafPoint {
+        MulVartime::mul_vartime(&self, &scalar)
+    }
+}
+
+impl MulVartime<&DecafScalar> for DecafPoint {
+    fn mul_vartime(self, scalar: &DecafScalar) -> DecafPoint {
+        MulVartime::mul_vartime(&self, scalar)
+    }
+}
+
+impl MulVartime<&DecafScalar> for &DecafPoint {
+    fn mul_vartime(self, scalar: &DecafScalar) -> DecafPoint {
+        // TODO(tarcieri): optimized vartime implementation
+        self * scalar
     }
 }
 

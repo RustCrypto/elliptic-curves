@@ -3,16 +3,14 @@
 #![allow(clippy::op_ref)]
 
 use crate::{PrimeCurveParams, ProjectivePoint};
-use core::{
-    borrow::Borrow,
-    ops::{Mul, Neg},
-};
+use core::borrow::Borrow;
 use elliptic_curve::{
     Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, Generate, PublicKey, Result, Scalar,
     array::ArraySize,
     ctutils::{self, CtGt as _, CtSelect as _},
     ff::{Field, PrimeField},
     group::{GroupEncoding, prime::PrimeCurveAffine},
+    ops::{Mul, MulVartime, Neg},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{
@@ -525,6 +523,30 @@ where
     #[inline]
     fn mul(self, scalar: S) -> ProjectivePoint<C> {
         ProjectivePoint::<C>::from(self) * scalar
+    }
+}
+
+impl<C, S> MulVartime<S> for AffinePoint<C>
+where
+    C: PrimeCurveParams,
+    S: Borrow<Scalar<C>>,
+    ProjectivePoint<C>: Double,
+{
+    #[inline]
+    fn mul_vartime(self, scalar: S) -> ProjectivePoint<C> {
+        ProjectivePoint::<C>::from(self).mul_vartime(scalar)
+    }
+}
+
+impl<C, S> MulVartime<S> for &AffinePoint<C>
+where
+    C: PrimeCurveParams,
+    S: Borrow<Scalar<C>>,
+    ProjectivePoint<C>: Double,
+{
+    #[inline]
+    fn mul_vartime(self, scalar: S) -> ProjectivePoint<C> {
+        ProjectivePoint::<C>::from(self).mul_vartime(scalar)
     }
 }
 
