@@ -4,7 +4,11 @@ use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
-use p256::{ProjectivePoint, Scalar, elliptic_curve::group::ff::PrimeField};
+use p256::{
+    ProjectivePoint, Scalar,
+    elliptic_curve::{group::ff::PrimeField, ops::MulVartime},
+};
+use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(
@@ -25,6 +29,9 @@ fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let m = test_scalar_x();
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| b.iter(|| p * s));
+    group.bench_function("point-scalar mul (variable-time)", |b| {
+        b.iter(|| black_box(p).mul_vartime(&black_box(s)))
+    });
 }
 
 fn bench_scalar_sub<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
@@ -42,7 +49,7 @@ fn bench_scalar_add<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
 fn bench_scalar_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let x = test_scalar_x();
     let y = test_scalar_y();
-    group.bench_function("mul", |b| b.iter(|| x * y));
+    group.bench_function("mul", |b| b.iter(|| black_box(x) * black_box(y)));
 }
 
 fn bench_scalar_negate<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {

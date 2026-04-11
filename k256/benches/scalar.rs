@@ -6,7 +6,11 @@ use criterion::{
 use hex_literal::hex;
 use k256::{
     ProjectivePoint, Scalar,
-    elliptic_curve::{Group, group::ff::PrimeField, ops::LinearCombination},
+    elliptic_curve::{
+        Group,
+        group::ff::PrimeField,
+        ops::{LinearCombination, MulVartime},
+    },
 };
 use std::hint::black_box;
 
@@ -40,6 +44,10 @@ fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| {
         b.iter(|| black_box(p) * black_box(s))
+    });
+
+    group.bench_function("point-scalar mul (variable-time)", |b| {
+        b.iter(|| black_box(p).mul_vartime(black_box(s)))
     });
 }
 
