@@ -24,7 +24,10 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use {alloc::vec::Vec, elliptic_curve::group::WnafGroup};
+use {
+    alloc::vec::Vec,
+    elliptic_curve::group::{Wnaf, WnafGroup},
+};
 
 #[rustfmt::skip]
 const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
@@ -243,6 +246,12 @@ impl ProjectivePoint {
         let y_eq = rhs_y.negate(1).add(&self.y).normalizes_to_zero();
 
         both_identity | (!rhs_identity & x_eq & y_eq)
+    }
+
+    /// Obtain a wNAF context for this group.
+    #[cfg(feature = "alloc")]
+    pub fn wnaf() -> Wnaf<(), Vec<Self>, Vec<i64>> {
+        Wnaf::new()
     }
 }
 
