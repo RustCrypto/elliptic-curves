@@ -112,7 +112,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "sec1",
  "signature",
 ]
@@ -216,7 +216,7 @@ dependencies = [
  "cfg-if",
  "cipher",
  "cpufeatures",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -399,7 +399,7 @@ dependencies = [
  "getrandom 0.4.2",
  "hybrid-array",
  "num-traits",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "subtle",
  "zeroize",
 ]
@@ -412,7 +412,7 @@ checksum = "77727bb15fa921304124b128af125e7e3b968275d1b108b379190264f4423710"
 dependencies = [
  "getrandom 0.4.2",
  "hybrid-array",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -490,7 +490,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "proptest",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "serde_bare",
  "serde_json",
  "serdect",
@@ -520,7 +520,7 @@ dependencies = [
  "once_cell",
  "pem-rfc7468",
  "pkcs8",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "rustcrypto-ff",
  "rustcrypto-group",
  "sec1",
@@ -596,7 +596,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi 6.0.0",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "wasip2",
  "wasip3",
 ]
@@ -924,7 +924,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "serdect",
  "sha2",
 ]
@@ -1007,7 +1007,7 @@ version = "0.14.0-rc.8"
 dependencies = [
  "crypto-bigint",
  "crypto-common",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "rustcrypto-ff",
  "subtle",
  "zeroize",
@@ -1126,9 +1126,9 @@ dependencies = [
 
 [[package]]
 name = "rand_core"
-version = "0.10.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c8d0fd677905edcbeedbf2edb6494d676f0e98d54d5cf9bda0b061cb8fb8aba"
+checksum = "63b8176103e19a2643978565ca18b50549f6101881c443590420e4dc998a3c69"
 
 [[package]]
 name = "rand_xorshift"
@@ -1205,7 +1205,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd2a8adb347447693cd2ba0d218c4b66c62da9b0a5672b17b981e4291ec65ff6"
 dependencies = [
  "bitvec",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "rustcrypto-ff_derive",
  "subtle",
 ]
@@ -1231,7 +1231,7 @@ version = "0.14.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "369f9b61aa45933c062c9f6b5c3c50ab710687eca83dd3802653b140b43f85ed"
 dependencies = [
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "rustcrypto-ff",
  "subtle",
 ]
@@ -1397,7 +1397,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f1880df446116126965eeec169136b2e0251dba37c6223bcc819569550edea3"
 dependencies = [
  "digest",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
 ]
 
 [[package]]
@@ -1412,7 +1412,7 @@ dependencies = [
  "primefield",
  "primeorder",
  "proptest",
- "rand_core 0.10.0",
+ "rand_core 0.10.1",
  "rfc6979",
  "serdect",
  "signature",
