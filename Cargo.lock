@@ -60,12 +60,6 @@ checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
 name = "belt-block"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d9aa1eef3994e2ccd304a78fe3fea4a73e5792007f85f09b79bb82143ca5f82b"
-
-[[package]]
-name = "belt-block"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0304188fd8684b910d24cae451c724cd5140a037c407e696247e94bb57b06434"
@@ -75,11 +69,11 @@ dependencies = [
 
 [[package]]
 name = "belt-hash"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "708822e7b2f678a17c1933aa32743e902906e4546614bb3f14f56212a8ab81f0"
+checksum = "84605d8024cc6794dc339947b933532675297372feef3ce1f45feeaa8da35fb8"
 dependencies = [
- "belt-block 0.1.2",
+ "belt-block",
  "digest",
 ]
 
@@ -98,7 +92,7 @@ dependencies = [
 name = "bignp256"
 version = "0.14.0-rc.8"
 dependencies = [
- "belt-block 0.2.0",
+ "belt-block",
  "belt-hash",
  "bign-genk",
  "criterion",
