@@ -123,8 +123,15 @@ where
     where
         Self: Double,
     {
-        // TODO(tarcieri): use wNAF for variable-time scalar multiplication when available
-        self.mul(k)
+        #[cfg(feature = "alloc")]
+        {
+            Self::wnaf().scalar(k).base(*self)
+        }
+
+        #[cfg(not(feature = "alloc"))]
+        {
+            self.mul(k)
+        }
     }
 
     /// Obtain a wNAF context for this group.
