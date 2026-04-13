@@ -5,8 +5,8 @@
 use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
 use core::{array, borrow::Borrow, iter::Sum};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, FieldBytes, FieldBytesSize, Generate, PrimeField, PublicKey,
-    Result, Scalar,
+    BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PrimeField, PublicKey, Result,
+    Scalar,
     array::ArraySize,
     bigint::{ArrayEncoding, ByteArray},
     ctutils,
@@ -129,10 +129,7 @@ where
 
     /// Obtain a wNAF context for this group.
     #[cfg(feature = "alloc")]
-    pub fn wnaf() -> Wnaf<(), Vec<Self>, Vec<i64>>
-    where
-        FieldBytes<C>: Copy,
-    {
+    pub fn wnaf() -> Wnaf<(), Vec<Self>, Vec<i64>> {
         Wnaf::new()
     }
 }
@@ -253,7 +250,6 @@ where
 impl<C> FromSec1Point<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
@@ -265,7 +261,6 @@ where
 impl<C> Generate for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
         rng: &mut R,
@@ -283,7 +278,6 @@ impl<C> CofactorGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
     CompressedPoint<C>: Send + Sync,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
@@ -306,7 +300,6 @@ where
 impl<C> CurveGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     type AffineRepr = AffinePoint<C>;
 
@@ -326,7 +319,6 @@ where
 impl<C> Group for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     type Scalar = Scalar<C>;
 
@@ -354,10 +346,8 @@ where
 impl<C> GroupEncoding for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Send + Sync,
-    FieldBytes<C>: Copy,
+    CompressedPoint<C>: Copy + Send + Sync,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Repr = CompressedPoint<C>;
@@ -381,7 +371,6 @@ where
     Self: Double,
     C: PrimeCurveParams,
     CompressedPoint<C>: Copy + Send + Sync,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
@@ -393,7 +382,6 @@ where
     Self: Double,
     C: PrimeCurveParams,
     CompressedPoint<C>: Copy + Send + Sync,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
@@ -406,7 +394,6 @@ where
 impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     type Output = [<Self as CurveGroup>::AffineRepr; N];
 
@@ -423,7 +410,6 @@ where
 impl<C> BatchNormalize<[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     type Output = Vec<<Self as CurveGroup>::AffineRepr>;
 
@@ -475,7 +461,6 @@ where
 impl<C> LinearCombination<[(Self, Scalar<C>)]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     #[cfg(feature = "alloc")]
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
@@ -496,7 +481,6 @@ where
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let mut ks: [_; N] = array::from_fn(|index| {
@@ -624,7 +608,6 @@ where
 impl<C> WnafGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     fn recommended_wnaf_for_num_scalars(_num_scalars: usize) -> usize {
         // TODO(tarcieri): provide a way for individual curves to configure this
@@ -986,7 +969,6 @@ where
 impl<'de, C> Deserialize<'de> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {

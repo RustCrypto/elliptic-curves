@@ -81,10 +81,7 @@ where
     /// TODO(tarcieri): find some way to avoid this?
     pub(crate) fn try_from_rng<R: TryRng + ?Sized>(
         rng: &mut R,
-    ) -> core::result::Result<Self, R::Error>
-    where
-        FieldBytes<C>: Copy,
-    {
+    ) -> core::result::Result<Self, R::Error> {
         let mut bytes = FieldBytes::<C>::default();
         let mut sign = 0;
 
@@ -101,13 +98,12 @@ where
 impl<C> AffineCoordinates for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     type FieldRepr = FieldBytes<C>;
 
     fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
-        C::FieldElement::from_repr(*y).and_then(|y| {
-            C::FieldElement::from_repr(*x).and_then(|x| {
+        C::FieldElement::from_repr(y.clone()).and_then(|y| {
+            C::FieldElement::from_repr(x.clone()).and_then(|x| {
                 let lhs = y * &y;
                 let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
                 CtOption::new(Self { x, y, infinity: 0 }, lhs.ct_eq(&rhs))
@@ -187,10 +183,9 @@ impl<C> DefaultIsZeroes for AffinePoint<C> where C: PrimeCurveParams {}
 impl<C> DecompressPoint<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     fn decompress(x_bytes: &FieldBytes<C>, y_is_odd: Choice) -> CtOption<Self> {
-        C::FieldElement::from_repr(*x_bytes).and_then(|x| {
+        C::FieldElement::from_repr(x_bytes.clone()).and_then(|x| {
             let alpha = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
             let beta = alpha.sqrt();
 
@@ -210,7 +205,6 @@ where
 impl<C> DecompactPoint<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     fn decompact(x_bytes: &FieldBytes<C>) -> CtOption<Self> {
         Self::decompress(x_bytes, Choice::from(0)).map(|point| point.to_compact())
@@ -222,9 +216,7 @@ impl<C> Eq for AffinePoint<C> where C: PrimeCurveParams {}
 impl<C> FromSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     /// Attempts to parse the given [`Sec1Point`] as an SEC1-encoded
     /// [`AffinePoint`].
@@ -304,7 +296,6 @@ where
 impl<C> Generate for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
 {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
         rng: &mut R,
@@ -317,7 +308,6 @@ impl<C> GroupEncoding for AffinePoint<C>
 where
     C: PrimeCurveParams,
     CompressedPoint<C>: Copy + Send + Sync,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
@@ -363,11 +353,9 @@ where
 impl<C> PrimeCurveAffine for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Send + Sync,
-    FieldBytes<C>: Copy,
+    CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     ProjectivePoint<C>: Double,
-    CompressedPoint<C>: Copy,
     <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Curve = ProjectivePoint<C>;
@@ -447,7 +435,6 @@ where
 impl<C> TryFrom<Sec1Point<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
@@ -461,7 +448,6 @@ where
 impl<C> TryFrom<&Sec1Point<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
@@ -602,7 +588,6 @@ where
 impl<'de, C> Deserialize<'de> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytes<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
 {
