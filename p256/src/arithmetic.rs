@@ -5,9 +5,10 @@
 //! [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 
 pub(crate) mod field;
+pub(crate) mod scalar;
+
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
-pub(crate) mod scalar;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP256;
@@ -19,6 +20,19 @@ pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 
 /// Elliptic curve point in projective coordinates.
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP256>;
+
+/// Window size for the variable-time basepoint table.
+#[cfg(feature = "precomputed-tables")]
+const WINDOW_SIZE_VARTIME: usize = 8;
+
+/// Variable-time basepoint table for NIST P-256's generator.
+#[cfg(feature = "precomputed-tables")]
+type BasepointTableVartime =
+    elliptic_curve::point::BasepointTableVartime<ProjectivePoint, WINDOW_SIZE_VARTIME>;
+
+/// Lazily computed basepoint table.
+#[cfg(feature = "precomputed-tables")]
+static BASEPOINT_TABLE_VARTIME: BasepointTableVartime = BasepointTableVartime::new();
 
 impl CurveArithmetic for NistP256 {
     type AffinePoint = AffinePoint;
@@ -60,4 +74,9 @@ impl PrimeCurveParams for NistP256 {
             "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
         ),
     );
+
+    #[cfg(feature = "precomputed-tables")]
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        BASEPOINT_TABLE_VARTIME.mul(k)
+    }
 }
