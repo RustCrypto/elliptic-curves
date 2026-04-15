@@ -3,7 +3,9 @@ use core::{
     fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex},
     iter::Sum,
 };
-use elliptic_curve::ops::{Add, AddAssign, Mul, MulAssign, MulVartime, Neg, Sub, SubAssign};
+use elliptic_curve::ops::{
+    Add, AddAssign, Mul, MulAssign, MulByGeneratorVartime, MulVartime, Neg, Sub, SubAssign,
+};
 
 use crate::{
     GOLDILOCKS_BASE_POINT, MontgomeryPoint, U57, U448,
@@ -741,6 +743,8 @@ impl MulVartime<&EdwardsScalar> for &EdwardsPoint {
         self.scalar_mul(scalar)
     }
 }
+
+impl MulByGeneratorVartime for EdwardsPoint {}
 
 #[cfg(feature = "serde")]
 impl serdect::serde::Serialize for EdwardsPoint {
