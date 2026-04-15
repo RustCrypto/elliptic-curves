@@ -50,6 +50,9 @@ pub mod schnorr;
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
 
+#[cfg(feature = "hash2curve")]
+pub use hash2curve;
+
 pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
