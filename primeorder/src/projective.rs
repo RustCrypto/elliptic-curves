@@ -16,8 +16,8 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
     },
     ops::{
-        Add, AddAssign, BatchInvert, LinearCombination, Mul, MulAssign, MulVartime, Neg, Sub,
-        SubAssign,
+        Add, AddAssign, BatchInvert, LinearCombination, Mul, MulAssign, MulByGeneratorVartime,
+        MulVartime, Neg, Sub, SubAssign,
     },
     point::{Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
@@ -916,6 +916,26 @@ where
 {
     fn mul_vartime(self, scalar: &Scalar<C>) -> ProjectivePoint<C> {
         ProjectivePoint::mul_vartime(self, scalar)
+    }
+}
+
+impl<C> MulByGeneratorVartime for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn mul_by_generator_vartime(scalar: &Scalar<C>) -> Self {
+        Self::GENERATOR.mul_vartime(scalar)
+    }
+
+    // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
+    // use linear combinations for this computation, but they're slower when they are available
+    #[cfg(not(feature = "alloc"))]
+    fn mul_by_generator_and_mul_add_point_vartime(
+        a: &Self::Scalar,
+        b_scalar: &Self::Scalar,
+        b_point: &Self,
+    ) -> Self {
+        Self::lincomb(&[(Self::GENERATOR, *a), (*b_point, *b_scalar)])
     }
 }
 
