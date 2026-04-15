@@ -41,12 +41,12 @@ let input = hex_literal::hex!("8108d09ce4ea5707d44a6e52d75f290d0a0801cd5e366b9a0
 let expected_scalar = EdwardsScalar::from_canonical_bytes(&input.into()).unwrap();
 assert_eq!(hashed_scalar, expected_scalar);
 
-let hashed_point = Ed448::hash_from_bytes(b"test", b"test DST").unwrap();
+let hashed_point = Ed448::hash_from_bytes(&[b"test"], &[b"test", b" DST"]).unwrap();
 let expected = hex_literal::hex!("ff5af3430905789691f01a54feb6275dc6a28a4f7e99c1c6ef261fe665428f986723060f44d4410ed4dcf33255f53bed07e068084fdb68f980");
 let expected_point = CompressedEdwardsY(expected).decompress().unwrap().to_edwards();
 assert_eq!(hashed_point, expected_point);
 
-let hashed_point = Ed448::hash_from_bytes(b"test", b"test DST").unwrap();
+let hashed_point = Ed448::hash_from_bytes(&[b"test"], &[b"test DST"]).unwrap();
 assert_eq!(hashed_point, expected_point);
 ```
 
