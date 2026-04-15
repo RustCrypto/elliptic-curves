@@ -4,7 +4,7 @@ use super::{CHALLENGE_TAG, Signature, tagged_hash};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
 use elliptic_curve::{
     group::prime::PrimeCurveAffine,
-    ops::{LinearCombination, Reduce},
+    ops::{MulByGeneratorVartime, Reduce},
     point::DecompactPoint,
 };
 use sha2::{
@@ -71,10 +71,11 @@ impl VerifyingKey {
                 .finalize(),
         );
 
-        let R = ProjectivePoint::lincomb(&[
-            (ProjectivePoint::GENERATOR, **s),
-            (self.inner.to_projective(), -e),
-        ])
+        let R = ProjectivePoint::mul_by_generator_and_mul_add_vartime(
+            s,
+            &(-e),
+            &self.inner.to_projective(),
+        )
         .to_affine();
 
         if R.is_identity().into() || R.y.normalize().is_odd().into() || R.x.normalize() != *r {

@@ -416,9 +416,8 @@ impl MulByGeneratorVartime for ProjectivePoint {
         Self::mul_by_generator(k)
     }
 
-    // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
-    // use linear combinations for this computation, but they're slower when they are available
-    #[cfg(not(feature = "alloc"))]
+    // When the basepoint tables aren't available, use linear combinations for this computation.
+    #[cfg(not(feature = "precomputed-tables"))]
     fn mul_by_generator_and_mul_add_vartime(
         a: &Self::Scalar,
         b_scalar: &Self::Scalar,
