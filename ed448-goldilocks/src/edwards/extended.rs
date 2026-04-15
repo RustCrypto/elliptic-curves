@@ -1023,7 +1023,7 @@ mod tests {
         for _ in 0..25 {
             let mut msg = [0u8; 64];
             SysRng.try_fill_bytes(&mut msg).unwrap();
-            let p = Ed448::hash_from_bytes(&msg, b"test DST").unwrap();
+            let p = Ed448::hash_from_bytes(&[&msg], &[b"test DST"]).unwrap();
             assert_eq!(p.is_on_curve().unwrap_u8(), 1u8);
             assert_eq!(p.is_torsion_free().unwrap_u8(), 1u8);
         }
@@ -1118,7 +1118,7 @@ mod tests {
         let b = EdwardsScalar::random(&mut rng);
 
         let g1 = EdwardsPoint::GENERATOR;
-        let g2 = Ed448::hash_from_bytes(b"test_pow_add_mul", b"test DST").unwrap();
+        let g2 = Ed448::hash_from_bytes(&[b"test_pow_add_mul"], &[b"test DST"]).unwrap();
 
         let expected_commitment = g1 * x + g2 * b;
 

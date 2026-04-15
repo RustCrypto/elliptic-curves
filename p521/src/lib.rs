@@ -44,6 +44,9 @@ pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
 
+#[cfg(feature = "hash2curve")]
+pub use hash2curve;
+
 pub use elliptic_curve;
 
 #[cfg(feature = "pkcs8")]

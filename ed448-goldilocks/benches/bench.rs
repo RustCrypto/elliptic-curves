@@ -40,7 +40,7 @@ pub fn ed448(c: &mut Criterion) {
                 SysRng.try_fill_bytes(&mut msg).unwrap();
                 msg
             },
-            |msg| Ed448::encode_from_bytes(&msg, b"test DST"),
+            |msg| Ed448::encode_from_bytes(&[&msg], &[b"test DST"]),
             BatchSize::SmallInput,
         )
     });
@@ -98,7 +98,7 @@ pub fn decaf448(c: &mut Criterion) {
                 SysRng.try_fill_bytes(&mut msg).unwrap();
                 msg
             },
-            |msg| Decaf448::encode_from_bytes(&msg, b"test DST"),
+            |msg| Decaf448::encode_from_bytes(&[&msg], &[b"test DST"]),
             BatchSize::SmallInput,
         )
     });

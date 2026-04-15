@@ -17,7 +17,8 @@ pub trait GroupDigest: MapToCurve {
     /// The `expand_message` function to use.
     type ExpandMsg: ExpandMsg<Self::SecurityLevel>;
 
-    /// Computes the hash to curve routine.
+    /// Computes the hash to curve routine, with message equal to the concatenation of the elements
+    /// in `msg`, and domain separator equal to the concatenation of the elements in `dst`.
     ///
     /// From <https://www.rfc-editor.org/rfc/rfc9380.html>:
     ///
@@ -36,14 +37,15 @@ pub trait GroupDigest: MapToCurve {
     /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
     /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn hash_from_bytes(
-        msg: &[u8],
-        dst: &[u8],
+        msg: &[&[u8]],
+        dst: &[&[u8]],
     ) -> Result<ProjectivePoint<Self>, <Self::ExpandMsg as ExpandMsg<Self::SecurityLevel>>::Error>
     {
-        hash_from_bytes::<Self, Self::ExpandMsg>(&[msg], &[dst])
+        hash_from_bytes::<Self, Self::ExpandMsg>(msg, dst)
     }
 
-    /// Computes the encode to curve routine.
+    /// Computes the encode to curve routine, with message equal to the concatenation of the elements
+    /// in `msg`, and domain separator equal to the concatenation of the elements in `dst`.
     ///
     /// From <https://www.rfc-editor.org/rfc/rfc9380.html>:
     ///
@@ -61,11 +63,11 @@ pub trait GroupDigest: MapToCurve {
     /// [`ExpandMsgXmdError`]: crate::ExpandMsgXmdError
     /// [`ExpandMsgXofError`]: crate::ExpandMsgXofError
     fn encode_from_bytes(
-        msg: &[u8],
-        dst: &[u8],
+        msg: &[&[u8]],
+        dst: &[&[u8]],
     ) -> Result<ProjectivePoint<Self>, <Self::ExpandMsg as ExpandMsg<Self::SecurityLevel>>::Error>
     {
-        encode_from_bytes::<Self, Self::ExpandMsg>(&[msg], &[dst])
+        encode_from_bytes::<Self, Self::ExpandMsg>(msg, dst)
     }
 }
 

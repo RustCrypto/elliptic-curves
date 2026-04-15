@@ -70,6 +70,9 @@ pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 #[cfg(feature = "expose-field")]
 pub use arithmetic::field::FieldElement;
 
+#[cfg(feature = "hash2curve")]
+pub use hash2curve;
+
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 

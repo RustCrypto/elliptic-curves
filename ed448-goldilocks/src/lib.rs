@@ -52,6 +52,7 @@ use alloc::{boxed::Box, vec::Vec};
 pub(crate) mod macros;
 
 pub use elliptic_curve;
+pub use hash2curve;
 pub use rand_core;
 pub use sha3;
 pub use subtle;
