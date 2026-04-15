@@ -2,7 +2,7 @@ use crate::{DecafAffinePoint, DecafScalar, curve::scalar_mul::double_and_add};
 use core::{borrow::Borrow, iter::Sum};
 use elliptic_curve::{
     CurveGroup,
-    ops::{Add, AddAssign, Mul, MulAssign, MulVartime, Neg, Sub, SubAssign},
+    ops::{Add, AddAssign, Mul, MulAssign, MulByGeneratorVartime, MulVartime, Neg, Sub, SubAssign},
 };
 
 use super::DecafPoint;
@@ -35,6 +35,8 @@ impl MulVartime<&DecafScalar> for &DecafPoint {
         self * scalar
     }
 }
+
+impl MulByGeneratorVartime for DecafPoint {}
 
 define_mul_variants!(LHS = DecafPoint, RHS = DecafScalar, Output = DecafPoint);
 
