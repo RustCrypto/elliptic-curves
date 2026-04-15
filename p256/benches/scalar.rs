@@ -6,7 +6,11 @@ use criterion::{
 use hex_literal::hex;
 use p256::{
     ProjectivePoint, Scalar,
-    elliptic_curve::{group::ff::PrimeField, ops::MulVartime},
+    elliptic_curve::{
+        Group,
+        group::ff::PrimeField,
+        ops::{MulByGeneratorVartime, MulVartime},
+    },
 };
 use std::hint::black_box;
 
@@ -28,9 +32,22 @@ fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = test_scalar_x();
     let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("point-scalar mul", |b| b.iter(|| p * s));
+    group.bench_function("point-scalar mul", |b| {
+        b.iter(|| black_box(p) * black_box(s))
+    });
     group.bench_function("point-scalar mul (variable-time)", |b| {
         b.iter(|| black_box(p).mul_vartime(&black_box(s)))
+    });
+}
+
+fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
+    let m = test_scalar_x();
+    let s = Scalar::from_repr(m.into()).unwrap();
+    group.bench_function("generator-scalar mul", |b| {
+        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(s)))
+    });
+    group.bench_function("generator-scalar mul (variable-time)", |b| {
+        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(s)))
     });
 }
 
@@ -73,6 +90,7 @@ fn bench_scalar(c: &mut Criterion) {
     bench_scalar_sub(&mut group);
     bench_scalar_add(&mut group);
     bench_scalar_mul(&mut group);
+    bench_point_mul_by_generator(&mut group);
     bench_scalar_negate(&mut group);
     bench_scalar_invert(&mut group);
     group.finish();
