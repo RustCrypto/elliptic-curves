@@ -39,7 +39,7 @@ use crate::arithmetic::{
     scalar::{Scalar, WideScalar},
 };
 use elliptic_curve::{
-    ops::{LinearCombination, Mul, MulAssign, MulVartime},
+    ops::{LinearCombination, Mul, MulAssign, MulByGeneratorVartime, MulVartime},
     scalar::IsHigh,
     subtle::ConditionallySelectable,
 };
@@ -407,6 +407,24 @@ impl MulVartime<&Scalar> for ProjectivePoint {
     // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
     fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
         mul(&self, other)
+    }
+}
+
+impl MulByGeneratorVartime for ProjectivePoint {
+    // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        Self::mul_by_generator(k)
+    }
+
+    // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
+    // use linear combinations for this computation, but they're slower when they are available
+    #[cfg(not(feature = "alloc"))]
+    fn mul_by_generator_and_mul_add_point_vartime(
+        a: &Self::Scalar,
+        b_scalar: &Self::Scalar,
+        b_point: &Self,
+    ) -> Self {
+        Self::lincomb(&[(Self::GENERATOR, *a), (*b_point, *b_scalar)])
     }
 }
 

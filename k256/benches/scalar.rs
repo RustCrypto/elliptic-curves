@@ -9,7 +9,7 @@ use k256::{
     elliptic_curve::{
         Group,
         group::ff::PrimeField,
-        ops::{LinearCombination, MulVartime},
+        ops::{LinearCombination, MulByGeneratorVartime, MulVartime},
     },
 };
 use std::hint::black_box;
@@ -75,6 +75,10 @@ fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M
 
     group.bench_function("mul_by_generator precomputed", |b| {
         b.iter(|| ProjectivePoint::mul_by_generator(&black_box(x)))
+    });
+
+    group.bench_function("mul_by_generator_vartime", |b| {
+        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(x)))
     });
 }
 
