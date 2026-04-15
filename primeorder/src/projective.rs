@@ -923,10 +923,6 @@ impl<C> MulByGeneratorVartime for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
-    fn mul_by_generator_vartime(scalar: &Scalar<C>) -> Self {
-        Self::GENERATOR.mul_vartime(scalar)
-    }
-
     // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
     // use linear combinations for this computation, but they're slower when they are available
     #[cfg(not(feature = "alloc"))]
