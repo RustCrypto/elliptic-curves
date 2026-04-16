@@ -34,6 +34,12 @@ use {
     elliptic_curve::group::{Wnaf, WnafGroup},
 };
 
+#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
+use {
+    crate::PrimeCurveWithBasepointTableVartime,
+    elliptic_curve::point::{BasepointTableVartime, PointWithBasepointTableVartime},
+};
+
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
 
@@ -626,6 +632,15 @@ where
         // Returns a number between 2 and 22, inclusive.
         4 // This seems to be a common starting point?
     }
+}
+
+#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
+impl<C, const WINDOW_SIZE: usize> PointWithBasepointTableVartime<WINDOW_SIZE> for ProjectivePoint<C>
+where
+    C: PrimeCurveWithBasepointTableVartime<WINDOW_SIZE>,
+{
+    const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime<Self, WINDOW_SIZE> =
+        C::BASEPOINT_TABLE_VARTIME;
 }
 
 //

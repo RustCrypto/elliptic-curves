@@ -27,6 +27,7 @@ serdect = { version = "0.4", optional = true, default-features = false }
 alloc = ["elliptic-curve/alloc"]
 std = ["alloc", "elliptic-curve/std"]
 
+basepoint-table = ["elliptic-curve/basepoint-table"]
 dev = []
 hash2curve = []
 serde = ["elliptic-curve/serde", "serdect"]
