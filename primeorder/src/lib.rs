@@ -33,6 +33,9 @@ use elliptic_curve::{
     subtle::CtOption,
 };
 
+#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
+use elliptic_curve::point::BasepointTableVartime;
+
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
 pub trait PrimeCurveParams:
@@ -70,4 +73,14 @@ pub trait PrimeCurveParams:
     fn mul_by_generator_vartime(k: &Scalar<Self>) -> ProjectivePoint<Self> {
         ProjectivePoint::GENERATOR.mul_vartime(k)
     }
+}
+
+/// Trait which allows curves to specify a variable-time basepoint table.
+#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
+pub trait PrimeCurveWithBasepointTableVartime<const WINDOW_SIZE: usize>: PrimeCurveParams {
+    /// Basepoint table for this curve.
+    const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime<
+        ProjectivePoint<Self>,
+        WINDOW_SIZE,
+    >;
 }

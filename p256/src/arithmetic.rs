@@ -15,6 +15,9 @@ use crate::NistP256;
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
 use primeorder::{PrimeCurveParams, point_arithmetic};
 
+#[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
+use primeorder::PrimeCurveWithBasepointTableVartime;
+
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 
@@ -22,16 +25,16 @@ pub type AffinePoint = primeorder::AffinePoint<NistP256>;
 pub type ProjectivePoint = primeorder::ProjectivePoint<NistP256>;
 
 /// Window size for the variable-time basepoint table.
-#[cfg(feature = "precomputed-tables")]
+#[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
 const WINDOW_SIZE_VARTIME: usize = 8;
 
 /// Variable-time basepoint table for NIST P-256's generator.
-#[cfg(feature = "precomputed-tables")]
+#[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
 type BasepointTableVartime =
     elliptic_curve::point::BasepointTableVartime<ProjectivePoint, WINDOW_SIZE_VARTIME>;
 
 /// Lazily computed basepoint table.
-#[cfg(feature = "precomputed-tables")]
+#[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
 static BASEPOINT_TABLE_VARTIME: BasepointTableVartime = BasepointTableVartime::new();
 
 impl CurveArithmetic for NistP256 {
@@ -75,8 +78,13 @@ impl PrimeCurveParams for NistP256 {
         ),
     );
 
-    #[cfg(feature = "precomputed-tables")]
+    #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
         BASEPOINT_TABLE_VARTIME.mul(k)
     }
+}
+
+#[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
+impl PrimeCurveWithBasepointTableVartime<WINDOW_SIZE_VARTIME> for NistP256 {
+    const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime = &BASEPOINT_TABLE_VARTIME;
 }
