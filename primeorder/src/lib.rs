@@ -23,19 +23,21 @@ mod projective;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
 pub use elliptic_curve::{
-    self, Field, FieldBytes, PrimeCurve, PrimeField, array, bigint::modular::Retrieve,
+    self, Field, FieldBytes, PrimeCurve, PrimeField, Scalar, array, bigint::modular::Retrieve,
     point::Double,
 };
 
-use elliptic_curve::{CurveArithmetic, Generate, ops::Invert, subtle::CtOption};
+use elliptic_curve::{
+    CurveArithmetic, Generate,
+    ops::{Invert, MulVartime},
+    subtle::CtOption,
+};
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
 pub trait PrimeCurveParams:
     PrimeCurve
-    + CurveArithmetic
-    + CurveArithmetic<AffinePoint = AffinePoint<Self>>
-    + CurveArithmetic<ProjectivePoint = ProjectivePoint<Self>>
+    + CurveArithmetic<AffinePoint = AffinePoint<Self>, ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
     type FieldElement: Generate
@@ -54,4 +56,18 @@ pub trait PrimeCurveParams:
 
     /// Generator point's affine coordinates: (x, y).
     const GENERATOR: (Self::FieldElement, Self::FieldElement);
+
+    /// Multiplication by the generator.
+    ///
+    /// This is overridable to make it possible to plug in a basepoint table.
+    fn mul_by_generator(k: &Scalar<Self>) -> ProjectivePoint<Self> {
+        ProjectivePoint::GENERATOR * k
+    }
+
+    /// Variable-time multiplication by the generator.
+    ///
+    /// This is overridable to make it possible to plug in a basepoint table.
+    fn mul_by_generator_vartime(k: &Scalar<Self>) -> ProjectivePoint<Self> {
+        ProjectivePoint::GENERATOR.mul_vartime(k)
+    }
 }

@@ -341,6 +341,11 @@ where
         Self::GENERATOR
     }
 
+    #[inline]
+    fn mul_by_generator(scalar: &Self::Scalar) -> Self {
+        C::mul_by_generator(scalar)
+    }
+
     fn is_identity(&self) -> Choice {
         self.ct_eq(&Self::IDENTITY)
     }
@@ -923,6 +928,11 @@ impl<C> MulByGeneratorVartime for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
+    fn mul_by_generator_vartime(scalar: &Scalar<C>) -> Self {
+        C::mul_by_generator_vartime(scalar)
+    }
+
     // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
     // use linear combinations for this computation, but they're slower when they are available
     #[cfg(not(feature = "alloc"))]
