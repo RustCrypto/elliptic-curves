@@ -4,7 +4,13 @@ use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
-use p521::{ProjectivePoint, Scalar, elliptic_curve::group::ff::PrimeField};
+use p521::{
+    ProjectivePoint, Scalar,
+    elliptic_curve::{
+        group::{Group, ff::PrimeField},
+        ops::MulByGeneratorVartime,
+    },
+};
 use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
@@ -24,6 +30,17 @@ fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let m = test_scalar_x();
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("point-scalar mul", |b| b.iter(|| p * s));
+}
+
+fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
+    let m = test_scalar_x();
+    let s = Scalar::from_repr(m.into()).unwrap();
+    group.bench_function("generator-scalar mul", |b| {
+        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(s)))
+    });
+    group.bench_function("generator-scalar mul (variable-time)", |b| {
+        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(s)))
+    });
 }
 
 fn bench_scalar_sub<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
@@ -57,6 +74,7 @@ fn bench_scalar_invert<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
 fn bench_point(c: &mut Criterion) {
     let mut group = c.benchmark_group("point operations");
     bench_point_mul(&mut group);
+    bench_point_mul_by_generator(&mut group);
     group.finish();
 }
 

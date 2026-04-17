@@ -9,6 +9,8 @@ pub(crate) mod scalar;
 
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
+#[cfg(feature = "precomputed-tables")]
+mod tables;
 
 pub use self::scalar::Scalar;
 
@@ -70,4 +72,9 @@ impl PrimeCurveParams for NistP521 {
             "011839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16650",
         ),
     );
+
+    #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        tables::BASEPOINT_TABLE_VARTIME.mul(k)
+    }
 }
