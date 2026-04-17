@@ -8,6 +8,9 @@
 pub(crate) mod field;
 pub(crate) mod scalar;
 
+#[cfg(feature = "precomputed-tables")]
+mod tables;
+
 pub use self::scalar::Scalar;
 
 use self::field::FieldElement;
@@ -60,4 +63,9 @@ impl PrimeCurveParams for Sm2 {
             "BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0",
         ),
     );
+
+    #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        tables::BASEPOINT_TABLE_VARTIME.mul(k)
+    }
 }
