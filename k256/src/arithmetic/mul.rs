@@ -34,7 +34,7 @@
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
-use crate::arithmetic::{
+use super::{
     ProjectivePoint,
     scalar::{Scalar, WideScalar},
 };
@@ -45,15 +45,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "precomputed-tables")]
-use elliptic_curve::point::PointWithBasepointTable;
-
-/// Window size for the basepoint table.
-#[cfg(feature = "precomputed-tables")]
-const WINDOW_SIZE: usize = 33;
-
-/// Basepoint table for multiples of secp256k1's generator.
-#[cfg(feature = "precomputed-tables")]
-type BasepointTable = elliptic_curve::point::BasepointTable<ProjectivePoint, WINDOW_SIZE>;
+use super::tables::BASEPOINT_TABLE;
 
 /// Lookup table for multiples of a given point.
 type LookupTable = elliptic_curve::point::LookupTable<ProjectivePoint>;
@@ -322,15 +314,6 @@ fn lincomb(
         }
     }
     acc
-}
-
-/// Lazily computed basepoint table.
-#[cfg(feature = "precomputed-tables")]
-static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
-
-#[cfg(feature = "precomputed-tables")]
-impl PointWithBasepointTable<WINDOW_SIZE> for ProjectivePoint {
-    const BASEPOINT_TABLE: &'static BasepointTable = &BASEPOINT_TABLE;
 }
 
 impl ProjectivePoint {

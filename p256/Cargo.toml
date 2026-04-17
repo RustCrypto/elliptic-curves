@@ -38,7 +38,7 @@ primeorder = { version = "0.14.0-rc.8", features = ["dev"] }
 proptest = "1"
 
 [features]
-default = ["arithmetic", "ecdsa", "pem", "std"]
+default = ["arithmetic", "ecdsa", "pem", "precomputed-tables", "std"]
 alloc = ["ecdsa-core?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "ecdsa-core?/std", "elliptic-curve/std", "getrandom"]
 
