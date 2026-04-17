@@ -12,7 +12,7 @@ const SCALAR_C: Scalar =
 
 elliptic_curve::bench_projective!(
     bench_projective,
-    "ProjectivePoint",
+    ProjectivePoint,
     ProjectivePoint::GENERATOR * SCALAR_A,
     ProjectivePoint::GENERATOR * SCALAR_B,
     SCALAR_C
