@@ -5,9 +5,12 @@
 //! [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 
 pub(crate) mod field;
+pub(crate) mod scalar;
+
 #[cfg(feature = "hash2curve")]
 mod hash2curve;
-pub(crate) mod scalar;
+#[cfg(feature = "precomputed-tables")]
+mod tables;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP384;
@@ -64,4 +67,9 @@ impl PrimeCurveParams for NistP384 {
             "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f",
         ),
     );
+
+    #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        tables::BASEPOINT_TABLE_VARTIME.mul(k)
+    }
 }
