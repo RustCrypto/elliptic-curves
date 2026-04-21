@@ -78,6 +78,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "belt-kwp"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a8acd493cfb335fe8ce38cc204d2906ae600c2dc4c5796a6b5bcc61ecc0ff92"
+dependencies = [
+ "belt-block",
+]
+
+[[package]]
 name = "bign-genk"
 version = "0.1.0-pre.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -94,11 +103,13 @@ version = "0.14.0-rc.9"
 dependencies = [
  "belt-block",
  "belt-hash",
+ "belt-kwp",
  "bign-genk",
  "criterion",
  "der",
  "digest",
  "elliptic-curve",
+ "hash2curve",
  "hex-literal",
  "hkdf",
  "hmac",
