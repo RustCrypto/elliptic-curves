@@ -15,14 +15,10 @@ description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellma
 
 [dependencies]
 ed448-goldilocks = { version = "0.14.0-pre.12", default-features = false }
+zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
 
 # optional dependencies
 serdect = { version = "0.4", optional = true }
-
-[dependencies.zeroize]
-version = "1"
-default-features = false
-features = ["zeroize_derive"]
 
 [features]
 default = ["getrandom"]
