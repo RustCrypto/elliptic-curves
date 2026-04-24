@@ -343,6 +343,7 @@ fn wnaf_128(k: &Scalar) -> [i8; WNAF_DIGITS] {
     let mut out = [0i8; WNAF_DIGITS];
     let mut i = 0;
     while (lo | hi) != 0 {
+        debug_assert!(i < WNAF_DIGITS);
         if (lo & 1) == 1 {
             // d = k mod 2^W, recentered into [-2^(W-1) + 1, 2^(W-1) - 1]
             let mut d = (lo & width_mask) as i64;
