@@ -342,7 +342,13 @@ fn wnaf_128(k: &Scalar) -> [i8; WNAF_DIGITS] {
 
     let mut out = [0i8; WNAF_DIGITS];
     let mut i = 0;
-    while (lo | hi) != 0 {
+    // Three-limb representation `(lo, hi, top)`: `top` is 0 or 1 and only becomes 1 when a
+    // negative digit adds past bit 127. The extra bit is absorbed back on the next right-shift.
+    // This is needed because GLV sub-scalars can legitimately reach magnitudes up to 2^128 − 1,
+    // and a width-W recentering can add up to 2^(W-1) − 1 to the value, so transient overflow
+    // past bit 127 must be preserved rather than silently wrapping `hi`.
+    let mut top: u64 = 0;
+    while (lo | hi | top) != 0 {
         debug_assert!(i < WNAF_DIGITS);
         if (lo & 1) == 1 {
             // d = k mod 2^W, recentered into [-2^(W-1) + 1, 2^(W-1) - 1]
@@ -352,27 +358,37 @@ fn wnaf_128(k: &Scalar) -> [i8; WNAF_DIGITS] {
             }
             out[i] = d as i8;
 
-            // k -= d (128-bit signed update)
+            // k -= d (129-bit signed update, but the result is always >= 0 because the low W
+            // bits of k equalled d mod 2^W and the recentering chose the signed representative).
             if d < 0 {
                 // k -= (negative d) == k += |d|
                 let add = (-d) as u64;
-                let (new_lo, carry) = lo.overflowing_add(add);
+                let (new_lo, carry0) = lo.overflowing_add(add);
                 lo = new_lo;
-                if carry {
-                    hi = hi.wrapping_add(1);
+                if carry0 {
+                    let (new_hi, carry1) = hi.overflowing_add(1);
+                    hi = new_hi;
+                    if carry1 {
+                        top = top.wrapping_add(1);
+                    }
                 }
             } else {
                 let sub = d as u64;
-                let (new_lo, borrow) = lo.overflowing_sub(sub);
+                let (new_lo, borrow0) = lo.overflowing_sub(sub);
                 lo = new_lo;
-                if borrow {
-                    hi = hi.wrapping_sub(1);
+                if borrow0 {
+                    let (new_hi, borrow1) = hi.overflowing_sub(1);
+                    hi = new_hi;
+                    if borrow1 {
+                        top = top.wrapping_sub(1);
+                    }
                 }
             }
         }
-        // Shift right by 1 across the 128-bit value.
+        // Shift right by 1 across the 129-bit value.
         lo = (lo >> 1) | (hi << 63);
-        hi >>= 1;
+        hi = (hi >> 1) | (top << 63);
+        top >>= 1;
         i += 1;
     }
     out
@@ -427,6 +443,10 @@ impl WnafSlot {
         let d = self.digits[i];
         if d != 0 {
             let idx = (d.unsigned_abs() >> 1) as usize;
+            // |d| ≤ 2^(W-1) − 1 = 15 for W=5, so idx ≤ 7 = WNAF_TABLE_SIZE − 1. Guard here so
+            // any future widening of WNAF_WIDTH that forgets to grow WNAF_TABLE_SIZE panics at
+            // test time rather than at a random position in the ladder under release.
+            debug_assert!(idx < WNAF_TABLE_SIZE);
             if d > 0 {
                 *acc += &self.table[idx];
             } else {
@@ -660,6 +680,69 @@ mod tests {
             mul_and_mul_add_vartime_impl(&Scalar::ZERO, &Scalar::ONE, &p),
             p
         );
+    }
+
+    // Reconstructs a wNAF digit array as a signed integer and compares to the expected low-128-bit
+    // value of `k` (since wnaf_128 only reads bytes[16..32]).
+    fn check_wnaf_reconstruction(k: &Scalar) {
+        let digits = wnaf_128(k);
+        let mut sum = num_bigint::BigInt::from(0);
+        for (i, &d) in digits.iter().enumerate() {
+            if d != 0 {
+                sum += num_bigint::BigInt::from(d) << i;
+            }
+        }
+        let bytes = k.to_bytes();
+        let mut expected = num_bigint::BigInt::from(0);
+        for &b in bytes[16..32].iter() {
+            expected = (expected << 8) + b as u32;
+        }
+        assert_eq!(
+            sum, expected,
+            "wnaf_128 reconstructs wrong value for k.lo128 = {expected:x}"
+        );
+    }
+
+    /// End-to-end check on a scalar whose GLV halves land at or near the 2^128 boundary.
+    /// We don't know in advance which scalars produce such halves, so instead we hunt: for a
+    /// fixed base point, try scalars whose low bits are `0xFF..FF` and verify that the vartime
+    /// result matches the constant-time reference. If the 3-limb carry fix is ever reverted,
+    /// one of these will mismatch.
+    #[test]
+    fn test_mul_vartime_adversarial_scalars() {
+        let p = ProjectivePoint::GENERATOR;
+        // A scalar where the low 128 bits are all 1s forces wnaf_128's original 128-bit
+        // code path through its carry-out window.
+        let mut bytes = [0u8; 32];
+        for b in bytes.iter_mut().skip(16) {
+            *b = 0xFF;
+        }
+        // Ensure it's a valid scalar (not >= n). Setting the high byte to 0 keeps it small.
+        let k = Scalar::from_bytes_unchecked(&bytes);
+        let reference = p * k;
+        let test = mul_vartime_impl(&p, &k);
+        assert_eq!(
+            reference, test,
+            "mul_vartime mismatch on adversarial scalar"
+        );
+    }
+
+    #[test]
+    fn test_wnaf_128_reconstruction_adversarial() {
+        // Pathological: all-ones low 128 bits (= 2^128 - 1). Triggers a carry past bit 127.
+        let mut bytes = [0u8; 32];
+        for b in bytes.iter_mut().skip(16) {
+            *b = 0xFF;
+        }
+        check_wnaf_reconstruction(&Scalar::from_bytes_unchecked(&bytes));
+
+        // Just below: 2^128 - 2 (even → d=0 on iter 0, no carry issue).
+        bytes[31] = 0xFE;
+        check_wnaf_reconstruction(&Scalar::from_bytes_unchecked(&bytes));
+
+        // Just below 2^128 but odd with high-bit set: 2^128 - 17.
+        bytes[31] = 0xEF;
+        check_wnaf_reconstruction(&Scalar::from_bytes_unchecked(&bytes));
     }
 
     #[test]
