@@ -388,62 +388,97 @@ fn build_odd_multiples(p: &ProjectivePoint) -> [ProjectivePoint; WNAF_TABLE_SIZE
     out
 }
 
+/// Everything needed to feed one scalar into the wNAF ladder: odd-multiples table for the
+/// associated point and the signed digits.
+struct WnafSlot {
+    table: [ProjectivePoint; WNAF_TABLE_SIZE],
+    digits: [i8; WNAF_DIGITS],
+}
+
+impl WnafSlot {
+    /// Prepare one slot: GLV-decompose `k` into `(r1, r2)`, then produce two slots — one for
+    /// `r1 * p` and one for `r2 * endomorphism(p)`. Sign is folded into the precomputed points.
+    fn pair_from(p: &ProjectivePoint, k: &Scalar) -> [Self; 2] {
+        let (r1, r2) = decompose_scalar(k);
+        let r1_neg = bool::from(r1.is_high());
+        let r2_neg = bool::from(r2.is_high());
+        let r1 = if r1_neg { -r1 } else { r1 };
+        let r2 = if r2_neg { -r2 } else { r2 };
+
+        let p1 = if r1_neg { -*p } else { *p };
+        let p_beta = p.endomorphism();
+        let p2 = if r2_neg { -p_beta } else { p_beta };
+
+        [
+            Self {
+                table: build_odd_multiples(&p1),
+                digits: wnaf_128(&r1),
+            },
+            Self {
+                table: build_odd_multiples(&p2),
+                digits: wnaf_128(&r2),
+            },
+        ]
+    }
+
+    #[inline]
+    fn apply(&self, acc: &mut ProjectivePoint, i: usize) {
+        let d = self.digits[i];
+        if d != 0 {
+            let idx = (d.unsigned_abs() >> 1) as usize;
+            if d > 0 {
+                *acc += &self.table[idx];
+            } else {
+                *acc += &(-self.table[idx]);
+            }
+        }
+    }
+}
+
+/// Walk `slots` in a single left-to-right double-and-add loop, sharing doublings across all of
+/// them. `top` is the number of wNAF digits to process.
+fn wnaf_ladder(slots: &[&WnafSlot], top: usize) -> ProjectivePoint {
+    if top == 0 {
+        return ProjectivePoint::IDENTITY;
+    }
+    let mut acc = ProjectivePoint::IDENTITY;
+    for i in (0..top).rev() {
+        acc = acc.double();
+        for slot in slots {
+            slot.apply(&mut acc, i);
+        }
+    }
+    acc
+}
+
+/// Highest digit index that's nonzero in any of the given slots.
+fn top_nonzero_digit(slots: &[&WnafSlot]) -> usize {
+    let mut top = WNAF_DIGITS;
+    while top > 0 && slots.iter().all(|s| s.digits[top - 1] == 0) {
+        top -= 1;
+    }
+    top
+}
+
 /// Variable-time `k * P` using GLV + width-5 wNAF.
 ///
 /// SECURITY: not constant time. Only call with non-secret scalars.
 fn mul_vartime_impl(p: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    let (r1, r2) = decompose_scalar(k);
-    let r1_neg = bool::from(r1.is_high());
-    let r2_neg = bool::from(r2.is_high());
-    let r1 = if r1_neg { -r1 } else { r1 };
-    let r2 = if r2_neg { -r2 } else { r2 };
+    let slots = WnafSlot::pair_from(p, k);
+    let refs = [&slots[0], &slots[1]];
+    let top = top_nonzero_digit(&refs);
+    wnaf_ladder(&refs, top)
+}
 
-    let p1 = if r1_neg { -*p } else { *p };
-    let p_beta = p.endomorphism();
-    let p2 = if r2_neg { -p_beta } else { p_beta };
-
-    let table1 = build_odd_multiples(&p1);
-    let table2 = build_odd_multiples(&p2);
-
-    let naf1 = wnaf_128(&r1);
-    let naf2 = wnaf_128(&r2);
-
-    // Find the highest nonzero digit across either NAF.
-    let mut top = WNAF_DIGITS;
-    while top > 0 && naf1[top - 1] == 0 && naf2[top - 1] == 0 {
-        top -= 1;
-    }
-    if top == 0 {
-        return ProjectivePoint::IDENTITY;
-    }
-
-    // Standard left-to-right double-and-add-with-signed-digits.
-    let mut acc = ProjectivePoint::IDENTITY;
-    for i in (0..top).rev() {
-        acc = acc.double();
-
-        let d1 = naf1[i];
-        if d1 != 0 {
-            let idx = ((d1.unsigned_abs()) >> 1) as usize;
-            if d1 > 0 {
-                acc += &table1[idx];
-            } else {
-                acc += &(-table1[idx]);
-            }
-        }
-
-        let d2 = naf2[i];
-        if d2 != 0 {
-            let idx = ((d2.unsigned_abs()) >> 1) as usize;
-            if d2 > 0 {
-                acc += &table2[idx];
-            } else {
-                acc += &(-table2[idx]);
-            }
-        }
-    }
-
-    acc
+/// Variable-time `a * G + b * P`, sharing doublings across all 4 GLV sub-scalars.
+///
+/// SECURITY: not constant time. Only call with non-secret scalars.
+fn mul_and_mul_add_vartime_impl(a: &Scalar, b: &Scalar, p: &ProjectivePoint) -> ProjectivePoint {
+    let g_slots = WnafSlot::pair_from(&ProjectivePoint::GENERATOR, a);
+    let p_slots = WnafSlot::pair_from(p, b);
+    let refs = [&g_slots[0], &g_slots[1], &p_slots[0], &p_slots[1]];
+    let top = top_nonzero_digit(&refs);
+    wnaf_ladder(&refs, top)
 }
 
 impl ProjectivePoint {
@@ -540,7 +575,7 @@ impl MulByGeneratorVartime for ProjectivePoint {
         b_scalar: &Self::Scalar,
         b_point: &Self,
     ) -> Self {
-        Self::mul_by_generator_vartime(a) + mul_vartime_impl(b_point, b_scalar)
+        mul_and_mul_add_vartime_impl(a, b_scalar, b_point)
     }
 }
 
@@ -594,6 +629,36 @@ mod tests {
             let test = mul_vartime_impl(&p, &k);
             assert_eq!(reference, test);
         }
+    }
+
+    #[test]
+    #[cfg(feature = "getrandom")]
+    fn test_mul_and_mul_add_vartime() {
+        for _ in 0..32 {
+            let p = ProjectivePoint::generate();
+            let a = Scalar::generate();
+            let b = Scalar::generate();
+            let reference = ProjectivePoint::GENERATOR * a + p * b;
+            let test = mul_and_mul_add_vartime_impl(&a, &b, &p);
+            assert_eq!(reference, test);
+        }
+    }
+
+    #[test]
+    fn test_mul_and_mul_add_vartime_edge_cases() {
+        let p = ProjectivePoint::GENERATOR;
+        assert_eq!(
+            mul_and_mul_add_vartime_impl(&Scalar::ZERO, &Scalar::ZERO, &p),
+            ProjectivePoint::IDENTITY
+        );
+        assert_eq!(
+            mul_and_mul_add_vartime_impl(&Scalar::ONE, &Scalar::ZERO, &p),
+            ProjectivePoint::GENERATOR
+        );
+        assert_eq!(
+            mul_and_mul_add_vartime_impl(&Scalar::ZERO, &Scalar::ONE, &p),
+            p
+        );
     }
 
     #[test]
