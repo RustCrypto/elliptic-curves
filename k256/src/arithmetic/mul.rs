@@ -316,6 +316,136 @@ fn lincomb(
     acc
 }
 
+/// Width of the wNAF window. Digits are odd values in `[-(2^(W-1) - 1), 2^(W-1) - 1]`.
+const WNAF_WIDTH: usize = 5;
+
+/// Number of precomputed odd multiples per point: `[P, 3P, 5P, ..., 15P]`.
+const WNAF_TABLE_SIZE: usize = 1 << (WNAF_WIDTH - 2);
+
+/// Output length for a signed-digit wNAF of a <= 129-bit value (128-bit GLV half plus a carry bit).
+const WNAF_DIGITS: usize = 130;
+
+/// Compute a width-`WNAF_WIDTH` signed-digit non-adjacent form of `k`, where `k` is known to fit
+/// in 128 bits (magnitude only — sign is tracked separately by the caller). The output array has
+/// one entry per bit, with zero entries meaning "skip this step". Nonzero entries are odd and in
+/// `[-(2^(W-1) - 1), 2^(W-1) - 1]`.
+///
+/// Callers must only pass values whose magnitude is < 2^128, which is the GLV guarantee.
+fn wnaf_128(k: &Scalar) -> [i8; WNAF_DIGITS] {
+    // Load the low 128 bits as little-endian u64 limbs. `to_bytes` is big-endian.
+    let bytes = k.to_bytes();
+    let mut lo = u64::from_be_bytes(bytes[24..32].try_into().expect("8 bytes"));
+    let mut hi = u64::from_be_bytes(bytes[16..24].try_into().expect("8 bytes"));
+
+    let width_mask: u64 = (1 << WNAF_WIDTH) - 1;
+    let half: u64 = 1 << (WNAF_WIDTH - 1);
+
+    let mut out = [0i8; WNAF_DIGITS];
+    let mut i = 0;
+    while (lo | hi) != 0 {
+        if (lo & 1) == 1 {
+            // d = k mod 2^W, recentered into [-2^(W-1) + 1, 2^(W-1) - 1]
+            let mut d = (lo & width_mask) as i64;
+            if d >= half as i64 {
+                d -= 1 << WNAF_WIDTH;
+            }
+            out[i] = d as i8;
+
+            // k -= d (128-bit signed update)
+            if d < 0 {
+                // k -= (negative d) == k += |d|
+                let add = (-d) as u64;
+                let (new_lo, carry) = lo.overflowing_add(add);
+                lo = new_lo;
+                if carry {
+                    hi = hi.wrapping_add(1);
+                }
+            } else {
+                let sub = d as u64;
+                let (new_lo, borrow) = lo.overflowing_sub(sub);
+                lo = new_lo;
+                if borrow {
+                    hi = hi.wrapping_sub(1);
+                }
+            }
+        }
+        // Shift right by 1 across the 128-bit value.
+        lo = (lo >> 1) | (hi << 63);
+        hi >>= 1;
+        i += 1;
+    }
+    out
+}
+
+/// Build `[P, 3P, 5P, ..., (2*WNAF_TABLE_SIZE - 1)P]` in projective coordinates.
+fn build_odd_multiples(p: &ProjectivePoint) -> [ProjectivePoint; WNAF_TABLE_SIZE] {
+    let mut out = [ProjectivePoint::IDENTITY; WNAF_TABLE_SIZE];
+    let two_p = p.double();
+    out[0] = *p;
+    for i in 1..WNAF_TABLE_SIZE {
+        out[i] = out[i - 1] + two_p;
+    }
+    out
+}
+
+/// Variable-time `k * P` using GLV + width-5 wNAF.
+///
+/// SECURITY: not constant time. Only call with non-secret scalars.
+fn mul_vartime_impl(p: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
+    let (r1, r2) = decompose_scalar(k);
+    let r1_neg = bool::from(r1.is_high());
+    let r2_neg = bool::from(r2.is_high());
+    let r1 = if r1_neg { -r1 } else { r1 };
+    let r2 = if r2_neg { -r2 } else { r2 };
+
+    let p1 = if r1_neg { -*p } else { *p };
+    let p_beta = p.endomorphism();
+    let p2 = if r2_neg { -p_beta } else { p_beta };
+
+    let table1 = build_odd_multiples(&p1);
+    let table2 = build_odd_multiples(&p2);
+
+    let naf1 = wnaf_128(&r1);
+    let naf2 = wnaf_128(&r2);
+
+    // Find the highest nonzero digit across either NAF.
+    let mut top = WNAF_DIGITS;
+    while top > 0 && naf1[top - 1] == 0 && naf2[top - 1] == 0 {
+        top -= 1;
+    }
+    if top == 0 {
+        return ProjectivePoint::IDENTITY;
+    }
+
+    // Standard left-to-right double-and-add-with-signed-digits.
+    let mut acc = ProjectivePoint::IDENTITY;
+    for i in (0..top).rev() {
+        acc = acc.double();
+
+        let d1 = naf1[i];
+        if d1 != 0 {
+            let idx = ((d1.unsigned_abs()) >> 1) as usize;
+            if d1 > 0 {
+                acc += &table1[idx];
+            } else {
+                acc += &(-table1[idx]);
+            }
+        }
+
+        let d2 = naf2[i];
+        if d2 != 0 {
+            let idx = ((d2.unsigned_abs()) >> 1) as usize;
+            if d2 > 0 {
+                acc += &table2[idx];
+            } else {
+                acc += &(-table2[idx]);
+            }
+        }
+    }
+
+    acc
+}
+
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(not(feature = "precomputed-tables"))]
@@ -374,39 +504,43 @@ impl Mul<&Scalar> for ProjectivePoint {
 
 impl MulVartime<Scalar> for ProjectivePoint {
     fn mul_vartime(self, other: Scalar) -> ProjectivePoint {
-        // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
-        mul(&self, &other)
+        mul_vartime_impl(&self, &other)
     }
 }
 
 impl MulVartime<&Scalar> for &ProjectivePoint {
     fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
-        // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
-        mul(self, other)
+        mul_vartime_impl(self, other)
     }
 }
 
 impl MulVartime<&Scalar> for ProjectivePoint {
-    // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
     fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
-        mul(&self, other)
+        mul_vartime_impl(&self, other)
     }
 }
 
 impl MulByGeneratorVartime for ProjectivePoint {
-    // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
-        Self::mul_by_generator(k)
+        // The precomputed basepoint table is already constant-time fast; beating it with wNAF
+        // would require a much larger vartime-specific table. When tables are unavailable,
+        // fall back to the endomorphism-aware vartime mul on the generator.
+        #[cfg(feature = "precomputed-tables")]
+        {
+            Self::mul_by_generator(k)
+        }
+        #[cfg(not(feature = "precomputed-tables"))]
+        {
+            mul_vartime_impl(&Self::GENERATOR, k)
+        }
     }
 
-    // When the basepoint tables aren't available, use linear combinations for this computation.
-    #[cfg(not(feature = "precomputed-tables"))]
     fn mul_by_generator_and_mul_add_vartime(
         a: &Self::Scalar,
         b_scalar: &Self::Scalar,
         b_point: &Self,
     ) -> Self {
-        Self::lincomb(&[(Self::GENERATOR, *a), (*b_point, *b_scalar)])
+        Self::mul_by_generator_vartime(a) + mul_vartime_impl(b_point, b_scalar)
     }
 }
 
@@ -448,6 +582,33 @@ mod tests {
         let reference = ProjectivePoint::GENERATOR * k;
         let test = ProjectivePoint::mul_by_generator(&k);
         assert_eq!(reference, test);
+    }
+
+    #[test]
+    #[cfg(feature = "getrandom")]
+    fn test_mul_vartime() {
+        for _ in 0..32 {
+            let p = ProjectivePoint::generate();
+            let k = Scalar::generate();
+            let reference = p * k;
+            let test = mul_vartime_impl(&p, &k);
+            assert_eq!(reference, test);
+        }
+    }
+
+    #[test]
+    fn test_mul_vartime_edge_cases() {
+        let p = ProjectivePoint::GENERATOR;
+        assert_eq!(
+            mul_vartime_impl(&p, &Scalar::ZERO),
+            ProjectivePoint::IDENTITY
+        );
+        assert_eq!(mul_vartime_impl(&p, &Scalar::ONE), p);
+        assert_eq!(mul_vartime_impl(&p, &-Scalar::ONE), -p);
+        assert_eq!(
+            mul_vartime_impl(&ProjectivePoint::IDENTITY, &Scalar::ONE),
+            ProjectivePoint::IDENTITY
+        );
     }
 
     #[cfg(all(feature = "alloc", feature = "getrandom"))]
