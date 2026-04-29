@@ -142,8 +142,9 @@ impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for SecretKey {
         private_key_info
             .algorithm
             .assert_oids(ALGORITHM_OID, BignP256::OID)?;
+
         Self::from_slice(private_key_info.private_key.as_bytes())
-            .map_err(|_| pkcs8::Error::KeyMalformed)
+            .map_err(|_| pkcs8::KeyError::Invalid.into())
     }
 }
 
