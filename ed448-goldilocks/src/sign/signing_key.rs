@@ -16,7 +16,7 @@ use signature::Error;
 use subtle::{Choice, ConstantTimeEq};
 
 #[cfg(feature = "pkcs8")]
-use crate::{PUBLIC_KEY_LENGTH, edwards::affine::PointBytes};
+use ::ed448::pkcs8::{KeypairBytes, PublicKeyBytes};
 
 /// Ed448 secret key as defined in [RFC8032 § 5.2.5]
 ///
@@ -330,70 +330,6 @@ impl pkcs8::spki::DynSignatureAlgorithmIdentifier for SigningKey {
 }
 
 #[cfg(feature = "pkcs8")]
-/// Keypair bytes for Ed448
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct KeypairBytes {
-    /// The secret key bytes
-    pub secret_key: PointBytes,
-    /// The public key bytes if included
-    pub verifying_key: Option<PointBytes>,
-}
-
-#[cfg(all(feature = "alloc", feature = "pkcs8"))]
-impl pkcs8::EncodePrivateKey for KeypairBytes {
-    fn to_pkcs8_der(&self) -> pkcs8::Result<pkcs8::SecretDocument> {
-        let verifying_key = self.verifying_key.as_ref();
-        let public_key = verifying_key
-            .map(|k| pkcs8::der::asn1::BitStringRef::from_bytes(k))
-            .transpose()?;
-        let private_key = pkcs8::der::asn1::OctetStringRef::new(self.secret_key.as_ref())?;
-
-        let private_key_info = pkcs8::PrivateKeyInfoRef {
-            algorithm: super::ALGORITHM_ID,
-            private_key,
-            public_key,
-        };
-        let result = pkcs8::SecretDocument::encode_msg(&private_key_info)?;
-
-        Ok(result)
-    }
-}
-
-#[cfg(feature = "pkcs8")]
-impl TryFrom<pkcs8::PrivateKeyInfoRef<'_>> for KeypairBytes {
-    type Error = pkcs8::Error;
-
-    fn try_from(value: pkcs8::PrivateKeyInfoRef<'_>) -> Result<Self, Self::Error> {
-        if value.algorithm.oid != super::ALGORITHM_OID {
-            return Err(pkcs8::Error::KeyMalformed);
-        }
-        if value.private_key.as_bytes().len() != SECRET_KEY_LENGTH {
-            return Err(pkcs8::Error::KeyMalformed);
-        }
-        let mut secret_key = [0u8; SECRET_KEY_LENGTH];
-        secret_key.copy_from_slice(value.private_key.as_bytes());
-        let verifying_key = if let Some(public_key) = value.public_key {
-            if public_key.has_unused_bits() {
-                return Err(pkcs8::Error::KeyMalformed);
-            }
-            let public_key = public_key.raw_bytes();
-            if public_key.len() != PUBLIC_KEY_LENGTH {
-                return Err(pkcs8::Error::KeyMalformed);
-            }
-            let mut bytes = [0u8; PUBLIC_KEY_LENGTH];
-            bytes.copy_from_slice(public_key);
-            Some(bytes)
-        } else {
-            None
-        };
-        Ok(KeypairBytes {
-            secret_key,
-            verifying_key,
-        })
-    }
-}
-
-#[cfg(feature = "pkcs8")]
 impl TryFrom<KeypairBytes> for SigningKey {
     type Error = pkcs8::Error;
 
@@ -410,11 +346,11 @@ impl TryFrom<&KeypairBytes> for SigningKey {
         let signing_key =
             SigningKey::from(SecretKey::try_from(&value.secret_key[..]).expect("invalid length"));
 
-        if let Some(public_bytes) = value.verifying_key {
-            let verifying_key =
-                VerifyingKey::from_bytes(&public_bytes).map_err(|_| pkcs8::Error::KeyMalformed)?;
+        if let Some(public_bytes) = &value.public_key {
+            let verifying_key = VerifyingKey::from_bytes(public_bytes.as_ref())
+                .map_err(|_| pkcs8::KeyError::Invalid)?;
             if signing_key.verifying_key() != verifying_key {
-                return Err(pkcs8::Error::KeyMalformed);
+                return Err(pkcs8::KeyError::Invalid.into());
             }
         }
         Ok(signing_key)
@@ -425,8 +361,8 @@ impl TryFrom<&KeypairBytes> for SigningKey {
 impl From<&SigningKey> for KeypairBytes {
     fn from(signing_key: &SigningKey) -> Self {
         KeypairBytes {
-            secret_key: PointBytes::from(signing_key.to_bytes()),
-            verifying_key: Some(PointBytes::from(signing_key.verifying_key().to_bytes())),
+            secret_key: signing_key.to_bytes().into(),
+            public_key: Some(PublicKeyBytes(signing_key.verifying_key().to_bytes())),
         }
     }
 }
