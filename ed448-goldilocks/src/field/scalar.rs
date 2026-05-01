@@ -452,7 +452,8 @@ impl<C: CurveWithScalar> serdect::serde::Serialize for Scalar<C> {
     where
         S: serdect::serde::Serializer,
     {
-        serdect::slice::serialize_hex_lower_or_bin(&self.to_bytes(), s)
+        let repr = C::to_repr(self);
+        serdect::slice::serialize_hex_lower_or_bin(repr.as_slice(), s)
     }
 }
 
@@ -463,7 +464,7 @@ impl<'de, C: CurveWithScalar> serdect::serde::Deserialize<'de> for Scalar<C> {
         D: serdect::serde::Deserializer<'de>,
     {
         let mut buffer = ScalarBytes::<C>::default();
-        serdect::array::deserialize_hex_or_bin(&mut buffer[..56], d)?;
+        serdect::array::deserialize_hex_or_bin(&mut buffer[..], d)?;
         Option::from(Self::from_canonical_bytes(&buffer)).ok_or(serdect::serde::de::Error::custom(
             "scalar was not canonically encoded",
         ))
