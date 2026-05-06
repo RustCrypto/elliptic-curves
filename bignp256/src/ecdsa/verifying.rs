@@ -108,7 +108,7 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         if prehash.len() != <BignP256 as Curve>::FieldBytesSize::USIZE {
             return Err(Error::new());
         }
-        // 2. Assume 𝑆 as 𝑆 = 𝑆0 ‖ 𝑆1, где 𝑆0 ∈ {0, 1}^𝑙, 𝑆1 ∈ {0, 1}^2𝑙.
+        // 2. Assume 𝑆 as 𝑆 = 𝑆0 ‖ 𝑆1, where 𝑆0 ∈ {0, 1}^𝑙, 𝑆1 ∈ {0, 1}^2𝑙.
         let s0 = signature.s0();
         // 3. If 𝑆1 ⩾ 𝑞, return NO.
         let s1 = signature.s1();
