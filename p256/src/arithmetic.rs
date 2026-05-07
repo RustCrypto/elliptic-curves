@@ -68,4 +68,13 @@ impl PrimeCurveParams for NistP256 {
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
         tables::BASEPOINT_TABLE_VARTIME.mul(k)
     }
+
+    #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
+    fn mul_by_generator_and_mul_add_vartime(
+        a: &Scalar,
+        b_scalar: &Scalar,
+        b_point: &ProjectivePoint,
+    ) -> ProjectivePoint {
+        tables::BASEPOINT_TABLE_VARTIME.lincomb(a, &[(*b_point, *b_scalar)])
+    }
 }

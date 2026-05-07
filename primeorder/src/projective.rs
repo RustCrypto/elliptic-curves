@@ -970,16 +970,13 @@ where
         C::mul_by_generator_vartime(scalar)
     }
 
-    // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
-    // use linear combinations for this computation, but they're slower when they are available
-    // TODO(tarcieri): `WnafBase::multiscalar_mul` w\ basepoint table when `alloc` *is* available
-    #[cfg(not(feature = "alloc"))]
+    #[inline]
     fn mul_by_generator_and_mul_add_vartime(
         a: &Self::Scalar,
         b_scalar: &Self::Scalar,
         b_point: &Self,
     ) -> Self {
-        Self::lincomb(&[(Self::GENERATOR, *a), (*b_point, *b_scalar)])
+        C::mul_by_generator_and_mul_add_vartime(a, b_scalar, b_point)
     }
 }
 
