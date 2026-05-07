@@ -1223,8 +1223,7 @@ dependencies = [
 [[package]]
 name = "rustcrypto-group"
 version = "0.14.0-rc.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "369f9b61aa45933c062c9f6b5c3c50ab710687eca83dd3802653b140b43f85ed"
+source = "git+https://github.com/RustCrypto/group#d5ef2775cb66a10085c9ec48432c51cad4e7b3ee"
 dependencies = [
  "rand_core 0.10.1",
  "rustcrypto-ff",

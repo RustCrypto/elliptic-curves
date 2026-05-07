@@ -105,9 +105,11 @@ proptest! {
         s1 in scalar(),
         p2 in projective(),
         s2 in scalar(),
+        p3 in projective(),
+        s3 in scalar(),
     ) {
-        let reference = p1 * s1 + p2 * s2;
-        let test = ProjectivePoint::lincomb(&[(p1, s1), (p2, s2)]);
+        let reference = p1 * s1 + p2 * s2 + p3 * s3;
+        let test = ProjectivePoint::lincomb(&[(p1, s1), (p2, s2), (p3, s3)]);
         assert_eq!(reference, test);
     }
 
@@ -118,9 +120,26 @@ proptest! {
         s1 in scalar(),
         p2 in projective(),
         s2 in scalar(),
+                p3 in projective(),
+        s3 in scalar(),
     ) {
-        let reference = p1 * s1 + p2 * s2;
-        let test = ProjectivePoint::lincomb(vec![(p1, s1), (p2, s2)].as_slice());
+        let reference = p1 * s1 + p2 * s2 + p3 * s3;
+        let test = ProjectivePoint::lincomb(vec![(p1, s1), (p2, s2), (p3, s3)].as_slice());
+        assert_eq!(reference, test);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn lincomb_vartime(
+        p1 in projective(),
+        s1 in scalar(),
+        p2 in projective(),
+        s2 in scalar(),
+        p3 in projective(),
+        s3 in scalar(),
+    ) {
+        let reference = p1 * s1 + p2 * s2 + p3 * s3;
+        let test = ProjectivePoint::lincomb_vartime(vec![(p1, s1), (p2, s2), (p3, s3)].as_slice());
         assert_eq!(reference, test);
     }
 }
