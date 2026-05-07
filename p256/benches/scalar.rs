@@ -4,14 +4,7 @@ use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use hex_literal::hex;
-use p256::{
-    ProjectivePoint, Scalar,
-    elliptic_curve::{
-        Group,
-        group::ff::PrimeField,
-        ops::{MulByGeneratorVartime, MulVartime},
-    },
-};
+use p256::{Scalar, elliptic_curve::PrimeField};
 use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
@@ -26,29 +19,6 @@ fn test_scalar_y() -> Scalar {
         hex!("0f56db78ca460b055c500064824bed999a25aaf48ebb519ac201537b85479813").into(),
     )
     .unwrap()
-}
-
-fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
-    let p = ProjectivePoint::GENERATOR;
-    let m = test_scalar_x();
-    let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("point-scalar mul", |b| {
-        b.iter(|| black_box(p) * black_box(s))
-    });
-    group.bench_function("point-scalar mul (variable-time)", |b| {
-        b.iter(|| black_box(p).mul_vartime(&black_box(s)))
-    });
-}
-
-fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
-    let m = test_scalar_x();
-    let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("generator-scalar mul", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(s)))
-    });
-    group.bench_function("generator-scalar mul (variable-time)", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(s)))
-    });
 }
 
 fn bench_scalar_sub<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
@@ -79,22 +49,15 @@ fn bench_scalar_invert<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     group.bench_function("invert", |b| b.iter(|| x.invert()));
 }
 
-fn bench_point(c: &mut Criterion) {
-    let mut group = c.benchmark_group("point operations");
-    bench_point_mul(&mut group);
-    group.finish();
-}
-
 fn bench_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("scalar operations");
     bench_scalar_sub(&mut group);
     bench_scalar_add(&mut group);
     bench_scalar_mul(&mut group);
-    bench_point_mul_by_generator(&mut group);
     bench_scalar_negate(&mut group);
     bench_scalar_invert(&mut group);
     group.finish();
 }
 
-criterion_group!(benches, bench_point, bench_scalar);
+criterion_group!(benches, bench_scalar);
 criterion_main!(benches);
