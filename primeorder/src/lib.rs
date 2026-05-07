@@ -29,7 +29,7 @@ pub use elliptic_curve::{
 
 use elliptic_curve::{
     CurveArithmetic, Generate,
-    ops::{Invert, MulVartime},
+    ops::{Invert, LinearCombination, MulVartime},
     subtle::CtOption,
 };
 
@@ -72,6 +72,19 @@ pub trait PrimeCurveParams:
     /// This is overridable to make it possible to plug in a basepoint table.
     fn mul_by_generator_vartime(k: &Scalar<Self>) -> ProjectivePoint<Self> {
         ProjectivePoint::GENERATOR.mul_vartime(k)
+    }
+
+    /// Multiply `a` by the generator of the prime-order subgroup, adding the result to the point
+    /// `P` multiplied by the scalar `b`, i.e. compute `aG + bP`.
+    fn mul_by_generator_and_mul_add_vartime(
+        a: &Scalar<Self>,
+        b_scalar: &Scalar<Self>,
+        b_point: &ProjectivePoint<Self>,
+    ) -> ProjectivePoint<Self> {
+        ProjectivePoint::<Self>::lincomb_vartime(&[
+            (ProjectivePoint::GENERATOR, *a),
+            (*b_point, *b_scalar),
+        ])
     }
 }
 
