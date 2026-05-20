@@ -57,7 +57,7 @@
 #![cfg_attr(feature = "getrandom", doc = "```")]
 #![cfg_attr(not(feature = "getrandom"), doc = "```ignore")]
 //! use ed448_goldilocks::{SigningKey, PreHasherXof, elliptic_curve::Generate};
-//! use sha3::{Shake256, digest::Update};
+//! use shake::{Shake256, digest::Update};
 //!
 //! let msg = b"Hello World";
 //!

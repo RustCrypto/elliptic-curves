@@ -19,7 +19,7 @@ use core::{
     hash::{Hash, Hasher},
 };
 use elliptic_curve::Group;
-use sha3::{
+use shake::{
     Shake256,
     digest::{Digest, ExtendableOutput, FixedOutput, HashMarker, Update, XofReader},
 };

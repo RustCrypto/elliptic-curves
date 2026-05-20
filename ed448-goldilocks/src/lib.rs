@@ -54,7 +54,7 @@ pub(crate) mod macros;
 pub use elliptic_curve;
 pub use hash2curve;
 pub use rand_core;
-pub use sha3;
+pub use shake;
 pub use subtle;
 
 pub(crate) mod curve;
@@ -87,7 +87,7 @@ use elliptic_curve::{
     point::PointCompression,
 };
 use hash2curve::{ExpandMsgXof, GroupDigest};
-use sha3::Shake256;
+use shake::Shake256;
 
 /// Edwards448 curve.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
