@@ -20,7 +20,7 @@ It is intended to be portable, fast, and safe.
 use ed448_goldilocks::{
     Ed448, EdwardsPoint, CompressedEdwardsY, EdwardsScalar,
     elliptic_curve::Generate,
-    sha3::Shake256
+    shake::Shake256
 };
 use elliptic_curve::{consts::U84, Field, group::GroupEncoding};
 use hash2curve::{ExpandMsgXof, GroupDigest};

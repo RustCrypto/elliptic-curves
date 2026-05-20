@@ -511,7 +511,7 @@ mod tests {
     use elliptic_curve::consts::U32;
     use hash2curve::{ExpandMsg, ExpandMsgXof, Expander};
     use hex_literal::hex;
-    use sha3::Shake256;
+    use shake::Shake256;
 
     fn assert_from_okm(dst: &[u8], msgs: &[(&[u8], [u8; 56], [u8; 56])]) {
         for (msg, expected_u0, expected_u1) in msgs {

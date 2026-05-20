@@ -8,7 +8,7 @@ use elliptic_curve::{
     rand_core::TryCryptoRng,
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
-use sha3::digest::{
+use shake::digest::{
     Digest, ExtendableOutput, FixedOutput, FixedOutputReset, HashMarker, Update, XofReader,
     common::BlockSizeUser, consts::U64, typenum::IsEqual,
 };

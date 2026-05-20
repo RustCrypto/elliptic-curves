@@ -7,7 +7,7 @@ use elliptic_curve::{
     group::GroupEncoding,
     zeroize::{Zeroize, ZeroizeOnDrop},
 };
-use sha3::{
+use shake::{
     Shake256,
     digest::{ExtendableOutput, ExtendableOutputReset, Update, XofReader},
 };

@@ -83,7 +83,7 @@ mod test {
     use hash2curve::ExpandMsgXof;
     use hex_literal::hex;
     use proptest::property_test;
-    use sha3::Shake256;
+    use shake::Shake256;
 
     #[test]
     fn test_basic_add() {
