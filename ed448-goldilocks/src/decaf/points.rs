@@ -618,7 +618,7 @@ mod test {
     use super::*;
     use crate::TWISTED_EDWARDS_BASE_POINT;
     use hash2curve::ExpandMsgXof;
-    use sha3::Shake256;
+    use shake::Shake256;
 
     #[test]
     fn test_edwards_decaf_operations() {

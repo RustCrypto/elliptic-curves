@@ -31,7 +31,7 @@ use elliptic_curve::{
 #[cfg(feature = "alloc")]
 use {
     alloc::vec::Vec,
-    elliptic_curve::group::{Wnaf, WnafGroup},
+    elliptic_curve::group::{Wnaf, WnafBase, WnafGroup, WnafScalar},
 };
 
 #[cfg(all(feature = "alloc", feature = "basepoint-table"))]
@@ -494,6 +494,23 @@ where
 
         lincomb::<C>(&mut ks, &mut pcs)
     }
+
+    #[cfg(feature = "alloc")]
+    fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
+        // TODO(tarcieri): make this customizable?
+        const WINDOW_SIZE: usize = 4;
+        let points = points_and_scalars
+            .iter()
+            .map(|(point, _)| WnafBase::<Self, WINDOW_SIZE>::new(*point))
+            .collect::<Vec<_>>();
+
+        let scalars = points_and_scalars
+            .iter()
+            .map(|(_, scalar)| WnafScalar::<Scalar<C>, WINDOW_SIZE>::new(scalar))
+            .collect::<Vec<_>>();
+
+        WnafBase::multiscalar_mul(scalars.iter(), points.iter())
+    }
 }
 
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
@@ -507,6 +524,11 @@ where
         let mut pcs: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
 
         lincomb::<C>(&mut ks, &mut pcs)
+    }
+
+    #[cfg(feature = "alloc")]
+    fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
+        Self::lincomb_vartime(points_and_scalars.as_slice())
     }
 }
 
@@ -948,15 +970,13 @@ where
         C::mul_by_generator_vartime(scalar)
     }
 
-    // When we're guaranteed *not* to have basepoint tables available (because they need `alloc`)
-    // use linear combinations for this computation, but they're slower when they are available
-    #[cfg(not(feature = "alloc"))]
+    #[inline]
     fn mul_by_generator_and_mul_add_vartime(
         a: &Self::Scalar,
         b_scalar: &Self::Scalar,
         b_point: &Self,
     ) -> Self {
-        Self::lincomb(&[(Self::GENERATOR, *a), (*b_point, *b_scalar)])
+        C::mul_by_generator_and_mul_add_vartime(a, b_scalar, b_point)
     }
 }
 

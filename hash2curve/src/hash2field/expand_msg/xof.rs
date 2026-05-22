@@ -120,7 +120,7 @@ mod test {
         typenum::{IsLess, U16, U32, U128, U65536},
     };
     use hex_literal::hex;
-    use sha3::Shake128;
+    use shake::Shake128;
 
     #[test]
     fn edge_cases() {
@@ -347,7 +347,7 @@ mod test {
 
     #[test]
     fn expand_message_xof_shake_256() {
-        use sha3::Shake256;
+        use shake::Shake256;
 
         const DST: &[u8] = b"QUUX-V01-CS02-with-expander-SHAKE256";
         const DST_PRIME: &[u8] =
