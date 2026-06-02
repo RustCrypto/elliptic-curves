@@ -50,7 +50,6 @@ arithmetic = [
     "elliptic-curve/arithmetic",
     "elliptic-curve/digest"
 ]
-bits = ["arithmetic", "elliptic-curve/bits"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/algorithm", "sha384"]

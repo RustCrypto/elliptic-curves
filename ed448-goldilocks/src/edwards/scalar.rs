@@ -72,13 +72,6 @@ pub type EdwardsScalarBytes = ScalarBytes<Ed448>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
 pub type WideEdwardsScalarBytes = WideScalarBytes<Ed448>;
 
-#[cfg(feature = "bits")]
-impl From<&EdwardsScalar> for elliptic_curve::scalar::ScalarBits<Ed448> {
-    fn from(scalar: &EdwardsScalar) -> Self {
-        scalar.scalar.to_words().into()
-    }
-}
-
 impl Reduce<Array<u8, U84>> for EdwardsScalar {
     fn reduce(value: &Array<u8, U84>) -> Self {
         const SEMI_WIDE_MODULUS: NonZero<U704> = NonZero::<U704>::new_unwrap(U704::from_be_hex(

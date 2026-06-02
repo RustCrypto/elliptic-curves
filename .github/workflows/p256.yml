@@ -41,7 +41,6 @@ jobs:
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features alloc
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features arithmetic
-      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features bits
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdh
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa-core
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa
@@ -52,7 +51,7 @@ jobs:
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features pkcs8
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features serde
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features sha256
-      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features alloc,bits,ecdh,ecdsa,group-digest,oprf,pem,pkcs8,serde,sha256
+      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features alloc,ecdh,ecdsa,group-digest,oprf,pem,pkcs8,serde,sha256
 
   benches:
     runs-on: ubuntu-latest

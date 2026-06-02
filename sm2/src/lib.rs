@@ -159,7 +159,3 @@ pub type SecretKey = elliptic_curve::SecretKey<Sm2>;
 
 #[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Sm2 {}
-
-/// Bit representation of a SM2 scalar field element.
-#[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::scalar::ScalarBits<Sm2>;

@@ -357,19 +357,6 @@ macro_rules! monty_field_element {
             }
         }
 
-        #[cfg(feature = "bits")]
-        impl $crate::ff::PrimeFieldBits for $fe {
-            type ReprBits = [$crate::bigint::Word; <$uint>::LIMBS];
-
-            fn to_le_bits(&self) -> $crate::ff::FieldBits<Self::ReprBits> {
-                self.to_canonical().to_words().into()
-            }
-
-            fn char_le_bits() -> $crate::ff::FieldBits<Self::ReprBits> {
-                Self::PARAMS.modulus().to_words().into()
-            }
-        }
-
         $crate::field_op!($fe, Add, add, add);
         $crate::field_op!($fe, Sub, sub, sub);
         $crate::field_op!($fe, Mul, mul, multiply);

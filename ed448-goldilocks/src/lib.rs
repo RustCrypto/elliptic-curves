@@ -93,12 +93,8 @@ use shake::Shake256;
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Ed448;
 
-/// Bytes of the Ed448 field
+/// Serialized byte representation of an Ed448 field element.
 pub type Ed448FieldBytes = elliptic_curve::FieldBytes<Ed448>;
-
-/// Scalar bits of the Ed448 scalar
-#[cfg(feature = "bits")]
-pub type Ed448ScalarBits = elliptic_curve::scalar::ScalarBits<Ed448>;
 
 /// Non-zero scalar of the Ed448 scalar
 pub type Ed448NonZeroScalar = elliptic_curve::NonZeroScalar<Ed448>;
@@ -147,10 +143,6 @@ pub struct Decaf448;
 
 /// Bytes of the Decaf448 field
 pub type Decaf448FieldBytes = elliptic_curve::FieldBytes<Decaf448>;
-
-/// Scalar bits of the Decaf448 scalar
-#[cfg(feature = "bits")]
-pub type Decaf448ScalarBits = elliptic_curve::scalar::ScalarBits<Decaf448>;
 
 /// Non-zero scalar of the Decaf448 scalar
 pub type Decaf448NonZeroScalar = elliptic_curve::NonZeroScalar<Decaf448>;

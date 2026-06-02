@@ -54,13 +54,6 @@ pub type DecafScalarBytes = ScalarBytes<Decaf448>;
 /// The number of bytes needed to represent the safely create a scalar from a random bytes
 pub type WideDecafScalarBytes = WideScalarBytes<Decaf448>;
 
-#[cfg(feature = "bits")]
-impl From<&DecafScalar> for elliptic_curve::scalar::ScalarBits<Decaf448> {
-    fn from(scalar: &DecafScalar) -> Self {
-        scalar.scalar.to_words().into()
-    }
-}
-
 impl Reduce<Array<u8, U64>> for DecafScalar {
     fn reduce(value: &Array<u8, U64>) -> Self {
         const SEMI_WIDE_MODULUS: NonZero<U512> = NonZero::<U512>::new_unwrap(U512::from_be_hex(

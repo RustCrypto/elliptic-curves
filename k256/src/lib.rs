@@ -154,7 +154,3 @@ pub type SecretKey = elliptic_curve::SecretKey<Secp256k1>;
 
 #[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for Secp256k1 {}
-
-/// Bit representation of a secp256k1 (K-256) scalar field element.
-#[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::scalar::ScalarBits<Secp256k1>;

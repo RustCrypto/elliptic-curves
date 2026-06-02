@@ -34,8 +34,6 @@ pub(crate) use self::wide::WideScalar;
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
-#[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
 
 #[cfg(test)]
 use num_bigint::{BigUint, ToBigUint};
@@ -66,8 +64,6 @@ const FRAC_MODULUS_2: U256 = ORDER.as_ref().shr_vartime(1);
 ///   represents elements of prime fields and provides:
 ///   - `from_repr`/`to_repr` for converting field elements from/to big integers.
 ///   - `multiplicative_generator` and `root_of_unity` constants.
-/// - [`PrimeFieldBits`](https://docs.rs/ff/latest/ff/trait.PrimeFieldBits.html) -
-///   operations over field elements represented as bits (requires `bits` feature)
 ///
 /// Please see the documentation for the relevant traits for more information.
 ///
@@ -313,30 +309,6 @@ impl PrimeField for Scalar {
 
     fn is_odd(&self) -> Choice {
         self.0.is_odd().into()
-    }
-}
-
-// Detect mismatch between our word size and bitvec's word size
-cpubits! {
-    64 => {
-        #[cfg(all(feature = "bits", target_pointer_width = "32"))]
-        compile_error!("the 'bits' feature is not supported on this target");
-    }
-}
-
-#[cfg(feature = "bits")]
-impl PrimeFieldBits for Scalar {
-    cpubits! {
-        32 => { type ReprBits = [u32; 8]; }
-        64 => { type ReprBits = [u64; 4]; }
-    }
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        ORDER.to_words().into()
     }
 }
 
@@ -711,13 +683,6 @@ impl Product for Scalar {
 impl<'a> Product<&'a Scalar> for Scalar {
     fn product<I: Iterator<Item = &'a Scalar>>(iter: I) -> Self {
         iter.copied().product()
-    }
-}
-
-#[cfg(feature = "bits")]
-impl From<&Scalar> for ScalarBits {
-    fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.to_words().into()
     }
 }
 

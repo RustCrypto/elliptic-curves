@@ -33,9 +33,6 @@ cpubits! {
     }
 }
 
-#[cfg(feature = "bits")]
-use {crate::ScalarBits, elliptic_curve::group::ff::PrimeFieldBits};
-
 #[cfg(feature = "serde")]
 use {
     elliptic_curve::ScalarValue,
@@ -314,30 +311,6 @@ impl PrimeField for Scalar {
     }
 }
 
-// Detect mismatch between our word size and bitvec's word size
-cpubits! {
-    64 => {
-        #[cfg(all(feature = "bits", target_pointer_width = "32"))]
-        compile_error!("the 'bits' feature is not supported on this target");
-    }
-}
-
-#[cfg(feature = "bits")]
-impl PrimeFieldBits for Scalar {
-    cpubits! {
-        32 => { type ReprBits = [u32; 8]; }
-        64 => { type ReprBits = [u64; 4]; }
-    }
-
-    fn to_le_bits(&self) -> ScalarBits {
-        self.into()
-    }
-
-    fn char_le_bits() -> ScalarBits {
-        NistP256::ORDER.to_words().into()
-    }
-}
-
 impl Retrieve for Scalar {
     type Output = U256;
 
@@ -464,13 +437,6 @@ impl FromUniformBytes<64> for Scalar {
             U256::from_be_slice(&bytes[32..]),
             U256::from_be_slice(&bytes[..32]),
         ))
-    }
-}
-
-#[cfg(feature = "bits")]
-impl From<&Scalar> for ScalarBits {
-    fn from(scalar: &Scalar) -> ScalarBits {
-        scalar.0.to_words().into()
     }
 }
 
@@ -710,7 +676,6 @@ mod tests {
     use elliptic_curve::{
         Curve,
         array::Array,
-        bigint::cpubits,
         group::ff::PrimeField,
         ops::{BatchInvert, ReduceNonZero},
     };
@@ -752,30 +717,6 @@ mod tests {
         let secret = SecretKey::from_bytes(&scalar.to_bytes()).unwrap();
         let rederived_scalar = Scalar::from(&secret);
         assert_eq!(scalar.0, rederived_scalar.0);
-    }
-
-    cpubits! {
-        32 => {
-            #[test]
-            #[cfg(feature = "bits")]
-            fn scalar_into_scalarbits() {
-                use crate::ScalarBits;
-
-                let minus_one = ScalarBits::from([
-                    0xfc63_2550,
-                    0xf3b9_cac2,
-                    0xa717_9e84,
-                    0xbce6_faad,
-                    0xffff_ffff,
-                    0xffff_ffff,
-                    0x0000_0000,
-                    0xffff_ffff,
-                ]);
-
-                let scalar_bits = ScalarBits::from(&-Scalar::from(1u32));
-                assert_eq!(minus_one, scalar_bits);
-            }
-        }
     }
 
     #[test]
