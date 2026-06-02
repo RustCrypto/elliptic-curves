@@ -32,7 +32,6 @@ alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "ecdsa?/std", "elliptic-curve/std", "getrandom"]
 
 arithmetic = ["dep:primefield", "dep:primeorder"]
-bits = ["arithmetic", "elliptic-curve/bits"]
 getrandom = ["ecdsa?/getrandom", "elliptic-curve/getrandom"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]

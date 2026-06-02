@@ -171,10 +171,6 @@ pub type SecretKey = elliptic_curve::SecretKey<NistP256>;
 #[cfg(not(feature = "arithmetic"))]
 impl elliptic_curve::sec1::ValidatePublicKey for NistP256 {}
 
-/// Bit representation of a NIST P-256 scalar field element.
-#[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::scalar::ScalarBits<NistP256>;
-
 #[cfg(feature = "oprf")]
 impl hash2curve::OprfParameters for NistP256 {
     /// See <https://www.rfc-editor.org/rfc/rfc9497.html#section-4.3-1>.

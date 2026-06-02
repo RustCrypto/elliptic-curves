@@ -31,9 +31,6 @@ use {
     },
 };
 
-#[cfg(all(doc, feature = "bits"))]
-use elliptic_curve::ff::PrimeFieldBits;
-
 /// Constant representing the modulus: p = 2^{224}(2^{32} − 1) + 2^{192} + 2^{96} − 1
 const MODULUS_HEX: &str = "ffffffff00000001000000000000000000000000ffffffffffffffffffffffff";
 

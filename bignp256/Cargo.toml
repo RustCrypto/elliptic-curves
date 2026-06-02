@@ -49,7 +49,6 @@ alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "elliptic-curve/std", "getrandom"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
-bits = ["arithmetic", "elliptic-curve/bits"]
 ecdsa = ["arithmetic", "dep:signature", "dep:belt-hash", "dep:bign-genk", "dep:belt-block", "belt-block/cipher", "belt-hash/oid"]
 getrandom = ["elliptic-curve/getrandom"]
 pem = ["pkcs8/pem", "sec1/pem"]

@@ -143,7 +143,3 @@ pub type NonZeroScalar = elliptic_curve::NonZeroScalar<BignP256>;
 /// Generic scalar type with primitive functionality.#
 #[cfg(feature = "arithmetic")]
 pub type ScalarValue = elliptic_curve::ScalarValue<BignP256>;
-
-/// Bit representation of a BIGN P-256 scalar field element.
-#[cfg(feature = "bits")]
-pub type ScalarBits = elliptic_curve::scalar::ScalarBits<BignP256>;

@@ -26,9 +26,6 @@ use elliptic_curve::{
 use rand_core::{CryptoRng, Rng, TryCryptoRng, TryRng};
 use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption};
 
-#[cfg(feature = "bits")]
-use elliptic_curve::ff::{FieldBits, PrimeFieldBits};
-
 /// Shared scalar for [`Ed448`] and [`Decaf448`].
 /// Use [`EdwardsScalar`] and [`DecafScalar`] directly.
 ///
@@ -547,19 +544,6 @@ impl<C: CurveWithScalar> Retrieve for Scalar<C> {
 
     fn retrieve(&self) -> U448 {
         U448::from_le_byte_array(self.to_bytes().into())
-    }
-}
-
-#[cfg(feature = "bits")]
-impl<C: CurveWithScalar> PrimeFieldBits for Scalar<C> {
-    type ReprBits = [Word; U448::LIMBS];
-
-    fn to_le_bits(&self) -> FieldBits<Self::ReprBits> {
-        self.scalar.to_words().into()
-    }
-
-    fn char_le_bits() -> FieldBits<Self::ReprBits> {
-        ORDER.to_words().into()
     }
 }
 
