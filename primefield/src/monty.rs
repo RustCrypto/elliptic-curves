@@ -413,7 +413,7 @@ where
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: rand_core::TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: rand_core::TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = MontyFieldBytes::<MOD, LIMBS>::default();
 
         loop {
@@ -473,17 +473,6 @@ where
 
     fn to_repr(&self) -> Self::Repr {
         self.to_bytes()
-    }
-
-    fn to_le_repr(&self) -> Self::Repr {
-        match MOD::BYTE_ORDER {
-            ByteOrder::BigEndian => {
-                let mut bytes = self.to_bytes();
-                bytes.reverse();
-                bytes
-            }
-            ByteOrder::LittleEndian => self.to_bytes(),
-        }
     }
 
     fn is_odd(&self) -> Choice {
@@ -944,7 +933,7 @@ where
     Uint<LIMBS>: ArrayEncoding,
 {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 

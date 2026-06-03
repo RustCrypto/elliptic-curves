@@ -3,7 +3,7 @@
 #![cfg(feature = "arithmetic")]
 
 use elliptic_curve::{
-    group::{GroupEncoding, prime::PrimeCurveAffine},
+    group::{CurveAffine, GroupEncoding},
     sec1::{FromSec1Point, ToCompactSec1Point, ToSec1Point},
 };
 use hex_literal::hex;

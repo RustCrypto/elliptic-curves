@@ -7,7 +7,6 @@ use core::{array, borrow::Borrow, iter::Sum};
 use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PrimeField, PublicKey, Result,
     Scalar,
-    array::ArraySize,
     bigint::{ArrayEncoding, ByteArray},
     ctutils,
     group::{
@@ -21,9 +20,7 @@ use elliptic_curve::{
     },
     point::{Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
-    sec1::{
-        CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point, UncompressedPointSize,
-    },
+    sec1::{CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -31,7 +28,7 @@ use elliptic_curve::{
 #[cfg(feature = "alloc")]
 use {
     alloc::vec::Vec,
-    elliptic_curve::group::{Wnaf, WnafBase, WnafGroup, WnafScalar},
+    elliptic_curve::{Wnaf, WnafBase, WnafGroup, WnafScalar},
 };
 
 #[cfg(all(feature = "alloc", feature = "basepoint-table"))]
@@ -290,10 +287,8 @@ where
 impl<C> CofactorGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Send + Sync,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Subgroup = ProjectivePoint<C>;
 
@@ -313,8 +308,10 @@ where
 impl<C> CurveGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
 {
-    type AffineRepr = AffinePoint<C>;
+    type Affine = AffinePoint<C>;
 
     fn to_affine(&self) -> AffinePoint<C> {
         ProjectivePoint::to_affine(self)
@@ -322,7 +319,7 @@ where
 
     #[cfg(feature = "alloc")]
     #[inline]
-    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::Affine]) {
         assert_eq!(projective.len(), affine.len());
         let mut zs = vec![C::FieldElement::ONE; projective.len()];
         batch_normalize_generic(projective, zs.as_mut_slice(), affine);
@@ -335,8 +332,8 @@ where
 {
     type Scalar = Scalar<C>;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
-        AffinePoint::try_from_rng(rng).map(Self::from)
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> core::result::Result<Self, R::Error> {
+        AffinePoint::try_random(rng).map(Self::from)
     }
 
     fn identity() -> Self {
@@ -364,9 +361,8 @@ where
 impl<C> GroupEncoding for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
+    CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Repr = CompressedPoint<C>;
 
@@ -388,20 +384,17 @@ impl<C> PrimeCurve for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
+    CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
-    type Affine = AffinePoint<C>;
 }
 
 impl<C> PrimeGroup for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
+    CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
 }
 
@@ -412,11 +405,13 @@ where
 impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
 {
-    type Output = [<Self as CurveGroup>::AffineRepr; N];
+    type Output = [<Self as CurveGroup>::Affine; N];
 
     #[inline]
-    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::AffineRepr; N] {
+    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::Affine; N] {
         let zs = [C::FieldElement::ONE; N];
         let mut affine_points = [C::AffinePoint::IDENTITY; N];
         batch_normalize_generic(points, zs, &mut affine_points);
@@ -428,11 +423,13 @@ where
 impl<C> BatchNormalize<[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
 {
-    type Output = Vec<<Self as CurveGroup>::AffineRepr>;
+    type Output = Vec<<Self as CurveGroup>::Affine>;
 
     #[inline]
-    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::AffineRepr> {
+    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::Affine> {
         let mut zs = vec![C::FieldElement::ONE; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
@@ -479,6 +476,8 @@ where
 impl<C> LinearCombination<[(Self, Scalar<C>)]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
 {
     #[cfg(feature = "alloc")]
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
@@ -509,13 +508,15 @@ where
             .map(|(_, scalar)| WnafScalar::<Scalar<C>, WINDOW_SIZE>::new(scalar))
             .collect::<Vec<_>>();
 
-        WnafBase::multiscalar_mul(scalars.iter(), points.iter())
+        WnafBase::multiscalar_mul(scalars, points)
     }
 }
 
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let mut ks: [_; N] = array::from_fn(|index| {
@@ -603,7 +604,6 @@ where
     C: PrimeCurveParams,
     CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
         self.to_affine().to_sec1_point(compress)
@@ -964,6 +964,8 @@ where
 impl<C> MulByGeneratorVartime for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
+    CompressedPoint<C>: Copy,
+    FieldBytesSize<C>: ModulusSize,
 {
     #[inline]
     fn mul_by_generator_vartime(scalar: &Scalar<C>) -> Self {
@@ -1023,7 +1025,6 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where

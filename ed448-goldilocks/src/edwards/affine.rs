@@ -1,9 +1,11 @@
 use crate::{field::FieldElement, *};
 use core::fmt::{Display, Formatter, LowerHex, Result as FmtResult, UpperHex};
+use elliptic_curve::array::Array;
 use elliptic_curve::{
     Error, Generate, ctutils,
-    ops::{Mul, MulVartime},
-    point::NonIdentity,
+    group::{CurveAffine, Group, GroupEncoding},
+    ops::{Mul, MulVartime, Neg},
+    point::{AffineCoordinates, NonIdentity},
     zeroize::DefaultIsZeroes,
 };
 use rand_core::{TryCryptoRng, TryRng};
@@ -105,7 +107,7 @@ impl AffinePoint {
     ///
     /// Helper method that has `TryRng` bounds so `ProjectivePoint` can call it for its `group`
     /// impls, otherwise end users should use the `Generate` trait.
-    pub(crate) fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
+    pub(crate) fn try_random<R>(rng: &mut R) -> Result<Self, R::Error>
     where
         R: TryRng + ?Sized,
     {
@@ -117,6 +119,56 @@ impl AffinePoint {
                 return Ok(point);
             }
         }
+    }
+}
+
+impl AffineCoordinates for AffinePoint {
+    type FieldRepr = Ed448FieldBytes;
+
+    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
+        let point = Self {
+            x: FieldElement::from_bytes_extended(&x.0),
+            y: FieldElement::from_bytes_extended(&y.0),
+        };
+
+        CtOption::new(point, point.is_on_curve())
+    }
+
+    fn x(&self) -> Self::FieldRepr {
+        Ed448FieldBytes::from(self.x.to_bytes_extended())
+    }
+
+    fn y(&self) -> Self::FieldRepr {
+        Ed448FieldBytes::from(self.y.to_bytes_extended())
+    }
+
+    fn x_is_odd(&self) -> Choice {
+        self.x.is_negative()
+    }
+
+    fn y_is_odd(&self) -> Choice {
+        self.y.is_negative()
+    }
+}
+
+impl CurveAffine for AffinePoint {
+    type Curve = EdwardsPoint;
+    type Scalar = EdwardsScalar;
+
+    fn identity() -> AffinePoint {
+        Self::IDENTITY
+    }
+
+    fn generator() -> AffinePoint {
+        EdwardsPoint::GENERATOR.to_affine()
+    }
+
+    fn is_identity(&self) -> Choice {
+        self.to_edwards().is_identity()
+    }
+
+    fn to_curve(&self) -> EdwardsPoint {
+        self.into()
     }
 }
 
@@ -156,6 +208,8 @@ impl ctutils::CtSelect for AffinePoint {
     }
 }
 
+impl DefaultIsZeroes for AffinePoint {}
+
 impl Eq for AffinePoint {}
 impl PartialEq for AffinePoint {
     fn eq(&self, other: &Self) -> bool {
@@ -165,40 +219,26 @@ impl PartialEq for AffinePoint {
 
 impl Generate for AffinePoint {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
-impl elliptic_curve::point::AffineCoordinates for AffinePoint {
-    type FieldRepr = Ed448FieldBytes;
+impl GroupEncoding for AffinePoint {
+    type Repr = Array<u8, U57>;
 
-    fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
-        let point = Self {
-            x: FieldElement::from_bytes_extended(&x.0),
-            y: FieldElement::from_bytes_extended(&y.0),
-        };
-
-        CtOption::new(point, point.is_on_curve())
+    fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
+        CompressedEdwardsY((*bytes).into()).decompress()
     }
 
-    fn x(&self) -> Self::FieldRepr {
-        Ed448FieldBytes::from(self.x.to_bytes_extended())
+    fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
     }
 
-    fn y(&self) -> Self::FieldRepr {
-        Ed448FieldBytes::from(self.y.to_bytes_extended())
-    }
-
-    fn x_is_odd(&self) -> Choice {
-        self.x.is_negative()
-    }
-
-    fn y_is_odd(&self) -> Choice {
-        self.y.is_negative()
+    fn to_bytes(&self) -> Self::Repr {
+        self.compress().0.into()
     }
 }
-
-impl DefaultIsZeroes for AffinePoint {}
 
 impl From<NonIdentity<AffinePoint>> for AffinePoint {
     fn from(affine: NonIdentity<AffinePoint>) -> Self {
@@ -250,6 +290,14 @@ define_mul_variants!(
     RHS = EdwardsScalar,
     Output = EdwardsPoint
 );
+
+impl Neg for AffinePoint {
+    type Output = AffinePoint;
+
+    fn neg(self) -> Self::Output {
+        self.to_edwards().neg().to_affine()
+    }
+}
 
 /// The compressed internal representation of a point on the Twisted Edwards Curve
 pub type PointBytes = [u8; 57];

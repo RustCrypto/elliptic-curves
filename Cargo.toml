@@ -28,4 +28,3 @@ primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
 
 elliptic-curve = { git = "http://github.com/RustCrypto/traits.git" }
-rustcrypto-group = { git = "https://github.com/RustCrypto/group" }

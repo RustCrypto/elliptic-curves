@@ -6,16 +6,15 @@ use crate::{PrimeCurveParams, ProjectivePoint};
 use core::borrow::Borrow;
 use elliptic_curve::{
     Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, Generate, PublicKey, Result, Scalar,
-    array::ArraySize,
     ctutils::{self, CtGt as _, CtSelect as _},
     ff::{Field, PrimeField},
-    group::{GroupEncoding, prime::PrimeCurveAffine},
+    group::{CurveAffine, GroupEncoding},
     ops::{Mul, MulVartime, Neg},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{
         self, CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToCompactSec1Point,
-        ToSec1Point, UncompressedPointSize,
+        ToSec1Point,
     },
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -79,7 +78,7 @@ where
     /// Internal RNG that avoids a `TryCryptoRng` bound so we can use it with `group`.
     ///
     /// TODO(tarcieri): find some way to avoid this?
-    pub(crate) fn try_from_rng<R: TryRng + ?Sized>(
+    pub(crate) fn try_random<R: TryRng + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
         let mut bytes = FieldBytes::<C>::default();
@@ -286,7 +285,6 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn from(affine: AffinePoint<C>) -> Sec1Point<C> {
         affine.to_sec1_point(false)
@@ -300,16 +298,15 @@ where
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
 impl<C> GroupEncoding for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy + Send + Sync,
+    CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Repr = CompressedPoint<C>;
 
@@ -350,13 +347,11 @@ where
     }
 }
 
-impl<C> PrimeCurveAffine for AffinePoint<C>
+impl<C> CurveAffine for AffinePoint<C>
 where
     C: PrimeCurveParams,
     CompressedPoint<C>: Copy,
     FieldBytesSize<C>: ModulusSize,
-    ProjectivePoint<C>: Double,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     type Curve = ProjectivePoint<C>;
     type Scalar = Scalar<C>;
@@ -383,7 +378,6 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     /// Serialize this value as a  SEC1 compact [`Sec1Point`]
     fn to_compact_encoded_point(&self) -> ctutils::CtOption<Sec1Point<C>> {
@@ -405,7 +399,6 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
         Sec1Point::<C>::ct_select(
@@ -574,7 +567,6 @@ where
     C: PrimeCurveParams,
     FieldBytesSize<C>: ModulusSize,
     CompressedPoint<C>: Copy,
-    <UncompressedPointSize<C> as ArraySize>::ArrayType<u8>: Copy,
 {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where

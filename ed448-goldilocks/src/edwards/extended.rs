@@ -129,19 +129,19 @@ impl PartialEq for EdwardsPoint {
 
 impl Generate for EdwardsPoint {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
 impl Group for EdwardsPoint {
     type Scalar = EdwardsScalar;
 
-    fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
+    fn try_random<R>(rng: &mut R) -> Result<Self, R::Error>
     where
         R: TryRng + ?Sized,
     {
         loop {
-            let point = AffinePoint::try_from_rng(rng)?;
+            let point = AffinePoint::try_random(rng)?;
             if point != AffinePoint::IDENTITY {
                 break Ok(point.into());
             }
@@ -169,23 +169,16 @@ impl GroupEncoding for EdwardsPoint {
     type Repr = Array<u8, U57>;
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
-        let mut value = [0u8; 57];
-        value.copy_from_slice(bytes);
-        CompressedEdwardsY(value)
-            .decompress()
-            .map(|point| point.to_edwards())
+        AffinePoint::from_bytes(bytes).map(|point| point.to_edwards())
     }
 
     fn from_bytes_unchecked(bytes: &Self::Repr) -> CtOption<Self> {
-        let mut value = [0u8; 57];
-        value.copy_from_slice(bytes);
-        CompressedEdwardsY(value)
-            .decompress()
-            .map(|point| point.to_edwards())
+        // No unchecked conversion possible for compressed points
+        Self::from_bytes(bytes)
     }
 
     fn to_bytes(&self) -> Self::Repr {
-        Self::Repr::from(self.to_affine().compress().0)
+        self.to_affine().to_bytes()
     }
 }
 
@@ -319,7 +312,7 @@ impl<const N: usize> LinearCombination<[(EdwardsPoint, EdwardsScalar); N]> for E
 impl LinearCombination<[(EdwardsPoint, EdwardsScalar)]> for EdwardsPoint {}
 
 impl CurveGroup for EdwardsPoint {
-    type AffineRepr = AffinePoint;
+    type Affine = AffinePoint;
 
     fn to_affine(&self) -> AffinePoint {
         self.to_affine()
@@ -327,7 +320,7 @@ impl CurveGroup for EdwardsPoint {
 
     #[cfg(feature = "alloc")]
     #[inline]
-    fn batch_normalize(projective: &[Self], affine: &mut [Self::AffineRepr]) {
+    fn batch_normalize(projective: &[Self], affine: &mut [Self::Affine]) {
         assert_eq!(projective.len(), affine.len());
         let mut zs = alloc::vec![FieldElement::ONE; projective.len()];
         batch_normalize_generic(projective, zs.as_mut_slice(), affine);
@@ -771,10 +764,10 @@ impl<'de> serdect::serde::Deserialize<'de> for EdwardsPoint {
 impl elliptic_curve::zeroize::DefaultIsZeroes for EdwardsPoint {}
 
 impl<const N: usize> BatchNormalize<[EdwardsPoint; N]> for EdwardsPoint {
-    type Output = [<Self as CurveGroup>::AffineRepr; N];
+    type Output = [<Self as CurveGroup>::Affine; N];
 
     #[inline]
-    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::AffineRepr; N] {
+    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::Affine; N] {
         let zs = [FieldElement::ONE; N];
         let mut affine_points = [AffinePoint::IDENTITY; N];
         batch_normalize_generic(points, zs, &mut affine_points);
@@ -784,10 +777,10 @@ impl<const N: usize> BatchNormalize<[EdwardsPoint; N]> for EdwardsPoint {
 
 #[cfg(feature = "alloc")]
 impl BatchNormalize<[EdwardsPoint]> for EdwardsPoint {
-    type Output = Vec<<Self as CurveGroup>::AffineRepr>;
+    type Output = Vec<<Self as CurveGroup>::Affine>;
 
     #[inline]
-    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::AffineRepr> {
+    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::Affine> {
         use alloc::vec;
 
         let mut zs = vec![FieldElement::ONE; points.len()];

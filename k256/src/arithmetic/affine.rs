@@ -7,7 +7,7 @@ use crate::{CompressedPoint, FieldBytes, PublicKey, Scalar, Sec1Point, Secp256k1
 use elliptic_curve::{
     Error, Generate, Result, ctutils,
     ff::PrimeField,
-    group::{GroupEncoding, prime::PrimeCurveAffine},
+    group::{CurveAffine, GroupEncoding},
     ops::{Mul, MulVartime, Neg},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
@@ -80,7 +80,7 @@ impl AffinePoint {
     ///
     /// This internal method avoids the `TryCryptoRng` bounds so it can be used in `group` impls for
     /// `ProjectivePoint`.
-    pub(crate) fn try_from_rng<R: TryRng + ?Sized>(
+    pub(crate) fn try_random<R: TryRng + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
@@ -103,7 +103,7 @@ impl AffinePoint {
     }
 }
 
-impl PrimeCurveAffine for AffinePoint {
+impl CurveAffine for AffinePoint {
     type Scalar = Scalar;
     type Curve = ProjectivePoint;
 
@@ -213,7 +213,7 @@ impl Generate for AffinePoint {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
         rng: &mut R,
     ) -> core::result::Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
@@ -443,7 +443,7 @@ mod tests {
     use super::AffinePoint;
     use crate::Sec1Point;
     use elliptic_curve::{
-        group::{GroupEncoding, prime::PrimeCurveAffine},
+        group::{CurveAffine, GroupEncoding},
         sec1::{FromSec1Point, ToSec1Point},
     };
     use hex_literal::hex;

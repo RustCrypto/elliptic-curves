@@ -28,7 +28,7 @@ use core::{
 };
 use elliptic_curve::{
     Generate,
-    bigint::{ArrayEncoding, Odd, U256, modular::Retrieve},
+    bigint::{Odd, U256, modular::Retrieve},
     ff::{self, Field, PrimeField},
     ops::Invert,
     rand_core::{TryCryptoRng, TryRng},
@@ -246,7 +246,7 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut bytes = FieldBytes::default();
 
         loop {
@@ -280,7 +280,7 @@ impl Field for FieldElement {
 
 impl Generate for FieldElement {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
@@ -316,10 +316,6 @@ impl PrimeField for FieldElement {
 
     fn to_repr(&self) -> Self::Repr {
         self.to_bytes()
-    }
-
-    fn to_le_repr(&self) -> Self::Repr {
-        self.0.normalize().to_u256().to_le_byte_array()
     }
 
     fn is_odd(&self) -> Choice {
