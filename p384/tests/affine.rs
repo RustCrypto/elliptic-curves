@@ -5,7 +5,7 @@
 #![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
 
 use elliptic_curve::{
-    group::{GroupEncoding, prime::PrimeCurveAffine},
+    group::{CurveAffine, GroupEncoding},
     sec1::{FromSec1Point, ToSec1Point},
 };
 use hex_literal::hex;

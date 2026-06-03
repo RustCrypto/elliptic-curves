@@ -492,7 +492,7 @@ impl Field for FieldElement {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // NOTE: can't use ScalarValue::random due to CryptoRng bound
         let mut bytes = <FieldBytes>::default();
 
@@ -531,7 +531,7 @@ impl Field for FieldElement {
 
 impl Generate for FieldElement {
     fn try_generate_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
@@ -558,13 +558,6 @@ impl PrimeField for FieldElement {
     #[inline]
     fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
-    }
-
-    #[inline]
-    fn to_le_repr(&self) -> FieldBytes {
-        let mut ret = [0u8; 66];
-        fiat_p521_to_bytes(&mut ret, &self.0); // natively little-endian
-        ret.into()
     }
 
     #[inline]

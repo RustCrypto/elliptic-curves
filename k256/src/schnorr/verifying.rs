@@ -3,7 +3,7 @@
 use super::{CHALLENGE_TAG, Signature, tagged_hash};
 use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
 use elliptic_curve::{
-    group::prime::PrimeCurveAffine,
+    group::CurveAffine,
     ops::{MulByGeneratorVartime, Reduce},
     point::DecompactPoint,
 };
@@ -52,14 +52,15 @@ impl VerifyingKey {
 
     /// Compute Schnorr signature.
     ///
-    /// # ⚠️ Warning
+    /// <div class="warning">
+    /// <b>Warning<b>
     ///
-    /// This is a low-level interface intended only for unusual use cases
-    /// involving verifying pre-hashed messages, or "raw" messages where the
-    /// message is not hashed at all prior to being used to generate the
-    /// Schnorr signature.
+    /// This is a low-level interface intended only for unusual use cases involving verifying
+    /// pre-hashed messages, or "raw" messages where the message is not hashed at all prior to being
+    /// used to generate the Schnorr signature.
     ///
     /// The preferred interfaces are the [`DigestVerifier`] or [`PrehashVerifier`] traits.
+    /// </div>
     pub fn verify_raw(&self, message: &[u8], signature: &Signature) -> Result<()> {
         let (r, s) = signature.split();
 

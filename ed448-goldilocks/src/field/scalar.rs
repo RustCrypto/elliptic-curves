@@ -316,7 +316,7 @@ impl<C: CurveWithScalar> Field for Scalar<C> {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut seed = WideScalarBytes::<C>::default();
         rng.try_fill_bytes(&mut seed)?;
         Ok(C::from_bytes_mod_order_wide(&seed))
@@ -373,7 +373,7 @@ impl<C: CurveWithScalar> PrimeField for Scalar<C> {
 
 impl<C: CurveWithScalar> Generate for Scalar<C> {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 

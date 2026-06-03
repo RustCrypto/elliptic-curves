@@ -28,13 +28,14 @@ pub use elliptic_curve::{
 };
 
 use elliptic_curve::{
-    CurveArithmetic, Generate,
+    CurveArithmetic, FieldBytesSize, Generate,
     ops::{Invert, LinearCombination, MulVartime},
     subtle::CtOption,
 };
 
 #[cfg(all(feature = "alloc", feature = "basepoint-table"))]
 use elliptic_curve::point::BasepointTableVartime;
+use elliptic_curve::sec1::{CompressedPoint, ModulusSize};
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
@@ -80,7 +81,11 @@ pub trait PrimeCurveParams:
         a: &Scalar<Self>,
         b_scalar: &Scalar<Self>,
         b_point: &ProjectivePoint<Self>,
-    ) -> ProjectivePoint<Self> {
+    ) -> ProjectivePoint<Self>
+    where
+        CompressedPoint<Self>: Copy,
+        FieldBytesSize<Self>: ModulusSize,
+    {
         ProjectivePoint::<Self>::lincomb_vartime(&[
             (ProjectivePoint::GENERATOR, *a),
             (*b_point, *b_scalar),

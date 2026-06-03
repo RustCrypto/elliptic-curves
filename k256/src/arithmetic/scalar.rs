@@ -180,7 +180,7 @@ impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
     const ONE: Self = Self::ONE;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         // Uses rejection sampling as the default random generation method,
         // which produces a uniformly random distribution of scalars.
         //
@@ -262,7 +262,7 @@ impl Field for Scalar {
 
 impl Generate for Scalar {
     fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
-        Self::try_from_rng(rng)
+        Self::try_random(rng)
     }
 }
 
@@ -301,10 +301,6 @@ impl PrimeField for Scalar {
 
     fn to_repr(&self) -> FieldBytes {
         self.to_bytes()
-    }
-
-    fn to_le_repr(&self) -> Self::Repr {
-        self.0.to_le_byte_array()
     }
 
     fn is_odd(&self) -> Choice {

@@ -274,7 +274,7 @@ macro_rules! monty_field_element {
             fn try_generate_from_rng<R: $crate::rand_core::TryCryptoRng + ?Sized>(
                 rng: &mut R,
             ) -> ::core::result::Result<Self, R::Error> {
-                <Self as $crate::ff::Field>::try_from_rng(rng)
+                <Self as $crate::ff::Field>::try_random(rng)
             }
         }
 
@@ -282,10 +282,10 @@ macro_rules! monty_field_element {
             const ZERO: Self = Self::ZERO;
             const ONE: Self = Self::ONE;
 
-            fn try_from_rng<R: $crate::rand_core::TryRng + ?Sized>(
+            fn try_random<R: $crate::rand_core::TryRng + ?Sized>(
                 rng: &mut R,
             ) -> ::core::result::Result<Self, R::Error> {
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::try_from_rng(rng)
+                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::try_random(rng)
                     .map(Self)
             }
 
@@ -344,11 +344,6 @@ macro_rules! monty_field_element {
             #[inline]
             fn to_repr(&self) -> Self::Repr {
                 self.0.to_repr()
-            }
-
-            #[inline]
-            fn to_le_repr(&self) -> Self::Repr {
-                self.0.to_le_repr()
             }
 
             #[inline]

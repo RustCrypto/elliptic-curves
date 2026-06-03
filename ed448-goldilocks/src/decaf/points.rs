@@ -266,7 +266,7 @@ impl Generate for DecafPoint {
 impl Group for DecafPoint {
     type Scalar = DecafScalar;
 
-    fn try_from_rng<R>(rng: &mut R) -> Result<Self, R::Error>
+    fn try_random<R>(rng: &mut R) -> Result<Self, R::Error>
     where
         R: TryRng + ?Sized,
     {
@@ -341,9 +341,9 @@ impl<const N: usize> LinearCombination<[(DecafPoint, DecafScalar); N]> for Decaf
 impl LinearCombination<[(DecafPoint, DecafScalar)]> for DecafPoint {}
 
 impl CurveGroup for DecafPoint {
-    type AffineRepr = DecafAffinePoint;
+    type Affine = DecafAffinePoint;
 
-    fn to_affine(&self) -> Self::AffineRepr {
+    fn to_affine(&self) -> Self::Affine {
         DecafAffinePoint(self.0.to_extensible().to_affine())
     }
 }
