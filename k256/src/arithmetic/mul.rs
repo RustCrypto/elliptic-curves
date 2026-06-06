@@ -496,7 +496,6 @@ impl MulByGeneratorVartime for ProjectivePoint {
         Self::mul_by_generator(k)
     }
 
-    // Without `alloc`, the trait's default (`aG + bP` via two separate `mul_vartime` calls) applies.
     #[cfg(feature = "alloc")]
     fn mul_by_generator_and_mul_add_vartime(
         a: &Self::Scalar,
@@ -504,6 +503,18 @@ impl MulByGeneratorVartime for ProjectivePoint {
         b_point: &Self,
     ) -> Self {
         b_point.mul_add_vartime_glv(a, b_scalar)
+    }
+
+    // Without `alloc` there is no wNAF table, so fall back to a linear combination, which shares
+    // doublings across both terms. This avoids the trait default's two independent scalar mults
+    // (`aG + bP` via separate `mul_vartime` calls), matching the pre-GLV behavior.
+    #[cfg(not(feature = "alloc"))]
+    fn mul_by_generator_and_mul_add_vartime(
+        a: &Self::Scalar,
+        b_scalar: &Self::Scalar,
+        b_point: &Self,
+    ) -> Self {
+        Self::lincomb(&[(Self::GENERATOR, *a), (*b_point, *b_scalar)])
     }
 }
 
