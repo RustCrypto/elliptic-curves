@@ -45,10 +45,9 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use elliptic_curve::{
-    PrimeField,
-    group::{WnafBase, WnafScalar},
-};
+use crate::FieldBytes;
+#[cfg(feature = "alloc")]
+use elliptic_curve::{PrimeField, WnafBase, WnafScalar};
 
 #[cfg(feature = "precomputed-tables")]
 use super::tables::BASEPOINT_TABLE;
@@ -332,6 +331,18 @@ const WNAF_WINDOW: usize = 5;
 #[cfg(feature = "alloc")]
 const GLV_LE_BYTES: usize = 17;
 
+/// Little-endian byte encoding of a scalar.
+///
+/// `Scalar::to_repr()` is big-endian; `WnafScalar::from_le_bytes` consumes little-endian bytes, so
+/// reverse it. (This replaces the forked `PrimeField::to_le_repr` the wNAF work previously relied
+/// on, which no longer exists upstream.)
+#[cfg(feature = "alloc")]
+fn to_le_bytes(scalar: &Scalar) -> FieldBytes {
+    let mut repr = scalar.to_repr();
+    repr.reverse();
+    repr
+}
+
 /// GLV-decompose `k` for point `p`: returns two `(WnafBase, WnafScalar)` pairs representing
 /// `r1 * p_signed` and `r2 * endomorphism(p_signed)`, with signs folded into the points.
 #[cfg(feature = "alloc")]
@@ -353,9 +364,13 @@ fn glv_wnaf_pair(
     let p2 = if r2_neg { -p_beta } else { p_beta };
 
     let bases = [WnafBase::new(p1), WnafBase::new(p2)];
+    // GLV guarantees each half-scalar has magnitude < 2^128, far below the curve order, so the
+    // canonical-range check in `from_le_bytes` cannot fail for these inputs.
     let scalars = [
-        WnafScalar::from_le_bytes(&r1.to_le_repr()[..GLV_LE_BYTES]),
-        WnafScalar::from_le_bytes(&r2.to_le_repr()[..GLV_LE_BYTES]),
+        WnafScalar::from_le_bytes(&to_le_bytes(&r1)[..GLV_LE_BYTES])
+            .expect("GLV half-scalar is in range"),
+        WnafScalar::from_le_bytes(&to_le_bytes(&r2)[..GLV_LE_BYTES])
+            .expect("GLV half-scalar is in range"),
     ];
     (bases, scalars)
 }
