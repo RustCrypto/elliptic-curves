@@ -17,6 +17,7 @@ and can be easily used for bare-metal or WebAssembly programming.
 | [`bignp256`] | bign-curve256v1  | [![crates.io](https://img.shields.io/crates/v/bignp256.svg)](https://crates.io/crates/bignp256) | [![Documentation](https://docs.rs/bignp256/badge.svg)](https://docs.rs/bignp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bignp256/badge.svg?branch=master&event=push) |
 | [`bp256`] | [brainpoolP256r1]/[brainpoolP256t1] | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
 | [`bp384`] | [brainpoolP384r1]/[brainpoolP384t1] | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
+| [`ed448-goldilocks`] | [Ed448]/[Curve448] | [![crates.io](https://img.shields.io/crates/v/ed448-goldilocks.svg)](https://crates.io/crates/ed448-goldilocks) | [![Documentation](https://docs.rs/ed448-goldilocks/badge.svg)](https://docs.rs/ed448-goldilocks) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/ed448-goldilocks/badge.svg?branch=master&event=push) |
 | [`hash2curve`] |               | [![crates.io](https://img.shields.io/crates/v/hash2curve.svg)](https://crates.io/crates/hash2curve)   | [![Documentation](https://docs.rs/hash2curve/badge.svg)](https://docs.rs/hash2curve)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/hash2curve/badge.svg?branch=master&event=push)  |
 | [`k256`]  | [secp256k1]        | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256)   | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push)  |
 | [`p192`]  | [NIST P-192]       | [![crates.io](https://img.shields.io/crates/v/p192.svg)](https://crates.io/crates/p192)   | [![Documentation](https://docs.rs/p192/badge.svg)](https://docs.rs/p192)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p192/badge.svg?branch=master&event=push)  |
@@ -25,6 +26,7 @@ and can be easily used for bare-metal or WebAssembly programming.
 | [`p384`]  | [NIST P-384]       | [![crates.io](https://img.shields.io/crates/v/p384.svg)](https://crates.io/crates/p384)   | [![Documentation](https://docs.rs/p384/badge.svg)](https://docs.rs/p384)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push)  |
 | [`p521`]  | [NIST P-521]       | [![crates.io](https://img.shields.io/crates/v/p521.svg)](https://crates.io/crates/p521)   | [![Documentation](https://docs.rs/p521/badge.svg)](https://docs.rs/p521)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p521/badge.svg?branch=master&event=push)  |
 | [`sm2`]   | [SM2]              | [![crates.io](https://img.shields.io/crates/v/sm2.svg)](https://crates.io/crates/sm2)   | [![Documentation](https://docs.rs/sm2/badge.svg)](https://docs.rs/sm2)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/sm2/badge.svg?branch=master&event=push)  |
+| [`x448`]  | [X448]/[Curve448]  | [![crates.io](https://img.shields.io/crates/v/x448.svg)](https://crates.io/crates/x448)   | [![Documentation](https://docs.rs/x448/badge.svg)](https://docs.rs/x448)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/x448/badge.svg?branch=master&event=push)  |
 
 Please see our [tracking issue for additional elliptic curves][other-curves]
 if you are interested in curves beyond the ones listed here.
@@ -64,6 +66,7 @@ dual licensed as above, without any additional terms or conditions.
 [`bignp256`]: ./bignp256
 [`bp256`]: ./bp256
 [`bp384`]: ./bp384
+[`ed448-goldilocks`]: ./ed448-goldilocks
 [`hash2curve`]: ./hash2curve
 [`k256`]: ./k256
 [`p192`]: ./p192
@@ -72,9 +75,13 @@ dual licensed as above, without any additional terms or conditions.
 [`p384`]: ./p384
 [`p521`]: ./p521
 [`sm2`]: ./sm2
+[`x448`]: ./x448
 
 [//]: # (curves)
 
+[Ed448]: https://neuromancer.sk/std/other/Ed448/
+[Curve448]: https://neuromancer.sk/std/other/Curve448
+[X448]: https://www.rfc-editor.org/rfc/rfc7748
 [secp256k1]: https://neuromancer.sk/std/secg/secp256k1
 [NIST P-192]: https://neuromancer.sk/std/nist/P-192
 [NIST P-224]: https://neuromancer.sk/std/nist/P-224
