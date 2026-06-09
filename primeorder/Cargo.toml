@@ -24,7 +24,7 @@ elliptic-curve = { version = "0.14.0-rc.33", default-features = false, features 
 serdect = { version = "0.4", optional = true, default-features = false }
 
 [features]
-alloc = ["elliptic-curve/alloc"]
+alloc = ["elliptic-curve/wnaf"]
 std = ["alloc", "elliptic-curve/std"]
 
 basepoint-table = ["elliptic-curve/basepoint-table"]

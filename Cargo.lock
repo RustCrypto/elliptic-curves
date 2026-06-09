@@ -423,7 +423,7 @@ dependencies = [
 [[package]]
 name = "ecdsa"
 version = "0.17.0-rc.18"
-source = "git+https://github.com/RustCrypto/signatures.git#a8c7206efe6ad9e9f9a1166eae3565e7dac093d6"
+source = "git+https://github.com/RustCrypto/signatures#a8c7206efe6ad9e9f9a1166eae3565e7dac093d6"
 dependencies = [
  "der",
  "digest",
@@ -478,8 +478,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.33"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "102d3643d30dd8b559613c5cced68317199597fffb278cdc88daa2ef7fafc935"
+source = "git+https://github.com/RustCrypto/traits#2032ddfec78963abdc4f412e8bb165da3117e621"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -497,6 +496,7 @@ dependencies = [
  "sec1",
  "serdect",
  "subtle",
+ "wnaf",
  "zeroize",
 ]
 
