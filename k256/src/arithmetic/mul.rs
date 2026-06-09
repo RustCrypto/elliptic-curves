@@ -45,7 +45,10 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use elliptic_curve::{WnafBase, WnafScalar, bigint::ArrayEncoding};
+use elliptic_curve::{
+    bigint::ArrayEncoding,
+    wnaf::{WnafBase, WnafScalar},
+};
 
 #[cfg(feature = "precomputed-tables")]
 use super::tables::BASEPOINT_TABLE;
@@ -331,7 +334,7 @@ const GLV_LE_BYTES: usize = 17;
 
 /// GLV + wNAF variable-time scalar multiplication.
 ///
-/// These require heap-allocated wNAF tables (via the `group` crate's `WnafBase`/`WnafScalar`), so
+/// These require heap-allocated wNAF tables (via the `wnaf` crate's `WnafBase`/`WnafScalar`), so
 /// the whole block is gated on `alloc`. Without `alloc`, the `MulVartime`/`MulByGeneratorVartime`
 /// impls fall back to constant-time multiplication and the trait-provided default combinators.
 ///
@@ -364,9 +367,9 @@ impl ProjectivePoint {
         // it produces an identical (just slower) result for any in-range scalar.
         let scalars = [
             WnafScalar::from_le_bytes(&r1.0.to_le_byte_array()[..GLV_LE_BYTES])
-                .unwrap_or_else(|_| WnafScalar::new(&r1)),
+                .unwrap_or_else(|| WnafScalar::new(&r1)),
             WnafScalar::from_le_bytes(&r2.0.to_le_byte_array()[..GLV_LE_BYTES])
-                .unwrap_or_else(|_| WnafScalar::new(&r2)),
+                .unwrap_or_else(|| WnafScalar::new(&r2)),
         ];
         (bases, scalars)
     }
