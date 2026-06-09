@@ -1,0 +1,24 @@
+[package]
+name = "wnaf"
+version = "0.0.0"
+description = """
+w-NAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
+over elliptic curve groups, including multiscalar multiplication using Straus's interleaved window
+method. Contains an implementation adapted from the `group` crate which has been forked and enhanced
+but is otherwise compatible with that crate's traits, along with the `ff` crate's traits for finite
+field representations
+"""
+authors = ["RustCrypto Developers"]
+license = "Apache-2.0 OR MIT"
+documentation = "https://docs.rs/wnaf"
+homepage = "https://github.com/RustCrypto/elliptic-curves/tree/master/wnaf"
+repository = "https://github.com/RustCrypto/elliptic-curves"
+readme = "README.md"
+categories = ["cryptography", "no-std"]
+keywords = ["crypto", "ecc", "field", "prime"]
+edition = "2024"
+rust-version = "1.85"
+
+[dependencies]
+ff = { version = "0.14", default-features = false }
+group = { version = "0.14", default-features = false }
