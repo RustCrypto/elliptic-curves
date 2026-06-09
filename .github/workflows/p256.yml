@@ -4,8 +4,11 @@ on:
   pull_request:
     paths:
       - ".github/workflows/p256.yml"
-      - "p256/**"
       - "hash2curve/**"
+      - "p256/**"
+      - "primefield/**"
+      - "primeorder/**"
+      - "wnaf/**"
       - "Cargo.*"
   push:
     branches: master

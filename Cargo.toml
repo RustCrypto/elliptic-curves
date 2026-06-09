@@ -15,6 +15,7 @@ members = [
     "primefield",
     "primeorder",
     "sm2",
+    "wnaf",
     "x448"
 ]
 
