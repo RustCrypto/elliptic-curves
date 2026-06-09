@@ -28,7 +28,7 @@ use elliptic_curve::{
 #[cfg(feature = "alloc")]
 use {
     alloc::vec::Vec,
-    elliptic_curve::{Wnaf, WnafBase, WnafGroup, WnafScalar},
+    elliptic_curve::wnaf::{Wnaf, WnafBase, WnafGroup, WnafScalar},
 };
 
 #[cfg(all(feature = "alloc", feature = "basepoint-table"))]
