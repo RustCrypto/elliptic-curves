@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "wnaf"
-version = "0.0.0"
+version = "0.14.0-pre.0"
 dependencies = [
  "ff",
  "group",

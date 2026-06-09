@@ -16,6 +16,7 @@ on:
       "primefield/v**",
       "primeorder/v**",
       "sm2/v**",
+      "wnaf/v**",
       "x448/v**",
     ]
 
