@@ -44,6 +44,12 @@ use elliptic_curve::{
     subtle::ConditionallySelectable,
 };
 
+#[cfg(feature = "alloc")]
+use elliptic_curve::{
+    bigint::ArrayEncoding,
+    wnaf::{WnafBase, WnafScalar},
+};
+
 #[cfg(feature = "precomputed-tables")]
 use super::tables::BASEPOINT_TABLE;
 
@@ -316,6 +322,73 @@ fn lincomb(
     acc
 }
 
+/// wNAF window width for GLV vartime multiplication.
+#[cfg(feature = "alloc")]
+const WNAF_WINDOW: usize = 5;
+
+/// Number of little-endian bytes to feed into `WnafScalar::from_le_bytes` for a GLV half-scalar.
+/// GLV guarantees magnitude < 2^128 (16 bytes). We use 17 bytes (136 bits) to give `wnaf_form`
+/// headroom for its carry bit without relying on the trailing-carry special case.
+#[cfg(feature = "alloc")]
+const GLV_LE_BYTES: usize = 17;
+
+/// GLV + wNAF variable-time scalar multiplication.
+///
+/// These require heap-allocated wNAF tables (via the `wnaf` crate's `WnafBase`/`WnafScalar`), so
+/// the whole block is gated on `alloc`. Without `alloc`, the `MulVartime`/`MulByGeneratorVartime`
+/// impls fall back to constant-time multiplication and the trait-provided default combinators.
+///
+/// SECURITY: these are not constant time and must only be called with non-secret scalars.
+#[cfg(feature = "alloc")]
+impl ProjectivePoint {
+    /// GLV-decompose `k` for `self`: two `(WnafBase, WnafScalar)` pairs representing
+    /// `r1 * self_signed` and `r2 * endomorphism(self_signed)`, with signs folded into the points.
+    fn glv_wnaf_pair(
+        &self,
+        k: &Scalar,
+    ) -> (
+        [WnafBase<ProjectivePoint, WNAF_WINDOW>; 2],
+        [WnafScalar<Scalar, WNAF_WINDOW>; 2],
+    ) {
+        let (r1, r2) = decompose_scalar(k);
+        let r1_neg = bool::from(r1.is_high());
+        let r2_neg = bool::from(r2.is_high());
+        let r1 = if r1_neg { -r1 } else { r1 };
+        let r2 = if r2_neg { -r2 } else { r2 };
+
+        let p1 = if r1_neg { -*self } else { *self };
+        let p_beta = self.endomorphism();
+        let p2 = if r2_neg { -p_beta } else { p_beta };
+
+        let bases = [WnafBase::new(p1), WnafBase::new(p2)];
+        // GLV guarantees each half-scalar fits in `GLV_LE_BYTES`, so the truncated little-endian
+        // encoding round-trips and `from_le_bytes`'s canonical-range check always succeeds. Should
+        // that invariant ever fail to hold, fall back to the full-width `new` rather than panicking;
+        // it produces an identical (just slower) result for any in-range scalar.
+        let scalars = [
+            WnafScalar::from_le_bytes(&r1.0.to_le_byte_array()[..GLV_LE_BYTES])
+                .unwrap_or_else(|| WnafScalar::new(&r1)),
+            WnafScalar::from_le_bytes(&r2.0.to_le_byte_array()[..GLV_LE_BYTES])
+                .unwrap_or_else(|| WnafScalar::new(&r2)),
+        ];
+        (bases, scalars)
+    }
+
+    /// Variable-time `k * self` using GLV + width-5 wNAF.
+    fn mul_vartime_glv(&self, k: &Scalar) -> ProjectivePoint {
+        let (bases, scalars) = self.glv_wnaf_pair(k);
+        WnafBase::multiscalar_mul_array(&scalars, &bases)
+    }
+
+    /// Variable-time `a * G + b * self`, sharing doublings across all 4 GLV sub-scalars.
+    fn mul_add_vartime_glv(&self, a: &Scalar, b: &Scalar) -> ProjectivePoint {
+        let ([gb0, gb1], [gs0, gs1]) = ProjectivePoint::GENERATOR.glv_wnaf_pair(a);
+        let ([pb0, pb1], [ps0, ps1]) = self.glv_wnaf_pair(b);
+
+        WnafBase::multiscalar_mul_array(&[gs0, gs1, ps0, ps1], &[gb0, gb1, pb0, pb1])
+    }
+}
+
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(not(feature = "precomputed-tables"))]
@@ -373,34 +446,72 @@ impl Mul<&Scalar> for ProjectivePoint {
 }
 
 impl MulVartime<Scalar> for ProjectivePoint {
+    #[cfg(feature = "alloc")]
     fn mul_vartime(self, other: Scalar) -> ProjectivePoint {
-        // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
-        mul(&self, &other)
+        self.mul_vartime_glv(&other)
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn mul_vartime(self, other: Scalar) -> ProjectivePoint {
+        self * other
     }
 }
 
 impl MulVartime<&Scalar> for &ProjectivePoint {
+    #[cfg(feature = "alloc")]
     fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
-        // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
-        mul(self, other)
+        self.mul_vartime_glv(other)
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
+        self * other
     }
 }
 
 impl MulVartime<&Scalar> for ProjectivePoint {
-    // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
+    #[cfg(feature = "alloc")]
     fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
-        mul(&self, other)
+        self.mul_vartime_glv(other)
+    }
+
+    #[cfg(not(feature = "alloc"))]
+    fn mul_vartime(self, other: &Scalar) -> ProjectivePoint {
+        self * other
     }
 }
 
 impl MulByGeneratorVartime for ProjectivePoint {
-    // TODO(tarcieri): actual vartime implementation (i.e. wNAF)
+    // With precomputed basepoint tables, fixed-base multiplication beats GLV+wNAF. Otherwise use
+    // the (alloc-only) GLV path, falling back to plain multiplication when neither is available.
+    #[cfg(feature = "precomputed-tables")]
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
         Self::mul_by_generator(k)
     }
 
-    // When the basepoint tables aren't available, use linear combinations for this computation.
-    #[cfg(not(feature = "precomputed-tables"))]
+    #[cfg(all(not(feature = "precomputed-tables"), feature = "alloc"))]
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        Self::GENERATOR.mul_vartime_glv(k)
+    }
+
+    #[cfg(not(any(feature = "precomputed-tables", feature = "alloc")))]
+    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
+        Self::mul_by_generator(k)
+    }
+
+    #[cfg(feature = "alloc")]
+    fn mul_by_generator_and_mul_add_vartime(
+        a: &Self::Scalar,
+        b_scalar: &Self::Scalar,
+        b_point: &Self,
+    ) -> Self {
+        b_point.mul_add_vartime_glv(a, b_scalar)
+    }
+
+    // Without `alloc` there is no wNAF table, so fall back to a linear combination, which shares
+    // doublings across both terms. This avoids the trait default's two independent scalar mults
+    // (`aG + bP` via separate `mul_vartime` calls), matching the pre-GLV behavior.
+    #[cfg(not(feature = "alloc"))]
     fn mul_by_generator_and_mul_add_vartime(
         a: &Self::Scalar,
         b_scalar: &Self::Scalar,
@@ -448,6 +559,76 @@ mod tests {
         let reference = ProjectivePoint::GENERATOR * k;
         let test = ProjectivePoint::mul_by_generator(&k);
         assert_eq!(reference, test);
+    }
+
+    #[test]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
+    fn test_mul_vartime() {
+        for _ in 0..32 {
+            let p = ProjectivePoint::generate();
+            let k = Scalar::generate();
+            let reference = p * k;
+            let test = p.mul_vartime_glv(&k);
+            assert_eq!(reference, test);
+        }
+    }
+
+    #[test]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
+    fn test_mul_and_mul_add_vartime() {
+        for _ in 0..32 {
+            let p = ProjectivePoint::generate();
+            let a = Scalar::generate();
+            let b = Scalar::generate();
+            let reference = ProjectivePoint::GENERATOR * a + p * b;
+            let test = p.mul_add_vartime_glv(&a, &b);
+            assert_eq!(reference, test);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn test_mul_and_mul_add_vartime_edge_cases() {
+        let p = ProjectivePoint::GENERATOR;
+        assert_eq!(
+            p.mul_add_vartime_glv(&Scalar::ZERO, &Scalar::ZERO),
+            ProjectivePoint::IDENTITY
+        );
+        assert_eq!(
+            p.mul_add_vartime_glv(&Scalar::ONE, &Scalar::ZERO),
+            ProjectivePoint::GENERATOR
+        );
+        assert_eq!(p.mul_add_vartime_glv(&Scalar::ZERO, &Scalar::ONE), p);
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn test_mul_vartime_adversarial_scalars() {
+        let p = ProjectivePoint::GENERATOR;
+        let mut bytes = [0u8; 32];
+        for b in bytes.iter_mut().skip(16) {
+            *b = 0xFF;
+        }
+        let k = Scalar::from_bytes_unchecked(&bytes);
+        let reference = p * k;
+        let test = p.mul_vartime_glv(&k);
+        assert_eq!(
+            reference, test,
+            "mul_vartime mismatch on adversarial scalar"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn test_mul_vartime_edge_cases() {
+        let p = ProjectivePoint::GENERATOR;
+        assert_eq!(p.mul_vartime_glv(&Scalar::ZERO), ProjectivePoint::IDENTITY);
+        assert_eq!(p.mul_vartime_glv(&Scalar::ONE), p);
+        assert_eq!(p.mul_vartime_glv(&-Scalar::ONE), -p);
+        assert_eq!(
+            ProjectivePoint::IDENTITY.mul_vartime_glv(&Scalar::ONE),
+            ProjectivePoint::IDENTITY
+        );
     }
 
     #[cfg(all(feature = "alloc", feature = "getrandom"))]

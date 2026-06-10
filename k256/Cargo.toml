@@ -43,7 +43,7 @@ sha3 = { version = "0.12", default-features = false }
 
 [features]
 default = ["arithmetic", "ecdsa", "pkcs8", "precomputed-tables", "schnorr", "std"]
-alloc = ["ecdsa-core?/alloc", "elliptic-curve/alloc"]
+alloc = ["ecdsa-core?/alloc", "elliptic-curve/alloc", "elliptic-curve/wnaf"]
 std = ["alloc", "ecdsa-core?/std", "elliptic-curve/std", "getrandom"]
 
 arithmetic = ["elliptic-curve/arithmetic"]
