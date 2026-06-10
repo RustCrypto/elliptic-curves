@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "bignp256"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "belt-block",
  "belt-hash",
@@ -138,7 +138,7 @@ dependencies = [
 
 [[package]]
 name = "bp256"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -150,7 +150,7 @@ dependencies = [
 
 [[package]]
 name = "bp384"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -727,7 +727,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "cpubits",
  "criterion",
@@ -832,7 +832,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "p192"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -844,7 +844,7 @@ dependencies = [
 
 [[package]]
 name = "p224"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -857,7 +857,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -873,7 +873,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -890,7 +890,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "base16ct",
  "criterion",
@@ -980,7 +980,7 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "crypto-bigint",
  "crypto-common",
@@ -992,7 +992,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "elliptic-curve",
  "serdect",
@@ -1347,7 +1347,7 @@ dependencies = [
 
 [[package]]
 name = "sm2"
-version = "0.14.0-rc.10"
+version = "0.14.0-rc.11"
 dependencies = [
  "criterion",
  "der",
