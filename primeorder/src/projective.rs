@@ -111,7 +111,7 @@ where
     }
 
     /// Returns `[k] self`.
-    fn mul(&self, k: &Scalar<C>) -> Self
+    pub fn mul(&self, k: &Scalar<C>) -> Self
     where
         Self: Double,
     {
@@ -122,7 +122,7 @@ where
     }
 
     /// Returns `[k] self` computed in variable time.
-    fn mul_vartime(&self, k: &Scalar<C>) -> Self
+    pub fn mul_vartime(&self, k: &Scalar<C>) -> Self
     where
         Self: Double,
     {

@@ -1,54 +1,16 @@
 //! Projective arithmetic tests.
 
-#![cfg(all(feature = "arithmetic", feature = "test-vectors"))]
+#![cfg(feature = "arithmetic")]
 
 use elliptic_curve::{
     BatchNormalize, Group,
     array::Array,
     consts::U32,
-    group::{GroupEncoding, ff::PrimeField},
-    ops::{LinearCombination, MulByGeneratorVartime, Reduce, ReduceNonZero},
+    ops::{LinearCombination, MulByGeneratorVartime, MulVartime, Reduce, ReduceNonZero},
     point::NonIdentity,
-    sec1::{self, ToSec1Point},
 };
-use p256::{
-    AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, Scalar,
-    test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
-};
-use primeorder::test_projective_arithmetic;
+use k256::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar};
 use proptest::{prelude::any, prop_compose, proptest};
-
-#[cfg(feature = "alloc")]
-use elliptic_curve::point::AffineCoordinates;
-
-test_projective_arithmetic!(
-    AffinePoint,
-    ProjectivePoint,
-    Scalar,
-    ADD_TEST_VECTORS,
-    MUL_TEST_VECTORS
-);
-
-#[test]
-fn projective_identity_to_bytes() {
-    // This is technically an invalid SEC1 encoding, but is preferable to panicking.
-    assert_eq!([0; 33], ProjectivePoint::IDENTITY.to_bytes().as_slice());
-}
-
-#[cfg(feature = "alloc")]
-#[test]
-fn wnaf() {
-    for (k, coords) in ADD_TEST_VECTORS.iter().enumerate() {
-        let scalar = Scalar::from(k as u64 + 1);
-        let mut wnaf = ProjectivePoint::wnaf();
-        let mut wnaf_base = wnaf.base(ProjectivePoint::GENERATOR, 1);
-        let p = wnaf_base.scalar(&scalar).to_affine();
-
-        let (x, y) = (p.x(), p.y());
-        assert_eq!(x.0, coords.0);
-        assert_eq!(y.0, coords.1);
-    }
-}
 
 prop_compose! {
     fn non_identity()(bytes in any::<[u8; 32]>()) -> NonIdentity<ProjectivePoint> {
@@ -68,7 +30,6 @@ prop_compose! {
     }
 }
 
-// TODO: move to `primeorder::test_projective_arithmetic`.
 proptest! {
     #[test]
     fn batch_normalize(
