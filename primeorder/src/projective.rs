@@ -2,12 +2,11 @@
 
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
+use crate::radix16::Radix16Decomposition;
 use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
-use core::{array, borrow::Borrow, iter::Sum};
+use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PrimeField, PublicKey, Result,
-    Scalar,
-    bigint::{ArrayEncoding, ByteArray},
+    BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PublicKey, Result, Scalar,
     ctutils,
     group::{
         Group, GroupEncoding,
@@ -18,7 +17,7 @@ use elliptic_curve::{
         Add, AddAssign, BatchInvert, LinearCombination, Mul, MulAssign, MulByGeneratorVartime,
         MulVartime, Neg, Sub, SubAssign,
     },
-    point::{Double, NonIdentity},
+    point::{Double, LookupTable, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -115,10 +114,10 @@ where
     where
         Self: Double,
     {
-        let mut k = Into::<C::Uint>::into(*k).to_le_byte_array();
-        let mut pc = LookupTable::new(*self);
+        let table = LookupTable::new(*self);
+        let digits = Radix16Decomposition::new::<C>(k);
 
-        lincomb(array::from_mut(&mut k), array::from_mut(&mut pc))
+        lincomb::<C>(&[table], &[digits])
     }
 
     /// Returns `[k] self` computed in variable time.
@@ -481,17 +480,16 @@ where
 {
     #[cfg(feature = "alloc")]
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
-        let (mut ks, mut pcs): (Vec<_>, Vec<_>) = points_and_scalars
+        let tables: Vec<_> = points_and_scalars
             .iter()
-            .map(|(point, scalar)| {
-                (
-                    Into::<C::Uint>::into(*scalar).to_le_byte_array(),
-                    LookupTable::new(*point),
-                )
-            })
-            .unzip();
+            .map(|(point, _)| LookupTable::new(*point))
+            .collect();
+        let digits: Vec<_> = points_and_scalars
+            .iter()
+            .map(|(_, scalar)| Radix16Decomposition::new::<C>(scalar))
+            .collect();
 
-        lincomb::<C>(&mut ks, &mut pcs)
+        lincomb::<C>(&tables, &digits)
     }
 
     #[cfg(feature = "alloc")]
@@ -519,12 +517,11 @@ where
     FieldBytesSize<C>: ModulusSize,
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
-        let mut ks: [_; N] = array::from_fn(|index| {
-            Into::<C::Uint>::into(points_and_scalars[index].1).to_le_byte_array()
-        });
-        let mut pcs: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
+        let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
+        let digits: [_; N] =
+            array::from_fn(|index| Radix16Decomposition::new::<C>(&points_and_scalars[index].1));
 
-        lincomb::<C>(&mut ks, &mut pcs)
+        lincomb::<C>(&tables, &digits)
     }
 
     #[cfg(feature = "alloc")]
@@ -534,60 +531,28 @@ where
 }
 
 fn lincomb<C: PrimeCurveParams>(
-    ks: &mut [ByteArray<C::Uint>],
-    pcs: &mut [LookupTable<C>],
+    tables: &[LookupTable<ProjectivePoint<C>>],
+    digits: &[Radix16Decomposition],
 ) -> ProjectivePoint<C> {
+    debug_assert_eq!(tables.len(), digits.len());
+    debug_assert!(!digits.is_empty());
+
+    let d = digits[0].len();
     let mut q = ProjectivePoint::IDENTITY;
-    let mut pos = (<Scalar<C> as PrimeField>::NUM_BITS.div_ceil(8) * 8) as usize - 4;
 
-    loop {
-        for (k, pc) in ks.iter().zip(pcs.iter()) {
-            let slot = (k[pos >> 3] >> (pos & 7)) & 0xf;
-            q = q.add(&pc.select(slot));
-        }
+    for (table, digit) in zip(tables, digits) {
+        q = q.add(&table.select(digit.digit(d - 1)));
+    }
 
-        if pos == 0 {
-            break;
-        }
-
+    for i in (0..d - 1).rev() {
         q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
-        pos -= 4;
+
+        for (table, digit) in zip(tables, digits) {
+            q = q.add(&table.select(digit.digit(i)));
+        }
     }
 
     q
-}
-
-struct LookupTable<C: PrimeCurveParams>([ProjectivePoint<C>; 16]);
-
-impl<C: PrimeCurveParams> LookupTable<C> {
-    fn new(point: ProjectivePoint<C>) -> Self {
-        let mut pc = [ProjectivePoint::default(); 16];
-        pc[0] = ProjectivePoint::IDENTITY;
-        pc[1] = point;
-
-        for i in 2..16 {
-            pc[i] = if i % 2 == 0 {
-                Double::double(&pc[i / 2])
-            } else {
-                pc[i - 1].add(point)
-            };
-        }
-
-        Self(pc)
-    }
-
-    fn select(&self, slot: u8) -> ProjectivePoint<C> {
-        let mut t = ProjectivePoint::IDENTITY;
-
-        for i in 1..16 {
-            t.conditional_assign(
-                &self.0[i],
-                Choice::from(((slot as usize ^ i).wrapping_sub(1) >> 8) as u8 & 1),
-            );
-        }
-
-        t
-    }
 }
 
 impl<C> PartialEq for ProjectivePoint<C>
