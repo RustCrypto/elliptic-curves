@@ -20,6 +20,7 @@ mod affine;
 #[cfg(feature = "dev")]
 mod dev;
 mod projective;
+mod radix16;
 
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
 pub use elliptic_curve::{
