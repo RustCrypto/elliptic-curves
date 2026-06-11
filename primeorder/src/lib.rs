@@ -25,15 +25,15 @@ mod radix16;
 pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
 pub use elliptic_curve::{
     self, Field, FieldBytes, PrimeCurve, PrimeField, Scalar,
-    array::{self, ArraySize},
+    array::{self, ArraySize, sizes::U1},
     bigint::modular::Retrieve,
     point::Double,
 };
 
 use elliptic_curve::{
     Curve, CurveArithmetic, Generate,
-    ops::{Invert, LinearCombination, MulVartime},
-    sec1::ModulusSize,
+    ops::{Add, Invert, LinearCombination, MulVartime},
+    sec1,
     subtle::CtOption,
 };
 
@@ -43,8 +43,10 @@ use elliptic_curve::point::BasepointTableVartime;
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
 pub trait PrimeCurveParams:
-    Curve<FieldBytesSize: ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>>
-    + PrimeCurve
+    Curve<
+        FieldBytesSize: Add<Output: Add<U1, Output: ArraySize>> // radix16::DigitsSize
+                            + sec1::ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>,
+    > + PrimeCurve
     + CurveArithmetic<AffinePoint = AffinePoint<Self>, ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.

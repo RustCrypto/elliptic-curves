@@ -2,11 +2,12 @@
 
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
-use crate::radix16::Radix16Decomposition;
-use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
+use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic, radix16};
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, Generate, PublicKey, Result, Scalar, ctutils,
+    BatchNormalize, CurveGroup, Error, Generate, PublicKey, Result, Scalar,
+    array::typenum::Unsigned,
+    ctutils,
     group::{
         Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -114,8 +115,7 @@ where
         Self: Double,
     {
         let table = LookupTable::new(*self);
-        let digits = Radix16Decomposition::new::<C>(k);
-
+        let digits = radix16::Decomposition::new::<C>(k);
         lincomb::<C>(&[table], &[digits])
     }
 
@@ -467,7 +467,7 @@ where
             .collect();
         let digits: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| Radix16Decomposition::new::<C>(scalar))
+            .map(|(_, scalar)| radix16::Decomposition::new::<C>(scalar))
             .collect();
 
         lincomb::<C>(&tables, &digits)
@@ -498,7 +498,7 @@ where
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
         let digits: [_; N] =
-            array::from_fn(|index| Radix16Decomposition::new::<C>(&points_and_scalars[index].1));
+            array::from_fn(|index| radix16::Decomposition::new::<C>(&points_and_scalars[index].1));
 
         lincomb::<C>(&tables, &digits)
     }
@@ -511,23 +511,23 @@ where
 
 fn lincomb<C: PrimeCurveParams>(
     tables: &[LookupTable<ProjectivePoint<C>>],
-    digits: &[Radix16Decomposition],
+    digits: &[radix16::Decomposition<radix16::DigitsSize<C>>],
 ) -> ProjectivePoint<C> {
     debug_assert_eq!(tables.len(), digits.len());
     debug_assert!(!digits.is_empty());
 
-    let d = digits[0].len();
+    let d = radix16::DigitsSize::<C>::USIZE;
     let mut q = ProjectivePoint::IDENTITY;
 
     for (table, digit) in zip(tables, digits) {
-        q = q.add(&table.select(digit.digit(d - 1)));
+        q = q.add(&table.select(digit[d - 1]));
     }
 
     for i in (0..d - 1).rev() {
         q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
 
         for (table, digit) in zip(tables, digits) {
-            q = q.add(&table.select(digit.digit(i)));
+            q = q.add(&table.select(digit[i]));
         }
     }
 
