@@ -5,17 +5,14 @@
 use crate::{PrimeCurveParams, ProjectivePoint};
 use core::borrow::Borrow;
 use elliptic_curve::{
-    Error, FieldBytes, FieldBytesEncoding, FieldBytesSize, Generate, PublicKey, Result, Scalar,
+    Error, FieldBytes, FieldBytesEncoding, Generate, PublicKey, Result, Scalar,
     ctutils::{self, CtGt as _, CtSelect as _},
     ff::{Field, PrimeField},
     group::{CurveAffine, GroupEncoding},
     ops::{Mul, MulVartime, Neg},
     point::{AffineCoordinates, DecompactPoint, DecompressPoint, Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
-    sec1::{
-        self, CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToCompactSec1Point,
-        ToSec1Point,
-    },
+    sec1::{self, CompressedPoint, FromSec1Point, Sec1Point, ToCompactSec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -215,7 +212,6 @@ impl<C> Eq for AffinePoint<C> where C: PrimeCurveParams {}
 impl<C> FromSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
 {
     /// Attempts to parse the given [`Sec1Point`] as an SEC1-encoded
     /// [`AffinePoint`].
@@ -283,8 +279,6 @@ where
 impl<C> From<AffinePoint<C>> for Sec1Point<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn from(affine: AffinePoint<C>) -> Sec1Point<C> {
         affine.to_sec1_point(false)
@@ -305,8 +299,6 @@ where
 impl<C> GroupEncoding for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     type Repr = CompressedPoint<C>;
 
@@ -350,8 +342,6 @@ where
 impl<C> CurveAffine for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     type Curve = ProjectivePoint<C>;
     type Scalar = Scalar<C>;
@@ -376,8 +366,6 @@ where
 impl<C> ToCompactSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     /// Serialize this value as a  SEC1 compact [`Sec1Point`]
     fn to_compact_encoded_point(&self) -> ctutils::CtOption<Sec1Point<C>> {
@@ -397,8 +385,6 @@ where
 impl<C> ToSec1Point<C> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
         Sec1Point::<C>::ct_select(
@@ -428,8 +414,6 @@ where
 impl<C> TryFrom<Sec1Point<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     type Error = Error;
 
@@ -441,8 +425,6 @@ where
 impl<C> TryFrom<&Sec1Point<C>> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     type Error = Error;
 
@@ -565,8 +547,6 @@ where
 impl<C> Serialize for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -580,8 +560,6 @@ where
 impl<'de, C> Deserialize<'de> for AffinePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where
