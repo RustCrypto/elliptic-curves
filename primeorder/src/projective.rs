@@ -6,8 +6,7 @@ use crate::radix16::Radix16Decomposition;
 use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic};
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PublicKey, Result, Scalar,
-    ctutils,
+    BatchNormalize, CurveGroup, Error, Generate, PublicKey, Result, Scalar, ctutils,
     group::{
         Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -19,7 +18,7 @@ use elliptic_curve::{
     },
     point::{Double, LookupTable, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
-    sec1::{CompressedPoint, FromSec1Point, ModulusSize, Sec1Point, ToSec1Point},
+    sec1::{CompressedPoint, FromSec1Point, Sec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
@@ -259,8 +258,6 @@ where
 impl<C> FromSec1Point<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn from_sec1_point(p: &Sec1Point<C>) -> ctutils::CtOption<Self> {
         AffinePoint::<C>::from_sec1_point(p).map(Self::from)
@@ -286,8 +283,6 @@ where
 impl<C> CofactorGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     type Subgroup = ProjectivePoint<C>;
 
@@ -307,8 +302,6 @@ where
 impl<C> CurveGroup for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     type Affine = AffinePoint<C>;
 
@@ -360,8 +353,6 @@ where
 impl<C> GroupEncoding for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     type Repr = CompressedPoint<C>;
 
@@ -383,8 +374,6 @@ impl<C> PrimeCurve for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
 }
 
@@ -392,8 +381,6 @@ impl<C> PrimeGroup for ProjectivePoint<C>
 where
     Self: Double,
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
 }
 
@@ -404,8 +391,6 @@ where
 impl<const N: usize, C> BatchNormalize<[ProjectivePoint<C>; N]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     type Output = [<Self as CurveGroup>::Affine; N];
 
@@ -422,8 +407,6 @@ where
 impl<C> BatchNormalize<[ProjectivePoint<C>]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     type Output = Vec<<Self as CurveGroup>::Affine>;
 
@@ -475,8 +458,6 @@ where
 impl<C> LinearCombination<[(Self, Scalar<C>)]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     #[cfg(feature = "alloc")]
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
@@ -513,8 +494,6 @@ where
 impl<C, const N: usize> LinearCombination<[(Self, Scalar<C>); N]> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
@@ -567,8 +546,6 @@ where
 impl<C> ToSec1Point<C> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
         self.to_affine().to_sec1_point(compress)
@@ -929,8 +906,6 @@ where
 impl<C> MulByGeneratorVartime for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    CompressedPoint<C>: Copy,
-    FieldBytesSize<C>: ModulusSize,
 {
     #[inline]
     fn mul_by_generator_vartime(scalar: &Scalar<C>) -> Self {
@@ -988,8 +963,6 @@ where
 impl<C> Serialize for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn serialize<S>(&self, serializer: S) -> core::result::Result<S::Ok, S::Error>
     where
@@ -1003,8 +976,6 @@ where
 impl<'de, C> Deserialize<'de> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
-    FieldBytesSize<C>: ModulusSize,
-    CompressedPoint<C>: Copy,
 {
     fn deserialize<D>(deserializer: D) -> core::result::Result<Self, D::Error>
     where
