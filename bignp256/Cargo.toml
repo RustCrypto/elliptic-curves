@@ -46,7 +46,7 @@ proptest = "1"
 [features]
 default = ["ecdh", "ecdsa", "pem", "std"]
 alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
-std = ["alloc", "elliptic-curve/std", "getrandom"]
+std = ["alloc", "elliptic-curve/std", "getrandom", "primeorder?/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 ecdsa = ["arithmetic", "dep:signature", "dep:belt-hash", "dep:bign-genk", "dep:belt-block", "belt-block/cipher", "belt-hash/oid"]

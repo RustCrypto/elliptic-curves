@@ -47,16 +47,16 @@ use elliptic_curve::{
 };
 use primeorder::Radix16Decomposition;
 
-#[cfg(feature = "alloc")]
-use elliptic_curve::{
-    bigint::ArrayEncoding,
-    wnaf::{WnafBase, WnafScalar},
-};
 #[cfg(feature = "precomputed-tables")]
 use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
+#[cfg(feature = "alloc")]
+use {
+    elliptic_curve::bigint::ArrayEncoding,
+    primeorder::wnaf::{WnafBase, WnafScalar},
+};
 
 /// Lookup table for multiples of a given point.
-type LookupTable = elliptic_curve::point::LookupTable<ProjectivePoint>;
+type LookupTable = primeorder::LookupTable<ProjectivePoint>;
 
 const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,

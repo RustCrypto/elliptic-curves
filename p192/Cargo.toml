@@ -34,7 +34,7 @@ primeorder = { version = "0.14.0-rc.11", features = ["dev"] }
 [features]
 default = ["arithmetic", "ecdsa", "pem", "std"]
 alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
-std = ["alloc", "elliptic-curve/std", "getrandom"]
+std = ["alloc", "elliptic-curve/std", "getrandom", "primeorder?/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]

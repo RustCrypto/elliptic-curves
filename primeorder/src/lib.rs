@@ -11,19 +11,25 @@
 #[cfg(feature = "alloc")]
 #[macro_use]
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
 #[cfg(feature = "hash2curve")]
 pub mod osswu;
 pub mod point_arithmetic;
 
 mod affine;
+#[cfg(feature = "basepoint-table")]
+mod basepoint_table;
 #[cfg(feature = "dev")]
 mod dev;
+mod lookup_table;
 mod projective;
 mod radix16;
 
 pub use crate::{
     affine::AffinePoint,
+    lookup_table::LookupTable,
     projective::ProjectivePoint,
     radix16::{Radix16Decomposition, Radix16Digits},
 };
@@ -41,8 +47,12 @@ use elliptic_curve::{
     subtle::CtOption,
 };
 
+#[cfg(feature = "basepoint-table")]
+pub use crate::basepoint_table::BasepointTable;
 #[cfg(all(feature = "alloc", feature = "basepoint-table"))]
-use elliptic_curve::point::BasepointTableVartime;
+pub use crate::basepoint_table::vartime::BasepointTableVartime;
+#[cfg(feature = "alloc")]
+pub use wnaf;
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
@@ -103,12 +113,26 @@ pub trait PrimeCurveParams:
     }
 }
 
+/// Trait for specifying a constant-time basepoint table for a given curve.
+#[cfg(feature = "basepoint-table")]
+pub trait PrimeCurveWithBasepointTable<const WINDOW_SIZE: usize>:
+    PrimeCurve + CurveArithmetic
+{
+    /// Basepoint table for this curve.
+    const BASEPOINT_TABLE: &'static BasepointTable<
+        <Self as CurveArithmetic>::ProjectivePoint,
+        WINDOW_SIZE,
+    >;
+}
+
 /// Trait which allows curves to specify a variable-time basepoint table.
 #[cfg(all(feature = "alloc", feature = "basepoint-table"))]
-pub trait PrimeCurveWithBasepointTableVartime<const WINDOW_SIZE: usize>: PrimeCurveParams {
-    /// Basepoint table for this curve.
+pub trait PrimeCurveWithBasepointTableVartime<const WINDOW_SIZE: usize>:
+    PrimeCurve + CurveArithmetic
+{
+    /// Basepoint table for this curve (variable-time, for nonsecret multiplications only).
     const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime<
-        ProjectivePoint<Self>,
+        <Self as CurveArithmetic>::ProjectivePoint,
         WINDOW_SIZE,
     >;
 }

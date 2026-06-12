@@ -28,3 +28,5 @@ hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
 wnaf = { path = "wnaf" }
+
+elliptic-curve = { git = "https://github.com/RustCrypto/traits" }
