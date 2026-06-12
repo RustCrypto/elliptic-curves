@@ -7,22 +7,22 @@ use elliptic_curve::{
     bigint::ArrayEncoding,
 };
 
-/// Two nibbles per scalar byte, plus one carry digit for signed re-centering.
-pub(crate) type DigitsSize<C> = <<FieldBytesSize<C> as Add>::Output as Add<U1>>::Output;
-
 /// Signed radix-16 decomposition of a scalar.
-///
-/// Produces `[a_0, ..., a_{len-1}]` such that `scalar = sum(a_j * 16^j)` and each `a_j` is within
-/// `[-8, 8]`.
-///
-/// `a_0` is the least significant position; `a_{len-1}` absorbs carry.
-#[derive(Clone, Debug)]
-pub(crate) struct Decomposition<Digits: ArraySize> {
+#[derive(Clone, Debug, Default)]
+pub(crate) struct Radix16Decomposition<Digits: ArraySize> {
     digits: Array<i8, Digits>,
 }
 
-impl<Digits: ArraySize> Decomposition<Digits> {
+impl<Digits: ArraySize> Radix16Decomposition<Digits> {
     /// Decompose a scalar into signed radix-16 digits.
+    ///
+    /// Produces `[a_0, ..., a_{digits-1}]` such that `scalar = sum(a_j * 16^j)` and each `a_j` is
+    /// within `[-8, 8]`.
+    ///
+    /// `a_0` is the least significant position; `a_{digits-1}` absorbs carry: the resulting
+    /// decomposition can be negative, so we need an additional byte to store it.
+    ///
+    /// Assumes `x < 2^(4*(digits-1))`.
     pub(crate) fn new<C>(scalar: &Scalar<C>) -> Self
     where
         C: PrimeCurve + CurveArithmetic,
@@ -30,30 +30,31 @@ impl<Digits: ArraySize> Decomposition<Digits> {
         C::Uint: ArrayEncoding,
         FieldBytesSize<C>: Add<Output: Add<U1, Output = Digits>>,
     {
-        let bytes = Into::<C::Uint>::into(*scalar).to_be_byte_array();
-        debug_assert!(bytes.len() >= FieldBytesSize::<C>::USIZE);
+        // TODO(tarcieri): `debug_assert!` that `uint < 2^(4*(digits-1))`.
+        let uint = Into::<C::Uint>::into(*scalar);
+        let bytes = uint.to_be_byte_array();
+        let mut ret = Self::default();
 
-        let mut digits = Array::<i8, Digits>::default();
-
-        // Step 1: change radix: BE bytes, LSB byte first in digit order
+        // Step 1: change radix.
+        // Convert from big endian radix-256 (bytes) to radix-16 (nibbles).
         for i in 0..FieldBytesSize::<C>::USIZE {
             let b = bytes[bytes.len() - 1 - i];
-            digits[2 * i] = (b & 0xf) as i8;
-            digits[2 * i + 1] = ((b >> 4) & 0xf) as i8;
+            ret.digits[2 * i] = (b & 0xf) as i8;
+            ret.digits[2 * i + 1] = ((b >> 4) & 0xf) as i8;
         }
 
         // Step 2: recenter coefficients from [0, 16) to [-8, 8)
         for i in 0..(Digits::USIZE - 1) {
-            let carry = (digits[i] + 8) >> 4;
-            digits[i] -= carry << 4;
-            digits[i + 1] += carry;
+            let carry = (ret.digits[i] + 8) >> 4;
+            ret.digits[i] -= carry << 4;
+            ret.digits[i + 1] += carry;
         }
 
-        Self { digits }
+        ret
     }
 }
 
-impl<Digits: ArraySize> Index<usize> for Decomposition<Digits> {
+impl<Digits: ArraySize> Index<usize> for Radix16Decomposition<Digits> {
     type Output = i8;
 
     #[inline]
@@ -71,7 +72,7 @@ mod tests {
     fn decompose_from_padded_be_uint<Digits: ArraySize>(
         bytes: &[u8],
         byte_len: usize,
-    ) -> Decomposition<Digits> {
+    ) -> Radix16Decomposition<Digits> {
         let uint_byte_len = bytes.len();
         assert!(uint_byte_len >= byte_len);
 
@@ -90,14 +91,14 @@ mod tests {
             digits[i + 1] += carry;
         }
 
-        Decomposition { digits }
+        Radix16Decomposition { digits }
     }
 
-    fn decompose_be_bytes<Digits: ArraySize>(bytes: &[u8]) -> Decomposition<Digits> {
+    fn decompose_be_bytes<Digits: ArraySize>(bytes: &[u8]) -> Radix16Decomposition<Digits> {
         decompose_from_padded_be_uint(bytes, bytes.len())
     }
 
-    fn assert_digits_in_range<Digits: ArraySize>(d: &Decomposition<Digits>) {
+    fn assert_digits_in_range<Digits: ArraySize>(d: &Radix16Decomposition<Digits>) {
         for i in 0..Digits::USIZE {
             let digit = d[i];
             assert!((-8..=8).contains(&digit), "digit[{i}] = {digit}");
