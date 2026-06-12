@@ -44,7 +44,7 @@ use elliptic_curve::point::BasepointTableVartime;
 /// short Weierstrass equation.
 pub trait PrimeCurveParams:
     Curve<
-        FieldBytesSize: Add<Output: Add<U1, Output: ArraySize>> // radix16::DigitsSize
+        FieldBytesSize: Add<Output: Add<U1, Output: ArraySize>> // Radix16Digits
                             + sec1::ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>,
     > + PrimeCurve
     + CurveArithmetic<AffinePoint = AffinePoint<Self>, ProjectivePoint = ProjectivePoint<Self>>

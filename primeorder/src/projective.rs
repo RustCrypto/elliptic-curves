@@ -2,10 +2,13 @@
 
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
-use crate::{AffinePoint, Field, PrimeCurveParams, point_arithmetic::PointArithmetic, radix16};
+use crate::{
+    AffinePoint, Field, PrimeCurveParams, U1, point_arithmetic::PointArithmetic,
+    radix16::Radix16Decomposition,
+};
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, Generate, PublicKey, Result, Scalar,
+    BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PublicKey, Result, Scalar,
     array::typenum::Unsigned,
     ctutils,
     group::{
@@ -38,6 +41,11 @@ use {
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
+
+/// Compute number of radix-16 digits for the given elliptic curve's scalar field.
+///
+/// Two nibbles per scalar byte, plus one carry digit for signed re-centering.
+pub(crate) type Radix16Digits<C> = <<FieldBytesSize<C> as Add>::Output as Add<U1>>::Output;
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -115,7 +123,7 @@ where
         Self: Double,
     {
         let table = LookupTable::new(*self);
-        let digits = radix16::Decomposition::new::<C>(k);
+        let digits = Radix16Decomposition::new::<C>(k);
         lincomb::<C>(&[table], &[digits])
     }
 
@@ -467,7 +475,7 @@ where
             .collect();
         let digits: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| radix16::Decomposition::new::<C>(scalar))
+            .map(|(_, scalar)| Radix16Decomposition::new::<C>(scalar))
             .collect();
 
         lincomb::<C>(&tables, &digits)
@@ -498,7 +506,7 @@ where
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
         let digits: [_; N] =
-            array::from_fn(|index| radix16::Decomposition::new::<C>(&points_and_scalars[index].1));
+            array::from_fn(|index| Radix16Decomposition::new::<C>(&points_and_scalars[index].1));
 
         lincomb::<C>(&tables, &digits)
     }
@@ -511,12 +519,12 @@ where
 
 fn lincomb<C: PrimeCurveParams>(
     tables: &[LookupTable<ProjectivePoint<C>>],
-    digits: &[radix16::Decomposition<radix16::DigitsSize<C>>],
+    digits: &[Radix16Decomposition<Radix16Digits<C>>],
 ) -> ProjectivePoint<C> {
     debug_assert_eq!(tables.len(), digits.len());
     debug_assert!(!digits.is_empty());
 
-    let d = radix16::DigitsSize::<C>::USIZE;
+    let d = Radix16Digits::<C>::USIZE;
     let mut q = ProjectivePoint::IDENTITY;
 
     for (table, digit) in zip(tables, digits) {
