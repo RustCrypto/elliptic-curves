@@ -2,14 +2,18 @@
 
 use core::ops::{Add, Index};
 use elliptic_curve::{
-    CurveArithmetic, FieldBytesSize, PrimeCurve, PrimeField, Scalar,
-    array::{Array, ArraySize, sizes::U1, typenum::Unsigned},
-    bigint::ArrayEncoding,
+    FieldBytesSize, PrimeField,
+    array::{Array, ArraySize, sizes::U1},
 };
+
+/// Compute number of radix-16 digits for the given elliptic curve's scalar field.
+///
+/// Two nibbles per scalar byte, plus one carry digit for signed re-centering.
+pub type Radix16Digits<C> = <<FieldBytesSize<C> as Add>::Output as Add<U1>>::Output;
 
 /// Signed radix-16 decomposition of a scalar.
 #[derive(Clone, Debug, Default)]
-pub(crate) struct Radix16Decomposition<Digits: ArraySize> {
+pub struct Radix16Decomposition<Digits: ArraySize> {
     digits: Array<i8, Digits>,
 }
 
@@ -23,21 +27,20 @@ impl<Digits: ArraySize> Radix16Decomposition<Digits> {
     /// decomposition can be negative, so we need an additional byte to store it.
     ///
     /// Assumes `x < 2^(4*(digits-1))`.
-    pub(crate) fn new<C>(scalar: &Scalar<C>) -> Self
-    where
-        C: PrimeCurve + CurveArithmetic,
-        Scalar<C>: PrimeField + Into<C::Uint>,
-        C::Uint: ArrayEncoding,
-        FieldBytesSize<C>: Add<Output: Add<U1, Output = Digits>>,
-    {
-        // TODO(tarcieri): `debug_assert!` that `uint < 2^(4*(digits-1))`.
-        let uint = Into::<C::Uint>::into(*scalar);
-        let bytes = uint.to_be_byte_array();
+    // TODO(tarcieri): get rid of `is_be` flag w\ e.g. zkcrypto/ff#158
+    pub fn new<Scalar: PrimeField>(scalar: &Scalar, is_be: bool) -> Self {
+        // TODO(tarcieri): `debug_assert!` that `scalar < 2^(4*(digits-1))`
         let mut ret = Self::default();
 
         // Step 1: change radix.
         // Convert from big endian radix-256 (bytes) to radix-16 (nibbles).
-        for i in 0..FieldBytesSize::<C>::USIZE {
+        let mut repr = scalar.to_repr();
+        if !is_be {
+            repr.as_mut().reverse();
+        }
+        let bytes = repr.as_ref();
+
+        for i in 0..(Digits::USIZE - 1) / 2 {
             let b = bytes[bytes.len() - 1 - i];
             ret.digits[2 * i] = (b & 0xf) as i8;
             ret.digits[2 * i + 1] = ((b >> 4) & 0xf) as i8;

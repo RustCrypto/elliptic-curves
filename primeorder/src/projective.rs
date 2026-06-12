@@ -3,12 +3,12 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{
-    AffinePoint, Field, PrimeCurveParams, U1, point_arithmetic::PointArithmetic,
-    radix16::Radix16Decomposition,
+    AffinePoint, Field, PrimeCurveParams, Radix16Decomposition, Radix16Digits,
+    point_arithmetic::PointArithmetic,
 };
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, FieldBytesSize, Generate, PublicKey, Result, Scalar,
+    BatchNormalize, CurveGroup, Error, Generate, PublicKey, Result, Scalar,
     array::typenum::Unsigned,
     ctutils,
     group::{
@@ -41,11 +41,6 @@ use {
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
-
-/// Compute number of radix-16 digits for the given elliptic curve's scalar field.
-///
-/// Two nibbles per scalar byte, plus one carry digit for signed re-centering.
-pub(crate) type Radix16Digits<C> = <<FieldBytesSize<C> as Add>::Output as Add<U1>>::Output;
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -123,7 +118,7 @@ where
         Self: Double,
     {
         let table = LookupTable::new(*self);
-        let digits = Radix16Decomposition::new::<C>(k);
+        let digits = Radix16Decomposition::new(k, C::FIELD_REPR_IS_BE);
         lincomb::<C>(&[table], &[digits])
     }
 
@@ -475,7 +470,7 @@ where
             .collect();
         let digits: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| Radix16Decomposition::new::<C>(scalar))
+            .map(|(_, scalar)| Radix16Decomposition::new(scalar, C::FIELD_REPR_IS_BE))
             .collect();
 
         lincomb::<C>(&tables, &digits)
@@ -505,8 +500,9 @@ where
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
-        let digits: [_; N] =
-            array::from_fn(|index| Radix16Decomposition::new::<C>(&points_and_scalars[index].1));
+        let digits: [_; N] = array::from_fn(|index| {
+            Radix16Decomposition::new(&points_and_scalars[index].1, C::FIELD_REPR_IS_BE)
+        });
 
         lincomb::<C>(&tables, &digits)
     }

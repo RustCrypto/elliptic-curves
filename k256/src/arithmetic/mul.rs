@@ -38,20 +38,22 @@ use super::{
     ProjectivePoint,
     scalar::{Scalar, WideScalar},
 };
+use core::array;
 use elliptic_curve::{
+    array::sizes::U33,
     ops::{LinearCombination, Mul, MulAssign, MulByGeneratorVartime, MulVartime},
     scalar::IsHigh,
     subtle::ConditionallySelectable,
 };
+use primeorder::Radix16Decomposition;
 
 #[cfg(feature = "alloc")]
 use elliptic_curve::{
     bigint::ArrayEncoding,
     wnaf::{WnafBase, WnafScalar},
 };
-
 #[cfg(feature = "precomputed-tables")]
-use super::tables::BASEPOINT_TABLE;
+use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
 
 /// Lookup table for multiples of a given point.
 type LookupTable = elliptic_curve::point::LookupTable<ProjectivePoint>;
@@ -197,57 +199,11 @@ fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
     (r1, r2)
 }
 
-// This needs to be an object to have Default implemented for it
-// (required because it's used in static_map later)
-// Otherwise we could just have a function returning an array.
-#[derive(Copy, Clone)]
-struct Radix16Decomposition<const D: usize>([i8; D]);
-
-impl<const D: usize> Radix16Decomposition<D> {
-    /// Returns an object containing a decomposition
-    /// `[a_0, ..., a_D]` such that `sum(a_j * 2^(j * 4)) == x`,
-    /// and `-8 <= a_j <= 7`.
-    /// Assumes `x < 2^(4*(D-1))`.
-    fn new(x: &Scalar) -> Self {
-        debug_assert!((x >> (4 * (D - 1))).is_zero().unwrap_u8() == 1);
-
-        // The resulting decomposition can be negative, so, despite the limit on `x`,
-        // we need an additional byte to store the carry.
-        let mut output = [0i8; D];
-
-        // Step 1: change radix.
-        // Convert from radix 256 (bytes) to radix 16 (nibbles)
-        let bytes = x.to_bytes();
-        for i in 0..(D - 1) / 2 {
-            output[2 * i] = (bytes[31 - i] & 0xf) as i8;
-            output[2 * i + 1] = ((bytes[31 - i] >> 4) & 0xf) as i8;
-        }
-
-        // Step 2: recenter coefficients from [0,16) to [-8,8)
-        for i in 0..(D - 1) {
-            let carry = (output[i] + 8) >> 4;
-            output[i] -= carry << 4;
-            output[i + 1] += carry;
-        }
-
-        Self(output)
-    }
-}
-
-impl<const D: usize> Default for Radix16Decomposition<D> {
-    fn default() -> Self {
-        Self([0i8; D])
-    }
-}
-
 impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for ProjectivePoint {
     fn lincomb(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
         let mut tables = [(LookupTable::default(), LookupTable::default()); N];
-        let mut digits = [(
-            Radix16Decomposition::<33>::default(),
-            Radix16Decomposition::<33>::default(),
-        ); N];
-
+        let mut digits: [(Radix16Decomposition<U33>, Radix16Decomposition<U33>); N] =
+            array::from_fn(|_| Default::default());
         lincomb(points_and_scalars, &mut tables, &mut digits)
     }
 }
@@ -259,8 +215,8 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
             vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
         let mut digits = vec![
             (
-                Radix16Decomposition::<33>::default(),
-                Radix16Decomposition::<33>::default(),
+                Radix16Decomposition::<U33>::default(),
+                Radix16Decomposition::<U33>::default(),
             );
             points_and_scalars.len()
         ];
@@ -272,7 +228,7 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
 fn lincomb(
     xks: &[(ProjectivePoint, Scalar)],
     tables: &mut [(LookupTable, LookupTable)],
-    digits: &mut [(Radix16Decomposition<33>, Radix16Decomposition<33>)],
+    digits: &mut [(Radix16Decomposition<U33>, Radix16Decomposition<U33>)],
 ) -> ProjectivePoint {
     xks.iter().enumerate().for_each(|(i, (x, k))| {
         let (r1, r2) = decompose_scalar(k);
@@ -292,18 +248,18 @@ fn lincomb(
         );
 
         digits[i] = (
-            Radix16Decomposition::<33>::new(&r1_c),
-            Radix16Decomposition::<33>::new(&r2_c),
+            Radix16Decomposition::<U33>::new(&r1_c, true),
+            Radix16Decomposition::<U33>::new(&r2_c, true),
         )
     });
 
     let mut acc = ProjectivePoint::IDENTITY;
     for component in 0..xks.len() {
-        let (digit1, digit2) = digits[component];
+        let (digit1, digit2) = &digits[component];
         let (table1, table2) = tables[component];
 
-        acc += &table1.select(digit1.0[32]);
-        acc += &table2.select(digit2.0[32]);
+        acc += &table1.select(digit1[32]);
+        acc += &table2.select(digit2[32]);
     }
 
     for i in (0..32).rev() {
@@ -312,11 +268,11 @@ fn lincomb(
         }
 
         for component in 0..xks.len() {
-            let (digit1, digit2) = digits[component];
+            let (digit1, digit2) = &digits[component];
             let (table1, table2) = tables[component];
 
-            acc += &table1.select(digit1.0[i]);
-            acc += &table2.select(digit2.0[i]);
+            acc += &table1.select(digit1[i]);
+            acc += &table2.select(digit2[i]);
         }
     }
     acc
@@ -399,13 +355,13 @@ impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(feature = "precomputed-tables")]
     pub(super) fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
-        let digits = Radix16Decomposition::<65>::new(k);
+        let digits = Radix16Decomposition::<U65>::new(k, true);
         let table = *BASEPOINT_TABLE;
-        let mut acc = table[32].select(digits.0[64]);
+        let mut acc = table[32].select(digits[64]);
         let mut acc2 = ProjectivePoint::IDENTITY;
         for i in (0..32).rev() {
-            acc2 += &table[i].select(digits.0[i * 2 + 1]);
-            acc += &table[i].select(digits.0[i * 2]);
+            acc2 += &table[i].select(digits[i * 2 + 1]);
+            acc += &table[i].select(digits[i * 2]);
         }
         // This is the price of halving the precomputed table size (from 60kb to 30kb)
         // The performance hit is minor, about 3%.

@@ -22,7 +22,11 @@ mod dev;
 mod projective;
 mod radix16;
 
-pub use crate::{affine::AffinePoint, projective::ProjectivePoint};
+pub use crate::{
+    affine::AffinePoint,
+    projective::ProjectivePoint,
+    radix16::{Radix16Decomposition, Radix16Digits},
+};
 pub use elliptic_curve::{
     self, Field, FieldBytes, PrimeCurve, PrimeField, Scalar,
     array::{self, ArraySize, sizes::U1},
@@ -66,6 +70,10 @@ pub trait PrimeCurveParams:
 
     /// Generator point's affine coordinates: (x, y).
     const GENERATOR: (Self::FieldElement, Self::FieldElement);
+
+    /// Are field element serializations for this curve big endian?
+    // TODO(tarcieri): make this a property of the scalar type, e.g. zkcrypto/ff#158
+    const FIELD_REPR_IS_BE: bool = true;
 
     /// Multiplication by the generator.
     ///
