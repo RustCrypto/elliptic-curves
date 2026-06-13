@@ -29,7 +29,7 @@ elliptic-curve = { version = "0.14.0-rc.34", default-features = false, features 
 [features]
 default = ["pkcs8", "std"]
 alloc = ["ecdsa?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
-std = ["alloc", "ecdsa?/std", "elliptic-curve/std", "getrandom"]
+std = ["alloc", "ecdsa?/std", "elliptic-curve/std", "getrandom", "primeorder?/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder"]
 getrandom = ["ecdsa?/getrandom", "elliptic-curve/getrandom"]

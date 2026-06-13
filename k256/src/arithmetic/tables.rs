@@ -4,18 +4,19 @@
 //! `group` crate doesn't support the secp256k1 endomorphism optimization and thus winds up being
 //! slower than the constant-time version (see RustCrypto/elliptic-curves
 
+use super::Secp256k1;
 use crate::ProjectivePoint;
-use elliptic_curve::point::PointWithBasepointTable;
+use primeorder::PrimeCurveWithBasepointTable;
 
 /// Window size for the basepoint table.
 const WINDOW_SIZE: usize = 33;
 
 /// Basepoint table for multiples of secp256k1's generator.
-type BasepointTable = elliptic_curve::point::BasepointTable<ProjectivePoint, WINDOW_SIZE>;
+type BasepointTable = primeorder::BasepointTable<ProjectivePoint, WINDOW_SIZE>;
 
 /// Lazily computed basepoint table.
 pub(super) static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
 
-impl PointWithBasepointTable<WINDOW_SIZE> for ProjectivePoint {
+impl PrimeCurveWithBasepointTable<WINDOW_SIZE> for Secp256k1 {
     const BASEPOINT_TABLE: &'static BasepointTable = &BASEPOINT_TABLE;
 }

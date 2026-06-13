@@ -479,8 +479,7 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.34"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a44d097c9f3e494ddc19f77af5aab89f0b3b2652cde370ec8c6064faca5bd2"
+source = "git+https://github.com/RustCrypto/traits#471ced1111b31be239002037a3104ffc10751257"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -491,14 +490,12 @@ dependencies = [
  "hex-literal",
  "hkdf",
  "hybrid-array",
- "once_cell",
  "pem-rfc7468",
  "pkcs8",
  "rand_core 0.10.1",
  "sec1",
  "serdect",
  "subtle",
- "wnaf",
  "zeroize",
 ]
 
@@ -995,7 +992,9 @@ name = "primeorder"
 version = "0.14.0-rc.11"
 dependencies = [
  "elliptic-curve",
+ "once_cell",
  "serdect",
+ "wnaf",
 ]
 
 [[package]]
@@ -1413,7 +1412,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.2",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys",

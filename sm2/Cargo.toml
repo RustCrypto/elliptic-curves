@@ -40,7 +40,7 @@ proptest = "1"
 [features]
 default = ["arithmetic", "dsa", "getrandom", "pke", "pem", "precomputed-tables", "std"]
 alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
-std = ["alloc", "elliptic-curve/std"]
+std = ["alloc", "elliptic-curve/std", "primeorder?/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 dsa = ["arithmetic", "dep:rfc6979", "dep:signature", "dep:sm3"]

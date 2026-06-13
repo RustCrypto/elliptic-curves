@@ -13,7 +13,7 @@ mod vartime {
 
     /// Variable-time basepoint table for NIST P-256's generator.
     type BasepointTableVartime =
-        elliptic_curve::point::BasepointTableVartime<ProjectivePoint, WINDOW_SIZE_VARTIME>;
+        primeorder::BasepointTableVartime<ProjectivePoint, WINDOW_SIZE_VARTIME>;
 
     /// Lazily computed basepoint table.
     pub(crate) static BASEPOINT_TABLE_VARTIME: BasepointTableVartime = BasepointTableVartime::new();

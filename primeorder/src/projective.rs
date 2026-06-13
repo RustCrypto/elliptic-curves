@@ -3,7 +3,7 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{
-    AffinePoint, Field, PrimeCurveParams, Radix16Decomposition, Radix16Digits,
+    AffinePoint, Field, LookupTable, PrimeCurveParams, Radix16Decomposition, Radix16Digits,
     point_arithmetic::PointArithmetic,
 };
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
@@ -20,7 +20,7 @@ use elliptic_curve::{
         Add, AddAssign, BatchInvert, LinearCombination, Mul, MulAssign, MulByGeneratorVartime,
         MulVartime, Neg, Sub, SubAssign,
     },
-    point::{Double, LookupTable, NonIdentity},
+    point::{Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{CompressedPoint, FromSec1Point, Sec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -28,19 +28,11 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "alloc")]
-use {
-    alloc::vec::Vec,
-    elliptic_curve::wnaf::{Wnaf, WnafBase, WnafGroup, WnafScalar},
-};
-
-#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
-use {
-    crate::PrimeCurveWithBasepointTableVartime,
-    elliptic_curve::point::{BasepointTableVartime, PointWithBasepointTableVartime},
-};
-
+use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
+#[cfg(feature = "alloc")]
+use wnaf::{Wnaf, WnafBase, WnafGroup, WnafScalar};
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -131,10 +123,9 @@ where
         {
             Self::wnaf().scalar(k).base(*self)
         }
-
         #[cfg(not(feature = "alloc"))]
         {
-            self.mul(k)
+            self.mul(k) // fall back on constant-time multiplication
         }
     }
 
@@ -600,15 +591,6 @@ where
         // Returns a number between 2 and 22, inclusive.
         4 // This seems to be a common starting point?
     }
-}
-
-#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
-impl<C, const WINDOW_SIZE: usize> PointWithBasepointTableVartime<WINDOW_SIZE> for ProjectivePoint<C>
-where
-    C: PrimeCurveWithBasepointTableVartime<WINDOW_SIZE>,
-{
-    const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime<Self, WINDOW_SIZE> =
-        C::BASEPOINT_TABLE_VARTIME;
 }
 
 //

@@ -21,13 +21,16 @@ rust-version = "1.85"
 elliptic-curve = { version = "0.14.0-rc.34", default-features = false, features = ["arithmetic", "sec1"] }
 
 # optional dependencies
+once_cell = { version = "1.21", optional = true, default-features = false }
 serdect = { version = "0.4", optional = true, default-features = false }
+wnaf = { version = "0.14.0-pre.0", optional = true }
 
 [features]
-alloc = ["elliptic-curve/wnaf"]
-std = ["alloc", "elliptic-curve/std"]
+alloc = ["elliptic-curve/alloc", "serdect?/alloc", "dep:wnaf"]
+std = ["alloc", "elliptic-curve/std", "once_cell?/std"]
 
-basepoint-table = ["elliptic-curve/basepoint-table"]
+basepoint-table = []
+critical-section = ["basepoint-table", "once_cell/critical-section"]
 dev = []
 hash2curve = []
 serde = ["elliptic-curve/serde", "serdect"]
