@@ -5,9 +5,13 @@
 #[cfg(not(any(feature = "critical-section", feature = "std")))]
 compile_error!("`basepoint-table` feature requires either `critical-section` or `std`");
 
-use super::LookupTable;
+use super::{LookupTable, Radix16Decomposition, Radix16Digits};
+use crate::{PrimeCurveParams, ProjectivePoint, Scalar};
 use core::ops::Deref;
-use elliptic_curve::{ff::PrimeField, group::Group, subtle::ConditionallySelectable};
+use elliptic_curve::{
+    FieldBytesSize, array::typenum::Unsigned, ff::PrimeField, group::Group,
+    subtle::ConditionallySelectable,
+};
 
 #[cfg(feature = "critical-section")]
 use once_cell::sync::Lazy as LazyLock;
@@ -53,6 +57,7 @@ where
 
             for i in 0..N {
                 res[i] = LookupTable::new(generator);
+
                 // We are storing tables spaced by two radix steps,
                 // to decrease the size of the precomputed data.
                 for _ in 0..8 {
@@ -66,6 +71,30 @@ where
         Self {
             tables: LazyLock::new(init_table),
         }
+    }
+}
+
+impl<C: PrimeCurveParams, const WINDOW_SIZE: usize>
+    BasepointTable<ProjectivePoint<C>, WINDOW_SIZE>
+{
+    /// Multiply `Point::generator` by the given scalar in constant-time, using the precomputed
+    /// basepoint table to accelerate the scalar multiplication.
+    pub fn mul(&self, k: &Scalar<C>) -> ProjectivePoint<C> {
+        let digits = Radix16Decomposition::<Radix16Digits<C>>::new(k, true);
+        let len = FieldBytesSize::<C>::USIZE;
+        let mut acc = self[len].select(digits[len * 2]);
+        let mut acc2 = ProjectivePoint::<C>::IDENTITY;
+        for i in (0..len).rev() {
+            acc2 += &self[i].select(digits[i * 2 + 1]);
+            acc += &self[i].select(digits[i * 2]);
+        }
+
+        // This is the price of halving the precomputed table size.
+        for _ in 0..4 {
+            acc2 = acc2.double();
+        }
+
+        acc + acc2
     }
 }
 
