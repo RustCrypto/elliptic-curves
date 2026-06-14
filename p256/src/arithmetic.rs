@@ -64,6 +64,11 @@ impl PrimeCurveParams for NistP256 {
         ),
     );
 
+    #[cfg(feature = "precomputed-tables")]
+    fn mul_by_generator(k: &elliptic_curve::Scalar<Self>) -> primeorder::ProjectivePoint<Self> {
+        tables::BASEPOINT_TABLE.mul(k)
+    }
+
     #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
         tables::BASEPOINT_TABLE_VARTIME.mul(k)
