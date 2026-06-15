@@ -53,10 +53,8 @@ pub use crate::basepoint_table::BasepointTable;
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
 pub trait PrimeCurveParams:
-    Curve<
-        FieldBytesSize: Add<Output: Add<U1, Output: ArraySize>> // Radix16Digits
-                            + sec1::ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>,
-    > + PrimeCurve
+    Curve<FieldBytesSize: ModulusSize>
+    + PrimeCurve
     + CurveArithmetic<AffinePoint = AffinePoint<Self>, ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
@@ -107,6 +105,22 @@ pub trait PrimeCurveParams:
             (*b_point, *b_scalar),
         ])
     }
+}
+
+/// Acceptable modulus sizes can be used as [`Radix16Digits`] and a [`sec1::ModulusSize`].
+pub trait ModulusSize:
+    ArraySize<ArrayType<u8>: Copy>
+    + Add<Output: Add<U1, Output: ArraySize>> // Radix16Digits
+    + sec1::ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>
+{
+}
+
+impl<T> ModulusSize for T
+where
+    T: ArraySize<ArrayType<u8>: Copy>,
+    T: Add<Output: Add<U1, Output: ArraySize>>, // Radix16Digits
+    T: sec1::ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>,
+{
 }
 
 /// Trait for specifying a constant-time basepoint table for a given curve.

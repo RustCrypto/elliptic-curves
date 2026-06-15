@@ -98,8 +98,8 @@ where
     type FieldRepr = FieldBytes<C>;
 
     fn from_coordinates(x: &Self::FieldRepr, y: &Self::FieldRepr) -> CtOption<Self> {
-        C::FieldElement::from_repr(y.clone()).and_then(|y| {
-            C::FieldElement::from_repr(x.clone()).and_then(|x| {
+        C::FieldElement::from_repr(*y).and_then(|y| {
+            C::FieldElement::from_repr(*x).and_then(|x| {
                 let lhs = y * &y;
                 let rhs = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
                 CtOption::new(Self { x, y, infinity: 0 }, lhs.ct_eq(&rhs))
@@ -181,7 +181,7 @@ where
     C: PrimeCurveParams,
 {
     fn decompress(x_bytes: &FieldBytes<C>, y_is_odd: Choice) -> CtOption<Self> {
-        C::FieldElement::from_repr(x_bytes.clone()).and_then(|x| {
+        C::FieldElement::from_repr(*x_bytes).and_then(|x| {
             let alpha = x * &x * &x + &(C::EQUATION_A * &x) + &C::EQUATION_B;
             let beta = alpha.sqrt();
 
