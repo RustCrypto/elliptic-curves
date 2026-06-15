@@ -5,8 +5,8 @@
 #[cfg(not(any(feature = "critical-section", feature = "std")))]
 compile_error!("`basepoint-table` feature requires either `critical-section` or `std`");
 
-use super::{LookupTable, Radix16Decomposition, Radix16Digits};
-use crate::{PrimeCurveParams, ProjectivePoint, Scalar};
+use super::LookupTable;
+use crate::{PrimeCurveParams, ProjectivePoint, Radix16Decomposition, Radix16Digits, Scalar};
 use core::ops::Deref;
 use elliptic_curve::{
     FieldBytesSize, array::typenum::Unsigned, ff::PrimeField, group::Group,
