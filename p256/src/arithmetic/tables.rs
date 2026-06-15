@@ -4,7 +4,7 @@ use super::NistP256;
 use crate::ProjectivePoint;
 use primeorder::PrimeCurveWithBasepointTable;
 
-/// Window size for the basepoint table.
+/// Window size for the basepoint table (1 + 32-byte modulus)
 const WINDOW_SIZE: usize = 33;
 
 /// Basepoint table for multiples of NIST P-256's generator.
@@ -15,26 +15,6 @@ pub(super) static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
 
 impl PrimeCurveWithBasepointTable<WINDOW_SIZE> for NistP256 {
     const BASEPOINT_TABLE: &'static BasepointTable = &BASEPOINT_TABLE;
-}
-
-#[cfg(feature = "alloc")]
-mod vartime {
-    use crate::{NistP256, ProjectivePoint};
-    use primeorder::PrimeCurveWithBasepointTableVartime;
-
-    /// Window size for the variable-time basepoint table.
-    const WINDOW_SIZE_VARTIME: usize = 8;
-
-    /// Variable-time basepoint table for NIST P-256's generator.
-    type BasepointTableVartime =
-        primeorder::BasepointTableVartime<ProjectivePoint, WINDOW_SIZE_VARTIME>;
-
-    /// Lazily computed basepoint table.
-    pub(crate) static BASEPOINT_TABLE_VARTIME: BasepointTableVartime = BasepointTableVartime::new();
-
-    impl PrimeCurveWithBasepointTableVartime<WINDOW_SIZE_VARTIME> for NistP256 {
-        const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime = &BASEPOINT_TABLE_VARTIME;
-    }
 }
 
 /// These are the main tests for `primeorder::BasepointTable` as we need a concrete curve to test

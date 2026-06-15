@@ -52,7 +52,7 @@ use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
 #[cfg(feature = "alloc")]
 use {
     elliptic_curve::bigint::ArrayEncoding,
-    primeorder::wnaf::{WnafBase, WnafScalar},
+    wnaf::{WnafBase, WnafScalar},
 };
 
 /// Lookup table for multiples of a given point.

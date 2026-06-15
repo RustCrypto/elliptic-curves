@@ -752,6 +752,7 @@ dependencies = [
  "sha2",
  "sha3",
  "signature",
+ "wnaf",
 ]
 
 [[package]]
@@ -1005,7 +1006,6 @@ dependencies = [
  "elliptic-curve",
  "once_cell",
  "serdect",
- "wnaf",
 ]
 
 [[package]]

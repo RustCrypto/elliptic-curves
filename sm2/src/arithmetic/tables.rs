@@ -16,23 +16,3 @@ pub(super) static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
 impl PrimeCurveWithBasepointTable<WINDOW_SIZE> for Sm2 {
     const BASEPOINT_TABLE: &'static BasepointTable = &BASEPOINT_TABLE;
 }
-
-#[cfg(feature = "alloc")]
-mod vartime {
-    use crate::{ProjectivePoint, Sm2};
-    use primeorder::PrimeCurveWithBasepointTableVartime;
-
-    /// Window size for the variable-time basepoint table.
-    const WINDOW_SIZE_VARTIME: usize = 8;
-
-    /// Variable-time basepoint table for NIST P-384's generator.
-    type BasepointTableVartime =
-        primeorder::BasepointTableVartime<ProjectivePoint, WINDOW_SIZE_VARTIME>;
-
-    /// Lazily computed basepoint table.
-    pub(crate) static BASEPOINT_TABLE_VARTIME: BasepointTableVartime = BasepointTableVartime::new();
-
-    impl PrimeCurveWithBasepointTableVartime<WINDOW_SIZE_VARTIME> for Sm2 {
-        const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime = &BASEPOINT_TABLE_VARTIME;
-    }
-}

@@ -49,10 +49,6 @@ use elliptic_curve::{
 
 #[cfg(feature = "basepoint-table")]
 pub use crate::basepoint_table::BasepointTable;
-#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
-pub use crate::basepoint_table::vartime::BasepointTableVartime;
-#[cfg(feature = "alloc")]
-pub use wnaf;
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
@@ -120,18 +116,6 @@ pub trait PrimeCurveWithBasepointTable<const WINDOW_SIZE: usize>:
 {
     /// Basepoint table for this curve.
     const BASEPOINT_TABLE: &'static BasepointTable<
-        <Self as CurveArithmetic>::ProjectivePoint,
-        WINDOW_SIZE,
-    >;
-}
-
-/// Trait which allows curves to specify a variable-time basepoint table.
-#[cfg(all(feature = "alloc", feature = "basepoint-table"))]
-pub trait PrimeCurveWithBasepointTableVartime<const WINDOW_SIZE: usize>:
-    PrimeCurve + CurveArithmetic
-{
-    /// Basepoint table for this curve (variable-time, for nonsecret multiplications only).
-    const BASEPOINT_TABLE_VARTIME: &'static BasepointTableVartime<
         <Self as CurveArithmetic>::ProjectivePoint,
         WINDOW_SIZE,
     >;
