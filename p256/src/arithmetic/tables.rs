@@ -10,7 +10,7 @@ pub(super) use vartime::BASEPOINT_TABLE_VARTIME;
 /// Window size for the basepoint table.
 const WINDOW_SIZE: usize = 33;
 
-/// Basepoint table for multiples of secp256r1's generator.
+/// Basepoint table for multiples of NIST P-256's generator.
 type BasepointTable = primeorder::BasepointTable<ProjectivePoint, WINDOW_SIZE>;
 
 /// Lazily computed basepoint table.

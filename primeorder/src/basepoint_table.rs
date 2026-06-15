@@ -47,7 +47,7 @@ where
             // Ensure basepoint table contains the expected number of entries for the scalar's size
             const {
                 assert!(
-                    N as u32 == 1 + Point::Scalar::NUM_BITS / 8,
+                    N as u32 == 1 + Point::Scalar::NUM_BITS.div_ceil(8),
                     "incorrectly sized basepoint table"
                 );
             }
