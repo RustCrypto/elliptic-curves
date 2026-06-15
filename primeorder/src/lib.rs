@@ -19,19 +19,15 @@ pub mod osswu;
 pub mod point_arithmetic;
 
 mod affine;
-#[cfg(feature = "basepoint-table")]
-mod basepoint_table;
 #[cfg(feature = "dev")]
 mod dev;
-mod lookup_table;
 mod projective;
-mod radix16;
+mod tables;
 
 pub use crate::{
     affine::AffinePoint,
-    lookup_table::LookupTable,
     projective::ProjectivePoint,
-    radix16::{Radix16Decomposition, Radix16Digits},
+    tables::{LookupTable, Radix16Decomposition, Radix16Digits},
 };
 pub use elliptic_curve::{
     self, Field, FieldBytes, PrimeCurve, PrimeField, Scalar,
@@ -48,7 +44,7 @@ use elliptic_curve::{
 };
 
 #[cfg(feature = "basepoint-table")]
-pub use crate::basepoint_table::BasepointTable;
+pub use crate::tables::BasepointTable;
 
 /// Parameters for elliptic curves of prime order which can be described by the
 /// short Weierstrass equation.
