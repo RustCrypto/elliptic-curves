@@ -32,7 +32,7 @@ use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
 #[cfg(feature = "alloc")]
-use wnaf::{Wnaf, WnafBase, WnafGroup, WnafScalar};
+use wnaf::{Wnaf, WnafGroup};
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -119,14 +119,9 @@ where
     where
         Self: Double,
     {
-        #[cfg(feature = "alloc")]
-        {
-            Self::wnaf().scalar(k).base(*self)
-        }
-        #[cfg(not(feature = "alloc"))]
-        {
-            self.mul(k) // fall back on constant-time multiplication
-        }
+        let table = LookupTable::new(*self);
+        let digits = Radix16Decomposition::new(k, C::FIELD_REPR_IS_BE);
+        lincomb_vartime::<C>(&[table], &[digits])
     }
 
     /// Obtain a wNAF context for this group.
@@ -469,19 +464,16 @@ where
 
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
-        // TODO(tarcieri): make this customizable?
-        const WINDOW_SIZE: usize = 4;
-        let points = points_and_scalars
+        let tables: Vec<_> = points_and_scalars
             .iter()
-            .map(|(point, _)| WnafBase::<Self, WINDOW_SIZE>::new(*point))
-            .collect::<Vec<_>>();
-
-        let scalars = points_and_scalars
+            .map(|(point, _)| LookupTable::new(*point))
+            .collect();
+        let digits: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| WnafScalar::<Scalar<C>, WINDOW_SIZE>::new(scalar))
-            .collect::<Vec<_>>();
+            .map(|(_, scalar)| Radix16Decomposition::new(scalar, C::FIELD_REPR_IS_BE))
+            .collect();
 
-        WnafBase::multiscalar_mul(scalars, points)
+        lincomb_vartime::<C>(&tables, &digits)
     }
 }
 
@@ -498,9 +490,13 @@ where
         lincomb::<C>(&tables, &digits)
     }
 
-    #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
-        Self::lincomb_vartime(points_and_scalars.as_slice())
+        let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
+        let digits: [_; N] = array::from_fn(|index| {
+            Radix16Decomposition::new(&points_and_scalars[index].1, C::FIELD_REPR_IS_BE)
+        });
+
+        lincomb_vartime::<C>(&tables, &digits)
     }
 }
 
@@ -523,6 +519,31 @@ fn lincomb<C: PrimeCurveParams>(
 
         for (table, digit) in zip(tables, digits) {
             q = q.add(&table.select(digit[i]));
+        }
+    }
+
+    q
+}
+
+fn lincomb_vartime<C: PrimeCurveParams>(
+    tables: &[LookupTable<ProjectivePoint<C>>],
+    digits: &[Radix16Decomposition<Radix16Digits<C>>],
+) -> ProjectivePoint<C> {
+    debug_assert_eq!(tables.len(), digits.len());
+    debug_assert!(!digits.is_empty());
+
+    let d = Radix16Digits::<C>::USIZE;
+    let mut q = ProjectivePoint::IDENTITY;
+
+    for (table, digit) in zip(tables, digits) {
+        q = q.add(&table.select_vartime(digit[d - 1]));
+    }
+
+    for i in (0..d - 1).rev() {
+        q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
+
+        for (table, digit) in zip(tables, digits) {
+            q = q.add(&table.select_vartime(digit[i]));
         }
     }
 
