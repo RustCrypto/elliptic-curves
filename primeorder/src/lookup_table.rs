@@ -63,4 +63,20 @@ where
 
         t
     }
+
+    /// Given `-8 <= x <= 8`, returns `x * p` in variable time.
+    #[allow(clippy::cast_sign_loss)]
+    #[inline]
+    pub fn select_vartime(&self, x: i8) -> Point {
+        debug_assert!((-8..=8).contains(&x));
+
+        let xabs = x.unsigned_abs();
+        let t = if xabs == 0 {
+            Point::identity()
+        } else {
+            self.points[xabs as usize - 1]
+        };
+
+        if x < 0 { -t } else { t }
+    }
 }

@@ -71,17 +71,6 @@ impl PrimeCurveParams for Sm2 {
 
     #[cfg(feature = "precomputed-tables")]
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
-        // NOTE: the constant-time basepoint table is ~70% faster than the variable-time one for
-        // a single scalar multiplication
-        tables::BASEPOINT_TABLE.mul(k)
-    }
-
-    #[cfg(all(feature = "alloc", feature = "precomputed-tables"))]
-    fn mul_by_generator_and_mul_add_vartime(
-        a: &Scalar,
-        b_scalar: &Scalar,
-        b_point: &ProjectivePoint,
-    ) -> ProjectivePoint {
-        tables::BASEPOINT_TABLE_VARTIME.lincomb(a, &[(*b_point, *b_scalar)])
+        tables::BASEPOINT_TABLE.mul_vartime(k)
     }
 }

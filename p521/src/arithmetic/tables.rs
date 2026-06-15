@@ -4,9 +4,6 @@ use super::NistP521;
 use crate::ProjectivePoint;
 use primeorder::PrimeCurveWithBasepointTable;
 
-#[cfg(feature = "alloc")]
-pub(super) use vartime::BASEPOINT_TABLE_VARTIME;
-
 /// Window size for the basepoint table.
 const WINDOW_SIZE: usize = 67;
 

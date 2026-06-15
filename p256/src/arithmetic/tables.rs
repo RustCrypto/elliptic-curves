@@ -4,9 +4,6 @@ use super::NistP256;
 use crate::ProjectivePoint;
 use primeorder::PrimeCurveWithBasepointTable;
 
-#[cfg(feature = "alloc")]
-pub(super) use vartime::BASEPOINT_TABLE_VARTIME;
-
 /// Window size for the basepoint table.
 const WINDOW_SIZE: usize = 33;
 
@@ -63,6 +60,15 @@ mod tests {
         fn basepoint_table_mul(x in scalar()) {
             let expected = ProjectivePoint::GENERATOR * &x;
             let actual = BASEPOINT_TABLE.mul(&x);
+            prop_assert_eq!(expected, actual);
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn basepoint_table_mul_vartime(x in scalar()) {
+            let expected = ProjectivePoint::GENERATOR * &x;
+            let actual = BASEPOINT_TABLE.mul_vartime(&x);
             prop_assert_eq!(expected, actual);
         }
     }
