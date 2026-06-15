@@ -26,7 +26,7 @@ use elliptic_curve::{
 #[cfg(feature = "alloc")]
 use {
     alloc::vec::Vec,
-    primeorder::wnaf::{Wnaf, WnafGroup},
+    wnaf::{Wnaf, WnafGroup},
 };
 
 #[rustfmt::skip]

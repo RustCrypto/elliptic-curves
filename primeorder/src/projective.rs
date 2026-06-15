@@ -31,8 +31,6 @@ use elliptic_curve::{
 use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
-#[cfg(feature = "alloc")]
-use wnaf::{Wnaf, WnafGroup};
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -122,12 +120,6 @@ where
         let table = LookupTable::new(*self);
         let digits = Radix16Decomposition::new(k, C::FIELD_REPR_IS_BE);
         lincomb_vartime::<C>(&[table], &[digits])
-    }
-
-    /// Obtain a wNAF context for this group.
-    #[cfg(feature = "alloc")]
-    pub fn wnaf() -> Wnaf<(), Vec<Self>, Vec<i64>> {
-        Wnaf::new()
     }
 }
 
@@ -599,18 +591,6 @@ where
 
     fn try_from(point: &ProjectivePoint<C>) -> Result<PublicKey<C>> {
         AffinePoint::<C>::from(point).try_into()
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl<C> WnafGroup for ProjectivePoint<C>
-where
-    C: PrimeCurveParams,
-{
-    fn recommended_wnaf_for_num_scalars(_num_scalars: usize) -> usize {
-        // TODO(tarcieri): provide a way for individual curves to configure this
-        // Returns a number between 2 and 22, inclusive.
-        4 // This seems to be a common starting point?
     }
 }
 
