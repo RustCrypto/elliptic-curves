@@ -34,6 +34,8 @@ pkcs8 = { version = "0.11", optional = true }
 primefield = { version = "0.14.0-rc.11", optional = true }
 primeorder = { version = "0.14.0-rc.11", optional = true }
 sec1 = { version = "0.8.1", optional = true }
+hash2curve = { version = "0.14.0-rc.12", optional = true }
+belt-kwp = { version = "0.1", optional = true }
 signature = { version = "3", optional = true }
 
 [dev-dependencies]
@@ -56,6 +58,7 @@ pkcs8 = ["dep:pkcs8"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh", "dep:digest", "dep:hkdf", "dep:hmac", "dep:belt-hash", "alloc"]
 serde = ["elliptic-curve/serde", "primeorder?/serde"]
 test-vectors = ["dep:hex-literal"]
+swu = ["primeorder/hash2curve", "hash2curve", "belt-kwp"]
 
 [lints.rust.unexpected_cfgs]
 level = "warn"

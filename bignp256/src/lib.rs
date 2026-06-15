@@ -60,6 +60,8 @@ pub mod ecdsa;
 pub mod public_key;
 #[cfg(feature = "arithmetic")]
 pub mod secret_key;
+#[cfg(feature = "swu")]
+pub mod swu;
 
 #[cfg(feature = "pkcs8")]
 #[allow(dead_code)]
