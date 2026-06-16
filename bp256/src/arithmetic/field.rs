@@ -20,7 +20,7 @@ use elliptic_curve::{
 // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 cpubits! {
     32 => {
-        #[cfg(not(bp256_backend = "bignum"))]
+        #[cfg(not(bp256_backend = "bigint"))]
         #[allow(
             dead_code,
             clippy::identity_op,
@@ -32,7 +32,7 @@ cpubits! {
         mod field_impl;
     }
     64 => {
-        #[cfg(not(bp256_backend = "bignum"))]
+        #[cfg(not(bp256_backend = "bigint"))]
         #[allow(
             dead_code,
             clippy::identity_op,
@@ -45,7 +45,7 @@ cpubits! {
     }
 }
 
-#[cfg(not(bp256_backend = "bignum"))]
+#[cfg(not(bp256_backend = "bigint"))]
 use self::field_impl::*;
 
 /// Constant representing the modulus serialized as hex.
@@ -67,14 +67,14 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP256 finite field modulo p"
 }
 
-#[cfg(bp256_backend = "bignum")]
+#[cfg(bp256_backend = "bigint")]
 primefield::monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: U256
 }
 
-#[cfg(not(bp256_backend = "bignum"))]
+#[cfg(not(bp256_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -97,7 +97,7 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U256};
-    #[cfg(not(bp256_backend = "bignum"))]
+    #[cfg(not(bp256_backend = "bigint"))]
     use super::{
         FieldParams, fiat_bp256_montgomery_domain_field_element, fiat_bp256_msat,
         fiat_bp256_non_montgomery_domain_field_element, fiat_bp256_to_montgomery,
@@ -105,7 +105,7 @@ mod tests {
 
     primefield::test_primefield!(FieldElement, U256);
 
-    #[cfg(not(bp256_backend = "bignum"))]
+    #[cfg(not(bp256_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,

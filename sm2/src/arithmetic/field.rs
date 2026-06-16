@@ -20,11 +20,11 @@ use elliptic_curve::{
 // Default backend: fiat-crypto
 cpubits! {
     32 => {
-        #[cfg(not(sm2_backend = "bignum"))]
+        #[cfg(not(sm2_backend = "bigint"))]
         use fiat_crypto::sm2_32::*;
     }
     64 => {
-        #[cfg(not(sm2_backend = "bignum"))]
+        #[cfg(not(sm2_backend = "bigint"))]
         use fiat_crypto::sm2_64::*;
     }
 }
@@ -48,14 +48,14 @@ primefield::monty_field_element! {
     doc: "Element in the SM2 finite field modulo `p = 0xfffffffeffffffffffffffffffffffffffffffff00000000ffffffffffffffff`"
 }
 
-#[cfg(sm2_backend = "bignum")]
+#[cfg(sm2_backend = "bigint")]
 primefield::monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: U256
 }
 
-#[cfg(not(sm2_backend = "bignum"))]
+#[cfg(not(sm2_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -78,7 +78,7 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U256};
-    #[cfg(not(sm2_backend = "bignum"))]
+    #[cfg(not(sm2_backend = "bigint"))]
     use super::{
         FieldParams, fiat_sm2_montgomery_domain_field_element, fiat_sm2_msat,
         fiat_sm2_non_montgomery_domain_field_element, fiat_sm2_to_montgomery,
@@ -86,7 +86,7 @@ mod tests {
 
     primefield::test_primefield!(FieldElement, U256);
 
-    #[cfg(not(sm2_backend = "bignum"))]
+    #[cfg(not(sm2_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,

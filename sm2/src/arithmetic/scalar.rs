@@ -22,11 +22,11 @@ use elliptic_curve::{
 // Default backend: fiat-crypto
 cpubits! {
     32 => {
-        #[cfg(not(sm2_backend = "bignum"))]
+        #[cfg(not(sm2_backend = "bigint"))]
         use fiat_crypto::sm2_scalar_32::*;
     }
     64 => {
-        #[cfg(not(sm2_backend = "bignum"))]
+        #[cfg(not(sm2_backend = "bigint"))]
         use fiat_crypto::sm2_scalar_64::*;
     }
 }
@@ -56,14 +56,14 @@ primefield::monty_field_element! {
     doc: "Element in the SM2 scalar field modulo `n`."
 }
 
-#[cfg(sm2_backend = "bignum")]
+#[cfg(sm2_backend = "bigint")]
 primefield::monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
     uint: U256
 }
 
-#[cfg(not(sm2_backend = "bignum"))]
+#[cfg(not(sm2_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -135,14 +135,14 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U256};
-    #[cfg(not(sm2_backend = "bignum"))]
+    #[cfg(not(sm2_backend = "bigint"))]
     use super::{
         ScalarParams, fiat_sm2_scalar_montgomery_domain_field_element, fiat_sm2_scalar_msat,
         fiat_sm2_scalar_non_montgomery_domain_field_element, fiat_sm2_scalar_to_montgomery,
     };
 
     primefield::test_primefield!(Scalar, U256);
-    #[cfg(not(sm2_backend = "bignum"))]
+    #[cfg(not(sm2_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,

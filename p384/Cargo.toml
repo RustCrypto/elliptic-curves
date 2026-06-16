@@ -29,7 +29,7 @@ primeorder = { version = "0.14.0-rc.11", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11", optional = true, default-features = false }
 
-[target.'cfg(not(p384_backend = "bignum"))'.dependencies]
+[target.'cfg(not(p384_backend = "bigint"))'.dependencies]
 fiat-crypto = { version = "0.3", default-features = false }
 
 [dev-dependencies]
@@ -68,7 +68,7 @@ test-vectors = ["hex-literal"]
 [lints.rust.unexpected_cfgs]
 level = "warn"
 check-cfg = [
-    'cfg(p384_backend, values("bignum", "fiat"))', # default: "fiat"
+    'cfg(p384_backend, values("bigint", "fiat"))', # default: "fiat"
     'cfg(cpubits, values("16", "32", "64"))'
 ]
 
