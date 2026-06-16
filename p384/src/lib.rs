@@ -11,23 +11,24 @@
 //! ## Backends
 //!
 //! This crate has support for two different field arithmetic backends which can be selected using
-//! `cfg(p384_backend)`, e.g. to select the `bigint` backend:
+//! `cfg(p384_backend)`, e.g. to select the formally verified `fiat` backend:
 //!
 //! ```console
-//! $ RUSTFLAGS='--cfg p384_backend="bigint"' cargo test
+//! $ RUSTFLAGS='--cfg p384_backend="fiat"' cargo test
 //! ```
 //!
 //! Or it can be set through [`.cargo/config`][buildrustflags]:
 //!
 //! ```toml
 //! [build]
-//! rustflags = ['--cfg', 'p384_backend="bigint"']
+//! rustflags = ['--cfg', 'p384_backend="fiat"']
 //! ```
 //!
 //! The available backends are:
-//! - `bigint`: experimental backend provided by [crypto-bigint]. May offer better performance in
-//!   some cases along with smaller code size, but might also have bugs.
-//! - `fiat` (default): formally verified implementation synthesized by [fiat-crypto] which should
+//! - `bigint` (default): backend provided by [crypto-bigint], which should provide better
+//!   performance as well as smaller code size and fewer dependencies, but isn't formally verified
+//!   and may contain bugs
+//! - `fiat`: formally verified implementation synthesized by [fiat-crypto] which should
 //!   be correct for all inputs (though there's a possibility of bugs in the code which glues to it)
 //!
 //! [buildrustflags]: https://doc.rust-lang.org/cargo/reference/config.html#buildrustflags

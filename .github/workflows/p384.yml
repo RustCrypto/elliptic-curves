@@ -100,8 +100,8 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
       - env:
-          RUSTFLAGS: '--cfg p384_backend="bigint"'
-          RUSTDOCFLAGS: '--cfg p384_backend="bigint"'
+          RUSTFLAGS: '--cfg p384_backend="fiat"'
+          RUSTDOCFLAGS: '--cfg p384_backend="fiat"'
         run: cargo test --release --target ${{ matrix.target }} --all-features
 
   cross:
