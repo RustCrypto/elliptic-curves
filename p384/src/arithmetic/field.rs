@@ -19,11 +19,11 @@ use elliptic_curve::{
 // Default backend: fiat-crypto
 cpubits! {
     32 => {
-        #[cfg(not(p384_backend = "bigint"))]
+        #[cfg(p384_backend = "fiat")]
         use fiat_crypto::p384_32::*;
     }
     64 => {
-        #[cfg(not(p384_backend = "bigint"))]
+        #[cfg(p384_backend = "fiat")]
         use fiat_crypto::p384_64::*;
     }
 }
@@ -48,14 +48,14 @@ primefield::monty_field_element! {
     doc: "Element in the finite field modulo `p = 2^{384} − 2^{128} − 2^{96} + 2^{32} − 1`."
 }
 
-#[cfg(p384_backend = "bigint")]
+#[cfg(not(p384_backend = "fiat"))]
 primefield::monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: U384
 }
 
-#[cfg(not(p384_backend = "bigint"))]
+#[cfg(p384_backend = "fiat")]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -78,7 +78,7 @@ primefield::fiat_monty_field_arithmetic! {
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U384};
-    #[cfg(not(p384_backend = "bigint"))]
+    #[cfg(p384_backend = "fiat")]
     use super::{
         FieldParams, fiat_p384_montgomery_domain_field_element, fiat_p384_msat,
         fiat_p384_non_montgomery_domain_field_element, fiat_p384_to_montgomery,
@@ -86,7 +86,7 @@ mod tests {
 
     primefield::test_primefield!(FieldElement, U384);
 
-    #[cfg(not(p384_backend = "bigint"))]
+    #[cfg(p384_backend = "fiat")]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,
