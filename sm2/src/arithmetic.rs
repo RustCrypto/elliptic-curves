@@ -41,6 +41,12 @@ impl PrimeCurveParams for Sm2 {
     type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
+    #[cfg(not(feature = "precomputed-tables"))]
+    type Backend = primeorder::backend::VariableOnly;
+    // TODO(tarcieri): use `primeorder::backend::PrecomputedTables` when MSRV 1.90
+    #[cfg(feature = "precomputed-tables")]
+    type Backend = tables::backend::PrecomputedTables;
+
     /// a = -3 (0xFFFFFFFE FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF 00000000 FFFFFFFF FFFFFFFC)
     const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();
 
@@ -63,14 +69,4 @@ impl PrimeCurveParams for Sm2 {
             "BC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0",
         ),
     );
-
-    #[cfg(feature = "precomputed-tables")]
-    fn mul_by_generator(k: &elliptic_curve::Scalar<Self>) -> primeorder::ProjectivePoint<Self> {
-        tables::BASEPOINT_TABLE.mul(k)
-    }
-
-    #[cfg(feature = "precomputed-tables")]
-    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
-        tables::BASEPOINT_TABLE.mul_vartime(k)
-    }
 }

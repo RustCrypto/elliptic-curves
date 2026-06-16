@@ -3,8 +3,8 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{
-    AffinePoint, Field, LookupTable, PrimeCurveParams, Radix16Decomposition, Radix16Digits,
-    point_arithmetic::PointArithmetic,
+    AffinePoint, Backend, Field, LookupTable, PrimeCurveParams, Radix16Decomposition,
+    Radix16Digits, point_arithmetic::PointArithmetic,
 };
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
@@ -319,7 +319,7 @@ where
 
     #[inline]
     fn mul_by_generator(scalar: &Self::Scalar) -> Self {
-        C::mul_by_generator(scalar)
+        C::Backend::mul_by_generator(scalar)
     }
 
     fn is_identity(&self) -> Choice {
@@ -896,7 +896,7 @@ where
 {
     #[inline]
     fn mul_by_generator_vartime(scalar: &Scalar<C>) -> Self {
-        C::mul_by_generator_vartime(scalar)
+        C::Backend::mul_by_generator_vartime(scalar)
     }
 
     #[inline]
@@ -905,7 +905,7 @@ where
         b_scalar: &Self::Scalar,
         b_point: &Self,
     ) -> Self {
-        C::mul_by_generator_and_mul_add_vartime(a, b_scalar, b_point)
+        C::Backend::mul_by_generator_and_mul_add_vartime(a, b_scalar, b_point)
     }
 }
 

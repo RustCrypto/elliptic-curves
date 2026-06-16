@@ -40,6 +40,12 @@ impl PrimeCurveParams for NistP384 {
     type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
+    #[cfg(not(feature = "precomputed-tables"))]
+    type Backend = primeorder::backend::VariableOnly;
+    // TODO(tarcieri): use `primeorder::backend::PrecomputedTables` when MSRV 1.90
+    #[cfg(feature = "precomputed-tables")]
+    type Backend = tables::backend::PrecomputedTables;
+
     /// a = -3 (0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffeffffffff0000000000000000fffffffc)
     const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();
 
@@ -67,16 +73,4 @@ impl PrimeCurveParams for NistP384 {
             "3617de4a96262c6f5d9e98bf9292dc29f8f41dbd289a147ce9da3113b5f0b8c00a60b1ce1d7e819d7a431d7c90ea0e5f",
         ),
     );
-
-    #[cfg(feature = "precomputed-tables")]
-    fn mul_by_generator(k: &elliptic_curve::Scalar<Self>) -> primeorder::ProjectivePoint<Self> {
-        tables::BASEPOINT_TABLE.mul(k)
-    }
-
-    #[cfg(feature = "precomputed-tables")]
-    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
-        // NOTE: the constant-time basepoint table is ~70% faster than the variable-time one for
-        // a single scalar multiplication
-        tables::BASEPOINT_TABLE.mul_vartime(k)
-    }
 }

@@ -40,6 +40,12 @@ impl PrimeCurveParams for NistP256 {
     type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
+    #[cfg(not(feature = "precomputed-tables"))]
+    type Backend = primeorder::backend::VariableOnly;
+    // TODO(tarcieri): use `primeorder::backend::PrecomputedTables` when MSRV 1.90
+    #[cfg(feature = "precomputed-tables")]
+    type Backend = tables::backend::PrecomputedTables;
+
     /// a = -3
     const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();
 
@@ -63,14 +69,4 @@ impl PrimeCurveParams for NistP256 {
             "4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5",
         ),
     );
-
-    #[cfg(feature = "precomputed-tables")]
-    fn mul_by_generator(k: &elliptic_curve::Scalar<Self>) -> primeorder::ProjectivePoint<Self> {
-        tables::BASEPOINT_TABLE.mul(k)
-    }
-
-    #[cfg(feature = "precomputed-tables")]
-    fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
-        tables::BASEPOINT_TABLE.mul_vartime(k)
-    }
 }
