@@ -20,7 +20,7 @@ use elliptic_curve::{
 // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 cpubits! {
     32 => {
-        #[cfg(not(p224_backend = "bignum"))]
+        #[cfg(not(p224_backend = "bigint"))]
         #[path = "field/p224_32.rs"]
         #[allow(
             dead_code,
@@ -32,7 +32,7 @@ cpubits! {
         mod field_impl;
     }
     64 => {
-        #[cfg(not(p224_backend = "bignum"))]
+        #[cfg(not(p224_backend = "bigint"))]
         #[path = "field/p224_64.rs"]
         #[allow(
             dead_code,
@@ -45,7 +45,7 @@ cpubits! {
     }
 }
 
-#[cfg(not(p224_backend = "bignum"))]
+#[cfg(not(p224_backend = "bigint"))]
 use self::field_impl::*;
 
 /// Constant representing the modulus serialized as hex.
@@ -73,14 +73,14 @@ primefield::monty_field_element! {
     doc: "Element in the finite field modulo `p = 2^{224} − 2^{96} + 1`."
 }
 
-#[cfg(p224_backend = "bignum")]
+#[cfg(p224_backend = "bigint")]
 primefield::monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
     uint: Uint
 }
 
-#[cfg(not(p224_backend = "bignum"))]
+#[cfg(not(p224_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -104,7 +104,7 @@ primefield::fiat_monty_field_arithmetic! {
 mod tests {
     use super::{FieldElement, Uint};
 
-    #[cfg(not(p224_backend = "bignum"))]
+    #[cfg(not(p224_backend = "bigint"))]
     use super::{
         FieldParams, fiat_p224_montgomery_domain_field_element, fiat_p224_msat,
         fiat_p224_non_montgomery_domain_field_element, fiat_p224_to_montgomery,
@@ -112,7 +112,7 @@ mod tests {
 
     primefield::test_primefield!(FieldElement, Uint);
 
-    #[cfg(not(p224_backend = "bignum"))]
+    #[cfg(not(p224_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,

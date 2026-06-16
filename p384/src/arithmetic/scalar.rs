@@ -22,11 +22,11 @@ use elliptic_curve::{
 
 cpubits! {
     32 => {
-        #[cfg(not(p384_backend = "bignum"))]
+        #[cfg(not(p384_backend = "bigint"))]
         use fiat_crypto::p384_scalar_32::*;
     }
     64 => {
-        #[cfg(not(p384_backend = "bignum"))]
+        #[cfg(not(p384_backend = "bigint"))]
         use fiat_crypto::p384_scalar_64::*;
     }
 }
@@ -56,14 +56,14 @@ primefield::monty_field_element! {
     doc: "Element in the NIST P-384 scalar field modulo `n`."
 }
 
-#[cfg(p384_backend = "bignum")]
+#[cfg(p384_backend = "bigint")]
 primefield::monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
     uint: U384
 }
 
-#[cfg(not(p384_backend = "bignum"))]
+#[cfg(not(p384_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -162,7 +162,7 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U384};
-    #[cfg(not(p384_backend = "bignum"))]
+    #[cfg(not(p384_backend = "bigint"))]
     use super::{
         ScalarParams, fiat_p384_scalar_montgomery_domain_field_element, fiat_p384_scalar_msat,
         fiat_p384_scalar_non_montgomery_domain_field_element, fiat_p384_scalar_to_montgomery,
@@ -178,7 +178,7 @@ mod tests {
 
     primefield::test_primefield!(Scalar, U384);
 
-    #[cfg(not(p384_backend = "bignum"))]
+    #[cfg(not(p384_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,

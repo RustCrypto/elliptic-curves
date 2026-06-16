@@ -18,21 +18,21 @@
 //! ## Backends
 //!
 //! This crate has support for two different field arithmetic backends which can be selected using
-//! `cfg(bp256_backend)`, e.g. to select the `bignum` backend:
+//! `cfg(bp256_backend)`, e.g. to select the `bigint` backend:
 //!
 //! ```console
-//! $ RUSTFLAGS='--cfg bp256_backend="bignum"' cargo test
+//! $ RUSTFLAGS='--cfg bp256_backend="bigint"' cargo test
 //! ```
 //!
 //! Or it can be set through [`.cargo/config`][buildrustflags]:
 //!
 //! ```toml
 //! [build]
-//! rustflags = ['--cfg', 'bp256_backend="bignum"']
+//! rustflags = ['--cfg', 'bp256_backend="bigint"']
 //! ```
 //!
 //! The available backends are:
-//! - `bignum`: experimental backend provided by [crypto-bigint]. May offer better performance in
+//! - `bigint`: experimental backend provided by [crypto-bigint]. May offer better performance in
 //!   some cases along with smaller code size, but might also have bugs.
 //! - `fiat` (default): formally verified implementation synthesized by [fiat-crypto] which should
 //!   be correct for all inputs (though there's a possibility of bugs in the code which glues to it)

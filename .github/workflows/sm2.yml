@@ -91,6 +91,6 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
       - env:
-          RUSTFLAGS: '--cfg sm2_backend="bignum"'
-          RUSTDOCFLAGS: '--cfg sm2_backend="bignum"'
+          RUSTFLAGS: '--cfg sm2_backend="bigint"'
+          RUSTDOCFLAGS: '--cfg sm2_backend="bigint"'
         run: cargo test --release --target ${{ matrix.target }} --all-features

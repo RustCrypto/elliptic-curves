@@ -21,7 +21,7 @@ use elliptic_curve::{
 // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 cpubits! {
     32 => {
-        #[cfg(not(bp384_backend = "bignum"))]
+        #[cfg(not(bp384_backend = "bigint"))]
         #[path = "scalar/bp384_scalar_32.rs"]
         #[allow(
             dead_code,
@@ -33,7 +33,7 @@ cpubits! {
         mod scalar_impl;
     }
     64 => {
-        #[cfg(not(bp384_backend = "bignum"))]
+        #[cfg(not(bp384_backend = "bigint"))]
         #[path = "scalar/bp384_scalar_64.rs"]
         #[allow(
             dead_code,
@@ -46,7 +46,7 @@ cpubits! {
     }
 }
 
-#[cfg(not(bp384_backend = "bignum"))]
+#[cfg(not(bp384_backend = "bigint"))]
 use self::scalar_impl::*;
 
 #[cfg(doc)]
@@ -68,14 +68,14 @@ primefield::monty_field_element! {
     doc: "Element in the brainpoolP384 scalar field modulo n"
 }
 
-#[cfg(bp384_backend = "bignum")]
+#[cfg(bp384_backend = "bigint")]
 primefield::monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
     uint: U384
 }
 
-#[cfg(not(bp384_backend = "bignum"))]
+#[cfg(not(bp384_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -128,7 +128,7 @@ impl IsHigh for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U384};
-    #[cfg(not(bp384_backend = "bignum"))]
+    #[cfg(not(bp384_backend = "bigint"))]
     use super::{
         ScalarParams, fiat_bp384_scalar_montgomery_domain_field_element, fiat_bp384_scalar_msat,
         fiat_bp384_scalar_non_montgomery_domain_field_element, fiat_bp384_scalar_to_montgomery,
@@ -136,7 +136,7 @@ mod tests {
 
     primefield::test_primefield!(Scalar, U384);
 
-    #[cfg(not(bp384_backend = "bignum"))]
+    #[cfg(not(bp384_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,
