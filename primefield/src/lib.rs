@@ -19,19 +19,10 @@ pub use crate::{
 };
 pub use array::typenum::consts;
 pub use bigint;
+pub use bigint::ByteOrder;
 pub use bigint::hybrid_array as array;
 pub use common;
 pub use ff;
 pub use rand_core;
 pub use subtle;
 pub use zeroize;
-
-/// Byte order used when encoding/decoding field elements as bytestrings.
-#[derive(Debug)]
-pub enum ByteOrder {
-    /// Big endian.
-    BigEndian,
-
-    /// Little endian.
-    LittleEndian,
-}
