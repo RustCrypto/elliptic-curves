@@ -80,7 +80,7 @@ impl<C: PrimeCurveParams, const WINDOW_SIZE: usize>
     /// Multiply `Point::generator` by the given scalar in constant-time, using the precomputed
     /// basepoint table to accelerate the scalar multiplication.
     pub fn mul(&self, k: &Scalar<C>) -> ProjectivePoint<C> {
-        let digits = Radix16Decomposition::<Radix16Digits<C>>::new(k, true);
+        let digits = Radix16Decomposition::<Radix16Digits<C>>::new(k);
         let len = FieldBytesSize::<C>::USIZE;
         let mut acc = self[len].select(digits[len * 2]);
         let mut acc2 = ProjectivePoint::<C>::IDENTITY;
@@ -107,7 +107,7 @@ impl<C: PrimeCurveParams, const WINDOW_SIZE: usize>
     /// used with them.
     /// </div>
     pub fn mul_vartime(&self, k: &Scalar<C>) -> ProjectivePoint<C> {
-        let digits = Radix16Decomposition::<Radix16Digits<C>>::new(k, true);
+        let digits = Radix16Decomposition::<Radix16Digits<C>>::new(k);
         let len = FieldBytesSize::<C>::USIZE;
         let mut acc = self[len].select_vartime(digits[len * 2]);
         let mut acc2 = ProjectivePoint::<C>::IDENTITY;

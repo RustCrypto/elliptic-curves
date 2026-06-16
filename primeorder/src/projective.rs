@@ -108,7 +108,7 @@ where
         Self: Double,
     {
         let table = LookupTable::new(*self);
-        let digits = Radix16Decomposition::new(k, C::FIELD_REPR_IS_BE);
+        let digits = Radix16Decomposition::new(k);
         lincomb::<C>(&[table], &[digits])
     }
 
@@ -118,7 +118,7 @@ where
         Self: Double,
     {
         let table = LookupTable::new(*self);
-        let digits = Radix16Decomposition::new(k, C::FIELD_REPR_IS_BE);
+        let digits = Radix16Decomposition::new(k);
         lincomb_vartime::<C>(&[table], &[digits])
     }
 }
@@ -448,7 +448,7 @@ where
             .collect();
         let digits: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| Radix16Decomposition::new(scalar, C::FIELD_REPR_IS_BE))
+            .map(|(_, scalar)| Radix16Decomposition::new(scalar))
             .collect();
 
         lincomb::<C>(&tables, &digits)
@@ -462,7 +462,7 @@ where
             .collect();
         let digits: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| Radix16Decomposition::new(scalar, C::FIELD_REPR_IS_BE))
+            .map(|(_, scalar)| Radix16Decomposition::new(scalar))
             .collect();
 
         lincomb_vartime::<C>(&tables, &digits)
@@ -475,18 +475,16 @@ where
 {
     fn lincomb(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
-        let digits: [_; N] = array::from_fn(|index| {
-            Radix16Decomposition::new(&points_and_scalars[index].1, C::FIELD_REPR_IS_BE)
-        });
+        let digits: [_; N] =
+            array::from_fn(|index| Radix16Decomposition::new(&points_and_scalars[index].1));
 
         lincomb::<C>(&tables, &digits)
     }
 
     fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
-        let digits: [_; N] = array::from_fn(|index| {
-            Radix16Decomposition::new(&points_and_scalars[index].1, C::FIELD_REPR_IS_BE)
-        });
+        let digits: [_; N] =
+            array::from_fn(|index| Radix16Decomposition::new(&points_and_scalars[index].1));
 
         lincomb_vartime::<C>(&tables, &digits)
     }

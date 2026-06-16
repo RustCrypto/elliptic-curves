@@ -19,6 +19,7 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
+use primeorder::PrimeFieldExt;
 
 cpubits! {
     32 => {
@@ -76,12 +77,6 @@ const FRAC_MODULUS_2: U256 = ORDER.as_ref().shr_vartime(1);
 /// textual formats, the binary data is encoded as hexadecimal.
 #[derive(Clone, Copy, Debug, Default, PartialOrd, Ord)]
 pub struct Scalar(pub(crate) U256);
-
-impl AsRef<Scalar> for Scalar {
-    fn as_ref(&self) -> &Scalar {
-        self
-    }
-}
 
 impl Scalar {
     /// Zero scalar.
@@ -175,6 +170,14 @@ impl Scalar {
         Self(U256::from_be_slice(bytes))
     }
 }
+
+impl AsRef<Scalar> for Scalar {
+    fn as_ref(&self) -> &Scalar {
+        self
+    }
+}
+
+impl DefaultIsZeroes for Scalar {}
 
 impl Field for Scalar {
     const ZERO: Self = Self::ZERO;
@@ -308,7 +311,7 @@ impl PrimeField for Scalar {
     }
 }
 
-impl DefaultIsZeroes for Scalar {}
+impl PrimeFieldExt for Scalar {}
 
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {

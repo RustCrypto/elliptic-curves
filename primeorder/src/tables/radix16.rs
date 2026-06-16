@@ -1,8 +1,9 @@
 //! Radix-16 signed-digit decomposition for constant-time scalar multiplication.
 
+use crate::PrimeFieldExt;
 use core::ops::{Add, Index};
 use elliptic_curve::{
-    FieldBytesSize, PrimeField,
+    FieldBytesSize,
     array::{Array, ArraySize, sizes::U1},
 };
 
@@ -27,17 +28,13 @@ impl<Digits: ArraySize> Radix16Decomposition<Digits> {
     /// decomposition can be negative, so we need an additional byte to store it.
     ///
     /// Assumes `x < 2^(4*(digits-1))`.
-    // TODO(tarcieri): get rid of `is_be` flag w\ e.g. zkcrypto/ff#158
-    pub fn new<Scalar: PrimeField>(scalar: &Scalar, is_be: bool) -> Self {
+    pub fn new<Scalar: PrimeFieldExt>(scalar: &Scalar) -> Self {
         // TODO(tarcieri): `debug_assert!` that `scalar < 2^(4*(digits-1))`
         let mut ret = Self::default();
 
         // Step 1: change radix.
         // Convert from big endian radix-256 (bytes) to radix-16 (nibbles).
-        let mut repr = scalar.to_repr();
-        if !is_be {
-            repr.as_mut().reverse();
-        }
+        let repr = scalar.to_be_repr();
         let bytes = repr.as_ref();
 
         for i in 0..(Digits::USIZE - 1) / 2 {
