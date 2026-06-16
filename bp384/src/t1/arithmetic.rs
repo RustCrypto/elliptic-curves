@@ -3,7 +3,7 @@
 use super::BrainpoolP384t1;
 use crate::{FieldElement, Scalar};
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
-use primeorder::{PrimeCurveParams, point_arithmetic};
+use primeorder::{PrimeCurveParams, backend, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<BrainpoolP384t1>;
@@ -30,6 +30,7 @@ impl PrimeCurveArithmetic for BrainpoolP384t1 {
 impl PrimeCurveParams for BrainpoolP384t1 {
     type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
+    type Backend = backend::VariableOnly;
 
     const EQUATION_A: FieldElement = FieldElement::from_hex_vartime(
         "8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b412b1da197fb71123acd3a729901d1a71874700133107ec50",

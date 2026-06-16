@@ -50,7 +50,7 @@ fn debug_assert_equation_a_is_zero<C: PrimeCurveParams>() {
 
 /// The 𝒂-coefficient of the short Weierstrass equation does not have specific
 /// properties which allow for an optimized implementation.
-pub struct EquationAIsGeneric {}
+pub struct EquationAIsGeneric;
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
     /// Implements complete addition for any curve
@@ -215,7 +215,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
 }
 
 /// The 𝒂-coefficient of the short Weierstrass equation is -3.
-pub struct EquationAIsMinusThree {}
+pub struct EquationAIsMinusThree;
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     /// Implements complete addition for curves with `a = -3`
@@ -325,7 +325,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
 }
 
 /// The 𝒂-coefficient of the short Weierstrass equation is 0.
-pub struct EquationAIsZero {}
+pub struct EquationAIsZero;
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     /// Implements complete addition for curves with `a = 0`

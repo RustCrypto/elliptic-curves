@@ -1,6 +1,6 @@
 //! ECDSA tests.
 
-#![cfg(feature = "arithmetic")]
+#![cfg(feature = "ecdsa")]
 
 use elliptic_curve::ops::Reduce;
 use p256::{

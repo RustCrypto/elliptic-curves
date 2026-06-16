@@ -14,6 +14,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+pub mod backend;
 #[cfg(feature = "hash2curve")]
 pub mod osswu;
 pub mod point_arithmetic;
@@ -26,6 +27,7 @@ mod tables;
 
 pub use crate::{
     affine::AffinePoint,
+    backend::Backend,
     projective::ProjectivePoint,
     tables::{LookupTable, Radix16Decomposition, Radix16Digits},
 };
@@ -36,12 +38,7 @@ pub use elliptic_curve::{
     point::Double,
 };
 
-use elliptic_curve::{
-    Curve, CurveArithmetic, Generate,
-    ops::{Invert, LinearCombination, MulVartime},
-    sec1,
-    subtle::CtOption,
-};
+use elliptic_curve::{Curve, CurveArithmetic, Generate, ops::Invert, sec1, subtle::CtOption};
 
 #[cfg(feature = "basepoint-table")]
 pub use crate::tables::BasepointTable;
@@ -62,6 +59,9 @@ pub trait PrimeCurveParams:
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
     type PointArithmetic: point_arithmetic::PointArithmetic<Self>;
 
+    /// Scalar arithmetic backend implementation.
+    type Backend: Backend<Self>;
+
     /// Coefficient `a` in the curve equation.
     const EQUATION_A: Self::FieldElement;
 
@@ -74,33 +74,6 @@ pub trait PrimeCurveParams:
     /// Are field element serializations for this curve big endian?
     // TODO(tarcieri): make this a property of the scalar type, e.g. zkcrypto/ff#158
     const FIELD_REPR_IS_BE: bool = true;
-
-    /// Multiplication by the generator.
-    ///
-    /// This is overridable to make it possible to plug in a basepoint table.
-    fn mul_by_generator(k: &Scalar<Self>) -> ProjectivePoint<Self> {
-        ProjectivePoint::GENERATOR * k
-    }
-
-    /// Variable-time multiplication by the generator.
-    ///
-    /// This is overridable to make it possible to plug in a basepoint table.
-    fn mul_by_generator_vartime(k: &Scalar<Self>) -> ProjectivePoint<Self> {
-        ProjectivePoint::GENERATOR.mul_vartime(k)
-    }
-
-    /// Multiply `a` by the generator of the prime-order subgroup, adding the result to the point
-    /// `P` multiplied by the scalar `b`, i.e. compute `aG + bP`.
-    fn mul_by_generator_and_mul_add_vartime(
-        a: &Scalar<Self>,
-        b_scalar: &Scalar<Self>,
-        b_point: &ProjectivePoint<Self>,
-    ) -> ProjectivePoint<Self> {
-        ProjectivePoint::<Self>::lincomb_vartime(&[
-            (ProjectivePoint::GENERATOR, *a),
-            (*b_point, *b_scalar),
-        ])
-    }
 }
 
 /// Trait for specifying a constant-time basepoint table for a given curve.
