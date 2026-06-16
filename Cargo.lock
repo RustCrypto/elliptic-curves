@@ -1005,6 +1005,7 @@ version = "0.14.0-rc.11"
 dependencies = [
  "elliptic-curve",
  "once_cell",
+ "primefield",
  "serdect",
 ]
 

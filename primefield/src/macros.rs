@@ -314,7 +314,7 @@ macro_rules! monty_field_element {
             }
         }
 
-        impl PrimeField for $fe {
+        impl $crate::ff::PrimeField for $fe {
             type Repr = $crate::MontyFieldBytes<$params, { <$params>::LIMBS }>;
 
             const MODULUS: &'static str =
@@ -350,6 +350,11 @@ macro_rules! monty_field_element {
             fn is_odd(&self) -> $crate::subtle::Choice {
                 self.0.is_odd()
             }
+        }
+
+        impl $crate::PrimeFieldExt for $fe {
+            const REPR_ENDIANNESS: $crate::ByteOrder =
+                <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::BYTE_ORDER;
         }
 
         $crate::field_op!($fe, Add, add, add);
@@ -794,8 +799,6 @@ macro_rules! monty_field_element_doc {
             "- [`PrimeField`] represents elements of prime fields and provides:\n",
             "  - `from_repr`/`to_repr` for converting field elements from/to big integers.\n",
             "  - `MULTIPLICATIVE_GENERATOR` and `ROOT_OF_UNITY` constants.\n",
-            "- [`PrimeFieldBits`] operations over field elements represented as bits ",
-            "  (requires `bits` feature)\n",
             "\n",
             "Please see the documentation for the relevant traits for more information.\n"
         )

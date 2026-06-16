@@ -49,5 +49,4 @@ impl PrimeCurveParams for BignP256 {
             "936A510418CF291E52F608C4663991785D83D651A3C9E45C9FD616FB3CFCF76B",
         ),
     );
-    const FIELD_REPR_IS_BE: bool = false;
 }

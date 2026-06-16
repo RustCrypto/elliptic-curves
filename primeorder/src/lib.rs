@@ -34,21 +34,26 @@ pub use crate::{
 pub use elliptic_curve::{
     self, Field, FieldBytes, PrimeCurve, PrimeField, Scalar,
     array::{self, ArraySize, sizes::U1},
-    bigint::modular::Retrieve,
+    bigint::{ByteOrder, modular::Retrieve},
     point::Double,
 };
+pub use primefield::PrimeFieldExt;
 
 use elliptic_curve::{Curve, CurveArithmetic, Generate, ops::Invert, sec1, subtle::CtOption};
 
 #[cfg(feature = "basepoint-table")]
 pub use crate::tables::BasepointTable;
 
-/// Parameters for elliptic curves of prime order which can be described by the short
-/// Weierstrass equation.
+/// Parameters for elliptic curves of prime order which can be described by the short Weierstrass
+/// equation.
 pub trait PrimeCurveParams:
     Curve<FieldBytesSize: sec1::ModulusSize>
     + PrimeCurve
-    + CurveArithmetic<AffinePoint = AffinePoint<Self>, ProjectivePoint = ProjectivePoint<Self>>
+    + CurveArithmetic<
+        AffinePoint = AffinePoint<Self>,
+        ProjectivePoint = ProjectivePoint<Self>,
+        Scalar: PrimeFieldExt,
+    >
 {
     /// Base field element type.
     type FieldElement: Generate
@@ -70,10 +75,6 @@ pub trait PrimeCurveParams:
 
     /// Generator point's affine coordinates: (x, y).
     const GENERATOR: (Self::FieldElement, Self::FieldElement);
-
-    /// Are field element serializations for this curve big endian?
-    // TODO(tarcieri): make this a property of the scalar type, e.g. zkcrypto/ff#158
-    const FIELD_REPR_IS_BE: bool = true;
 }
 
 /// Trait for specifying a constant-time basepoint table for a given curve.

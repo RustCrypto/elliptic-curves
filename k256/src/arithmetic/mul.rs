@@ -248,8 +248,8 @@ fn lincomb(
         );
 
         digits[i] = (
-            Radix16Decomposition::<U33>::new(&r1_c, true),
-            Radix16Decomposition::<U33>::new(&r2_c, true),
+            Radix16Decomposition::<U33>::new(&r1_c),
+            Radix16Decomposition::<U33>::new(&r2_c),
         )
     });
 
@@ -355,7 +355,7 @@ impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[cfg(feature = "precomputed-tables")]
     pub(super) fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
-        let digits = Radix16Decomposition::<U65>::new(k, true);
+        let digits = Radix16Decomposition::<U65>::new(k);
         let table = *BASEPOINT_TABLE;
         let mut acc = table[32].select(digits[64]);
         let mut acc2 = ProjectivePoint::IDENTITY;

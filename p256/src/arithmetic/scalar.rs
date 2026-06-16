@@ -21,6 +21,7 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
+use primefield::PrimeFieldExt;
 
 cpubits! {
     32 => {
@@ -306,6 +307,8 @@ impl PrimeField for Scalar {
         self.0.is_odd().into()
     }
 }
+
+impl PrimeFieldExt for Scalar {}
 
 impl Retrieve for Scalar {
     type Output = U256;

@@ -10,8 +10,8 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+use primefield::ByteOrder;
 
-// TODO(tarcieri): remove this when we can use `const _` to silence warnings
 cpubits! {
     32 => {
         #[path = "scalar/bignp256_scalar_32.rs"]
@@ -23,7 +23,7 @@ cpubits! {
             clippy::identity_op,
             clippy::needless_lifetimes,
             clippy::too_many_arguments,
-            clippy::unnecessary_cast
+            clippy::unnecessary_cast,
         )]
         mod scalar_impl;
     }
@@ -52,7 +52,7 @@ primefield::monty_field_params! {
     name: ScalarParams,
     modulus: ORDER_HEX,
     uint: U256,
-    byte_order: primefield::ByteOrder::LittleEndian,
+    byte_order: ByteOrder::LittleEndian,
     multiplicative_generator: 3,
     doc: "Montgomery parameters for the bign-curve256v1 scalar modulus"
 }

@@ -12,10 +12,12 @@ mod dev;
 mod error;
 mod macros;
 mod monty;
+mod traits;
 
 pub use crate::{
     error::{Error, Result},
     monty::{MontyFieldBytes, MontyFieldElement, MontyFieldParams, compute_t},
+    traits::PrimeFieldExt,
 };
 pub use array::typenum::consts;
 pub use bigint;
