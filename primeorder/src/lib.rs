@@ -38,7 +38,7 @@ pub use elliptic_curve::{
 
 use elliptic_curve::{
     Curve, CurveArithmetic, Generate,
-    ops::{Add, Invert, LinearCombination, MulVartime},
+    ops::{Invert, LinearCombination, MulVartime},
     sec1,
     subtle::CtOption,
 };
@@ -46,13 +46,11 @@ use elliptic_curve::{
 #[cfg(feature = "basepoint-table")]
 pub use crate::tables::BasepointTable;
 
-/// Parameters for elliptic curves of prime order which can be described by the
-/// short Weierstrass equation.
+/// Parameters for elliptic curves of prime order which can be described by the short
+/// Weierstrass equation.
 pub trait PrimeCurveParams:
-    Curve<
-        FieldBytesSize: Add<Output: Add<U1, Output: ArraySize>> // Radix16Digits
-                            + sec1::ModulusSize<CompressedPointSize: ArraySize<ArrayType<u8>: Copy>>,
-    > + PrimeCurve
+    Curve<FieldBytesSize: sec1::ModulusSize>
+    + PrimeCurve
     + CurveArithmetic<AffinePoint = AffinePoint<Self>, ProjectivePoint = ProjectivePoint<Self>>
 {
     /// Base field element type.
