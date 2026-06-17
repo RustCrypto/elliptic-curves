@@ -531,7 +531,7 @@ impl MulVartime<&Scalar> for ProjectivePoint {
 }
 
 impl MulByGeneratorVartime for ProjectivePoint {
-    #[cfg(feature = "precomputed-tables")]
+    #[inline]
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
         Self::mul_by_generator_vartime(k)
     }
