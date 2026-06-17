@@ -560,6 +560,8 @@ impl MulAssign<&Scalar> for ProjectivePoint {
 mod tests {
     use super::*;
     use crate::arithmetic::{ProjectivePoint, Scalar};
+
+    #[cfg(feature = "getrandom")]
     use elliptic_curve::Generate;
 
     #[test]
