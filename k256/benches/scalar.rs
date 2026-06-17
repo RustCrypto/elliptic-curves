@@ -7,9 +7,8 @@ use hex_literal::hex;
 use k256::{
     ProjectivePoint, Scalar,
     elliptic_curve::{
-        Group,
         group::ff::PrimeField,
-        ops::{LinearCombination, MulByGeneratorVartime, MulVartime},
+        ops::{LinearCombination, MulVartime},
     },
 };
 use std::hint::black_box;

@@ -5,7 +5,7 @@ use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
 use elliptic_curve::{
-    Generate, Group,
+    Generate,
     ops::Reduce,
     rand_core::{CryptoRng, TryCryptoRng},
     subtle::ConditionallySelectable,
