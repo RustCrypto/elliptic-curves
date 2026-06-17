@@ -3,10 +3,10 @@
 #![cfg(feature = "arithmetic")]
 
 use elliptic_curve::{
-    BatchNormalize, Group,
+    BatchNormalize,
     array::Array,
     consts::U32,
-    ops::{LinearCombination, MulByGeneratorVartime, MulVartime, Reduce, ReduceNonZero},
+    ops::{LinearCombination, MulVartime, Reduce, ReduceNonZero},
     point::NonIdentity,
 };
 use k256::{FieldBytes, NonZeroScalar, ProjectivePoint, Scalar};
