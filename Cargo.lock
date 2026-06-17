@@ -88,7 +88,7 @@ dependencies = [
 
 [[package]]
 name = "bignp256"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "belt-block",
  "belt-hash",
@@ -149,7 +149,7 @@ dependencies = [
 
 [[package]]
 name = "bp256"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -161,7 +161,7 @@ dependencies = [
 
 [[package]]
 name = "bp384"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -433,9 +433,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.19"
+version = "0.17.0-rc.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fcddae1289a08e614a83d155a070f54c1803196e92089b8299e2738eb74d3e4"
+checksum = "0f7195c1205cec99025b3004e8034e1ddc12746333aa0a3945df7f9b80882ca2"
 dependencies = [
  "der",
  "digest",
@@ -489,8 +489,9 @@ checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.34"
-source = "git+https://github.com/RustCrypto/traits#a4525fbbe6edaead3a78d7ba4981175fa574f2d8"
+version = "0.14.0-rc.35"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51c58d86e2f3cebbf2dfd94c4bf049585c7def71058ba506bfdafcb57652a34b"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -735,7 +736,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "cpubits",
  "criterion",
@@ -840,7 +841,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "p192"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -852,7 +853,7 @@ dependencies = [
 
 [[package]]
 name = "p224"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -865,7 +866,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -881,7 +882,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -898,7 +899,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "base16ct",
  "criterion",
@@ -988,7 +989,7 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "crypto-bigint",
  "crypto-common",
@@ -1000,7 +1001,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "elliptic-curve",
  "once_cell",
@@ -1357,7 +1358,7 @@ dependencies = [
 
 [[package]]
 name = "sm2"
-version = "0.14.0-rc.11"
+version = "0.14.0-rc.12"
 dependencies = [
  "criterion",
  "der",
