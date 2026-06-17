@@ -34,6 +34,9 @@
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
+#[cfg(feature = "alloc")]
+mod wnaf;
+
 use super::{
     ProjectivePoint,
     scalar::{Scalar, WideScalar},
@@ -46,6 +49,12 @@ use elliptic_curve::{
     subtle::ConditionallySelectable,
 };
 use primeorder::Radix16Decomposition;
+
+#[cfg(feature = "alloc")]
+use {
+    self::wnaf::{WnafBase, WnafScalar},
+    primeorder::PrimeFieldExt,
+};
 
 #[cfg(feature = "precomputed-tables")]
 use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
@@ -77,6 +86,18 @@ const G2: Scalar = Scalar::from_bytes_unchecked(&[
     0xe4, 0x43, 0x7e, 0xd6, 0x01, 0x0e, 0x88, 0x28, 0x6f, 0x54, 0x7f, 0xa9, 0x0a, 0xbf, 0xe4, 0xc4,
     0x22, 0x12, 0x08, 0xac, 0x9d, 0xf5, 0x06, 0xc6, 0x15, 0x71, 0xb4, 0xae, 0x8a, 0xc4, 0x7f, 0x71,
 ]);
+
+/// wNAF window width for GLV vartime multiplication.
+#[cfg(feature = "alloc")]
+const WNAF_WINDOW: usize = 5;
+
+/// Number of little-endian bytes to feed into `WnafScalar::from_le_bytes` for a GLV half-scalar.
+/// GLV guarantees magnitude < 2^128 (16 bytes).
+///
+/// We use 17 bytes (136 bits) to give headroom for its carry bit without relying on the
+/// trailing-carry special case.
+#[cfg(feature = "alloc")]
+const GLV_LE_BYTES: usize = 17;
 
 /*
  * Proof for decompose_scalar's bounds.
@@ -413,8 +434,52 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
 }
 
 #[inline]
+#[cfg(not(feature = "alloc"))]
 fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     ProjectivePoint::lincomb_vartime(&[(*x, *k)])
+}
+
+/// Variable-time `k * self` using width-5 wNAF + GLV endomorphism.
+#[cfg(feature = "alloc")]
+fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
+    let (bases, scalars) = decompose_glv_wnaf(x, k);
+    WnafBase::multiscalar_mul(&scalars, &bases)
+}
+
+/// GLV-decompose `k` for `x`: two `(WnafBase, WnafScalar)` pairs representing `r1 * self_signed`
+/// and `r2 * endomorphism(self_signed)`, with signs folded into the points.
+#[cfg(feature = "alloc")]
+fn decompose_glv_wnaf(
+    x: &ProjectivePoint,
+    k: &Scalar,
+) -> (
+    [WnafBase<ProjectivePoint, WNAF_WINDOW>; 2],
+    [WnafScalar<Scalar, WNAF_WINDOW>; 2],
+) {
+    let (r1, r2) = decompose_scalar(k);
+    let r1_neg = bool::from(r1.is_high());
+    let r2_neg = bool::from(r2.is_high());
+    let r1 = if r1_neg { -r1 } else { r1 };
+    let r2 = if r2_neg { -r2 } else { r2 };
+
+    let p1 = if r1_neg { -*x } else { *x };
+    let p_beta = x.endomorphism();
+    let p2 = if r2_neg { -p_beta } else { p_beta };
+
+    let bases = [WnafBase::new(p1), WnafBase::new(p2)];
+
+    // GLV guarantees each half-scalar fits in `GLV_LE_BYTES`, so the truncated little-endian
+    // encoding round-trips and `from_le_bytes`'s canonical-range check always succeeds.
+    //
+    // Should that invariant ever fail to hold, fall back to the full-width `new` rather than
+    // panicking; it produces an identical (just slower) result for any in-range scalar.
+    let scalars = [
+        WnafScalar::from_le_bytes(&r1.to_le_repr()[..GLV_LE_BYTES])
+            .unwrap_or_else(|| WnafScalar::new(&r1)),
+        WnafScalar::from_le_bytes(&r2.to_le_repr()[..GLV_LE_BYTES])
+            .unwrap_or_else(|| WnafScalar::new(&r2)),
+    ];
+    (bases, scalars)
 }
 
 impl Mul<Scalar> for ProjectivePoint {
@@ -466,11 +531,16 @@ impl MulVartime<&Scalar> for ProjectivePoint {
 }
 
 impl MulByGeneratorVartime for ProjectivePoint {
-    // With precomputed basepoint tables, fixed-base multiplication beats GLV+wNAF. Otherwise use
-    // the (alloc-only) GLV path, falling back to plain multiplication when neither is available.
     #[cfg(feature = "precomputed-tables")]
     fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
-        Self::mul_by_generator(k)
+        Self::mul_by_generator_vartime(k)
+    }
+
+    #[cfg(feature = "alloc")]
+    fn mul_by_generator_and_mul_add_vartime(a: &Self::Scalar, b: &Self::Scalar, p: &Self) -> Self {
+        let ([gb0, gb1], [gs0, gs1]) = decompose_glv_wnaf(&ProjectivePoint::GENERATOR, a);
+        let ([pb0, pb1], [ps0, ps1]) = decompose_glv_wnaf(p, b);
+        WnafBase::multiscalar_mul(&[gs0, gs1, ps0, ps1], &[gb0, gb1, pb0, pb1])
     }
 }
 
