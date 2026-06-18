@@ -54,12 +54,20 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
     let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("lincomb via mul+add", |b| {
+    group.bench_function("lincomb (unoptimized, 2-term)", |b| {
         b.iter(|| black_box(p) * black_box(s) + black_box(p) * black_box(s))
     });
-    group.bench_function("lincomb()", |b| {
+    group.bench_function("lincomb (optimized, 2-term)", |b| {
         b.iter(|| {
             ProjectivePoint::lincomb(&[(black_box(p), black_box(s)), (black_box(p), black_box(s))])
+        })
+    });
+    group.bench_function("lincomb_vartime (2-term)", |b| {
+        b.iter(|| {
+            ProjectivePoint::lincomb_vartime(&[
+                (black_box(p), black_box(s)),
+                (black_box(p), black_box(s)),
+            ])
         })
     });
 }
