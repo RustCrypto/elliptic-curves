@@ -728,13 +728,12 @@ mod tests {
         Scalar,
         test_vectors::group::{ADD_TEST_VECTORS, MUL_TEST_VECTORS},
     };
-    use elliptic_curve::{
-        BatchNormalize, CurveGroup, Generate,
-        group::{CurveAffine, ff::PrimeField},
-    };
+    use elliptic_curve::group::{CurveAffine, ff::PrimeField};
 
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
     use alloc::vec::Vec;
+    #[cfg(feature = "getrandom")]
+    use elliptic_curve::{BatchNormalize, CurveGroup, Generate};
 
     #[test]
     fn affine_to_projective() {
@@ -756,8 +755,8 @@ mod tests {
     #[test]
     #[cfg(feature = "getrandom")]
     fn batch_normalize_array() {
-        let k: Scalar = Scalar::generate();
-        let l: Scalar = Scalar::generate();
+        let k = Scalar::generate();
+        let l = Scalar::generate();
         let g = ProjectivePoint::mul_by_generator(&k);
         let h = ProjectivePoint::mul_by_generator(&l);
 

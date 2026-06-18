@@ -101,6 +101,9 @@ jobs:
           targets: ${{ matrix.target }}
       - run: cargo check --target ${{ matrix.target }} --all-features
       - run: cargo test --release --target ${{ matrix.target }} --no-default-features
+      - run: cargo test --release --target ${{ matrix.target }} --no-default-features --features arithmetic
+      - run: cargo test --release --target ${{ matrix.target }} --no-default-features --features alloc,arithmetic
+      - run: cargo test --release --target ${{ matrix.target }} --no-default-features --features arithmetic,critical-section,precomputed-tables
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
 

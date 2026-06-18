@@ -740,7 +740,7 @@ mod tests {
         array::Array,
         bigint::{ArrayEncoding, U256, U512},
         ff::{Field, PrimeField},
-        ops::{BatchInvert, Reduce},
+        ops::Reduce,
         scalar::IsHigh,
     };
     use num_bigint::{BigUint, ToBigUint};
@@ -748,7 +748,7 @@ mod tests {
     use proptest::prelude::*;
 
     #[cfg(feature = "getrandom")]
-    use elliptic_curve::{Generate, common::getrandom::SysRng};
+    use elliptic_curve::{Generate, common::getrandom::SysRng, ops::BatchInvert};
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {

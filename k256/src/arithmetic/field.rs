@@ -510,18 +510,18 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
 
 #[cfg(test)]
 mod tests {
-    use elliptic_curve::Generate;
-    use elliptic_curve::ff::{Field, PrimeField};
-    use elliptic_curve::ops::BatchInvert;
-    use num_bigint::{BigUint, ToBigUint};
-    use proptest::prelude::*;
-
     use super::FieldElement;
     use crate::{
         FieldBytes,
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         test_vectors::field::DBL_TEST_VECTORS,
     };
+    use elliptic_curve::ff::{Field, PrimeField};
+    use num_bigint::{BigUint, ToBigUint};
+    use proptest::prelude::*;
+
+    #[cfg(feature = "getrandom")]
+    use elliptic_curve::{Generate, ops::BatchInvert};
 
     impl From<&BigUint> for FieldElement {
         fn from(x: &BigUint) -> Self {
