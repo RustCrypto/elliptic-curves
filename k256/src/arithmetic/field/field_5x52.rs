@@ -189,12 +189,6 @@ impl FieldElement5x52 {
         (self.0[0] as u8 & 1).into()
     }
 
-    /// The maximum number `m` for which `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64`
-    #[cfg(debug_assertions)]
-    pub const fn max_magnitude() -> u32 {
-        2047u32
-    }
-
     /// Returns -self, treating it as a value of given magnitude.
     /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
     /// Raises the magnitude by 1.

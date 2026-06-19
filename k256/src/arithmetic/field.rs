@@ -2,23 +2,15 @@
 
 #![allow(clippy::assign_op_pattern, clippy::op_ref)]
 
-use cpubits::{cfg_if, cpubits};
+mod lazy;
+
+pub use lazy::LazyFieldElement;
+
+use cpubits::cpubits;
 
 cpubits! {
     32 => { mod field_10x26; }
     64 => { mod field_5x52; }
-}
-
-cfg_if! {
-    if #[cfg(debug_assertions)] {
-        mod field_impl;
-        use field_impl::FieldElementImpl;
-    } else {
-        cpubits! {
-            32 => { use field_10x26::FieldElement10x26 as FieldElementImpl; }
-            64 => { use field_5x52::FieldElement5x52 as FieldElementImpl; }
-        }
-    }
 }
 
 use crate::FieldBytes;
@@ -42,15 +34,26 @@ use num_bigint::{BigUint, ToBigUint};
 const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
 
 /// An element in the finite field used for curve coordinates.
+///
+/// `FieldElement` is always normalized — the represented value is guaranteed to be
+/// in the range `[0, p)`. Arithmetic operations on `FieldElement` delegate to
+/// `LazyFieldElement` internally and normalize the result, so `is_odd()`, `to_bytes()`,
+/// `retrieve()`, and all other operations that require a canonical representative
+/// are safe without explicit normalization.
+///
+/// For internal point arithmetic, `LazyFieldElement` is used directly to avoid
+/// the cost of normalizing after every intermediate operation.
+///
+/// See also `LazyFieldElement` for the lazily-normalized variant used internally.
 #[derive(Clone, Copy, Debug)]
-pub struct FieldElement(FieldElementImpl);
+pub struct FieldElement(LazyFieldElement);
 
 impl FieldElement {
     /// Zero element.
-    pub const ZERO: Self = Self(FieldElementImpl::ZERO);
+    pub const ZERO: Self = Self(LazyFieldElement::ZERO);
 
     /// Multiplicative identity.
-    pub const ONE: Self = Self(FieldElementImpl::ONE);
+    pub const ONE: Self = Self(LazyFieldElement::ONE);
 
     /// Determine if this `FieldElement` is zero.
     ///
@@ -67,7 +70,7 @@ impl FieldElement {
     ///
     /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_even(&self) -> Choice {
-        !self.0.is_odd()
+        !self.is_odd()
     }
 
     /// Determine if this `FieldElement` is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -82,7 +85,7 @@ impl FieldElement {
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
     /// Does not check the result for being in the correct range.
     pub(crate) const fn from_bytes_unchecked(bytes: &[u8; 32]) -> Self {
-        Self(FieldElementImpl::from_bytes_unchecked(bytes))
+        Self(LazyFieldElement::from_bytes_unchecked(bytes))
     }
 
     /// Attempts to parse the given byte array as an SEC1-encoded field element.
@@ -90,17 +93,17 @@ impl FieldElement {
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
-        FieldElementImpl::from_bytes(bytes).map(Self)
+        LazyFieldElement::from_bytes(bytes).map(Self)
     }
 
     /// Convert a `u64` to a field element.
     pub const fn from_u64(w: u64) -> Self {
-        Self(FieldElementImpl::from_u64(w))
+        Self(LazyFieldElement::from_u64(w))
     }
 
     /// Returns the SEC1 encoding of this field element.
     pub fn to_bytes(self) -> FieldBytes {
-        self.0.normalize().to_bytes()
+        self.normalize().0.to_bytes()
     }
 
     /// Returns -self, treating it as a value of given magnitude.
@@ -110,12 +113,14 @@ impl FieldElement {
     }
 
     /// Fully normalizes the field element.
+    ///
     /// Brings the magnitude to 1 and modulo reduces the value.
     pub fn normalize(&self) -> Self {
         Self(self.0.normalize())
     }
 
     /// Weakly normalizes the field element.
+    ///
     /// Brings the magnitude to 1, but does not guarantee the value to be less than the modulus.
     pub fn normalize_weak(&self) -> Self {
         Self(self.0.normalize_weak())
@@ -135,20 +140,15 @@ impl FieldElement {
     /// Returns 2*self.
     /// Doubles the magnitude.
     pub fn double(&self) -> Self {
-        Self(self.0.add(&(self.0)))
+        *self + *self
     }
 
-    /// Returns self * rhs mod p
-    /// Brings the magnitude to 1 (but doesn't normalize the result).
-    /// The magnitudes of arguments should be <= 8.
+    /// Returns self * rhs mod p.
     pub fn mul(&self, rhs: &Self) -> Self {
-        Self(self.0.mul(&(rhs.0)))
+        Self(self.0.mul(&rhs.0))
     }
 
     /// Returns self * self.
-    ///
-    /// Brings the magnitude to 1 (but doesn't normalize the result).
-    /// The magnitudes of arguments should be <= 8.
     pub fn square(&self) -> Self {
         Self(self.0.square())
     }
@@ -164,28 +164,27 @@ impl FieldElement {
 
     /// Returns the multiplicative inverse of self, if self is non-zero.
     ///
-    /// The result has magnitude 1 and is normalized.
+    /// The result is normalized.
     pub fn invert(&self) -> CtOption<Self> {
         let inv = self
             .retrieve()
             .invert_odd_mod(const { &Odd::from_be_hex(MODULUS_HEX) });
 
-        CtOption::from(inv).map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
+        CtOption::from(inv).map(|uint| Self(LazyFieldElement::from_u256_unchecked(uint)))
     }
 
     /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
     ///
-    /// The result has magnitude 1 and is normalized.
+    /// The result is normalized.
     pub fn invert_vartime(&self) -> CtOption<Self> {
         let inv = self
             .retrieve()
             .invert_odd_mod_vartime(const { &Odd::from_be_hex(MODULUS_HEX) });
 
-        CtOption::from(inv).map(|uint| Self(FieldElementImpl::from_u256_unchecked(uint)))
+        CtOption::from(inv).map(|uint| Self(LazyFieldElement::from_u256_unchecked(uint)))
     }
 
     /// Returns the square root of self mod p, or `None` if no square root exists.
-    /// The result has magnitude 1, but is not normalized.
     pub fn sqrt(&self) -> CtOption<Self> {
         /*
         Given that p is congruent to 3 mod 4, we can compute the square root of
@@ -291,19 +290,19 @@ impl PrimeField for FieldElement {
         "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
     const NUM_BITS: u32 = 256;
     const CAPACITY: u32 = 255;
-    const TWO_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+    const TWO_INV: Self = Self(LazyFieldElement::from_bytes_unchecked(&[
         0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0xff,
         0xfe, 0x18,
     ]));
     const MULTIPLICATIVE_GENERATOR: Self = Self::from_u64(3);
     const S: u32 = 1;
-    const ROOT_OF_UNITY: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+    const ROOT_OF_UNITY: Self = Self(LazyFieldElement::from_bytes_unchecked(&[
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
         0xfc, 0x2e,
     ]));
-    const ROOT_OF_UNITY_INV: Self = Self(FieldElementImpl::from_bytes_unchecked(&[
+    const ROOT_OF_UNITY_INV: Self = Self(LazyFieldElement::from_bytes_unchecked(&[
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff,
         0xfc, 0x2e,
@@ -334,13 +333,13 @@ impl Retrieve for FieldElement {
 impl ConditionallySelectable for FieldElement {
     #[inline(always)]
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        Self(FieldElementImpl::conditional_select(&(a.0), &(b.0), choice))
+        Self(LazyFieldElement::conditional_select(&a.0, &b.0, choice))
     }
 }
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {
-        self.0.ct_eq(&(other.0))
+        LazyFieldElement::ct_eq(&self.0, &other.0)
     }
 }
 
@@ -356,13 +355,13 @@ impl Eq for FieldElement {}
 
 impl From<u64> for FieldElement {
     fn from(k: u64) -> Self {
-        Self(FieldElementImpl::from_u64(k))
+        Self(LazyFieldElement::from_u64(k))
     }
 }
 
 impl PartialEq for FieldElement {
     fn eq(&self, other: &Self) -> bool {
-        self.0.ct_eq(&(other.0)).into()
+        bool::from(Self::ct_eq(self, other))
     }
 }
 
@@ -370,7 +369,7 @@ impl Add<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: FieldElement) -> FieldElement {
-        FieldElement(self.0.add(&(other.0)))
+        FieldElement(self.0.add(&other.0))
     }
 }
 
@@ -378,7 +377,7 @@ impl Add<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.add(&(other.0)))
+        FieldElement(self.0.add(&other.0))
     }
 }
 
@@ -386,7 +385,7 @@ impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.add(&(other.0)))
+        FieldElement(self.0.add(&other.0))
     }
 }
 
@@ -434,7 +433,7 @@ impl Mul<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&(other.0)))
+        FieldElement(self.0.mul(&other.0))
     }
 }
 
@@ -443,7 +442,7 @@ impl Mul<&FieldElement> for FieldElement {
 
     #[inline(always)]
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&(other.0)))
+        FieldElement(self.0.mul(&other.0))
     }
 }
 
@@ -451,7 +450,7 @@ impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&(other.0)))
+        FieldElement(self.0.mul(&other.0))
     }
 }
 
@@ -508,6 +507,18 @@ impl<'a> Product<&'a FieldElement> for FieldElement {
     }
 }
 
+impl From<LazyFieldElement> for FieldElement {
+    fn from(lazy: LazyFieldElement) -> Self {
+        Self(lazy.normalize())
+    }
+}
+
+impl From<FieldElement> for LazyFieldElement {
+    fn from(fe: FieldElement) -> Self {
+        fe.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::FieldElement;
@@ -554,7 +565,6 @@ mod tests {
 
     #[test]
     fn root_of_unity_constant() {
-        // ROOT_OF_UNITY^{2^s} mod m == 1
         assert_eq!(
             FieldElement::ROOT_OF_UNITY
                 .pow_vartime([1u64 << FieldElement::S, 0, 0, 0])
@@ -562,7 +572,6 @@ mod tests {
             FieldElement::ONE
         );
 
-        // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
         assert_eq!(
             FieldElement::MULTIPLICATIVE_GENERATOR
                 .pow_vartime(T)
@@ -581,7 +590,6 @@ mod tests {
 
     #[test]
     fn delta_constant() {
-        // DELTA^{t} mod m == 1
         assert_eq!(
             FieldElement::DELTA.pow_vartime(T).normalize(),
             FieldElement::ONE
@@ -611,8 +619,8 @@ mod tests {
         assert_eq!(
             FieldElement::from_bytes(
                 &[
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 1
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 1
                 ]
                 .into()
             )
@@ -630,8 +638,8 @@ mod tests {
         assert_eq!(
             FieldElement::ONE.to_bytes(),
             [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 1
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 1
             ]
         );
     }
@@ -686,7 +694,7 @@ mod tests {
 
     #[test]
     fn invert_vartime() {
-        assert!(bool::from(FieldElement::ZERO.invert().is_none()));
+        assert!(bool::from(FieldElement::ZERO.invert_vartime().is_none()));
 
         let one = FieldElement::ONE;
         assert_eq!(one.invert_vartime().unwrap().normalize(), one);
@@ -716,7 +724,7 @@ mod tests {
         let l: FieldElement = FieldElement::generate();
 
         let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`
+        let field_elements = vec![k, l];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
 
         assert_eq!(expected[0], actual[0].normalize());
@@ -731,39 +739,10 @@ mod tests {
         assert_eq!(four.sqrt().unwrap().normalize(), two.normalize());
     }
 
-    #[test]
-    #[cfg_attr(
-        debug_assertions,
-        should_panic(expected = "assertion failed: self.normalized")
-    )]
-    fn unnormalized_is_odd() {
-        // This is a regression test for https://github.com/RustCrypto/elliptic-curves/issues/529
-        // where `is_odd()` in debug mode force-normalized its argument
-        // instead of checking that it is already normalized.
-        // As a result, in release (where normalization didn't happen) `is_odd()`
-        // could return an incorrect value.
-
-        let x = FieldElement::from_bytes_unchecked(&[
-            61, 128, 156, 189, 241, 12, 174, 4, 80, 52, 238, 78, 188, 251, 9, 188, 95, 115, 38, 6,
-            212, 168, 175, 174, 211, 232, 208, 14, 182, 45, 59, 122,
-        ]);
-        // Produces an unnormalized FieldElement with magnitude 1
-        // (we cannot create one directly).
-        let y = x.sqrt().unwrap();
-
-        // This is fine.
-        assert!(y.normalize().is_odd().unwrap_u8() == 0);
-
-        // This panics since `y` is not normalized.
-        let _result = y.is_odd();
-    }
-
     prop_compose! {
         fn field_element()(bytes in any::<[u8; 32]>()) -> FieldElement {
             let mut res = bytes_to_biguint(&bytes);
             let m = FieldElement::modulus_as_biguint();
-            // Modulus is 256 bit long, same as the maximum `res`,
-            // so this is guaranteed to land us in the correct range.
             if res >= m {
                 res -= m;
             }
@@ -772,7 +751,6 @@ mod tests {
     }
 
     proptest! {
-
         #[test]
         fn fuzzy_add(
             a in field_element(),
@@ -835,7 +813,6 @@ mod tests {
             let possible_sqrt = (&m - &a_bi) % &m;
             let res_ref2 = FieldElement::from(&possible_sqrt);
             let res_test = sqr.sqrt().unwrap().normalize();
-            // FIXME: is there a rule which square root is returned?
             assert!(res_test == res_ref1 || res_test == res_ref2);
         }
 

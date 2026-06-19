@@ -247,12 +247,6 @@ impl FieldElement10x26 {
         (self.0[0] as u8 & 1).into()
     }
 
-    // The maximum number `m` for which `0x3FFFFFF * 2 * (m + 1) < 2^32`
-    #[cfg(debug_assertions)]
-    pub const fn max_magnitude() -> u32 {
-        31u32
-    }
-
     /// Returns -self, treating it as a value of given magnitude.
     /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
     pub const fn negate(&self, magnitude: u32) -> Self {
