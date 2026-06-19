@@ -60,6 +60,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    #[inline]
     pub fn is_zero(&self) -> Choice {
         self.0.is_zero()
     }
@@ -69,6 +70,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    #[inline]
     pub fn is_even(&self) -> Choice {
         !self.is_odd()
     }
@@ -78,6 +80,7 @@ impl FieldElement {
     /// # Returns
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
+    #[inline]
     pub fn is_odd(&self) -> Choice {
         self.0.is_odd()
     }
@@ -92,6 +95,7 @@ impl FieldElement {
     ///
     /// Returns None if the byte array does not contain a big-endian integer in the range
     /// [0, p).
+    #[inline]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         LazyFieldElement::from_bytes(bytes).map(Self)
     }
@@ -102,14 +106,19 @@ impl FieldElement {
     }
 
     /// Returns the SEC1 encoding of this field element.
+    ///
+    /// `FieldElement` is always normalized by type invariant, so this is a direct
+    /// serialization of the inner value (one full reduction, no extra pass).
+    #[inline]
     pub fn to_bytes(self) -> FieldBytes {
-        self.normalize().0.to_bytes()
+        self.0.to_bytes()
     }
 
     /// Returns -self, treating it as a value of given magnitude.
     /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
     ///
     /// The result is normalized.
+    #[inline]
     pub fn negate(&self, magnitude: u32) -> Self {
         Self(self.0.negate(magnitude).normalize())
     }
@@ -117,6 +126,7 @@ impl FieldElement {
     /// Fully normalizes the field element.
     ///
     /// Brings the magnitude to 1 and modulo reduces the value.
+    #[inline]
     pub fn normalize(&self) -> Self {
         Self(self.0.normalize())
     }
@@ -124,11 +134,13 @@ impl FieldElement {
     /// Weakly normalizes the field element.
     ///
     /// Brings the magnitude to 1, but does not guarantee the value to be less than the modulus.
+    #[inline]
     pub fn normalize_weak(&self) -> Self {
         Self(self.0.normalize_weak())
     }
 
     /// Checks if the field element becomes zero if normalized.
+    #[inline]
     pub fn normalizes_to_zero(&self) -> Choice {
         self.0.normalizes_to_zero()
     }
@@ -136,6 +148,7 @@ impl FieldElement {
     /// Multiplies by a single-limb integer.
     ///
     /// The result is normalized.
+    #[inline]
     pub fn mul_single(&self, rhs: u32) -> Self {
         Self(self.0.mul_single(rhs).normalize())
     }
@@ -143,6 +156,7 @@ impl FieldElement {
     /// Returns 2*self.
     ///
     /// The result is normalized.
+    #[inline]
     pub fn double(&self) -> Self {
         Self(self.0.add(&self.0).normalize())
     }
@@ -150,6 +164,7 @@ impl FieldElement {
     /// Returns self * rhs mod p.
     ///
     /// The result is normalized.
+    #[inline]
     pub fn mul(&self, rhs: &Self) -> Self {
         Self(self.0.mul(&rhs.0).normalize())
     }
@@ -157,6 +172,7 @@ impl FieldElement {
     /// Returns self * self.
     ///
     /// The result is normalized.
+    #[inline]
     pub fn square(&self) -> Self {
         Self(self.0.square().normalize())
     }

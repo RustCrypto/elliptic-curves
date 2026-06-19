@@ -74,6 +74,7 @@ impl LazyFieldElement {
     }
 
     /// Construct a new lazy field element from a raw value with the given magnitude.
+    #[inline]
     fn new(value: &Inner, magnitude: u32) -> Self {
         debug_assert!(magnitude <= MAX_MAGNITUDE);
         Self {
@@ -95,6 +96,8 @@ impl LazyFieldElement {
     /// Construct a weakly-normalized lazy field element.
     ///
     /// The magnitude is set to 1 but the value may still be >= p.
+    #[allow(dead_code)]
+    #[inline]
     fn new_weak_normalized(value: &Inner) -> Self {
         Self {
             value: value.normalize_weak(),
@@ -125,6 +128,7 @@ impl LazyFieldElement {
     /// Parse a field element from bytes, validating that the value is in range.
     ///
     /// The resulting element is normalized.
+    #[inline]
     pub fn from_bytes(bytes: &FieldBytes) -> CtOption<Self> {
         Inner::from_bytes(bytes).map(|x| Self::new_normalized(&x))
     }
@@ -132,6 +136,7 @@ impl LazyFieldElement {
     /// Construct a normalized element from a raw `U256` without range checking.
     ///
     /// The resulting element is normalized.
+    #[inline]
     pub(crate) const fn from_u256_unchecked(value: U256) -> Self {
         Self {
             value: Inner::from_u256_unchecked(value),
@@ -146,6 +151,7 @@ impl LazyFieldElement {
     ///
     /// Returns a normalized `LazyFieldElement` (magnitude = 1, value < p).
     /// Use `From<LazyFieldElement> for FieldElement` to convert to `FieldElement`.
+    #[inline]
     pub fn normalize(&self) -> Self {
         Self {
             value: self.value.normalize(),
@@ -158,13 +164,18 @@ impl LazyFieldElement {
     /// The result has magnitude 1 but may be >= p. This is faster than `normalize()`
     /// but should only be used when the caller is about to perform another
     /// arithmetic operation that will consume the excess.
+    #[inline]
     pub fn normalize_weak(&self) -> Self {
-        Self::new_weak_normalized(&self.value)
+        Self {
+            value: self.value.normalize_weak(),
+            magnitude: 1,
+        }
     }
 
     /// Check whether this element would become zero if fully normalized.
     ///
     /// This is useful for checking if a value is 0 or p (both normalize to 0).
+    #[inline]
     pub fn normalizes_to_zero(&self) -> Choice {
         self.value.normalizes_to_zero()
     }
@@ -172,6 +183,7 @@ impl LazyFieldElement {
     /// Determine if this element is zero.
     ///
     /// The element **must** be normalized before calling this.
+    #[inline]
     pub fn is_zero(&self) -> Choice {
         debug_assert!(self.magnitude == 1, "is_zero requires normalized element");
         self.value.is_zero()
@@ -183,6 +195,7 @@ impl LazyFieldElement {
     /// this is checked with a debug assertion. (In release builds, calling this
     /// on an unnormalized element produces incorrect results — this is precisely
     /// the class of bugs this type system is designed to eliminate.)
+    #[inline]
     pub fn is_odd(&self) -> Choice {
         debug_assert!(
             self.magnitude == 1,
@@ -194,6 +207,7 @@ impl LazyFieldElement {
     /// Returns `self + rhs mod p`.
     ///
     /// The new magnitude is `self.magnitude + rhs.magnitude`.
+    #[inline]
     pub fn add(&self, rhs: &Self) -> Self {
         let new_magnitude = self.magnitude + rhs.magnitude;
         debug_assert!(new_magnitude <= MAX_MAGNITUDE);
@@ -203,6 +217,7 @@ impl LazyFieldElement {
     /// Multiplies by a single-limb integer.
     ///
     /// The magnitude is multiplied by the same value.
+    #[inline]
     pub fn mul_single(&self, rhs: u32) -> Self {
         let new_magnitude = self.magnitude * rhs;
         debug_assert!(new_magnitude <= MAX_MAGNITUDE);
@@ -213,25 +228,42 @@ impl LazyFieldElement {
     ///
     /// Both operands must have magnitude ≤ 8. The result has magnitude 1 and is
     /// weakly normalized (carries propagated but may still be ≥ p).
+    ///
+    /// The inner `Inner::mul` already propagates carries as part of the
+    /// multiplication, so the result is weakly normalized without a second
+    /// `normalize_weak` pass.
+    #[inline]
     pub fn mul(&self, rhs: &Self) -> Self {
         debug_assert!(self.magnitude <= 8);
         debug_assert!(rhs.magnitude <= 8);
-        Self::new_weak_normalized(&self.value.mul(&rhs.value))
+        Self {
+            value: self.value.mul(&rhs.value),
+            magnitude: 1,
+        }
     }
 
     /// Returns `self * self mod p`.
     ///
     /// The operand must have magnitude ≤ 8. The result has magnitude 1 and is
     /// weakly normalized.
+    ///
+    /// The inner `Inner::square` already propagates carries as part of the
+    /// squaring, so the result is weakly normalized without a second
+    /// `normalize_weak` pass.
+    #[inline]
     pub fn square(&self) -> Self {
         debug_assert!(self.magnitude <= 8);
-        Self::new_weak_normalized(&self.value.square())
+        Self {
+            value: self.value.square(),
+            magnitude: 1,
+        }
     }
 
     /// Returns `-self`, treating it as having the given magnitude.
     ///
     /// The provided `magnitude` must be ≥ the actual magnitude of `self`.
     /// The new magnitude is `magnitude + 1`.
+    #[inline]
     pub fn negate(&self, magnitude: u32) -> Self {
         debug_assert!(self.magnitude <= magnitude);
         let new_magnitude = magnitude + 1;
@@ -240,16 +272,20 @@ impl LazyFieldElement {
     }
 
     /// Returns `2 * self`, doubling the magnitude.
+    #[inline]
     pub fn double(&self) -> Self {
         self.add(self)
     }
 
     /// Returns the SEC1 encoding of this element.
     ///
-    /// Requires the element to be normalized.
+    /// Requires the element to be normalized. The `magnitude == 1` invariant is
+    /// sufficient — the inner value is already reduced by the type system, so
+    /// no second `normalize()` pass is needed before serialization.
+    #[inline]
     pub fn to_bytes(self) -> FieldBytes {
         debug_assert!(self.magnitude == 1, "to_bytes requires normalized element");
-        self.value.normalize().to_bytes()
+        self.value.to_bytes()
     }
 
     /// Returns the raw `U256` representation of this element.
