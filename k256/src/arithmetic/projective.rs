@@ -2,7 +2,7 @@
 
 #![allow(clippy::op_ref)]
 
-use super::{AffinePoint, CURVE_EQUATION_B_SINGLE, FieldElement, Scalar};
+use super::{AffinePoint, CURVE_EQUATION_B_SINGLE, FieldElement, LazyFieldElement, Scalar};
 use crate::{CompressedPoint, PublicKey, Sec1Point, Secp256k1};
 use core::{
     iter::Sum,
@@ -27,7 +27,7 @@ use elliptic_curve::{
 use alloc::vec::Vec;
 
 #[rustfmt::skip]
-const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
+const ENDOMORPHISM_BETA: LazyFieldElement = LazyFieldElement::from_bytes_unchecked(&[
     0x7a, 0xe9, 0x6a, 0x2b, 0x65, 0x7c, 0x07, 0x10,
     0x6e, 0x64, 0x47, 0x9e, 0xac, 0x34, 0x34, 0xe9,
     0x9c, 0xf0, 0x49, 0x75, 0x12, 0xf5, 0x89, 0x95,
@@ -35,47 +35,66 @@ const ENDOMORPHISM_BETA: FieldElement = FieldElement::from_bytes_unchecked(&[
 ]);
 
 /// A point on the secp256k1 curve in projective coordinates.
+///
+/// Coordinates are stored as [`LazyFieldElement`]s. The point-arithmetic inner
+/// loops (`add`, `add_mixed`, `double`, `neg`, `endomorphism`) operate directly
+/// on the lazy form, accumulating magnitude without an intermediate full
+/// modular reduction. Only `.normalize_weak()` calls appear in the middle of the
+/// formulas, which keep the magnitude ≤ 8 so that the subsequent `mul` (which
+/// requires `magnitude ≤ 8`) is valid.
+///
+/// At a boundary (`to_affine`, `batch_normalize`, `ConditionallySelectable`
+/// over a non-lazy choice, etc.) the lazy coordinates are normalized via
+/// `FieldElement::from(lazy)` before crossing into the canonical-form world.
 #[derive(Clone, Copy, Debug)]
 pub struct ProjectivePoint {
-    x: FieldElement,
-    y: FieldElement,
-    pub(super) z: FieldElement,
+    x: LazyFieldElement,
+    y: LazyFieldElement,
+    pub(super) z: LazyFieldElement,
 }
 
 impl ProjectivePoint {
     /// Additive identity of the group: the point at infinity.
     pub const IDENTITY: Self = Self {
-        x: FieldElement::ZERO,
-        y: FieldElement::ONE,
-        z: FieldElement::ZERO,
+        x: LazyFieldElement::ZERO,
+        y: LazyFieldElement::ONE,
+        z: LazyFieldElement::ZERO,
     };
 
     /// Base point of secp256k1.
     pub const GENERATOR: Self = Self {
         x: AffinePoint::GENERATOR.x,
         y: AffinePoint::GENERATOR.y,
-        z: FieldElement::ONE,
+        z: LazyFieldElement::ONE,
     };
 
     /// Returns the affine representation of this point.
     pub fn to_affine(&self) -> AffinePoint {
-        self.z
-            .invert()
+        let z = FieldElement::from(self.z);
+        z.invert()
             .map(|zinv| self.to_affine_internal(zinv))
             .unwrap_or_else(|| AffinePoint::IDENTITY)
     }
 
     pub(super) fn to_affine_internal(self, zinv: FieldElement) -> AffinePoint {
-        let x = self.x * &zinv;
-        let y = self.y * &zinv;
-        AffinePoint::new(x.normalize(), y.normalize())
+        // The cross-type multiplication `LazyFieldElement * &FieldElement` runs lazily
+        // (one cheap multiplication, no per-op modular reduction) and produces a
+        // normalized `FieldElement`. Wrapping it back as `LazyFieldElement` is free
+        // (it's just the inner `FieldElement.0`); the `AffinePoint` then owns the
+        // result without any extra `.normalize()` cost.
+        let x: LazyFieldElement = (&self.x * &zinv).into();
+        let y: LazyFieldElement = (&self.y * &zinv).into();
+        AffinePoint::new(x, y)
     }
 
     /// Returns `-self`.
     fn neg(&self) -> ProjectivePoint {
+        // Negate lazily via the `Neg` impl, which tracks the operand's
+        // magnitude. `normalize_weak()` then brings the result back to
+        // magnitude 1 for the next operation in the calling code.
         ProjectivePoint {
             x: self.x,
-            y: self.y.negate(1).normalize_weak(),
+            y: (-self.y).normalize_weak(),
             z: self.z,
         }
     }
@@ -84,38 +103,43 @@ impl ProjectivePoint {
     fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 7).
+        //
+        // All arithmetic here is `LazyFieldElement` so the per-op modular
+        // reductions of `FieldElement` are avoided; the only modular-reduction
+        // operations in the hot loop are the `normalize_weak()` calls that keep
+        // magnitudes ≤ 8 (a precondition of `LazyFieldElement::mul`).
 
-        let xx = self.x * &other.x;
-        let yy = self.y * &other.y;
-        let zz = self.z * &other.z;
+        let xx = &self.x * &other.x;
+        let yy = &self.y * &other.y;
+        let zz = &self.z * &other.z;
 
-        let n_xx_yy = (xx + &yy).negate(2);
-        let n_yy_zz = (yy + &zz).negate(2);
-        let n_xx_zz = (xx + &zz).negate(2);
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &n_xx_yy;
-        let yz_pairs = ((self.y + &self.z) * &(other.y + &other.z)) + &n_yy_zz;
-        let xz_pairs = ((self.x + &self.z) * &(other.x + &other.z)) + &n_xx_zz;
+        let n_xx_yy = (xx.add(&yy)).negate(2);
+        let n_yy_zz = (yy.add(&zz)).negate(2);
+        let n_xx_zz = (xx.add(&zz)).negate(2);
+        let xy_pairs = (self.x.add(&self.y)).mul(&(other.x.add(&other.y))).add(&n_xx_yy);
+        let yz_pairs = (self.y.add(&self.z)).mul(&(other.y.add(&other.z))).add(&n_yy_zz);
+        let xz_pairs = (self.x.add(&self.z)).mul(&(other.x.add(&other.z))).add(&n_xx_zz);
 
         let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE);
-        let bzz3 = (bzz.double() + &bzz).normalize_weak();
+        let bzz3 = bzz.double().add(&bzz).normalize_weak();
 
-        let yy_m_bzz3 = yy + &bzz3.negate(1);
-        let yy_p_bzz3 = yy + &bzz3;
+        let yy_m_bzz3 = yy.add(&bzz3.negate(1));
+        let yy_p_bzz3 = yy.add(&bzz3);
 
-        let byz = &yz_pairs
-            .mul_single(CURVE_EQUATION_B_SINGLE)
-            .normalize_weak();
-        let byz3 = (byz.double() + byz).normalize_weak();
+        let byz = yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let byz3 = byz.double().add(&byz).normalize_weak();
 
-        let xx3 = xx.double() + &xx;
-        let bxx9 = (xx3.double() + &xx3)
+        let xx3 = xx.double().add(&xx);
+        let bxx9 = xx3
+            .double()
+            .add(&xx3)
             .normalize_weak()
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
 
-        let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
-        let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
-        let new_z = ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak();
+        let new_x = xy_pairs.mul(&yy_m_bzz3).add(&byz3.mul(&xz_pairs).negate(1)).normalize_weak(); // m1
+        let new_y = yy_p_bzz3.mul(&yy_m_bzz3).add(&bxx9.mul(&xz_pairs)).normalize_weak();
+        let new_z = yz_pairs.mul(&yy_p_bzz3).add(&xx3.mul(&xy_pairs)).normalize_weak();
 
         ProjectivePoint {
             x: new_x,
@@ -128,34 +152,38 @@ impl ProjectivePoint {
     fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 8).
+        //
+        // Same lazy-arithmetic strategy as `add`. The `other` operand is in
+        // affine coordinates with magnitude 1, so its operands participate in
+        // the lazy ops with no extra normalization.
 
-        let xx = self.x * &other.x;
-        let yy = self.y * &other.y;
-        let xy_pairs = ((self.x + &self.y) * &(other.x + &other.y)) + &(xx + &yy).negate(2);
-        let yz_pairs = (other.y * &self.z) + &self.y;
-        let xz_pairs = (other.x * &self.z) + &self.x;
+        let xx = &self.x * &other.x;
+        let yy = &self.y * &other.y;
+        let xy_pairs = (self.x.add(&self.y)).mul(&(other.x.add(&other.y))).add(&(xx.add(&yy)).negate(2));
+        let yz_pairs = (&other.y * &self.z).add(&self.y);
+        let xz_pairs = (&other.x * &self.z).add(&self.x);
 
-        let bzz = &self.z.mul_single(CURVE_EQUATION_B_SINGLE);
-        let bzz3 = (bzz.double() + bzz).normalize_weak();
+        let bzz = self.z.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = bzz.double().add(&bzz).normalize_weak();
 
-        let yy_m_bzz3 = yy + &bzz3.negate(1);
-        let yy_p_bzz3 = yy + &bzz3;
+        let yy_m_bzz3 = yy.add(&bzz3.negate(1));
+        let yy_p_bzz3 = yy.add(&bzz3);
 
-        let byz = &yz_pairs
-            .mul_single(CURVE_EQUATION_B_SINGLE)
-            .normalize_weak();
-        let byz3 = (byz.double() + byz).normalize_weak();
+        let byz = yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let byz3 = byz.double().add(&byz).normalize_weak();
 
-        let xx3 = xx.double() + &xx;
-        let bxx9 = &(xx3.double() + &xx3)
+        let xx3 = xx.double().add(&xx);
+        let bxx9 = xx3
+            .double()
+            .add(&xx3)
             .normalize_weak()
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
 
         let mut ret = ProjectivePoint {
-            x: ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(),
-            y: ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak(),
-            z: ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak(),
+            x: xy_pairs.mul(&yy_m_bzz3).add(&byz3.mul(&xz_pairs).negate(1)).normalize_weak(),
+            y: yy_p_bzz3.mul(&yy_m_bzz3).add(&bxx9.mul(&xz_pairs)).normalize_weak(),
+            z: yz_pairs.mul(&yy_p_bzz3).add(&xx3.mul(&xy_pairs)).normalize_weak(),
         };
         ret.conditional_assign(self, other.is_identity());
         ret
@@ -166,32 +194,29 @@ impl ProjectivePoint {
     pub fn double(&self) -> ProjectivePoint {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 9).
+        //
+        // Lazy-arithmetic throughout; `.normalize_weak()` keeps magnitudes
+        // ≤ 8 for subsequent `mul`s.
 
         let yy = self.y.square();
         let zz = self.z.square();
-        let xy2 = (self.x * &self.y).double();
+        let xy2 = (&self.x * &self.y).double();
 
-        let bzz = &zz.mul_single(CURVE_EQUATION_B_SINGLE);
-        let bzz3 = (bzz.double() + bzz).normalize_weak();
-        let bzz9 = (bzz3.double() + &bzz3).normalize_weak();
+        let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE);
+        let bzz3 = bzz.double().add(&bzz).normalize_weak();
+        let bzz9 = bzz3.double().add(&bzz3).normalize_weak();
 
-        let yy_m_bzz9 = yy + &bzz9.negate(1);
-        let yy_p_bzz3 = yy + &bzz3;
+        let yy_m_bzz9 = yy.add(&bzz9.negate(1));
+        let yy_p_bzz3 = yy.add(&bzz3);
 
-        let yy_zz = yy * &zz;
+        let yy_zz = yy.mul(&zz);
         let yy_zz8 = yy_zz.double().double().double();
-        let t = (yy_zz8.double() + &yy_zz8)
-            .normalize_weak()
-            .mul_single(CURVE_EQUATION_B_SINGLE);
+        let t = yy_zz8.double().add(&yy_zz8).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE);
 
         ProjectivePoint {
-            x: xy2 * &yy_m_bzz9,
-            y: ((yy_m_bzz9 * &yy_p_bzz3) + &t).normalize_weak(),
-            z: ((yy * &self.y) * &self.z)
-                .double()
-                .double()
-                .double()
-                .normalize_weak(),
+            x: xy2.mul(&yy_m_bzz9),
+            y: yy_m_bzz9.mul(&yy_p_bzz3).add(&t).normalize_weak(),
+            z: yy.mul(&self.y).mul(&self.z).double().double().double().normalize_weak(),
         }
     }
 
@@ -208,7 +233,7 @@ impl ProjectivePoint {
     /// Calculates SECP256k1 endomorphism: `self * lambda`.
     pub fn endomorphism(&self) -> Self {
         Self {
-            x: self.x * &ENDOMORPHISM_BETA,
+            x: self.x.mul(&ENDOMORPHISM_BETA),
             y: self.y,
             z: self.z,
         }
@@ -223,10 +248,10 @@ impl ProjectivePoint {
         // that we know z = 1 for rhs and we have to check identity as a separate case.
         let both_identity = self.is_identity() & other.is_identity();
         let rhs_identity = other.is_identity();
-        let rhs_x = &other.x * &self.z;
+        let rhs_x = other.x.mul(&self.z);
         let x_eq = rhs_x.negate(1).add(&self.x).normalizes_to_zero();
 
-        let rhs_y = &other.y * &self.z;
+        let rhs_y = other.y.mul(&self.z);
         let y_eq = rhs_y.negate(1).add(&self.y).normalizes_to_zero();
 
         both_identity | (!rhs_identity & x_eq & y_eq)
@@ -238,7 +263,7 @@ impl From<AffinePoint> for ProjectivePoint {
         let projective = ProjectivePoint {
             x: p.x,
             y: p.y,
-            z: FieldElement::ONE,
+            z: LazyFieldElement::ONE,
         };
         Self::conditional_select(&projective, &Self::IDENTITY, p.is_identity())
     }
@@ -292,7 +317,17 @@ where
         // Even a single zero value will fail inversion for the entire batch.
         // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
         // and treat that case specially later-on.
-        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.normalizes_to_zero());
+        //
+        // The projective `z` coordinate is a `LazyFieldElement`; the `BatchInvert`
+        // trait is only impl'd for `FieldElement`, so we normalize at this
+        // boundary. Cost is one full `normalize()` per point (i.e. one modular
+        // reduction), which is negligible compared to the batch inversion itself.
+        let z_lazy = points[i].z;
+        let z_field = FieldElement::from(z_lazy);
+        let is_zero = z_lazy.normalizes_to_zero();
+        let mut slot = FieldElement::ONE;
+        slot.conditional_assign(&z_field, !is_zero);
+        zs.as_mut()[i] = slot;
     }
 
     // This is safe to unwrap since we assured that all elements are non-zero
@@ -349,9 +384,9 @@ impl ToSec1Point<Secp256k1> for ProjectivePoint {
 impl ConditionallySelectable for ProjectivePoint {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
         ProjectivePoint {
-            x: FieldElement::conditional_select(&a.x, &b.x, choice),
-            y: FieldElement::conditional_select(&a.y, &b.y, choice),
-            z: FieldElement::conditional_select(&a.z, &b.z, choice),
+            x: LazyFieldElement::conditional_select(&a.x, &b.x, choice),
+            y: LazyFieldElement::conditional_select(&a.y, &b.y, choice),
+            z: LazyFieldElement::conditional_select(&a.z, &b.z, choice),
         }
     }
 }
@@ -372,12 +407,12 @@ impl ConstantTimeEq for ProjectivePoint {
         // y₂) = (0, z₂y₂) for the first point and (0 * x₂z₂, 0 * y₂z₂) = (0, 0) for the second.
         //
         // Since z₂y₂ will never be 0 they will not be equal in this case either.
-        let lhs_x = self.x * &other.z;
-        let rhs_x = other.x * &self.z;
+        let lhs_x = self.x.mul(&other.z);
+        let rhs_x = other.x.mul(&self.z);
         let x_eq = rhs_x.negate(1).add(&lhs_x).normalizes_to_zero();
 
-        let lhs_y = self.y * &other.z;
-        let rhs_y = other.y * &self.z;
+        let lhs_y = self.y.mul(&other.z);
+        let rhs_y = other.y.mul(&self.z);
         let y_eq = rhs_y.negate(1).add(&lhs_y).normalizes_to_zero();
         x_eq & y_eq
     }

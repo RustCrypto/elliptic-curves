@@ -3,6 +3,7 @@
 use super::{AUX_TAG, CHALLENGE_TAG, NONCE_TAG, Signature, VerifyingKey, tagged_hash};
 use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
+    arithmetic::FieldElement,
 };
 use elliptic_curve::{
     Generate,
@@ -101,7 +102,7 @@ impl SigningKey {
         let R = ProjectivePoint::mul_by_generator(&k).to_affine();
         let odd = R.y.normalize().is_odd();
         k.conditional_assign(&-k, odd);
-        let r = R.x.normalize();
+        let r = FieldElement::from(R.x.normalize());
 
         let e = <Scalar as Reduce<FieldBytes>>::reduce(
             &tagged_hash(CHALLENGE_TAG)

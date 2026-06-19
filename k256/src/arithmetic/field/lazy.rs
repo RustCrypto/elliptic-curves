@@ -16,6 +16,8 @@
 //! automatically, so generic code using the trait is unaffected.
 
 use crate::FieldBytes;
+use core::ops::{Add, Mul, Neg, Sub};
+use super::FieldElement;
 use elliptic_curve::{
     bigint::U256,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -256,6 +258,174 @@ impl LazyFieldElement {
     pub(crate) fn to_u256(self) -> U256 {
         debug_assert!(self.magnitude == 1, "to_u256 requires normalized element");
         self.value.normalize().to_u256()
+    }
+}
+
+//
+// Operator overloads. These mirror the inherent methods but keep the result
+// in lazy form: arithmetic on `LazyFieldElement` does not normalize, so the
+// point-addition / doubling inner loops avoid the per-op modular reduction.
+// Use `From<LazyFieldElement> for FieldElement` (or `.normalize()`) to obtain
+// a normalized value at the boundary.
+//
+
+impl Add<LazyFieldElement> for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn add(self, rhs: LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(&self, &rhs)
+    }
+}
+
+impl Add<&LazyFieldElement> for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn add(self, rhs: &LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(&self, rhs)
+    }
+}
+
+impl Add<LazyFieldElement> for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn add(self, rhs: LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(self, &rhs)
+    }
+}
+
+impl Add<&LazyFieldElement> for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn add(self, rhs: &LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(self, rhs)
+    }
+}
+
+impl Sub<LazyFieldElement> for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn sub(self, rhs: LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(&self, &rhs.negate(rhs.magnitude))
+    }
+}
+
+impl Sub<&LazyFieldElement> for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn sub(self, rhs: &LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(&self, &rhs.negate(rhs.magnitude))
+    }
+}
+
+impl Sub<LazyFieldElement> for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn sub(self, rhs: LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(self, &rhs.negate(rhs.magnitude))
+    }
+}
+
+impl Sub<&LazyFieldElement> for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn sub(self, rhs: &LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::add(self, &rhs.negate(rhs.magnitude))
+    }
+}
+
+impl Mul<LazyFieldElement> for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn mul(self, rhs: LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::mul(&self, &rhs)
+    }
+}
+
+impl Mul<&LazyFieldElement> for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    #[inline(always)]
+    fn mul(self, rhs: &LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::mul(&self, rhs)
+    }
+}
+
+impl Mul<LazyFieldElement> for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn mul(self, rhs: LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::mul(self, &rhs)
+    }
+}
+
+impl Mul<&LazyFieldElement> for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn mul(self, rhs: &LazyFieldElement) -> LazyFieldElement {
+        LazyFieldElement::mul(self, rhs)
+    }
+}
+
+/// Boundary conversion: multiply a `LazyFieldElement` (which may carry a
+/// non-canonical magnitude) by a normalized `FieldElement`, returning a
+/// normalized `FieldElement`.
+///
+/// Use this when leaving the lazy point-arithmetic inner loops: e.g. when
+/// projecting an affine coordinate by multiplying a projective `x` or `y`
+/// (lazy) by a normalized `z^{-1}` (from `BatchInvert`), or when feeding a
+/// lazy result back into `ff::Field`-based algorithms. The multiplication
+/// itself runs lazily (cheap), and the `From` conversion performs exactly one
+/// full `normalize()` on the result.
+impl Mul<&FieldElement> for &LazyFieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: &FieldElement) -> FieldElement {
+        FieldElement::from(self.mul(&rhs.0))
+    }
+}
+
+impl Mul<&FieldElement> for LazyFieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: &FieldElement) -> FieldElement {
+        FieldElement::from(self.mul(&rhs.0))
+    }
+}
+
+impl Mul<FieldElement> for &LazyFieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: FieldElement) -> FieldElement {
+        FieldElement::from(self.mul(&rhs.0))
+    }
+}
+
+impl Mul<FieldElement> for LazyFieldElement {
+    type Output = FieldElement;
+
+    fn mul(self, rhs: FieldElement) -> FieldElement {
+        FieldElement::from(self.mul(&rhs.0))
+    }
+}
+
+impl Neg for LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn neg(self) -> LazyFieldElement {
+        // Use the actual magnitude so the operation is safe regardless of
+        // whether `self` is a normalized magnitude-1 value or an
+        // un-normalized accumulated-sum value.
+        let magnitude = self.magnitude;
+        self.negate(magnitude)
+    }
+}
+
+impl Neg for &LazyFieldElement {
+    type Output = LazyFieldElement;
+
+    fn neg(self) -> LazyFieldElement {
+        let magnitude = self.magnitude;
+        self.negate(magnitude)
     }
 }
 

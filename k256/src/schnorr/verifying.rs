@@ -1,7 +1,9 @@
 //! Taproot Schnorr verifying key.
 
 use super::{CHALLENGE_TAG, Signature, tagged_hash};
-use crate::{AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar};
+use crate::{
+    AffinePoint, FieldBytes, ProjectivePoint, PublicKey, Scalar, arithmetic::FieldElement,
+};
 use elliptic_curve::{
     group::CurveAffine,
     ops::{MulByGeneratorVartime, Reduce},
@@ -79,7 +81,10 @@ impl VerifyingKey {
         )
         .to_affine();
 
-        if R.is_identity().into() || R.y.normalize().is_odd().into() || R.x.normalize() != *r {
+        if R.is_identity().into()
+            || R.y.normalize().is_odd().into()
+            || FieldElement::from(R.x.normalize()) != *r
+        {
             return Err(Error::new());
         }
 
@@ -176,7 +181,7 @@ impl TryFrom<PublicKey> for VerifyingKey {
     type Error = Error;
 
     fn try_from(public_key: PublicKey) -> Result<VerifyingKey> {
-        if public_key.as_affine().y.normalize().is_even().into() {
+        if FieldElement::from(public_key.as_affine().y.normalize()).is_even().into() {
             Ok(Self { inner: public_key })
         } else {
             Err(Error::new())
