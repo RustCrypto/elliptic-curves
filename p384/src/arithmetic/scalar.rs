@@ -168,13 +168,8 @@ mod tests {
         fiat_p384_scalar_non_montgomery_domain_field_element, fiat_p384_scalar_to_montgomery,
     };
     use crate::{FieldBytes, NistP384, NonZeroScalar};
-    use elliptic_curve::{
-        Curve,
-        array::Array,
-        ff::PrimeField,
-        ops::{BatchInvert, ReduceNonZero},
-    };
-    use proptest::{prelude::any, prop_compose, proptest};
+    use elliptic_curve::{Curve, array::Array, ff::PrimeField, ops::ReduceNonZero};
+    use proptest::{prelude::any, prop_compose};
 
     primefield::test_primefield!(Scalar, U384);
 
@@ -261,26 +256,6 @@ mod tests {
     prop_compose! {
         fn non_zero_scalar()(bytes in any::<[u8; 48]>()) -> NonZeroScalar {
             NonZeroScalar::reduce_nonzero(&FieldBytes::from(bytes))
-        }
-    }
-
-    // TODO: move to `primefield::test_field_invert`.
-    proptest! {
-        #[test]
-        fn batch_invert(
-            a in non_zero_scalar(),
-            b in non_zero_scalar(),
-            c in non_zero_scalar(),
-            d in non_zero_scalar(),
-            e in non_zero_scalar(),
-        ) {
-            let scalars: [Scalar; 5] = [*a, *b, *c, *d, *e];
-
-            let inverted_scalars = Scalar::batch_invert(scalars).unwrap();
-
-            for (scalar, inverted_scalar) in scalars.into_iter().zip(inverted_scalars) {
-                assert_eq!(inverted_scalar, scalar.invert().unwrap());
-            }
         }
     }
 }

@@ -39,7 +39,12 @@ pub use elliptic_curve::{
 };
 pub use primefield::PrimeFieldExt;
 
-use elliptic_curve::{Curve, CurveArithmetic, Generate, ops::Invert, sec1, subtle::CtOption};
+use elliptic_curve::{
+    Curve, CurveArithmetic, Generate,
+    ops::{BatchInvert, Invert},
+    sec1,
+    subtle::CtOption,
+};
 
 #[cfg(feature = "basepoint-table")]
 pub use crate::tables::BasepointTable;
@@ -56,7 +61,8 @@ pub trait PrimeCurveParams:
     >
 {
     /// Base field element type.
-    type FieldElement: Generate
+    type FieldElement: BatchInvert
+        + Generate
         + Invert<Output = CtOption<Self::FieldElement>>
         + PrimeField<Repr = FieldBytes<Self>>
         + Retrieve<Output = Self::Uint>;

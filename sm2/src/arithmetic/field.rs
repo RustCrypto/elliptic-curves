@@ -14,6 +14,7 @@ use crate::U256;
 use elliptic_curve::{
     bigint::cpubits,
     ff::PrimeField,
+    ops::BatchInvert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
@@ -74,6 +75,8 @@ primefield::fiat_monty_field_arithmetic! {
     msat: fiat_sm2_msat,
     selectnz: fiat_sm2_selectznz
 }
+
+impl BatchInvert for FieldElement {}
 
 #[cfg(test)]
 mod tests {

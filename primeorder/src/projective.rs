@@ -294,8 +294,9 @@ where
     #[inline]
     fn batch_normalize(projective: &[Self], affine: &mut [Self::Affine]) {
         assert_eq!(projective.len(), affine.len());
-        let mut zs = vec![C::FieldElement::ONE; projective.len()];
-        batch_normalize_generic(projective, zs.as_mut_slice(), affine);
+        let mut zs = vec![C::FieldElement::ZERO; projective.len()];
+        let mut scratch = vec![C::FieldElement::ZERO; projective.len()];
+        batch_normalize_generic(projective, &mut zs, &mut scratch, affine);
     }
 }
 
@@ -377,9 +378,10 @@ where
 
     #[inline]
     fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::Affine; N] {
-        let zs = [C::FieldElement::ONE; N];
+        let mut zs = [C::FieldElement::ZERO; N];
+        let mut scratch = [C::FieldElement::ZERO; N];
         let mut affine_points = [C::AffinePoint::IDENTITY; N];
-        batch_normalize_generic(points, zs, &mut affine_points);
+        batch_normalize_generic(points, &mut zs, &mut scratch, &mut affine_points);
         affine_points
     }
 }
@@ -393,43 +395,37 @@ where
 
     #[inline]
     fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::Affine> {
-        let mut zs = vec![C::FieldElement::ONE; points.len()];
+        let mut zs = vec![C::FieldElement::ZERO; points.len()];
+        let mut scratch = vec![C::FieldElement::ZERO; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
-        batch_normalize_generic(points, zs.as_mut_slice(), &mut affine_points);
+        batch_normalize_generic(points, &mut zs, &mut scratch, &mut affine_points);
         affine_points
     }
 }
 
 /// Generic implementation of batch normalization.
-fn batch_normalize_generic<C, P, Z, I, O>(points: &P, mut zs: Z, out: &mut O)
-where
+fn batch_normalize_generic<C>(
+    points: &[ProjectivePoint<C>],
+    zs: &mut [C::FieldElement],
+    scratch: &mut [C::FieldElement],
+    out: &mut [AffinePoint<C>],
+) where
     C: PrimeCurveParams,
-    C::FieldElement: BatchInvert<Z, Output = CtOption<I>>,
-    C::ProjectivePoint: Double,
-    P: AsRef<[ProjectivePoint<C>]> + ?Sized,
-    Z: AsMut<[C::FieldElement]>,
-    I: AsRef<[C::FieldElement]>,
-    O: AsMut<[AffinePoint<C>]> + ?Sized,
 {
-    let points = points.as_ref();
-    let out = out.as_mut();
+    debug_assert_eq!(points.len(), zs.len());
+    debug_assert_eq!(points.len(), scratch.len());
+    debug_assert_eq!(points.len(), out.len());
 
-    for i in 0..points.len() {
-        // Even a single zero value will fail inversion for the entire batch.
-        // Put a dummy value (above `FieldElement::ONE`) so inversion succeeds
-        // and treat that case specially later-on.
-        zs.as_mut()[i].conditional_assign(&points[i].z, !points[i].z.ct_eq(&C::FieldElement::ZERO));
+    for (z, point) in zs.iter_mut().zip(points) {
+        *z = point.z;
     }
 
-    // This is safe to unwrap since we assured that all elements are non-zero
-    let zs_inverses = <C::FieldElement as BatchInvert<Z>>::batch_invert(zs)
-        .expect("all elements should be non-zero");
+    // Zero `zs` (identity) are handled explicitly below, so the `Choice` here is informational only
+    let _ = C::FieldElement::batch_invert_in_place(zs, scratch);
 
     for i in 0..out.len() {
-        // If the `z` coordinate is non-zero, we can use it to invert;
-        // otherwise it defaults to the `IDENTITY` value.
         out[i] = C::AffinePoint::conditional_select(
-            &points[i].to_affine_internal(zs_inverses.as_ref()[i]),
+            &points[i].to_affine_internal(zs[i]),
             &C::AffinePoint::IDENTITY,
             points[i].z.ct_eq(&C::FieldElement::ZERO),
         );
