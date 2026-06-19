@@ -116,9 +116,15 @@ impl ProjectivePoint {
         let n_xx_yy = (xx.add(&yy)).negate(2);
         let n_yy_zz = (yy.add(&zz)).negate(2);
         let n_xx_zz = (xx.add(&zz)).negate(2);
-        let xy_pairs = (self.x.add(&self.y)).mul(&(other.x.add(&other.y))).add(&n_xx_yy);
-        let yz_pairs = (self.y.add(&self.z)).mul(&(other.y.add(&other.z))).add(&n_yy_zz);
-        let xz_pairs = (self.x.add(&self.z)).mul(&(other.x.add(&other.z))).add(&n_xx_zz);
+        let xy_pairs = (self.x.add(&self.y))
+            .mul(&(other.x.add(&other.y)))
+            .add(&n_xx_yy);
+        let yz_pairs = (self.y.add(&self.z))
+            .mul(&(other.y.add(&other.z)))
+            .add(&n_yy_zz);
+        let xz_pairs = (self.x.add(&self.z))
+            .mul(&(other.x.add(&other.z)))
+            .add(&n_xx_zz);
 
         let bzz = zz.mul_single(CURVE_EQUATION_B_SINGLE);
         let bzz3 = bzz.double().add(&bzz).normalize_weak();
@@ -126,7 +132,9 @@ impl ProjectivePoint {
         let yy_m_bzz3 = yy.add(&bzz3.negate(1));
         let yy_p_bzz3 = yy.add(&bzz3);
 
-        let byz = yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let byz = yz_pairs
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
         let byz3 = byz.double().add(&byz).normalize_weak();
 
         let xx3 = xx.double().add(&xx);
@@ -137,9 +145,18 @@ impl ProjectivePoint {
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
 
-        let new_x = xy_pairs.mul(&yy_m_bzz3).add(&byz3.mul(&xz_pairs).negate(1)).normalize_weak(); // m1
-        let new_y = yy_p_bzz3.mul(&yy_m_bzz3).add(&bxx9.mul(&xz_pairs)).normalize_weak();
-        let new_z = yz_pairs.mul(&yy_p_bzz3).add(&xx3.mul(&xy_pairs)).normalize_weak();
+        let new_x = xy_pairs
+            .mul(&yy_m_bzz3)
+            .add(&byz3.mul(&xz_pairs).negate(1))
+            .normalize_weak(); // m1
+        let new_y = yy_p_bzz3
+            .mul(&yy_m_bzz3)
+            .add(&bxx9.mul(&xz_pairs))
+            .normalize_weak();
+        let new_z = yz_pairs
+            .mul(&yy_p_bzz3)
+            .add(&xx3.mul(&xy_pairs))
+            .normalize_weak();
 
         ProjectivePoint {
             x: new_x,
@@ -159,7 +176,9 @@ impl ProjectivePoint {
 
         let xx = &self.x * &other.x;
         let yy = &self.y * &other.y;
-        let xy_pairs = (self.x.add(&self.y)).mul(&(other.x.add(&other.y))).add(&(xx.add(&yy)).negate(2));
+        let xy_pairs = (self.x.add(&self.y))
+            .mul(&(other.x.add(&other.y)))
+            .add(&(xx.add(&yy)).negate(2));
         let yz_pairs = (&other.y * &self.z).add(&self.y);
         let xz_pairs = (&other.x * &self.z).add(&self.x);
 
@@ -169,7 +188,9 @@ impl ProjectivePoint {
         let yy_m_bzz3 = yy.add(&bzz3.negate(1));
         let yy_p_bzz3 = yy.add(&bzz3);
 
-        let byz = yz_pairs.mul_single(CURVE_EQUATION_B_SINGLE).normalize_weak();
+        let byz = yz_pairs
+            .mul_single(CURVE_EQUATION_B_SINGLE)
+            .normalize_weak();
         let byz3 = byz.double().add(&byz).normalize_weak();
 
         let xx3 = xx.double().add(&xx);
@@ -181,9 +202,18 @@ impl ProjectivePoint {
             .normalize_weak();
 
         let mut ret = ProjectivePoint {
-            x: xy_pairs.mul(&yy_m_bzz3).add(&byz3.mul(&xz_pairs).negate(1)).normalize_weak(),
-            y: yy_p_bzz3.mul(&yy_m_bzz3).add(&bxx9.mul(&xz_pairs)).normalize_weak(),
-            z: yz_pairs.mul(&yy_p_bzz3).add(&xx3.mul(&xy_pairs)).normalize_weak(),
+            x: xy_pairs
+                .mul(&yy_m_bzz3)
+                .add(&byz3.mul(&xz_pairs).negate(1))
+                .normalize_weak(),
+            y: yy_p_bzz3
+                .mul(&yy_m_bzz3)
+                .add(&bxx9.mul(&xz_pairs))
+                .normalize_weak(),
+            z: yz_pairs
+                .mul(&yy_p_bzz3)
+                .add(&xx3.mul(&xy_pairs))
+                .normalize_weak(),
         };
         ret.conditional_assign(self, other.is_identity());
         ret
@@ -211,12 +241,22 @@ impl ProjectivePoint {
 
         let yy_zz = yy.mul(&zz);
         let yy_zz8 = yy_zz.double().double().double();
-        let t = yy_zz8.double().add(&yy_zz8).normalize_weak().mul_single(CURVE_EQUATION_B_SINGLE);
+        let t = yy_zz8
+            .double()
+            .add(&yy_zz8)
+            .normalize_weak()
+            .mul_single(CURVE_EQUATION_B_SINGLE);
 
         ProjectivePoint {
             x: xy2.mul(&yy_m_bzz9),
             y: yy_m_bzz9.mul(&yy_p_bzz3).add(&t).normalize_weak(),
-            z: yy.mul(&self.y).mul(&self.z).double().double().double().normalize_weak(),
+            z: yy
+                .mul(&self.y)
+                .mul(&self.z)
+                .double()
+                .double()
+                .double()
+                .normalize_weak(),
         }
     }
 

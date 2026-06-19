@@ -199,7 +199,8 @@ impl ConstantTimeEq for AffinePoint {
         // magnitude internally and produces a safe result regardless.
         let x_diff = (-self.x).add(&other.x);
         let y_diff = (-self.y).add(&other.y);
-        x_diff.normalizes_to_zero() & y_diff.normalizes_to_zero()
+        x_diff.normalizes_to_zero()
+            & y_diff.normalizes_to_zero()
             & self.infinity.ct_eq(&other.infinity)
     }
 }

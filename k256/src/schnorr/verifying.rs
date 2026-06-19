@@ -181,7 +181,10 @@ impl TryFrom<PublicKey> for VerifyingKey {
     type Error = Error;
 
     fn try_from(public_key: PublicKey) -> Result<VerifyingKey> {
-        if FieldElement::from(public_key.as_affine().y.normalize()).is_even().into() {
+        if FieldElement::from(public_key.as_affine().y.normalize())
+            .is_even()
+            .into()
+        {
             Ok(Self { inner: public_key })
         } else {
             Err(Error::new())
