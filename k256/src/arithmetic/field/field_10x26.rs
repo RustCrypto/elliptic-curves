@@ -186,6 +186,28 @@ impl FieldElement10x26 {
         Self::conditional_select(&res, &res_corrected, overflow)
     }
 
+    /// Final reduction step. Input MUST already be weakly normalized
+    /// (magnitude 1, value < 2^256) — i.e. carries have already been propagated
+    /// through the limbs. This is the case after `Inner::mul` / `Inner::square`,
+    /// which do their own carry propagation as part of the operation.
+    ///
+    /// Performs only the conditional subtract of `p` needed to bring the value
+    /// into `[0, p)` — skipping the `normalize_weak` pass that `normalize()`
+    /// would otherwise repeat.
+    #[inline]
+    pub fn normalize_canonical(&self) -> Self {
+        // Input is already weakly normalized, so skip `normalize_weak`.
+        let overflow = self.get_overflow();
+        let corrected = self.add_modulus_correction(1u32);
+        let (corrected, x) = corrected.subtract_modulus_approximation();
+
+        // If the last limb didn't carry to bit 23 already,
+        // then it should have after the final reduction.
+        debug_assert!(x == (overflow.unwrap_u8() as u32));
+
+        Self::conditional_select(self, &corrected, overflow)
+    }
+
     /// Checks if the field element becomes zero if normalized.
     pub fn normalizes_to_zero(&self) -> Choice {
         let res = self.normalize_weak();

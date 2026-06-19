@@ -45,7 +45,11 @@ const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffffffffffffffffffffffff
 /// the cost of normalizing after every intermediate operation.
 ///
 /// See also `LazyFieldElement` for the lazily-normalized variant used internally.
+///
+/// `#[repr(transparent)]` ensures `FieldElement` and `LazyFieldElement` share the
+/// same layout, so the wrapper layer can be collapsed by the optimizer.
 #[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 pub struct FieldElement(LazyFieldElement);
 
 impl FieldElement {
@@ -128,7 +132,9 @@ impl FieldElement {
     /// Brings the magnitude to 1 and modulo reduces the value.
     #[inline]
     pub fn normalize(&self) -> Self {
-        Self(self.0.normalize())
+        // FieldElement is always weakly normalized by invariant, so the inner
+        // carry-propagation pass is a no-op — just do the final-subtract step.
+        Self(self.0.normalize_canonical())
     }
 
     /// Weakly normalizes the field element.
@@ -158,23 +164,33 @@ impl FieldElement {
     /// The result is normalized.
     #[inline]
     pub fn double(&self) -> Self {
+        // `add` produces magnitude=2, so we need the full normalize (with the
+        // carry-propagation pass) here, not just `normalize_canonical`.
         Self(self.0.add(&self.0).normalize())
     }
 
     /// Returns self * rhs mod p.
     ///
     /// The result is normalized.
+    ///
+    /// `LazyFieldElement::mul` already produces a weakly-normalized result
+    /// (carries propagated as part of the multiplication), so the boundary
+    /// reduction only needs the cheap final-subtract step.
     #[inline]
     pub fn mul(&self, rhs: &Self) -> Self {
-        Self(self.0.mul(&rhs.0).normalize())
+        Self(self.0.mul(&rhs.0).normalize_canonical())
     }
 
     /// Returns self * self.
     ///
     /// The result is normalized.
+    ///
+    /// `LazyFieldElement::square` already produces a weakly-normalized result
+    /// (carries propagated as part of the squaring), so the boundary
+    /// reduction only needs the cheap final-subtract step.
     #[inline]
     pub fn square(&self) -> Self {
-        Self(self.0.square().normalize())
+        Self(self.0.square().normalize_canonical())
     }
 
     /// Raises the scalar to the power `2^k`
@@ -457,7 +473,7 @@ impl Mul<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&other.0).normalize())
+        FieldElement(self.0.mul(&other.0).normalize_canonical())
     }
 }
 
@@ -466,7 +482,7 @@ impl Mul<&FieldElement> for FieldElement {
 
     #[inline(always)]
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&other.0).normalize())
+        FieldElement(self.0.mul(&other.0).normalize_canonical())
     }
 }
 
@@ -474,7 +490,7 @@ impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&other.0).normalize())
+        FieldElement(self.0.mul(&other.0).normalize_canonical())
     }
 }
 

@@ -159,6 +159,26 @@ impl LazyFieldElement {
         }
     }
 
+    /// Final reduction step on an element that is *already* weakly normalized
+    /// (magnitude = 1, value < 2^256). Skips the carry-propagation pass that
+    /// `normalize()` would otherwise repeat.
+    ///
+    /// The inner `Inner::mul` / `Inner::square` propagate carries as part of the
+    /// operation, so their output is weakly normalized. This method is the
+    /// cheap final-subtract step needed only at boundaries (`FieldElement::mul`
+    /// etc.) where we need a canonical `[0, p)` value.
+    #[inline]
+    pub fn normalize_canonical(&self) -> Self {
+        debug_assert!(
+            self.magnitude == 1,
+            "normalize_canonical requires weakly-normalized input (magnitude == 1)",
+        );
+        Self {
+            value: self.value.normalize_canonical(),
+            magnitude: 1,
+        }
+    }
+
     /// Weakly normalize the element: propagate carries but do not reduce mod p.
     ///
     /// The result has magnitude 1 but may be >= p. This is faster than `normalize()`
