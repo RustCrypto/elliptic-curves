@@ -245,7 +245,7 @@ impl LazyFieldElement {
     /// Returns the SEC1 encoding of this element.
     ///
     /// Requires the element to be normalized.
-    pub fn to_bytes(&self) -> FieldBytes {
+    pub fn to_bytes(self) -> FieldBytes {
         debug_assert!(self.magnitude == 1, "to_bytes requires normalized element");
         self.value.normalize().to_bytes()
     }
@@ -253,7 +253,7 @@ impl LazyFieldElement {
     /// Returns the raw `U256` representation of this element.
     ///
     /// Requires the element to be normalized.
-    pub(crate) fn to_u256(&self) -> U256 {
+    pub(crate) fn to_u256(self) -> U256 {
         debug_assert!(self.magnitude == 1, "to_u256 requires normalized element");
         self.value.normalize().to_u256()
     }

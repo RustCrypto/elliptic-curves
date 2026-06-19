@@ -108,8 +108,10 @@ impl FieldElement {
 
     /// Returns -self, treating it as a value of given magnitude.
     /// The provided magnitude must be equal or greater than the actual magnitude of `self`.
+    ///
+    /// The result is normalized.
     pub fn negate(&self, magnitude: u32) -> Self {
-        Self(self.0.negate(magnitude))
+        Self(self.0.negate(magnitude).normalize())
     }
 
     /// Fully normalizes the field element.
@@ -132,25 +134,31 @@ impl FieldElement {
     }
 
     /// Multiplies by a single-limb integer.
-    /// Multiplies the magnitude by the same value.
+    ///
+    /// The result is normalized.
     pub fn mul_single(&self, rhs: u32) -> Self {
-        Self(self.0.mul_single(rhs))
+        Self(self.0.mul_single(rhs).normalize())
     }
 
     /// Returns 2*self.
-    /// Doubles the magnitude.
+    ///
+    /// The result is normalized.
     pub fn double(&self) -> Self {
-        *self + *self
+        Self(self.0.add(&self.0).normalize())
     }
 
     /// Returns self * rhs mod p.
+    ///
+    /// The result is normalized.
     pub fn mul(&self, rhs: &Self) -> Self {
-        Self(self.0.mul(&rhs.0))
+        Self(self.0.mul(&rhs.0).normalize())
     }
 
     /// Returns self * self.
+    ///
+    /// The result is normalized.
     pub fn square(&self) -> Self {
-        Self(self.0.square())
+        Self(self.0.square().normalize())
     }
 
     /// Raises the scalar to the power `2^k`
@@ -369,7 +377,7 @@ impl Add<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: FieldElement) -> FieldElement {
-        FieldElement(self.0.add(&other.0))
+        FieldElement(self.0.add(&other.0).normalize())
     }
 }
 
@@ -377,7 +385,7 @@ impl Add<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.add(&other.0))
+        FieldElement(self.0.add(&other.0).normalize())
     }
 }
 
@@ -385,7 +393,7 @@ impl Add<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn add(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.add(&other.0))
+        FieldElement(self.0.add(&other.0).normalize())
     }
 }
 
@@ -405,7 +413,7 @@ impl Sub<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: FieldElement) -> FieldElement {
-        self + -other
+        FieldElement(self.0.add(&other.0.negate(1)).normalize())
     }
 }
 
@@ -413,7 +421,7 @@ impl Sub<&FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn sub(self, other: &FieldElement) -> FieldElement {
-        self + -other
+        FieldElement(self.0.add(&other.0.negate(1)).normalize())
     }
 }
 
@@ -433,7 +441,7 @@ impl Mul<FieldElement> for FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&other.0))
+        FieldElement(self.0.mul(&other.0).normalize())
     }
 }
 
@@ -442,7 +450,7 @@ impl Mul<&FieldElement> for FieldElement {
 
     #[inline(always)]
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&other.0))
+        FieldElement(self.0.mul(&other.0).normalize())
     }
 }
 
@@ -450,7 +458,7 @@ impl Mul<&FieldElement> for &FieldElement {
     type Output = FieldElement;
 
     fn mul(self, other: &FieldElement) -> FieldElement {
-        FieldElement(self.0.mul(&other.0))
+        FieldElement(self.0.mul(&other.0).normalize())
     }
 }
 
@@ -644,6 +652,50 @@ mod tests {
         );
     }
 
+    /// Regression test: every arithmetic operation on the public `FieldElement`
+    /// (the one that implements `ff::Field` / `ff::PrimeField`) must yield a value
+    /// that is in the canonical range `[0, p)`, so callers can use `is_odd`,
+    /// `to_bytes`, etc. on the result without an explicit `.normalize()`.
+    /// See the discussion on the branch `k256/type-safe-field-elements` for the
+    /// motivation (a previous lack of normalization broke #1522's use of
+    /// `BatchInvert` and other generic `ff`-based algorithms).
+    #[test]
+    fn arithmetic_ops_return_normalized() {
+        // Two arbitrary non-trivial field elements.
+        let a = FieldElement::from_u64(0xdeadbeef);
+        let b = FieldElement::from_u64(0x12345678);
+
+        // Sanity: `is_odd` / `to_bytes` work on freshly-constructed values.
+        assert!(bool::from(a.is_odd()));
+        assert_eq!(a.to_bytes()[28..], [0xde, 0xad, 0xbe, 0xef]);
+
+        // Core `core::ops` impls.
+        let sum = &a + &b;
+        assert_eq!(sum, (a.normalize() + b.normalize()).normalize());
+        let sum = a + &b;
+        assert_eq!(sum, (a.normalize() + b.normalize()).normalize());
+        let diff = a - &b;
+        assert_eq!(diff, (a.normalize() - b.normalize()).normalize());
+        let neg = -&a;
+        assert_eq!(neg, (-a.normalize()).normalize());
+        let prod = &a * &b;
+        assert_eq!(prod, (a.normalize() * b.normalize()).normalize());
+        let sq = a.square();
+        assert_eq!(sq, a.normalize().square());
+        let dbl = a.double();
+        assert_eq!(dbl, a.normalize().double());
+
+        // `ff::Field` API.
+        assert_eq!(<FieldElement as Field>::double(&a), a.double());
+        assert_eq!(<FieldElement as Field>::square(&a), a.square());
+
+        // Inherent methods that take an explicit magnitude.
+        let m3 = a.negate(2); // a + (-a) == 0
+        assert!(bool::from((a + &m3).is_zero()));
+        let m1 = b.mul_single(3);
+        assert_eq!(m1, b.normalize() * FieldElement::from_u64(3));
+    }
+
     #[test]
     fn repeated_add() {
         let mut r = FieldElement::ONE;
@@ -723,8 +775,8 @@ mod tests {
         let k: FieldElement = FieldElement::generate();
         let l: FieldElement = FieldElement::generate();
 
-        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let field_elements = vec![k, l];
+        let expected = [k.invert().unwrap(), l.invert().unwrap()];
+        let field_elements = [k, l];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
 
         assert_eq!(expected[0], actual[0].normalize());

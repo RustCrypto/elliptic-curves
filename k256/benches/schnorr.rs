@@ -21,7 +21,7 @@ fn bench_schnorr(c: &mut Criterion) {
     });
 
     let sk = SigningKey::generate();
-    let vk = sk.verifying_key().clone();
+    let vk = *sk.verifying_key();
     let message = b"Schnorr benchmark message for performance testing";
 
     // Signing (deterministic)
