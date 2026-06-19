@@ -15,9 +15,9 @@
 //! applied. The `ff::Field` trait impl on `FieldElement` performs this conversion
 //! automatically, so generic code using the trait is unaffected.
 
+use super::FieldElement;
 use crate::FieldBytes;
 use core::ops::{Add, Mul, Neg, Sub};
-use super::FieldElement;
 use elliptic_curve::{
     bigint::U256,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -29,12 +29,24 @@ cpubits::cpubits! {
     64 => { pub(crate) use super::field_5x52::FieldElement5x52 as Inner; }
 }
 
-/// Maximum magnitude for lazy field elements.
-///
-/// This is the largest magnitude `m` such that
-/// `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64` (for 64-bit limbs), ensuring no
-/// overflow occurs in addition/subtraction chains.
-pub const MAX_MAGNITUDE: u32 = 2047;
+cpubits::cpubits! {
+    32 => {
+        /// Maximum magnitude for lazy field elements (32-bit backend).
+        ///
+        /// This is the largest magnitude `m` such that
+        /// `0x3FFFFFF * 2 * (m + 1) < 2^32` (for 32-bit limbs), ensuring no
+        /// overflow occurs in `negate()`.
+        pub const MAX_MAGNITUDE: u32 = 31;
+    }
+    64 => {
+        /// Maximum magnitude for lazy field elements (64-bit backend).
+        ///
+        /// This is the largest magnitude `m` such that
+        /// `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64` (for 64-bit limbs), ensuring no
+        /// overflow occurs in `negate()`.
+        pub const MAX_MAGNITUDE: u32 = 2047;
+    }
+}
 
 /// A field element that may be lazily normalized — i.e. the result of arithmetic
 /// operations before a final modular reduction.
@@ -67,8 +79,10 @@ impl LazyFieldElement {
 
     /// Maximum supported magnitude.
     ///
-    /// This is the largest `m` such that `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64`
-    /// (64-bit limbs), which ensures no overflow occurs in addition chains.
+    /// This is the largest `m` such that `max_limb * 2 * (m + 1) < 2^bits`
+    /// for the active backend's limb size, which ensures no overflow occurs
+    /// in `negate()`. The value is backend-specific: 31 for the 32-bit
+    /// backend, 2047 for the 64-bit backend.
     pub const fn max_magnitude() -> u32 {
         MAX_MAGNITUDE
     }
@@ -217,10 +231,7 @@ impl LazyFieldElement {
     /// the class of bugs this type system is designed to eliminate.)
     #[inline]
     pub fn is_odd(&self) -> Choice {
-        debug_assert!(
-            self.magnitude == 1,
-            "is_odd requires normalized element",
-        );
+        debug_assert!(self.magnitude == 1, "is_odd requires normalized element",);
         self.value.is_odd()
     }
 
@@ -514,8 +525,6 @@ impl Zeroize for LazyFieldElement {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::LazyFieldElement;
@@ -557,5 +566,53 @@ mod tests {
     fn normalizes_to_zero_detects_both_zero_and_p() {
         let zero = LazyFieldElement::ONE.add(&LazyFieldElement::ONE.negate(1));
         assert!(bool::from(zero.normalizes_to_zero()));
+    }
+
+    /// Verify that `normalize_canonical()` rejects an element that has not
+    /// been weakly normalized (magnitude > 1).
+    ///
+    /// `normalize_canonical` skips the carry-propagation pass that
+    /// `normalize()` performs, so feeding it an un-normalized input produces
+    /// a silently incorrect result in release builds. The `debug_assert!`
+    /// inside the method must fire in debug builds to catch this class of bug
+    /// during testing.
+    ///
+    /// This test is expected to panic in debug builds (the default test
+    /// profile). In release builds the assertion is compiled out, so the test
+    /// would not panic — it is marked `#[cfg(debug_assertions)]` to avoid a
+    /// spurious failure in that case.
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic(expected = "normalize_canonical requires weakly-normalized input")]
+    fn normalize_canonical_rejects_unnormalized_input() {
+        // `add` produces a magnitude-2 element whose carries have NOT been
+        // propagated (it is a raw limb-wise sum). Passing this to
+        // `normalize_canonical` violates the precondition.
+        let mag2 = LazyFieldElement::ONE.add(&LazyFieldElement::ONE);
+        assert_eq!(mag2.magnitude, 2);
+        let _ = mag2.normalize_canonical();
+    }
+
+    /// Verify that `normalize_canonical()` produces the correct result when
+    /// its precondition IS satisfied (magnitude 1, carries propagated).
+    ///
+    /// `Inner::mul` propagates carries as part of the multiplication, so its
+    // output is weakly normalized (magnitude 1). `normalize_canonical` should
+    // then produce a canonical value identical to `normalize()`.
+    #[test]
+    fn normalize_canonical_matches_normalize_on_weakly_normalized_input() {
+        // `mul` produces a magnitude-1, weakly-normalized result.
+        let weak = LazyFieldElement::ONE.mul(&LazyFieldElement::from_u64(2));
+        assert_eq!(weak.magnitude, 1);
+
+        let canonical = weak.normalize_canonical();
+        let full = weak.normalize();
+
+        // Both should produce the same canonical value (2).
+        assert_eq!(canonical.to_bytes(), full.to_bytes());
+        assert_eq!(
+            canonical.to_bytes(),
+            LazyFieldElement::from_u64(2).to_bytes()
+        );
     }
 }

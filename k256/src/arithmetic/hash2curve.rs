@@ -139,12 +139,7 @@ impl MapToCurve for Secp256k1 {
         let (rx, ry) = element.osswu();
         let (qx, qy) = isogeny(rx, ry);
 
-        AffinePoint {
-            x: qx,
-            y: qy,
-            infinity: 0,
-        }
-        .into()
+        AffinePoint::from_field_elements(qx, qy).into()
     }
 }
 
