@@ -187,9 +187,17 @@ impl LazyFieldElement {
             self.magnitude == 1,
             "normalize_canonical requires weakly-normalized input (magnitude == 1)",
         );
-        Self {
-            value: self.value.normalize_canonical(),
-            magnitude: 1,
+        // Fast path: magnitude == 1 (always taken when invariants hold).
+        // The cold branch provides a safety net in release builds where the
+        // debug_assert is stripped — it falls back to full normalization
+        // rather than producing a silently incorrect result.
+        if self.magnitude == 1 {
+            Self {
+                value: self.value.normalize_canonical(),
+                magnitude: 1,
+            }
+        } else {
+            self.normalize()
         }
     }
 

@@ -4,6 +4,11 @@
 
 mod lazy;
 
+// `LazyFieldElement` is always available internally.
+// It is only re-exported publicly when `expose-field` is enabled.
+#[cfg(not(feature = "expose-field"))]
+pub(crate) use lazy::LazyFieldElement;
+#[cfg(feature = "expose-field")]
 pub use lazy::LazyFieldElement;
 
 use cpubits::cpubits;

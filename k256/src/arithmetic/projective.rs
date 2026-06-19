@@ -1048,4 +1048,53 @@ mod tests {
             AffinePoint::GENERATOR.neg()
         );
     }
+
+    /// Exercise `add`, `add_mixed`, and `double` with random points to verify
+    /// that the magnitude tracking in `LazyFieldElement` never overflows.
+    ///
+    /// The `debug_assert!` guards on every lazy arithmetic op serve as the
+    /// invariant checker — if a magnitude ever exceeds the safe bound, the
+    /// test panics in debug builds.
+    #[test]
+    #[cfg(feature = "getrandom")]
+    fn magnitude_bounds_randomized() {
+        // Generate random projective / affine points via random scalars.
+        let scalars: Vec<Scalar> = (0..12).map(|_| Scalar::generate()).collect();
+        let projective: Vec<ProjectivePoint> = scalars
+            .iter()
+            .map(|s| ProjectivePoint::GENERATOR * s)
+            .collect();
+        let affine: Vec<AffinePoint> = scalars
+            .iter()
+            .map(|s| (ProjectivePoint::GENERATOR * s).to_affine())
+            .collect();
+
+        // Mix add, add_mixed, and double in random sequences.
+        // Each formula exercises a different magnitude envelope — this test
+        // is the cheap version of a full fuzzer.
+        for i in 0..projective.len() {
+            for j in 0..projective.len() {
+                let p = projective[i];
+                let q = projective[j];
+                let a = affine[j];
+
+                // Projective + projective (full add).
+                let r_add = (p + q).to_affine();
+                let r_add_ref = (ProjectivePoint::from(p.to_affine())
+                    + ProjectivePoint::from(q.to_affine()))
+                .to_affine();
+                assert_eq!(r_add, r_add_ref);
+
+                // Projective + affine (mixed add).
+                let r_mixed = (p + a).to_affine();
+                let r_mixed_ref = (ProjectivePoint::from(p.to_affine()) + a).to_affine();
+                assert_eq!(r_mixed, r_mixed_ref);
+
+                // Doubling.
+                let r_dbl = p.double().to_affine();
+                let r_dbl_ref = ProjectivePoint::from(p.to_affine()).double().to_affine();
+                assert_eq!(r_dbl, r_dbl_ref);
+            }
+        }
+    }
 }

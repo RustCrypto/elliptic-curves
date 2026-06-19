@@ -13,7 +13,11 @@ mod hash2curve;
 #[cfg(feature = "precomputed-tables")]
 mod tables;
 
-pub use field::{FieldElement, LazyFieldElement};
+pub use field::FieldElement;
+#[cfg(not(feature = "expose-field"))]
+pub(crate) use field::LazyFieldElement;
+#[cfg(feature = "expose-field")]
+pub use field::LazyFieldElement;
 
 use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 use crate::Secp256k1;
