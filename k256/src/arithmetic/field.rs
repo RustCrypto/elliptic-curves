@@ -659,8 +659,8 @@ mod tests {
         assert_eq!(
             FieldElement::from_bytes(
                 &[
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 1
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 1
                 ]
                 .into()
             )
@@ -678,8 +678,8 @@ mod tests {
         assert_eq!(
             FieldElement::ONE.to_bytes(),
             [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 1
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 1
             ]
         );
     }
@@ -797,8 +797,10 @@ mod tests {
         let expected = [k.invert().unwrap(), l.invert().unwrap()];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
 
-        assert_eq!(expected[0], actual[0].normalize());
-        assert_eq!(expected[1], actual[1].normalize());
+        // No .normalize() — trust the FieldElement type invariant that
+        // BatchInvert always returns canonical elements.
+        assert_eq!(expected[0], actual[0]);
+        assert_eq!(expected[1], actual[1]);
     }
 
     #[test]
@@ -811,8 +813,9 @@ mod tests {
         let field_elements = [k, l];
         let actual = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
 
-        assert_eq!(expected[0], actual[0].normalize());
-        assert_eq!(expected[1], actual[1].normalize());
+        // No .normalize() — trust the FieldElement type invariant.
+        assert_eq!(expected[0], actual[0]);
+        assert_eq!(expected[1], actual[1]);
     }
 
     #[test]
