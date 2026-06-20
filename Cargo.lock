@@ -1714,6 +1714,7 @@ version = "0.14.0-pre.0"
 dependencies = [
  "ff",
  "group",
+ "hybrid-array",
 ]
 
 [[package]]
