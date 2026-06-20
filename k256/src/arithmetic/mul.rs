@@ -253,25 +253,7 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
 
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
-        #[cfg(not(feature = "alloc"))]
-        {
-            let mut tables =
-                vec![(LookupTable::default(), LookupTable::default()); points_and_scalars.len()];
-            let mut digits = vec![
-                (
-                    Radix16Decomposition::<U33>::default(),
-                    Radix16Decomposition::<U33>::default(),
-                );
-                points_and_scalars.len()
-            ];
-
-            lincomb_vartime(points_and_scalars, &mut tables, &mut digits)
-        }
-
-        #[cfg(feature = "alloc")]
-        {
-            lincomb_vartime(points_and_scalars)
-        }
+        lincomb_vartime(points_and_scalars)
     }
 }
 
@@ -470,6 +452,7 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
 }
 
 /// Variable-time `k * self` using width-5 wNAF + GLV endomorphism.
+#[inline]
 fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     let (bases, scalars) = decompose_glv_wnaf(x, k);
     WnafBase::multiscalar_mul_array(&scalars, &bases)
