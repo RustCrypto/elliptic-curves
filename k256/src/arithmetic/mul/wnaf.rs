@@ -90,16 +90,12 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
     ///
     /// `scalars` and `bases` must have the same length.
     #[must_use]
-    pub fn multiscalar_mul<WnafStorage: ArraySize>(
-        scalars: &[WnafScalar<G::Scalar, W, WnafStorage>],
-        bases: &[Self],
-    ) -> G {
-        let terms = bases
-            .iter()
-            .zip(scalars.iter())
-            .map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits));
-
-        wnaf_multi_exp(terms)
+    pub fn multiscalar_mul<'a, WnafStorage, I>(pairs: I) -> G
+    where
+        WnafStorage: ArraySize,
+        I: Clone + Iterator<Item = (&'a Self, &'a WnafScalar<G::Scalar, W, WnafStorage>)>,
+    {
+        wnaf_multi_exp(pairs.map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits)))
     }
 }
 
@@ -109,7 +105,7 @@ impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar,
     type Output = G;
 
     fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
-        wnaf_exp(&self.table, &rhs.wnaf, rhs.digits)
+        WnafBase::multiscalar_mul(core::iter::once((self, rhs)))
     }
 }
 
@@ -358,19 +354,6 @@ fn wnaf_form<S: AsRef<[u8]>, WnafStorage: ArraySize>(
     }
 
     cursor
-}
-
-/// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar.
-///
-/// `window` must match the window size used to construct both `table` and `wnaf`.
-#[inline]
-fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
-    table: &Array<G, TableSize>,
-    wnaf: &Array<i64, WnafStorage>,
-    wnaf_len: usize,
-) -> G {
-    let terms = [(table.as_slice(), wnaf.as_slice(), wnaf_len)];
-    wnaf_multi_exp(terms.iter().copied())
 }
 
 /// Performs w-NAF multi-exponentiation using the interleaved window method, also known as
