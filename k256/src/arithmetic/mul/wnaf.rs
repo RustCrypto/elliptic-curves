@@ -5,7 +5,7 @@
 //! goal is to eventually get onto the implementation in the `wnaf` crate (and ideally, eventually
 //! get onto the implementation in `group`).
 
-use core::{marker::PhantomData, ops::Mul, slice};
+use core::{marker::PhantomData, ops::Mul};
 use elliptic_curve::{
     array::{
         Array, ArraySize,
@@ -14,9 +14,6 @@ use elliptic_curve::{
     group::Group,
 };
 use primeorder::{PrimeField, PrimeFieldExt};
-
-#[cfg(feature = "alloc")]
-use alloc::vec::Vec;
 
 // Compute w-NAF table size using `typenum` type-level arithmetic. Unfortunately we can't use this
 // in struct definitions or bounds without the compiler infinitely recursing.
@@ -92,33 +89,17 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// using the interleaved window method, also known as Straus's method.
     ///
     /// `scalars` and `bases` must have the same length.
-    #[cfg(feature = "alloc")]
     #[must_use]
     pub fn multiscalar_mul<WnafStorage: ArraySize>(
         scalars: &[WnafScalar<G::Scalar, W, WnafStorage>],
         bases: &[Self],
     ) -> G {
-        debug_assert_eq!(scalars.len(), bases.len());
-        let wnafs: Vec<_> = scalars
+        let terms = bases
             .iter()
-            .map(|s| (s.wnaf.as_slice(), s.digits))
-            .collect();
-        let tables: Vec<_> = bases.iter().map(|b| b.table.as_slice()).collect();
-        wnaf_multi_exp(&tables, &wnafs, W::USIZE)
-    }
+            .zip(scalars.iter())
+            .map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits));
 
-    /// Perform a multiscalar multiplication with fixed-size array arguments.
-    ///
-    /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
-    /// using the interleaved window method, also known as Straus's method.
-    #[must_use]
-    pub fn multiscalar_mul_array<WnafStorage: ArraySize, const N: usize>(
-        scalars: &[WnafScalar<G::Scalar, W, WnafStorage>; N],
-        bases: &[Self; N],
-    ) -> G {
-        let wnafs = scalars.each_ref().map(|s| (s.wnaf.as_slice(), s.digits));
-        let tables = bases.each_ref().map(|b| b.table.as_slice());
-        wnaf_multi_exp(&tables, &wnafs, W::USIZE)
+        wnaf_multi_exp(terms)
     }
 }
 
@@ -128,7 +109,7 @@ impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar,
     type Output = G;
 
     fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
-        wnaf_exp(&self.table, &rhs.wnaf, rhs.digits, W::USIZE)
+        wnaf_exp(&self.table, &rhs.wnaf, rhs.digits)
     }
 }
 
@@ -387,15 +368,9 @@ fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
     table: &Array<G, TableSize>,
     wnaf: &Array<i64, WnafStorage>,
     wnaf_len: usize,
-    window: usize,
 ) -> G {
-    let table_slice: &[G] = table.as_slice();
-    let wnaf_entry: (&[i64], usize) = (wnaf.as_slice(), wnaf_len);
-    wnaf_multi_exp(
-        slice::from_ref(&table_slice),
-        slice::from_ref(&wnaf_entry),
-        window,
-    )
+    let terms = [(table.as_slice(), wnaf.as_slice(), wnaf_len)];
+    wnaf_multi_exp(terms.iter().copied())
 }
 
 /// Performs w-NAF multi-exponentiation using the interleaved window method, also known as
@@ -411,25 +386,32 @@ fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss
 )]
-fn wnaf_multi_exp<G: Group>(tables: &[&[G]], wnafs: &[(&[i64], usize)], window: usize) -> G {
-    debug_assert_eq!(tables.len(), wnafs.len());
-    debug_assert!(tables.iter().all(|t| t.len() == 1 << (window - 2)));
-
-    let window_size = wnafs.iter().map(|(_, len)| *len).max().unwrap_or(0);
+fn wnaf_multi_exp<'a, G, I>(terms: I) -> G
+where
+    G: Group,
+    I: Clone + IntoIterator<Item = (&'a [G], &'a [i64], usize)>,
+{
+    let window_size = terms
+        .clone()
+        .into_iter()
+        .map(|(_, _, len)| len)
+        .max()
+        .unwrap_or(0);
 
     let mut result = G::identity();
     let mut found_one = false;
 
     for i in (0..window_size).rev() {
-        // Only double once per iteration of the loop
         if found_one {
             result = result.double();
         }
 
-        for (&table, (wnaf, _)) in tables.iter().zip(wnafs.iter()) {
+        for (table, wnaf, _) in terms.clone() {
             let n = wnaf.get(i).copied().unwrap_or(0);
+
             if n != 0 {
                 found_one = true;
+
                 if n > 0 {
                     result += table[(n / 2) as usize];
                 } else {

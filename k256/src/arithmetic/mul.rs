@@ -452,7 +452,7 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
 #[inline]
 fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     let (bases, scalars) = decompose_glv_wnaf(x, k);
-    WnafBase::multiscalar_mul_array(&scalars, &bases)
+    WnafBase::multiscalar_mul(&scalars, &bases)
 }
 
 /// GLV-decompose `k` for `x`: two `(WnafBase, WnafScalar)` pairs representing `r1 * self_signed`
@@ -541,7 +541,7 @@ impl MulByGeneratorVartime for ProjectivePoint {
     fn mul_by_generator_and_mul_add_vartime(a: &Self::Scalar, b: &Self::Scalar, p: &Self) -> Self {
         let ([gb0, gb1], [gs0, gs1]) = decompose_glv_wnaf(&ProjectivePoint::GENERATOR, a);
         let ([pb0, pb1], [ps0, ps1]) = decompose_glv_wnaf(p, b);
-        WnafBase::multiscalar_mul_array(&[gs0, gs1, ps0, ps1], &[gb0, gb1, pb0, pb1])
+        WnafBase::multiscalar_mul(&[gs0, gs1, ps0, ps1], &[gb0, gb1, pb0, pb1])
     }
 }
 
