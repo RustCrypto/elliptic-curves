@@ -7,7 +7,10 @@
 
 use core::{marker::PhantomData, ops::Mul, slice};
 use elliptic_curve::{
-    array::{Array, ArraySize, typenum::Unsigned},
+    array::{
+        Array, ArraySize,
+        typenum::{U1, U2, U3, U4, U5, U6, U7, U8, U16, U32, U64, Unsigned},
+    },
     group::Group,
 };
 use primeorder::{PrimeField, PrimeFieldExt};
@@ -15,8 +18,32 @@ use primeorder::{PrimeField, PrimeFieldExt};
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-/// A fixed window table for a group element, precomputed to improve the speed of scalar
-/// multiplication.
+// Compute w-NAF table size using `typenum` type-level arithmetic. Unfortunately we can't use this
+// in struct definitions or bounds without the compiler infinitely recursing.
+// TODO(tarcieri): either make use of this or remove it when copying this back to `wnaf` crate
+//type TableSize<W> = Shleft<U1, Diff<W, U2>>;
+
+/// Allowed w-NAF window size: we use this to precompute the window point sizes, because it's
+/// currently not possible to write bounds for them.
+pub(super) trait WindowSize: Unsigned {
+    /// Number of precomputed points in the window table: `1 << (Self::USIZE - 2)`.
+    type TableSize: ArraySize;
+}
+
+// TODO(tarcieri): compute or failing that test window sizes
+macro_rules! impl_window_sizes {
+    ($($window_size:ty => $table_size:ty),+) => {
+        $(
+            impl WindowSize for $window_size {
+                type TableSize = $table_size;
+            }
+        )+
+    };
+}
+
+impl_window_sizes!(U2 => U1, U3 => U2, U4 => U4, U5 => U8, U6 => U16, U7 => U32, U8 => U64);
+
+/// Fixed window table for a group element, precomputed to improve scalar multiplication speed.
 ///
 /// This struct is designed for usage patterns that have long-term cached bases and/or
 /// scalars, or [Cartesian products] of bases and scalars. The [`Wnaf`] API enables one or
@@ -47,24 +74,15 @@ use alloc::vec::Vec;
 /// in the type system that the base and scalar `Wnaf`s were computed with the same window
 /// size, allowing the result to be computed infallibly.
 #[derive(Clone, Debug)]
-pub(super) struct WnafBase<G: Group, W: Unsigned, TableSize: ArraySize> {
-    table: Array<G, TableSize>,
-    _window: PhantomData<W>,
+pub(super) struct WnafBase<G: Group, W: WindowSize> {
+    table: Array<G, W::TableSize>,
 }
 
-impl<G: Group, W: Unsigned, TableSize: ArraySize> WnafBase<G, W, TableSize> {
+impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// Computes a window table for the given base with the specified window size `W`.
     pub fn new(base: G) -> Self {
-        const {
-            assert!(
-                TableSize::USIZE == 1 << (W::USIZE - 2),
-                "provided `TableSize` is incorrect"
-            );
-        }
-
         WnafBase {
             table: wnaf_table(base, W::USIZE),
-            _window: PhantomData,
         }
     }
 
@@ -104,8 +122,8 @@ impl<G: Group, W: Unsigned, TableSize: ArraySize> WnafBase<G, W, TableSize> {
     }
 }
 
-impl<G: Group, W: Unsigned, TableSize: ArraySize, WnafStorage: ArraySize>
-    Mul<&WnafScalar<G::Scalar, W, WnafStorage>> for &WnafBase<G, W, TableSize>
+impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar, W, WnafStorage>>
+    for &WnafBase<G, W>
 {
     type Output = G;
 
@@ -114,20 +132,19 @@ impl<G: Group, W: Unsigned, TableSize: ArraySize, WnafStorage: ArraySize>
     }
 }
 
-/// A "w-ary non-adjacent form" scalar, precomputed to improve the speed of
-/// scalar multiplication.
+/// A "w-ary non-adjacent form" scalar, precomputed to improve the speed of scalar multiplication.
 ///
 /// # Examples
 ///
 /// See [`WnafBase`] for usage examples.
 #[derive(Clone, Debug)]
-pub(super) struct WnafScalar<F: PrimeField, W: Unsigned, WnafStorage: ArraySize> {
+pub(super) struct WnafScalar<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> {
     wnaf: Array<i64, WnafStorage>,
     digits: usize,
     _field: PhantomData<(F, W)>,
 }
 
-impl<F: PrimeFieldExt, W: Unsigned, WnafStorage: ArraySize> WnafScalar<F, W, WnafStorage> {
+impl<F: PrimeFieldExt, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, WnafStorage> {
     /// Computes the w-NAF representation of the given scalar with window size `W`.
     pub fn new(scalar: &F) -> Self {
         let mut wnaf = Array::from_fn(|_| 0i64);
@@ -167,9 +184,10 @@ impl<F: PrimeFieldExt, W: Unsigned, WnafStorage: ArraySize> WnafScalar<F, W, Wna
         }
 
         // Validate that `bytes` encodes a canonical field element by round-tripping it through
-        // `F::from_repr`, which returns `None` for any integer >= the modulus. `from_repr`
-        // consumes the canonical big-endian representation, so reverse the little-endian input
-        // into a zero-extended `F::Repr`.
+        // `F::from_repr`, which returns `None` for any integer >= the modulus.
+        //
+        // `from_repr` consumes the canonical big-endian representation, so reverse the
+        // little-endian input into a zero-extended `F::Repr`.
         let mut repr = F::Repr::default();
         let repr_len = repr.as_ref().len();
 
@@ -269,9 +287,10 @@ impl<'a> LimbBuffer<'a> {
 
 /// Computes a w-NAF window table for the given base and window size.
 ///
-/// For a window of size `w`, non-zero w-NAF digits are odd and have magnitude at most
-/// `2^(w-1) - 1`. The table is indexed by `|digit| / 2`, so the required size is
-/// `(2^(w-1) - 1) / 2 + 1 = 2^(w-2)` entries.
+/// For a window of size `w` non-zero w-NAF digits are odd and have magnitude at most `2^(w-1) - 1`.
+///
+/// The table is indexed by `|digit| / 2`, so the required size is `(2^(w-1) - 1) / 2 + 1 = 2^(w-2)`
+/// entries.
 fn wnaf_table<G: Group, TableSize: ArraySize>(base: G, window: usize) -> Array<G, TableSize> {
     debug_assert_eq!(TableSize::USIZE, 1 << (window - 2));
 
@@ -380,7 +399,7 @@ fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
 }
 
 /// Performs w-NAF multi-exponentiation using the interleaved window method, also known as
-/// Straus' method.
+/// Straus's method.
 ///
 /// The key insight is that when computing this sum by means of additions and doublings, the
 /// doublings can be shared by performing the additions within an inner loop.

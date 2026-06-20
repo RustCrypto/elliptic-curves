@@ -42,7 +42,7 @@ use super::{
 };
 use core::array;
 use elliptic_curve::{
-    array::sizes::{U5, U8, U33, U257},
+    array::sizes::{U5, U33, U257},
     ops::{LinearCombination, Mul, MulAssign, MulByGeneratorVartime, MulVartime},
     scalar::IsHigh,
     subtle::ConditionallySelectable,
@@ -58,7 +58,7 @@ use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
 type LookupTable = primeorder::LookupTable<ProjectivePoint>;
 
 /// `WnafBase` specialized for `k256`.
-type WnafBase = wnaf::WnafBase<ProjectivePoint, U5, U8>;
+type WnafBase = wnaf::WnafBase<ProjectivePoint, U5>;
 
 /// `WnafScalar` specialized for `k256`.
 type WnafScalar = wnaf::WnafScalar<Scalar, U5, U257>;
