@@ -90,10 +90,7 @@ const G2: Scalar = Scalar::from_bytes_unchecked(&[
 
 /// Number of little-endian bytes to feed into `WnafScalar::from_le_bytes` for a GLV half-scalar.
 /// GLV guarantees magnitude < 2^128 (16 bytes).
-///
-/// We use 17 bytes (136 bits) to give headroom for its carry bit without relying on the
-/// trailing-carry special case.
-const GLV_LE_BYTES: usize = 17;
+const GLV_LE_BYTES: usize = 16;
 
 /*
  * Proof for decompose_scalar's bounds.
