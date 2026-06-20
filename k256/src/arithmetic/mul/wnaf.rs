@@ -378,9 +378,6 @@ fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
 ///
 /// The key insight is that when computing this sum by means of additions and doublings, the
 /// doublings can be shared by performing the additions within an inner loop.
-///
-/// `tables` and `wnafs` must have been constructed with the same window size `window`;
-/// otherwise this function may panic or produce invalid results.
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,

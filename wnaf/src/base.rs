@@ -1,10 +1,9 @@
-use crate::{WnafScalar, wnaf_exp, wnaf_multi_exp, wnaf_table};
-use alloc::vec::Vec;
+use crate::{WindowSize, WnafScalar, wnaf_exp, wnaf_multi_exp, wnaf_table};
+use array::{Array, ArraySize};
 use core::ops::Mul;
 use group::Group;
 
-/// A fixed window table for a group element, precomputed to improve the speed of scalar
-/// multiplication.
+/// Fixed window table for a group element, precomputed to improve scalar multiplication speed.
 ///
 /// This struct is designed for usage patterns that have long-term cached bases and/or
 /// scalars, or [Cartesian products] of bases and scalars. The [`Wnaf`] API enables one or
@@ -23,79 +22,56 @@ use group::Group;
 /// # Examples
 ///
 /// ```ignore
-/// use group::{WnafBase, WnafScalar};
+/// type MyWnafBase   = WnafBase<ProjectivePoint, U5, U8>;
+/// type MyWnafScalar = WnafScalar<Scalar, U5, U129>;
 ///
-/// let wnaf_bases: Vec<_> = bases.into_iter().map(WnafBase::<_, 4>::new).collect();
-/// let wnaf_scalars: Vec<_> = scalars.iter().map(WnafScalar::new).collect();
-/// let results: Vec<_> = wnaf_bases
-///     .iter()
-///     .flat_map(|base| wnaf_scalars.iter().map(|scalar| base * scalar))
-///     .collect();
+/// let base = MyWnafBase::new(ProjectivePoint::GENERATOR);
+/// let scalar = MyWnafScalar::new(&s);
+/// let result = base * scalar;
 /// ```
 ///
-/// Note that this pattern requires specifying a fixed window size (unlike previous
-/// patterns that picked a suitable window size internally). This is necessary to ensure
+/// Note that this pattern requires specifying a fixed window size `W`. This is necessary to ensure
 /// in the type system that the base and scalar `Wnaf`s were computed with the same window
 /// size, allowing the result to be computed infallibly.
 #[derive(Clone, Debug)]
-pub struct WnafBase<G: Group, const WINDOW_SIZE: usize> {
-    table: Vec<G>,
+pub struct WnafBase<G: Group, W: WindowSize> {
+    table: Array<G, W::TableSize>,
 }
 
-impl<G: Group, const WINDOW_SIZE: usize> WnafBase<G, WINDOW_SIZE> {
-    /// Computes a window table for the given base with the specified `WINDOW_SIZE`.
+impl<G: Group, W: WindowSize> WnafBase<G, W> {
+    /// Computes a window table for the given base with the specified window size `W`.
     pub fn new(base: G) -> Self {
-        let mut table = vec![];
-
-        // Compute a window table for the provided base and window size.
-        wnaf_table(&mut table, base, WINDOW_SIZE);
-
-        WnafBase { table }
+        WnafBase {
+            table: wnaf_table(base, W::USIZE),
+        }
     }
 
     /// Perform a multiscalar multiplication.
     ///
     /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
-    /// using the interleaved window method, also known as Straus' method.
-    pub fn multiscalar_mul<I, J>(scalars: I, bases: J) -> G
-    where
-        I: IntoIterator<Item = WnafScalar<G::Scalar, WINDOW_SIZE>>,
-        J: IntoIterator<Item = Self>,
-    {
-        let wnafs = scalars.into_iter().map(|s| s.wnaf).collect::<Vec<_>>();
-        let tables = bases.into_iter().map(|b| b.table).collect::<Vec<_>>();
-        wnaf_multi_exp(tables.as_slice(), wnafs.as_slice())
-    }
-
-    /// Perform a multiscalar multiplication over a fixed-size set of scalars and bases.
+    /// using the interleaved window method, also known as Straus's method.
     ///
-    /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
-    /// using the interleaved window method, also known as Straus' method.
-    ///
-    /// This is a borrowing, fixed-arity counterpart to [`multiscalar_mul`]: it operates on
-    /// `&[_; N]` arrays and borrows the precomputed w-NAF forms and window tables in place,
-    /// avoiding the intermediate heap allocations that the iterator-based version performs. It
-    /// suits hot paths with a statically known number of terms (for example the four sub-scalars
-    /// of a GLV-decomposed `aG + bP`).
-    ///
-    /// [`multiscalar_mul`]: Self::multiscalar_mul
+    /// `scalars` and `bases` must have the same length.
     #[must_use]
-    pub fn multiscalar_mul_array<const N: usize>(
-        scalars: &[WnafScalar<G::Scalar, WINDOW_SIZE>; N],
-        bases: &[Self; N],
+    pub fn multiscalar_mul<WnafStorage: ArraySize>(
+        scalars: &[WnafScalar<G::Scalar, W, WnafStorage>],
+        bases: &[Self],
     ) -> G {
-        let wnafs = scalars.each_ref().map(|s| s.wnaf.as_slice());
-        let tables = bases.each_ref().map(|b| b.table.as_slice());
-        wnaf_multi_exp(&tables, &wnafs)
+        let terms = bases
+            .iter()
+            .zip(scalars.iter())
+            .map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits));
+
+        wnaf_multi_exp(terms)
     }
 }
 
-impl<G: Group, const WINDOW_SIZE: usize> Mul<&WnafScalar<G::Scalar, WINDOW_SIZE>>
-    for &WnafBase<G, WINDOW_SIZE>
+impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar, W, WnafStorage>>
+    for &WnafBase<G, W>
 {
     type Output = G;
 
-    fn mul(self, rhs: &WnafScalar<G::Scalar, WINDOW_SIZE>) -> Self::Output {
-        wnaf_exp(&self.table, &rhs.wnaf)
+    fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
+        wnaf_exp(&self.table, &rhs.wnaf, rhs.digits)
     }
 }

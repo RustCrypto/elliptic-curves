@@ -54,4 +54,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
+      - run: cargo test --no-default-features
       - run: cargo test
+      - run: cargo test --all-features

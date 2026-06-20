@@ -1,32 +1,29 @@
-use crate::{le_repr, wnaf_form};
-use alloc::vec::Vec;
+use crate::{WindowSize, le_repr, wnaf_form};
+use array::{Array, ArraySize};
 use core::marker::PhantomData;
 use ff::PrimeField;
 
-/// A "w-ary non-adjacent form" scalar, that uses precomputation to improve the speed of
-/// scalar multiplication.
+/// A "w-ary non-adjacent form" scalar, precomputed to improve the speed of scalar multiplication.
 ///
 /// # Examples
 ///
 /// See [`WnafBase`] for usage examples.
 #[derive(Clone, Debug)]
-pub struct WnafScalar<F: PrimeField, const WINDOW_SIZE: usize> {
-    pub(crate) wnaf: Vec<i64>,
-    field: PhantomData<F>,
+pub struct WnafScalar<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> {
+    pub(crate) wnaf: Array<i64, WnafStorage>,
+    pub(crate) digits: usize,
+    _field: PhantomData<(F, W)>,
 }
 
-impl<F: PrimeField, const WINDOW_SIZE: usize> WnafScalar<F, WINDOW_SIZE> {
-    /// Computes the w-NAF representation of the given scalar with the specified
-    /// `WINDOW_SIZE`.
+impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, WnafStorage> {
+    /// Computes the w-NAF representation of the given scalar with window size `W`.
     pub fn new(scalar: &F) -> Self {
-        let mut wnaf = vec![];
-
-        // Compute the w-NAF form of the scalar.
-        wnaf_form(&mut wnaf, le_repr(scalar), WINDOW_SIZE);
-
+        let mut wnaf = Array::from_fn(|_| 0i64);
+        let len = wnaf_form(&mut wnaf, le_repr(scalar), W::USIZE);
         WnafScalar {
             wnaf,
-            field: PhantomData,
+            digits: len,
+            _field: PhantomData,
         }
     }
 
@@ -49,13 +46,19 @@ impl<F: PrimeField, const WINDOW_SIZE: usize> WnafScalar<F, WINDOW_SIZE> {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `bytes` is longer than the field's canonical representation, or if
-    /// the encoded integer is greater than or equal to the field modulus.
+    /// Returns `None` if `bytes` is longer than the field's canonical representation, if the
+    /// encoded integer is greater than or equal to the field modulus, or if `bytes.len() * 8 + 1`
+    /// exceeds `WnafStorage::USIZE` (which would overflow the fixed-size `wnaf` storage).
     pub fn from_le_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() * 8 + 1 > WnafStorage::USIZE {
+            return None;
+        }
+
         // Validate that `bytes` encodes a canonical field element by round-tripping it through
-        // `F::from_repr`, which returns `None` for any integer greater than or equal to the
-        // modulus. `from_repr` consumes the canonical representation, assumed big-endian to match
-        // `le_repr` below, so reverse the little-endian input into a zero-extended `F::Repr`.
+        // `F::from_repr`, which returns `None` for any integer >= the modulus.
+        //
+        // `from_repr` consumes the canonical big-endian representation, so reverse the
+        // little-endian input into a zero-extended `F::Repr`.
         let mut repr = F::Repr::default();
         let repr_len = repr.as_ref().len();
 
@@ -72,14 +75,13 @@ impl<F: PrimeField, const WINDOW_SIZE: usize> WnafScalar<F, WINDOW_SIZE> {
             return None;
         }
 
-        let mut wnaf = vec![];
-
-        // Compute the w-NAF form directly from the provided little-endian bytes.
-        wnaf_form(&mut wnaf, bytes, WINDOW_SIZE);
+        let mut wnaf = Array::default();
+        let digits = wnaf_form(&mut wnaf, bytes, W::USIZE);
 
         Some(WnafScalar {
             wnaf,
-            field: PhantomData,
+            digits,
+            _field: PhantomData,
         })
     }
 }
