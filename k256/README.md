@@ -102,7 +102,7 @@ dual licensed as above, without any additional terms or conditions.
 [RustCrypto]: https://github.com/RustCrypto/
 [secp256k1]: https://en.bitcoin.it/wiki/Secp256k1
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
-[`arithmetic`]: https://docs.rs/k256/latest/k256/arithmetic/index.html
+[`arithmetic`]: https://docs.rs/k256/latest/k256/index.html#arithmetic
 [`group`]: https://github.com/zkcrypto/group
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
