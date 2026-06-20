@@ -5,10 +5,15 @@
 //! goal is to eventually get onto the implementation in the `wnaf` crate (and ideally, eventually
 //! get onto the implementation in `group`).
 
-use alloc::vec::Vec;
-use core::{marker::PhantomData, ops::Mul};
-use elliptic_curve::group::Group;
+use core::{marker::PhantomData, ops::Mul, slice};
+use elliptic_curve::{
+    array::{Array, ArraySize, typenum::Unsigned},
+    group::Group,
+};
 use primeorder::{PrimeField, PrimeFieldExt};
+
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
 
 /// A fixed window table for a group element, precomputed to improve the speed of scalar
 /// multiplication.
@@ -30,99 +35,107 @@ use primeorder::{PrimeField, PrimeFieldExt};
 /// # Examples
 ///
 /// ```ignore
-/// use group::{WnafBase, WnafScalar};
+/// type MyWnafBase   = WnafBase<ProjectivePoint, U5, U8>;
+/// type MyWnafScalar = WnafScalar<Scalar, U5, U129>;
 ///
-/// let wnaf_bases: Vec<_> = bases.into_iter().map(WnafBase::<_, 4>::new).collect();
-/// let wnaf_scalars: Vec<_> = scalars.iter().map(WnafScalar::new).collect();
-/// let results: Vec<_> = wnaf_bases
-///     .iter()
-///     .flat_map(|base| wnaf_scalars.iter().map(|scalar| base * scalar))
-///     .collect();
+/// let base = MyWnafBase::new(ProjectivePoint::GENERATOR);
+/// let scalar = MyWnafScalar::new(&s);
+/// let result = base * scalar;
 /// ```
 ///
-/// Note that this pattern requires specifying a fixed window size (unlike previous
-/// patterns that picked a suitable window size internally). This is necessary to ensure
+/// Note that this pattern requires specifying a fixed window size `W`. This is necessary to ensure
 /// in the type system that the base and scalar `Wnaf`s were computed with the same window
 /// size, allowing the result to be computed infallibly.
 #[derive(Clone, Debug)]
-pub(super) struct WnafBase<G: Group, const WINDOW_SIZE: usize> {
-    table: Vec<G>,
+pub(super) struct WnafBase<G: Group, W: Unsigned, TableSize: ArraySize> {
+    table: Array<G, TableSize>,
+    _window: PhantomData<W>,
 }
 
-impl<G: Group, const WINDOW_SIZE: usize> WnafBase<G, WINDOW_SIZE> {
-    /// Computes a window table for the given base with the specified `WINDOW_SIZE`.
+impl<G: Group, W: Unsigned, TableSize: ArraySize> WnafBase<G, W, TableSize> {
+    /// Computes a window table for the given base with the specified window size `W`.
     pub fn new(base: G) -> Self {
-        let mut table = vec![];
+        const {
+            assert!(
+                TableSize::USIZE == 1 << (W::USIZE - 2),
+                "provided `TableSize` is incorrect"
+            );
+        }
 
-        // Compute a window table for the provided base and window size.
-        wnaf_table(&mut table, base, WINDOW_SIZE);
-
-        WnafBase { table }
+        WnafBase {
+            table: wnaf_table(base, W::USIZE),
+            _window: PhantomData,
+        }
     }
 
     /// Perform a multiscalar multiplication.
     ///
     /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
-    /// using the interleaved window method, also known as Straus' method.
-    pub fn multiscalar_mul<I, J>(scalars: I, bases: J) -> G
-    where
-        I: IntoIterator<Item = WnafScalar<G::Scalar, WINDOW_SIZE>>,
-        J: IntoIterator<Item = Self>,
-    {
-        let wnafs = scalars.into_iter().map(|s| s.wnaf).collect::<Vec<_>>();
-        let tables = bases.into_iter().map(|b| b.table).collect::<Vec<_>>();
-        wnaf_multi_exp(tables.as_slice(), wnafs.as_slice())
+    /// using the interleaved window method, also known as Straus's method.
+    ///
+    /// `scalars` and `bases` must have the same length.
+    #[cfg(feature = "alloc")]
+    #[must_use]
+    pub fn multiscalar_mul<WnafStorage: ArraySize>(
+        scalars: &[WnafScalar<G::Scalar, W, WnafStorage>],
+        bases: &[Self],
+    ) -> G {
+        debug_assert_eq!(scalars.len(), bases.len());
+        let wnafs: Vec<_> = scalars
+            .iter()
+            .map(|s| (s.wnaf.as_slice(), s.digits))
+            .collect();
+        let tables: Vec<_> = bases.iter().map(|b| b.table.as_slice()).collect();
+        wnaf_multi_exp(&tables, &wnafs, W::USIZE)
     }
 
     /// Perform a multiscalar multiplication with fixed-size array arguments.
     ///
     /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
-    /// using the interleaved window method, also known as Straus' method.
+    /// using the interleaved window method, also known as Straus's method.
     #[must_use]
-    pub fn multiscalar_mul_array<const N: usize>(
-        scalars: &[WnafScalar<G::Scalar, WINDOW_SIZE>; N],
+    pub fn multiscalar_mul_array<WnafStorage: ArraySize, const N: usize>(
+        scalars: &[WnafScalar<G::Scalar, W, WnafStorage>; N],
         bases: &[Self; N],
     ) -> G {
-        let wnafs = scalars.each_ref().map(|s| s.wnaf.as_slice());
+        let wnafs = scalars.each_ref().map(|s| (s.wnaf.as_slice(), s.digits));
         let tables = bases.each_ref().map(|b| b.table.as_slice());
-        wnaf_multi_exp(&tables, &wnafs)
+        wnaf_multi_exp(&tables, &wnafs, W::USIZE)
     }
 }
 
-impl<G: Group, const WINDOW_SIZE: usize> Mul<&WnafScalar<G::Scalar, WINDOW_SIZE>>
-    for &WnafBase<G, WINDOW_SIZE>
+impl<G: Group, W: Unsigned, TableSize: ArraySize, WnafStorage: ArraySize>
+    Mul<&WnafScalar<G::Scalar, W, WnafStorage>> for &WnafBase<G, W, TableSize>
 {
     type Output = G;
 
-    fn mul(self, rhs: &WnafScalar<G::Scalar, WINDOW_SIZE>) -> Self::Output {
-        wnaf_exp(&self.table, &rhs.wnaf)
+    fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
+        wnaf_exp(&self.table, &rhs.wnaf, rhs.digits, W::USIZE)
     }
 }
 
-/// A "w-ary non-adjacent form" scalar, that uses precomputation to improve the speed of
+/// A "w-ary non-adjacent form" scalar, precomputed to improve the speed of
 /// scalar multiplication.
 ///
 /// # Examples
 ///
 /// See [`WnafBase`] for usage examples.
 #[derive(Clone, Debug)]
-pub(super) struct WnafScalar<F: PrimeField, const WINDOW_SIZE: usize> {
-    pub(crate) wnaf: Vec<i64>,
-    field: PhantomData<F>,
+pub(super) struct WnafScalar<F: PrimeField, W: Unsigned, WnafStorage: ArraySize> {
+    wnaf: Array<i64, WnafStorage>,
+    digits: usize,
+    _field: PhantomData<(F, W)>,
 }
 
-impl<F: PrimeFieldExt, const WINDOW_SIZE: usize> WnafScalar<F, WINDOW_SIZE> {
-    /// Computes the w-NAF representation of the given scalar with the specified
-    /// `WINDOW_SIZE`.
+impl<F: PrimeFieldExt, W: Unsigned, WnafStorage: ArraySize> WnafScalar<F, W, WnafStorage> {
+    /// Computes the w-NAF representation of the given scalar with window size `W`.
     pub fn new(scalar: &F) -> Self {
-        let mut wnaf = vec![];
-
-        // Compute the w-NAF form of the scalar.
-        wnaf_form(&mut wnaf, scalar.to_le_repr(), WINDOW_SIZE);
-
+        let mut wnaf = Array::from_fn(|_| 0i64);
+        let len = wnaf_form(&mut wnaf, scalar.to_le_repr(), W::USIZE);
         WnafScalar {
             wnaf,
-            field: PhantomData,
+            digits: len,
+            _field: PhantomData,
         }
     }
 
@@ -145,13 +158,18 @@ impl<F: PrimeFieldExt, const WINDOW_SIZE: usize> WnafScalar<F, WINDOW_SIZE> {
     ///
     /// # Errors
     ///
-    /// Returns `None` if `bytes` is longer than the field's canonical representation, or if
-    /// the encoded integer is greater than or equal to the field modulus.
+    /// Returns `None` if `bytes` is longer than the field's canonical representation, if the
+    /// encoded integer is greater than or equal to the field modulus, or if `bytes.len() * 8 + 1`
+    /// exceeds `WnafStorage::USIZE` (which would overflow the fixed-size `wnaf` storage).
     pub fn from_le_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() * 8 + 1 > WnafStorage::USIZE {
+            return None;
+        }
+
         // Validate that `bytes` encodes a canonical field element by round-tripping it through
-        // `F::from_repr`, which returns `None` for any integer greater than or equal to the
-        // modulus. `from_repr` consumes the canonical representation, assumed big-endian to match
-        // `le_repr` below, so reverse the little-endian input into a zero-extended `F::Repr`.
+        // `F::from_repr`, which returns `None` for any integer >= the modulus. `from_repr`
+        // consumes the canonical big-endian representation, so reverse the little-endian input
+        // into a zero-extended `F::Repr`.
         let mut repr = F::Repr::default();
         let repr_len = repr.as_ref().len();
 
@@ -168,14 +186,13 @@ impl<F: PrimeFieldExt, const WINDOW_SIZE: usize> WnafScalar<F, WINDOW_SIZE> {
             return None;
         }
 
-        let mut wnaf = vec![];
-
-        // Compute the w-NAF form directly from the provided little-endian bytes.
-        wnaf_form(&mut wnaf, bytes, WINDOW_SIZE);
+        let mut wnaf = Array::default();
+        let digits = wnaf_form(&mut wnaf, bytes, W::USIZE);
 
         Some(WnafScalar {
             wnaf,
-            field: PhantomData,
+            digits,
+            _field: PhantomData,
         })
     }
 }
@@ -192,7 +209,7 @@ struct LimbBuffer<'a> {
 }
 
 impl<'a> LimbBuffer<'a> {
-    pub(crate) fn new(buf: &'a [u8]) -> Self {
+    fn new(buf: &'a [u8]) -> Self {
         let mut ret = Self {
             buf,
             cur_idx: 0,
@@ -208,7 +225,7 @@ impl<'a> LimbBuffer<'a> {
         ret
     }
 
-    pub(crate) fn increment_limb(&mut self) {
+    fn increment_limb(&mut self) {
         self.cur_idx += 1;
         self.cur_limb = self.next_limb;
         match self.buf.len() {
@@ -241,7 +258,7 @@ impl<'a> LimbBuffer<'a> {
         }
     }
 
-    pub(crate) fn get(&mut self, idx: usize) -> (u64, u64) {
+    fn get(&mut self, idx: usize) -> (u64, u64) {
         assert!([self.cur_idx, self.cur_idx + 1].contains(&idx));
         if idx > self.cur_idx {
             self.increment_limb();
@@ -250,46 +267,48 @@ impl<'a> LimbBuffer<'a> {
     }
 }
 
-/// Replaces the contents of `table` with a w-NAF window table for the given window size.
+/// Computes a w-NAF window table for the given base and window size.
 ///
-/// For a window of size `w`, non-zero wNAF digits are odd and have magnitude at most
+/// For a window of size `w`, non-zero w-NAF digits are odd and have magnitude at most
 /// `2^(w-1) - 1`. The table is indexed by `|digit| / 2`, so the required size is
 /// `(2^(w-1) - 1) / 2 + 1 = 2^(w-2)` entries.
-fn wnaf_table<G: Group>(table: &mut Vec<G>, mut base: G, window: usize) {
-    let table_len = 1 << (window - 2);
-    table.clear();
-    table.reserve(table_len);
+fn wnaf_table<G: Group, TableSize: ArraySize>(base: G, window: usize) -> Array<G, TableSize> {
+    debug_assert_eq!(TableSize::USIZE, 1 << (window - 2));
 
     let dbl = base.double();
+    let mut cur = base;
 
-    for _ in 0..table_len {
-        table.push(base);
-        base.add_assign(&dbl);
-    }
+    Array::from_fn(|_| {
+        let entry = cur;
+        cur.add_assign(&dbl);
+        entry
+    })
 }
 
-/// Replaces the contents of `wnaf` with the w-NAF representation of a little-endian
-/// scalar.
+/// Fills `wnaf` with the w-NAF representation of a little-endian scalar, and returns the
+/// number of digits written.
 #[allow(clippy::cast_possible_wrap)]
-fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut Vec<i64>, c: S, window: usize) {
-    // Required by the NAF definition
+fn wnaf_form<S: AsRef<[u8]>, WnafStorage: ArraySize>(
+    wnaf: &mut Array<i64, WnafStorage>,
+    c: S,
+    window: usize,
+) -> usize {
+    // Required by the NAF definition.
     debug_assert!(window >= 2);
-    // Required so that the NAF digits fit in i64
+    // Required so that the NAF digits fit in i64.
     debug_assert!(window <= 64);
 
     let bit_len = c.as_ref().len() * 8;
-
-    wnaf.clear();
-    wnaf.reserve(bit_len);
-
-    // Initialise the current and next limb buffers.
-    let mut limbs = LimbBuffer::new(c.as_ref());
+    debug_assert!(WnafStorage::USIZE > bit_len, "wnaf storage too small");
 
     let width = 1u64 << window;
     let window_mask = width - 1;
 
+    let mut limbs = LimbBuffer::new(c.as_ref());
     let mut pos = 0;
     let mut carry = 0;
+    let mut cursor = 0;
+
     while pos < bit_len {
         // Construct a buffer of bits of the scalar, starting at bit `pos`
         let u64_idx = pos / 64;
@@ -308,38 +327,56 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut Vec<i64>, c: S, window: usize) {
 
         if window_val & 1 == 0 {
             // If the window value is even, preserve the carry and emit 0.
-            // Why is the carry preserved?
-            // If carry == 0 and window_val & 1 == 0, then the next carry should be 0
-            // If carry == 1 and window_val & 1 == 0, then bit_buf & 1 == 1 so the next carry should be 1
-            wnaf.push(0);
+            // If carry == 0 and window_val & 1 == 0, then the next carry should be 0.
+            // If carry == 1 and window_val & 1 == 0, then bit_buf & 1 == 1 so the next carry should
+            // be 1.
+            wnaf[cursor] = 0;
+            cursor += 1;
             pos += 1;
         } else {
-            wnaf.push(if window_val < width / 2 {
+            wnaf[cursor] = if window_val < width / 2 {
                 carry = 0;
                 window_val as i64
             } else {
                 carry = 1;
                 (window_val as i64).wrapping_sub(width as i64)
-            });
-            wnaf.extend(core::iter::repeat_n(0, window - 1));
+            };
+            cursor += 1;
+            for _ in 1..window {
+                wnaf[cursor] = 0;
+                cursor += 1;
+            }
             pos += window;
         }
     }
 
-    // If there is a remaining carry (the scalar used all `bit_len` bit and the last wNAF digit was
-    // negative), emit it so the representation is exact.
+    // If there is a remaining carry (the scalar used all `bit_len` bits and the last w-NAF digit
+    // was negative), emit it so the representation is exact.
     if carry != 0 {
-        wnaf.push(carry as i64);
+        wnaf[cursor] = carry as i64;
+        cursor += 1;
     }
+
+    cursor
 }
 
 /// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar.
 ///
-/// This function must be provided a `table` and `wnaf` that were constructed with
-/// the same window size; otherwise, it may panic or produce invalid results.
+/// `window` must match the window size used to construct both `table` and `wnaf`.
 #[inline]
-fn wnaf_exp<G: Group>(table: &[G], wnaf: &[i64]) -> G {
-    wnaf_multi_exp(&[table], &[wnaf])
+fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
+    table: &Array<G, TableSize>,
+    wnaf: &Array<i64, WnafStorage>,
+    wnaf_len: usize,
+    window: usize,
+) -> G {
+    let table_slice: &[G] = table.as_slice();
+    let wnaf_entry: (&[i64], usize) = (wnaf.as_slice(), wnaf_len);
+    wnaf_multi_exp(
+        slice::from_ref(&table_slice),
+        slice::from_ref(&wnaf_entry),
+        window,
+    )
 }
 
 /// Performs w-NAF multi-exponentiation using the interleaved window method, also known as
@@ -348,16 +385,18 @@ fn wnaf_exp<G: Group>(table: &[G], wnaf: &[i64]) -> G {
 /// The key insight is that when computing this sum by means of additions and doublings, the
 /// doublings can be shared by performing the additions within an inner loop.
 ///
-/// This function must be provided with `tables` and `wnafs` that were constructed with
-/// the same window size; otherwise, it may panic or produce invalid results.
+/// `tables` and `wnafs` must have been constructed with the same window size `window`;
+/// otherwise this function may panic or produce invalid results.
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss
 )]
-fn wnaf_multi_exp<G: Group, T: AsRef<[G]>, W: AsRef<[i64]>>(tables: &[T], wnafs: &[W]) -> G {
+fn wnaf_multi_exp<G: Group>(tables: &[&[G]], wnafs: &[(&[i64], usize)], window: usize) -> G {
     debug_assert_eq!(tables.len(), wnafs.len());
-    let window_size = wnafs.iter().map(|w| w.as_ref().len()).max().unwrap_or(0);
+    debug_assert!(tables.iter().all(|t| t.len() == 1 << (window - 2)));
+
+    let window_size = wnafs.iter().map(|(_, len)| *len).max().unwrap_or(0);
 
     let mut result = G::identity();
     let mut found_one = false;
@@ -368,15 +407,14 @@ fn wnaf_multi_exp<G: Group, T: AsRef<[G]>, W: AsRef<[i64]>>(tables: &[T], wnafs:
             result = result.double();
         }
 
-        for (table, wnaf) in tables.iter().zip(wnafs.iter()) {
-            let n = wnaf.as_ref().get(i).copied().unwrap_or(0);
+        for (&table, (wnaf, _)) in tables.iter().zip(wnafs.iter()) {
+            let n = wnaf.get(i).copied().unwrap_or(0);
             if n != 0 {
                 found_one = true;
-
                 if n > 0 {
-                    result += table.as_ref()[(n / 2) as usize];
+                    result += table[(n / 2) as usize];
                 } else {
-                    result -= table.as_ref()[((-n) / 2) as usize];
+                    result -= table[((-n) / 2) as usize];
                 }
             }
         }

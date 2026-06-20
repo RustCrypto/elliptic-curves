@@ -34,7 +34,6 @@
 //! (Note that 'd' is also equal to the curve order here because `[a1,b1]` and `[a2,b2]` are found
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
-#[cfg(feature = "alloc")]
 mod wnaf;
 
 use super::{
@@ -43,24 +42,26 @@ use super::{
 };
 use core::array;
 use elliptic_curve::{
-    array::sizes::U33,
+    array::sizes::{U5, U8, U33, U257},
     ops::{LinearCombination, Mul, MulAssign, MulByGeneratorVartime, MulVartime},
     scalar::IsHigh,
     subtle::ConditionallySelectable,
 };
-use primeorder::Radix16Decomposition;
+use primeorder::{PrimeFieldExt, Radix16Decomposition};
 
 #[cfg(feature = "alloc")]
-use {
-    self::wnaf::{WnafBase, WnafScalar},
-    alloc::vec::Vec,
-    primeorder::PrimeFieldExt,
-};
+use alloc::vec::Vec;
 #[cfg(feature = "precomputed-tables")]
 use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
 
 /// Lookup table for multiples of a given point.
 type LookupTable = primeorder::LookupTable<ProjectivePoint>;
+
+/// `WnafBase` specialized for `k256`.
+type WnafBase = wnaf::WnafBase<ProjectivePoint, U5, U8>;
+
+/// `WnafScalar` specialized for `k256`.
+type WnafScalar = wnaf::WnafScalar<Scalar, U5, U257>;
 
 const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,
@@ -87,16 +88,11 @@ const G2: Scalar = Scalar::from_bytes_unchecked(&[
     0x22, 0x12, 0x08, 0xac, 0x9d, 0xf5, 0x06, 0xc6, 0x15, 0x71, 0xb4, 0xae, 0x8a, 0xc4, 0x7f, 0x71,
 ]);
 
-/// wNAF window width for GLV vartime multiplication.
-#[cfg(feature = "alloc")]
-const WNAF_WINDOW: usize = 5;
-
 /// Number of little-endian bytes to feed into `WnafScalar::from_le_bytes` for a GLV half-scalar.
 /// GLV guarantees magnitude < 2^128 (16 bytes).
 ///
 /// We use 17 bytes (136 bits) to give headroom for its carry bit without relying on the
 /// trailing-carry special case.
-#[cfg(feature = "alloc")]
 const GLV_LE_BYTES: usize = 17;
 
 /*
@@ -398,8 +394,8 @@ fn lincomb_vartime(
 /// This implementation uses w-NAF and provides the best performance but requires `alloc`.
 #[cfg(feature = "alloc")]
 fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePoint {
-    let mut bases: Vec<WnafBase<ProjectivePoint, WNAF_WINDOW>> = Vec::with_capacity(xks.len() * 2);
-    let mut scalars: Vec<WnafScalar<Scalar, WNAF_WINDOW>> = Vec::with_capacity(xks.len() * 2);
+    let mut bases: Vec<WnafBase> = Vec::with_capacity(xks.len() * 2);
+    let mut scalars: Vec<WnafScalar> = Vec::with_capacity(xks.len() * 2);
 
     for (x, k) in xks {
         let ([b0, b1], [s0, s1]) = decompose_glv_wnaf(x, k);
@@ -409,7 +405,7 @@ fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePoint {
         scalars.push(s1);
     }
 
-    WnafBase::multiscalar_mul(scalars, bases)
+    WnafBase::multiscalar_mul(&scalars, &bases)
 }
 
 impl ProjectivePoint {
@@ -473,14 +469,7 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     ProjectivePoint::lincomb(&[(*x, *k)])
 }
 
-#[inline]
-#[cfg(not(feature = "alloc"))]
-fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    ProjectivePoint::lincomb_vartime(&[(*x, *k)])
-}
-
 /// Variable-time `k * self` using width-5 wNAF + GLV endomorphism.
-#[cfg(feature = "alloc")]
 fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
     let (bases, scalars) = decompose_glv_wnaf(x, k);
     WnafBase::multiscalar_mul_array(&scalars, &bases)
@@ -488,14 +477,7 @@ fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
 
 /// GLV-decompose `k` for `x`: two `(WnafBase, WnafScalar)` pairs representing `r1 * self_signed`
 /// and `r2 * endomorphism(self_signed)`, with signs folded into the points.
-#[cfg(feature = "alloc")]
-fn decompose_glv_wnaf(
-    x: &ProjectivePoint,
-    k: &Scalar,
-) -> (
-    [WnafBase<ProjectivePoint, WNAF_WINDOW>; 2],
-    [WnafScalar<Scalar, WNAF_WINDOW>; 2],
-) {
+fn decompose_glv_wnaf(x: &ProjectivePoint, k: &Scalar) -> ([WnafBase; 2], [WnafScalar; 2]) {
     let (r1, r2) = decompose_scalar(k);
     let r1_neg = bool::from(r1.is_high());
     let r2_neg = bool::from(r2.is_high());
@@ -576,7 +558,6 @@ impl MulByGeneratorVartime for ProjectivePoint {
         Self::mul_by_generator_vartime(k)
     }
 
-    #[cfg(feature = "alloc")]
     fn mul_by_generator_and_mul_add_vartime(a: &Self::Scalar, b: &Self::Scalar, p: &Self) -> Self {
         let ([gb0, gb1], [gs0, gs1]) = decompose_glv_wnaf(&ProjectivePoint::GENERATOR, a);
         let ([pb0, pb1], [ps0, ps1]) = decompose_glv_wnaf(p, b);
