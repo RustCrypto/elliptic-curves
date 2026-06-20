@@ -217,18 +217,12 @@ impl<const N: usize> LinearCombination<[(ProjectivePoint, Scalar); N]> for Proje
     }
 
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar); N]) -> Self {
-        #[cfg(not(feature = "alloc"))]
-        {
-            let mut tables = [(LookupTable::default(), LookupTable::default()); N];
-            let mut digits: [(Radix16Decomposition<U33>, Radix16Decomposition<U33>); N] =
-                array::from_fn(|_| Default::default());
-            lincomb_vartime(points_and_scalars, &mut tables, &mut digits)
-        }
+        let decomposed: [_; N] = array::from_fn(|i| {
+            let (x, k) = &points_and_scalars[i];
+            decompose_glv_wnaf(x, k)
+        });
 
-        #[cfg(feature = "alloc")]
-        {
-            lincomb_vartime(points_and_scalars)
-        }
+        lincomb_vartime_glv_wnaf(&decomposed)
     }
 }
 
@@ -250,7 +244,12 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
 
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
-        lincomb_vartime(points_and_scalars)
+        let decomposed: Vec<_> = points_and_scalars
+            .iter()
+            .map(|(x, k)| decompose_glv_wnaf(x, k))
+            .collect();
+
+        lincomb_vartime_glv_wnaf(&decomposed)
     }
 }
 
@@ -308,83 +307,16 @@ fn lincomb(
     acc
 }
 
-/// Linear combination (a.k.a. multiscalar multiplication) implemented in variable-time.
-///
-/// This implementation reuses the radix-16 decomposition from the constant-time implementation and
-/// has no `alloc` dependency but is slower than w-NAF, so it is only used when `alloc` isn't
-/// available.
-// TODO(tarcieri): fully eliminate constant-time constructions
-#[cfg(not(feature = "alloc"))]
-fn lincomb_vartime(
-    xks: &[(ProjectivePoint, Scalar)],
-    tables: &mut [(LookupTable, LookupTable)],
-    digits: &mut [(Radix16Decomposition<U33>, Radix16Decomposition<U33>)],
+/// Linear combination / multiscalar multiplication using inputs decomposed for the GLV endomorphism
+/// (using `decompose_glv_wnaf`) in combination with w-NAF scalar multiplication.
+fn lincomb_vartime_glv_wnaf(
+    decomposed_xks: &[([WnafBase; 2], [WnafScalar; 2])],
 ) -> ProjectivePoint {
-    xks.iter().enumerate().for_each(|(i, (x, k))| {
-        let (r1, r2) = decompose_scalar(k);
-        let x_beta = x.endomorphism();
-        let (r1_sign, r2_sign) = (r1.is_high(), r2.is_high());
+    let terms = decomposed_xks
+        .iter()
+        .flat_map(|(bases, scalars)| bases.iter().zip(scalars.iter()));
 
-        let (r1_c, r2_c) = (
-            Scalar::conditional_select(&r1, &-r1, r1_sign),
-            Scalar::conditional_select(&r2, &-r2, r2_sign),
-        );
-
-        tables[i] = (
-            LookupTable::new(ProjectivePoint::conditional_select(x, &-*x, r1_sign)),
-            LookupTable::new(ProjectivePoint::conditional_select(
-                &x_beta, &-x_beta, r2_sign,
-            )),
-        );
-
-        digits[i] = (
-            Radix16Decomposition::<U33>::new(&r1_c),
-            Radix16Decomposition::<U33>::new(&r2_c),
-        )
-    });
-
-    let mut acc = ProjectivePoint::IDENTITY;
-    for component in 0..xks.len() {
-        let (digit1, digit2) = &digits[component];
-        let (table1, table2) = tables[component];
-
-        acc += &table1.select_vartime(digit1[32]);
-        acc += &table2.select_vartime(digit2[32]);
-    }
-
-    for i in (0..32).rev() {
-        for _j in 0..4 {
-            acc = acc.double();
-        }
-
-        for component in 0..xks.len() {
-            let (digit1, digit2) = &digits[component];
-            let (table1, table2) = tables[component];
-
-            acc += &table1.select_vartime(digit1[i]);
-            acc += &table2.select_vartime(digit2[i]);
-        }
-    }
-    acc
-}
-
-/// Linear combination (a.k.a. multiscalar multiplication) implemented in variable-time.
-///
-/// This implementation uses w-NAF and provides the best performance but requires `alloc`.
-#[cfg(feature = "alloc")]
-fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePoint {
-    let mut bases: Vec<WnafBase> = Vec::with_capacity(xks.len() * 2);
-    let mut scalars: Vec<WnafScalar> = Vec::with_capacity(xks.len() * 2);
-
-    for (x, k) in xks {
-        let ([b0, b1], [s0, s1]) = decompose_glv_wnaf(x, k);
-        bases.push(b0);
-        bases.push(b1);
-        scalars.push(s0);
-        scalars.push(s1);
-    }
-
-    WnafBase::multiscalar_mul(&scalars, &bases)
+    WnafBase::multiscalar_mul(terms)
 }
 
 impl ProjectivePoint {
@@ -451,8 +383,7 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
 /// Variable-time `k * self` using width-5 wNAF + GLV endomorphism.
 #[inline]
 fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    let (bases, scalars) = decompose_glv_wnaf(x, k);
-    WnafBase::multiscalar_mul(&scalars, &bases)
+    lincomb_vartime_glv_wnaf(&[decompose_glv_wnaf(x, k)])
 }
 
 /// GLV-decompose `k` for `x`: two `(WnafBase, WnafScalar)` pairs representing `r1 * self_signed`
@@ -539,9 +470,12 @@ impl MulByGeneratorVartime for ProjectivePoint {
     }
 
     fn mul_by_generator_and_mul_add_vartime(a: &Self::Scalar, b: &Self::Scalar, p: &Self) -> Self {
-        let ([gb0, gb1], [gs0, gs1]) = decompose_glv_wnaf(&ProjectivePoint::GENERATOR, a);
-        let ([pb0, pb1], [ps0, ps1]) = decompose_glv_wnaf(p, b);
-        WnafBase::multiscalar_mul(&[gs0, gs1, ps0, ps1], &[gb0, gb1, pb0, pb1])
+        let decomposed = [
+            decompose_glv_wnaf(&ProjectivePoint::GENERATOR, a),
+            decompose_glv_wnaf(p, b),
+        ];
+
+        lincomb_vartime_glv_wnaf(&decomposed)
     }
 }
 
