@@ -2,11 +2,12 @@
 //!
 //! Arithmetic implementations are provided by `primefield` and `crypto-bigint`.
 
-use crate::{FieldBytes, FieldBytesEncoding, NistP521, ORDER_HEX, Uint};
+use crate::{FieldBytes, NistP521, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
     bigint::Limb,
     ff::PrimeField,
+    field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
@@ -77,7 +78,7 @@ impl Reduce<Uint> for Scalar {
 impl Reduce<FieldBytes> for Scalar {
     #[inline]
     fn reduce(bytes: &FieldBytes) -> Self {
-        <Self as Reduce<Uint>>::reduce(&FieldBytesEncoding::<NistP521>::decode_field_bytes(bytes))
+        <Self as Reduce<Uint>>::reduce(&field::bytes_to_uint::<NistP521>(bytes))
     }
 }
 

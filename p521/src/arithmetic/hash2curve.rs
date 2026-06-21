@@ -1,9 +1,9 @@
 use super::FieldElement;
-use crate::{AffinePoint, NistP521, ProjectivePoint, Scalar, Uint};
+use crate::{AffinePoint, NistP521, ProjectivePoint, Scalar};
 use elliptic_curve::{
-    FieldBytesEncoding,
     array::Array,
     consts::{U32, U98},
+    field,
     ops::Reduce,
     subtle::Choice,
 };
@@ -26,12 +26,12 @@ impl Reduce<Array<u8, U98>> for FieldElement {
 
         let mut d0 = Array::default();
         d0[17..].copy_from_slice(&value[0..49]);
-        let u0 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d0);
+        let u0 = field::bytes_to_uint::<NistP521>(&d0);
         let d0 = FieldElement::from_uint_unchecked(u0);
 
         let mut d1 = Array::default();
         d1[17..].copy_from_slice(&value[49..]);
-        let u1 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d1);
+        let u1 = field::bytes_to_uint::<NistP521>(&d1);
         let d1 = FieldElement::from_uint_unchecked(u1);
 
         d0 * F_2_392 + d1
@@ -84,12 +84,12 @@ impl Reduce<Array<u8, U98>> for Scalar {
 
         let mut d0 = Array::default();
         d0[17..].copy_from_slice(&value[0..49]);
-        let u0 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d0);
+        let u0 = field::bytes_to_uint::<NistP521>(&d0);
         let d0 = Scalar::reduce(&u0);
 
         let mut d1 = Array::default();
         d1[17..].copy_from_slice(&value[49..]);
-        let u1 = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(&d1);
+        let u1 = field::bytes_to_uint::<NistP521>(&d1);
         let d1 = Scalar::reduce(&u1);
 
         d0 * F_2_392 + d1

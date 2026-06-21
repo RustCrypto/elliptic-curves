@@ -10,11 +10,12 @@
 //! Apache License (Version 2.0), and the BSD 1-Clause License;
 //! users may pick which license to apply.
 
-use crate::{FieldBytes, FieldBytesEncoding, NistP224, ORDER_HEX, Uint};
+use crate::{FieldBytes, NistP224, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
     bigint::{Limb, cpubits},
     ff::PrimeField,
+    field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
@@ -137,8 +138,7 @@ impl Reduce<Uint> for Scalar {
 impl Reduce<FieldBytes> for Scalar {
     #[inline]
     fn reduce(bytes: &FieldBytes) -> Self {
-        let w = <Uint as FieldBytesEncoding<NistP224>>::decode_field_bytes(bytes);
-        Self::reduce(&w)
+        Self::reduce(&field::bytes_to_uint::<NistP224>(bytes))
     }
 }
 

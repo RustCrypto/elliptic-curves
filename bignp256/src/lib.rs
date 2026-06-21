@@ -30,11 +30,7 @@
 extern crate alloc;
 
 pub use elliptic_curve::{self, bigint::U256};
-use elliptic_curve::{
-    Error, FieldBytesEncoding,
-    bigint::{ArrayEncoding, Odd},
-    consts::U32,
-};
+use elliptic_curve::{ByteOrder, Error, bigint::Odd, consts::U32};
 
 #[cfg(feature = "arithmetic")]
 pub use {
@@ -100,6 +96,7 @@ impl elliptic_curve::Curve for BignP256 {
 
     /// Order of BIGN P-256's elliptic curve group (i.e. scalar modulus).
     const ORDER: Odd<U256> = Odd::<U256>::from_be_hex(ORDER_HEX);
+    const FIELD_ENDIANNESS: ByteOrder = ByteOrder::LittleEndian;
 }
 
 impl elliptic_curve::PrimeCurve for BignP256 {}
@@ -127,16 +124,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<BignP256>;
 
 /// SEC1 encoded point.
 pub type Sec1Point = elliptic_curve::sec1::Sec1Point<BignP256>;
-
-impl FieldBytesEncoding<BignP256> for U256 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U256::from_le_byte_array(*field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_le_byte_array()
-    }
-}
 
 /// Non-zero scalar field element.
 #[cfg(feature = "arithmetic")]

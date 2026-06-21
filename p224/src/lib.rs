@@ -36,7 +36,6 @@ pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
-    FieldBytesEncoding,
     array::Array,
     bigint::{Odd, cpubits},
     consts::{U28, U29},
@@ -97,8 +96,6 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP224>;
 /// Byte array containing a serialized field element value (base field or
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP224>;
-
-impl FieldBytesEncoding<NistP224> for Uint {}
 
 /// Non-zero NIST P-256 scalar field element.
 #[cfg(feature = "arithmetic")]

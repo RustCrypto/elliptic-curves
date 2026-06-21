@@ -53,12 +53,7 @@ pub use arithmetic::field::FieldElement;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{
-    FieldBytesEncoding,
-    array::Array,
-    bigint::{ArrayEncoding, Odd},
-    consts::U33,
-};
+use elliptic_curve::{array::Array, bigint::Odd, consts::U33};
 
 /// Order of NIST P-256's elliptic curve group (i.e. scalar modulus) serialized
 /// as hexadecimal.
@@ -146,16 +141,6 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP256>;
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP256>;
-
-impl FieldBytesEncoding<NistP256> for U256 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U256::from_be_byte_array(*field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
-    }
-}
 
 /// Non-zero NIST P-256 scalar field element.
 #[cfg(feature = "arithmetic")]
