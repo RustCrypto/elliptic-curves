@@ -5,7 +5,7 @@
 //! goal is to eventually get onto the implementation in the `wnaf` crate (and ideally, eventually
 //! get onto the implementation in `group`).
 
-use core::{marker::PhantomData, ops::Mul};
+use core::{iter, marker::PhantomData, ops::Mul};
 use elliptic_curve::{
     array::{
         Array, ArraySize,
@@ -105,7 +105,7 @@ impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar,
     type Output = G;
 
     fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
-        WnafBase::multiscalar_mul(core::iter::once((self, rhs)))
+        WnafBase::multiscalar_mul(iter::once((self, rhs)))
     }
 }
 

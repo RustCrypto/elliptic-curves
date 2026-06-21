@@ -8,15 +8,16 @@
 #![doc = include_str!("../README.md")]
 
 #[cfg(feature = "alloc")]
+#[macro_use]
 extern crate alloc;
 
 mod base;
 mod limb_buffer;
 mod scalar;
 mod traits;
-// TODO(tarcieri): update to support API changes
-// #[cfg(feature = "alloc")]
-// mod wnaf;
+
+#[cfg(feature = "alloc")]
+mod wnaf;
 
 pub use crate::{
     base::WnafBase,
@@ -25,8 +26,10 @@ pub use crate::{
 };
 pub use group::Group;
 
+#[cfg(feature = "alloc")]
+pub use crate::wnaf::Wnaf;
+
 use crate::limb_buffer::LimbBuffer;
-use array::{Array, ArraySize};
 use ff::PrimeField;
 
 /// Computes a w-NAF window table for the given base and window size.
@@ -35,34 +38,27 @@ use ff::PrimeField;
 ///
 /// The table is indexed by `|digit| / 2`, so the required size is `(2^(w-1) - 1) / 2 + 1 = 2^(w-2)`
 /// entries.
-fn wnaf_table<G: Group, TableSize: ArraySize>(base: G, window: usize) -> Array<G, TableSize> {
-    debug_assert_eq!(TableSize::USIZE, 1 << (window - 2));
+fn wnaf_table<G: Group>(table: &mut [G], base: G, window: usize) {
+    debug_assert_eq!(table.len(), 1 << (window - 2));
 
     let dbl = base.double();
     let mut cur = base;
 
-    Array::from_fn(|_| {
-        let entry = cur;
+    for entry in table {
+        *entry = cur;
         cur.add_assign(&dbl);
-        entry
-    })
+    }
 }
 
 /// Fills `wnaf` with the w-NAF representation of a little-endian scalar, and returns the
 /// number of digits written.
 #[allow(clippy::cast_possible_wrap)]
-fn wnaf_form<S: AsRef<[u8]>, WnafStorage: ArraySize>(
-    wnaf: &mut Array<i64, WnafStorage>,
-    c: S,
-    window: usize,
-) -> usize {
-    // Required by the NAF definition.
+fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [i64], c: S, window: usize) -> usize {
     debug_assert!(window >= 2);
-    // Required so that the NAF digits fit in i64.
     debug_assert!(window <= 64);
 
     let bit_len = c.as_ref().len() * 8;
-    debug_assert!(WnafStorage::USIZE > bit_len, "wnaf storage too small");
+    debug_assert!(wnaf.len() > bit_len, "wnaf storage too small");
 
     let width = 1u64 << window;
     let window_mask = width - 1;
@@ -121,19 +117,6 @@ fn wnaf_form<S: AsRef<[u8]>, WnafStorage: ArraySize>(
     }
 
     cursor
-}
-
-/// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar.
-///
-/// `window` must match the window size used to construct both `table` and `wnaf`.
-#[inline]
-fn wnaf_exp<G: Group, TableSize: ArraySize, WnafStorage: ArraySize>(
-    table: &Array<G, TableSize>,
-    wnaf: &Array<i64, WnafStorage>,
-    wnaf_len: usize,
-) -> G {
-    let terms = [(table.as_slice(), wnaf.as_slice(), wnaf_len)];
-    wnaf_multi_exp(terms.iter().copied())
 }
 
 /// Performs w-NAF multi-exponentiation using the interleaved window method, also known as

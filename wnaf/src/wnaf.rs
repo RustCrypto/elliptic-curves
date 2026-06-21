@@ -1,7 +1,6 @@
 //! Dynamic w-NAF API (requires `alloc` feature).
-// TODO(tarcieri): actually make this work with the API changes to e.g. `wnaf_table`
 
-use crate::{WnafBase, WnafGroup, WnafScalar, le_repr, wnaf_exp, wnaf_form, wnaf_table};
+use crate::{WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
 use alloc::vec::Vec;
 use group::Group;
 
@@ -93,7 +92,6 @@ impl<G: Group> Default for Wnaf<(), Vec<G>, Vec<i64>> {
 }
 
 impl<G: Group> Wnaf<(), Vec<G>, Vec<i64>> {
-    /// Construct a new wNAF context without allocating.
     #[must_use]
     pub fn new() -> Self {
         Wnaf {
@@ -105,17 +103,12 @@ impl<G: Group> Wnaf<(), Vec<G>, Vec<i64>> {
 }
 
 impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<i64>> {
-    /// Given a base and a number of scalars, compute a window table and return a `Wnaf` object that
-    /// can perform exponentiations with `.scalar(..)`.
     pub fn base(&mut self, base: G, num_scalars: usize) -> Wnaf<usize, &[G], &mut Vec<i64>> {
-        // Compute the appropriate window size based on the number of scalars.
         let window_size = G::recommended_wnaf_for_num_scalars(num_scalars);
 
-        // Compute a wNAF table for the provided base and window size.
+        self.base.resize_with(1 << (window_size - 2), G::identity);
         wnaf_table(&mut self.base, base, window_size);
 
-        // Return a Wnaf object that immutably borrows the computed base storage location,
-        // but mutably borrows the scalar storage location.
         Wnaf {
             base: &self.base[..],
             scalar: &mut self.scalar,
@@ -123,17 +116,14 @@ impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<i64>> {
         }
     }
 
-    /// Given a scalar, compute its wNAF representation and return a `Wnaf` object that can perform
-    /// exponentiations with `.base(..)`.
     pub fn scalar(&mut self, scalar: &<G as Group>::Scalar) -> Wnaf<usize, &mut Vec<G>, &[i64]> {
-        // We hard-code a window size of 4.
         let window_size = 4;
 
-        // Compute the wNAF form of the scalar.
-        wnaf_form(&mut self.scalar, le_repr(scalar), window_size);
+        let repr = le_repr(scalar);
+        self.scalar.resize(repr.as_ref().len() * 8 + 1, 0);
+        let digits = wnaf_form(&mut self.scalar, repr, window_size);
+        self.scalar.truncate(digits);
 
-        // Return a Wnaf object that mutably borrows the base storage location, but
-        // immutably borrows the computed wNAF form scalar location.
         Wnaf {
             base: &mut self.base,
             scalar: &self.scalar[..],
@@ -170,23 +160,33 @@ impl<'a, G: Group> Wnaf<usize, &'a mut Vec<G>, &'a [i64]> {
 }
 
 impl<B, S: AsRef<[i64]>> Wnaf<usize, B, S> {
-    /// Performs exponentiation given a base.
     pub fn base<G: Group>(&mut self, base: G) -> G
     where
         B: AsMut<Vec<G>>,
     {
+        self.base
+            .as_mut()
+            .resize_with(1 << (self.window_size - 2), G::identity);
         wnaf_table(self.base.as_mut(), base, self.window_size);
         wnaf_exp(self.base.as_mut(), self.scalar.as_ref())
     }
 }
 
 impl<B, S: AsMut<Vec<i64>>> Wnaf<usize, B, S> {
-    /// Performs exponentiation given a scalar.
     pub fn scalar<G: Group>(&mut self, scalar: &<G as Group>::Scalar) -> G
     where
         B: AsRef<[G]>,
     {
-        wnaf_form(self.scalar.as_mut(), le_repr(scalar), self.window_size);
+        let repr = le_repr(scalar);
+        self.scalar.as_mut().resize(repr.as_ref().len() * 8 + 1, 0);
+        let digits = wnaf_form(self.scalar.as_mut(), repr, self.window_size);
+        self.scalar.as_mut().truncate(digits);
         wnaf_exp(self.base.as_ref(), self.scalar.as_mut())
     }
+}
+
+/// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar, whose
+/// lengths must match.
+pub(crate) fn wnaf_exp<G: Group>(table: &[G], wnaf: &[i64]) -> G {
+    wnaf_multi_exp(core::iter::once((table, wnaf, wnaf.len())))
 }

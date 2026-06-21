@@ -1,5 +1,6 @@
-use crate::{WindowSize, WnafScalar, wnaf_exp, wnaf_multi_exp, wnaf_table};
+use crate::{WindowSize, WnafScalar, wnaf_multi_exp, wnaf_table};
 use array::{Array, ArraySize};
+use core::iter;
 use core::ops::Mul;
 use group::Group;
 
@@ -41,28 +42,22 @@ pub struct WnafBase<G: Group, W: WindowSize> {
 impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// Computes a window table for the given base with the specified window size `W`.
     pub fn new(base: G) -> Self {
-        WnafBase {
-            table: wnaf_table(base, W::USIZE),
-        }
+        let mut table = Array::from_fn(|_| G::generator());
+        wnaf_table(&mut table, base, W::USIZE);
+        WnafBase { table }
     }
 
     /// Perform a multiscalar multiplication.
     ///
     /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
     /// using the interleaved window method, also known as Straus's method.
-    ///
-    /// `scalars` and `bases` must have the same length.
     #[must_use]
-    pub fn multiscalar_mul<WnafStorage: ArraySize>(
-        scalars: &[WnafScalar<G::Scalar, W, WnafStorage>],
-        bases: &[Self],
-    ) -> G {
-        let terms = bases
-            .iter()
-            .zip(scalars.iter())
-            .map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits));
-
-        wnaf_multi_exp(terms)
+    pub fn multiscalar_mul<'a, WnafStorage, I>(pairs: I) -> G
+    where
+        WnafStorage: ArraySize,
+        I: Clone + Iterator<Item = (&'a Self, &'a WnafScalar<G::Scalar, W, WnafStorage>)>,
+    {
+        wnaf_multi_exp(pairs.map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits)))
     }
 }
 
@@ -72,6 +67,6 @@ impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar,
     type Output = G;
 
     fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
-        wnaf_exp(&self.table, &rhs.wnaf, rhs.digits)
+        WnafBase::multiscalar_mul(iter::once((self, rhs)))
     }
 }
