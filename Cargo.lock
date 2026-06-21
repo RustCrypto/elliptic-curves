@@ -753,6 +753,7 @@ dependencies = [
  "sha2",
  "sha3",
  "signature",
+ "wnaf",
 ]
 
 [[package]]
