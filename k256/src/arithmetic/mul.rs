@@ -406,12 +406,11 @@ fn decompose_glv_wnaf(x: &ProjectivePoint, k: &Scalar) -> ([WnafBase; 2], [WnafS
     //
     // Should that invariant ever fail to hold, fall back to the full-width `new` rather than
     // panicking; it produces an identical (just slower) result for any in-range scalar.
-    let scalars = [
-        WnafScalar::from_le_bytes(&r1.to_le_repr()[..GLV_LE_BYTES])
-            .unwrap_or_else(|| WnafScalar::new(&r1)),
-        WnafScalar::from_le_bytes(&r2.to_le_repr()[..GLV_LE_BYTES])
-            .unwrap_or_else(|| WnafScalar::new(&r2)),
-    ];
+    let scalars = [r1, r2].map(|r| {
+        WnafScalar::from_le_bytes(&r.to_le_repr()[..GLV_LE_BYTES])
+            .unwrap_or_else(|| WnafScalar::new(&r))
+    });
+
     (bases, scalars)
 }
 
