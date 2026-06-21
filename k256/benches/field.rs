@@ -3,8 +3,11 @@
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
-use k256::FieldElement;
+use elliptic_curve::hazmat::FieldArithmetic;
+use k256::Secp256k1;
 use std::hint::black_box;
+
+type FieldElement = <Secp256k1 as FieldArithmetic>::FieldElement;
 
 fn test_field_element_x() -> FieldElement {
     FieldElement::from_bytes(

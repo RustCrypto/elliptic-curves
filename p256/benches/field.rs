@@ -3,9 +3,11 @@
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
-use elliptic_curve::array::Array;
+use elliptic_curve::{array::Array, hazmat::FieldArithmetic};
 use hex_literal::hex;
-use p256::FieldElement;
+use p256::NistP256;
+
+type FieldElement = <NistP256 as FieldArithmetic>::FieldElement;
 
 fn test_field_element_x() -> FieldElement {
     FieldElement::from_bytes(&Array(hex!(

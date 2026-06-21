@@ -46,7 +46,6 @@ arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/algorithm", "sha256"]
-expose-field = ["arithmetic"]
 hash2curve = ["arithmetic", "dep:hash2curve", "primeorder/hash2curve"]
 getrandom = ["elliptic-curve/getrandom"]
 group-digest = ["hash2curve", "sha2"]
@@ -70,7 +69,6 @@ required-features = ["ecdsa"]
 [[bench]]
 name = "field"
 harness = false
-required-features = ["expose-field"]
 
 [[bench]]
 name = "point"

@@ -53,7 +53,6 @@ arithmetic = [
 digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/algorithm", "sha384"]
-expose-field = ["arithmetic"]
 hash2curve = ["arithmetic", "dep:hash2curve", "primeorder/hash2curve"]
 getrandom = ["ecdsa-core?/getrandom", "elliptic-curve/getrandom"]
 group-digest = ["hash2curve", "sha2"]
@@ -75,7 +74,6 @@ check-cfg = [
 [[bench]]
 name = "field"
 harness = false
-required-features = ["expose-field"]
 
 [[bench]]
 name = "scalar"

@@ -3,10 +3,12 @@
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
-use elliptic_curve::array::Array;
+use elliptic_curve::{array::Array, hazmat::FieldArithmetic};
 use hex_literal::hex;
-use p521::FieldElement;
+use p521::NistP521;
 use std::hint::black_box;
+
+type FieldElement = <NistP521 as FieldArithmetic>::FieldElement;
 
 fn test_field_element_x() -> FieldElement {
     black_box(FieldElement::from_bytes(

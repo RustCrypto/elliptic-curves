@@ -47,17 +47,15 @@
 //!
 //! Please see type-specific documentation for more information.
 
-#[cfg(feature = "arithmetic")]
-mod arithmetic;
-
 #[cfg(feature = "ecdh")]
 pub mod ecdh;
-
 #[cfg(feature = "ecdsa-core")]
 pub mod ecdsa;
-
 #[cfg(any(feature = "test-vectors", test))]
 pub mod test_vectors;
+
+#[cfg(feature = "arithmetic")]
+mod arithmetic;
 
 pub use elliptic_curve::{
     self,
@@ -67,15 +65,10 @@ pub use elliptic_curve::{
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
-
-#[cfg(feature = "expose-field")]
-pub use arithmetic::field::FieldElement;
-
-#[cfg(feature = "hash2curve")]
-pub use hash2curve;
-
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
+#[cfg(feature = "hash2curve")]
+pub use hash2curve;
 
 use elliptic_curve::{array::Array, consts::U49};
 
