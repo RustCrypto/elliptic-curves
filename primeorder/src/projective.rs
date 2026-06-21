@@ -3,7 +3,7 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{
-    AffinePoint, Backend, Field, LookupTable, PrimeCurveParams, Radix16Decomposition,
+    AffinePoint, Field, LookupTable, MulBackend, PrimeCurveParams, Radix16Decomposition,
     Radix16Digits, point_arithmetic::PointArithmetic,
 };
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};

@@ -45,8 +45,8 @@ impl PrimeCurveParams for Sm2 {
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
     #[cfg(not(feature = "precomputed-tables"))]
-    type Backend = primeorder::backend::VariableOnly;
-    // TODO(tarcieri): use `primeorder::backend::PrecomputedTables` when MSRV 1.90
+    type Backend = primeorder::mul_backend::VariableOnly;
+    // TODO(tarcieri): use `primeorder::mul_backend::PrecomputedTables` when MSRV 1.90
     #[cfg(feature = "precomputed-tables")]
     type Backend = tables::backend::PrecomputedTables;
 

@@ -13,7 +13,7 @@ pub use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldAri
 pub use primeorder::{PrimeCurveParams, point_arithmetic};
 
 use crate::BignP256;
-use primeorder::backend;
+use primeorder::mul_backend;
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<BignP256>;
@@ -37,7 +37,7 @@ impl PrimeCurveArithmetic for BignP256 {
 
 impl PrimeCurveParams for BignP256 {
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
-    type Backend = backend::VariableOnly;
+    type Backend = mul_backend::VariableOnly;
 
     const EQUATION_A: Self::FieldElement = FieldElement::from_hex_vartime(
         "40FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",

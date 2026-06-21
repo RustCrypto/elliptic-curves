@@ -13,7 +13,7 @@ pub use self::precomputed_tables::PrecomputedTables;
 pub use self::variable_only::VariableOnly;
 
 /// Scalar multiplication backend.
-pub trait Backend<C: PrimeCurveParams> {
+pub trait MulBackend<C: PrimeCurveParams> {
     /// Multiplication by the generator.
     ///
     /// This is overridable to make it possible to plug in a basepoint table.
