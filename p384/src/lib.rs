@@ -77,7 +77,7 @@ pub use hash2curve;
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
 
-use elliptic_curve::{FieldBytesEncoding, array::Array, bigint::ArrayEncoding, consts::U49};
+use elliptic_curve::{array::Array, consts::U49};
 
 /// Order of NIST P-384's elliptic curve group (i.e. scalar modulus) in hexadecimal.
 const ORDER_HEX: &str = "ffffffffffffffffffffffffffffffffffffffffffffffffc7634d81f4372ddf581a0db248b0a77aecec196accc52973";
@@ -125,16 +125,6 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP384>;
 /// Byte array containing a serialized field element value (base field or
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP384>;
-
-impl FieldBytesEncoding<NistP384> for U384 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U384::from_be_byte_array(*field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
-    }
-}
 
 /// Non-zero NIST P-384 scalar field element.
 #[cfg(feature = "arithmetic")]

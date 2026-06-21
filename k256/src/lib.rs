@@ -67,9 +67,8 @@ pub use elliptic_curve::pkcs8;
 pub use sha2;
 
 use elliptic_curve::{
-    FieldBytesEncoding,
     array::Array,
-    bigint::{ArrayEncoding, Odd},
+    bigint::Odd,
     consts::{U32, U33, U64},
 };
 
@@ -126,16 +125,6 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<Secp256k1>;
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<Secp256k1>;
-
-impl FieldBytesEncoding<Secp256k1> for U256 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U256::from_be_byte_array(*field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
-    }
-}
 
 /// Bytes used by a wide reduction: twice the width of [`FieldBytes`].
 pub type WideBytes = Array<u8, U64>;

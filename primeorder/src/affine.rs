@@ -5,7 +5,8 @@
 use crate::{PrimeCurveParams, ProjectivePoint};
 use core::borrow::Borrow;
 use elliptic_curve::{
-    Error, FieldBytes, FieldBytesEncoding, Generate, PublicKey, Result, Scalar,
+    Error, FieldBytes, Generate, PublicKey, Result, Scalar,
+    bigint::modular::Retrieve,
     ctutils::{self, CtGt as _, CtSelect as _},
     ff::{Field, PrimeField},
     group::{CurveAffine, GroupEncoding},
@@ -62,12 +63,11 @@ where
     /// Conditionally negate [`AffinePoint`] for use with point compaction.
     fn to_compact(self) -> Self {
         let neg_self = -self;
-        let choice = C::Uint::decode_field_bytes(&self.y.to_repr())
-            .ct_gt(&C::Uint::decode_field_bytes(&neg_self.y.to_repr()));
-
+        let gt = self.y.retrieve().ct_gt(&neg_self.y.retrieve());
+        let y = C::FieldElement::conditional_select(&self.y, &neg_self.y, gt.into());
         Self {
             x: self.x,
-            y: C::FieldElement::conditional_select(&self.y, &neg_self.y, choice.into()),
+            y,
             infinity: self.infinity,
         }
     }

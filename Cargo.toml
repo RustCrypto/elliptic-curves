@@ -29,4 +29,6 @@ primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
 wnaf = { path = "wnaf" }
 
+crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint" }
+ecdsa = { git = "https://github.com/RustCrypto/signatures" }
 elliptic-curve = { git = "https://github.com/RustCrypto/traits" }

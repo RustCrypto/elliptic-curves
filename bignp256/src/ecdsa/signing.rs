@@ -19,8 +19,9 @@ use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Sca
 use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
-    Curve, Field, FieldBytesEncoding, Generate, Group, PrimeField,
+    Curve, Field, Generate, Group, PrimeField,
     array::{Array, sizes::U32, typenum::Unsigned},
+    field,
     ops::Reduce,
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
@@ -116,7 +117,7 @@ impl PrehashSigner<Signature> for SigningKey {
         // 2. Generate 𝑘 ← rand(1,..,𝑞-1)
         let k = Scalar::from_repr(bign_genk::generate_k::<BeltHash, belt_block::BeltBlock, _>(
             &self.secret_scalar.to_bytes(),
-            &FieldBytesEncoding::<BignP256>::encode_field_bytes(BignP256::ORDER.as_ref()),
+            &field::uint_to_bytes::<BignP256>(&BignP256::ORDER),
             &h.to_bytes(),
             &[],
         ))

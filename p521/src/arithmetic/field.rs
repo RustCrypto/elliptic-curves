@@ -18,10 +18,11 @@ use core::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    Error, FieldBytesEncoding, Generate,
+    Error, Generate,
     array::Array,
     bigint::{Word, cpubits, modular::Retrieve},
     ff::{self, Field, PrimeField},
+    field::bytes_to_uint,
     ops::{BatchInvert, Invert},
     rand_core::TryRng,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
@@ -84,8 +85,7 @@ impl FieldElement {
 
     /// Create a [`FieldElement`] from a canonical big-endian representation.
     pub fn from_bytes(repr: &FieldBytes) -> CtOption<Self> {
-        let uint = <Uint as FieldBytesEncoding<NistP521>>::decode_field_bytes(repr);
-        Self::from_uint(uint)
+        Self::from_uint(bytes_to_uint::<NistP521>(repr))
     }
 
     /// Decode [`FieldElement`] from a big endian byte slice.

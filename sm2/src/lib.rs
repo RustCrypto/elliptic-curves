@@ -74,9 +74,8 @@ pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
-    FieldBytesEncoding,
     array::Array,
-    bigint::{ArrayEncoding, Odd},
+    bigint::Odd,
     consts::{U32, U33, U65},
 };
 
@@ -135,16 +134,6 @@ pub type FieldBytes = elliptic_curve::FieldBytes<Sm2>;
 
 /// Size of a SM2 field element serialized as bytes.
 pub type FieldBytesSize = elliptic_curve::FieldBytesSize<Sm2>;
-
-impl FieldBytesEncoding<Sm2> for U256 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U256::from_be_byte_array(*field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
-    }
-}
 
 /// Non-zero scalar field element.
 #[cfg(feature = "arithmetic")]

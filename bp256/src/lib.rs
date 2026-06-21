@@ -61,7 +61,7 @@ pub(crate) use crate::arithmetic::field::FieldElement;
 
 use elliptic_curve::{
     array::{Array, typenum::U32},
-    bigint::{ArrayEncoding, Odd},
+    bigint::Odd,
 };
 
 /// Byte representation of a base/scalar field element of a given curve.
@@ -69,11 +69,3 @@ pub type FieldBytes = Array<u8, U32>;
 
 const ORDER_HEX: &str = "a9fb57dba1eea9bc3e660a909d838d718c397aa3b561a6f7901e0e82974856a7";
 const ORDER: Odd<U256> = Odd::<U256>::from_be_hex(ORDER_HEX);
-
-fn decode_field_bytes(field_bytes: &FieldBytes) -> U256 {
-    U256::from_be_byte_array(*field_bytes)
-}
-
-fn encode_field_bytes(uint: &U256) -> FieldBytes {
-    uint.to_be_byte_array()
-}

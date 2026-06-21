@@ -14,7 +14,6 @@ pub use {
 
 use crate::ORDER;
 use elliptic_curve::{
-    FieldBytesEncoding,
     bigint::{Odd, U256},
     consts::U32,
 };
@@ -56,16 +55,6 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<BrainpoolP256r1>;
 ///
 /// Byte array containing a serialized field element value (base field or scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<BrainpoolP256r1>;
-
-impl FieldBytesEncoding<BrainpoolP256r1> for U256 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        crate::decode_field_bytes(field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        crate::encode_field_bytes(self)
-    }
-}
 
 /// brainpoolP256r1 secret key.
 pub type SecretKey = elliptic_curve::SecretKey<BrainpoolP256r1>;

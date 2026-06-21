@@ -82,7 +82,7 @@ pub use montgomery::{MontgomeryPoint, ProjectiveMontgomeryPoint};
 pub use sign::*;
 
 use elliptic_curve::{
-    Curve, FieldBytesEncoding, PrimeCurve,
+    ByteOrder, Curve, PrimeCurve,
     array::typenum::{U56, U57},
     bigint::{ArrayEncoding, Odd, U448},
     point::PointCompression,
@@ -105,24 +105,13 @@ impl Curve for Ed448 {
     type Uint = U448;
 
     const ORDER: Odd<U448> = ORDER;
+    const FIELD_ENDIANNESS: ByteOrder = ByteOrder::LittleEndian;
 }
 
 impl PrimeCurve for Ed448 {}
 
 impl PointCompression for Ed448 {
     const COMPRESS_POINTS: bool = true;
-}
-
-impl FieldBytesEncoding<Ed448> for U448 {
-    fn decode_field_bytes(field_bytes: &Ed448FieldBytes) -> Self {
-        U448::from_le_slice(field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> Ed448FieldBytes {
-        let mut data = Ed448FieldBytes::default();
-        data.copy_from_slice(&self.to_le_byte_array()[..]);
-        data
-    }
 }
 
 impl elliptic_curve::CurveArithmetic for Ed448 {
@@ -159,18 +148,6 @@ impl PrimeCurve for Decaf448 {}
 
 impl PointCompression for Decaf448 {
     const COMPRESS_POINTS: bool = true;
-}
-
-impl FieldBytesEncoding<Decaf448> for U448 {
-    fn decode_field_bytes(field_bytes: &Decaf448FieldBytes) -> Self {
-        U448::from_le_slice(field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> Decaf448FieldBytes {
-        let mut data = Decaf448FieldBytes::default();
-        data.copy_from_slice(&self.to_le_byte_array()[..]);
-        data
-    }
 }
 
 impl elliptic_curve::CurveArithmetic for Decaf448 {

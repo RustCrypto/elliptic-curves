@@ -33,9 +33,8 @@ pub use arithmetic::{AffinePoint, ProjectivePoint, scalar::Scalar};
 pub use elliptic_curve::pkcs8;
 
 use elliptic_curve::{
-    FieldBytesEncoding,
     array::Array,
-    bigint::{ArrayEncoding, Odd, U192},
+    bigint::{Odd, U192},
     consts::{U24, U25},
 };
 
@@ -79,16 +78,6 @@ pub type Sec1Point = elliptic_curve::sec1::Sec1Point<NistP192>;
 /// Byte array containing a serialized field element value (base field or
 /// scalar).
 pub type FieldBytes = elliptic_curve::FieldBytes<NistP192>;
-
-impl FieldBytesEncoding<NistP192> for U192 {
-    fn decode_field_bytes(field_bytes: &FieldBytes) -> Self {
-        U192::from_be_byte_array(*field_bytes)
-    }
-
-    fn encode_field_bytes(&self) -> FieldBytes {
-        self.to_be_byte_array()
-    }
-}
 
 /// Non-zero NIST P-192 scalar field element.
 #[cfg(feature = "arithmetic")]
