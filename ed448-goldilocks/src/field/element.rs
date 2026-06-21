@@ -7,7 +7,6 @@ use crate::{
     AffinePoint, Decaf448, DecafPoint, Ed448, EdwardsPoint,
     curve::twedwards::extended::ExtendedPoint as TwistedExtendedPoint,
 };
-use elliptic_curve::ops::Reduce;
 use elliptic_curve::{
     Field,
     array::Array,
@@ -16,6 +15,7 @@ use elliptic_curve::{
         consts::{U28, U56, U84, U88},
         modular::ConstMontyParams,
     },
+    ops::{BatchInvert, Reduce},
     zeroize::DefaultIsZeroes,
 };
 use hash2curve::MapToCurve;
@@ -51,6 +51,8 @@ impl UpperHex for FieldElement {
         write!(f, "{:X}", self.0.retrieve())
     }
 }
+
+impl BatchInvert for FieldElement {}
 
 impl ConstantTimeEq for FieldElement {
     fn ct_eq(&self, other: &Self) -> Choice {

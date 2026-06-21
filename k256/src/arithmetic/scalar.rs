@@ -748,7 +748,7 @@ mod tests {
     use proptest::prelude::*;
 
     #[cfg(feature = "getrandom")]
-    use elliptic_curve::{Generate, common::getrandom::SysRng, ops::BatchInvert};
+    use elliptic_curve::{Generate, common::getrandom::SysRng};
 
     impl From<&BigUint> for Scalar {
         fn from(x: &BigUint) -> Self {
@@ -894,31 +894,6 @@ mod tests {
             Scalar::ROOT_OF_UNITY.invert_vartime().unwrap(),
             Scalar::ROOT_OF_UNITY_INV
         );
-    }
-
-    #[test]
-    #[cfg(feature = "getrandom")]
-    fn batch_invert_array() {
-        let k: Scalar = Scalar::generate();
-        let l: Scalar = Scalar::generate();
-
-        let expected = [k.invert().unwrap(), l.invert().unwrap()];
-        assert_eq!(
-            <Scalar as BatchInvert<_>>::batch_invert([k, l]).unwrap(),
-            expected
-        );
-    }
-
-    #[test]
-    #[cfg(all(feature = "alloc", feature = "getrandom"))]
-    fn batch_invert() {
-        let k: Scalar = Scalar::generate();
-        let l: Scalar = Scalar::generate();
-
-        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let scalars = vec![k, l];
-        let res = <Scalar as BatchInvert<_>>::batch_invert(scalars).unwrap();
-        assert_eq!(res, expected);
     }
 
     #[test]

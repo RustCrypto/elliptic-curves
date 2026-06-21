@@ -22,7 +22,7 @@ use elliptic_curve::{
     array::Array,
     bigint::{Word, cpubits, modular::Retrieve},
     ff::{self, Field, PrimeField},
-    ops::Invert,
+    ops::{BatchInvert, Invert},
     rand_core::TryRng,
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
@@ -406,6 +406,8 @@ impl AsRef<fiat_p521_tight_field_element> for FieldElement {
         &self.0
     }
 }
+
+impl BatchInvert for FieldElement {}
 
 impl Default for FieldElement {
     fn default() -> Self {

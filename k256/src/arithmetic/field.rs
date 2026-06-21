@@ -30,7 +30,7 @@ use elliptic_curve::{
     Generate,
     bigint::{Odd, U256, modular::Retrieve},
     ff::{self, Field, PrimeField},
-    ops::Invert,
+    ops::{BatchInvert, Invert},
     rand_core::{TryCryptoRng, TryRng},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
@@ -227,6 +227,47 @@ impl FieldElement {
     #[cfg(test)]
     pub fn modulus_as_biguint() -> BigUint {
         Self::ONE.negate(1).to_biguint().unwrap() + 1.to_biguint().unwrap()
+    }
+}
+
+impl BatchInvert for FieldElement {
+    fn batch_invert_in_place(elements: &mut [Self], scratch: &mut [Self]) -> Choice {
+        // Implements "Montgomery's trick", a trick for computing many modular inverses at once.
+        //
+        // "Montgomery's trick" works by reducing the problem of computing `n` inverses
+        // to computing a single inversion, plus some storage and `O(n)` extra multiplications.
+        //
+        // See: https://iacr.org/archive/pkc2004/29470042/29470042.pdf section 2.2.
+        assert_eq!(elements.len(), scratch.len());
+
+        // TODO(tarcieri): share implementation with `elliptic-curve` somehow
+        // The only difference from the default impl: we need to normalize the elements first
+        for e in elements.iter_mut() {
+            *e = e.normalize();
+        }
+
+        let mut acc = Self::ONE;
+        let mut all_nonzero = Choice::from(1u8);
+
+        for (tmp, e) in scratch.iter_mut().zip(elements.iter()) {
+            // $ a_n = a_{n-1}*x_n $
+            *tmp = acc;
+            let is_zero = e.ct_eq(&Self::ZERO);
+            all_nonzero &= !is_zero;
+            acc = Self::conditional_select(&(acc * e), &acc, is_zero);
+        }
+
+        // `acc` is the product of every nonzero element, so this can't fail.
+        acc = acc.invert().unwrap_or(Self::ONE);
+
+        for (e, tmp) in elements.iter_mut().zip(scratch.iter()).rev() {
+            let is_zero = e.ct_eq(&Self::ZERO);
+            let new_acc = Self::conditional_select(&(acc * *e), &acc, is_zero);
+            *e = Self::conditional_select(&(acc * *tmp), e, is_zero);
+            acc = new_acc;
+        }
+
+        all_nonzero
     }
 }
 
@@ -698,26 +739,14 @@ mod tests {
 
     #[test]
     #[cfg(feature = "getrandom")]
-    fn batch_invert_array() {
-        let k: FieldElement = FieldElement::generate();
-        let l: FieldElement = FieldElement::generate();
-
-        let expected = [k.invert().unwrap(), l.invert().unwrap()];
-        let actual = <FieldElement as BatchInvert<_>>::batch_invert([k, l]).unwrap();
-
-        assert_eq!(expected[0], actual[0].normalize());
-        assert_eq!(expected[1], actual[1].normalize());
-    }
-
-    #[test]
-    #[cfg(all(feature = "alloc", feature = "getrandom"))]
     fn batch_invert() {
         let k: FieldElement = FieldElement::generate();
         let l: FieldElement = FieldElement::generate();
 
-        let expected = vec![k.invert().unwrap(), l.invert().unwrap()];
-        let field_elements = vec![k, l]; // to test impl of `BatchInvert` for `Vec`
-        let actual = <FieldElement as BatchInvert<_>>::batch_invert(field_elements).unwrap();
+        let expected = [k.invert().unwrap(), l.invert().unwrap()];
+        let mut actual = [k, l];
+        let mut scratch = [FieldElement::ZERO; 2];
+        FieldElement::batch_invert_in_place(&mut actual, &mut scratch);
 
         assert_eq!(expected[0], actual[0].normalize());
         assert_eq!(expected[1], actual[1].normalize());

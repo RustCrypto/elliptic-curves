@@ -2,7 +2,7 @@
 
 #![allow(clippy::assign_op_pattern, clippy::op_ref)]
 
-use elliptic_curve::bigint::cpubits;
+use elliptic_curve::{bigint::cpubits, ops::BatchInvert};
 
 cpubits! {
     32 => {
@@ -160,6 +160,8 @@ impl FieldElement {
         >::from_montgomery(uint))
     }
 }
+
+impl BatchInvert for FieldElement {}
 
 #[cfg(test)]
 mod tests {
