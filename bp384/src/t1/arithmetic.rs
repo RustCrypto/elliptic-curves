@@ -2,7 +2,7 @@
 
 use super::BrainpoolP384t1;
 use crate::{FieldElement, Scalar};
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 use primeorder::{PrimeCurveParams, backend, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -23,12 +23,15 @@ impl CurveArithmetic for BrainpoolP384t1 {
     type Scalar = Scalar;
 }
 
+impl FieldArithmetic for BrainpoolP384t1 {
+    type FieldElement = FieldElement;
+}
+
 impl PrimeCurveArithmetic for BrainpoolP384t1 {
     type CurveGroup = ProjectivePoint;
 }
 
 impl PrimeCurveParams for BrainpoolP384t1 {
-    type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
     type Backend = backend::VariableOnly;
 

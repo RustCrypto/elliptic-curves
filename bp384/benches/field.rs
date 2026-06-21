@@ -2,9 +2,9 @@
 
 use bp384::BrainpoolP384r1;
 use criterion::{criterion_group, criterion_main};
-use primeorder::PrimeCurveParams;
+use elliptic_curve::hazmat::FieldArithmetic;
 
-type FieldElement = <BrainpoolP384r1 as PrimeCurveParams>::FieldElement;
+type FieldElement = <BrainpoolP384r1 as FieldArithmetic>::FieldElement;
 
 const FE_A: FieldElement = FieldElement::from_hex_vartime(
     "1d1c64f068cf45ffa2a63a81b7c13f6b8847a3e77ef14fe3db7fcafe0cbd10e8e826e03436d646aaef87b2e247d4af1e",

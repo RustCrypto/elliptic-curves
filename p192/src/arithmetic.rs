@@ -9,7 +9,7 @@ pub(crate) mod scalar;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP192;
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 use primeorder::{PrimeCurveParams, backend, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -24,6 +24,10 @@ impl CurveArithmetic for NistP192 {
     type Scalar = Scalar;
 }
 
+impl FieldArithmetic for NistP192 {
+    type FieldElement = FieldElement;
+}
+
 impl PrimeCurveArithmetic for NistP192 {
     type CurveGroup = ProjectivePoint;
 }
@@ -32,7 +36,6 @@ impl PrimeCurveArithmetic for NistP192 {
 ///
 /// [FIPS 186-4]: https://csrc.nist.gov/publications/detail/fips/186/4/final
 impl PrimeCurveParams for NistP192 {
-    type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
     type Backend = backend::VariableOnly;
 
