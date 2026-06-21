@@ -231,43 +231,13 @@ impl FieldElement {
 }
 
 impl BatchInvert for FieldElement {
-    fn batch_invert_in_place(elements: &mut [Self], scratch: &mut [Self]) -> Choice {
-        // Implements "Montgomery's trick", a trick for computing many modular inverses at once.
-        //
-        // "Montgomery's trick" works by reducing the problem of computing `n` inverses
-        // to computing a single inversion, plus some storage and `O(n)` extra multiplications.
-        //
-        // See: https://iacr.org/archive/pkc2004/29470042/29470042.pdf section 2.2.
-        assert_eq!(elements.len(), scratch.len());
-
-        // TODO(tarcieri): share implementation with `elliptic-curve` somehow
+    fn batch_invert_in_place(elements: &mut [Self], scratch: &mut [Self]) -> Self {
         // The only difference from the default impl: we need to normalize the elements first
         for e in elements.iter_mut() {
             *e = e.normalize();
         }
 
-        let mut acc = Self::ONE;
-        let mut all_nonzero = Choice::from(1u8);
-
-        for (tmp, e) in scratch.iter_mut().zip(elements.iter()) {
-            // $ a_n = a_{n-1}*x_n $
-            *tmp = acc;
-            let is_zero = e.ct_eq(&Self::ZERO);
-            all_nonzero &= !is_zero;
-            acc = Self::conditional_select(&(acc * e), &acc, is_zero);
-        }
-
-        // `acc` is the product of every nonzero element, so this can't fail.
-        acc = acc.invert().unwrap_or(Self::ONE);
-
-        for (e, tmp) in elements.iter_mut().zip(scratch.iter()).rev() {
-            let is_zero = e.ct_eq(&Self::ZERO);
-            let new_acc = Self::conditional_select(&(acc * *e), &acc, is_zero);
-            *e = Self::conditional_select(&(acc * *tmp), e, is_zero);
-            acc = new_acc;
-        }
-
-        all_nonzero
+        ff::BatchInverter::invert_with_external_scratch(elements, scratch)
     }
 }
 
