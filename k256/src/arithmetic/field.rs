@@ -42,6 +42,14 @@ use num_bigint::{BigUint, ToBigUint};
 const MODULUS_HEX: &str = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f";
 
 /// An element in the finite field used for curve coordinates.
+///
+/// <div class="warning">
+/// <b>Security Warning</b>
+///
+/// This type implements lazy normalization. Failure to use it correctly can lead to miscomputation!
+/// Please be extremely sure you understand how this normalization works before you do ANYTHING
+/// with this type.
+/// </div>
 #[derive(Clone, Copy, Debug)]
 pub struct FieldElement(FieldElementImpl);
 

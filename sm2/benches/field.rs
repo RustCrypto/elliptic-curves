@@ -1,10 +1,10 @@
 //! sm2 `FieldElement` benchmarks
 
 use criterion::{criterion_group, criterion_main};
-use primeorder::PrimeCurveParams;
+use elliptic_curve::hazmat::FieldArithmetic;
 use sm2::Sm2;
 
-type FieldElement = <Sm2 as PrimeCurveParams>::FieldElement;
+type FieldElement = <Sm2 as FieldArithmetic>::FieldElement;
 
 const FE_A: FieldElement = FieldElement::from_hex_vartime(
     "32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7",

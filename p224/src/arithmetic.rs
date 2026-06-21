@@ -11,7 +11,7 @@ pub use self::scalar::Scalar;
 
 use self::field::FieldElement;
 use crate::NistP224;
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 use primeorder::{PrimeCurveParams, backend, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -26,6 +26,10 @@ impl CurveArithmetic for NistP224 {
     type Scalar = Scalar;
 }
 
+impl FieldArithmetic for NistP224 {
+    type FieldElement = FieldElement;
+}
+
 impl PrimeCurveArithmetic for NistP224 {
     type CurveGroup = ProjectivePoint;
 }
@@ -34,7 +38,6 @@ impl PrimeCurveArithmetic for NistP224 {
 ///
 /// [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 impl PrimeCurveParams for NistP224 {
-    type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
     type Backend = backend::VariableOnly;
 

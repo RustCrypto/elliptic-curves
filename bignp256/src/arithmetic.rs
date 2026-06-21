@@ -8,13 +8,12 @@
 pub(crate) mod field;
 pub(crate) mod scalar;
 
-pub use self::scalar::Scalar;
-
-pub use self::field::FieldElement;
-use crate::BignP256;
-pub use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
-use primeorder::backend;
+pub use self::{field::FieldElement, scalar::Scalar};
+pub use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 pub use primeorder::{PrimeCurveParams, point_arithmetic};
+
+use crate::BignP256;
+use primeorder::backend;
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<BignP256>;
@@ -28,12 +27,15 @@ impl CurveArithmetic for BignP256 {
     type Scalar = Scalar;
 }
 
+impl FieldArithmetic for BignP256 {
+    type FieldElement = FieldElement;
+}
+
 impl PrimeCurveArithmetic for BignP256 {
     type CurveGroup = ProjectivePoint;
 }
 
 impl PrimeCurveParams for BignP256 {
-    type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
     type Backend = backend::VariableOnly;
 

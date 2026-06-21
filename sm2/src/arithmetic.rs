@@ -15,7 +15,7 @@ pub use self::scalar::Scalar;
 
 use self::field::FieldElement;
 use crate::Sm2;
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 use primeorder::{PrimeCurveParams, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -30,6 +30,10 @@ impl CurveArithmetic for Sm2 {
     type Scalar = Scalar;
 }
 
+impl FieldArithmetic for Sm2 {
+    type FieldElement = FieldElement;
+}
+
 impl PrimeCurveArithmetic for Sm2 {
     type CurveGroup = ProjectivePoint;
 }
@@ -38,7 +42,6 @@ impl PrimeCurveArithmetic for Sm2 {
 ///
 /// [draft-shen-sm2-ecdsa Appendix D]: https://datatracker.ietf.org/doc/html/draft-shen-sm2-ecdsa-02#appendix-D
 impl PrimeCurveParams for Sm2 {
-    type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
     #[cfg(not(feature = "precomputed-tables"))]

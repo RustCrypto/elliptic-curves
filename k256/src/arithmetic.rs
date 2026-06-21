@@ -17,12 +17,16 @@ pub use field::FieldElement;
 
 use self::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
 use crate::Secp256k1;
-use elliptic_curve::CurveArithmetic;
+use elliptic_curve::{CurveArithmetic, hazmat::FieldArithmetic};
 
 impl CurveArithmetic for Secp256k1 {
     type AffinePoint = AffinePoint;
     type ProjectivePoint = ProjectivePoint;
     type Scalar = Scalar;
+}
+
+impl FieldArithmetic for Secp256k1 {
+    type FieldElement = FieldElement;
 }
 
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;

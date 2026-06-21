@@ -2,19 +2,25 @@
 //!
 //! <https://www.rfc-editor.org/rfc/rfc9380.html#name-simplified-swu-method>
 
-use elliptic_curve::Field;
-use elliptic_curve::subtle::{Choice, ConditionallySelectable, ConstantTimeEq};
+use elliptic_curve::{
+    Field,
+    hazmat::FieldArithmetic,
+    subtle::{Choice, ConditionallySelectable, ConstantTimeEq},
+};
 
 use crate::{AffinePoint, PrimeCurveParams};
 
 /// [`OsswuMap`] for [`AffinePoint`].
-pub trait AffineOsswuMap<C: PrimeCurveParams<FieldElement: OsswuMap>> {
+pub trait AffineOsswuMap<C: PrimeCurveParams + FieldArithmetic<FieldElement: OsswuMap>> {
     /// [`OsswuMap::osswu()`] to [`AffinePoint`].
     fn osswu(u: &C::FieldElement) -> Self;
 }
 
-impl<C: PrimeCurveParams<FieldElement: OsswuMap>> AffineOsswuMap<C> for AffinePoint<C> {
-    fn osswu(u: &<C as PrimeCurveParams>::FieldElement) -> Self {
+impl<C> AffineOsswuMap<C> for AffinePoint<C>
+where
+    C: PrimeCurveParams + FieldArithmetic<FieldElement: OsswuMap>,
+{
+    fn osswu(u: &<C as FieldArithmetic>::FieldElement) -> Self {
         let (x, y) = u.osswu();
         Self { x, y, infinity: 0 }
     }

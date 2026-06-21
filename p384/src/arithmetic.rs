@@ -14,7 +14,7 @@ mod tables;
 
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP384;
-use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic};
+use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 use primeorder::{PrimeCurveParams, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
@@ -29,6 +29,10 @@ impl CurveArithmetic for NistP384 {
     type Scalar = Scalar;
 }
 
+impl FieldArithmetic for NistP384 {
+    type FieldElement = FieldElement;
+}
+
 impl PrimeCurveArithmetic for NistP384 {
     type CurveGroup = ProjectivePoint;
 }
@@ -37,7 +41,6 @@ impl PrimeCurveArithmetic for NistP384 {
 ///
 /// [NIST SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
 impl PrimeCurveParams for NistP384 {
-    type FieldElement = FieldElement;
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
 
     #[cfg(not(feature = "precomputed-tables"))]

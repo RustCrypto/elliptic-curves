@@ -35,16 +35,12 @@ pub use elliptic_curve::{
     self, Field, FieldBytes, PrimeCurve, PrimeField, Scalar,
     array::{self, ArraySize, sizes::U1},
     bigint::{ByteOrder, modular::Retrieve},
+    hazmat::FieldArithmetic,
     point::Double,
 };
 pub use primefield::PrimeFieldExt;
 
-use elliptic_curve::{
-    Curve, CurveArithmetic, Generate,
-    ops::{BatchInvert, Invert},
-    sec1,
-    subtle::CtOption,
-};
+use elliptic_curve::{Curve, CurveArithmetic, sec1};
 
 #[cfg(feature = "basepoint-table")]
 pub use crate::tables::BasepointTable;
@@ -53,20 +49,13 @@ pub use crate::tables::BasepointTable;
 /// equation.
 pub trait PrimeCurveParams:
     Curve<FieldBytesSize: sec1::ModulusSize>
-    + PrimeCurve
     + CurveArithmetic<
         AffinePoint = AffinePoint<Self>,
         ProjectivePoint = ProjectivePoint<Self>,
         Scalar: PrimeFieldExt,
-    >
+    > + FieldArithmetic
+    + PrimeCurve
 {
-    /// Base field element type.
-    type FieldElement: BatchInvert
-        + Generate
-        + Invert<Output = CtOption<Self::FieldElement>>
-        + PrimeField<Repr = FieldBytes<Self>>
-        + Retrieve<Output = Self::Uint>;
-
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
     type PointArithmetic: point_arithmetic::PointArithmetic<Self>;
 
