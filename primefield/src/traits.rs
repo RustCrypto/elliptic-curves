@@ -1,9 +1,17 @@
 use crate::ByteOrder;
 
+/// Extension trait for [`ff::Field`], intended as a place to put optimizable arithmetic operations.
+///
+/// The idea is future versions of this crate can add provided methods which are useful in dense
+/// field arithmetic like `primeorder`'s RCB implementation, and `primefield` can potentially
+/// automatically plug in optimized implementations when available.
+// TODO(tarcieri): add some methods to this trait, e.g. `add_and_mul`, `mul_and_add`
+pub trait FieldExt: ff::Field {}
+
 /// Extension trait for [`ff::PrimeField`] which enables specifying the endianness in which
 /// [`ff::PrimeField::Repr`] is encoded.
 // TODO(tarcieri): remove this if/whenever zkcrypto/rfcs#4 lands. See also: zkcrypto/ff#158
-pub trait PrimeFieldExt: ff::PrimeField {
+pub trait PrimeFieldExt: FieldExt + ff::PrimeField {
     /// Endianness used when encoding [`ff::PrimeField::Repr`].
     const REPR_ENDIANNESS: ByteOrder = ByteOrder::BigEndian;
 

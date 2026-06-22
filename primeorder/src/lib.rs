@@ -38,7 +38,7 @@ pub use elliptic_curve::{
     hazmat::FieldArithmetic,
     point::Double,
 };
-pub use primefield::PrimeFieldExt;
+pub use primefield::{FieldExt, PrimeFieldExt};
 
 use elliptic_curve::{Curve, CurveArithmetic, sec1};
 
@@ -53,7 +53,7 @@ pub trait PrimeCurveParams:
         AffinePoint = AffinePoint<Self>,
         ProjectivePoint = ProjectivePoint<Self>,
         Scalar: PrimeFieldExt,
-    > + FieldArithmetic
+    > + FieldArithmetic<FieldElement: PrimeFieldExt>
     + PrimeCurve
 {
     /// [Point arithmetic](point_arithmetic) implementation, might be optimized for this specific curve
