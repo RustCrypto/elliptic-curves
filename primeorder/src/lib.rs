@@ -14,7 +14,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-pub mod backend;
+pub mod mul_backend;
 #[cfg(feature = "hash2curve")]
 pub mod osswu;
 pub mod point_arithmetic;
@@ -27,7 +27,7 @@ mod tables;
 
 pub use crate::{
     affine::AffinePoint,
-    backend::Backend,
+    mul_backend::MulBackend,
     projective::ProjectivePoint,
     tables::{LookupTable, Radix16Decomposition, Radix16Digits},
 };
@@ -60,7 +60,7 @@ pub trait PrimeCurveParams:
     type PointArithmetic: point_arithmetic::PointArithmetic<Self>;
 
     /// Scalar arithmetic backend implementation.
-    type Backend: Backend<Self>;
+    type Backend: MulBackend<Self>;
 
     /// Coefficient `a` in the curve equation.
     const EQUATION_A: Self::FieldElement;

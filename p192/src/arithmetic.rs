@@ -10,7 +10,7 @@ pub(crate) mod scalar;
 use self::{field::FieldElement, scalar::Scalar};
 use crate::NistP192;
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
-use primeorder::{PrimeCurveParams, backend, point_arithmetic};
+use primeorder::{PrimeCurveParams, mul_backend, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<NistP192>;
@@ -37,7 +37,7 @@ impl PrimeCurveArithmetic for NistP192 {
 /// [FIPS 186-4]: https://csrc.nist.gov/publications/detail/fips/186/4/final
 impl PrimeCurveParams for NistP192 {
     type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
-    type Backend = backend::VariableOnly;
+    type Backend = mul_backend::VariableOnly;
 
     /// a = -3 (=0xffffffff ffffffff ffffffff fffffffe ffffffff ffffffff fffffffe)
     const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();

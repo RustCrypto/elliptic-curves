@@ -3,7 +3,7 @@
 use super::BrainpoolP256r1;
 use crate::{FieldElement, Scalar};
 use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
-use primeorder::{PrimeCurveParams, backend, point_arithmetic};
+use primeorder::{PrimeCurveParams, mul_backend, point_arithmetic};
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<BrainpoolP256r1>;
@@ -33,7 +33,7 @@ impl PrimeCurveArithmetic for BrainpoolP256r1 {
 
 impl PrimeCurveParams for BrainpoolP256r1 {
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
-    type Backend = backend::VariableOnly;
+    type Backend = mul_backend::VariableOnly;
 
     const EQUATION_A: FieldElement = FieldElement::from_hex_vartime(
         "7d5a0975fc2c3057eef67530417affe7fb8055c126dc5c6ce94a4b44f330b5d9",
