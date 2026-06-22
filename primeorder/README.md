@@ -8,8 +8,9 @@
 [![Project Chat][chat-image]][chat-link]
 
 Pure Rust implementation of complete addition formulas for prime order elliptic
-curves ([Renes-Costello-Batina 2015]). Generic over field elements and curve
-equation coefficients.
+curves ([Renes-Costello-Batina 2015] a.k.a. RCB).
+
+Generic over field element implementations and curve equation coefficients.
 
 [Documentation][docs-link]
 

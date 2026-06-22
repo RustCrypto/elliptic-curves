@@ -20,7 +20,7 @@ use core::{
 use elliptic_curve::{
     Error, Generate,
     array::Array,
-    bigint::{Word, cpubits, modular::Retrieve},
+    bigint::{self, Limb, Odd, Word, cpubits, modular::Retrieve},
     ff::{self, Field, PrimeField},
     field::bytes_to_uint,
     ops::{BatchInvert, Invert},
@@ -28,7 +28,7 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeLess, CtOption},
     zeroize::DefaultIsZeroes,
 };
-use primefield::bigint::{self, Limb, Odd};
+use primefield::{FieldExt, PrimeFieldExt};
 
 // TODO(tarcieri): remove `allow(dead_code)` when we can use `const _` to silence warnings
 cpubits! {
@@ -530,6 +530,9 @@ impl Field for FieldElement {
         ff::helpers::sqrt_ratio_generic(num, div)
     }
 }
+
+impl FieldExt for FieldElement {}
+impl PrimeFieldExt for FieldElement {}
 
 impl Generate for FieldElement {
     fn try_generate_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {

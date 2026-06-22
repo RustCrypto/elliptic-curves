@@ -352,6 +352,8 @@ macro_rules! monty_field_element {
             }
         }
 
+        impl $crate::FieldExt for $fe {}
+
         impl $crate::PrimeFieldExt for $fe {
             const REPR_ENDIANNESS: $crate::ByteOrder =
                 <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::BYTE_ORDER;

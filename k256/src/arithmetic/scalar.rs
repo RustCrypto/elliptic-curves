@@ -19,7 +19,7 @@ use elliptic_curve::{
     },
     zeroize::DefaultIsZeroes,
 };
-use primeorder::PrimeFieldExt;
+use primeorder::{FieldExt, PrimeFieldExt};
 
 cpubits! {
     32 => {
@@ -311,6 +311,7 @@ impl PrimeField for Scalar {
     }
 }
 
+impl FieldExt for Scalar {}
 impl PrimeFieldExt for Scalar {}
 
 impl From<u32> for Scalar {

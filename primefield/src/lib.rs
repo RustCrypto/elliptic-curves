@@ -17,7 +17,7 @@ mod traits;
 pub use crate::{
     error::{Error, Result},
     monty::{MontyFieldBytes, MontyFieldElement, MontyFieldParams, compute_t},
-    traits::PrimeFieldExt,
+    traits::{FieldExt, PrimeFieldExt},
 };
 pub use array::typenum::consts;
 pub use bigint;
