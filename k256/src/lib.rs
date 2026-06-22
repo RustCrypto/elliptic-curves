@@ -56,13 +56,8 @@ pub use elliptic_curve::{self, bigint::U256};
 
 #[cfg(feature = "arithmetic")]
 pub use arithmetic::{affine::AffinePoint, projective::ProjectivePoint, scalar::Scalar};
-
-#[cfg(feature = "expose-field")]
-pub use arithmetic::FieldElement;
-
 #[cfg(feature = "pkcs8")]
 pub use elliptic_curve::pkcs8;
-
 #[cfg(feature = "sha2")]
 pub use sha2;
 

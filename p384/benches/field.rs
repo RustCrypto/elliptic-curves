@@ -4,8 +4,11 @@ use core::hint::black_box;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
+use elliptic_curve::{ff::Field, hazmat::FieldArithmetic};
 use hex_literal::hex;
-use p384::{FieldElement, elliptic_curve::ff::Field};
+use p384::NistP384;
+
+type FieldElement = <NistP384 as FieldArithmetic>::FieldElement;
 
 fn test_field_element_x() -> FieldElement {
     black_box(FieldElement::from_bytes(
