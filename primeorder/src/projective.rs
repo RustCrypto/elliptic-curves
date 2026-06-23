@@ -179,6 +179,7 @@ where
 impl<C> DefaultIsZeroes for ProjectivePoint<C> where C: PrimeCurveParams {}
 
 impl<C: PrimeCurveParams> Double for ProjectivePoint<C> {
+    #[inline]
     fn double(&self) -> Self {
         C::PointArithmetic::double(self)
     }
@@ -318,17 +319,18 @@ where
         Self::GENERATOR
     }
 
-    #[inline]
-    fn mul_by_generator(scalar: &Self::Scalar) -> Self {
-        C::Backend::mul_by_generator(scalar)
-    }
-
     fn is_identity(&self) -> Choice {
         self.ct_eq(&Self::IDENTITY)
     }
 
+    #[inline]
     fn double(&self) -> Self {
         Double::double(self)
+    }
+
+    #[inline]
+    fn mul_by_generator(scalar: &Self::Scalar) -> Self {
+        C::Backend::mul_by_generator(scalar)
     }
 }
 
@@ -629,6 +631,7 @@ impl<C> AddAssign<ProjectivePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn add_assign(&mut self, rhs: ProjectivePoint<C>) {
         *self = ProjectivePoint::add(self, &rhs);
     }
@@ -638,6 +641,7 @@ impl<C> AddAssign<&ProjectivePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn add_assign(&mut self, rhs: &ProjectivePoint<C>) {
         *self = ProjectivePoint::add(self, rhs);
     }
@@ -680,6 +684,7 @@ impl<C> AddAssign<AffinePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn add_assign(&mut self, rhs: AffinePoint<C>) {
         *self = ProjectivePoint::add_mixed(self, &rhs);
     }
@@ -689,6 +694,7 @@ impl<C> AddAssign<&AffinePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn add_assign(&mut self, rhs: &AffinePoint<C>) {
         *self = ProjectivePoint::add_mixed(self, rhs);
     }
@@ -698,6 +704,7 @@ impl<C> Sum for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(ProjectivePoint::IDENTITY, |a, b| a + b)
     }
@@ -707,6 +714,7 @@ impl<'a, C> Sum<&'a ProjectivePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn sum<I: Iterator<Item = &'a ProjectivePoint<C>>>(iter: I) -> Self {
         iter.cloned().sum()
     }
@@ -749,6 +757,7 @@ impl<C> SubAssign<ProjectivePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn sub_assign(&mut self, rhs: ProjectivePoint<C>) {
         *self = ProjectivePoint::sub(self, &rhs);
     }
@@ -758,6 +767,7 @@ impl<C> SubAssign<&ProjectivePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn sub_assign(&mut self, rhs: &ProjectivePoint<C>) {
         *self = ProjectivePoint::sub(self, rhs);
     }
@@ -800,6 +810,7 @@ impl<C> SubAssign<AffinePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn sub_assign(&mut self, rhs: AffinePoint<C>) {
         *self = ProjectivePoint::sub_mixed(self, &rhs);
     }
@@ -809,6 +820,7 @@ impl<C> SubAssign<&AffinePoint<C>> for ProjectivePoint<C>
 where
     C: PrimeCurveParams,
 {
+    #[inline]
     fn sub_assign(&mut self, rhs: &AffinePoint<C>) {
         *self = ProjectivePoint::sub_mixed(self, rhs);
     }
@@ -822,6 +834,7 @@ where
 {
     type Output = Self;
 
+    #[inline]
     fn mul(self, scalar: S) -> Self {
         ProjectivePoint::mul(&self, scalar.borrow())
     }
@@ -835,6 +848,7 @@ where
 {
     type Output = ProjectivePoint<C>;
 
+    #[inline]
     fn mul(self, scalar: S) -> ProjectivePoint<C> {
         ProjectivePoint::mul(self, scalar.borrow())
     }
@@ -847,6 +861,7 @@ where
 {
     type Output = ProjectivePoint<C>;
 
+    #[inline]
     fn mul(self, scalar: &Scalar<C>) -> ProjectivePoint<C> {
         ProjectivePoint::mul(self, scalar)
     }
@@ -858,6 +873,7 @@ where
     C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
+    #[inline]
     fn mul_vartime(self, scalar: S) -> Self {
         ProjectivePoint::mul_vartime(&self, scalar.borrow())
     }
@@ -869,6 +885,7 @@ where
     C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
+    #[inline]
     fn mul_vartime(self, scalar: S) -> ProjectivePoint<C> {
         ProjectivePoint::mul_vartime(self, scalar.borrow())
     }
@@ -879,6 +896,7 @@ where
     C: PrimeCurveParams,
     ProjectivePoint<C>: Double,
 {
+    #[inline]
     fn mul_vartime(self, scalar: &Scalar<C>) -> ProjectivePoint<C> {
         ProjectivePoint::mul_vartime(self, scalar)
     }
@@ -909,6 +927,7 @@ where
     C: PrimeCurveParams,
     S: Borrow<Scalar<C>>,
 {
+    #[inline]
     fn mul_assign(&mut self, scalar: S) {
         *self = ProjectivePoint::mul(self, scalar.borrow());
     }

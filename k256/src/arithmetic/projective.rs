@@ -475,10 +475,12 @@ impl Group for ProjectivePoint {
         self.z.normalizes_to_zero()
     }
 
+    #[inline]
     fn double(&self) -> Self {
         Self::double(self)
     }
 
+    #[inline]
     fn mul_by_generator(k: &Scalar) -> Self {
         Self::mul_by_generator(k)
     }
@@ -533,12 +535,14 @@ impl Add<&ProjectivePoint> for ProjectivePoint {
 }
 
 impl AddAssign<ProjectivePoint> for ProjectivePoint {
+    #[inline]
     fn add_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::add(self, &rhs);
     }
 }
 
 impl AddAssign<&ProjectivePoint> for ProjectivePoint {
+    #[inline]
     fn add_assign(&mut self, rhs: &ProjectivePoint) {
         *self = ProjectivePoint::add(self, rhs);
     }
@@ -569,12 +573,14 @@ impl Add<&AffinePoint> for ProjectivePoint {
 }
 
 impl AddAssign<AffinePoint> for ProjectivePoint {
+    #[inline]
     fn add_assign(&mut self, rhs: AffinePoint) {
         *self = ProjectivePoint::add_mixed(self, &rhs);
     }
 }
 
 impl AddAssign<&AffinePoint> for ProjectivePoint {
+    #[inline]
     fn add_assign(&mut self, rhs: &AffinePoint) {
         *self = ProjectivePoint::add_mixed(self, rhs);
     }
@@ -617,12 +623,14 @@ impl Sub<&ProjectivePoint> for ProjectivePoint {
 }
 
 impl SubAssign<ProjectivePoint> for ProjectivePoint {
+    #[inline]
     fn sub_assign(&mut self, rhs: ProjectivePoint) {
         *self = ProjectivePoint::sub(self, &rhs);
     }
 }
 
 impl SubAssign<&ProjectivePoint> for ProjectivePoint {
+    #[inline]
     fn sub_assign(&mut self, rhs: &ProjectivePoint) {
         *self = ProjectivePoint::sub(self, rhs);
     }
@@ -653,12 +661,14 @@ impl Sub<&AffinePoint> for ProjectivePoint {
 }
 
 impl SubAssign<AffinePoint> for ProjectivePoint {
+    #[inline]
     fn sub_assign(&mut self, rhs: AffinePoint) {
         *self = ProjectivePoint::sub_mixed(self, &rhs);
     }
 }
 
 impl SubAssign<&AffinePoint> for ProjectivePoint {
+    #[inline]
     fn sub_assign(&mut self, rhs: &AffinePoint) {
         *self = ProjectivePoint::sub_mixed(self, rhs);
     }
