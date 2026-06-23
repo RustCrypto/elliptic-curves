@@ -36,7 +36,7 @@ pub use elliptic_curve::{
     array::{self, ArraySize, sizes::U1},
     bigint::{ByteOrder, modular::Retrieve},
     hazmat::FieldArithmetic,
-    point::Double,
+    ops::Double,
 };
 pub use primefield::{FieldExt, PrimeFieldExt};
 
