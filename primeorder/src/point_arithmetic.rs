@@ -15,14 +15,14 @@ mod sealed {
     /// Provides implementation of point arithmetic (point addition, point doubling) which
     /// might be optimized for the curve.
     pub trait PointArithmetic<C: PrimeCurveParams> {
-        /// Returns `lhs + rhs`
-        fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C>;
+        /// Assigns `lhs + rhs` to `lhs`.
+        fn add_assign(lhs: &mut ProjectivePoint<C>, rhs: &ProjectivePoint<C>);
 
-        /// Returns `lhs + rhs`
-        fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C>;
+        /// Assigns `lhs + rhs` to `lhs`.
+        fn add_assign_mixed(lhs: &mut ProjectivePoint<C>, rhs: &AffinePoint<C>);
 
-        /// Returns `point + point`
-        fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C>;
+        /// Computes `point + point` and assigns it to `point`.
+        fn double_in_place(point: &mut ProjectivePoint<C>);
     }
 }
 
@@ -60,7 +60,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
     /// are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+    fn add_assign(lhs: &mut ProjectivePoint<C>, rhs: &ProjectivePoint<C>) {
         let b3 = C::FieldElement::from(3) * C::EQUATION_B;
 
         let t0 = lhs.x * rhs.x; // 1
@@ -104,11 +104,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
         let z3 = t5 * z3; // 39
         let z3 = z3 + t0; // 40
 
-        ProjectivePoint {
-            x: x3,
-            y: y3,
-            z: z3,
-        }
+        lhs.x = x3;
+        lhs.y = y3;
+        lhs.z = z3;
     }
 
     /// Implements complete mixed addition for curves with any `a`
@@ -118,7 +116,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
     /// steps are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C> {
+    fn add_assign_mixed(lhs: &mut ProjectivePoint<C>, rhs: &AffinePoint<C>) {
         let b3 = C::EQUATION_B * C::FieldElement::from(3);
 
         let t0 = lhs.x * rhs.x; // 1
@@ -155,13 +153,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
         let z3 = t5 * z3; // 32
         let z3 = z3 + t0; // 33
 
-        let mut ret = ProjectivePoint {
-            x: x3,
-            y: y3,
-            z: z3,
-        };
-        ret.conditional_assign(lhs, rhs.is_identity());
-        ret
+        lhs.x.conditional_assign(&x3, !rhs.is_identity());
+        lhs.y.conditional_assign(&y3, !rhs.is_identity());
+        lhs.z.conditional_assign(&z3, !rhs.is_identity());
     }
 
     /// Implements point doubling for curves with any `a`
@@ -171,12 +165,12 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
     /// steps are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+    fn double_in_place(point: &mut ProjectivePoint<C>) {
         let b3 = C::EQUATION_B * C::FieldElement::from(3);
 
-        let t0 = point.x * point.x; // 1
-        let t1 = point.y * point.y; // 2
-        let t2 = point.z * point.z; // 3
+        let t0 = point.x.square(); // 1
+        let t1 = point.y.square(); // 2
+        let t2 = point.z.square(); // 3
         let t3 = point.x * point.y; // 4
         let t3 = t3 + t3; // 5
         let z3 = point.x * point.z; // 6
@@ -206,11 +200,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
         let z3 = z3 + z3; // 30
         let z3 = z3 + z3; // 31
 
-        ProjectivePoint {
-            x: x3,
-            y: y3,
-            z: z3,
-        }
+        point.x = x3;
+        point.y = y3;
+        point.z = z3;
     }
 }
 
@@ -225,7 +217,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     /// are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+    fn add_assign(lhs: &mut ProjectivePoint<C>, rhs: &ProjectivePoint<C>) {
         debug_assert_equation_a_is_minus_three::<C>();
 
         let xx = lhs.x * rhs.x; // 1
@@ -245,11 +237,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
         let bxz3_part = bxz_part.double() + bxz_part; // 30, 31
         let xx3_m_zz3 = xx.double() + xx - zz3; // 32, 33, 34
 
-        ProjectivePoint {
-            x: (yy_p_bzz3 * xy_pairs) - (yz_pairs * bxz3_part), // 35, 39, 40
-            y: (yy_p_bzz3 * yy_m_bzz3) + (xx3_m_zz3 * bxz3_part), // 36, 37, 38
-            z: (yy_m_bzz3 * yz_pairs) + (xy_pairs * xx3_m_zz3), // 41, 42, 43
-        }
+        lhs.x = (yy_p_bzz3 * xy_pairs) - (yz_pairs * bxz3_part); // 35, 39, 40
+        lhs.y = (yy_p_bzz3 * yy_m_bzz3) + (xx3_m_zz3 * bxz3_part); // 36, 37, 38
+        lhs.z = (yy_m_bzz3 * yz_pairs) + (xy_pairs * xx3_m_zz3); // 41, 42, 43
     }
 
     /// Implements complete mixed addition for curves with `a = -3`
@@ -259,7 +249,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     /// steps are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C> {
+    fn add_assign_mixed(lhs: &mut ProjectivePoint<C>, rhs: &AffinePoint<C>) {
         debug_assert_equation_a_is_minus_three::<C>();
 
         let xx = lhs.x * rhs.x; // 1
@@ -278,13 +268,13 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
         let bxz3_part = bxz_part.double() + bxz_part; // 23, 24
         let xx3_m_zz3 = xx.double() + xx - z3; // 25, 26, 27
 
-        let mut ret = ProjectivePoint {
-            x: (yy_p_bzz3 * xy_pairs) - (yz_pairs * bxz3_part), // 28, 32, 33
-            y: (yy_p_bzz3 * yy_m_bzz3) + (xx3_m_zz3 * bxz3_part), // 29, 30, 31
-            z: (yy_m_bzz3 * yz_pairs) + (xy_pairs * xx3_m_zz3), // 34, 35, 36
-        };
-        ret.conditional_assign(lhs, rhs.is_identity());
-        ret
+        let x = (yy_p_bzz3 * xy_pairs) - (yz_pairs * bxz3_part); // 28, 32, 33
+        let y = (yy_p_bzz3 * yy_m_bzz3) + (xx3_m_zz3 * bxz3_part); // 29, 30, 31
+        let z = (yy_m_bzz3 * yz_pairs) + (xy_pairs * xx3_m_zz3); // 34, 35, 36
+
+        lhs.x.conditional_assign(&x, !rhs.is_identity());
+        lhs.y.conditional_assign(&y, !rhs.is_identity());
+        lhs.z.conditional_assign(&z, !rhs.is_identity());
     }
 
     /// Implements point doubling for curves with `a = -3`
@@ -294,7 +284,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     /// steps are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+    fn double_in_place(point: &mut ProjectivePoint<C>) {
         debug_assert_equation_a_is_minus_three::<C>();
 
         let xx = point.x.square(); // 1
@@ -320,7 +310,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
         let x = x_frag - (bxz6_part * yz2); // 30, 31
         let z = (yz2 * yy).double().double(); // 32, 33, 34
 
-        ProjectivePoint { x, y, z }
+        point.x = x;
+        point.y = y;
+        point.z = z;
     }
 }
 
@@ -335,7 +327,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     /// are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn add(lhs: &ProjectivePoint<C>, rhs: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+    fn add_assign(lhs: &mut ProjectivePoint<C>, rhs: &ProjectivePoint<C>) {
         debug_assert_equation_a_is_zero::<C>();
 
         let b3 = C::FieldElement::from(3) * C::EQUATION_B;
@@ -374,11 +366,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
         let z3 = z3 * t4; // 32
         let z3 = z3 + t0; // 33
 
-        ProjectivePoint {
-            x: x3,
-            y: y3,
-            z: z3,
-        }
+        lhs.x = x3;
+        lhs.y = y3;
+        lhs.z = z3;
     }
 
     /// Implements complete mixed addition for curves with `a = 0`
@@ -388,7 +378,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     /// steps are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn add_mixed(lhs: &ProjectivePoint<C>, rhs: &AffinePoint<C>) -> ProjectivePoint<C> {
+    fn add_assign_mixed(lhs: &mut ProjectivePoint<C>, rhs: &AffinePoint<C>) {
         debug_assert_equation_a_is_zero::<C>();
 
         let b3 = C::EQUATION_B * C::FieldElement::from(3);
@@ -420,13 +410,9 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
         let z3 = z3 * t4; // 25
         let z3 = z3 + t0; // 26
 
-        let mut ret = ProjectivePoint {
-            x: x3,
-            y: y3,
-            z: z3,
-        };
-        ret.conditional_assign(lhs, rhs.is_identity());
-        ret
+        lhs.x.conditional_assign(&x3, !rhs.is_identity());
+        lhs.y.conditional_assign(&y3, !rhs.is_identity());
+        lhs.z.conditional_assign(&z3, !rhs.is_identity());
     }
 
     /// Implements point doubling for curves with `a = 0`
@@ -436,7 +422,7 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
     /// steps are being performed.
     ///
     /// [Renes-Costello-Batina 2015]: https://eprint.iacr.org/2015/1060
-    fn double(point: &ProjectivePoint<C>) -> ProjectivePoint<C> {
+    fn double_in_place(point: &mut ProjectivePoint<C>) {
         debug_assert_equation_a_is_zero::<C>();
 
         let b3 = C::EQUATION_B * C::FieldElement::from(3);
@@ -460,10 +446,8 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
         let x3 = t0 * t1; // 17
         let x3 = x3.double(); // 18
 
-        ProjectivePoint {
-            x: x3,
-            y: y3,
-            z: z3,
-        }
+        point.x = x3;
+        point.y = y3;
+        point.z = z3;
     }
 }
