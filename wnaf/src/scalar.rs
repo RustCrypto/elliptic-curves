@@ -8,7 +8,7 @@ use ff::PrimeField;
 /// # Examples
 ///
 /// See [`WnafBase`] for usage examples.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct WnafScalar<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> {
     pub(crate) wnaf: Array<Digit, WnafStorage>,
     pub(crate) digits: usize,
@@ -19,71 +19,39 @@ impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, Wnaf
     /// Computes the w-NAF representation of the given scalar with window size `W`.
     #[inline]
     pub fn new(scalar: &F) -> Self {
-        let mut wnaf = Array::default();
-        let len = wnaf_form(&mut wnaf, le_repr(scalar), W::USIZE);
-        WnafScalar {
-            wnaf,
-            digits: len,
-            _field: PhantomData,
-        }
+        Self::from_le_bytes(le_repr(scalar).as_ref())
     }
 
     /// Computes the w-NAF representation directly from raw little-endian bytes.
     ///
     /// `bytes` is interpreted as a little-endian unsigned integer (trailing zero bytes may be
     /// omitted), and the resulting [`WnafScalar`] evaluates to that integer times the base.
+    ///
     /// Because the number of w-NAF digits — and therefore the number of doublings in the
     /// evaluation loop — is proportional to `bytes.len() * 8`, passing a slice shorter than the
-    /// field's canonical representation produces a faster scalar.
+    /// field's canonical representation is faster.
     ///
-    /// This is intended for callers that have already decomposed a scalar into a value smaller
-    /// than the field modulus, e.g. the ~128-bit half-scalars produced by a GLV endomorphism
-    /// decomposition.
-    ///
-    /// The encoded integer is validated to be a canonical field element: it must be strictly
-    /// less than the field modulus. No modular reduction is performed — a value that is not
-    /// already in range is rejected rather than reduced, so the returned [`WnafScalar`] always
-    /// evaluates to the integer `bytes` encodes.
-    ///
-    /// # Errors
-    ///
-    /// Returns `None` if `bytes` is longer than the field's canonical representation, if the
-    /// encoded integer is greater than or equal to the field modulus, or if `bytes.len() * 8 + 1`
-    /// exceeds `WnafStorage::USIZE` (which would overflow the fixed-size `wnaf` storage).
+    /// # Panics
+    /// If `bytes*8+1 > WnafStorage::USIZE`.
     #[inline]
-    pub fn from_le_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() * 8 + 1 > WnafStorage::USIZE {
-            return None;
-        }
+    pub fn from_le_bytes(bytes: &[u8]) -> Self {
+        debug_assert!(bytes.len() * 8 < WnafStorage::USIZE);
+        let mut wnaf = Self::default();
+        wnaf.init_from_le_bytes(bytes);
+        wnaf
+    }
 
-        // Validate that `bytes` encodes a canonical field element by round-tripping it through
-        // `F::from_repr`, which returns `None` for any integer >= the modulus.
-        //
-        // `from_repr` consumes the canonical big-endian representation, so reverse the
-        // little-endian input into a zero-extended `F::Repr`.
-        let mut repr = F::Repr::default();
-        let repr_len = repr.as_ref().len();
-
-        // Anything wider than the canonical representation is necessarily out of range.
-        if bytes.len() > repr_len {
-            return None;
-        }
-
-        for (i, &byte) in bytes.iter().enumerate() {
-            repr.as_mut()[repr_len - 1 - i] = byte;
-        }
-
-        if bool::from(F::from_repr(repr).is_none()) {
-            return None;
-        }
-
-        let mut wnaf = Array::default();
-        let digits = wnaf_form(&mut wnaf, bytes, W::USIZE);
-
-        Some(WnafScalar {
-            wnaf,
-            digits,
-            _field: PhantomData,
-        })
+    /// Initialize w-NAF representation directly from raw little-endian bytes, for an already
+    /// allocated [`WnafScalar`].
+    ///
+    /// This is the equivalent of [`WnafScalar::from_le_bytes`] for reusing an existing value.
+    /// See that method for full documentation.
+    ///
+    /// # Panics
+    /// If `bytes*8+1 > WnafStorage::USIZE`.
+    #[inline]
+    pub fn init_from_le_bytes(&mut self, bytes: &[u8]) {
+        debug_assert!(bytes.len() * 8 < WnafStorage::USIZE);
+        self.digits = wnaf_form(&mut self.wnaf, bytes, W::USIZE);
     }
 }
