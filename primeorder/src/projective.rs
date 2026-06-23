@@ -103,20 +103,14 @@ where
     }
 
     /// Returns `[k] self`.
-    pub fn mul(&self, k: &Scalar<C>) -> Self
-    where
-        Self: Double,
-    {
+    pub fn mul(&self, k: &Scalar<C>) -> Self {
         let table = LookupTable::new(*self);
         let digits = Radix16Decomposition::new(k);
         lincomb::<C>(&[table], &[digits])
     }
 
     /// Returns `[k] self` computed in variable time.
-    pub fn mul_vartime(&self, k: &Scalar<C>) -> Self
-    where
-        Self: Double,
-    {
+    pub fn mul_vartime(&self, k: &Scalar<C>) -> Self {
         let table = LookupTable::new(*self);
         let digits = Radix16Decomposition::new(k);
         lincomb_vartime::<C>(&[table], &[digits])
@@ -354,19 +348,8 @@ where
     }
 }
 
-impl<C> PrimeCurve for ProjectivePoint<C>
-where
-    Self: Double,
-    C: PrimeCurveParams,
-{
-}
-
-impl<C> PrimeGroup for ProjectivePoint<C>
-where
-    Self: Double,
-    C: PrimeCurveParams,
-{
-}
+impl<C> PrimeCurve for ProjectivePoint<C> where C: PrimeCurveParams {}
+impl<C> PrimeGroup for ProjectivePoint<C> where C: PrimeCurveParams {}
 
 //
 // Batch trait impls
@@ -503,7 +486,9 @@ fn lincomb<C: PrimeCurveParams>(
     }
 
     for i in (0..d - 1).rev() {
-        q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
+        for _ in 0..4 {
+            q.double_in_place();
+        }
 
         for (table, digit) in zip(tables, digits) {
             q = q.add(&table.select(digit[i]));
@@ -528,7 +513,9 @@ fn lincomb_vartime<C: PrimeCurveParams>(
     }
 
     for i in (0..d - 1).rev() {
-        q = Double::double(&Double::double(&Double::double(&Double::double(&q))));
+        for _ in 0..4 {
+            q.double_in_place();
+        }
 
         for (table, digit) in zip(tables, digits) {
             q = q.add(&table.select_vartime(digit[i]));

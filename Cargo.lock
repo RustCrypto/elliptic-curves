@@ -484,8 +484,7 @@ checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 [[package]]
 name = "elliptic-curve"
 version = "0.14.0-rc.36"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abda41bf4d801bd9bfe2ef26ab37ae40d8c703374985b5c642e141d23de3f556"
+source = "git+https://github.com/RustCrypto/traits#68dab4109be9432d61cb58bc4438211f7c0a25c3"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -1375,7 +1374,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys",
