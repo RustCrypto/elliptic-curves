@@ -32,6 +32,9 @@ pub use crate::wnaf::Wnaf;
 use crate::limb_buffer::LimbBuffer;
 use ff::PrimeField;
 
+/// Type used to represent w-NAF digits.
+pub type Digit = i64;
+
 /// Computes a w-NAF window table for the given base and window size.
 ///
 /// For a window of size `w` non-zero w-NAF digits are odd and have magnitude at most `2^(w-1) - 1`.
@@ -53,7 +56,7 @@ fn wnaf_table<G: Group>(table: &mut [G], base: G, window: usize) {
 /// Fills `wnaf` with the w-NAF representation of a little-endian scalar, and returns the
 /// number of digits written.
 #[allow(clippy::cast_possible_wrap)]
-fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [i64], c: S, window: usize) -> usize {
+fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, window: usize) -> usize {
     debug_assert!(window >= 2);
     debug_assert!(window <= 64);
 
@@ -95,10 +98,10 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [i64], c: S, window: usize) -> usize {
         } else {
             wnaf[cursor] = if window_val < width / 2 {
                 carry = 0;
-                window_val as i64
+                window_val as Digit
             } else {
                 carry = 1;
-                (window_val as i64).wrapping_sub(width as i64)
+                (window_val as Digit).wrapping_sub(width as Digit)
             };
             cursor += 1;
             for _ in 1..window {
@@ -112,7 +115,7 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [i64], c: S, window: usize) -> usize {
     // If there is a remaining carry (the scalar used all `bit_len` bits and the last w-NAF digit
     // was negative), emit it so the representation is exact.
     if carry != 0 {
-        wnaf[cursor] = carry as i64;
+        wnaf[cursor] = carry as Digit;
         cursor += 1;
     }
 
@@ -132,7 +135,7 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [i64], c: S, window: usize) -> usize {
 fn wnaf_multi_exp<'a, G, I>(terms: I) -> G
 where
     G: Group,
-    I: Clone + IntoIterator<Item = (&'a [G], &'a [i64], usize)>,
+    I: Clone + IntoIterator<Item = (&'a [G], &'a [Digit], usize)>,
 {
     let window_size = terms
         .clone()

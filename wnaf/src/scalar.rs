@@ -1,4 +1,4 @@
-use crate::{WindowSize, le_repr, wnaf_form};
+use crate::{Digit, WindowSize, le_repr, wnaf_form};
 use array::{Array, ArraySize};
 use core::marker::PhantomData;
 use ff::PrimeField;
@@ -10,15 +10,16 @@ use ff::PrimeField;
 /// See [`WnafBase`] for usage examples.
 #[derive(Clone, Debug)]
 pub struct WnafScalar<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> {
-    pub(crate) wnaf: Array<i64, WnafStorage>,
+    pub(crate) wnaf: Array<Digit, WnafStorage>,
     pub(crate) digits: usize,
     _field: PhantomData<(F, W)>,
 }
 
 impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, WnafStorage> {
     /// Computes the w-NAF representation of the given scalar with window size `W`.
+    #[inline]
     pub fn new(scalar: &F) -> Self {
-        let mut wnaf = Array::from_fn(|_| 0i64);
+        let mut wnaf = Array::default();
         let len = wnaf_form(&mut wnaf, le_repr(scalar), W::USIZE);
         WnafScalar {
             wnaf,
@@ -49,6 +50,7 @@ impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, Wnaf
     /// Returns `None` if `bytes` is longer than the field's canonical representation, if the
     /// encoded integer is greater than or equal to the field modulus, or if `bytes.len() * 8 + 1`
     /// exceeds `WnafStorage::USIZE` (which would overflow the fixed-size `wnaf` storage).
+    #[inline]
     pub fn from_le_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() * 8 + 1 > WnafStorage::USIZE {
             return None;
