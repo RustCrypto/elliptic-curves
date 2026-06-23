@@ -291,7 +291,7 @@ fn lincomb(
 
     for i in (0..32).rev() {
         for _j in 0..4 {
-            acc = acc.double();
+            acc.double_in_place();
         }
 
         for component in 0..xks.len() {
@@ -333,7 +333,7 @@ impl ProjectivePoint {
             // This is the price of halving the precomputed table size (from 60kb to 30kb)
             // The performance hit is minor, about 3%.
             for _ in 0..4 {
-                acc2 = acc2.double();
+                acc2.double_in_place();
             }
             acc + acc2
         }
@@ -360,7 +360,7 @@ impl ProjectivePoint {
             // This is the price of halving the precomputed table size (from 60kb to 30kb)
             // The performance hit is minor, about 3%.
             for _ in 0..4 {
-                acc2 = acc2.double();
+                acc2.double_in_place();
             }
 
             acc + acc2

@@ -16,7 +16,7 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
     },
     ops::BatchInvert,
-    point::NonIdentity,
+    point::{Double, NonIdentity},
     rand_core::{TryCryptoRng, TryRng},
     sec1::{FromSec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
@@ -164,6 +164,14 @@ impl ProjectivePoint {
     /// Doubles this point.
     #[inline]
     pub fn double(&self) -> ProjectivePoint {
+        let mut ret = *self;
+        ret.double_in_place();
+        ret
+    }
+
+    /// Doubles this point in-place.
+    #[inline]
+    pub fn double_in_place(&mut self) {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 9).
 
@@ -184,15 +192,13 @@ impl ProjectivePoint {
             .normalize_weak()
             .mul_single(CURVE_EQUATION_B_SINGLE);
 
-        ProjectivePoint {
-            x: xy2 * &yy_m_bzz9,
-            y: ((yy_m_bzz9 * &yy_p_bzz3) + &t).normalize_weak(),
-            z: ((yy * &self.y) * &self.z)
-                .double()
-                .double()
-                .double()
-                .normalize_weak(),
-        }
+        self.x = xy2 * &yy_m_bzz9;
+        self.z = ((yy * &self.y) * &self.z)
+            .double()
+            .double()
+            .double()
+            .normalize_weak();
+        self.y = ((yy_m_bzz9 * &yy_p_bzz3) + &t).normalize_weak();
     }
 
     /// Returns `self - other`.
@@ -230,6 +236,18 @@ impl ProjectivePoint {
         let y_eq = rhs_y.negate(1).add(&self.y).normalizes_to_zero();
 
         both_identity | (!rhs_identity & x_eq & y_eq)
+    }
+}
+
+impl Double for ProjectivePoint {
+    #[inline]
+    fn double(&self) -> Self {
+        self.double()
+    }
+
+    #[inline]
+    fn double_in_place(&mut self) {
+        self.double_in_place();
     }
 }
 
