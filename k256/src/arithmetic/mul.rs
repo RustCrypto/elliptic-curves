@@ -398,17 +398,7 @@ fn decompose_glv_wnaf(x: &ProjectivePoint, k: &Scalar) -> ([WnafBase; 2], [WnafS
     let p2 = if r2_neg { -p_beta } else { p_beta };
 
     let bases = [WnafBase::new(p1), WnafBase::new(p2)];
-
-    // GLV guarantees each half-scalar fits in `GLV_LE_BYTES`, so the truncated little-endian
-    // encoding round-trips and `from_le_bytes`'s canonical-range check always succeeds.
-    //
-    // Should that invariant ever fail to hold, fall back to the full-width `new` rather than
-    // panicking; it produces an identical (just slower) result for any in-range scalar.
-    let scalars = [r1, r2].map(|r| {
-        WnafScalar::from_le_bytes(&r.to_le_repr()[..GLV_LE_BYTES])
-            .unwrap_or_else(|| WnafScalar::new(&r))
-    });
-
+    let scalars = [r1, r2].map(|r| WnafScalar::from_le_bytes(&r.to_le_repr()[..GLV_LE_BYTES]));
     (bases, scalars)
 }
 
