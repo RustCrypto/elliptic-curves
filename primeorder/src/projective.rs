@@ -83,13 +83,19 @@ where
     }
 
     /// Returns `self + other`.
+    #[inline]
     pub fn add(&self, other: &Self) -> Self {
-        C::PointArithmetic::add(self, other)
+        let mut lhs = *self;
+        C::PointArithmetic::add_assign(&mut lhs, other);
+        lhs
     }
 
     /// Returns `self + other`.
+    #[inline]
     fn add_mixed(&self, other: &AffinePoint<C>) -> Self {
-        C::PointArithmetic::add_mixed(self, other)
+        let mut lhs = *self;
+        C::PointArithmetic::add_assign_mixed(&mut lhs, other);
+        lhs
     }
 
     /// Returns `self - other`.
@@ -99,7 +105,7 @@ where
 
     /// Returns `self - other`.
     fn sub_mixed(&self, other: &AffinePoint<C>) -> Self {
-        self.add_mixed(&other.neg())
+        self.add_mixed(&-other)
     }
 
     /// Returns `[k] self`.
@@ -175,7 +181,14 @@ impl<C> DefaultIsZeroes for ProjectivePoint<C> where C: PrimeCurveParams {}
 impl<C: PrimeCurveParams> Double for ProjectivePoint<C> {
     #[inline]
     fn double(&self) -> Self {
-        C::PointArithmetic::double(self)
+        let mut ret = *self;
+        C::PointArithmetic::double_in_place(&mut ret);
+        ret
+    }
+
+    #[inline]
+    fn double_in_place(&mut self) {
+        C::PointArithmetic::double_in_place(self);
     }
 }
 
@@ -620,7 +633,7 @@ where
 {
     #[inline]
     fn add_assign(&mut self, rhs: ProjectivePoint<C>) {
-        *self = ProjectivePoint::add(self, &rhs);
+        C::PointArithmetic::add_assign(self, &rhs);
     }
 }
 
@@ -630,7 +643,7 @@ where
 {
     #[inline]
     fn add_assign(&mut self, rhs: &ProjectivePoint<C>) {
-        *self = ProjectivePoint::add(self, rhs);
+        C::PointArithmetic::add_assign(self, rhs);
     }
 }
 
@@ -673,7 +686,7 @@ where
 {
     #[inline]
     fn add_assign(&mut self, rhs: AffinePoint<C>) {
-        *self = ProjectivePoint::add_mixed(self, &rhs);
+        C::PointArithmetic::add_assign_mixed(self, &rhs);
     }
 }
 
@@ -683,7 +696,7 @@ where
 {
     #[inline]
     fn add_assign(&mut self, rhs: &AffinePoint<C>) {
-        *self = ProjectivePoint::add_mixed(self, rhs);
+        C::PointArithmetic::add_assign_mixed(self, rhs);
     }
 }
 
@@ -746,7 +759,7 @@ where
 {
     #[inline]
     fn sub_assign(&mut self, rhs: ProjectivePoint<C>) {
-        *self = ProjectivePoint::sub(self, &rhs);
+        C::PointArithmetic::add_assign(self, &-rhs);
     }
 }
 
@@ -756,7 +769,7 @@ where
 {
     #[inline]
     fn sub_assign(&mut self, rhs: &ProjectivePoint<C>) {
-        *self = ProjectivePoint::sub(self, rhs);
+        *self -= *rhs;
     }
 }
 
@@ -799,7 +812,7 @@ where
 {
     #[inline]
     fn sub_assign(&mut self, rhs: AffinePoint<C>) {
-        *self = ProjectivePoint::sub_mixed(self, &rhs);
+        C::PointArithmetic::add_assign_mixed(self, &-rhs);
     }
 }
 
@@ -809,7 +822,7 @@ where
 {
     #[inline]
     fn sub_assign(&mut self, rhs: &AffinePoint<C>) {
-        *self = ProjectivePoint::sub_mixed(self, rhs);
+        *self -= *rhs;
     }
 }
 
