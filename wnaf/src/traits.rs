@@ -31,4 +31,5 @@ macro_rules! impl_window_sizes {
     };
 }
 
+// NOTE: the maximum size supported here should match the `W_MAX` constant
 impl_window_sizes!(U2 => U1, U3 => U2, U4 => U4, U5 => U8, U6 => U16, U7 => U32, U8 => U64);

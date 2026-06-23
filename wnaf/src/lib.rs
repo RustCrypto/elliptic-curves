@@ -33,7 +33,16 @@ use crate::limb_buffer::LimbBuffer;
 use ff::PrimeField;
 
 /// Type used to represent w-NAF digits.
-pub type Digit = i64;
+///
+/// For a window of size `w` non-zero w-NAF digits are odd and have magnitude at most `2^(w-1) - 1`
+/// and lie within `[-(2^(w-1)-1), 2^(w-1)-1]`.
+pub type Digit = i8;
+
+/// Maximum supported value for `w`.
+///
+/// This ensures `2^(8-1)-1=127`, so digits lie within `[-127,127]`, which fits in `i8`.
+// NOTE: this is also the maximum impl size we support for the `WindowSize` trait
+const W_MAX: usize = 8;
 
 /// Computes a w-NAF window table for the given base and window size.
 ///
@@ -58,7 +67,7 @@ fn wnaf_table<G: Group>(table: &mut [G], base: G, window: usize) {
 #[allow(clippy::cast_possible_wrap)]
 fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, window: usize) -> usize {
     debug_assert!(window >= 2);
-    debug_assert!(window <= 64);
+    debug_assert!(window <= W_MAX);
 
     let bit_len = c.as_ref().len() * 8;
     debug_assert!(wnaf.len() > bit_len, "wnaf storage too small");
@@ -173,7 +182,7 @@ where
 /// Get the little endian representation of a field, namely a scalar.
 fn le_repr<F: PrimeField>(fe: &F) -> F::Repr {
     let mut ret = fe.to_repr();
-    // TODO(tarcieri): we currently assume this is always big endian. Make it configurable.
+    // TODO(tarcieri): determine endianness via `PrimeField` trait. See zkcrypto/rfcs#4
     ret.as_mut().reverse();
     ret
 }
