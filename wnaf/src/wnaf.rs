@@ -1,6 +1,6 @@
 //! Dynamic w-NAF API (requires `alloc` feature).
 
-use crate::{WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
+use crate::{Digit, WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
 use alloc::vec::Vec;
 use group::Group;
 
@@ -85,13 +85,13 @@ pub struct Wnaf<W, B, S> {
     window_size: W,
 }
 
-impl<G: Group> Default for Wnaf<(), Vec<G>, Vec<i64>> {
+impl<G: Group> Default for Wnaf<(), Vec<G>, Vec<Digit>> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<G: Group> Wnaf<(), Vec<G>, Vec<i64>> {
+impl<G: Group> Wnaf<(), Vec<G>, Vec<Digit>> {
     #[must_use]
     pub fn new() -> Self {
         Wnaf {
@@ -102,8 +102,8 @@ impl<G: Group> Wnaf<(), Vec<G>, Vec<i64>> {
     }
 }
 
-impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<i64>> {
-    pub fn base(&mut self, base: G, num_scalars: usize) -> Wnaf<usize, &[G], &mut Vec<i64>> {
+impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<Digit>> {
+    pub fn base(&mut self, base: G, num_scalars: usize) -> Wnaf<usize, &[G], &mut Vec<Digit>> {
         let window_size = G::recommended_wnaf_for_num_scalars(num_scalars);
 
         self.base.resize_with(1 << (window_size - 2), G::identity);
@@ -116,7 +116,7 @@ impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<i64>> {
         }
     }
 
-    pub fn scalar(&mut self, scalar: &<G as Group>::Scalar) -> Wnaf<usize, &mut Vec<G>, &[i64]> {
+    pub fn scalar(&mut self, scalar: &<G as Group>::Scalar) -> Wnaf<usize, &mut Vec<G>, &[Digit]> {
         let window_size = 4;
 
         let repr = le_repr(scalar);
@@ -132,11 +132,11 @@ impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<i64>> {
     }
 }
 
-impl<'a, G: Group> Wnaf<usize, &'a [G], &'a mut Vec<i64>> {
+impl<'a, G: Group> Wnaf<usize, &'a [G], &'a mut Vec<Digit>> {
     /// Constructs new space for the scalar representation while borrowing
     /// the computed window table, for sending the window table across threads.
     #[must_use]
-    pub fn shared(&self) -> Wnaf<usize, &'a [G], Vec<i64>> {
+    pub fn shared(&self) -> Wnaf<usize, &'a [G], Vec<Digit>> {
         Wnaf {
             base: self.base,
             scalar: vec![],
@@ -145,12 +145,12 @@ impl<'a, G: Group> Wnaf<usize, &'a [G], &'a mut Vec<i64>> {
     }
 }
 
-impl<'a, G: Group> Wnaf<usize, &'a mut Vec<G>, &'a [i64]> {
+impl<'a, G: Group> Wnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
     /// Constructs new space for the window table while borrowing
     /// the computed scalar representation, for sending the scalar representation
     /// across threads.
     #[must_use]
-    pub fn shared(&self) -> Wnaf<usize, Vec<G>, &'a [i64]> {
+    pub fn shared(&self) -> Wnaf<usize, Vec<G>, &'a [Digit]> {
         Wnaf {
             base: vec![],
             scalar: self.scalar,
@@ -159,7 +159,7 @@ impl<'a, G: Group> Wnaf<usize, &'a mut Vec<G>, &'a [i64]> {
     }
 }
 
-impl<B, S: AsRef<[i64]>> Wnaf<usize, B, S> {
+impl<B, S: AsRef<[Digit]>> Wnaf<usize, B, S> {
     pub fn base<G: Group>(&mut self, base: G) -> G
     where
         B: AsMut<Vec<G>>,
@@ -172,7 +172,7 @@ impl<B, S: AsRef<[i64]>> Wnaf<usize, B, S> {
     }
 }
 
-impl<B, S: AsMut<Vec<i64>>> Wnaf<usize, B, S> {
+impl<B, S: AsMut<Vec<Digit>>> Wnaf<usize, B, S> {
     pub fn scalar<G: Group>(&mut self, scalar: &<G as Group>::Scalar) -> G
     where
         B: AsRef<[G]>,
@@ -187,6 +187,6 @@ impl<B, S: AsMut<Vec<i64>>> Wnaf<usize, B, S> {
 
 /// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar, whose
 /// lengths must match.
-pub(crate) fn wnaf_exp<G: Group>(table: &[G], wnaf: &[i64]) -> G {
+pub(crate) fn wnaf_exp<G: Group>(table: &[G], wnaf: &[Digit]) -> G {
     wnaf_multi_exp(core::iter::once((table, wnaf, wnaf.len())))
 }
