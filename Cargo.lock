@@ -82,7 +82,7 @@ dependencies = [
 
 [[package]]
 name = "bignp256"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "belt-block",
  "belt-hash",
@@ -143,7 +143,7 @@ dependencies = [
 
 [[package]]
 name = "bp256"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -155,7 +155,7 @@ dependencies = [
 
 [[package]]
 name = "bp384"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -366,8 +366,9 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 
 [[package]]
 name = "crypto-bigint"
-version = "0.7.4"
-source = "git+https://github.com/RustCrypto/crypto-bigint#ec6615fad09d26f8518378f1fdfe96a635ddab2d"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a52aa3fcda4e6302a9f48734f234d35d4721b96f8fe07d073f07ce9df4f0271"
 dependencies = [
  "cpubits",
  "ctutils",
@@ -426,8 +427,9 @@ dependencies = [
 
 [[package]]
 name = "ecdsa"
-version = "0.17.0-rc.20"
-source = "git+https://github.com/RustCrypto/signatures#9556832958dbdeb804f0291a4e81ee1ec2ecf677"
+version = "0.17.0-rc.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8c49632b5dd114acd72982823888124a7f25c97801e6e38df893548f3c45b3b"
 dependencies = [
  "der",
  "digest",
@@ -453,7 +455,7 @@ dependencies = [
 
 [[package]]
 name = "ed448-goldilocks"
-version = "0.14.0-pre.13"
+version = "0.14.0-pre.14"
 dependencies = [
  "chacha20",
  "criterion",
@@ -481,8 +483,9 @@ checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
 name = "elliptic-curve"
-version = "0.14.0-rc.35"
-source = "git+https://github.com/RustCrypto/traits#5b2a9dc34790d9aee0daaff8d87dcf6c50630654"
+version = "0.14.0-rc.36"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abda41bf4d801bd9bfe2ef26ab37ae40d8c703374985b5c642e141d23de3f556"
 dependencies = [
  "base16ct",
  "crypto-bigint",
@@ -612,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "hash2curve"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "digest",
  "elliptic-curve",
@@ -699,7 +702,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "cpubits",
  "criterion",
@@ -793,7 +796,7 @@ checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "p192"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -805,7 +808,7 @@ dependencies = [
 
 [[package]]
 name = "p224"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "ecdsa",
  "elliptic-curve",
@@ -818,7 +821,7 @@ dependencies = [
 
 [[package]]
 name = "p256"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -834,7 +837,7 @@ dependencies = [
 
 [[package]]
 name = "p384"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "criterion",
  "ecdsa",
@@ -851,7 +854,7 @@ dependencies = [
 
 [[package]]
 name = "p521"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "base16ct",
  "criterion",
@@ -937,7 +940,7 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "crypto-bigint",
  "crypto-common",
@@ -949,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "elliptic-curve",
  "once_cell",
@@ -1306,7 +1309,7 @@ checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
 
 [[package]]
 name = "sm2"
-version = "0.14.0-rc.12"
+version = "0.14.0-rc.13"
 dependencies = [
  "criterion",
  "der",
@@ -1372,7 +1375,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys",
@@ -1527,7 +1530,7 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 
 [[package]]
 name = "wnaf"
-version = "0.14.0-pre.0"
+version = "0.14.0-rc.0"
 dependencies = [
  "ff",
  "group",
@@ -1536,7 +1539,7 @@ dependencies = [
 
 [[package]]
 name = "x448"
-version = "0.14.0-pre.10"
+version = "0.14.0-pre.11"
 dependencies = [
  "ed448-goldilocks",
  "serdect",
