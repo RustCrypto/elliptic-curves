@@ -72,6 +72,7 @@ impl ProjectivePoint {
     }
 
     /// Returns `-self`.
+    #[inline]
     fn neg(&self) -> ProjectivePoint {
         ProjectivePoint {
             x: self.x,
@@ -81,7 +82,15 @@ impl ProjectivePoint {
     }
 
     /// Returns `self + other`.
+    #[inline]
     fn add(&self, other: &ProjectivePoint) -> ProjectivePoint {
+        let mut ret = *self;
+        ret.add_assign(other);
+        ret
+    }
+
+    /// Assign `self + other` to `self`.
+    fn add_assign(&mut self, other: &ProjectivePoint) {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 7).
 
@@ -113,19 +122,21 @@ impl ProjectivePoint {
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
 
-        let new_x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
-        let new_y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
-        let new_z = ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak();
-
-        ProjectivePoint {
-            x: new_x,
-            y: new_y,
-            z: new_z,
-        }
+        self.x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(); // m1
+        self.y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
+        self.z = ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak();
     }
 
     /// Returns `self + other`.
+    #[inline]
     fn add_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
+        let mut ret = *self;
+        ret.add_assign_mixed(other);
+        ret
+    }
+
+    /// Assign `self + other` to `self`.
+    fn add_assign_mixed(&mut self, other: &AffinePoint) {
         // We implement the complete addition formula from Renes-Costello-Batina 2015
         // (https://eprint.iacr.org/2015/1060 Algorithm 8).
 
@@ -152,13 +163,13 @@ impl ProjectivePoint {
             .mul_single(CURVE_EQUATION_B_SINGLE)
             .normalize_weak();
 
-        let mut ret = ProjectivePoint {
-            x: ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak(),
-            y: ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak(),
-            z: ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak(),
-        };
-        ret.conditional_assign(self, other.is_identity());
-        ret
+        let x = ((xy_pairs * &yy_m_bzz3) + &(byz3 * &xz_pairs).negate(1)).normalize_weak();
+        let y = ((yy_p_bzz3 * &yy_m_bzz3) + &(bxx9 * &xz_pairs)).normalize_weak();
+        let z = ((yz_pairs * &yy_p_bzz3) + &(xx3 * &xy_pairs)).normalize_weak();
+
+        self.x.conditional_assign(&x, !other.is_identity());
+        self.y.conditional_assign(&y, !other.is_identity());
+        self.z.conditional_assign(&z, !other.is_identity());
     }
 
     /// Doubles this point.
@@ -206,9 +217,19 @@ impl ProjectivePoint {
         self.add(&other.neg())
     }
 
+    /// Assign `self - other` to `self`.
+    fn sub_assign(&mut self, other: &ProjectivePoint) {
+        self.add_assign(&other.neg());
+    }
+
     /// Returns `self - other`.
     fn sub_mixed(&self, other: &AffinePoint) -> ProjectivePoint {
         self.add_mixed(&other.neg())
+    }
+
+    /// Assign `self - other` to `self`.
+    fn sub_assign_mixed(&mut self, other: &AffinePoint) {
+        self.add_assign_mixed(&other.neg());
     }
 
     /// Calculates SECP256k1 endomorphism: `self * lambda`.
@@ -531,86 +552,94 @@ impl PrimeGroup for ProjectivePoint {}
 impl Add<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
-        ProjectivePoint::add(self, other)
+    #[inline]
+    fn add(self, rhs: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(self, rhs)
     }
 }
 
 impl Add<ProjectivePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn add(self, other: ProjectivePoint) -> ProjectivePoint {
-        ProjectivePoint::add(&self, &other)
+    #[inline]
+    fn add(self, rhs: ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(&self, &rhs)
     }
 }
 
 impl Add<&ProjectivePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn add(self, other: &ProjectivePoint) -> ProjectivePoint {
-        ProjectivePoint::add(&self, other)
+    #[inline]
+    fn add(self, rhs: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::add(&self, rhs)
     }
 }
 
 impl AddAssign<ProjectivePoint> for ProjectivePoint {
     #[inline]
     fn add_assign(&mut self, rhs: ProjectivePoint) {
-        *self = ProjectivePoint::add(self, &rhs);
+        ProjectivePoint::add_assign(self, &rhs);
     }
 }
 
 impl AddAssign<&ProjectivePoint> for ProjectivePoint {
     #[inline]
     fn add_assign(&mut self, rhs: &ProjectivePoint) {
-        *self = ProjectivePoint::add(self, rhs);
+        ProjectivePoint::add_assign(self, rhs);
     }
 }
 
 impl Add<AffinePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn add(self, other: AffinePoint) -> ProjectivePoint {
-        ProjectivePoint::add_mixed(&self, &other)
+    #[inline]
+    fn add(self, rhs: AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(&self, &rhs)
     }
 }
 
 impl Add<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn add(self, other: &AffinePoint) -> ProjectivePoint {
-        ProjectivePoint::add_mixed(self, other)
+    #[inline]
+    fn add(self, rhs: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(self, rhs)
     }
 }
 
 impl Add<&AffinePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn add(self, other: &AffinePoint) -> ProjectivePoint {
-        ProjectivePoint::add_mixed(&self, other)
+    #[inline]
+    fn add(self, rhs: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::add_mixed(&self, rhs)
     }
 }
 
 impl AddAssign<AffinePoint> for ProjectivePoint {
     #[inline]
     fn add_assign(&mut self, rhs: AffinePoint) {
-        *self = ProjectivePoint::add_mixed(self, &rhs);
+        ProjectivePoint::add_assign_mixed(self, &rhs);
     }
 }
 
 impl AddAssign<&AffinePoint> for ProjectivePoint {
     #[inline]
     fn add_assign(&mut self, rhs: &AffinePoint) {
-        *self = ProjectivePoint::add_mixed(self, rhs);
+        ProjectivePoint::add_assign_mixed(self, rhs);
     }
 }
 
 impl Sum for ProjectivePoint {
+    #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(ProjectivePoint::IDENTITY, |a, b| a + b)
     }
 }
 
 impl<'a> Sum<&'a ProjectivePoint> for ProjectivePoint {
+    #[inline]
     fn sum<I: Iterator<Item = &'a ProjectivePoint>>(iter: I) -> Self {
         iter.cloned().sum()
     }
@@ -619,82 +648,89 @@ impl<'a> Sum<&'a ProjectivePoint> for ProjectivePoint {
 impl Sub<ProjectivePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn sub(self, other: ProjectivePoint) -> ProjectivePoint {
-        ProjectivePoint::sub(&self, &other)
+    #[inline]
+    fn sub(self, rhs: ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(&self, &rhs)
     }
 }
 
 impl Sub<&ProjectivePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn sub(self, other: &ProjectivePoint) -> ProjectivePoint {
-        ProjectivePoint::sub(self, other)
+    #[inline]
+    fn sub(self, rhs: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(self, rhs)
     }
 }
 
 impl Sub<&ProjectivePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn sub(self, other: &ProjectivePoint) -> ProjectivePoint {
-        ProjectivePoint::sub(&self, other)
+    #[inline]
+    fn sub(self, rhs: &ProjectivePoint) -> ProjectivePoint {
+        ProjectivePoint::sub(&self, rhs)
     }
 }
 
 impl SubAssign<ProjectivePoint> for ProjectivePoint {
     #[inline]
     fn sub_assign(&mut self, rhs: ProjectivePoint) {
-        *self = ProjectivePoint::sub(self, &rhs);
+        ProjectivePoint::sub_assign(self, &rhs);
     }
 }
 
 impl SubAssign<&ProjectivePoint> for ProjectivePoint {
     #[inline]
     fn sub_assign(&mut self, rhs: &ProjectivePoint) {
-        *self = ProjectivePoint::sub(self, rhs);
+        ProjectivePoint::sub_assign(self, rhs);
     }
 }
 
 impl Sub<AffinePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn sub(self, other: AffinePoint) -> ProjectivePoint {
-        ProjectivePoint::sub_mixed(&self, &other)
+    #[inline]
+    fn sub(self, rhs: AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(&self, &rhs)
     }
 }
 
 impl Sub<&AffinePoint> for &ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn sub(self, other: &AffinePoint) -> ProjectivePoint {
-        ProjectivePoint::sub_mixed(self, other)
+    #[inline]
+    fn sub(self, rhs: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(self, rhs)
     }
 }
 
 impl Sub<&AffinePoint> for ProjectivePoint {
     type Output = ProjectivePoint;
 
-    fn sub(self, other: &AffinePoint) -> ProjectivePoint {
-        ProjectivePoint::sub_mixed(&self, other)
+    #[inline]
+    fn sub(self, rhs: &AffinePoint) -> ProjectivePoint {
+        ProjectivePoint::sub_mixed(&self, rhs)
     }
 }
 
 impl SubAssign<AffinePoint> for ProjectivePoint {
     #[inline]
     fn sub_assign(&mut self, rhs: AffinePoint) {
-        *self = ProjectivePoint::sub_mixed(self, &rhs);
+        ProjectivePoint::sub_assign_mixed(self, &rhs);
     }
 }
 
 impl SubAssign<&AffinePoint> for ProjectivePoint {
     #[inline]
     fn sub_assign(&mut self, rhs: &AffinePoint) {
-        *self = ProjectivePoint::sub_mixed(self, rhs);
+        ProjectivePoint::sub_assign_mixed(self, rhs);
     }
 }
 
 impl Neg for ProjectivePoint {
     type Output = ProjectivePoint;
 
+    #[inline]
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(&self)
     }
@@ -703,6 +739,7 @@ impl Neg for ProjectivePoint {
 impl Neg for &ProjectivePoint {
     type Output = ProjectivePoint;
 
+    #[inline]
     fn neg(self) -> ProjectivePoint {
         ProjectivePoint::neg(self)
     }
