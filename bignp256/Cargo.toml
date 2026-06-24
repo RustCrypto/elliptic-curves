@@ -34,7 +34,7 @@ pkcs8 = { version = "0.11", optional = true }
 primefield = { version = "0.14", optional = true }
 primeorder = { version = "0.14.0-rc.13", optional = true }
 sec1 = { version = "0.8.1", optional = true }
-hash2curve = { version = "0.14.0-rc.13", optional = true }
+hash2curve = { version = "0.14", optional = true }
 belt-kwp = { version = "0.2", optional = true }
 signature = { version = "3", optional = true }
 
