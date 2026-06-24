@@ -23,3 +23,6 @@ ff = { version = "0.14", default-features = false }
 subtle = { version = "2.6", default-features = false, features = ["const-generics"] }
 rand_core = { version = "0.10", default-features = false }
 zeroize = { version = "1.7", default-features = false }
+
+[lints]
+workspace = true
