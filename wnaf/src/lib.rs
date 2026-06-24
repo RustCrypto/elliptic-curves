@@ -17,7 +17,7 @@ mod scalar;
 mod traits;
 
 #[cfg(feature = "alloc")]
-mod wnaf;
+mod boxed;
 
 pub use crate::{
     base::WnafBase,
@@ -27,7 +27,7 @@ pub use crate::{
 pub use group::Group;
 
 #[cfg(feature = "alloc")]
-pub use crate::wnaf::Wnaf;
+pub use crate::boxed::BoxedWnaf;
 
 use crate::limb_buffer::LimbBuffer;
 use ff::PrimeField;
@@ -35,12 +35,12 @@ use ff::PrimeField;
 /// Type used to represent w-NAF digits.
 ///
 /// For a window of size `w` non-zero w-NAF digits are odd and have magnitude at most `2^(w-1) - 1`
-/// and lie within `[-(2^(w-1)-1), 2^(w-1)-1]`.
+/// and lie within `{-(2^(w-1)-1), 2^(w-1)-1}`.
 pub type Digit = i8;
 
 /// Maximum supported value for `w`.
 ///
-/// This ensures `2^(8-1)-1=127`, so digits lie within `[-127,127]`, which fits in `i8`.
+/// This ensures `2^(8-1)-1=127`, so digits lie within `{-127,127}`, which fits in `i8`.
 // NOTE: this is also the maximum impl size we support for the `WindowSize` trait
 const W_MAX: usize = 8;
 

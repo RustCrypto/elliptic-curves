@@ -3,6 +3,9 @@ use array::{Array, ArraySize};
 use core::marker::PhantomData;
 use ff::PrimeField;
 
+#[cfg(doc)]
+use crate::WnafBase;
+
 /// A "w-ary non-adjacent form" scalar, precomputed to improve the speed of scalar multiplication.
 ///
 /// # Examples
@@ -27,9 +30,9 @@ impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, Wnaf
     /// `bytes` is interpreted as a little-endian unsigned integer (trailing zero bytes may be
     /// omitted), and the resulting [`WnafScalar`] evaluates to that integer times the base.
     ///
-    /// Because the number of w-NAF digits — and therefore the number of doublings in the
-    /// evaluation loop — is proportional to `bytes.len() * 8`, passing a slice shorter than the
-    /// field's canonical representation is faster.
+    /// Because the number of w-NAF digits, and therefore the number of doublings, is proportional
+    /// to `bytes.len() * 8`, passing a slice shorter than the field's canonical representation is
+    /// faster.
     ///
     /// # Panics
     /// If `bytes*8+1 > WnafStorage::USIZE`.
