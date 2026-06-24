@@ -3,7 +3,7 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{
-    AffinePoint, Field, LookupTable, MulBackend, PrimeCurveParams, Radix16Decomposition,
+    AffinePoint, ArraySize, Field, LookupTable, MulBackend, PrimeCurveParams, Radix16Decomposition,
     Radix16Digits, point_arithmetic::PointArithmetic,
 };
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
@@ -27,6 +27,7 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 
+use crate::array::Array;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 #[cfg(feature = "serde")]
@@ -379,6 +380,23 @@ where
         let mut zs = [C::FieldElement::ZERO; N];
         let mut scratch = [C::FieldElement::ZERO; N];
         let mut affine_points = [C::AffinePoint::IDENTITY; N];
+        batch_normalize_generic(points, &mut zs, &mut scratch, &mut affine_points);
+        affine_points
+    }
+}
+
+impl<C, U> BatchNormalize<Array<ProjectivePoint<C>, U>> for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+    U: ArraySize,
+{
+    type Output = Array<AffinePoint<C>, U>;
+
+    #[inline]
+    fn batch_normalize(points: &Array<Self, U>) -> Array<AffinePoint<C>, U> {
+        let mut zs = Array::<C::FieldElement, U>::default();
+        let mut scratch = Array::<C::FieldElement, U>::default();
+        let mut affine_points = Array::<AffinePoint<C>, U>::default();
         batch_normalize_generic(points, &mut zs, &mut scratch, &mut affine_points);
         affine_points
     }

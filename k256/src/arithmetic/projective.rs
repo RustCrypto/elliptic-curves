@@ -9,7 +9,9 @@ use core::{
     ops::{Add, AddAssign, Neg, Sub, SubAssign},
 };
 use elliptic_curve::{
-    BatchNormalize, CurveGroup, Error, Generate, Result, ctutils,
+    BatchNormalize, CurveGroup, Error, Generate, Result,
+    array::{Array, ArraySize},
+    ctutils,
     group::{
         CurveAffine, Group, GroupEncoding,
         cofactor::CofactorGroup,
@@ -292,10 +294,10 @@ impl Generate for ProjectivePoint {
 }
 
 impl<const N: usize> BatchNormalize<[ProjectivePoint; N]> for ProjectivePoint {
-    type Output = [<Self as CurveGroup>::Affine; N];
+    type Output = [AffinePoint; N];
 
     #[inline]
-    fn batch_normalize(points: &[Self; N]) -> [<Self as CurveGroup>::Affine; N] {
+    fn batch_normalize(points: &[Self; N]) -> [AffinePoint; N] {
         let mut zs = [FieldElement::ZERO; N];
         let mut scratch = [FieldElement::ZERO; N];
         let mut affine_points = [AffinePoint::IDENTITY; N];
@@ -304,12 +306,25 @@ impl<const N: usize> BatchNormalize<[ProjectivePoint; N]> for ProjectivePoint {
     }
 }
 
-#[cfg(feature = "alloc")]
-impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
-    type Output = Vec<<Self as CurveGroup>::Affine>;
+impl<U: ArraySize> BatchNormalize<Array<ProjectivePoint, U>> for ProjectivePoint {
+    type Output = Array<AffinePoint, U>;
 
     #[inline]
-    fn batch_normalize(points: &[Self]) -> Vec<<Self as CurveGroup>::Affine> {
+    fn batch_normalize(points: &Array<Self, U>) -> Array<AffinePoint, U> {
+        let mut zs = Array::<FieldElement, U>::default();
+        let mut scratch = Array::<FieldElement, U>::default();
+        let mut affine_points = Array::<AffinePoint, U>::default();
+        batch_normalize(points, &mut zs, &mut scratch, &mut affine_points);
+        affine_points
+    }
+}
+
+#[cfg(feature = "alloc")]
+impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
+    type Output = Vec<AffinePoint>;
+
+    #[inline]
+    fn batch_normalize(points: &[Self]) -> Vec<AffinePoint> {
         let mut zs = vec![FieldElement::ZERO; points.len()];
         let mut scratch = vec![FieldElement::ZERO; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
