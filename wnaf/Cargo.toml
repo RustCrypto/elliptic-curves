@@ -1,6 +1,6 @@
 [package]
 name = "wnaf"
-version = "0.14.0-rc.0"
+version = "0.14.0-rc.1"
 description = """
 w-NAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
 over elliptic curve groups with full `no_alloc` support, including multiscalar multiplication using
