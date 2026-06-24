@@ -4,8 +4,10 @@ use crate::{Digit, WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
 use alloc::vec::Vec;
 use group::Group;
 
-/// A "w-ary non-adjacent form" scalar multiplication (also known as exponentiation)
-/// context.
+#[cfg(doc)]
+use crate::{WnafBase, WnafScalar};
+
+/// A "w-ary non-adjacent form" scalar multiplication (also known as exponentiation) context.
 ///
 /// # Examples
 ///
@@ -13,10 +15,10 @@ use group::Group;
 ///
 /// ## One base, one scalar
 ///
-/// For this pattern, you can use a transient `Wnaf` context:
+/// For this pattern, you can use a transient [`BoxedWnaf`] context:
 ///
 /// ```ignore
-/// use group::Wnaf;
+/// use wnaf::BoxedWnaf;
 ///
 /// let result = Wnaf::new().scalar(&scalar).base(base);
 /// ```
@@ -27,9 +29,9 @@ use group::Group;
 /// process each base in turn:
 ///
 /// ```ignore
-/// use group::Wnaf;
+/// use wnaf::BoxedWnaf;
 ///
-/// let mut wnaf = Wnaf::new();
+/// let mut wnaf = BoxedWnaf::new();
 /// let mut wnaf_scalar = wnaf.scalar(&scalar);
 /// let results: Vec<_> = bases
 ///     .into_iter()
@@ -43,9 +45,9 @@ use group::Group;
 /// each scalar in turn:
 ///
 /// ```ignore
-/// use group::Wnaf;
+/// use wnaf::BoxedWnaf;
 ///
-/// let mut wnaf = Wnaf::new();
+/// let mut wnaf = BoxedWnaf::new();
 /// let mut wnaf_base = wnaf.base(base, scalars.len());
 /// let results: Vec<_> = scalars
 ///     .iter()
@@ -60,9 +62,9 @@ use group::Group;
 /// form of the scalars on the fly for every base, or vice versa:
 ///
 /// ```ignore
-/// use group::Wnaf;
+/// use wnaf::BoxedWnaf;
 ///
-/// let mut wnaf_contexts: Vec<_> = (0..bases.len()).map(|_| Wnaf::new()).collect();
+/// let mut wnaf_contexts: Vec<_> = (0..bases.len()).map(|_| BoxedWnaf::new()).collect();
 /// let mut wnaf_bases: Vec<_> = wnaf_contexts
 ///     .iter_mut()
 ///     .zip(bases)
@@ -79,22 +81,22 @@ use group::Group;
 /// then be directly multiplied without any additional runtime work, at the cost of fixing
 /// a specific window size (rather than choosing the window size dynamically).
 #[derive(Debug)]
-pub struct Wnaf<W, B, S> {
+pub struct BoxedWnaf<W, B, S> {
     base: B,
     scalar: S,
     window_size: W,
 }
 
-impl<G: Group> Default for Wnaf<(), Vec<G>, Vec<Digit>> {
+impl<G: Group> Default for BoxedWnaf<(), Vec<G>, Vec<Digit>> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<G: Group> Wnaf<(), Vec<G>, Vec<Digit>> {
+impl<G: Group> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
     #[must_use]
     pub fn new() -> Self {
-        Wnaf {
+        BoxedWnaf {
             base: vec![],
             scalar: vec![],
             window_size: (),
@@ -102,21 +104,24 @@ impl<G: Group> Wnaf<(), Vec<G>, Vec<Digit>> {
     }
 }
 
-impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<Digit>> {
-    pub fn base(&mut self, base: G, num_scalars: usize) -> Wnaf<usize, &[G], &mut Vec<Digit>> {
+impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
+    pub fn base(&mut self, base: G, num_scalars: usize) -> BoxedWnaf<usize, &[G], &mut Vec<Digit>> {
         let window_size = G::recommended_wnaf_for_num_scalars(num_scalars);
 
         self.base.resize_with(1 << (window_size - 2), G::identity);
         wnaf_table(&mut self.base, base, window_size);
 
-        Wnaf {
+        BoxedWnaf {
             base: &self.base[..],
             scalar: &mut self.scalar,
             window_size,
         }
     }
 
-    pub fn scalar(&mut self, scalar: &<G as Group>::Scalar) -> Wnaf<usize, &mut Vec<G>, &[Digit]> {
+    pub fn scalar(
+        &mut self,
+        scalar: &<G as Group>::Scalar,
+    ) -> BoxedWnaf<usize, &mut Vec<G>, &[Digit]> {
         let window_size = 4;
 
         let repr = le_repr(scalar);
@@ -124,7 +129,7 @@ impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<Digit>> {
         let digits = wnaf_form(&mut self.scalar, repr, window_size);
         self.scalar.truncate(digits);
 
-        Wnaf {
+        BoxedWnaf {
             base: &mut self.base,
             scalar: &self.scalar[..],
             window_size,
@@ -132,12 +137,12 @@ impl<G: WnafGroup> Wnaf<(), Vec<G>, Vec<Digit>> {
     }
 }
 
-impl<'a, G: Group> Wnaf<usize, &'a [G], &'a mut Vec<Digit>> {
+impl<'a, G: Group> BoxedWnaf<usize, &'a [G], &'a mut Vec<Digit>> {
     /// Constructs new space for the scalar representation while borrowing
     /// the computed window table, for sending the window table across threads.
     #[must_use]
-    pub fn shared(&self) -> Wnaf<usize, &'a [G], Vec<Digit>> {
-        Wnaf {
+    pub fn shared(&self) -> BoxedWnaf<usize, &'a [G], Vec<Digit>> {
+        BoxedWnaf {
             base: self.base,
             scalar: vec![],
             window_size: self.window_size,
@@ -145,13 +150,13 @@ impl<'a, G: Group> Wnaf<usize, &'a [G], &'a mut Vec<Digit>> {
     }
 }
 
-impl<'a, G: Group> Wnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
+impl<'a, G: Group> BoxedWnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
     /// Constructs new space for the window table while borrowing
     /// the computed scalar representation, for sending the scalar representation
     /// across threads.
     #[must_use]
-    pub fn shared(&self) -> Wnaf<usize, Vec<G>, &'a [Digit]> {
-        Wnaf {
+    pub fn shared(&self) -> BoxedWnaf<usize, Vec<G>, &'a [Digit]> {
+        BoxedWnaf {
             base: vec![],
             scalar: self.scalar,
             window_size: self.window_size,
@@ -159,7 +164,7 @@ impl<'a, G: Group> Wnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
     }
 }
 
-impl<B, S: AsRef<[Digit]>> Wnaf<usize, B, S> {
+impl<B, S: AsRef<[Digit]>> BoxedWnaf<usize, B, S> {
     pub fn base<G: Group>(&mut self, base: G) -> G
     where
         B: AsMut<Vec<G>>,
@@ -172,7 +177,7 @@ impl<B, S: AsRef<[Digit]>> Wnaf<usize, B, S> {
     }
 }
 
-impl<B, S: AsMut<Vec<Digit>>> Wnaf<usize, B, S> {
+impl<B, S: AsMut<Vec<Digit>>> BoxedWnaf<usize, B, S> {
     pub fn scalar<G: Group>(&mut self, scalar: &<G as Group>::Scalar) -> G
     where
         B: AsRef<[G]>,

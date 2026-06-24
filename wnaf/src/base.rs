@@ -6,24 +6,19 @@ use group::Group;
 
 /// Fixed window table for a group element, precomputed to improve scalar multiplication speed.
 ///
-/// This struct is designed for usage patterns that have long-term cached bases and/or
-/// scalars, or [Cartesian products] of bases and scalars. The [`Wnaf`] API enables one or
-/// the other to be cached, but requires either the base window tables or the scalar w-NAF
-/// forms to be computed repeatedly on the fly, which can become a significant performance
-/// issue for some use cases.
+/// By fixing the window size at compile time, we are able to support fully `no_alloc`
+/// stack-allocated operation, and also use the type system to ensure [`WnafBase`] and
+/// [`WnafScalar`] are using the same window size.
 ///
-/// `WnafBase` and [`WnafScalar`] enable an alternative trade-off: by fixing the window
-/// size at compile time, the precomputations are guaranteed to only occur once per base
-/// and once per scalar. Users should select their window size based on how long the bases
-/// are expected to live; a larger window size will consume more memory and take longer to
-/// precompute, but result in faster scalar multiplications.
-///
-/// [Cartesian products]: https://en.wikipedia.org/wiki/Cartesian_product
+/// Precomputations are guaranteed to only occur once per base and once per scalar. Users should
+/// select their window size based on how long the bases are expected to live; a larger window size
+/// will consume more memory and take longer to precompute, but result in faster scalar
+/// multiplications.
 ///
 /// # Examples
 ///
 /// ```ignore
-/// type MyWnafBase   = WnafBase<ProjectivePoint, U5, U8>;
+/// type MyWnafBase = WnafBase<ProjectivePoint, U5, U8>;
 /// type MyWnafScalar = WnafScalar<Scalar, U5, U129>;
 ///
 /// let base = MyWnafBase::new(ProjectivePoint::GENERATOR);
