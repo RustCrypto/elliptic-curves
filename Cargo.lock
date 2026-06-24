@@ -940,7 +940,7 @@ dependencies = [
 
 [[package]]
 name = "primefield"
-version = "0.14.0-rc.13"
+version = "0.14.0"
 dependencies = [
  "crypto-bigint",
  "crypto-common",
