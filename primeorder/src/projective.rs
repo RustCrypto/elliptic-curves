@@ -17,10 +17,10 @@ use elliptic_curve::{
         prime::{PrimeCurve, PrimeGroup},
     },
     ops::{
-        Add, AddAssign, BatchInvert, LinearCombination, Mul, MulAssign, MulByGeneratorVartime,
-        MulVartime, Neg, Sub, SubAssign,
+        Add, AddAssign, BatchInvert, Double, LinearCombination, Mul, MulAssign,
+        MulByGeneratorVartime, MulVartime, Neg, Sub, SubAssign,
     },
-    point::{Double, NonIdentity},
+    point::NonIdentity,
     rand_core::{TryCryptoRng, TryRng},
     sec1::{CompressedPoint, FromSec1Point, Sec1Point, ToSec1Point},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
