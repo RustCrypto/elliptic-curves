@@ -8,7 +8,7 @@ use ff::PrimeField;
 /// # Examples
 ///
 /// See [`WnafBase`] for usage examples.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct WnafScalar<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> {
     pub(crate) wnaf: Array<Digit, WnafStorage>,
     pub(crate) digits: usize,
@@ -36,7 +36,11 @@ impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, Wnaf
     #[inline]
     pub fn from_le_bytes(bytes: &[u8]) -> Self {
         debug_assert!(bytes.len() * 8 < WnafStorage::USIZE);
-        let mut wnaf = Self::default();
+        let mut wnaf = Self {
+            wnaf: Array::default(),
+            digits: 0,
+            _field: PhantomData,
+        };
         wnaf.init_from_le_bytes(bytes);
         wnaf
     }

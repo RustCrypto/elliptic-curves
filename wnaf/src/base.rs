@@ -41,10 +41,13 @@ pub struct WnafBase<G: Group, W: WindowSize> {
 
 impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// Computes a window table for the given base with the specified window size `W`.
+    #[inline]
     pub fn new(base: G) -> Self {
-        let mut table = Array::from_fn(|_| G::generator());
-        wnaf_table(&mut table, base, W::USIZE);
-        WnafBase { table }
+        let mut ret = Self {
+            table: Array::from_fn(|_| G::generator()),
+        };
+        wnaf_table(&mut ret.table, base, W::USIZE);
+        ret
     }
 
     /// Perform a multiscalar multiplication.
