@@ -103,6 +103,7 @@ where
     ///
     /// Slice is expected to be zero padded to the expected byte size.
     #[inline]
+    #[must_use]
     pub fn from_slice(slice: &[u8]) -> Option<Self>
     where
         Uint<LIMBS>: ArrayEncoding,
@@ -120,6 +121,7 @@ where
     /// - When hex is malformed
     /// - When input is the wrong length
     /// - If input overflows the modulus
+    #[must_use]
     pub const fn from_hex_vartime(hex: &str) -> Self {
         let uint = match MOD::BYTE_ORDER {
             ByteOrder::BigEndian => Uint::from_be_hex(hex),
@@ -142,6 +144,7 @@ where
     ///
     /// Reduces the input modulo `p`.
     #[inline]
+    #[must_use]
     pub const fn from_uint_reduced(uint: &Uint<LIMBS>) -> Self {
         Self {
             inner: MontyForm::new(uint),
@@ -158,6 +161,7 @@ where
     ///
     /// The `CtOption` equivalent of `None` if the input overflows the modulus.
     #[inline]
+    #[must_use]
     pub fn from_uint(uint: &Uint<LIMBS>) -> CtOption<Self> {
         let is_some = ctutils::CtLt::ct_lt(uint, MOD::PARAMS.modulus());
 
@@ -171,6 +175,7 @@ where
     ///
     /// If the modulus is 32-bits or smaller.
     #[inline]
+    #[must_use]
     pub const fn from_u32(w: u32) -> Self {
         assert!(
             MOD::PARAMS.modulus().as_ref().bits() > 32,
@@ -186,6 +191,7 @@ where
     ///
     /// If the modulus is 64-bits or smaller.
     #[inline]
+    #[must_use]
     pub const fn from_u64(w: u64) -> Self {
         assert!(
             MOD::PARAMS.modulus().as_ref().bits() > 64,
@@ -202,6 +208,7 @@ where
     /// This value is expected to be in Montgomery form and reduced. Failure to maintain these
     /// invariants will lead to miscomputation and potential security issues!
     #[inline]
+    #[must_use]
     pub const fn from_montgomery(uint: Uint<LIMBS>) -> Self {
         Self {
             inner: MontyForm::from_montgomery(uint),
@@ -212,6 +219,7 @@ where
     // TODO(tarcieri): this is here to simplify the inner type conversion for fiat-crypto.
     // After we've successfully done that, it would be good to try to remove this
     #[inline]
+    #[must_use]
     pub const fn from_montgomery_words(words: [Word; LIMBS]) -> Self {
         Self::from_montgomery(Uint::from_words(words))
     }
@@ -223,18 +231,21 @@ where
     /// Make sure you are actually expecting a value in Montgomery form! This is not the correct
     /// function for converting *out* of Montgomery form: that would be
     /// [`MontyFieldElement::to_canonical`].
+    #[must_use]
     pub const fn as_montgomery(&self) -> &Uint<LIMBS> {
         self.inner.as_montgomery()
     }
 
     /// Retrieve the Montgomery form representation as an array of [`Word`]s.
     // TODO(tarcieri): like `from_montgomery_words`, phase this out after fiat-crypto is migrated
+    #[must_use]
     pub const fn to_montgomery_words(&self) -> [Word; LIMBS] {
         self.as_montgomery().to_words()
     }
 
     /// Returns the bytestring encoding of this field element.
     #[inline]
+    #[must_use]
     pub fn to_bytes(self) -> MontyFieldBytes<MOD, LIMBS>
     where
         MOD: MontyFieldParams<LIMBS>,
@@ -268,6 +279,7 @@ where
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     #[inline]
+    #[must_use]
     pub fn is_odd(&self) -> Choice {
         self.inner.retrieve().is_odd().into()
     }
@@ -278,6 +290,7 @@ where
     ///
     /// If even, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     #[inline]
+    #[must_use]
     pub fn is_even(&self) -> Choice {
         !self.is_odd()
     }
@@ -288,18 +301,21 @@ where
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     #[inline]
+    #[must_use]
     pub fn is_zero(&self) -> Choice {
         self.ct_eq(&Self::ZERO)
     }
 
     /// Translate field element out of the Montgomery domain, returning a [`Uint`] in canonical form.
     #[inline]
+    #[must_use]
     pub const fn to_canonical(self) -> Uint<LIMBS> {
         self.inner.retrieve()
     }
 
     /// Add elements.
     #[inline]
+    #[must_use]
     pub const fn add(&self, rhs: &Self) -> Self {
         Self {
             inner: MontyForm::add(&self.inner, &rhs.inner),
@@ -317,6 +333,7 @@ where
 
     /// Subtract elements.
     #[inline]
+    #[must_use]
     pub const fn sub(&self, rhs: &Self) -> Self {
         Self {
             inner: MontyForm::sub(&self.inner, &rhs.inner),
@@ -325,6 +342,7 @@ where
 
     /// Multiply elements.
     #[inline]
+    #[must_use]
     pub const fn multiply(&self, rhs: &Self) -> Self {
         Self {
             inner: MontyForm::mul(&self.inner, &rhs.inner),
@@ -333,6 +351,7 @@ where
 
     /// Negate element.
     #[inline]
+    #[must_use]
     pub const fn neg(&self) -> Self {
         Self {
             inner: MontyForm::neg(&self.inner),
@@ -350,12 +369,14 @@ where
 
     /// Compute field inversion: `1 / self`.
     #[inline]
+    #[must_use]
     pub fn invert(&self) -> CtOption<Self> {
         CtOption::from(self.inner.invert()).map(|inner| Self { inner })
     }
 
     /// Compute field inversion: `1 / self` in variable-time.
     #[inline]
+    #[must_use]
     pub fn invert_vartime(&self) -> CtOption<Self> {
         CtOption::from(self.inner.invert_vartime()).map(|inner| Self { inner })
     }
@@ -363,6 +384,7 @@ where
     /// Compute field inversion as a `const fn`. Panics if `self` is zero.
     ///
     /// This is mainly intended for inverting constants at compile time.
+    #[must_use]
     pub const fn const_invert(&self) -> Self {
         Self {
             inner: self
@@ -378,6 +400,7 @@ where
     ///
     /// If `exp` is fixed, this operation is constant time. Note that `exp` will still be branched
     /// upon and should NOT be a secret.
+    #[must_use]
     pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
         Self {
             inner: self.inner.pow_vartime(exp),
@@ -389,6 +412,7 @@ where
     /// **This operation is variable time with respect to the exponent `n`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
+    #[must_use]
     pub const fn sqn_vartime(&self, n: usize) -> Self {
         let mut x = *self;
         let mut i = 0;
@@ -966,6 +990,7 @@ where
 }
 
 /// Compute `t = (modulus - 1) >> S`
+#[must_use]
 pub const fn compute_t<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> Uint<LIMBS> {
     let s = modulus.wrapping_sub(&Uint::ONE).trailing_zeros();
     modulus.wrapping_sub(&Uint::ONE).unbounded_shr(s)

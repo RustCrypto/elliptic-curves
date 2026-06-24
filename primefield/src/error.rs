@@ -3,6 +3,7 @@
 use core::fmt;
 
 /// Error type.
+#[derive(Clone, Copy, Debug)]
 pub struct Error;
 
 impl fmt::Display for Error {
@@ -10,6 +11,8 @@ impl fmt::Display for Error {
         write!(f, "field error")
     }
 }
+
+impl core::error::Error for Error {}
 
 /// Result type.
 pub type Result<T> = core::result::Result<T, Error>;
