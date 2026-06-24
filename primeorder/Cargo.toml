@@ -1,6 +1,6 @@
 [package]
 name = "primeorder"
-version = "0.14.0-rc.13"
+version = "0.14.0-rc.14"
 description = """
 Pure Rust implementation of complete addition formulas for prime order elliptic
 curves (Renes-Costello-Batina 2015). Generic over field elements and curve
@@ -19,7 +19,7 @@ rust-version = "1.85"
 
 [dependencies]
 elliptic-curve = { version = "0.14", default-features = false, features = ["arithmetic", "sec1"] }
-primefield = "0.14.0-rc.13"
+primefield = "0.14"
 
 # optional dependencies
 once_cell = { version = "1.21", optional = true, default-features = false }
