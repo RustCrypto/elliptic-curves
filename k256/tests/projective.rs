@@ -36,8 +36,21 @@ proptest! {
         a in non_identity(),
         b in non_identity(),
     ) {
-        let points: [NonIdentity<ProjectivePoint>; 2] = [a, b];
-        let affine_points = NonIdentity::batch_normalize(&points);
+        let points = [*a, *b];
+        let affine_points = ProjectivePoint::batch_normalize(&points);
+
+        for (point, affine_point) in points.into_iter().zip(affine_points) {
+            assert_eq!(affine_point, point.to_affine());
+        }
+    }
+
+    #[test]
+    fn batch_normalize_vartime(
+        a in non_identity(),
+        b in non_identity(),
+    ) {
+        let points = [*a, *b];
+        let affine_points = ProjectivePoint::batch_normalize_vartime(&points);
 
         for (point, affine_point) in points.into_iter().zip(affine_points) {
             assert_eq!(affine_point, point.to_affine());
@@ -50,8 +63,8 @@ proptest! {
         a in non_identity(),
         b in non_identity(),
     ) {
-        let points = vec![a, b];
-        let affine_points = NonIdentity::batch_normalize(points.as_slice());
+        let points = vec![*a, *b];
+        let affine_points = ProjectivePoint::batch_normalize(points.as_slice());
 
         for (point, affine_point) in points.into_iter().zip(affine_points) {
             assert_eq!(affine_point, point.to_affine());
