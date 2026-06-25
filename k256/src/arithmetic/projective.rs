@@ -304,6 +304,15 @@ impl<const N: usize> BatchNormalize<[ProjectivePoint; N]> for ProjectivePoint {
         batch_normalize(points, &mut zs, &mut scratch, &mut affine_points);
         affine_points
     }
+
+    #[inline]
+    fn batch_normalize_vartime(points: &[Self; N]) -> [AffinePoint; N] {
+        let mut zs = [FieldElement::ZERO; N];
+        let mut scratch = [FieldElement::ZERO; N];
+        let mut affine_points = [AffinePoint::IDENTITY; N];
+        batch_normalize_vartime(points, &mut zs, &mut scratch, &mut affine_points);
+        affine_points
+    }
 }
 
 impl<U: ArraySize> BatchNormalize<Array<ProjectivePoint, U>> for ProjectivePoint {
@@ -315,6 +324,15 @@ impl<U: ArraySize> BatchNormalize<Array<ProjectivePoint, U>> for ProjectivePoint
         let mut scratch = Array::<FieldElement, U>::default();
         let mut affine_points = Array::<AffinePoint, U>::default();
         batch_normalize(points, &mut zs, &mut scratch, &mut affine_points);
+        affine_points
+    }
+
+    #[inline]
+    fn batch_normalize_vartime(points: &Array<Self, U>) -> Array<AffinePoint, U> {
+        let mut zs = Array::<FieldElement, U>::default();
+        let mut scratch = Array::<FieldElement, U>::default();
+        let mut affine_points = Array::<AffinePoint, U>::default();
+        batch_normalize_vartime(points, &mut zs, &mut scratch, &mut affine_points);
         affine_points
     }
 }
@@ -329,6 +347,15 @@ impl BatchNormalize<[ProjectivePoint]> for ProjectivePoint {
         let mut scratch = vec![FieldElement::ZERO; points.len()];
         let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
         batch_normalize(points, &mut zs, &mut scratch, &mut affine_points);
+        affine_points
+    }
+
+    #[inline]
+    fn batch_normalize_vartime(points: &[Self]) -> Vec<AffinePoint> {
+        let mut zs = vec![FieldElement::ZERO; points.len()];
+        let mut scratch = vec![FieldElement::ZERO; points.len()];
+        let mut affine_points = vec![AffinePoint::IDENTITY; points.len()];
+        batch_normalize_vartime(points, &mut zs, &mut scratch, &mut affine_points);
         affine_points
     }
 }
@@ -356,6 +383,32 @@ fn batch_normalize(
             &AffinePoint::IDENTITY,
             points[i].z.normalizes_to_zero(),
         );
+    }
+}
+
+fn batch_normalize_vartime(
+    points: &[ProjectivePoint],
+    zs: &mut [FieldElement],
+    scratch: &mut [FieldElement],
+    out: &mut [AffinePoint],
+) {
+    debug_assert_eq!(points.len(), zs.len());
+    debug_assert_eq!(points.len(), scratch.len());
+    debug_assert_eq!(points.len(), out.len());
+
+    for (z, point) in zs.iter_mut().zip(points) {
+        *z = point.z;
+    }
+
+    // Zero `zs` (identity) are handled explicitly below, so the `Choice` here is informational only
+    let _ = FieldElement::batch_invert_in_place_vartime(zs, scratch);
+
+    for i in 0..out.len() {
+        out[i] = if bool::from(points[i].z.normalizes_to_zero()) {
+            AffinePoint::IDENTITY
+        } else {
+            points[i].to_affine_internal(zs[i])
+        };
     }
 }
 
