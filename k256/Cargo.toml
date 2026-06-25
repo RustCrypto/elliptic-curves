@@ -77,6 +77,10 @@ name = "field"
 harness = false
 
 [[bench]]
+name = "point"
+harness = false
+
+[[bench]]
 name = "scalar"
 harness = false
 
