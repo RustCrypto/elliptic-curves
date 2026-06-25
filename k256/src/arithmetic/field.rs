@@ -157,6 +157,7 @@ impl FieldElement {
     ///
     /// Brings the magnitude to 1 (but doesn't normalize the result).
     /// The magnitudes of arguments should be <= 8.
+    #[inline]
     pub fn square(&self) -> Self {
         Self(self.0.square())
     }
@@ -173,6 +174,7 @@ impl FieldElement {
     /// Returns the multiplicative inverse of self, if self is non-zero.
     ///
     /// The result has magnitude 1 and is normalized.
+    #[inline]
     pub fn invert(&self) -> CtOption<Self> {
         let inv = self
             .retrieve()
@@ -184,6 +186,7 @@ impl FieldElement {
     /// Returns the multiplicative inverse of self in variable-time, if self is non-zero.
     ///
     /// The result has magnitude 1 and is normalized.
+    #[inline]
     pub fn invert_vartime(&self) -> CtOption<Self> {
         let inv = self
             .retrieve()
@@ -239,13 +242,25 @@ impl FieldElement {
 }
 
 impl BatchInvert for FieldElement {
-    fn batch_invert_in_place(elements: &mut [Self], scratch: &mut [Self]) -> Self {
-        // The only difference from the default impl: we need to normalize the elements first
-        for e in elements.iter_mut() {
-            *e = e.normalize();
+    fn batch_invert_in_place(elements: &mut [Self], scratch_space: &mut [Self]) -> Self {
+        assert_eq!(elements.len(), scratch_space.len());
+
+        let mut acc = Self::ONE;
+        for (p, scratch) in elements.iter().zip(scratch_space.iter_mut()) {
+            *scratch = acc;
+            acc = Self::conditional_select(&(acc * *p), &acc, p.normalizes_to_zero());
+        }
+        acc = acc.invert().unwrap();
+        let allinv = acc;
+
+        for (p, scratch) in elements.iter_mut().zip(scratch_space.iter()).rev() {
+            let tmp = *scratch * &acc;
+            let skip = p.normalizes_to_zero();
+            acc = Self::conditional_select(&(acc * *p), &acc, skip);
+            *p = Self::conditional_select(&tmp, p, skip).normalize();
         }
 
-        ff::BatchInverter::invert_with_external_scratch(elements, scratch)
+        allinv
     }
 }
 
