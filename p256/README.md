@@ -118,7 +118,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
-[`DecodePrivateKey`]: https://docs.rs/pkcs8/latest/pkcs8/trait.DecodePrivateKey.html
+[`pkcs8::DecodePrivateKey`]: https://docs.rs/pkcs8/latest/pkcs8/trait.DecodePrivateKey.html
 [`pkcs8`]: https://docs.rs/pkcs8/latest/pkcs8/
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
