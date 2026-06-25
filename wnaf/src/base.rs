@@ -38,11 +38,15 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// Computes a window table for the given base with the specified window size `W`.
     #[inline]
     pub fn new(base: G) -> Self {
-        let mut ret = Self {
-            table: Array::from_fn(|_| G::generator()),
-        };
-        wnaf_table(&mut ret.table, base, W::USIZE);
+        let mut ret = Self::default();
+        ret.init_from_base(base);
         ret
+    }
+
+    /// Initialize an already allocated window table from the given base.
+    #[inline]
+    pub fn init_from_base(&mut self, base: G) {
+        wnaf_table(&mut self.table, base, W::USIZE);
     }
 
     /// Perform a multiscalar multiplication.
@@ -56,6 +60,14 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
         I: Clone + Iterator<Item = (&'a Self, &'a WnafScalar<G::Scalar, W, WnafStorage>)>,
     {
         wnaf_multi_exp(pairs.map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits)))
+    }
+}
+
+impl<G: Group, W: WindowSize> Default for WnafBase<G, W> {
+    fn default() -> Self {
+        Self {
+            table: Array::from_fn(|_| G::generator()),
+        }
     }
 }
 
