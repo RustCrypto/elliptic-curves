@@ -202,7 +202,6 @@ fn decompose_scalar(k: &Scalar) -> (Scalar, Scalar) {
     let c2 = WideScalar::mul_shift_vartime(k, &G2, 384) * MINUS_B2;
     let r2 = c1 + c2;
     let r1 = k + r2 * MINUS_LAMBDA;
-
     (r1, r2)
 }
 
@@ -381,24 +380,42 @@ fn mul(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
 /// Variable-time `k * self` using width-5 wNAF + GLV endomorphism.
 #[inline]
 fn mul_vartime(x: &ProjectivePoint, k: &Scalar) -> ProjectivePoint {
-    lincomb_vartime_glv_wnaf(&[decompose_glv_wnaf(x, k)])
+    let mut bases = [WnafBase::default(), WnafBase::default()];
+    let mut scalars = [WnafScalar::default(), WnafScalar::default()];
+    decompose_glv_wnaf_into(x, k, &mut bases, &mut scalars);
+    WnafBase::multiscalar_mul([(&bases[0], &scalars[0]), (&bases[1], &scalars[1])].into_iter())
 }
 
 /// GLV-decompose `k` for `x`: two `(WnafBase, WnafScalar)` pairs representing `r1 * self_signed`
 /// and `r2 * endomorphism(self_signed)`, with signs folded into the points.
-fn decompose_glv_wnaf(x: &ProjectivePoint, k: &Scalar) -> ([WnafBase; 2], [WnafScalar; 2]) {
+#[inline]
+fn decompose_glv_wnaf_into(
+    x: &ProjectivePoint,
+    k: &Scalar,
+    bases: &mut [WnafBase; 2],
+    scalars: &mut [WnafScalar; 2],
+) {
     let (r1, r2) = decompose_scalar(k);
     let r1_neg = bool::from(r1.is_high());
     let r2_neg = bool::from(r2.is_high());
     let r1 = if r1_neg { -r1 } else { r1 };
     let r2 = if r2_neg { -r2 } else { r2 };
+    scalars[0].init_from_le_bytes(&r1.to_le_repr()[..GLV_LE_BYTES]);
+    scalars[1].init_from_le_bytes(&r2.to_le_repr()[..GLV_LE_BYTES]);
 
     let p1 = if r1_neg { -*x } else { *x };
     let p_beta = x.endomorphism();
     let p2 = if r2_neg { -p_beta } else { p_beta };
+    bases[0].init_from_base(p1);
+    bases[1].init_from_base(p2);
+}
 
-    let bases = [WnafBase::new(p1), WnafBase::new(p2)];
-    let scalars = [r1, r2].map(|r| WnafScalar::from_le_bytes(&r.to_le_repr()[..GLV_LE_BYTES]));
+/// Perform GLV decomposition and return the resulting w-NAF bases and scalars.
+#[inline]
+fn decompose_glv_wnaf(x: &ProjectivePoint, k: &Scalar) -> ([WnafBase; 2], [WnafScalar; 2]) {
+    let mut bases = [WnafBase::default(), WnafBase::default()];
+    let mut scalars = [WnafScalar::default(), WnafScalar::default()];
+    decompose_glv_wnaf_into(x, k, &mut bases, &mut scalars);
     (bases, scalars)
 }
 
