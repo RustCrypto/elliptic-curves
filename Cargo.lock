@@ -96,7 +96,6 @@ dependencies = [
  "hex-literal",
  "hkdf",
  "hmac",
- "pkcs8",
  "primefield",
  "primeorder",
  "proptest",

@@ -1,7 +1,7 @@
 #![cfg(feature = "pkcs8")]
 
+use elliptic_curve::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use hex_literal::hex;
-use pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 
 use bignp256::{PublicKey, SecretKey};
 

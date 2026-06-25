@@ -5,16 +5,16 @@
 use crate::ALGORITHM_OID;
 use crate::{AffinePoint, BignP256, NonZeroScalar, ProjectivePoint, Sec1Point};
 use core::{fmt::Display, str::FromStr};
+#[cfg(feature = "pkcs8")]
+use elliptic_curve::pkcs8::{
+    self, AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
+    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
+};
 use elliptic_curve::{
     CurveArithmetic, Error, Group,
     array::Array,
     point::NonIdentity,
     sec1::{FromSec1Point, ToSec1Point},
-};
-#[cfg(feature = "pkcs8")]
-use pkcs8::{
-    AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
-    spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 
 #[cfg(feature = "alloc")]

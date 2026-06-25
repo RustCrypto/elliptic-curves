@@ -32,6 +32,59 @@ USE AT YOUR OWN RISK!
 - [Elliptic Curve Digital Signature Algorithm (ECDSA)][ECDSA]: gated under the
   `ecdsa` feature.
 
+## PKCS#8 Key Encoding
+
+PKCS#8 is a private key format with support for multiple algorithms. It can be
+encoded as binary DER or text PEM.
+
+You can recognize PEM encoded PKCS#8 private keys because they do not have an
+algorithm name in the type label, e.g.:
+
+```text
+-----BEGIN PRIVATE KEY-----
+```
+
+PKCS#8 support is gated under the `pkcs8` feature. The `pem` feature, which is
+enabled by default, adds PEM decoding and also enables `pkcs8`.
+
+The same pattern is used by the other curve crates in this repository which
+re-export `pkcs8`.
+
+The following traits can be used to decode/encode secret and public keys as
+PKCS#8/SPKI. Note that [`pkcs8`] is re-exported from `p384` when the `pkcs8`
+feature is enabled:
+
+- [`pkcs8::DecodePrivateKey`]: decode private keys from PKCS#8
+- [`pkcs8::EncodePrivateKey`]: encode private keys to PKCS#8
+- [`pkcs8::DecodePublicKey`]: decode public keys from SPKI
+- [`pkcs8::EncodePublicKey`]: encode public keys to SPKI
+
+For private keys, [`SecretKey::from_der`] and [`SecretKey::from_pem`] provide
+convenience methods which can decode PKCS#8 keys. Use the trait methods above
+when the input is expected to be specifically PKCS#8.
+
+### Example
+
+```rust
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# #[cfg(feature = "pem")]
+# {
+use p384::SecretKey;
+
+// WARNING: Do not hardcode private keys in your source code. This is for demonstration purposes only.
+let pem = r#"-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDBs2FQo+zKrF8hywWB/
+mISKUjsyCpYI/tZc0nzXW9zsBE3xqR0gG/f3qsETDG3cSw+hZANiAAR5bOBw+XY+
+jrppUPPAT9VKB+e9X/4Lk9tpYNpC1dfLXzTa4wzRkCS5MJHgYNnYynzFKG0a1uY5
+cO4Gd7ngQcruAZwkADecrwDeGtnrTdcRrQ0qhQGlHYfwT4runOeuT2c=
+-----END PRIVATE KEY-----"#;
+let secret_key = SecretKey::from_pem(pem)?;
+# let _ = secret_key;
+# }
+# Ok(())
+# }
+```
+
 ## About P-384
 
 NIST P-384 is a Weierstrass curve specified in [SP 800-186]:

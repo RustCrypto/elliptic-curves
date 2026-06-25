@@ -7,12 +7,12 @@ use der::{SecretDocument, asn1::OctetStringRef};
 #[cfg(feature = "pkcs8")]
 use crate::ALGORITHM_OID;
 use crate::{PublicKey, ScalarValue};
-use elliptic_curve::{Error, Generate, array::typenum::Unsigned, zeroize::Zeroizing};
 #[cfg(feature = "pkcs8")]
-use pkcs8::{
-    AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
+use elliptic_curve::pkcs8::{
+    self, AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
+use elliptic_curve::{Error, Generate, array::typenum::Unsigned, zeroize::Zeroizing};
 
 #[cfg(feature = "arithmetic")]
 use crate::{BignP256, FieldBytes, NonZeroScalar, Result, elliptic_curve::rand_core::TryCryptoRng};

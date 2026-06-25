@@ -60,6 +60,9 @@ pub mod secret_key;
 pub mod swu;
 
 #[cfg(feature = "pkcs8")]
+pub use elliptic_curve::pkcs8;
+
+#[cfg(feature = "pkcs8")]
 #[allow(dead_code)]
 const ALGORITHM_OID: pkcs8::ObjectIdentifier =
     pkcs8::ObjectIdentifier::new_unwrap("1.2.112.0.2.0.34.101.45.2.1");
