@@ -3,7 +3,7 @@
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
-use elliptic_curve::hazmat::FieldArithmetic;
+use elliptic_curve::{hazmat::FieldArithmetic, ops::BatchInvert};
 use k256::Secp256k1;
 use std::hint::black_box;
 
@@ -64,6 +64,16 @@ fn bench_field_element_sqrt<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M
 fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("invert", |b| b.iter(|| black_box(x).invert()));
+    group.bench_function("invert_vartime", |b| {
+        b.iter(|| black_box(x).invert_vartime())
+    });
+    group.bench_function("batch_invert_in_place", |b| {
+        let points = [test_field_element_x(), test_field_element_y()];
+        let scratch = [FieldElement::ZERO; 2];
+        b.iter(|| {
+            FieldElement::batch_invert_in_place(&mut black_box(points), &mut black_box(scratch))
+        })
+    });
 }
 
 fn bench_field_element_to_bytes<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
