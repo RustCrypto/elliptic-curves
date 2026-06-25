@@ -244,20 +244,46 @@ impl FieldElement {
 impl BatchInvert for FieldElement {
     fn batch_invert_in_place(elements: &mut [Self], scratch_space: &mut [Self]) -> Self {
         assert_eq!(elements.len(), scratch_space.len());
-
         let mut acc = Self::ONE;
+
         for (p, scratch) in elements.iter().zip(scratch_space.iter_mut()) {
             *scratch = acc;
-            acc = Self::conditional_select(&(acc * *p), &acc, p.normalizes_to_zero());
+            acc.conditional_assign(&(acc * *p), !p.normalizes_to_zero());
         }
+
         acc = acc.invert().unwrap();
         let allinv = acc;
 
         for (p, scratch) in elements.iter_mut().zip(scratch_space.iter()).rev() {
-            let tmp = *scratch * &acc;
+            let tmp = (*scratch * &acc).normalize();
             let skip = p.normalizes_to_zero();
-            acc = Self::conditional_select(&(acc * *p), &acc, skip);
-            *p = Self::conditional_select(&tmp, p, skip).normalize();
+            acc.conditional_assign(&(acc * *p), !skip);
+            p.conditional_assign(&tmp, !skip);
+        }
+
+        allinv
+    }
+
+    fn batch_invert_in_place_vartime(elements: &mut [Self], scratch_space: &mut [Self]) -> Self {
+        assert_eq!(elements.len(), scratch_space.len());
+        let mut acc = Self::ONE;
+
+        for (p, scratch) in elements.iter().zip(scratch_space.iter_mut()) {
+            *scratch = acc;
+            if !bool::from(p.normalizes_to_zero()) {
+                acc *= *p;
+            }
+        }
+
+        acc = acc.invert_vartime().unwrap();
+        let allinv = acc;
+
+        for (p, scratch) in elements.iter_mut().zip(scratch_space.iter()).rev() {
+            if !bool::from(p.normalizes_to_zero()) {
+                let tmp = (*scratch * &acc).normalize();
+                acc *= *p;
+                *p = tmp;
+            }
         }
 
         allinv
@@ -550,12 +576,12 @@ mod tests {
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
         test_vectors::field::DBL_TEST_VECTORS,
     };
-    use elliptic_curve::ff::{Field, PrimeField};
+    use elliptic_curve::{
+        ff::{Field, PrimeField},
+        ops::BatchInvert,
+    };
     use num_bigint::{BigUint, ToBigUint};
     use proptest::prelude::*;
-
-    #[cfg(feature = "getrandom")]
-    use elliptic_curve::{Generate, ops::BatchInvert};
 
     impl From<&BigUint> for FieldElement {
         fn from(x: &BigUint) -> Self {
@@ -731,21 +757,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "getrandom")]
-    fn batch_invert() {
-        let k: FieldElement = FieldElement::generate();
-        let l: FieldElement = FieldElement::generate();
-
-        let expected = [k.invert().unwrap(), l.invert().unwrap()];
-        let mut actual = [k, l];
-        let mut scratch = [FieldElement::ZERO; 2];
-        FieldElement::batch_invert_in_place(&mut actual, &mut scratch);
-
-        assert_eq!(expected[0], actual[0].normalize());
-        assert_eq!(expected[1], actual[1].normalize());
-    }
-
-    #[test]
     fn sqrt() {
         let one = FieldElement::ONE;
         let two = one + &one;
@@ -794,9 +805,8 @@ mod tests {
     }
 
     proptest! {
-
         #[test]
-        fn fuzzy_add(
+        fn add(
             a in field_element(),
             b in field_element()
         ) {
@@ -809,7 +819,7 @@ mod tests {
         }
 
         #[test]
-        fn fuzzy_mul(
+        fn mul(
             a in field_element(),
             b in field_element()
         ) {
@@ -822,7 +832,7 @@ mod tests {
         }
 
         #[test]
-        fn fuzzy_square(
+        fn square(
             a in field_element()
         ) {
             let a_bi = a.to_biguint().unwrap();
@@ -833,7 +843,7 @@ mod tests {
         }
 
         #[test]
-        fn fuzzy_negate(
+        fn negate(
             a in field_element()
         ) {
             let m = FieldElement::modulus_as_biguint();
@@ -845,7 +855,7 @@ mod tests {
         }
 
         #[test]
-        fn fuzzy_sqrt(
+        fn sqrt_proptest(
             a in field_element()
         ) {
             let m = FieldElement::modulus_as_biguint();
@@ -862,7 +872,7 @@ mod tests {
         }
 
         #[test]
-        fn fuzzy_invert(
+        fn invert_proptest(
             a in field_element()
         ) {
             let a = if bool::from(a.is_zero()) { FieldElement::ONE } else { a };
@@ -871,6 +881,28 @@ mod tests {
             let inv_bi = inv.to_biguint().unwrap();
             let m = FieldElement::modulus_as_biguint();
             assert_eq!((&inv_bi * &a_bi) % &m, 1.to_biguint().unwrap());
+        }
+
+        #[test]
+        fn batch_invert_in_place(k in field_element(), l in field_element()) {
+            let expected = [k.invert().unwrap(), l.invert().unwrap()];
+            let mut actual = [k, l];
+            let mut scratch = [FieldElement::ZERO; 2];
+            FieldElement::batch_invert_in_place(&mut actual, &mut scratch);
+
+            assert_eq!(expected[0], actual[0].normalize());
+            assert_eq!(expected[1], actual[1].normalize());
+        }
+
+        #[test]
+        fn batch_invert_in_place_vartime(k in field_element(), l in field_element()) {
+            let expected = [k.invert().unwrap(), l.invert().unwrap()];
+            let mut actual = [k, l];
+            let mut scratch = [FieldElement::ZERO; 2];
+            FieldElement::batch_invert_in_place_vartime(&mut actual, &mut scratch);
+
+            assert_eq!(expected[0], actual[0].normalize());
+            assert_eq!(expected[1], actual[1].normalize());
         }
     }
 }

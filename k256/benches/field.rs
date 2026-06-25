@@ -67,11 +67,21 @@ fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a,
     group.bench_function("invert_vartime", |b| {
         b.iter(|| black_box(x).invert_vartime())
     });
-    group.bench_function("batch_invert_in_place", |b| {
+    group.bench_function("batch_invert_in_place (2p)", |b| {
         let points = [test_field_element_x(), test_field_element_y()];
         let scratch = [FieldElement::ZERO; 2];
         b.iter(|| {
             FieldElement::batch_invert_in_place(&mut black_box(points), &mut black_box(scratch))
+        })
+    });
+    group.bench_function("batch_invert_in_place_vartime (2p)", |b| {
+        let points = [test_field_element_x(), test_field_element_y()];
+        let scratch = [FieldElement::ZERO; 2];
+        b.iter(|| {
+            FieldElement::batch_invert_in_place_vartime(
+                &mut black_box(points),
+                &mut black_box(scratch),
+            )
         })
     });
 }
