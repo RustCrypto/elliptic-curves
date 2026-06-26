@@ -34,25 +34,48 @@ USE AT YOUR OWN RISK!
 
 ## PKCS#8 Key Encoding
 
-PKCS#8 support is gated under the `pkcs8` feature. It provides DER decoding for
-secret keys via the [`DecodePrivateKey`] trait re-exported from the [`pkcs8`]
-module. The `pem` feature, which is enabled by default, adds PEM decoding and
-also enables `pkcs8`.
+PKCS#8 is a private key format with support for multiple algorithms. It can be
+encoded as binary DER or text PEM.
+
+You can recognize PEM encoded PKCS#8 private keys because they do not have an
+algorithm name in the type label, e.g.:
+
+```text
+-----BEGIN PRIVATE KEY-----
+```
+
+PKCS#8 support is gated under the `pkcs8` feature. The `pem` feature, which is
+enabled by default, adds PEM decoding and also enables `pkcs8`.
 
 The same pattern is used by the other curve crates in this repository which
 re-export `pkcs8`.
+
+The following traits can be used to decode/encode secret and public keys as
+PKCS#8/SPKI. Note that [`pkcs8`] is re-exported from `p256` when the `pkcs8`
+feature is enabled:
+
+- [`pkcs8::DecodePrivateKey`]: decode private keys from PKCS#8
+- [`pkcs8::EncodePrivateKey`]: encode private keys to PKCS#8
+- [`pkcs8::DecodePublicKey`]: decode public keys from SPKI
+- [`pkcs8::EncodePublicKey`]: encode public keys to SPKI
+
+For private keys, [`SecretKey::from_der`] and [`SecretKey::from_pem`] provide
+convenience methods which can decode PKCS#8 keys. Use the trait methods above
+when the input is expected to be specifically PKCS#8.
+
+### Example
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 # #[cfg(feature = "pkcs8")]
 # {
-use p256::{pkcs8::DecodePrivateKey, SecretKey};
+use p256::SecretKey;
 
 let der = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/examples/pkcs8-private-key.der"
 ));
-let secret_key = SecretKey::from_pkcs8_der(der)?;
+let secret_key = SecretKey::from_der(der)?;
 # let _ = secret_key;
 # }
 # Ok(())
@@ -63,13 +86,13 @@ let secret_key = SecretKey::from_pkcs8_der(der)?;
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 # #[cfg(feature = "pem")]
 # {
-use p256::{pkcs8::DecodePrivateKey, SecretKey};
+use p256::SecretKey;
 
 let pem = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/examples/pkcs8-private-key.pem"
 ));
-let secret_key = SecretKey::from_pkcs8_pem(pem)?;
+let secret_key = SecretKey::from_pem(pem)?;
 # let _ = secret_key;
 # }
 # Ok(())
@@ -119,7 +142,12 @@ dual licensed as above, without any additional terms or conditions.
 [RustCrypto]: https://github.com/rustcrypto/
 [`elliptic-curve`]: https://github.com/RustCrypto/traits/tree/master/elliptic-curve
 [`pkcs8::DecodePrivateKey`]: https://docs.rs/pkcs8/latest/pkcs8/trait.DecodePrivateKey.html
+[`pkcs8::EncodePrivateKey`]: https://docs.rs/pkcs8/latest/pkcs8/trait.EncodePrivateKey.html
+[`pkcs8::DecodePublicKey`]: https://docs.rs/pkcs8/latest/pkcs8/trait.DecodePublicKey.html
+[`pkcs8::EncodePublicKey`]: https://docs.rs/pkcs8/latest/pkcs8/trait.EncodePublicKey.html
 [`pkcs8`]: https://docs.rs/pkcs8/latest/pkcs8/
+[`SecretKey::from_der`]: https://docs.rs/elliptic-curve/latest/elliptic_curve/struct.SecretKey.html#method.from_der
+[`SecretKey::from_pem`]: https://docs.rs/elliptic-curve/latest/elliptic_curve/struct.SecretKey.html#method.from_pem
 [ECDH]: https://en.wikipedia.org/wiki/Elliptic-curve_Diffie-Hellman
 [ECDSA]: https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm
 [SP 800-186]: https://csrc.nist.gov/publications/detail/sp/800-186/final
