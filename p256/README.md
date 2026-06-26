@@ -67,31 +67,15 @@ when the input is expected to be specifically PKCS#8.
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-# #[cfg(feature = "pkcs8")]
-# {
-use p256::SecretKey;
-
-let der = include_bytes!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/examples/pkcs8-private-key.der"
-));
-let secret_key = SecretKey::from_der(der)?;
-# let _ = secret_key;
-# }
-# Ok(())
-# }
-```
-
-```rust
-# fn main() -> Result<(), Box<dyn std::error::Error>> {
 # #[cfg(feature = "pem")]
 # {
 use p256::SecretKey;
 
-let pem = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/tests/examples/pkcs8-private-key.pem"
-));
+let pem = r#"-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgaWJBcVYaYzQN4OfY
+afKgVJJVjhoEhotqn4VKhmeIGI2hRANCAAQcrP+1Xy8s79idies3SyaBFSRSgC3u
+oJkWBoE32DnPf8SBpESSME1+9mrBF77+g6jQjxVfK1L59hjdRHApBI4P
+-----END PRIVATE KEY-----"#;
 let secret_key = SecretKey::from_pem(pem)?;
 # let _ = secret_key;
 # }
