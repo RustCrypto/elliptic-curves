@@ -3,14 +3,7 @@
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
-use hex_literal::hex;
-use k256::{
-    ProjectivePoint, Scalar,
-    elliptic_curve::{
-        group::ff::PrimeField,
-        ops::{LinearCombination, MulVartime},
-    },
-};
+use k256::{Scalar, elliptic_curve::group::ff::PrimeField};
 use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
@@ -35,66 +28,6 @@ fn test_scalar_y() -> Scalar {
         .into(),
     )
     .unwrap()
-}
-
-fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
-    let p = ProjectivePoint::GENERATOR;
-    let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
-    let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("point-scalar mul", |b| {
-        b.iter(|| black_box(p) * black_box(s))
-    });
-
-    group.bench_function("point-scalar mul (variable-time)", |b| {
-        b.iter(|| black_box(p).mul_vartime(black_box(s)))
-    });
-}
-
-fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
-    let p = ProjectivePoint::GENERATOR;
-    let m = hex!("AA5E28D6A97A2479A65527F7290311A3624D4CC0FA1578598EE3C2613BF99522");
-    let s = Scalar::from_repr(m.into()).unwrap();
-    group.bench_function("lincomb (unoptimized, 2-term)", |b| {
-        b.iter(|| black_box(p) * black_box(s) + black_box(p) * black_box(s))
-    });
-    group.bench_function("lincomb (optimized, 2-term)", |b| {
-        b.iter(|| {
-            ProjectivePoint::lincomb(&[(black_box(p), black_box(s)), (black_box(p), black_box(s))])
-        })
-    });
-    group.bench_function("lincomb_vartime (2-term)", |b| {
-        b.iter(|| {
-            ProjectivePoint::lincomb_vartime(&[
-                (black_box(p), black_box(s)),
-                (black_box(p), black_box(s)),
-            ])
-        })
-    });
-}
-
-fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
-    let p = ProjectivePoint::GENERATOR;
-    let x = test_scalar_x();
-
-    group.bench_function("mul_by_generator naive", |b| {
-        b.iter(|| black_box(p) * black_box(x))
-    });
-
-    group.bench_function("mul_by_generator precomputed", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(x)))
-    });
-
-    group.bench_function("mul_by_generator_vartime", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(x)))
-    });
-}
-
-fn bench_high_level(c: &mut Criterion) {
-    let mut group = c.benchmark_group("high-level operations");
-    bench_point_mul(&mut group);
-    bench_point_mul_by_generator(&mut group);
-    bench_point_lincomb(&mut group);
-    group.finish();
 }
 
 fn bench_scalar_sub<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
@@ -135,5 +68,5 @@ fn bench_scalar(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_high_level, bench_scalar);
+criterion_group!(benches, bench_scalar);
 criterion_main!(benches);
