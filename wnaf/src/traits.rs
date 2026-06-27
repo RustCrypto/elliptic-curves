@@ -9,7 +9,7 @@ use group::Group;
 /// Extension trait on a [`Group`] that provides helpers used by [`crate::BoxedWnaf`].
 pub trait WnafGroup: Group {
     /// Recommends a wNAF window size given the number of scalars you intend to multiply
-    /// a base by. Always returns a number between 2 and 22, inclusive.
+    /// a base by. Always returns a number between 2 and [`W_MAX`][`crate::W_MAX`], inclusive.
     fn recommended_wnaf_for_num_scalars(num_scalars: usize) -> usize;
 }
 
