@@ -1,5 +1,5 @@
-use crate::{Digit, WindowSize, le_repr, wnaf_form};
-use array::{Array, ArraySize};
+use crate::{Digit, WindowSize, WnafSize, le_repr, wnaf_form};
+use array::{Array, typenum::Unsigned};
 use core::marker::PhantomData;
 use ff::PrimeField;
 
@@ -8,17 +8,21 @@ use crate::WnafBase;
 
 /// A "w-ary non-adjacent form" scalar, precomputed to improve the speed of scalar multiplication.
 ///
+/// The w-NAF representation is represented by a table of [`Digit`]s which includes one for each
+/// bit of the original scalar, plus an additional bit for any remaining carry, i.e.
+/// `F::NUM_BITS + 1`.
+///
 /// # Examples
 ///
 /// See [`WnafBase`] for usage examples.
 #[derive(Clone, Debug, Default)]
-pub struct WnafScalar<F: PrimeField, W: WindowSize, S: ArraySize> {
-    pub(crate) wnaf: Array<Digit, S>,
+pub struct WnafScalar<F: PrimeField + WnafSize, W: WindowSize> {
+    pub(crate) wnaf: Array<Digit, F::StorageSize>,
     pub(crate) digits: usize,
     _field: PhantomData<(F, W)>,
 }
 
-impl<F: PrimeField, W: WindowSize, S: ArraySize> WnafScalar<F, W, S> {
+impl<F: PrimeField + WnafSize, W: WindowSize> WnafScalar<F, W> {
     /// Computes the w-NAF representation of the given scalar with window size `W`.
     #[inline]
     pub fn new(scalar: &F) -> Self {
@@ -38,7 +42,6 @@ impl<F: PrimeField, W: WindowSize, S: ArraySize> WnafScalar<F, W, S> {
     /// If `bytes*8+1 > S::USIZE`.
     #[inline]
     pub fn from_le_bytes(bytes: &[u8]) -> Self {
-        debug_assert!(bytes.len() * 8 < S::USIZE);
         let mut wnaf = Self::default();
         wnaf.init_from_le_bytes(bytes);
         wnaf
@@ -54,7 +57,8 @@ impl<F: PrimeField, W: WindowSize, S: ArraySize> WnafScalar<F, W, S> {
     /// If `bytes*8+1 > S::USIZE`.
     #[inline]
     pub fn init_from_le_bytes(&mut self, bytes: &[u8]) {
-        debug_assert!(bytes.len() * 8 < S::USIZE);
+        debug_assert_eq!(F::NUM_BITS + 1, F::StorageSize::U32);
+        debug_assert!(bytes.len() * 8 + 1 <= F::StorageSize::USIZE);
         self.digits = wnaf_form(&mut self.wnaf, bytes, W::USIZE);
     }
 }

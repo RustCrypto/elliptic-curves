@@ -40,7 +40,7 @@ use super::{
 };
 use core::array;
 use elliptic_curve::{
-    array::sizes::{U5, U33, U257},
+    array::sizes::{U5, U33},
     ops::{LinearCombination, Mul, MulAssign, MulByGeneratorVartime, MulVartime},
     scalar::IsHigh,
     subtle::ConditionallySelectable,
@@ -55,11 +55,14 @@ use {super::tables::BASEPOINT_TABLE, elliptic_curve::array::sizes::U65};
 /// Lookup table for multiples of a given point.
 type LookupTable = primeorder::LookupTable<ProjectivePoint>;
 
+/// w-NAF window size to use by default.
+type WnafWindowSize = U5;
+
 /// `WnafBase` specialized for `k256`.
-type WnafBase = wnaf::WnafBase<ProjectivePoint, U5>;
+type WnafBase = wnaf::WnafBase<ProjectivePoint, WnafWindowSize>;
 
 /// `WnafScalar` specialized for `k256`.
-type WnafScalar = wnaf::WnafScalar<Scalar, U5, U257>;
+type WnafScalar = wnaf::WnafScalar<Scalar, WnafWindowSize>;
 
 const MINUS_LAMBDA: Scalar = Scalar::from_bytes_unchecked(&[
     0xac, 0x9c, 0x52, 0xb3, 0x3f, 0xa3, 0xcf, 0x1f, 0x5a, 0xd9, 0xe3, 0xfd, 0x77, 0xed, 0x9b, 0xa4,
