@@ -4,6 +4,7 @@ use array::{
     ArraySize,
     typenum::{U1, U2, U3, U4, U5, U6, U7, U8, U16, U32, U64, Unsigned},
 };
+use ff::PrimeField;
 use group::Group;
 
 /// Extension trait on a [`Group`] that provides helpers used by [`crate::BoxedWnaf`].
@@ -11,6 +12,13 @@ pub trait WnafGroup: Group {
     /// Recommends a wNAF window size given the number of scalars you intend to multiply
     /// a base by. Always returns a number between 2 and [`W_MAX`][`crate::W_MAX`], inclusive.
     fn recommended_wnaf_for_num_scalars(num_scalars: usize) -> usize;
+}
+
+/// Size of the w-NAF representation: this should be the type-level equivalent of
+/// `PrimeField::NUM_BITS + 1`, which includes an extra entry for any remaining carry.
+pub trait WnafSize: PrimeField {
+    /// Number of digits in the w-NAF representation.
+    type StorageSize: ArraySize;
 }
 
 /// Allowed w-NAF window size: we use this to precompute the window point sizes, because it's

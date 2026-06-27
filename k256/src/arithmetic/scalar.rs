@@ -3,7 +3,7 @@
 use crate::{FieldBytes, NonZeroScalar, ORDER, ORDER_HEX, Secp256k1, WideBytes};
 use core::iter::{Product, Sum};
 use elliptic_curve::{
-    Curve, Error, Generate, ScalarValue,
+    Curve, Error, Generate, ScalarValue, array,
     bigint::{ArrayEncoding, Limb, U256, U512, Word, cpubits, modular::Retrieve},
     ctutils,
     ff::{self, Field, FromUniformBytes, PrimeField},
@@ -20,6 +20,7 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 use primeorder::{FieldExt, PrimeFieldExt};
+use wnaf::WnafSize;
 
 cpubits! {
     32 => {
@@ -313,6 +314,11 @@ impl PrimeField for Scalar {
 
 impl FieldExt for Scalar {}
 impl PrimeFieldExt for Scalar {}
+
+impl WnafSize for Scalar {
+    // Scalar::NUM_BITS + 1
+    type StorageSize = array::sizes::U257;
+}
 
 impl From<u32> for Scalar {
     fn from(k: u32) -> Self {

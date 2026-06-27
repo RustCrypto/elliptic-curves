@@ -4,6 +4,7 @@
     html_logo_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg",
     html_favicon_url = "https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg"
 )]
+#![allow(clippy::int_plus_one, reason = "clearer for our use cases  ")]
 #![forbid(unsafe_code)]
 #![doc = include_str!("../README.md")]
 
@@ -22,7 +23,7 @@ mod boxed;
 pub use crate::{
     base::WnafBase,
     scalar::WnafScalar,
-    traits::{WindowSize, WnafGroup},
+    traits::{WindowSize, WnafGroup, WnafSize},
 };
 pub use group::Group;
 
@@ -69,7 +70,7 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, window: usize) -> usize {
     debug_assert!(window >= 2);
     debug_assert!(window <= W_MAX);
 
-    let bit_len = c.as_ref().len() * 8;
+    let bit_len = c.as_ref().len() * 8 + 1;
     debug_assert!(wnaf.len() > bit_len, "wnaf storage too small");
 
     let width = 1u64 << window;
