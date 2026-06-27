@@ -25,6 +25,7 @@ pub use crate::{
     scalar::WnafScalar,
     traits::{WindowSize, WnafGroup, WnafSize},
 };
+pub use array;
 pub use group::Group;
 
 #[cfg(feature = "alloc")]
@@ -66,12 +67,11 @@ fn wnaf_table<G: Group>(table: &mut [G], base: &G, window: usize) {
 /// Fills `wnaf` with the w-NAF representation of a little-endian scalar, and returns the
 /// number of digits written.
 #[allow(clippy::cast_possible_wrap)]
-fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, window: usize) -> usize {
+fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, bit_len: usize, window: usize) -> usize {
     debug_assert!(window >= 2);
     debug_assert!(window <= W_MAX);
-
-    let bit_len = c.as_ref().len() * 8 + 1;
-    debug_assert!(wnaf.len() > bit_len, "wnaf storage too small");
+    debug_assert!(bit_len < wnaf.len(), "wnaf storage too small");
+    debug_assert!(c.as_ref().len() <= bit_len.div_ceil(8), "input too large");
 
     let width = 1u64 << window;
     let window_mask = width - 1;
@@ -114,11 +114,15 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, window: usize) -> usize {
                 (window_val as Digit).wrapping_sub(width as Digit)
             };
             cursor += 1;
-            for _ in 1..window {
+
+            let max_pos = bit_len.saturating_sub(carry as usize);
+            let skip = window.min(max_pos - pos);
+
+            for _ in 1..skip {
                 wnaf[cursor] = 0;
                 cursor += 1;
             }
-            pos += window;
+            pos += skip;
         }
     }
 

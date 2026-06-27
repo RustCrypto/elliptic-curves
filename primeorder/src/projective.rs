@@ -9,7 +9,7 @@ use crate::{
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
     BatchNormalize, CurveGroup, Error, Generate, PublicKey, Result, Scalar,
-    array::typenum::Unsigned,
+    array::{sizes::U5, typenum::Unsigned},
     ctutils,
     group::{
         Group, GroupEncoding,
@@ -26,12 +26,23 @@ use elliptic_curve::{
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption},
     zeroize::DefaultIsZeroes,
 };
+use wnaf::WnafGroup;
 
 use crate::array::Array;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
+
+/// Default w-NAF window size to use.
+// TODO(tarcieri): per-curve customization?
+type DefaultWnafWindowSize = U5;
+
+/// `WnafBase` generic around an elliptic curve `C` using default window size for this curve.
+pub(crate) type WnafBase<C> = wnaf::WnafBase<ProjectivePoint<C>, DefaultWnafWindowSize>;
+
+/// `WnafScalar` generic around an elliptic curve `C` using default window size for this curve.
+pub(crate) type WnafScalar<C> = wnaf::WnafScalar<Scalar<C>, DefaultWnafWindowSize>;
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -118,9 +129,7 @@ where
 
     /// Returns `[k] self` computed in variable time.
     pub fn mul_vartime(&self, k: &Scalar<C>) -> Self {
-        let table = LookupTable::new(*self);
-        let digits = Radix16Decomposition::new(k);
-        lincomb_vartime::<C>(&[table], &[digits])
+        WnafBase::<C>::new(self) * WnafScalar::<C>::new(k)
     }
 }
 
@@ -365,6 +374,15 @@ where
 impl<C> PrimeCurve for ProjectivePoint<C> where C: PrimeCurveParams {}
 impl<C> PrimeGroup for ProjectivePoint<C> where C: PrimeCurveParams {}
 
+impl<C> WnafGroup for ProjectivePoint<C>
+where
+    C: PrimeCurveParams,
+{
+    fn recommended_wnaf_for_num_scalars(_num_scalars: usize) -> usize {
+        5 // TODO(tarcieri): better estimate based on `num_scalars`, curve-specific config
+    }
+}
+
 //
 // Batch trait impls
 //
@@ -468,16 +486,16 @@ where
 
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>)]) -> Self {
-        let tables: Vec<_> = points_and_scalars
+        let bases: Vec<_> = points_and_scalars
             .iter()
-            .map(|(point, _)| LookupTable::new(*point))
+            .map(|(point, _)| WnafBase::<C>::new(point))
             .collect();
-        let digits: Vec<_> = points_and_scalars
+        let scalars: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| Radix16Decomposition::new(scalar))
+            .map(|(_, scalar)| WnafScalar::<C>::new(scalar))
             .collect();
 
-        lincomb_vartime::<C>(&tables, &digits)
+        WnafBase::multiscalar_mul(bases.iter().zip(scalars.iter()))
     }
 }
 
@@ -494,11 +512,9 @@ where
     }
 
     fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
-        let tables: [_; N] = array::from_fn(|index| LookupTable::new(points_and_scalars[index].0));
-        let digits: [_; N] =
-            array::from_fn(|index| Radix16Decomposition::new(&points_and_scalars[index].1));
-
-        lincomb_vartime::<C>(&tables, &digits)
+        let bases = points_and_scalars.map(|(point, _)| WnafBase::<C>::new(&point));
+        let scalars = points_and_scalars.map(|(_, scalar)| WnafScalar::<C>::new(&scalar));
+        WnafBase::multiscalar_mul(bases.iter().zip(scalars.iter()))
     }
 }
 
@@ -523,33 +539,6 @@ fn lincomb<C: PrimeCurveParams>(
 
         for (table, digit) in zip(tables, digits) {
             q = q.add(&table.select(digit[i]));
-        }
-    }
-
-    q
-}
-
-fn lincomb_vartime<C: PrimeCurveParams>(
-    tables: &[LookupTable<ProjectivePoint<C>>],
-    digits: &[Radix16Decomposition<Radix16Digits<C>>],
-) -> ProjectivePoint<C> {
-    debug_assert_eq!(tables.len(), digits.len());
-    debug_assert!(!digits.is_empty());
-
-    let d = Radix16Digits::<C>::USIZE;
-    let mut q = ProjectivePoint::IDENTITY;
-
-    for (table, digit) in zip(tables, digits) {
-        q = q.add(&table.select_vartime(digit[d - 1]));
-    }
-
-    for i in (0..d - 1).rev() {
-        for _ in 0..4 {
-            q.double_in_place();
-        }
-
-        for (table, digit) in zip(tables, digits) {
-            q = q.add(&table.select_vartime(digit[i]));
         }
     }
 

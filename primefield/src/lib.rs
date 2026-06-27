@@ -18,10 +18,9 @@ pub use crate::{
     monty::{MontyFieldBytes, MontyFieldElement, MontyFieldParams, compute_t},
     traits::{FieldExt, PrimeFieldExt},
 };
-pub use array::typenum::consts;
 pub use bigint;
 pub use bigint::ByteOrder;
-pub use bigint::hybrid_array as array;
+pub use bigint::hybrid_array::{self as array, typenum::consts};
 pub use common;
 pub use ff;
 pub use rand_core;

@@ -11,6 +11,7 @@ use elliptic_curve::{
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
 use primefield::ByteOrder;
+use primeorder::wnaf;
 
 cpubits! {
     32 => {
@@ -90,6 +91,8 @@ primefield::monty_field_reduce! {
 }
 
 elliptic_curve::scalar_impls!(BignP256, Scalar);
+
+wnaf::impl_wnaf_size_for_scalar!(Scalar);
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {

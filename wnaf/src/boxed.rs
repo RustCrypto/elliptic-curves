@@ -2,6 +2,7 @@
 
 use crate::{Digit, WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
 use alloc::vec::Vec;
+use ff::PrimeField;
 use group::Group;
 
 #[cfg(doc)]
@@ -122,15 +123,12 @@ impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
         }
     }
 
-    pub fn scalar(
-        &mut self,
-        scalar: &<G as Group>::Scalar,
-    ) -> BoxedWnaf<usize, &mut Vec<G>, &[Digit]> {
+    pub fn scalar(&mut self, scalar: &G::Scalar) -> BoxedWnaf<usize, &mut Vec<G>, &[Digit]> {
         let window_size = 4;
 
         let repr = le_repr(scalar);
-        self.scalar.resize(repr.as_ref().len() * 8 + 1, 0);
-        let digits = wnaf_form(&mut self.scalar, repr, window_size);
+        let bit_len = init_storage::<G::Scalar>(&mut self.scalar, repr);
+        let digits = wnaf_form(&mut self.scalar, repr, bit_len, window_size);
         self.scalar.truncate(digits);
 
         BoxedWnaf {
@@ -182,20 +180,29 @@ impl<B, S: AsRef<[Digit]>> BoxedWnaf<usize, B, S> {
 }
 
 impl<B, S: AsMut<Vec<Digit>>> BoxedWnaf<usize, B, S> {
-    pub fn scalar<G: Group>(&mut self, scalar: &<G as Group>::Scalar) -> G
+    pub fn scalar<G: Group>(&mut self, scalar: &G::Scalar) -> G
     where
         B: AsRef<[G]>,
     {
         let repr = le_repr(scalar);
-        self.scalar.as_mut().resize(repr.as_ref().len() * 8 + 1, 0);
-        let digits = wnaf_form(self.scalar.as_mut(), repr, self.window_size);
+        let bit_len = init_storage::<G::Scalar>(self.scalar.as_mut(), repr);
+        let digits = wnaf_form(self.scalar.as_mut(), repr, bit_len, self.window_size);
         self.scalar.as_mut().truncate(digits);
         wnaf_exp(self.base.as_ref(), self.scalar.as_mut())
     }
 }
 
+/// Initialize storage for w-NAF `Digit`s.
+#[inline]
+fn init_storage<F: PrimeField>(digits: &mut Vec<Digit>, repr: F::Repr) -> usize {
+    let bit_len = (repr.as_ref().len() * 8).min(F::NUM_BITS as usize);
+    digits.resize(bit_len + 1, 0);
+    bit_len
+}
+
 /// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar, whose
 /// lengths must match.
-pub(crate) fn wnaf_exp<G: Group>(table: &[G], wnaf: &[Digit]) -> G {
+#[inline]
+fn wnaf_exp<G: Group>(table: &[G], wnaf: &[Digit]) -> G {
     wnaf_multi_exp(core::iter::once((table, wnaf, wnaf.len())))
 }

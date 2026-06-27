@@ -54,11 +54,16 @@ impl<F: PrimeField + WnafSize, W: WindowSize> WnafScalar<F, W> {
     /// See that method for full documentation.
     ///
     /// # Panics
-    /// If `bytes*8+1 > S::USIZE`.
+    /// If `bytes` is larger than `F::Repr`.
     #[inline]
     pub fn init_from_le_bytes(&mut self, bytes: &[u8]) {
         debug_assert_eq!(F::NUM_BITS + 1, F::StorageSize::U32);
-        debug_assert!(bytes.len() * 8 + 1 <= F::StorageSize::USIZE);
-        self.digits = wnaf_form(&mut self.wnaf, bytes, W::USIZE);
+        debug_assert!(
+            bytes.len() <= F::NUM_BITS.div_ceil(8) as usize,
+            "input too large: {}",
+            bytes.len(),
+        );
+        let bit_len = (bytes.len() * 8).min(F::NUM_BITS as usize);
+        self.digits = wnaf_form(&mut self.wnaf, bytes, bit_len, W::USIZE);
     }
 }
