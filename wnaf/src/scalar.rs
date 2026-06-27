@@ -12,13 +12,13 @@ use crate::WnafBase;
 ///
 /// See [`WnafBase`] for usage examples.
 #[derive(Clone, Debug, Default)]
-pub struct WnafScalar<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> {
-    pub(crate) wnaf: Array<Digit, WnafStorage>,
+pub struct WnafScalar<F: PrimeField, W: WindowSize, S: ArraySize> {
+    pub(crate) wnaf: Array<Digit, S>,
     pub(crate) digits: usize,
     _field: PhantomData<(F, W)>,
 }
 
-impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, WnafStorage> {
+impl<F: PrimeField, W: WindowSize, S: ArraySize> WnafScalar<F, W, S> {
     /// Computes the w-NAF representation of the given scalar with window size `W`.
     #[inline]
     pub fn new(scalar: &F) -> Self {
@@ -35,10 +35,10 @@ impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, Wnaf
     /// faster.
     ///
     /// # Panics
-    /// If `bytes*8+1 > WnafStorage::USIZE`.
+    /// If `bytes*8+1 > S::USIZE`.
     #[inline]
     pub fn from_le_bytes(bytes: &[u8]) -> Self {
-        debug_assert!(bytes.len() * 8 < WnafStorage::USIZE);
+        debug_assert!(bytes.len() * 8 < S::USIZE);
         let mut wnaf = Self::default();
         wnaf.init_from_le_bytes(bytes);
         wnaf
@@ -51,10 +51,10 @@ impl<F: PrimeField, W: WindowSize, WnafStorage: ArraySize> WnafScalar<F, W, Wnaf
     /// See that method for full documentation.
     ///
     /// # Panics
-    /// If `bytes*8+1 > WnafStorage::USIZE`.
+    /// If `bytes*8+1 > S::USIZE`.
     #[inline]
     pub fn init_from_le_bytes(&mut self, bytes: &[u8]) {
-        debug_assert!(bytes.len() * 8 < WnafStorage::USIZE);
+        debug_assert!(bytes.len() * 8 < S::USIZE);
         self.digits = wnaf_form(&mut self.wnaf, bytes, W::USIZE);
     }
 }

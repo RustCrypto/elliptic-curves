@@ -42,7 +42,7 @@ pub type Digit = i8;
 ///
 /// This ensures `2^(8-1)-1=127`, so digits lie within `{-127,127}`, which fits in `i8`.
 // NOTE: this is also the maximum impl size we support for the `WindowSize` trait
-const W_MAX: usize = 8;
+pub const W_MAX: usize = 8;
 
 /// Computes a w-NAF window table for the given base and window size.
 ///
@@ -50,11 +50,11 @@ const W_MAX: usize = 8;
 ///
 /// The table is indexed by `|digit| / 2`, so the required size is `(2^(w-1) - 1) / 2 + 1 = 2^(w-2)`
 /// entries.
-fn wnaf_table<G: Group>(table: &mut [G], base: G, window: usize) {
+fn wnaf_table<G: Group>(table: &mut [G], base: &G, window: usize) {
     debug_assert_eq!(table.len(), 1 << (window - 2));
 
     let dbl = base.double();
-    let mut cur = base;
+    let mut cur = *base;
 
     for entry in table {
         *entry = cur;

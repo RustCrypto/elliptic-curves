@@ -406,8 +406,8 @@ fn decompose_glv_wnaf_into(
     let p1 = if r1_neg { -*x } else { *x };
     let p_beta = x.endomorphism();
     let p2 = if r2_neg { -p_beta } else { p_beta };
-    bases[0].init_from_base(p1);
-    bases[1].init_from_base(p2);
+    bases[0].init_from_base(&p1);
+    bases[1].init_from_base(&p2);
 }
 
 /// Perform GLV decomposition and return the resulting w-NAF bases and scalars.

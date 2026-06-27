@@ -105,7 +105,11 @@ impl<G: Group> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
 }
 
 impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
-    pub fn base(&mut self, base: G, num_scalars: usize) -> BoxedWnaf<usize, &[G], &mut Vec<Digit>> {
+    pub fn base(
+        &mut self,
+        base: &G,
+        num_scalars: usize,
+    ) -> BoxedWnaf<usize, &[G], &mut Vec<Digit>> {
         let window_size = G::recommended_wnaf_for_num_scalars(num_scalars);
 
         self.base.resize_with(1 << (window_size - 2), G::identity);
@@ -165,7 +169,7 @@ impl<'a, G: Group> BoxedWnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
 }
 
 impl<B, S: AsRef<[Digit]>> BoxedWnaf<usize, B, S> {
-    pub fn base<G: Group>(&mut self, base: G) -> G
+    pub fn base<G: Group>(&mut self, base: &G) -> G
     where
         B: AsMut<Vec<G>>,
     {

@@ -37,7 +37,7 @@ pub struct WnafBase<G: Group, W: WindowSize> {
 impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// Computes a window table for the given base with the specified window size `W`.
     #[inline]
-    pub fn new(base: G) -> Self {
+    pub fn new(base: &G) -> Self {
         let mut ret = Self::default();
         ret.init_from_base(base);
         ret
@@ -45,7 +45,7 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
 
     /// Initialize an already allocated window table from the given base.
     #[inline]
-    pub fn init_from_base(&mut self, base: G) {
+    pub fn init_from_base(&mut self, base: &G) {
         wnaf_table(&mut self.table, base, W::USIZE);
     }
 
@@ -54,10 +54,10 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
     /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
     /// using the interleaved window method, also known as Straus's method.
     #[must_use]
-    pub fn multiscalar_mul<'a, WnafStorage, I>(pairs: I) -> G
+    pub fn multiscalar_mul<'a, S, I>(pairs: I) -> G
     where
-        WnafStorage: ArraySize,
-        I: Clone + Iterator<Item = (&'a Self, &'a WnafScalar<G::Scalar, W, WnafStorage>)>,
+        S: ArraySize,
+        I: Clone + Iterator<Item = (&'a Self, &'a WnafScalar<G::Scalar, W, S>)>,
     {
         wnaf_multi_exp(pairs.map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits)))
     }
@@ -71,12 +71,28 @@ impl<G: Group, W: WindowSize> Default for WnafBase<G, W> {
     }
 }
 
-impl<G: Group, W: WindowSize, WnafStorage: ArraySize> Mul<&WnafScalar<G::Scalar, W, WnafStorage>>
-    for &WnafBase<G, W>
-{
+impl<G: Group, W: WindowSize, S: ArraySize> Mul<&WnafScalar<G::Scalar, W, S>> for &WnafBase<G, W> {
     type Output = G;
 
-    fn mul(self, rhs: &WnafScalar<G::Scalar, W, WnafStorage>) -> Self::Output {
+    fn mul(self, rhs: &WnafScalar<G::Scalar, W, S>) -> Self::Output {
         WnafBase::multiscalar_mul(iter::once((self, rhs)))
+    }
+}
+
+impl<G: Group, W: WindowSize, S: ArraySize> Mul<&WnafScalar<G::Scalar, W, S>> for WnafBase<G, W> {
+    type Output = G;
+
+    #[inline]
+    fn mul(self, rhs: &WnafScalar<G::Scalar, W, S>) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl<G: Group, W: WindowSize, S: ArraySize> Mul<WnafScalar<G::Scalar, W, S>> for WnafBase<G, W> {
+    type Output = G;
+
+    #[inline]
+    fn mul(self, rhs: WnafScalar<G::Scalar, W, S>) -> Self::Output {
+        &self * &rhs
     }
 }
