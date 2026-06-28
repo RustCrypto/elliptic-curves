@@ -18,6 +18,7 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+use primeorder::wnaf;
 
 // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 cpubits! {
@@ -109,6 +110,8 @@ primefield::monty_field_reduce! {
 }
 
 elliptic_curve::scalar_impls!(NistP192, Scalar);
+
+wnaf::impl_wnaf_size_for_scalar!(Scalar);
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {

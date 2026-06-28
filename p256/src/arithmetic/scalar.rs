@@ -22,6 +22,7 @@ use elliptic_curve::{
     zeroize::DefaultIsZeroes,
 };
 use primefield::{FieldExt, PrimeFieldExt};
+use primeorder::wnaf;
 
 cpubits! {
     32 => {
@@ -310,6 +311,8 @@ impl PrimeField for Scalar {
 
 impl FieldExt for Scalar {}
 impl PrimeFieldExt for Scalar {}
+
+wnaf::impl_wnaf_size_for_scalar!(Scalar);
 
 impl Retrieve for Scalar {
     type Output = U256;

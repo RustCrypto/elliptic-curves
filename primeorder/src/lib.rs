@@ -39,6 +39,7 @@ pub use elliptic_curve::{
     ops::Double,
 };
 pub use primefield::{FieldExt, PrimeFieldExt};
+pub use wnaf::{self, WnafSize};
 
 use elliptic_curve::{Curve, CurveArithmetic, sec1};
 
@@ -52,7 +53,7 @@ pub trait PrimeCurveParams:
     + CurveArithmetic<
         AffinePoint = AffinePoint<Self>,
         ProjectivePoint = ProjectivePoint<Self>,
-        Scalar: PrimeFieldExt,
+        Scalar: PrimeFieldExt + WnafSize,
     > + FieldArithmetic<FieldElement: PrimeFieldExt>
     + PrimeCurve
 {

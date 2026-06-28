@@ -19,6 +19,7 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+use primeorder::wnaf;
 
 cpubits! {
     32 => {
@@ -84,6 +85,8 @@ primefield::fiat_monty_field_arithmetic! {
 }
 
 elliptic_curve::scalar_impls!(NistP384, Scalar);
+
+wnaf::impl_wnaf_size_for_scalar!(Scalar);
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {

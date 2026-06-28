@@ -18,6 +18,7 @@ use elliptic_curve::{
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
 };
+use primeorder::wnaf;
 
 // Default backend: fiat-crypto
 cpubits! {
@@ -90,6 +91,8 @@ primefield::monty_field_reduce! {
 }
 
 elliptic_curve::scalar_impls!(Sm2, Scalar);
+
+wnaf::impl_wnaf_size_for_scalar!(Scalar);
 
 impl AsRef<Scalar> for Scalar {
     fn as_ref(&self) -> &Scalar {

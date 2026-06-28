@@ -7,6 +7,13 @@ use array::{
 use ff::PrimeField;
 use group::Group;
 
+/// Allowed w-NAF window size: we use this to precompute the window point sizes, because it's
+/// currently not possible to write bounds for them.
+pub trait WindowSize: Unsigned {
+    /// Number of precomputed points in the window table: `1 << (Self::USIZE - 2)`.
+    type TableSize: ArraySize;
+}
+
 /// Extension trait on a [`Group`] that provides helpers used by [`crate::BoxedWnaf`].
 pub trait WnafGroup: Group {
     /// Recommends a wNAF window size given the number of scalars you intend to multiply
@@ -19,13 +26,6 @@ pub trait WnafGroup: Group {
 pub trait WnafSize: PrimeField {
     /// Number of digits in the w-NAF representation.
     type StorageSize: ArraySize;
-}
-
-/// Allowed w-NAF window size: we use this to precompute the window point sizes, because it's
-/// currently not possible to write bounds for them.
-pub trait WindowSize: Unsigned {
-    /// Number of precomputed points in the window table: `1 << (Self::USIZE - 2)`.
-    type TableSize: ArraySize;
 }
 
 // TODO(tarcieri): compute or failing that test window sizes
@@ -41,3 +41,13 @@ macro_rules! impl_window_sizes {
 
 // NOTE: the maximum size supported here should match the `W_MAX` constant
 impl_window_sizes!(U2 => U1, U3 => U2, U4 => U4, U5 => U8, U6 => U16, U7 => U32, U8 => U64);
+
+/// Write an impl of the `WnafSize` trait automatically based on the `PrimeField` impl.
+#[macro_export]
+macro_rules! impl_wnaf_size_for_scalar {
+    ($fe:ty) => {
+        impl $crate::WnafSize for $fe {
+            type StorageSize = $crate::array::typenum::U<{ (Self::NUM_BITS + 1) as usize }>;
+        }
+    };
+}

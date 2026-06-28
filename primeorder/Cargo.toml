@@ -20,6 +20,7 @@ rust-version = "1.85"
 [dependencies]
 elliptic-curve = { version = "0.14", default-features = false, features = ["arithmetic", "sec1"] }
 primefield = "0.14"
+wnaf = { version = "0.14.0-rc.1", default-features = false }
 
 # optional dependencies
 once_cell = { version = "1.21", optional = true, default-features = false }
