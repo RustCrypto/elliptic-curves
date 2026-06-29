@@ -544,4 +544,61 @@ mod tests {
             }
         }
     }
+
+    // ── exhaustive invariant check over every byte and window ───────────────
+
+    #[test]
+    fn exhaustive_wnaf_invariants() {
+        // For every scalar 0..=255 and every window w in 2..=8, verify the defining
+        // properties of the w-NAF (GECC §3.3 / HAC Algorithm 14.104):
+        //
+        //   1. Exactness:      Σ digit[i]·2^i == scalar
+        //   2. Odd non-zeros:  every non-zero digit is odd
+        //   3. Magnitude:      |digit| ≤ 2^(w-1) - 1  (i.e. < 2^(w-1))
+        //   4. Non-adjacency:  at most one non-zero digit in any window of w consecutive
+        //                      positions — equivalently, every non-zero digit is followed
+        //                      by at least w-1 zeros before the next non-zero digit.
+        for scalar in 0u8..=255 {
+            for window in 2..=8usize {
+                let d = run(&[scalar], window);
+                let max_mag = (1i64 << (window - 1)) - 1;
+
+                // 1. Exactness.
+                assert_eq!(
+                    reconstruct(&d),
+                    scalar as i128,
+                    "exactness: scalar={scalar} window={window}"
+                );
+
+                // 2 & 3. Per-digit properties.
+                for &digit in &d {
+                    if digit != 0 {
+                        assert_eq!(
+                            digit & 1,
+                            1,
+                            "odd non-zero: scalar={scalar} window={window} digit={digit}"
+                        );
+                        assert!(
+                            (digit as i64).abs() <= max_mag,
+                            "magnitude: scalar={scalar} window={window} digit={digit} max={max_mag}"
+                        );
+                    }
+                }
+
+                // 4. Non-adjacency: gap between consecutive non-zero digits is ≥ window.
+                let nonzero_positions: Vec<usize> = d
+                    .iter()
+                    .enumerate()
+                    .filter(|&(_, &x)| x != 0)
+                    .map(|(i, _)| i)
+                    .collect();
+                for pair in nonzero_positions.windows(2) {
+                    assert!(
+                        pair[1] - pair[0] >= window,
+                        "non-adjacency: scalar={scalar} window={window} positions={pair:?}"
+                    );
+                }
+            }
+        }
+    }
 }
