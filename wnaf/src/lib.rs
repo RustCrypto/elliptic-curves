@@ -186,6 +186,25 @@ where
 
 #[cfg(test)]
 mod tests {
+    //! Unit tests for [`wnaf_form`].
+    //!
+    //! # References
+    //!
+    //! The w-NAF algorithm and its properties (non-adjacency, digit magnitude, uniqueness) are
+    //! defined in:
+    //!
+    //! - Hankerson, Menezes, Vanstone — "Guide to Elliptic Curve Cryptography" (2004),
+    //!   §3.3 (Non-Adjacent Forms), Algorithm 3.35.
+    //!   <https://link.springer.com/book/10.1007/b97644>
+    //!
+    //! - Menezes, van Oorschot, Vanstone — "Handbook of Applied Cryptography" (1996),
+    //!   §14.6.1, Algorithm 14.104.
+    //!   <https://cacr.uwaterloo.ca/hac/about/chap14.pdf>
+    //!
+    //! Concrete digit sequences in the tests below are derived by hand-tracing the
+    //! `wnaf_form` implementation against those definitions, then cross-checked via the
+    //! `reconstruct` helper (value = Σ digit[i] · 2^i).
+
     use super::{Digit, wnaf_form};
     use alloc::vec::Vec;
 
