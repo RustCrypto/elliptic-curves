@@ -69,7 +69,7 @@ pub type SigningKey = ecdsa_core::SigningKey<NistP256>;
 pub type VerifyingKey = ecdsa_core::VerifyingKey<NistP256>;
 
 #[cfg(feature = "sha256")]
-impl ecdsa_core::hazmat::DigestAlgorithm for NistP256 {
+impl ecdsa_core::DigestAlgorithm for NistP256 {
     type Digest = sha2::Sha256;
 }
 #[cfg(all(test, feature = "ecdsa"))]

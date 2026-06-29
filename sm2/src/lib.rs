@@ -56,7 +56,6 @@ extern crate alloc;
 
 #[cfg(feature = "dsa")]
 pub mod dsa;
-
 #[cfg(feature = "pke")]
 pub mod pke;
 

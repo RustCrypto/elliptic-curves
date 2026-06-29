@@ -16,13 +16,12 @@
 
 use super::{Signature, VerifyingKey};
 use crate::{
-    DistId, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey, Sm2,
+    DistId, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey, Sm2, U256,
 };
 use core::fmt::{self, Debug};
 use elliptic_curve::{
     Curve, Group, PrimeField,
     array::typenum::Unsigned,
-    field,
     ops::Reduce,
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
@@ -217,17 +216,27 @@ fn sign_prehash_rfc6979(secret_scalar: &Scalar, prehash: &[u8], data: &[u8]) -> 
     }
 
     // A2: calculate e=Hv(M~)
-    #[allow(deprecated)] // from_slice
-    let e = Scalar::reduce(FieldBytes::from_slice(prehash));
+    let e = bytes2scalar(prehash);
 
     // A3: pick a random number k in [1, n-1] via a random number generator
-    let k = Scalar::from_repr(rfc6979::generate_k::<Sm3, _>(
+    //
+    // NOTE: we use RFC6979 as our "random number generator", optionally supplemented with `data`.
+    // Though SM2DSA doesn't mandate use of RFC6979 it ensures `k` is generated in a uniformly
+    // random manner since the algorithm samples from the uniformly random outputs of HMAC-DRBG and
+    // uses rejection sampling to find `k` in `[1, n-1]` in an unbiased manner.
+    let mut kgen = rfc6979::KGenerator::<Sm3, U256>::new(
         &secret_scalar.to_repr(),
-        &field::uint_to_bytes::<Sm2>(&Sm2::ORDER),
         &e.to_bytes(),
         data,
-    ))
-    .unwrap();
+        &Sm2::ORDER,
+    );
+
+    // TODO(tarcieri): add a loop and retry `kgen.fill_next_k` until we succeed
+    let mut k_bytes = FieldBytes::default();
+    kgen.fill_next_k(&mut k_bytes);
+    let k = Scalar::from_repr(k_bytes)
+        .into_option()
+        .ok_or_else(Error::new)?;
 
     // A4: calculate the elliptic curve point (x1, y1)=[k]G
     let R = ProjectivePoint::mul_by_generator(&k).to_affine();
@@ -254,4 +263,17 @@ impl SignatureAlgorithmIdentifier for SigningKey {
 
     const SIGNATURE_ALGORITHM_IDENTIFIER: AlgorithmIdentifier<Self::Params> =
         Signature::ALGORITHM_IDENTIFIER;
+}
+
+/// Convert bytestring into a scalar, interpreting it as big endian, zero-padding or truncating it
+/// to the bit length of `n` (curve order) if necessary, and then reducing it mod `n`.
+fn bytes2scalar(mut bytes: &[u8]) -> Scalar {
+    // Compute number of bytes in `n` (curve order)
+    let n_bits = Sm2::ORDER.bits();
+    let n_bytes = n_bits.div_ceil(8) as usize;
+    if bytes.len() > n_bytes {
+        bytes = &bytes[..n_bytes];
+    }
+
+    <Scalar as Reduce<U256>>::reduce(&U256::from_be_slice_truncated(bytes, n_bits))
 }
