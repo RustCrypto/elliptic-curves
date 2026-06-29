@@ -192,7 +192,7 @@ fn le_repr<F: PrimeField>(fe: &F) -> F::Repr {
     ret
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     //! Unit tests for [`wnaf_form`].
     //!
