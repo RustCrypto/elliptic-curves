@@ -72,12 +72,12 @@ dependencies = [
 [[package]]
 name = "bign-genk"
 version = "0.1.0-pre.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b490be84332ccba8f52816c912af7f1ff84fe2148d2ed83c9fd867826f2d44a1"
+source = "git+https://github.com/RustCrypto/signatures#9cafcb4f589b8ccdd720fa3c530388863e9bd911"
 dependencies = [
+ "belt-hash",
  "cipher",
+ "crypto-bigint",
  "digest",
- "subtle",
 ]
 
 [[package]]
