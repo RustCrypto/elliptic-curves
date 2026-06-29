@@ -85,7 +85,7 @@ impl Scalar {
         Self(barrett_reduce(lo, hi))
     }
 
-    /// Returns self * self mod p
+    /// Returns self * self mod n
     pub const fn square(&self) -> Self {
         // Schoolbook multiplication.
         self.multiply(self)
@@ -98,7 +98,7 @@ impl Scalar {
         Self(self.0.unbounded_shr_vartime(shift))
     }
 
-    /// Compute [`FieldElement`] inversion: `1 / self`.
+    /// Compute scalar inversion: `1 / self`.
     pub fn invert(&self) -> CtOption<Self> {
         self.0
             .invert_odd_mod(const { &Odd::from_be_hex(ORDER_HEX) })
@@ -106,7 +106,7 @@ impl Scalar {
             .into()
     }
 
-    /// Compute [`FieldElement`] inversion: `1 / self` in variable-time.
+    /// Compute scalar inversion: `1 / self` in variable-time.
     pub fn invert_vartime(&self) -> CtOption<Self> {
         self.0
             .invert_odd_mod_vartime(const { &Odd::from_be_hex(ORDER_HEX) })
