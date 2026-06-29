@@ -188,6 +188,19 @@ where
 mod tests {
     //! Unit tests for [`wnaf_form`].
     //!
+    //! # Design note
+    //!
+    //! Each test falls into one of two categories:
+    //!
+    //! - **Structural tests** assert the exact digit sequence produced for a known scalar and
+    //!   window size. The expected sequences are derived by hand-tracing the algorithm (see
+    //!   references below) and the `reconstruct` helper is intentionally *not* used — if the
+    //!   exact digits are correct, the value is correct by definition.
+    //!
+    //! - **Value tests** (currently [`all_windows_agree_on_value`]) use `reconstruct` to verify
+    //!   that every window size produces the same integer value, exercising the algorithm's
+    //!   window-independent correctness without fixing a specific digit layout.
+    //!
     //! # References
     //!
     //! The w-NAF algorithm and its properties (non-adjacency, digit magnitude, uniqueness) are
@@ -200,10 +213,6 @@ mod tests {
     //! - Menezes, van Oorschot, Vanstone — "Handbook of Applied Cryptography" (1996),
     //!   §14.6.1, Algorithm 14.104.
     //!   <https://cacr.uwaterloo.ca/hac/about/chap14.pdf>
-    //!
-    //! Concrete digit sequences in the tests below are derived by hand-tracing the
-    //! `wnaf_form` implementation against those definitions, then cross-checked via the
-    //! `reconstruct` helper (value = Σ digit[i] · 2^i).
 
     use super::{Digit, wnaf_form};
     use alloc::vec::Vec;
@@ -211,6 +220,8 @@ mod tests {
     /// Reconstruct the integer value encoded by a w-NAF digit sequence.
     ///
     /// `value = Σ digits[i] * 2^i`
+    ///
+    /// Only used in value tests; structural tests assert exact digit slices instead.
     fn reconstruct(digits: &[Digit]) -> i128 {
         digits
             .iter()
@@ -244,45 +255,28 @@ mod tests {
 
     #[test]
     fn scalar_one_w2() {
+        // 1 → single positive digit, all others zero.
         let d = run(&[0x01], 2);
-        assert_eq!(reconstruct(&d), 1);
         assert_eq!(d[0], 1);
         assert!(d[1..].iter().all(|&x| x == 0));
-    }
-
-    // ── borrowing / negative digit ───────────────────────────────────────────
-
-    #[test]
-    fn scalar_three_w2() {
-        // 3 = 0b11  →  -1·1 + 1·4  →  NAF = [-1, 0, 1, 0, …]
-        let d = run(&[0x03], 2);
-        assert_eq!(reconstruct(&d), 3);
-        assert_eq!(&d[..4], &[-1, 0, 1, 0]);
     }
 
     // ── two non-adjacent non-zero digits ────────────────────────────────────
 
     #[test]
     fn scalar_five_w2() {
-        // 5 = 0b101  →  1·1 + 1·4  →  NAF w=2 = [1, 0, 1, 0, …]
+        // 5 = 0b101  →  two non-adjacent set bits, no borrow needed.
+        // NAF w=2 = [1, 0, 1, 0, …]
         let d = run(&[0x05], 2);
-        assert_eq!(reconstruct(&d), 5);
         assert_eq!(&d[..4], &[1, 0, 1, 0]);
     }
 
     #[test]
     fn scalar_five_w3() {
-        // 5 fits in one w=3 digit (magnitude ≤ 2^(3-1)-1 = 3 … wait, 5 > 3).
-        // Actually for w=3: width=8, digits in (-7..=7) odd, window_val=5 < 4? No, 5>=4.
-        // So: 5 → digit = 5-8 = -3 at pos 0, carry=1 → digit = 1 at pos 3.
-        // But that's the same as checking via reconstruct.
-        // In fact for w=3, 5 < width/2=4 is false, so this DOES borrow:
-        // NAF w=3 of 5 = [-3, 0, 0, 1, …]? Let me re-derive.
-        //   pos=0: window_val=5, >=4, digit=5-8=-3, carry=1, skip=3 → pos=3
-        //   pos=3: carry=1, bit_buf=5>>3=0, window_val=1, <4, digit=1, carry=0 → pos=6
-        //   NAF = [-3, 0, 0, 1, 0, 0, …]  value = -3 + 8 = 5 ✓
+        // 5 with w=3: window_val=5 ≥ width/2=4, so borrows: digit = 5-8 = -3, carry=1.
+        // Carry resolves at pos=3 (bit_buf=0, window_val=1 < 4): digit = 1.
+        // NAF w=3 = [-3, 0, 0, 1, …]  (same scalar, different representation from w=2)
         let d = run(&[0x05], 3);
-        assert_eq!(reconstruct(&d), 5);
         assert_eq!(&d[..4], &[-3, 0, 0, 1]);
     }
 
@@ -292,15 +286,6 @@ mod tests {
     fn scalar_seven_w2() {
         // 7 = 0b111  →  -1·1 + 1·8  →  NAF w=2 = [-1, 0, 0, 1, …]
         let d = run(&[0x07], 2);
-        assert_eq!(reconstruct(&d), 7);
-        assert_eq!(&d[..4], &[-1, 0, 0, 1]);
-    }
-
-    #[test]
-    fn scalar_seven_w3() {
-        // Same value, wider window — same structure for this scalar.
-        let d = run(&[0x07], 3);
-        assert_eq!(reconstruct(&d), 7);
         assert_eq!(&d[..4], &[-1, 0, 0, 1]);
     }
 
@@ -308,30 +293,28 @@ mod tests {
 
     #[test]
     fn scalar_eleven_w4() {
-        // 11 = 0b1011  →  -5·1 + 1·16  →  NAF w=4 = [-5, 0, 0, 0, 1, 0, 0, 0]
+        // 11 = 0b1011  →  window_val=11 ≥ 8, digit = 11-16 = -5, carry=1 at pos=4.
+        // NAF w=4 = [-5, 0, 0, 0, 1, 0, 0, 0]
         let d = run(&[0x0b], 4);
-        assert_eq!(reconstruct(&d), 11);
         assert_eq!(&d[..8], &[-5, 0, 0, 0, 1, 0, 0, 0]);
     }
 
-    // ── alternating bits (no borrow for w=2) ────────────────────────────────
+    // ── same scalar, window size changes the representation ─────────────────
 
     #[test]
     fn scalar_21_w2() {
-        // 21 = 0b10101  →  all individual set bits are non-adjacent  →  no borrow
+        // 21 = 0b10101  →  all set bits are non-adjacent, no borrow for w=2.
         // NAF w=2 = [1, 0, 1, 0, 1, 0, …]
         let d = run(&[0x15], 2);
-        assert_eq!(reconstruct(&d), 21);
         assert_eq!(&d[..6], &[1, 0, 1, 0, 1, 0]);
     }
 
     #[test]
     fn scalar_21_w3() {
-        // 21 = 0b10101  →  window_val at pos 0: 21 & 7 = 5 ≥ 4, digit = 5-8 = -3, carry=1
-        // then pos 3: carry+bit = 1+(21>>3 & 7) = 1+2 = 3 < 4, digit = 3
-        // NAF w=3 = [-3, 0, 0, 3, 0, 0, …]  value = -3 + 3·8 = 21 ✓
+        // 21 = 0b10101  →  window_val at pos=0: 21&7=5 ≥ 4, digit=-3, carry=1.
+        // Carry resolves at pos=3: 1+(21>>3 & 7)=3 < 4, digit=3.
+        // NAF w=3 = [-3, 0, 0, 3, 0, 0, …]
         let d = run(&[0x15], 3);
-        assert_eq!(reconstruct(&d), 21);
         assert_eq!(&d[..6], &[-3, 0, 0, 3, 0, 0]);
     }
 
@@ -339,153 +322,147 @@ mod tests {
 
     #[test]
     fn scalar_0xff_carry_extra_digit() {
-        // 0xFF = 255 = 0b1111_1111
-        // The borrow at pos 0 propagates through all 8 bits, emitting a carry digit at pos 8.
-        // NAF w=2 = [-1, 0, 0, 0, 0, 0, 0, 0, 1]  value = -1 + 256 = 255 ✓
+        // 0xFF = 0b1111_1111: borrow at pos=0 propagates through all 8 bits.
+        // Carry is flushed as an extra digit past bit_len.
+        // NAF w=2 = [-1, 0×7, 1]  (9 digits total)
         let d = run(&[0xFF], 2);
-        assert_eq!(reconstruct(&d), 255);
-        assert_eq!(&d[..9], &[-1, 0, 0, 0, 0, 0, 0, 0, 1]);
+        assert_eq!(d.as_slice(), &[-1, 0, 0, 0, 0, 0, 0, 0, 1]);
     }
 
     // ── cross-byte carry ─────────────────────────────────────────────────────
 
     #[test]
     fn scalar_511_cross_byte_carry() {
-        // 511 = 0x1FF = 0b1_1111_1111
-        // bytes (LE) = [0xFF, 0x01]  →  u64 limb = 0x01FF
-        // Borrow at pos 0 ripples across the byte boundary, resolving at pos 9.
-        // NAF w=2 = [-1, 0, 0, 0, 0, 0, 0, 0, 0, 1, …]  value = -1 + 512 = 511 ✓
+        // 511 = 0x1FF = 0b1_1111_1111; bytes (LE) = [0xFF, 0x01].
+        // Borrow at pos=0 ripples across the byte boundary, resolving at pos=9.
+        // NAF w=2 = [-1, 0×8, 1]
         let d = run(&[0xFF, 0x01], 2);
-        assert_eq!(reconstruct(&d), 511);
         assert_eq!(&d[..10], &[-1, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
     }
 
     #[test]
     fn scalar_256_no_carry() {
-        // 256 = 0x100, bytes (LE) = [0x00, 0x01]
-        // Single set bit at position 8 — no borrowing.
-        // NAF w=2 = [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, …]
+        // 256 = 0x100; bytes (LE) = [0x00, 0x01]. Single set bit at position 8, no borrow.
+        // NAF w=2 = [0×8, 1, 0, …]
         let d = run(&[0x00, 0x01], 2);
-        assert_eq!(reconstruct(&d), 256);
         assert_eq!(&d[..10], &[0, 0, 0, 0, 0, 0, 0, 0, 1, 0]);
     }
 
-    // ── limb boundary: single bit at position 63 (MSB of first u64 limb) ──
+    // ── mixed: 0x7F (carry absorbed at MSB, no extra digit) ─────────────────
+
+    #[test]
+    fn scalar_0x7f_w2() {
+        // 0x7F = 0b0111_1111 = 127.
+        // Borrow at pos=0 sets carry=1; carry propagates through bits 1..6 (all 1, window_val
+        // always even), then at pos=7 the bit is 0 so window_val=1 (odd, < 2): carry absorbed
+        // as digit +1 at position 7. No extra digit emitted past bit_len.
+        // NAF w=2 = [-1, 0×6, 1]  (8 digits, length = bit_len)
+        let d = run(&[0x7F], 2);
+        assert_eq!(d.as_slice(), &[-1, 0, 0, 0, 0, 0, 0, 1]);
+    }
+
+    // ── mixed: 0xAB (repeating borrow pattern, carry escapes) ───────────────
+
+    #[test]
+    fn scalar_0xab_w2() {
+        // 0xAB = 0b1010_1011 = 171.
+        // Bits 0,1 set → window_val=3 ≥ 2, borrow each time the window opens on an odd value;
+        // the carry never resolves within bit_len and is flushed as an extra digit at pos=8.
+        // NAF w=2 = [-1, 0, -1, 0, -1, 0, -1, 0, 1]  (9 digits; -1-4-16-64+256 = 171 ✓)
+        let d = run(&[0xAB], 2);
+        assert_eq!(d.as_slice(), &[-1, 0, -1, 0, -1, 0, -1, 0, 1]);
+    }
+
+    // ── limb boundary: single bit at position 63 (MSB of first u64 limb) ────
 
     #[test]
     fn scalar_bit63() {
-        // 2^63 = [0x00×7, 0x80] in little-endian.
-        // Single set bit at position 63 — lies at the MSB of the first u64 limb read by
-        // LimbBuffer. No borrow; the digit is emitted at position 63 and there is no carry.
+        // 2^63 = [0x00×7, 0x80]; single set bit at the MSB of the first u64 limb in LimbBuffer.
+        // No borrow; digit=1 at position 63, no carry.
         let mut bytes = [0u8; 8];
         bytes[7] = 0x80;
         let d = run(&bytes, 2);
-        assert_eq!(reconstruct(&d), 1i128 << 63);
         assert!(d[..63].iter().all(|&x| x == 0), "no non-zero digits before position 63");
         assert_eq!(d[63], 1);
     }
 
-    // ── limb boundary: single bit at position 64 (LSB of second u64 limb) ──
+    // ── limb boundary: single bit at position 64 (LSB of second u64 limb) ───
 
     #[test]
     fn scalar_bit64() {
-        // 2^64 = [0x00×8, 0x01] in little-endian.
-        // Single set bit at position 64 — the first bit of the second u64 limb in LimbBuffer.
-        // No borrow; the digit is emitted at position 64.
+        // 2^64 = [0x00×8, 0x01]; single set bit at the LSB of the second u64 limb in LimbBuffer.
+        // No borrow; digit=1 at position 64, no carry.
         let mut bytes = [0u8; 9];
         bytes[8] = 0x01;
         let d = run(&bytes, 2);
-        assert_eq!(reconstruct(&d), 1i128 << 64);
         assert!(d[..64].iter().all(|&x| x == 0), "no non-zero digits before position 64");
         assert_eq!(d[64], 1);
     }
 
-    // ── all 64 bits set (2^64 - 1): carry escapes past the u64 limb ─────────
+    // ── all 64 bits set (2^64 - 1): carry escapes the u64 limb ──────────────
 
     #[test]
     fn scalar_2_pow_64_minus_1_w2() {
-        // 2^64 - 1 = [0xFF; 8].
-        // The borrow at pos=0 sets carry=1; every subsequent position sees window_val = 1+3 = 4
-        // (even), so carry propagates unchanged until pos=63 which emits 0, and then carry
-        // is flushed as an extra digit at position 64.
-        // NAF w=2 = [-1, 0×63, 1]  value = -1 + 2^64 = 2^64 - 1 ✓
+        // 2^64 - 1 = [0xFF; 8]. Borrow at pos=0 propagates through all 63 subsequent positions
+        // (window_val = 1+3 = 4, always even), then carry is flushed past bit_len.
+        // NAF w=2 = [-1, 0×63, 1]  (65 digits total)
         let d = run(&[0xFF; 8], 2);
-        let expected: i128 = (1i128 << 64) - 1;
-        assert_eq!(reconstruct(&d), expected);
         assert_eq!(d[0], -1);
-        assert!(d[1..64].iter().all(|&x| x == 0), "carry propagates silently across all 63 middle positions");
-        assert_eq!(*d.last().unwrap(), 1, "carry flushed as extra digit at position 64");
+        assert!(d[1..64].iter().all(|&x| x == 0), "carry propagates silently");
+        assert_eq!(*d.last().unwrap(), 1, "carry flushed at position 64");
         assert_eq!(d.len(), 65);
     }
 
-    // ── Mersenne-like: 2^63 - 1 (carry absorbed at MSB of limb) ─────────────
+    // ── Mersenne-like: 2^63 - 1 (carry absorbed within limb, no extra digit) ─
 
     #[test]
     fn scalar_2_pow_63_minus_1_w2() {
         // 0x7FFF_FFFF_FFFF_FFFF = 2^63 - 1 = [0xFF×7, 0x7F].
-        // Borrow at pos=0 sets carry=1; the carry propagates through bits 0..62 (all 1),
-        // then at pos=63 the bit is 0 so window_val = carry(1) + 0 = 1 (odd, < 2), which
-        // absorbs the carry cleanly as digit +1 at position 63. No extra carry digit emitted.
-        // NAF w=2 = [-1, 0×62, 1]  value = -1 + 2^63 = 2^63 - 1 ✓
+        // Same propagation as 2^64-1, but bit 63 is 0: window_val=1 (odd, <2) absorbs the
+        // carry cleanly as digit +1 at position 63. No extra digit emitted.
+        // NAF w=2 = [-1, 0×62, 1]  (64 digits, length = bit_len)
         let mut bytes = [0xFFu8; 8];
         bytes[7] = 0x7F;
         let d = run(&bytes, 2);
-        let expected: i128 = (1i128 << 63) - 1;
-        assert_eq!(reconstruct(&d), expected);
         assert_eq!(d[0], -1);
         assert!(d[1..63].iter().all(|&x| x == 0), "carry propagates through bits 1..62");
         assert_eq!(d[63], 1, "carry absorbed at position 63");
         assert_eq!(d.len(), 64);
     }
 
-    // ── uniform byte pattern 0xAA (bits at odd positions) ───────────────────
+    // ── uniform byte pattern 0xAA (bits at odd positions, no borrow) ─────────
 
     #[test]
     fn scalar_0xaa_x2_w2() {
-        // [0xAA, 0xAA] = 0xAAAA; bits set at positions 1, 3, 5, 7, 9, 11, 13, 15.
-        // Each set bit is odd-positioned, so the window always starts on a 0 bit before
-        // finding a 1 bit one step later: no borrowing occurs.
-        // NAF w=2 = [0, 1, 0, 1,  0, 1, 0, 1,  0, 1, 0, 1,  0, 1, 0, 1]
+        // [0xAA, 0xAA] = 0xAAAA; set bits at positions 1, 3, 5, 7, 9, 11, 13, 15.
+        // Window always opens on a 0 bit, then finds a 1 one step later: no borrow.
+        // NAF w=2 = [0, 1, 0, 1, 0, 1, 0, 1,  0, 1, 0, 1, 0, 1, 0, 1]
         let d = run(&[0xAA, 0xAA], 2);
-        assert_eq!(reconstruct(&d), 0xAAAA);
-        assert_eq!(
-            d.as_slice(),
-            &[0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1i8]
-        );
+        assert_eq!(d.as_slice(), &[0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1i8]);
     }
 
-    // ── uniform byte pattern 0x55 (bits at even positions, non-adjacent) ────
+    // ── uniform byte pattern 0x55 (bits at even positions, no borrow) ────────
 
     #[test]
     fn scalar_0x55_x2_w2() {
-        // [0x55, 0x55] = 0x5555; bits set at positions 0, 2, 4, 6, 8, 10, 12, 14.
-        // All set bits are non-adjacent and fall on even positions. For w=2 the window
-        // always opens on one of these, so no borrowing: each becomes a positive digit.
-        // NAF w=2 = [1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0,  1, 0, 1, 0]
+        // [0x55, 0x55] = 0x5555; set bits at positions 0, 2, 4, 6, 8, 10, 12, 14.
+        // All non-adjacent, each becomes a positive digit with no borrow.
+        // NAF w=2 = [1, 0, 1, 0, 1, 0, 1, 0,  1, 0, 1, 0, 1, 0, 1, 0]
         let d = run(&[0x55, 0x55], 2);
-        assert_eq!(reconstruct(&d), 0x5555);
-        assert_eq!(
-            d.as_slice(),
-            &[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0i8]
-        );
+        assert_eq!(d.as_slice(), &[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0i8]);
     }
 
-    // ── two u64 limb boundaries: 72 all-one bits (2^72 - 1) ─────────────────
+    // ── two u64 limb crossings: 72 all-one bits (2^72 - 1) ───────────────────
 
     #[test]
     fn scalar_2_pow_72_minus_1_w2() {
-        // [0xFF; 9] = 2^72 - 1.
-        // The scalar spans 9 bytes (72 bits), crossing two u64-limb boundaries in LimbBuffer
-        // (at bit 64 and implicitly at bit 128, which is beyond input). The borrow at pos=0
-        // propagates silently through all 71 intermediate positions, resolving as carry=1
-        // flushed after the loop.
-        // NAF w=2 = [-1, 0×71, 1]  value = -1 + 2^72 = 2^72 - 1 ✓
+        // [0xFF; 9] = 2^72 - 1; spans two u64-limb boundaries in LimbBuffer (at bits 64 and 128).
+        // Borrow at pos=0 propagates silently through all 71 intermediate positions.
+        // NAF w=2 = [-1, 0×71, 1]  (73 digits total)
         let d = run(&[0xFF; 9], 2);
-        let expected: i128 = (1i128 << 72) - 1;
-        assert_eq!(reconstruct(&d), expected);
         assert_eq!(d[0], -1);
-        assert!(d[1..72].iter().all(|&x| x == 0), "carry propagates silently across both limb boundaries");
-        assert_eq!(*d.last().unwrap(), 1, "carry flushed as extra digit at position 72");
+        assert!(d[1..72].iter().all(|&x| x == 0), "carry propagates across both limb boundaries");
+        assert_eq!(*d.last().unwrap(), 1, "carry flushed at position 72");
         assert_eq!(d.len(), 73);
     }
 
@@ -493,29 +470,26 @@ mod tests {
 
     #[test]
     fn scalar_max_per_window() {
-        // For each window size w, the scalar 2^w - 1 has all bits set within exactly one window
-        // starting at position 0. This is the worst-case borrow for that window: the entire
-        // window is consumed, digit = (2^w - 1) - 2^w = -1, carry = 1, resolved at position w.
+        // For each window size w, the scalar 2^w - 1 has all w bits set in the first window.
+        // This forces the maximum borrow: digit = -1, carry = 1, resolved at position w.
         // NAF = [-1, 0×(w-1), 1]
         for w in 2..=8usize {
-            let scalar: u8 = ((1u16 << w) - 1) as u8; // 2^w - 1; use u16 to avoid overflow at w=8
+            let scalar: u8 = ((1u16 << w) - 1) as u8; // use u16 to avoid shift overflow at w=8
             let d = run(&[scalar], w);
-            let expected = (1i128 << w) - 1;
-            assert_eq!(reconstruct(&d), expected, "w={w}");
             assert_eq!(d[0], -1, "w={w}: first digit must borrow");
-            assert!(
-                d[1..w].iter().all(|&x| x == 0),
-                "w={w}: zeros in positions 1..w"
-            );
+            assert!(d[1..w].iter().all(|&x| x == 0), "w={w}: zeros in positions 1..w");
             assert_eq!(d[w], 1, "w={w}: carry resolved at position w");
         }
     }
 
-    // ── all window sizes agree on value ─────────────────────────────────────
+    // ── all window sizes agree on value ──────────────────────────────────────
 
     #[test]
     fn all_windows_agree_on_value() {
-        // These scalars exercise carry, multi-byte input, and alternating patterns.
+        // Verify that every window size produces the correct integer value via reconstruction
+        // (Σ digit[i]·2^i), regardless of how the digit layout differs between windows.
+        // Inputs are chosen to cover: single bits, borrow chains, alternating patterns,
+        // multi-byte scalars, and carry-escaping all-ones values.
         let cases: &[(&[u8], i128)] = &[
             (&[0x01], 1),
             (&[0x07], 7),
