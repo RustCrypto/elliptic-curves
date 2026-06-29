@@ -184,6 +184,14 @@ where
     result
 }
 
+/// Get the little endian representation of a field, namely a scalar.
+fn le_repr<F: PrimeField>(fe: &F) -> F::Repr {
+    let mut ret = fe.to_repr();
+    // TODO(tarcieri): determine endianness via `PrimeField` trait. See zkcrypto/rfcs#4
+    ret.as_mut().reverse();
+    ret
+}
+
 #[cfg(test)]
 mod tests {
     //! Unit tests for [`wnaf_form`].
@@ -382,7 +390,10 @@ mod tests {
         let mut bytes = [0u8; 8];
         bytes[7] = 0x80;
         let d = run(&bytes, 2);
-        assert!(d[..63].iter().all(|&x| x == 0), "no non-zero digits before position 63");
+        assert!(
+            d[..63].iter().all(|&x| x == 0),
+            "no non-zero digits before position 63"
+        );
         assert_eq!(d[63], 1);
     }
 
@@ -395,7 +406,10 @@ mod tests {
         let mut bytes = [0u8; 9];
         bytes[8] = 0x01;
         let d = run(&bytes, 2);
-        assert!(d[..64].iter().all(|&x| x == 0), "no non-zero digits before position 64");
+        assert!(
+            d[..64].iter().all(|&x| x == 0),
+            "no non-zero digits before position 64"
+        );
         assert_eq!(d[64], 1);
     }
 
@@ -408,7 +422,10 @@ mod tests {
         // NAF w=2 = [-1, 0×63, 1]  (65 digits total)
         let d = run(&[0xFF; 8], 2);
         assert_eq!(d[0], -1);
-        assert!(d[1..64].iter().all(|&x| x == 0), "carry propagates silently");
+        assert!(
+            d[1..64].iter().all(|&x| x == 0),
+            "carry propagates silently"
+        );
         assert_eq!(*d.last().unwrap(), 1, "carry flushed at position 64");
         assert_eq!(d.len(), 65);
     }
@@ -425,7 +442,10 @@ mod tests {
         bytes[7] = 0x7F;
         let d = run(&bytes, 2);
         assert_eq!(d[0], -1);
-        assert!(d[1..63].iter().all(|&x| x == 0), "carry propagates through bits 1..62");
+        assert!(
+            d[1..63].iter().all(|&x| x == 0),
+            "carry propagates through bits 1..62"
+        );
         assert_eq!(d[63], 1, "carry absorbed at position 63");
         assert_eq!(d.len(), 64);
     }
@@ -438,7 +458,10 @@ mod tests {
         // Window always opens on a 0 bit, then finds a 1 one step later: no borrow.
         // NAF w=2 = [0, 1, 0, 1, 0, 1, 0, 1,  0, 1, 0, 1, 0, 1, 0, 1]
         let d = run(&[0xAA, 0xAA], 2);
-        assert_eq!(d.as_slice(), &[0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1i8]);
+        assert_eq!(
+            d.as_slice(),
+            &[0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1i8]
+        );
     }
 
     // ── uniform byte pattern 0x55 (bits at even positions, no borrow) ────────
@@ -449,7 +472,10 @@ mod tests {
         // All non-adjacent, each becomes a positive digit with no borrow.
         // NAF w=2 = [1, 0, 1, 0, 1, 0, 1, 0,  1, 0, 1, 0, 1, 0, 1, 0]
         let d = run(&[0x55, 0x55], 2);
-        assert_eq!(d.as_slice(), &[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0i8]);
+        assert_eq!(
+            d.as_slice(),
+            &[1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0i8]
+        );
     }
 
     // ── two u64 limb crossings: 72 all-one bits (2^72 - 1) ───────────────────
@@ -461,7 +487,10 @@ mod tests {
         // NAF w=2 = [-1, 0×71, 1]  (73 digits total)
         let d = run(&[0xFF; 9], 2);
         assert_eq!(d[0], -1);
-        assert!(d[1..72].iter().all(|&x| x == 0), "carry propagates across both limb boundaries");
+        assert!(
+            d[1..72].iter().all(|&x| x == 0),
+            "carry propagates across both limb boundaries"
+        );
         assert_eq!(*d.last().unwrap(), 1, "carry flushed at position 72");
         assert_eq!(d.len(), 73);
     }
@@ -477,7 +506,10 @@ mod tests {
             let scalar: u8 = ((1u16 << w) - 1) as u8; // use u16 to avoid shift overflow at w=8
             let d = run(&[scalar], w);
             assert_eq!(d[0], -1, "w={w}: first digit must borrow");
-            assert!(d[1..w].iter().all(|&x| x == 0), "w={w}: zeros in positions 1..w");
+            assert!(
+                d[1..w].iter().all(|&x| x == 0),
+                "w={w}: zeros in positions 1..w"
+            );
             assert_eq!(d[w], 1, "w={w}: carry resolved at position w");
         }
     }
@@ -514,10 +546,3 @@ mod tests {
     }
 }
 
-/// Get the little endian representation of a field, namely a scalar.
-fn le_repr<F: PrimeField>(fe: &F) -> F::Repr {
-    let mut ret = fe.to_repr();
-    // TODO(tarcieri): determine endianness via `PrimeField` trait. See zkcrypto/rfcs#4
-    ret.as_mut().reverse();
-    ret
-}
