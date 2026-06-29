@@ -192,7 +192,7 @@ fn le_repr<F: PrimeField>(fe: &F) -> F::Repr {
     ret
 }
 
-#[cfg(all(test, feature = "alloc"))]
+#[cfg(test)]
 mod tests {
     //! Unit tests for [`wnaf_form`].
     //!
@@ -222,8 +222,52 @@ mod tests {
     //!   §14.6.1, Algorithm 14.104.
     //!   <https://cacr.uwaterloo.ca/hac/about/chap14.pdf>
 
-    use super::{Digit, wnaf_form};
-    use alloc::vec::Vec;
+    use super::{Digit, W_MAX, wnaf_form};
+
+    /// Upper bound on w-NAF digits in any test: 9 bytes × 8 bits + 2 (carry headroom).
+    const MAX_WNAF_DIGITS: usize = 9 * 8 + 2;
+
+    /// Stack-allocated, length-tracked digit buffer returned by [`run`].
+    ///
+    /// Implements `Deref<Target = [Digit]>` so all slice operations (`[]`, `.len()`,
+    /// `.iter()`, `.last()`, `.windows()`, …) work on it directly without heap allocation.
+    struct Digits {
+        buf: [Digit; MAX_WNAF_DIGITS],
+        len: usize,
+    }
+
+    impl core::ops::Deref for Digits {
+        type Target = [Digit];
+        fn deref(&self) -> &[Digit] {
+            &self.buf[..self.len]
+        }
+    }
+
+    impl Digits {
+        fn as_slice(&self) -> &[Digit] {
+            self
+        }
+    }
+
+    impl core::fmt::Debug for Digits {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            core::fmt::Debug::fmt(self.as_slice(), f)
+        }
+    }
+
+    impl<T: AsRef<[Digit]>> PartialEq<T> for Digits {
+        fn eq(&self, other: &T) -> bool {
+            self.as_slice() == other.as_ref()
+        }
+    }
+
+    impl<'a> IntoIterator for &'a Digits {
+        type Item = &'a Digit;
+        type IntoIter = core::slice::Iter<'a, Digit>;
+        fn into_iter(self) -> Self::IntoIter {
+            self.as_slice().iter()
+        }
+    }
 
     /// Reconstruct the integer value encoded by a w-NAF digit sequence.
     ///
@@ -240,14 +284,22 @@ mod tests {
 
     /// Run `wnaf_form` on little-endian `bytes` with the given window size and return only the
     /// written digits (the rest of the buffer is discarded).
-    fn run(bytes: &[u8], window: usize) -> Vec<Digit> {
+    ///
+    /// Uses a fixed-size stack buffer sized for the largest input used in these tests
+    /// (`MAX_WNAF_DIGITS`), so no heap allocation is needed.
+    fn run(bytes: &[u8], window: usize) -> Digits {
         let bit_len = bytes.len() * 8;
-        // `+2`: one so `bit_len < buf.len()` (the debug_assert inside wnaf_form is satisfied),
+        // Sanity-check: our stack buffer must fit the output.
+        debug_assert!(
+            bit_len + 2 <= MAX_WNAF_DIGITS,
+            "input too large for stack buffer (increase MAX_WNAF_DIGITS)"
+        );
+        debug_assert!(window >= 2 && window <= W_MAX);
+        // `+2`: one so `bit_len < buf.len()` (satisfies wnaf_form's debug_assert),
         // one more for any carry digit that may be emitted past `bit_len`.
-        let mut buf = vec![0i8; bit_len + 2];
-        let n = wnaf_form(&mut buf, bytes, bit_len, window);
-        buf.truncate(n);
-        buf
+        let mut buf = [0i8; MAX_WNAF_DIGITS];
+        let len = wnaf_form(&mut buf, bytes, bit_len, window);
+        Digits { buf, len }
     }
 
     // ── zero scalar ─────────────────────────────────────────────────────────
@@ -586,17 +638,18 @@ mod tests {
                 }
 
                 // 4. Non-adjacency: gap between consecutive non-zero digits is ≥ window.
-                let nonzero_positions: Vec<usize> = d
-                    .iter()
-                    .enumerate()
-                    .filter(|&(_, &x)| x != 0)
-                    .map(|(i, _)| i)
-                    .collect();
-                for pair in nonzero_positions.windows(2) {
-                    assert!(
-                        pair[1] - pair[0] >= window,
-                        "non-adjacency: scalar={scalar} window={window} positions={pair:?}"
-                    );
+                // Single-pass scan to avoid heap allocation.
+                let mut last_nonzero: Option<usize> = None;
+                for (i, &digit) in d.iter().enumerate() {
+                    if digit != 0 {
+                        if let Some(prev) = last_nonzero {
+                            assert!(
+                                i - prev >= window,
+                                "non-adjacency: scalar={scalar} window={window} positions=[{prev}, {i}]"
+                            );
+                        }
+                        last_nonzero = Some(i);
+                    }
                 }
             }
         }
