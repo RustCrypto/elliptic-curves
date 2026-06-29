@@ -1,6 +1,6 @@
 [package]
 name = "wnaf"
-version = "0.14.0-rc.1"
+version = "0.14.0-rc.2"
 description = """
 w-NAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
 over elliptic curve groups with full `no_alloc` support, including multiscalar multiplication using
@@ -20,7 +20,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-array = { version = "0.4.12", package = "hybrid-array" }
+array = { version = "0.4.13", package = "hybrid-array" }
 ff = { version = "0.14", default-features = false }
 group = { version = "0.14", default-features = false }
 
