@@ -15,13 +15,15 @@
 #![allow(non_snake_case)]
 
 use super::{BELT_OID, Signature, VerifyingKey};
-use crate::{BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey};
+use crate::{
+    BignP256, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey, U256,
+};
+use belt_block::BeltBlock;
 use belt_hash::{BeltHash, Digest};
 use core::fmt::{self, Debug};
 use elliptic_curve::{
     Curve, Field, Generate, Group, PrimeField,
     array::{Array, sizes::U32, typenum::Unsigned},
-    field,
     ops::Reduce,
     point::AffineCoordinates,
     subtle::{Choice, ConstantTimeEq},
@@ -115,13 +117,21 @@ impl PrehashSigner<Signature> for SigningKey {
         let h = Scalar::reduce(&h_word);
 
         // 2. Generate 𝑘 ← rand(1,..,𝑞-1)
-        let k = Scalar::from_repr(bign_genk::generate_k::<BeltHash, belt_block::BeltBlock, _>(
-            &self.secret_scalar.to_bytes(),
-            &field::uint_to_bytes::<BignP256>(&BignP256::ORDER),
+        let mut kgen = bign_genk::KGenerator::<BeltBlock, U256>::new::<BeltHash>(
+            &self.secret_scalar.to_repr(),
             &h.to_bytes(),
             &[],
-        ))
-        .unwrap();
+            &BignP256::ORDER,
+        );
+
+        let mut k_bytes = FieldBytes::default();
+        let k = loop {
+            kgen.fill_next_k(&mut k_bytes);
+
+            if let Some(scalar) = Scalar::from_repr(k_bytes).into_option() {
+                break scalar;
+            }
+        };
 
         // 3. Set 𝑅 ← 𝑘𝐺.
         let R = ProjectivePoint::mul_by_generator(&k).to_affine();
