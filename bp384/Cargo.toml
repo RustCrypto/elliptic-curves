@@ -36,7 +36,7 @@ getrandom = ["ecdsa?/getrandom", "elliptic-curve/getrandom"]
 pem = ["elliptic-curve/pem", "pkcs8"]
 pkcs8 = ["ecdsa/pkcs8", "elliptic-curve/pkcs8"]
 serde = ["ecdsa/serde", "elliptic-curve/serde"]
-sha384 = ["ecdsa/digest", "ecdsa/hazmat", "sha2"]
+sha384 = ["ecdsa/digest", "sha2"]
 
 [lints.rust.unexpected_cfgs]
 level = "warn"

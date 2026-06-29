@@ -38,7 +38,7 @@ alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "elliptic-curve/std", "getrandom", "primeorder?/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
-digest = ["ecdsa-core/digest", "ecdsa-core/hazmat"]
+digest = ["ecdsa-core/digest"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]
 ecdsa = ["arithmetic", "ecdsa-core/algorithm", "sha224"]
 getrandom = ["ecdsa-core?/getrandom", "elliptic-curve/getrandom"]

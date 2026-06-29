@@ -67,3 +67,6 @@ hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
 wnaf = { path = "wnaf" }
+
+ecdsa = { git = "https://github.com/RustCrypto/signatures" }
+rfc6979 = { git = "https://github.com/RustCrypto/signatures" }

@@ -321,6 +321,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "alloc")]
     fn bip340_ext_sign_vectors() {
         // Test indexes 15-18 from https://github.com/bitcoin/bips/blob/master/bip-0340/test-vectors.csv
         //
