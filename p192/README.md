@@ -45,6 +45,58 @@ that generated assembly is constant time on common CPU architectures.
 
 USE AT YOUR OWN RISK!
 
+## PKCS#8 Key Encoding
+
+PKCS#8 is a private key format with support for multiple algorithms. It can be
+encoded as binary DER or text PEM.
+
+You can recognize PEM encoded PKCS#8 private keys because they do not have an
+algorithm name in the type label, e.g.:
+
+```text
+-----BEGIN PRIVATE KEY-----
+```
+
+PKCS#8 support is gated under the `pkcs8` feature. The `pem` feature, which is
+enabled by default, adds PEM decoding and also enables `pkcs8`.
+
+The same pattern is used by the other curve crates in this repository which
+re-export `pkcs8`.
+
+The following traits can be used to decode/encode secret and public keys as
+PKCS#8/SPKI. Note that [`pkcs8`] is re-exported from `p192` when the `pkcs8`
+feature is enabled:
+
+- [`pkcs8::DecodePrivateKey`]: decode private keys from PKCS#8
+- [`pkcs8::EncodePrivateKey`]: encode private keys to PKCS#8
+- [`pkcs8::DecodePublicKey`]: decode public keys from SPKI
+- [`pkcs8::EncodePublicKey`]: encode public keys to SPKI
+
+For public keys, you can use the traits above via the generic `elliptic_curve::PublicKey`
+type when the input is expected to be specifically SPKI.
+
+### Example
+
+```rust
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# #[cfg(feature = "pem")]
+# {
+use p192::elliptic_curve::PublicKey;
+use p192::NistP192;
+use p192::pkcs8::DecodePublicKey;
+
+// WARNING: Do not hardcode public keys in your source code. This is for demonstration purposes only.
+let pem = r#"-----BEGIN PUBLIC KEY-----
+MEkwEwYHKoZIzj0CAQYIKoZIzj0DAQEDMgAE/xW9cn1Y25+dj7qzy7gvirEF+jIV
+O0h4q4osrY+F1QFz7XIjwEuHQ6+GyiY9n1t1
+-----END PUBLIC KEY-----"#;
+let public_key = PublicKey::<NistP192>::from_public_key_pem(pem)?;
+# let _ = public_key;
+# }
+# Ok(())
+# }
+```
+
 ## About P-192
 
 NIST P-192 is a Weierstrass curve specified in [FIPS 186-4].

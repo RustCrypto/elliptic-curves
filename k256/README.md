@@ -52,6 +52,58 @@ USE AT YOUR OWN RISK!
   signature algorithm based on group operations enabling elegant higher-level
   constructions like multisignatures.
 
+## PKCS#8 Key Encoding
+
+PKCS#8 is a private key format with support for multiple algorithms. It can be
+encoded as binary DER or text PEM.
+
+You can recognize PEM encoded PKCS#8 private keys because they do not have an
+algorithm name in the type label, e.g.:
+
+```text
+-----BEGIN PRIVATE KEY-----
+```
+
+PKCS#8 support is gated under the `pkcs8` feature. The `pem` feature, which is
+enabled by default, adds PEM decoding and also enables `pkcs8`.
+
+The same pattern is used by the other curve crates in this repository which
+re-export `pkcs8`.
+
+The following traits can be used to decode/encode secret and public keys as
+PKCS#8/SPKI. Note that [`pkcs8`] is re-exported from `k256` when the `pkcs8`
+feature is enabled:
+
+- [`pkcs8::DecodePrivateKey`]: decode private keys from PKCS#8
+- [`pkcs8::EncodePrivateKey`]: encode private keys to PKCS#8
+- [`pkcs8::DecodePublicKey`]: decode public keys from SPKI
+- [`pkcs8::EncodePublicKey`]: encode public keys to SPKI
+
+For private keys, [`SecretKey::from_der`] and [`SecretKey::from_pem`] provide
+convenience methods which can decode PKCS#8 keys. Use the trait methods above
+when the input is expected to be specifically PKCS#8.
+
+### Example
+
+```rust
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# #[cfg(feature = "pem")]
+# {
+use k256::SecretKey;
+
+// WARNING: Do not hardcode private keys in your source code. This is for demonstration purposes only.
+let pem = r#"-----BEGIN PRIVATE KEY-----
+MIGEAgEAMBAGByqGSM49AgEGBSuBBAAKBG0wawIBAQQg5gaqCR3sHPJeQHw2qXBM
+45LTkX+ek6P3OYLcSkrwK2KhRANCAATvt+fomKwK3lN/EyTIgA4OzmlGj0xQuU0w
+T9scCLkqYa+pYyw+hfpE80apG3HucI2DhwPK8ozPg+TMwQqUmwN6
+-----END PRIVATE KEY-----"#;
+let secret_key = SecretKey::from_pem(pem)?;
+# let _ = secret_key;
+# }
+# Ok(())
+# }
+```
+
 ## About secp256k1 (K-256)
 
 [secp256k1] is a Koblitz curve commonly used in cryptocurrency applications.
