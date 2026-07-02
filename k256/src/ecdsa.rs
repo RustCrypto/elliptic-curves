@@ -239,7 +239,7 @@ mod tests {
             );
 
             let digest = Keccak256::new_with_prefix(msg);
-            let (sig, recid) = signing_key.sign_digest_recoverable(digest.clone()).unwrap();
+            let (sig, recid) = signing_key.sign_digest_recoverable(digest.clone());
             assert_eq!(
                 sig.to_bytes().as_slice(),
                 &hex!(
