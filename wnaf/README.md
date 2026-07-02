@@ -1,4 +1,4 @@
-# [RustCrypto]: w-NAF scalar multiplication
+# [RustCrypto]: wNAF scalar multiplication
 
 [![crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -7,7 +7,7 @@
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
 
-w-NAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
+wNAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
 over elliptic curve groups, including multiscalar multiplication using Straus's interleaved window
 method.
 
@@ -15,7 +15,7 @@ method.
 
 ## About
 
-w-NAF is a signed-digit representation of a scalar with a minimal number of non-zero digits,
+wNAF is a signed-digit representation of a scalar with a minimal number of non-zero digits,
 reducing the number of costly group additions required during the double-and-add loop.
 
 The core idea is to represent a scalar `k` as a sequence of digits in:
@@ -32,7 +32,7 @@ the scalar.
 
 ## ⚠️ Security Warning
 
-w-NAF scalar multiplications should NOT be used with secret scalar values (i.e. elliptic curve
+wNAF scalar multiplications should NOT be used with secret scalar values (i.e. elliptic curve
 private keys) because they are variable-time and can leak the secret value.
 
 ## Minimum Supported Rust Version (MSRV) Policy

@@ -34,9 +34,9 @@ pub use crate::boxed::BoxedWnaf;
 use crate::limb_buffer::LimbBuffer;
 use ff::PrimeField;
 
-/// Type used to represent w-NAF digits.
+/// Type used to represent wNAF digits.
 ///
-/// For a window of size `w` non-zero w-NAF digits are odd and have magnitude at most `2^(w-1) - 1`
+/// For a window of size `w` non-zero wNAF digits are odd and have magnitude at most `2^(w-1) - 1`
 /// and lie within `{-(2^(w-1)-1), 2^(w-1)-1}`.
 pub type Digit = i8;
 
@@ -46,9 +46,9 @@ pub type Digit = i8;
 // NOTE: this is also the maximum impl size we support for the `WindowSize` trait
 pub const W_MAX: usize = 8;
 
-/// Computes a w-NAF window table for the given base and window size.
+/// Computes a wNAF window table for the given base and window size.
 ///
-/// For a window of size `w` non-zero w-NAF digits are odd and have magnitude at most `2^(w-1) - 1`.
+/// For a window of size `w` non-zero wNAF digits are odd and have magnitude at most `2^(w-1) - 1`.
 ///
 /// The table is indexed by `|digit| / 2`, so the required size is `(2^(w-1) - 1) / 2 + 1 = 2^(w-2)`
 /// entries.
@@ -64,10 +64,21 @@ fn wnaf_table<G: Group>(table: &mut [G], base: &G, window: usize) {
     }
 }
 
-/// Fills `wnaf` with the w-NAF representation of a little-endian scalar, and returns the
+/// Fills `wnaf` with the wNAF representation of a little-endian scalar, and returns the
 /// number of digits written.
 #[allow(clippy::cast_possible_wrap)]
 fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, bit_len: usize, window: usize) -> usize {
+    fn digit(n: u64) -> Digit {
+        #[cfg(debug_assertions)]
+        {
+            Digit::try_from(n).expect("overflow")
+        }
+        #[cfg(not(debug_assertions))]
+        {
+            n as Digit
+        }
+    }
+
     debug_assert!(window >= 2);
     debug_assert!(window <= W_MAX);
     debug_assert!(bit_len < wnaf.len(), "wnaf storage too small");
@@ -106,16 +117,18 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, bit_len: usize, window: u
             cursor += 1;
             pos += 1;
         } else {
-            wnaf[cursor] = if window_val < width / 2 {
+            wnaf[cursor] = digit(window_val);
+
+            if window_val < width / 2 {
                 carry = 0;
-                window_val as Digit
             } else {
                 carry = 1;
-                (window_val as Digit).wrapping_sub(width as Digit)
+                wnaf[cursor] -= digit(width);
             };
+
             cursor += 1;
 
-            let max_pos = bit_len.saturating_sub(carry as usize);
+            let max_pos = bit_len.saturating_sub(usize::try_from(carry).expect("overflow"));
             let skip = window.min(max_pos - pos);
 
             for _ in 1..skip {
@@ -126,26 +139,21 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, bit_len: usize, window: u
         }
     }
 
-    // If there is a remaining carry (the scalar used all `bit_len` bits and the last w-NAF digit
+    // If there is a remaining carry (the scalar used all `bit_len` bits and the last wNAF digit
     // was negative), emit it so the representation is exact.
     if carry != 0 {
-        wnaf[cursor] = carry as Digit;
+        wnaf[cursor] = digit(carry);
         cursor += 1;
     }
 
     cursor
 }
 
-/// Performs w-NAF multi-exponentiation using the interleaved window method, also known as
+/// Performs wNAF multi-exponentiation using the interleaved window method, also known as
 /// Straus's method.
 ///
 /// The key insight is that when computing this sum by means of additions and doublings, the
 /// doublings can be shared by performing the additions within an inner loop.
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_possible_wrap,
-    clippy::cast_sign_loss
-)]
 fn wnaf_multi_exp<'a, G, I>(terms: I) -> G
 where
     G: Group,
@@ -172,6 +180,7 @@ where
             if n != 0 {
                 found_one = true;
 
+                #[allow(clippy::cast_sign_loss)]
                 if n > 0 {
                     result += table[(n / 2) as usize];
                 } else {

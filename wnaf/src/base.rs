@@ -51,7 +51,7 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
 
     /// Perform a multiscalar multiplication.
     ///
-    /// Computes a sum-of-products `aA + bB + ...` in variable time with w-NAF multi-exponentiation
+    /// Computes a sum-of-products `aA + bB + ...` in variable time with wNAF multi-exponentiation
     /// using the interleaved window method, also known as Straus's method.
     #[must_use]
     pub fn multiscalar_mul<'a, I>(pairs: I) -> G
