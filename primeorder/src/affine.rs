@@ -203,7 +203,7 @@ where
     C: PrimeCurveParams,
 {
     fn decompact(x_bytes: &FieldBytes<C>) -> CtOption<Self> {
-        Self::decompress(x_bytes, Choice::from(0)).map(|point| point.to_compact())
+        Self::decompress(x_bytes, Choice::from(0)).map(AffinePoint::to_compact)
     }
 }
 
@@ -224,7 +224,7 @@ where
             sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
             sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
-                Self::decompress(x, Choice::from(y_is_odd as u8)).into()
+                Self::decompress(x, Choice::from(u8::from(y_is_odd))).into()
             }
             sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y).into(),
         }
@@ -305,14 +305,16 @@ where
     /// NOTE: not constant-time with respect to identity point
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
         Sec1Point::<C>::from_bytes(bytes)
-            .map(ctutils::CtOption::some)
-            .unwrap_or_else(|_| {
-                // SEC1 identity encoding is technically 1-byte 0x00, but the
-                // `GroupEncoding` API requires a fixed-width `Repr`
-                let is_identity =
-                    ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
-                ctutils::CtOption::new(Sec1Point::<C>::identity(), is_identity)
-            })
+            .map_or_else(
+                |_| {
+                    // SEC1 identity encoding is technically 1-byte 0x00, but the
+                    // `GroupEncoding` API requires a fixed-width `Repr`
+                    let is_identity =
+                        ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
+                    ctutils::CtOption::new(Sec1Point::<C>::identity(), is_identity)
+                },
+                ctutils::CtOption::some,
+            )
             .and_then(|point| Self::from_sec1_point(&point))
             .into()
     }

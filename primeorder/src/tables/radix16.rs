@@ -37,6 +37,7 @@ impl<Digits: ArraySize> Radix16Decomposition<Digits> {
         let repr = scalar.to_be_repr();
         let bytes = repr.as_ref();
 
+        #[allow(clippy::cast_possible_wrap, reason = "TODO")]
         for i in 0..(Digits::USIZE - 1) / 2 {
             let b = bytes[bytes.len() - 1 - i];
             ret.digits[2 * i] = (b & 0xf) as i8;
@@ -79,6 +80,7 @@ mod tests {
         let len = 2 * byte_len + 1;
         let mut digits = Array::<i8, Digits>::default();
 
+        #[allow(clippy::cast_possible_wrap, reason = "TODO")]
         for i in 0..byte_len {
             let b = bytes[uint_byte_len - 1 - i];
             digits[2 * i] = (b & 0xf) as i8;

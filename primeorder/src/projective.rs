@@ -86,6 +86,7 @@ where
     }
 
     /// Returns `-self`.
+    #[must_use]
     pub fn neg(&self) -> Self {
         Self {
             x: self.x,
@@ -96,6 +97,7 @@ where
 
     /// Returns `self + other`.
     #[inline]
+    #[must_use]
     pub fn add(&self, other: &Self) -> Self {
         let mut lhs = *self;
         C::PointArithmetic::add_assign(&mut lhs, other);
@@ -104,6 +106,7 @@ where
 
     /// Returns `self + other`.
     #[inline]
+    #[must_use]
     fn add_mixed(&self, other: &AffinePoint<C>) -> Self {
         let mut lhs = *self;
         C::PointArithmetic::add_assign_mixed(&mut lhs, other);
@@ -111,16 +114,22 @@ where
     }
 
     /// Returns `self - other`.
+    #[inline]
+    #[must_use]
     pub fn sub(&self, other: &Self) -> Self {
         self.add(&other.neg())
     }
 
     /// Returns `self - other`.
+    #[inline]
+    #[must_use]
     fn sub_mixed(&self, other: &AffinePoint<C>) -> Self {
         self.add_mixed(&-other)
     }
 
     /// Returns `[k] self`.
+    #[inline]
+    #[must_use]
     pub fn mul(&self, k: &Scalar<C>) -> Self {
         let table = LookupTable::new(*self);
         let digits = Radix16Decomposition::new(k);
@@ -128,6 +137,8 @@ where
     }
 
     /// Returns `[k] self` computed in variable time.
+    #[inline]
+    #[must_use]
     pub fn mul_vartime(&self, k: &Scalar<C>) -> Self {
         WnafBase::<C>::new(self) * WnafScalar::<C>::new(k)
     }

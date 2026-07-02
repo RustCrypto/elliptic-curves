@@ -1,16 +1,11 @@
 //! Scalar multiplication backends.
 
-#[cfg(feature = "basepoint-table")]
-mod precomputed_tables;
-mod variable_only;
-
 use crate::{PrimeCurveParams, ProjectivePoint};
 use elliptic_curve::Scalar;
 use elliptic_curve::ops::LinearCombination;
 
 #[cfg(feature = "basepoint-table")]
-pub use self::precomputed_tables::PrecomputedTables;
-pub use self::variable_only::VariableOnly;
+use crate::PrimeCurveWithBasepointTable;
 
 /// Scalar multiplication backend.
 pub trait MulBackend<C: PrimeCurveParams> {
@@ -42,5 +37,32 @@ pub trait MulBackend<C: PrimeCurveParams> {
             (ProjectivePoint::GENERATOR, *a),
             (*b_point, *b_scalar),
         ])
+    }
+}
+
+/// Simple backend that only supports variable-base scalar multiplication.
+#[derive(Clone, Copy, Debug)]
+pub struct VariableOnly;
+
+impl<C: PrimeCurveParams> MulBackend<C> for VariableOnly {}
+
+/// Backend based on precomputed tables.
+#[derive(Clone, Copy, Debug)]
+#[cfg(feature = "basepoint-table")]
+pub struct PrecomputedTables<const WINDOW_SIZE: usize>;
+
+#[cfg(feature = "basepoint-table")]
+impl<C, const WINDOW_SIZE: usize> MulBackend<C> for PrecomputedTables<WINDOW_SIZE>
+where
+    C: PrimeCurveParams + PrimeCurveWithBasepointTable<WINDOW_SIZE>,
+{
+    #[inline]
+    fn mul_by_generator(k: &Scalar<C>) -> ProjectivePoint<C> {
+        C::BASEPOINT_TABLE.mul(k)
+    }
+
+    #[inline]
+    fn mul_by_generator_vartime(k: &Scalar<C>) -> ProjectivePoint<C> {
+        C::BASEPOINT_TABLE.mul_vartime(k)
     }
 }

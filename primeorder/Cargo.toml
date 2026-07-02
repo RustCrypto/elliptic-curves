@@ -36,5 +36,8 @@ dev = []
 hash2curve = []
 serde = ["elliptic-curve/serde", "serdect"]
 
+[lints]
+workspace = true
+
 [package.metadata.docs.rs]
 all-features = true

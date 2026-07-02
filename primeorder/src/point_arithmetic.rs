@@ -48,8 +48,9 @@ fn debug_assert_equation_a_is_zero<C: PrimeCurveParams>() {
     );
 }
 
-/// The 𝒂-coefficient of the short Weierstrass equation does not have specific
-/// properties which allow for an optimized implementation.
+/// The 𝒂-coefficient of the short Weierstrass equation does not have specific properties which
+/// allow for an optimized implementation.
+#[derive(Clone, Copy, Debug)]
 pub struct EquationAIsGeneric;
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
@@ -206,7 +207,8 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsGeneric {
     }
 }
 
-/// The 𝒂-coefficient of the short Weierstrass equation is -3.
+/// The 𝒂-coefficient of the short Weierstrass equation is `-3`.
+#[derive(Clone, Copy, Debug)]
 pub struct EquationAIsMinusThree;
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
@@ -316,7 +318,8 @@ impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsMinusThree {
     }
 }
 
-/// The 𝒂-coefficient of the short Weierstrass equation is 0.
+/// The 𝒂-coefficient of the short Weierstrass equation is `0`.
+#[derive(Clone, Copy, Debug)]
 pub struct EquationAIsZero;
 
 impl<C: PrimeCurveParams> PointArithmetic<C> for EquationAIsZero {
