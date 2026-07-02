@@ -2,7 +2,7 @@
 name = "wnaf"
 version = "0.14.0-rc.2"
 description = """
-w-NAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
+wNAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
 over elliptic curve groups with full `no_alloc` support, including multiscalar multiplication using
 Straus's interleaved window method. Contains an implementation adapted from the `group` crate which
 has been forked and enhanced but is otherwise compatible with that crate's traits, along with the
@@ -27,3 +27,9 @@ group = { version = "0.14", default-features = false }
 [features]
 default = ["alloc"]
 alloc = ["array/alloc", "ff/alloc", "group/alloc"]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

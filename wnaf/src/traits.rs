@@ -7,7 +7,7 @@ use array::{
 use ff::PrimeField;
 use group::Group;
 
-/// Allowed w-NAF window size: we use this to precompute the window point sizes, because it's
+/// Allowed wNAF window size: we use this to precompute the window point sizes, because it's
 /// currently not possible to write bounds for them.
 pub trait WindowSize: Unsigned {
     /// Number of precomputed points in the window table: `1 << (Self::USIZE - 2)`.
@@ -21,10 +21,10 @@ pub trait WnafGroup: Group {
     fn recommended_wnaf_for_num_scalars(num_scalars: usize) -> usize;
 }
 
-/// Size of the w-NAF representation: this should be the type-level equivalent of
+/// Size of the wNAF representation: this should be the type-level equivalent of
 /// `PrimeField::NUM_BITS + 1`, which includes an extra entry for any remaining carry.
 pub trait WnafSize: PrimeField {
-    /// Number of digits in the w-NAF representation.
+    /// Number of digits in the wNAF representation.
     type StorageSize: ArraySize;
 }
 

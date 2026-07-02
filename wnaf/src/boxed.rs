@@ -1,4 +1,4 @@
-//! Dynamic w-NAF API (requires `alloc` feature).
+//! Dynamic wNAF API (requires `alloc` feature).
 
 use crate::{Digit, WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
 use alloc::vec::Vec;
@@ -59,7 +59,7 @@ use crate::{WnafBase, WnafScalar};
 /// ## Many bases, many scalars
 ///
 /// Say you have `n` bases and `m` scalars, and want to produce `n * m` results. For this
-/// pattern, you need to cache the w-NAF tables for the bases and then compute the w-NAF
+/// pattern, you need to cache the wNAF tables for the bases and then compute the w-NAF
 /// form of the scalars on the fly for every base, or vice versa:
 ///
 /// ```ignore
@@ -78,7 +78,7 @@ use crate::{WnafBase, WnafScalar};
 /// ```
 ///
 /// Alternatively, use the [`WnafBase`] and [`WnafScalar`] types, which enable the various
-/// tables and w-NAF forms to be cached individually per base and scalar. These types can
+/// tables and wNAF forms to be cached individually per base and scalar. These types can
 /// then be directly multiplied without any additional runtime work, at the cost of fixing
 /// a specific window size (rather than choosing the window size dynamically).
 #[derive(Debug)]
@@ -95,6 +95,7 @@ impl<G: Group> Default for BoxedWnaf<(), Vec<G>, Vec<Digit>> {
 }
 
 impl<G: Group> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
+    /// Create a new [`BoxedWnaf`].
     #[must_use]
     pub fn new() -> Self {
         BoxedWnaf {
@@ -106,6 +107,7 @@ impl<G: Group> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
 }
 
 impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
+    /// Construct wNAF base for the provided group element `G`.
     pub fn base(
         &mut self,
         base: &G,
@@ -123,6 +125,7 @@ impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
         }
     }
 
+    /// Construct wNAF context for `scalar`.
     pub fn scalar(&mut self, scalar: &G::Scalar) -> BoxedWnaf<usize, &mut Vec<G>, &[Digit]> {
         let window_size = 4;
 
@@ -140,8 +143,8 @@ impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
 }
 
 impl<'a, G: Group> BoxedWnaf<usize, &'a [G], &'a mut Vec<Digit>> {
-    /// Constructs new space for the scalar representation while borrowing
-    /// the computed window table, for sending the window table across threads.
+    /// Constructs new space for the scalar representation while borrowing the computed window
+    /// table, for sending the window table across threads.
     #[must_use]
     pub fn shared(&self) -> BoxedWnaf<usize, &'a [G], Vec<Digit>> {
         BoxedWnaf {
@@ -153,9 +156,8 @@ impl<'a, G: Group> BoxedWnaf<usize, &'a [G], &'a mut Vec<Digit>> {
 }
 
 impl<'a, G: Group> BoxedWnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
-    /// Constructs new space for the window table while borrowing
-    /// the computed scalar representation, for sending the scalar representation
-    /// across threads.
+    /// Constructs new space for the window table while borrowing the computed scalar
+    /// representation, for sending the scalar representation across threads.
     #[must_use]
     pub fn shared(&self) -> BoxedWnaf<usize, Vec<G>, &'a [Digit]> {
         BoxedWnaf {
@@ -167,6 +169,7 @@ impl<'a, G: Group> BoxedWnaf<usize, &'a mut Vec<G>, &'a [Digit]> {
 }
 
 impl<B, S: AsRef<[Digit]>> BoxedWnaf<usize, B, S> {
+    /// Construct wNAF base for the provided group element `G`.
     pub fn base<G: Group>(&mut self, base: &G) -> G
     where
         B: AsMut<Vec<G>>,
@@ -180,6 +183,7 @@ impl<B, S: AsRef<[Digit]>> BoxedWnaf<usize, B, S> {
 }
 
 impl<B, S: AsMut<Vec<Digit>>> BoxedWnaf<usize, B, S> {
+    /// Construct wNAF context for `scalar`.
     pub fn scalar<G: Group>(&mut self, scalar: &G::Scalar) -> G
     where
         B: AsRef<[G]>,
@@ -192,7 +196,7 @@ impl<B, S: AsMut<Vec<Digit>>> BoxedWnaf<usize, B, S> {
     }
 }
 
-/// Initialize storage for w-NAF `Digit`s.
+/// Initialize storage for wNAF `Digit`s.
 #[inline]
 fn init_storage<F: PrimeField>(digits: &mut Vec<Digit>, repr: F::Repr) -> usize {
     let bit_len = (repr.as_ref().len() * 8).min(F::NUM_BITS as usize);
@@ -200,7 +204,7 @@ fn init_storage<F: PrimeField>(digits: &mut Vec<Digit>, repr: F::Repr) -> usize 
     bit_len
 }
 
-/// Performs w-NAF exponentiation with the provided window table and w-NAF form scalar, whose
+/// Performs wNAF exponentiation with the provided window table and w-NAF form scalar, whose
 /// lengths must match.
 #[inline]
 fn wnaf_exp<G: Group>(table: &[G], wnaf: &[Digit]) -> G {
