@@ -19,7 +19,7 @@ proptest! {
     #[test]
     fn recover_from_msg(sk in signing_key()) {
         let msg = b"example";
-        let (signature, v) = sk.sign_recoverable(msg).unwrap();
+        let (signature, v) = sk.sign_recoverable(msg);
         let recovered_vk = VerifyingKey::recover_from_msg(msg, &signature, v).unwrap();
         prop_assert_eq!(sk.verifying_key(), &recovered_vk);
     }
