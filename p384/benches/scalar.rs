@@ -1,5 +1,8 @@
 //! secp384r1 scalar arithmetic benchmarks
 
+#![allow(missing_docs, reason = "benchmark")]
+
+use core::hint::black_box;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
@@ -11,7 +14,6 @@ use p384::{
         ops::MulByGeneratorVartime,
     },
 };
-use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(
@@ -36,10 +38,10 @@ fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M
     let m = test_scalar_x();
     let s = Scalar::from_repr(m.into()).unwrap();
     group.bench_function("generator-scalar mul", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(s)))
+        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(s)));
     });
     group.bench_function("generator-scalar mul (variable-time)", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(s)))
+        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(s)));
     });
 }
 
