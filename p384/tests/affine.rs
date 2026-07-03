@@ -80,5 +80,5 @@ fn identity_encoding() {
         AffinePoint::from_bytes(&AffinePoint::IDENTITY.to_bytes())
             .unwrap()
             .is_identity()
-    ))
+    ));
 }

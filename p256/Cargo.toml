@@ -57,8 +57,6 @@ serde = ["ecdsa-core?/serde", "elliptic-curve/serde", "primeorder?/serde", "serd
 sha256 = ["digest", "sha2"]
 test-vectors = ["dep:hex-literal"]
 
-
-
 [[bench]]
 name = "ecdsa"
 harness = false
@@ -75,6 +73,21 @@ harness = false
 [[bench]]
 name = "scalar"
 harness = false
+
+# NOTE: these are the only lints we explicitly want to configure for p256
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(cpubits, values("16", "32", "64"))']
+
+# NOTE: can't use `lints.workspace` because we override `lints.rust.unexpected_cfgs`
+[lints.rust]
+missing_copy_implementations = "warn"
+missing_debug_implementations = "warn"
+missing_docs = "warn"
+trivial_casts = "warn"
+trivial_numeric_casts = "warn"
+unused_lifetimes = "warn"
+unused_qualifications = "warn"
 
 # NOTE: can't use `lints.workspace` because we override `lints.rust.unexpected_cfgs`
 [lints.clippy]
@@ -106,21 +119,6 @@ undocumented_unsafe_blocks = "warn"
 unnecessary_safety_comment = "warn"
 unwrap_in_result = "warn"
 unwrap_used = "warn"
-
-# NOTE: can't use `lints.workspace` because we override `lints.rust.unexpected_cfgs`
-[lints.rust]
-missing_copy_implementations = "warn"
-missing_debug_implementations = "warn"
-missing_docs = "warn"
-trivial_casts = "warn"
-trivial_numeric_casts = "warn"
-unused_lifetimes = "warn"
-unused_qualifications = "warn"
-
-# NOTE: these are the only lints we explicitly want to configure for p256
-[lints.rust.unexpected_cfgs]
-level = "warn"
-check-cfg = ['cfg(cpubits, values("16", "32", "64"))']
 
 [package.metadata.docs.rs]
 all-features = true
