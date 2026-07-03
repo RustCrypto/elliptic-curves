@@ -1,5 +1,7 @@
 //! p256 ECDSA benchmarks
 
+#![allow(missing_docs, clippy::unwrap_used, reason = "benchmark")]
+
 use criterion::{criterion_group, criterion_main};
 use hex_literal::hex;
 use p256::ecdsa::{Signature, SigningKey};

@@ -60,32 +60,38 @@ impl Scalar {
     pub const ONE: Self = Self(U256::ONE);
 
     /// Returns the SEC1 encoding of this scalar.
+    #[must_use]
     pub fn to_bytes(&self) -> FieldBytes {
         self.0.to_be_byte_array()
     }
 
     /// Returns self + rhs mod n
+    #[must_use]
     pub const fn add(&self, rhs: &Self) -> Self {
         Self(self.0.add_mod(&rhs.0, NistP256::ORDER.as_nz_ref()))
     }
 
     /// Returns 2*self.
+    #[must_use]
     pub const fn double(&self) -> Self {
         self.add(self)
     }
 
     /// Returns self - rhs mod n.
+    #[must_use]
     pub const fn sub(&self, rhs: &Self) -> Self {
         Self(self.0.sub_mod(&rhs.0, NistP256::ORDER.as_nz_ref()))
     }
 
     /// Returns self * rhs mod n
+    #[must_use]
     pub const fn multiply(&self, rhs: &Self) -> Self {
         let (lo, hi) = self.0.widening_mul(&rhs.0);
         Self(barrett_reduce(lo, hi))
     }
 
     /// Returns self * self mod n
+    #[must_use]
     pub const fn square(&self) -> Self {
         // Schoolbook multiplication.
         self.multiply(self)
@@ -94,6 +100,7 @@ impl Scalar {
     /// Right shifts the scalar.
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
+    #[must_use]
     pub const fn shr_vartime(&self, shift: u32) -> Scalar {
         Self(self.0.unbounded_shr_vartime(shift))
     }
@@ -131,6 +138,7 @@ impl Scalar {
     /// **This operation is variable time with respect to the exponent `exp`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
+    #[must_use]
     pub const fn pow_vartime<const RHS_LIMBS: usize>(&self, exp: &Uint<RHS_LIMBS>) -> Self {
         let mut res = Self::ONE;
         let mut i = RHS_LIMBS;
@@ -157,6 +165,7 @@ impl Scalar {
     /// **This operation is variable time with respect to the exponent `n`.**
     ///
     /// If the exponent is fixed, this operation is constant time.
+    #[must_use]
     pub const fn sqn_vartime(&self, n: usize) -> Self {
         let mut x = *self;
         let mut i = 0;
@@ -168,11 +177,13 @@ impl Scalar {
     }
 
     /// Is integer representing equivalence class odd?
+    #[must_use]
     pub fn is_odd(&self) -> Choice {
         self.0.is_odd().into()
     }
 
     /// Is integer representing equivalence class even?
+    #[must_use]
     pub fn is_even(&self) -> Choice {
         !self.is_odd()
     }
@@ -355,6 +366,7 @@ impl IsHigh for Scalar {
 impl Shr<usize> for Scalar {
     type Output = Self;
 
+    #[allow(clippy::cast_possible_truncation, reason = "TODO")]
     fn shr(self, rhs: usize) -> Self::Output {
         self.shr_vartime(rhs as u32)
     }
@@ -363,6 +375,7 @@ impl Shr<usize> for Scalar {
 impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
+    #[allow(clippy::cast_possible_truncation, reason = "TODO")]
     fn shr(self, rhs: usize) -> Self::Output {
         self.shr_vartime(rhs as u32)
     }

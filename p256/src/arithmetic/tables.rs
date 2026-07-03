@@ -27,6 +27,7 @@ pub(crate) mod backend {
     use primeorder::MulBackend;
 
     /// Backend based on precomputed tables.
+    #[derive(Clone, Copy, Debug)]
     pub struct PrecomputedTables;
 
     impl MulBackend<NistP256> for PrecomputedTables {
@@ -63,7 +64,7 @@ mod tests {
     proptest! {
         #[test]
         fn basepoint_table_mul(x in scalar()) {
-            let expected = ProjectivePoint::GENERATOR * &x;
+            let expected = ProjectivePoint::GENERATOR * x;
             let actual = BASEPOINT_TABLE.mul(&x);
             prop_assert_eq!(expected, actual);
         }
@@ -72,7 +73,7 @@ mod tests {
     proptest! {
         #[test]
         fn basepoint_table_mul_vartime(x in scalar()) {
-            let expected = ProjectivePoint::GENERATOR * &x;
+            let expected = ProjectivePoint::GENERATOR * x;
             let actual = BASEPOINT_TABLE.mul_vartime(&x);
             prop_assert_eq!(expected, actual);
         }

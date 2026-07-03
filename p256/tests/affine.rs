@@ -82,7 +82,7 @@ fn compact_round_trip() {
 
     let point = AffinePoint::from_sec1_point(&pubkey).unwrap();
     let res = point.to_compact_encoded_point().unwrap();
-    assert_eq!(res, pubkey)
+    assert_eq!(res, pubkey);
 }
 
 #[test]
@@ -92,7 +92,7 @@ fn uncompact_to_compact() {
 
     let point = AffinePoint::from_sec1_point(&pubkey).unwrap();
     let res = point.to_compact_encoded_point().unwrap();
-    assert_eq!(res.as_bytes(), COMPACT_BASEPOINT)
+    assert_eq!(res.as_bytes(), COMPACT_BASEPOINT);
 }
 
 #[test]
@@ -114,7 +114,7 @@ fn identity_encoding() {
         AffinePoint::from_bytes(&AffinePoint::IDENTITY.to_bytes())
             .unwrap()
             .is_identity()
-    ))
+    ));
 }
 
 #[test]
