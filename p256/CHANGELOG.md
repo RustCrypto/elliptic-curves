@@ -4,25 +4,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.14.0 (UNRELEASED)
+## 0.14.0 (2026-07-03)
 ### Added
-- hash2curve implementation ([#964])
-- `elliptic_curve::ops::Invert` implementation ([#971])
+- `hash2curve` implementation ([#964])
+- `BatchInvert` implementation ([#971])
+- `EcdsaCurve` trait impls ([#1019])
+- Implement `From<NonZeroScalar>` for `Scalar` ([#1188])
+- Implement `TryFrom<Scalar>` for `NonZeroScalar` ([#1193])
+- `getrandom` feature ([#1521])
+- Implement `crypto_common::Generate` trait ([#1586])
+- `basepoint-table` feature ([#1789], [#1790], [#1796])
 
-## Changed
-- Update to `elliptic-curve` v0.14 ([#1011])
-- Update to `ecdsa` v0.17 ([#1011])
-- Update to `sec1` v0.8 ([#1011])
-- Update to `secdect` v0.3 ([#1084])
-- Update to `rand_core` v0.9 ([#1125])
-- Update to `hybrid-array` v0.3 ([#1125])
+### Changed
 - Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
 - Relax MSRV policy and allow MSRV bumps in patch releases
+- Use `U256` for `MODULUS` of `FieldElement` ([#1153])
+- Have `FieldElement::to_canonical` return `U256` ([#1154])
+- Use `primefield` for `FieldElement` boilerplate ([#1179], [#1180])
+- Update to `elliptic-curve` v0.14 ([#1849])
+- Use `crypto-bigint` to implement inversions ([#1549], [#1578])
+- Bump `sha2` dependency to v0.11 ([#1712])
+- Bump `elliptic-curve` dependency to v0.14 ([#1849])
+- Bump `ecdsa` to v0.17 ([#1883])
+- Bump `primeorder` to v0.14 ([#1887])
+
+### Removed
+- `bits` feature ([#1766])
+- `expose-field` feature: use `FieldArithmetic` trait instead ([#1834])
 
 [#964]: https://github.com/RustCrypto/elliptic-curves/pull/964
-[#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
-[#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
+[#971]: https://github.com/RustCrypto/elliptic-curves/pull/971
+[#1019]: https://github.com/RustCrypto/elliptic-curves/pull/1019
 [#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
+[#1153]: https://github.com/RustCrypto/elliptic-curves/pull/1153
+[#1154]: https://github.com/RustCrypto/elliptic-curves/pull/1154
+[#1179]: https://github.com/RustCrypto/elliptic-curves/pull/1179
+[#1180]: https://github.com/RustCrypto/elliptic-curves/pull/1180
+[#1188]: https://github.com/RustCrypto/elliptic-curves/pull/1188
+[#1193]: https://github.com/RustCrypto/elliptic-curves/pull/1193
+[#1521]: https://github.com/RustCrypto/elliptic-curves/pull/1521
+[#1549]: https://github.com/RustCrypto/elliptic-curves/pull/1549
+[#1578]: https://github.com/RustCrypto/elliptic-curves/pull/1578
+[#1586]: https://github.com/RustCrypto/elliptic-curves/pull/1586
+[#1712]: https://github.com/RustCrypto/elliptic-curves/pull/1712
+[#1766]: https://github.com/RustCrypto/elliptic-curves/pull/1766
+[#1789]: https://github.com/RustCrypto/elliptic-curves/pull/1789
+[#1790]: https://github.com/RustCrypto/elliptic-curves/pull/1790
+[#1796]: https://github.com/RustCrypto/elliptic-curves/pull/1796
+[#1834]: https://github.com/RustCrypto/elliptic-curves/pull/1834
+[#1849]: https://github.com/RustCrypto/elliptic-curves/pull/1849
+[#1883]: https://github.com/RustCrypto/elliptic-curves/pull/1883
+[#1887]: https://github.com/RustCrypto/elliptic-curves/pull/1887
 
 ## 0.13.2 (2023-04-15)
 ### Changed

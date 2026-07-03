@@ -28,8 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support batch normalizations on hybrid `Array`s ([#1860])
 
 ### Changed
-- Update to `elliptic-curve` v0.14 ([#1011])
-- Update to `secdect` v0.3 ([#1084])
 - Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
 - Relax MSRV policy and allow MSRV bumps in patch releases
 - Rename `impl_projective_arithmetic_tests!` macro to `test_projective_arithmetic!` ([#1200])
@@ -46,8 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MulByGenerator` trait - use `Group::mul_by_generator` ([#1145])
 - `field` module ([#1175])
 
-[#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
-[#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
 [#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
 [#1145]: https://github.com/RustCrypto/elliptic-curves/pull/1145
 [#1175]: https://github.com/RustCrypto/elliptic-curves/pull/1175
