@@ -25,7 +25,7 @@ ecdsa-core = { version = "0.17", package = "ecdsa", optional = true, default-fea
 hash2curve = { version = "0.14", optional = true }
 hex-literal = { version = "1", optional = true }
 primefield = { version = "0.14", optional = true }
-primeorder = { version = "0.14.0-rc.15", optional = true }
+primeorder = { version = "0.14", optional = true }
 serdect = { version = "0.4", optional = true, default-features = false }
 sha2 = { version = "0.11", optional = true, default-features = false }
 
@@ -36,7 +36,7 @@ fiat-crypto = { version = "0.3", default-features = false }
 criterion = "0.7"
 ecdsa-core = { version = "0.17", package = "ecdsa", default-features = false, features = ["dev"] }
 hex-literal = "1"
-primeorder = { version = "0.14.0-rc.15", features = ["dev"] }
+primeorder = { version = "0.14", features = ["dev"] }
 proptest = "1.11"
 
 [features]

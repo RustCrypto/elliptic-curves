@@ -951,7 +951,7 @@ dependencies = [
 
 [[package]]
 name = "primeorder"
-version = "0.14.0-rc.15"
+version = "0.14.0"
 dependencies = [
  "elliptic-curve",
  "once_cell",

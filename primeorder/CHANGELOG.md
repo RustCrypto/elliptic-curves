@@ -4,15 +4,90 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.14.0 (UNRELEASED)
-## Changed
+## 0.14.0 (2026-07-02)
+### Added
+- Implement `From<NonIdentity>` for `Projective/AffinePoint` ([#1190])
+- Implement `TryFrom<Scalar/Projective/AffinePoint>` for `NonIdentity/ZeroScalar` ([#1193])
+- `scalar_mul_impls!` macro ([#1198])
+- `scalar_impls!` and `scalar_from_impls!` ([#1201])
+- Implement `De/Serialize` for `ProjectivePoint` ([#1214])
+- Optimized addition formulas for curves with `a=0` ([#1270])
+- Optimized implementation for `LinearCombination` ([#1343], [#1360])
+- Implement `CofactorGroup` ([#1394])
+- `hash2curve::osswu` implementation ([#1404])
+- Implement `AffineCoordinates::from_coordinates` ([#1405])
+- Implement `crypto_common::Generate` trait ([#1586])
+- Support for wNAF variable-time scalar multiplications ([#1714], [#1779], [#1870])
+- Implement `MulVartime` ([#1715], [#1870])
+- Implement `MulByGeneratorVartime` for `ProjectivePoint` ([#1726])
+- `BasepointTable` and `LookupTable` types ([#1788], [#1789], [#1796])
+- `PrimeCurveWithBasepointTable` trait ([#1788])
+- `lincomb_vartime` support ([#1797], [#1870])
+- `MulBackend` trait and associated type ([#1803], [#1835])
+- `double_in_place` support ([#1843])
+- Support batch normalizations on hybrid `Array`s ([#1860])
+
+### Changed
 - Update to `elliptic-curve` v0.14 ([#1011])
 - Update to `secdect` v0.3 ([#1084])
 - Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
 - Relax MSRV policy and allow MSRV bumps in patch releases
+- Rename `impl_projective_arithmetic_tests!` macro to `test_projective_arithmetic!` ([#1200])
+- Expose `AffineCoordinates::y` ([#1230])
+- Use rejection sampling for random point generation ([#1344])
+- Use new `Reduce` trait ([#1359])
+- Avoid field inversion in ProjectivePoint equality ([#1706])
+- Simplify bounds ([#1721], [#1784], [#1802])
+- Use `elliptic_curve::FieldArithmetic` trait ([#1833])
+- Use mixed arithmetic formulas for `ProjectivePoint` `*Assign` impls ([#1842], [#1844])
+- Bump `elliptic-curve` to v0.14 ([#1849])
+
+### Removed
+- `MulByGenerator` trait - use `Group::mul_by_generator` ([#1145])
+- `field` module ([#1175])
 
 [#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
 [#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
+[#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
+[#1145]: https://github.com/RustCrypto/elliptic-curves/pull/1145
+[#1175]: https://github.com/RustCrypto/elliptic-curves/pull/1175
+[#1190]: https://github.com/RustCrypto/elliptic-curves/pull/1190
+[#1193]: https://github.com/RustCrypto/elliptic-curves/pull/1193
+[#1198]: https://github.com/RustCrypto/elliptic-curves/pull/1198
+[#1200]: https://github.com/RustCrypto/elliptic-curves/pull/1200
+[#1201]: https://github.com/RustCrypto/elliptic-curves/pull/1201
+[#1214]: https://github.com/RustCrypto/elliptic-curves/pull/1214
+[#1230]: https://github.com/RustCrypto/elliptic-curves/pull/1230
+[#1270]: https://github.com/RustCrypto/elliptic-curves/pull/1270
+[#1343]: https://github.com/RustCrypto/elliptic-curves/pull/1343
+[#1344]: https://github.com/RustCrypto/elliptic-curves/pull/1344
+[#1359]: https://github.com/RustCrypto/elliptic-curves/pull/1359
+[#1360]: https://github.com/RustCrypto/elliptic-curves/pull/1360
+[#1394]: https://github.com/RustCrypto/elliptic-curves/pull/1394
+[#1404]: https://github.com/RustCrypto/elliptic-curves/pull/1404
+[#1405]: https://github.com/RustCrypto/elliptic-curves/pull/1405
+[#1586]: https://github.com/RustCrypto/elliptic-curves/pull/1586
+[#1706]: https://github.com/RustCrypto/elliptic-curves/pull/1706
+[#1714]: https://github.com/RustCrypto/elliptic-curves/pull/1714
+[#1715]: https://github.com/RustCrypto/elliptic-curves/pull/1715
+[#1721]: https://github.com/RustCrypto/elliptic-curves/pull/1721
+[#1726]: https://github.com/RustCrypto/elliptic-curves/pull/1726
+[#1779]: https://github.com/RustCrypto/elliptic-curves/pull/1779
+[#1784]: https://github.com/RustCrypto/elliptic-curves/pull/1784
+[#1788]: https://github.com/RustCrypto/elliptic-curves/pull/1788
+[#1789]: https://github.com/RustCrypto/elliptic-curves/pull/1789
+[#1796]: https://github.com/RustCrypto/elliptic-curves/pull/1796
+[#1797]: https://github.com/RustCrypto/elliptic-curves/pull/1797
+[#1802]: https://github.com/RustCrypto/elliptic-curves/pull/1802
+[#1803]: https://github.com/RustCrypto/elliptic-curves/pull/1803
+[#1833]: https://github.com/RustCrypto/elliptic-curves/pull/1833
+[#1835]: https://github.com/RustCrypto/elliptic-curves/pull/1835
+[#1842]: https://github.com/RustCrypto/elliptic-curves/pull/1842
+[#1843]: https://github.com/RustCrypto/elliptic-curves/pull/1843
+[#1844]: https://github.com/RustCrypto/elliptic-curves/pull/1844
+[#1849]: https://github.com/RustCrypto/elliptic-curves/pull/1849
+[#1860]: https://github.com/RustCrypto/elliptic-curves/pull/1860
+[#1870]: https://github.com/RustCrypto/elliptic-curves/pull/1870
 
 ## 0.13.6 (2023-11-15)
 ### Removed
