@@ -118,8 +118,13 @@ mod tests {
             / NonZero::new(U256::from_u8(4)).unwrap();
 
         assert_eq!(
-            Array::from_iter(params.c1.iter().rev().flat_map(|v| v.to_be_bytes())),
-            c1.to_be_byte_array()
+            c1.to_be_byte_array(),
+            params
+                .c1
+                .iter()
+                .rev()
+                .flat_map(|v| v.to_be_bytes())
+                .collect::<Array<_, _>>(),
         );
 
         let c2 = FieldElement::from_u64(10).sqrt().unwrap();
