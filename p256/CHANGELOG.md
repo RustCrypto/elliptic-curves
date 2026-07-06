@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implement `TryFrom<Scalar>` for `NonZeroScalar` ([#1193])
 - `getrandom` feature ([#1521])
 - Implement `crypto_common::Generate` trait ([#1586])
-- `basepoint-table` feature ([#1789], [#1790], [#1796])
+- `precomputed-tables` feature ([#1789], [#1790], [#1796])
 
 ### Changed
 - Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
