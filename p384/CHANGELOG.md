@@ -4,26 +4,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.14.0 (UNRELEASED)
+## 0.14.0 (2026-07-06)
 ### Added
+- `EcdsaCurve` trait impls ([#1019])
+- Implement `ReduceNonZero` for `p384::Scalar` ([#1148])
+- Implement `From<NonZeroScalar>` for `Scalar` ([#1188])
+- `getrandom` feature ([#1521])
+- `cfg(p384_backend)` with `bigint` and `fiat` options ([#1548], [#1806], [#1808])
+- Implement `crypto_common::Generate` trait ([#1586])
+- `precomputed-tables` feature ([#1737])
 
 ### Changed
-- Better `Debug` for field elements ([#798])
 - Make `primeorder` dependency optional ([#799])
-- Update to `elliptic-curve` v0.14 ([#1011])
-- Update to `ecdsa` v0.17 ([#1011])
-- Update to `sec1` v0.8 ([#1011])
-- Update to `secdect` v0.3 ([#1084])
-- Update to `rand_core` v0.9 ([#1125])
-- Update to `hybrid-array` v0.3 ([#1125])
+- `ecdh` feature no longer enabled-by-default ([#1112])
 - Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
 - Relax MSRV policy and allow MSRV bumps in patch releases
+- `p384_backend="fiat"` now uses `fiat-crypto` crate ([#1431])
+- Bump `sha2` dependency to v0.11 ([#1712])
+- Default field backend is now `crypto-bigint` based ([#1808])
+- Bump `elliptic-curve` to v0.14 ([#1849])
+- Bump `ecdsa` to v0.17 ([#1883])
+- Bump `primeorder` v0.14 ([#1887])
 
-[#798]: https://github.com/RustCrypto/elliptic-curves/pull/798
+### Removed
+- `bits` feature ([#1766])
+- `expose-field` feature: use `FieldArithmetic` trait instead ([#1834])
+
 [#799]: https://github.com/RustCrypto/elliptic-curves/pull/799
-[#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
-[#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
+[#1019]: https://github.com/RustCrypto/elliptic-curves/pull/1019
+[#1112]: https://github.com/RustCrypto/elliptic-curves/pull/1112
 [#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
+[#1148]: https://github.com/RustCrypto/elliptic-curves/pull/1148
+[#1188]: https://github.com/RustCrypto/elliptic-curves/pull/1188
+[#1431]: https://github.com/RustCrypto/elliptic-curves/pull/1431
+[#1521]: https://github.com/RustCrypto/elliptic-curves/pull/1521
+[#1548]: https://github.com/RustCrypto/elliptic-curves/pull/1548
+[#1586]: https://github.com/RustCrypto/elliptic-curves/pull/1586
+[#1712]: https://github.com/RustCrypto/elliptic-curves/pull/1712
+[#1737]: https://github.com/RustCrypto/elliptic-curves/pull/1737
+[#1766]: https://github.com/RustCrypto/elliptic-curves/pull/1766
+[#1806]: https://github.com/RustCrypto/elliptic-curves/pull/1806
+[#1808]: https://github.com/RustCrypto/elliptic-curves/pull/1808
+[#1834]: https://github.com/RustCrypto/elliptic-curves/pull/1834
+[#1849]: https://github.com/RustCrypto/elliptic-curves/pull/1849
+[#1883]: https://github.com/RustCrypto/elliptic-curves/pull/1883
+[#1887]: https://github.com/RustCrypto/elliptic-curves/pull/1887
 
 ## 0.13.1 (2025-02-06)
 ### Fixed
