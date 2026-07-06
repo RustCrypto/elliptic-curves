@@ -86,36 +86,43 @@ impl Scalar {
     pub const ONE: Self = Self(U256::ONE);
 
     /// Checks if the scalar is zero.
+    #[must_use]
     pub fn is_zero(&self) -> Choice {
         self.0.is_zero().into()
     }
 
     /// Returns the SEC1 encoding of this scalar.
+    #[must_use]
     pub fn to_bytes(&self) -> FieldBytes {
         self.0.to_be_byte_array()
     }
 
     /// Negates the scalar.
+    #[must_use]
     pub const fn negate(&self) -> Self {
         Self(self.0.neg_mod(ORDER.as_nz_ref()))
     }
 
     /// Returns self + rhs mod n.
+    #[must_use]
     pub const fn add(&self, rhs: &Self) -> Self {
         Self(self.0.add_mod(&rhs.0, ORDER.as_nz_ref()))
     }
 
     /// Returns self - rhs mod n.
+    #[must_use]
     pub const fn sub(&self, rhs: &Self) -> Self {
         Self(self.0.sub_mod(&rhs.0, ORDER.as_nz_ref()))
     }
 
     /// Modulo multiplies two scalars.
+    #[must_use]
     pub fn mul(&self, rhs: &Scalar) -> Scalar {
         WideScalar::mul_wide(self, rhs).reduce()
     }
 
     /// Modulo squares the scalar.
+    #[must_use]
     pub fn square(&self) -> Self {
         self.mul(self)
     }
@@ -123,6 +130,7 @@ impl Scalar {
     /// Right shifts the scalar.
     ///
     /// Note: not constant-time with respect to the `shift` parameter.
+    #[must_use]
     pub fn shr_vartime(&self, shift: u32) -> Scalar {
         Self(self.0.unbounded_shr_vartime(shift))
     }
@@ -143,6 +151,8 @@ impl Scalar {
 
     /// Returns the scalar modulus as a `BigUint` object.
     #[cfg(test)]
+    #[must_use]
+    #[allow(clippy::missing_panics_doc, reason = "test")]
     pub fn modulus_as_biguint() -> BigUint {
         Self::ONE.negate().to_biguint().unwrap() + 1.to_biguint().unwrap()
     }
@@ -154,6 +164,9 @@ impl Scalar {
     }
 
     /// Returns a (nearly) uniformly-random scalar, generated in constant time.
+    ///
+    /// # Errors
+    /// Propagates `R::Error` on RNG failure.
     pub fn try_generate_biased_from_rng<R: TryCryptoRng + ?Sized>(
         rng: &mut R,
     ) -> Result<Self, R::Error> {
@@ -413,6 +426,7 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
+        #[allow(clippy::cast_possible_truncation)]
         self.shr_vartime(rhs as u32)
     }
 }
@@ -421,6 +435,7 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
+        #[allow(clippy::cast_possible_truncation)]
         self.shr_vartime(rhs as u32)
     }
 }
@@ -798,7 +813,7 @@ mod tests {
         assert_eq!(
             Scalar::MULTIPLICATIVE_GENERATOR.pow_vartime(T),
             Scalar::ROOT_OF_UNITY
-        )
+        );
     }
 
     #[test]
@@ -951,7 +966,7 @@ mod tests {
     fn try_generate_from_rng() {
         let a = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
         // just to make sure `a` is not optimized out by the compiler
-        assert_eq!((a - &a).is_zero().unwrap_u8(), 1);
+        assert_eq!((a - a).is_zero().unwrap_u8(), 1);
     }
 
     #[test]

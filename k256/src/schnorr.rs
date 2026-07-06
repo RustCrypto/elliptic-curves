@@ -101,6 +101,7 @@ impl Signature {
     pub const BYTE_SIZE: usize = 64;
 
     /// Serialize this signature as bytes.
+    #[must_use]
     pub fn to_bytes(&self) -> SignatureBytes {
         let mut ret = [0; Self::BYTE_SIZE];
         let (r_bytes, s_bytes) = ret.split_at_mut(Self::BYTE_SIZE / 2);
@@ -124,7 +125,10 @@ impl Signature {
         (self.r(), self.s())
     }
 
-    /// Parse a Secp256k1 signature from a byte array.
+    /// Parse a Taproot Schnorr from a byte array.
+    ///
+    /// # Errors
+    /// Returns [`Error`] if the signature failed to parse successfully.
     pub fn from_bytes(bytes: &SignatureBytes) -> Result<Self> {
         let components = FieldBytes::slice_as_chunks(bytes).0;
         let r_bytes = components[0];
@@ -144,7 +148,11 @@ impl Signature {
         Ok(Self { r, s })
     }
 
-    /// Parse a Secp256k1 signature from a byte slice.
+    /// Parse a Taproot Schnorr from a byte slice.
+    ///
+    /// # Errors
+    /// Returns [`Error`] if `bytes` is not 64-bytes (i.e. [`Signature::BYTE_SIZE`]) long or if it
+    /// otherwise failed to parse successfully.
     pub fn from_slice(bytes: &[u8]) -> Result<Self> {
         SignatureBytes::try_from(bytes)
             .map_err(|_| Error::new())?

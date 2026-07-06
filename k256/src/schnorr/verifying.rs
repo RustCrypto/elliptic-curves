@@ -27,6 +27,9 @@ pub struct VerifyingKey {
 
 impl VerifyingKey {
     /// Parse verifying key from big endian-encoded x-coordinate.
+    ///
+    /// # Errors
+    /// Returns an error if a curve point could not be reconstructed from `x_bytes.`
     pub fn from_bytes(x_bytes: &FieldBytes) -> Result<Self> {
         AffinePoint::decompact(x_bytes)
             .into_option()
@@ -35,17 +38,23 @@ impl VerifyingKey {
     }
 
     /// Parse verifying key from big endian-encoded x-coordinate.
+    ///
+    /// # Errors
+    /// Returns an error if `x_bytes` is not 32-bytes long or if a valid curve point could not
+    /// be reconstructed.
     pub fn from_slice(x_bytes: &[u8]) -> Result<Self> {
         let x_bytes = FieldBytes::try_from(x_bytes).map_err(|_| Error::new())?;
         Self::from_bytes(&x_bytes)
     }
 
     /// Borrow the inner [`AffinePoint`] this type wraps.
+    #[must_use]
     pub fn as_affine(&self) -> &AffinePoint {
         self.inner.as_affine()
     }
 
     /// Serialize as bytes.
+    #[must_use]
     pub fn to_bytes(&self) -> FieldBytes {
         self.as_affine().x.to_bytes()
     }
@@ -61,6 +70,9 @@ impl VerifyingKey {
     ///
     /// The preferred interfaces are the [`DigestVerifier`] or [`PrehashVerifier`] traits.
     /// </div>
+    ///
+    /// # Errors
+    /// Returns [`Error`] if `signature` is not valid for `message`.
     pub fn verify_raw(&self, message: &[u8], signature: &Signature) -> Result<()> {
         let (r, s) = signature.split();
 

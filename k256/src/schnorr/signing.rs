@@ -4,6 +4,7 @@ use super::{AUX_TAG, CHALLENGE_TAG, NONCE_TAG, Signature, VerifyingKey, tagged_h
 use crate::{
     AffinePoint, FieldBytes, NonZeroScalar, ProjectivePoint, PublicKey, Scalar, SecretKey,
 };
+use core::fmt;
 use elliptic_curve::{
     Generate,
     ops::Reduce,
@@ -37,6 +38,9 @@ pub struct SigningKey {
 
 impl SigningKey {
     /// Parse signing key from big endian-encoded bytes.
+    ///
+    /// # Errors
+    /// Returns [`Error`] in the event the provided bytes overflow the curve order `n`.
     pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
         NonZeroScalar::from_repr(*bytes)
             .into_option()
@@ -45,17 +49,22 @@ impl SigningKey {
     }
 
     /// Parse signing key from big endian-encoded byte slice.
+    ///
+    /// # Errors
+    /// Returns [`Error`] if `bytes` is not 32-bytes long, or if it overflows the curve order `n`.
     pub fn from_slice(bytes: &[u8]) -> Result<Self> {
         let x_bytes = FieldBytes::try_from(bytes).map_err(|_| Error::new())?;
         Self::from_bytes(&x_bytes)
     }
 
     /// Serialize as bytes.
+    #[must_use]
     pub fn to_bytes(&self) -> FieldBytes {
         self.secret_key.to_bytes()
     }
 
     /// Get the [`VerifyingKey`] that corresponds to this signing key.
+    #[must_use]
     pub fn verifying_key(&self) -> &VerifyingKey {
         &self.verifying_key
     }
@@ -67,25 +76,30 @@ impl SigningKey {
     /// This value is key material.
     ///
     /// Please treat it with the care it deserves!
+    #[must_use]
     pub fn as_nonzero_scalar(&self) -> &NonZeroScalar {
         &self.secret_key
     }
 
     /// Compute Schnorr signature.
     ///
-    /// # ⚠️ Warning
-    ///
+    /// <div class="warning">
     /// This is a low-level interface intended only for unusual use cases
     /// involving signing pre-hashed messages, or "raw" messages where the
     /// message is not hashed at all prior to being used to generate the
     /// Schnorr signature.
     ///
     /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
+    /// </div>
+    ///
+    /// # Errors
+    /// Returns an error if the generated signature would be invalid.
+    // TODO(tarcieri): deterministically handle errors internally to make this infallible?
     pub fn sign_raw(&self, msg: &[u8], aux_rand: &[u8; 32]) -> Result<Signature> {
         let mut t = tagged_hash(AUX_TAG).chain_update(aux_rand).finalize();
 
         for (a, b) in t.iter_mut().zip(self.secret_key.to_bytes().iter()) {
-            *a ^= b
+            *a ^= b;
         }
 
         let rand = tagged_hash(NONCE_TAG)
@@ -178,6 +192,14 @@ impl TryFrom<&[u8]> for SigningKey {
 
     fn try_from(bytes: &[u8]) -> Result<SigningKey> {
         Self::from_slice(bytes)
+    }
+}
+
+impl fmt::Debug for SigningKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SigningKey")
+            .field("verifying_key", &self.verifying_key)
+            .finish_non_exhaustive()
     }
 }
 

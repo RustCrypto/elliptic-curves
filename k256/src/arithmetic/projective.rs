@@ -60,6 +60,7 @@ impl ProjectivePoint {
     };
 
     /// Returns the affine representation of this point.
+    #[must_use]
     pub fn to_affine(&self) -> AffinePoint {
         self.z
             .invert()
@@ -176,6 +177,7 @@ impl ProjectivePoint {
 
     /// Doubles this point.
     #[inline]
+    #[must_use]
     pub fn double(&self) -> ProjectivePoint {
         let mut ret = *self;
         ret.double_in_place();
@@ -235,6 +237,7 @@ impl ProjectivePoint {
     }
 
     /// Calculates SECP256k1 endomorphism: `self * lambda`.
+    #[must_use]
     pub fn endomorphism(&self) -> Self {
         Self {
             x: self.x * &ENDOMORPHISM_BETA,
@@ -247,6 +250,7 @@ impl ProjectivePoint {
     ///
     /// This is a lot faster than first converting `self` to an `AffinePoint` and then doing the
     /// comparison. It is a little bit faster than converting `other` to a `ProjectivePoint` first.
+    #[must_use]
     pub fn eq_affine(&self, other: &AffinePoint) -> Choice {
         // For understanding of this algorithm see Projective equality comment. It's the same except
         // that we know z = 1 for rhs and we have to check identity as a separate case.
@@ -1061,6 +1065,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::cast_possible_truncation, reason = "test")]
     fn test_vector_scalar_mult() {
         let generator = ProjectivePoint::GENERATOR;
 

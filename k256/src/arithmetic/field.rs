@@ -628,7 +628,7 @@ mod tests {
                 .pow_vartime(T)
                 .normalize(),
             FieldElement::ROOT_OF_UNITY
-        )
+        );
     }
 
     #[test]
