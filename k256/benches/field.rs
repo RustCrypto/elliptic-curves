@@ -1,11 +1,13 @@
 //! secp256k1 field element benchmarks
 
+#![allow(missing_docs, reason = "benchmark")]
+
+use core::hint::black_box;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use elliptic_curve::{hazmat::FieldArithmetic, ops::BatchInvert};
 use k256::Secp256k1;
-use std::hint::black_box;
 
 type FieldElement = <Secp256k1 as FieldArithmetic>::FieldElement;
 
@@ -36,7 +38,7 @@ fn test_field_element_y() -> FieldElement {
 fn bench_field_element_normalize_weak<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     group.bench_function("normalize_weak", |b| {
-        b.iter(|| black_box(x).normalize_weak())
+        b.iter(|| black_box(x).normalize_weak());
     });
 }
 
@@ -48,7 +50,7 @@ fn bench_field_element_normalize<'a, M: Measurement>(group: &mut BenchmarkGroup<
 fn bench_field_element_mul<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
     let x = test_field_element_x();
     let y = test_field_element_y();
-    group.bench_function("mul", |b| b.iter(|| &black_box(x) * &black_box(y)));
+    group.bench_function("mul", |b| b.iter(|| black_box(x) * black_box(y)));
 }
 
 fn bench_field_element_square<'a, M: Measurement>(group: &mut BenchmarkGroup<'a, M>) {
@@ -65,14 +67,14 @@ fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a,
     let x = test_field_element_x();
     group.bench_function("invert", |b| b.iter(|| black_box(x).invert()));
     group.bench_function("invert_vartime", |b| {
-        b.iter(|| black_box(x).invert_vartime())
+        b.iter(|| black_box(x).invert_vartime());
     });
     group.bench_function("batch_invert_in_place (2p)", |b| {
         let points = [test_field_element_x(), test_field_element_y()];
         let scratch = [FieldElement::ZERO; 2];
         b.iter(|| {
             FieldElement::batch_invert_in_place(&mut black_box(points), &mut black_box(scratch))
-        })
+        });
     });
     group.bench_function("batch_invert_in_place_vartime (2p)", |b| {
         let points = [test_field_element_x(), test_field_element_y()];
@@ -82,7 +84,7 @@ fn bench_field_element_invert<'a, M: Measurement>(group: &mut BenchmarkGroup<'a,
                 &mut black_box(points),
                 &mut black_box(scratch),
             )
-        })
+        });
     });
 }
 
@@ -95,7 +97,7 @@ fn bench_field_element_from_bytes<'a, M: Measurement>(group: &mut BenchmarkGroup
     let x = test_field_element_x();
     let bytes = x.to_bytes();
     group.bench_function("from_bytes", |b| {
-        b.iter(|| FieldElement::from_bytes(black_box(&bytes)))
+        b.iter(|| FieldElement::from_bytes(black_box(&bytes)));
     });
 }
 

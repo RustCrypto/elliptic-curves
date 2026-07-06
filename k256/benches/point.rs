@@ -1,5 +1,8 @@
 //! k256 `ProjectivePoint` benchmarks
 
+#![allow(missing_docs, reason = "benchmark")]
+
+use core::hint::black_box;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
@@ -11,7 +14,6 @@ use k256::{
         subtle::ConstantTimeEq,
     },
 };
-use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(
@@ -50,10 +52,10 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
 
     group.bench_function("lincomb (2-term, naive)", |b| b.iter(|| (p * s) + (p * s)));
     group.bench_function("lincomb (2-term)", |b| {
-        b.iter(|| ProjectivePoint::lincomb(&[(p, s), (p, s)]))
+        b.iter(|| ProjectivePoint::lincomb(&[(p, s), (p, s)]));
     });
     group.bench_function("lincomb_vartime (2-term)", |b| {
-        b.iter(|| ProjectivePoint::lincomb_vartime(&[(p, s), (p, s)]))
+        b.iter(|| ProjectivePoint::lincomb_vartime(&[(p, s), (p, s)]));
     });
 }
 
@@ -62,7 +64,7 @@ fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let s = test_scalar_x();
     group.bench_function("mul", |b| b.iter(|| black_box(p) * black_box(s)));
     group.bench_function("mul_vartime", |b| {
-        b.iter(|| black_box(p).mul_vartime(&black_box(s)))
+        b.iter(|| black_box(p).mul_vartime(&black_box(s)));
     });
 }
 
@@ -70,13 +72,13 @@ fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M
     let x = test_scalar_x();
     let y = test_scalar_y();
     group.bench_function("ProjectivePoint::GENERATOR * scalar", |b| {
-        b.iter(|| ProjectivePoint::GENERATOR * &black_box(x))
+        b.iter(|| ProjectivePoint::GENERATOR * black_box(x));
     });
     group.bench_function("mul_by_generator", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(x)))
+        b.iter(|| ProjectivePoint::mul_by_generator(&black_box(x)));
     });
     group.bench_function("mul_by_generator_vartime", |b| {
-        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(x)))
+        b.iter(|| ProjectivePoint::mul_by_generator_vartime(&black_box(x)));
     });
     group.bench_function("mul_by_generator_and_mul_add_vartime", |b| {
         b.iter(|| {
@@ -85,7 +87,7 @@ fn bench_point_mul_by_generator<M: Measurement>(group: &mut BenchmarkGroup<'_, M
                 &black_box(y),
                 &black_box(ProjectivePoint::GENERATOR),
             )
-        })
+        });
     });
 }
 
@@ -93,10 +95,10 @@ fn bench_point_normalize<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     let p = ProjectivePoint::GENERATOR;
     let points = [p, p];
     group.bench_function("batch_normalize (2p)", |b| {
-        b.iter(|| ProjectivePoint::batch_normalize(&black_box(points)))
+        b.iter(|| ProjectivePoint::batch_normalize(&black_box(points)));
     });
     group.bench_function("batch_normalize_vartime (2p)", |b| {
-        b.iter(|| ProjectivePoint::batch_normalize_vartime(&black_box(points)))
+        b.iter(|| ProjectivePoint::batch_normalize_vartime(&black_box(points)));
     });
     group.bench_function("normalize (1p)", |b| b.iter(|| black_box(p).to_affine()));
 }
@@ -111,7 +113,7 @@ fn bench_point(c: &mut Criterion) {
     bench_point_normalize(&mut group);
 
     group.bench_function("ct_eq", |b| {
-        b.iter(|| ProjectivePoint::GENERATOR.ct_eq(&ProjectivePoint::GENERATOR))
+        b.iter(|| ProjectivePoint::GENERATOR.ct_eq(&ProjectivePoint::GENERATOR));
     });
 
     group.finish();

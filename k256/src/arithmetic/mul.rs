@@ -134,7 +134,7 @@ fn lincomb(
         digits[i] = (
             Radix16Decomposition::<U33>::new(&r1_c),
             Radix16Decomposition::<U33>::new(&r2_c),
-        )
+        );
     });
 
     let mut acc = ProjectivePoint::IDENTITY;
@@ -176,6 +176,7 @@ fn lincomb_vartime_glv_wnaf(
 
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
+    #[must_use]
     pub fn mul_by_generator(k: &Scalar) -> ProjectivePoint {
         #[cfg(feature = "precomputed-tables")]
         {
@@ -202,6 +203,7 @@ impl ProjectivePoint {
     }
 
     /// Calculates `k * G` in variable-time, where `G` is the generator.
+    #[must_use]
     pub fn mul_by_generator_vartime(k: &Scalar) -> ProjectivePoint {
         #[cfg(feature = "precomputed-tables")]
         {

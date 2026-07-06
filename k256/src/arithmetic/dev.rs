@@ -17,7 +17,7 @@ pub fn biguint_to_bytes(x: &BigUint) -> [u8; 32] {
     let mask = BigUint::from(u8::MAX);
     let mut bytes = [0u8; 32];
     for i in 0..32 {
-        bytes[i] = ((x >> ((31 - i) * 8)) as BigUint & &mask).to_u8().unwrap();
+        bytes[i] = ((x >> ((31 - i) * 8)) & &mask).to_u8().unwrap();
     }
     bytes
 }

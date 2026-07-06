@@ -1,5 +1,8 @@
-//! secp256k1 scalar arithmetic benchmarks
+//! secp256k1 ECDSA benchmarks
 
+#![allow(missing_docs, clippy::unwrap_used, reason = "benchmark")]
+
+use core::hint::black_box;
 use criterion::{Criterion, criterion_group, criterion_main};
 use k256::{
     FieldBytes, NonZeroScalar, Scalar,
@@ -9,7 +12,6 @@ use k256::{
     },
     elliptic_curve::group::ff::PrimeField,
 };
-use std::hint::black_box;
 
 fn test_scalar_d() -> NonZeroScalar {
     NonZeroScalar::new(
@@ -44,7 +46,7 @@ fn bench_ecdsa(c: &mut Criterion) {
     group.bench_function("try_sign_prehashed", |b| {
         b.iter(|| {
             let _: Signature = black_box(&d).sign_prehash(&black_box(z)).unwrap();
-        })
+        });
     });
 
     let q = d.verifying_key();
@@ -54,8 +56,8 @@ fn bench_ecdsa(c: &mut Criterion) {
         b.iter(|| {
             black_box(q)
                 .verify_prehash(&black_box(z), &black_box(s))
-                .unwrap()
-        })
+                .unwrap();
+        });
     });
 
     group.finish();

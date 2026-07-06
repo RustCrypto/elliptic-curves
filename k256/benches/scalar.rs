@@ -1,10 +1,12 @@
 //! secp256k1 scalar arithmetic benchmarks
 
+#![allow(missing_docs, reason = "benchmark")]
+
+use core::hint::black_box;
 use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::Measurement,
 };
 use k256::{Scalar, elliptic_curve::group::ff::PrimeField};
-use std::hint::black_box;
 
 fn test_scalar_x() -> Scalar {
     Scalar::from_repr(

@@ -179,7 +179,7 @@ impl ConstantTimeEq for FieldElementImpl {
         self.value.ct_eq(&(other.value))
             & self.magnitude.ct_eq(&(other.magnitude))
             // See the comment in `conditional_select()`
-            & Choice::from((self.normalized == other.normalized) as u8)
+            & Choice::from(u8::from(self.normalized == other.normalized))
     }
 }
 

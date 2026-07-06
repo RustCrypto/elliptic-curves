@@ -291,15 +291,17 @@ impl GroupEncoding for AffinePoint {
 
     fn from_bytes(bytes: &Self::Repr) -> CtOption<Self> {
         Sec1Point::from_bytes(bytes)
-            .map(ctutils::CtOption::some)
-            .unwrap_or_else(|_| {
-                // SEC1 identity encoding is technically 1-byte 0x00, but the
-                // `GroupEncoding` API requires a fixed-width `Repr`
-                let is_identity =
-                    ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
+            .map_or_else(
+                |_| {
+                    // SEC1 identity encoding is technically 1-byte 0x00, but the
+                    // `GroupEncoding` API requires a fixed-width `Repr`
+                    let is_identity =
+                        ctutils::CtEq::ct_eq(bytes.as_slice(), Self::Repr::default().as_slice());
 
-                ctutils::CtOption::new(Sec1Point::identity(), is_identity)
-            })
+                    ctutils::CtOption::new(Sec1Point::identity(), is_identity)
+                },
+                ctutils::CtOption::some,
+            )
             .and_then(|point| Self::from_sec1_point(&point))
             .into()
     }
@@ -328,7 +330,7 @@ impl FromSec1Point<Secp256k1> for AffinePoint {
             sec1::Coordinates::Identity => ctutils::CtOption::some(Self::IDENTITY),
             sec1::Coordinates::Compact { x } => Self::decompact(x).into(),
             sec1::Coordinates::Compressed { x, y_is_odd } => {
-                AffinePoint::decompress(x, Choice::from(y_is_odd as u8)).into()
+                AffinePoint::decompress(x, Choice::from(u8::from(y_is_odd))).into()
             }
             sec1::Coordinates::Uncompressed { x, y } => Self::from_coordinates(x, y).into(),
         }
@@ -511,6 +513,6 @@ mod tests {
             AffinePoint::from_bytes(&AffinePoint::IDENTITY.to_bytes())
                 .unwrap()
                 .is_identity()
-        ))
+        ));
     }
 }

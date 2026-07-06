@@ -1,5 +1,8 @@
 //! Taproot Schnorr signature benchmarks
 
+#![allow(missing_docs, clippy::unwrap_used, reason = "benchmark")]
+
+use core::hint::black_box;
 use criterion::{Criterion, criterion_group, criterion_main};
 use k256::{
     elliptic_curve::Generate,
@@ -8,7 +11,6 @@ use k256::{
         signature::{Signer, Verifier},
     },
 };
-use std::hint::black_box;
 
 fn bench_schnorr(c: &mut Criterion) {
     let mut group = c.benchmark_group("schnorr");
@@ -17,18 +19,18 @@ fn bench_schnorr(c: &mut Criterion) {
     group.bench_function("keygen", |b| {
         b.iter(|| {
             let _sk = SigningKey::generate();
-        })
+        });
     });
 
     let sk = SigningKey::generate();
-    let vk = sk.verifying_key().clone();
+    let vk = *sk.verifying_key();
     let message = b"Schnorr benchmark message for performance testing";
 
     // Signing (deterministic)
     group.bench_function("sign", |b| {
         b.iter(|| {
             let _sig = black_box(&sk).sign(black_box(&message[..]));
-        })
+        });
     });
 
     // Signing (randomized) - removed, needs rng plumbing
@@ -40,8 +42,8 @@ fn bench_schnorr(c: &mut Criterion) {
         b.iter(|| {
             black_box(&vk)
                 .verify(black_box(&message[..]), black_box(&sig))
-                .unwrap()
-        })
+                .unwrap();
+        });
     });
 
     group.finish();

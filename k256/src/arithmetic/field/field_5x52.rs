@@ -115,7 +115,7 @@ impl FieldElement5x52 {
             | ((self.0[4] == 0x0FFFFFFFFFFFFu64)
                 & (m == 0xFFFFFFFFFFFFFu64)
                 & (self.0[0] >= 0xFFFFEFFFFFC2Fu64));
-        Choice::from(x as u8)
+        Choice::from(u8::from(x))
     }
 
     /// Brings the field element's magnitude to 1, but does not necessarily normalize it.
@@ -149,7 +149,7 @@ impl FieldElement5x52 {
 
         // If the last limb didn't carry to bit 48 already,
         // then it should have after any final reduction
-        debug_assert!(x == (overflow.unwrap_u8() as u64));
+        debug_assert!(x == u64::from(overflow.unwrap_u8()));
 
         Self::conditional_select(&res, &res_corrected, overflow)
     }
@@ -168,7 +168,7 @@ impl FieldElement5x52 {
         let z0 = t0 | t1 | t2 | t3 | t4;
         let z1 = (t0 ^ 0x1000003D0u64) & t1 & t2 & t3 & (t4 ^ 0xF000000000000u64);
 
-        Choice::from(((z0 == 0) | (z1 == 0xFFFFFFFFFFFFFu64)) as u8)
+        Choice::from(u8::from((z0 == 0) | (z1 == 0xFFFFFFFFFFFFFu64)))
     }
 
     /// Determine if this `FieldElement5x52` is zero.
@@ -177,7 +177,9 @@ impl FieldElement5x52 {
     ///
     /// If zero, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_zero(&self) -> Choice {
-        Choice::from(((self.0[0] | self.0[1] | self.0[2] | self.0[3] | self.0[4]) == 0) as u8)
+        Choice::from(u8::from(
+            (self.0[0] | self.0[1] | self.0[2] | self.0[3] | self.0[4]) == 0,
+        ))
     }
 
     /// Determine if this `FieldElement5x52` is odd in the SEC1 sense: `self mod 2 == 1`.
@@ -186,7 +188,7 @@ impl FieldElement5x52 {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        (self.0[0] as u8 & 1).into()
+        ((self.0[0] & 1) as u8).into()
     }
 
     /// The maximum number `m` for which `0xFFFFFFFFFFFFF * 2 * (m + 1) < 2^64`
@@ -234,6 +236,7 @@ impl FieldElement5x52 {
     }
 
     #[inline(always)]
+    #[allow(clippy::cast_possible_truncation)]
     fn mul_inner(&self, rhs: &Self) -> Self {
         /*
         `square()` is just `mul()` with equal arguments. Rust compiler is smart enough
@@ -246,16 +249,16 @@ impl FieldElement5x52 {
         arguments in `square()`, compiler is able to use that fact after inlining.
         */
 
-        let a0 = self.0[0] as u128;
-        let a1 = self.0[1] as u128;
-        let a2 = self.0[2] as u128;
-        let a3 = self.0[3] as u128;
-        let a4 = self.0[4] as u128;
-        let b0 = rhs.0[0] as u128;
-        let b1 = rhs.0[1] as u128;
-        let b2 = rhs.0[2] as u128;
-        let b3 = rhs.0[3] as u128;
-        let b4 = rhs.0[4] as u128;
+        let a0 = u128::from(self.0[0]);
+        let a1 = u128::from(self.0[1]);
+        let a2 = u128::from(self.0[2]);
+        let a3 = u128::from(self.0[3]);
+        let a4 = u128::from(self.0[4]);
+        let b0 = u128::from(rhs.0[0]);
+        let b1 = u128::from(rhs.0[1]);
+        let b2 = u128::from(rhs.0[2]);
+        let b3 = u128::from(rhs.0[3]);
+        let b4 = u128::from(rhs.0[4]);
         let m = 0xFFFFFFFFFFFFFu128;
         let r = 0x1000003D10u128;
 
@@ -295,10 +298,10 @@ impl FieldElement5x52 {
         let d64 = d as u64;
         // [c 0 0 0 0 d t3 0 0 0] = [p8 0 0 0 0 p3 0 0 0]
 
-        d = d64 as u128 + a0 * b4 + a1 * b3 + a2 * b2 + a3 * b1 + a4 * b0;
+        d = u128::from(d64) + a0 * b4 + a1 * b3 + a2 * b2 + a3 * b1 + a4 * b0;
         debug_assert!(d >> 115 == 0);
         // [c 0 0 0 0 d t3 0 0 0] = [p8 0 0 0 p4 p3 0 0 0]
-        d += c64 as u128 * r;
+        d += u128::from(c64) * r;
         debug_assert!(d >> 116 == 0);
         // [d t3 0 0 0] = [p8 0 0 0 p4 p3 0 0 0]
         let t4 = (d & m) as u64;
@@ -316,7 +319,7 @@ impl FieldElement5x52 {
         c = a0 * b0;
         debug_assert!(c >> 112 == 0);
         // [d t4+(tx<<48) t3 0 0 c] = [p8 0 0 0 p4 p3 0 0 p0]
-        d = d64 as u128 + a1 * b4 + a2 * b3 + a3 * b2 + a4 * b1;
+        d = u128::from(d64) + a1 * b4 + a2 * b3 + a3 * b2 + a4 * b1;
         debug_assert!(d >> 115 == 0);
         // [d t4+(tx<<48) t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
         let u0 = (d & m) as u64;
@@ -329,7 +332,7 @@ impl FieldElement5x52 {
         let u0 = (u0 << 4) | tx;
         debug_assert!(u0 >> 56 == 0);
         // [d 0 t4+(u0<<48) t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
-        c += u0 as u128 * ((r as u64) >> 4) as u128;
+        c += u128::from(u0) * u128::from((r as u64) >> 4);
         debug_assert!(c >> 115 == 0);
         // [d 0 t4 t3 0 0 c] = [p8 0 0 p5 p4 p3 0 0 p0]
         let r0 = (c & m) as u64;
@@ -339,10 +342,10 @@ impl FieldElement5x52 {
         let c64 = c as u64;
         // [d 0 t4 t3 0 c r0] = [p8 0 0 p5 p4 p3 0 0 p0]
 
-        c = c64 as u128 + a0 * b1 + a1 * b0;
+        c = u128::from(c64) + a0 * b1 + a1 * b0;
         debug_assert!(c >> 114 == 0);
         // [d 0 t4 t3 0 c r0] = [p8 0 0 p5 p4 p3 0 p1 p0]
-        d = d64 as u128 + a2 * b4 + a3 * b3 + a4 * b2;
+        d = u128::from(d64) + a2 * b4 + a3 * b3 + a4 * b2;
         debug_assert!(d >> 114 == 0);
         // [d 0 t4 t3 0 c r0] = [p8 0 p6 p5 p4 p3 0 p1 p0]
         c += (d & m) * r;
@@ -358,10 +361,10 @@ impl FieldElement5x52 {
         let c64 = c as u64;
         // [d 0 0 t4 t3 c r1 r0] = [p8 0 p6 p5 p4 p3 0 p1 p0]
 
-        c = c64 as u128 + a0 * b2 + a1 * b1 + a2 * b0;
+        c = u128::from(c64) + a0 * b2 + a1 * b1 + a2 * b0;
         debug_assert!(c >> 114 == 0);
         // [d 0 0 t4 t3 c r1 r0] = [p8 0 p6 p5 p4 p3 p2 p1 p0]
-        d = d64 as u128 + a3 * b4 + a4 * b3;
+        d = u128::from(d64) + a3 * b4 + a4 * b3;
         debug_assert!(d >> 114 == 0);
         // [d 0 0 t4 t3 c t1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
         c += (d & m) * r;
@@ -378,7 +381,7 @@ impl FieldElement5x52 {
         debug_assert!(c >> 63 == 0);
         let c64 = c as u64;
         // [d 0 0 0 t4 t3+c r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        c = c64 as u128 + (d64 as u128) * r + t3 as u128;
+        c = u128::from(c64) + u128::from(d64) * r + u128::from(t3);
         debug_assert!(c >> 100 == 0);
         // [t4 c r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
         let r3 = (c & m) as u64;
@@ -387,7 +390,7 @@ impl FieldElement5x52 {
         debug_assert!(c >> 48 == 0);
         let c64 = c as u64;
         // [t4+c r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
-        c = c64 as u128 + t4 as u128;
+        c = u128::from(c64) + u128::from(t4);
         debug_assert!(c >> 49 == 0);
         // [c r3 r2 r1 r0] = [p8 p7 p6 p5 p4 p3 p2 p1 p0]
         let r4 = c as u64;

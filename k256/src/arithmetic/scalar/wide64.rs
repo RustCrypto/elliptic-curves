@@ -190,24 +190,24 @@ impl WideScalar {
 
         // Reduce 258 bits into 256.
         // r[0..3] = p[0..3] + p[4] * neg_modulus.
-        let mut c = (p0 as u128) + (neg_modulus0 as u128) * (p4 as u128);
+        let mut c = u128::from(p0) + u128::from(neg_modulus0) * u128::from(p4);
         let r0 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
         c >>= 64;
-        c += (p1 as u128) + (NEG_MODULUS[1] as u128) * (p4 as u128);
+        c += u128::from(p1) + u128::from(NEG_MODULUS[1]) * u128::from(p4);
         let r1 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
         c >>= 64;
-        c += (p2 as u128) + (p4 as u128);
+        c += u128::from(p2) + u128::from(p4);
         let r2 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
         c >>= 64;
-        c += p3 as u128;
+        c += u128::from(p3);
         let r3 = (c & 0xFFFFFFFFFFFFFFFFu128) as u64;
         c >>= 64;
 
         // Final reduction of r.
         let r = U256::from([r0, r1, r2, r3]);
         let (r2, underflow) = r.borrowing_sub(&modulus, Limb::ZERO);
-        let high_bit = Choice::from(c as u8);
-        let underflow = Choice::from((underflow.0 >> 63) as u8);
+        let high_bit = Choice::from((c & 1) as u8);
+        let underflow = Choice::from(((underflow.0 >> 63) & 1) as u8);
         Scalar(U256::conditional_select(&r, &r2, !underflow | high_bit))
     }
 
@@ -224,40 +224,44 @@ impl WideScalar {
 /// Add a to the number defined by (c0,c1,c2). c2 must never overflow.
 fn sumadd(a: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
     let (new_c0, carry0) = c0.overflowing_add(a);
-    let (new_c1, carry1) = c1.overflowing_add(carry0 as u64);
-    let new_c2 = c2 + (carry1 as u64);
+    let (new_c1, carry1) = c1.overflowing_add(u64::from(carry0));
+    let new_c2 = c2 + u64::from(carry1);
     (new_c0, new_c1, new_c2)
 }
 
 /// Add a to the number defined by (c0,c1). c1 must never overflow.
 fn sumadd_fast(a: u64, c0: u64, c1: u64) -> (u64, u64) {
     let (new_c0, carry0) = c0.overflowing_add(a);
-    let new_c1 = c1 + (carry0 as u64);
+    let new_c1 = c1 + u64::from(carry0);
     (new_c0, new_c1)
 }
 
 /// Add a*b to the number defined by (c0,c1,c2). c2 must never overflow.
 fn muladd(a: u64, b: u64, c0: u64, c1: u64, c2: u64) -> (u64, u64, u64) {
-    let t = (a as u128) * (b as u128);
-    let th = (t >> 64) as u64; // at most 0xFFFFFFFFFFFFFFFE
+    let t = u128::from(a) * u128::from(b);
+
+    #[allow(clippy::cast_possible_truncation, reason = "deliberate truncation")]
     let tl = t as u64;
+    let th = (t >> 64) as u64; // at most 0xFFFFFFFFFFFFFFFE
 
     let (new_c0, carry0) = c0.overflowing_add(tl);
-    let new_th = th.wrapping_add(carry0 as u64); // at most 0xFFFFFFFFFFFFFFFF
+    let new_th = th.wrapping_add(u64::from(carry0)); // at most 0xFFFFFFFFFFFFFFFF
     let (new_c1, carry1) = c1.overflowing_add(new_th);
-    let new_c2 = c2 + (carry1 as u64);
+    let new_c2 = c2 + u64::from(carry1);
 
     (new_c0, new_c1, new_c2)
 }
 
 /// Add a*b to the number defined by (c0,c1). c1 must never overflow.
 fn muladd_fast(a: u64, b: u64, c0: u64, c1: u64) -> (u64, u64) {
-    let t = (a as u128) * (b as u128);
-    let th = (t >> 64) as u64; // at most 0xFFFFFFFFFFFFFFFE
+    let t = u128::from(a) * u128::from(b);
+
+    #[allow(clippy::cast_possible_truncation, reason = "deliberate truncation")]
     let tl = t as u64;
+    let th = (t >> 64) as u64; // at most 0xFFFFFFFFFFFFFFFE
 
     let (new_c0, carry0) = c0.overflowing_add(tl);
-    let new_th = th.wrapping_add(carry0 as u64); // at most 0xFFFFFFFFFFFFFFFF
+    let new_th = th.wrapping_add(u64::from(carry0)); // at most 0xFFFFFFFFFFFFFFFF
     let new_c1 = c1 + new_th;
 
     (new_c0, new_c1)

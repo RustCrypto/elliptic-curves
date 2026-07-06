@@ -32,6 +32,7 @@ impl FieldArithmetic for Secp256k1 {
 const CURVE_EQUATION_B_SINGLE: u32 = 7u32;
 
 #[rustfmt::skip]
+#[allow(clippy::cast_possible_truncation)]
 pub(crate) const CURVE_EQUATION_B: FieldElement = FieldElement::from_bytes_unchecked(&[
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0, 0,
