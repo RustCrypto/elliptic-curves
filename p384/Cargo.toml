@@ -72,7 +72,7 @@ harness = false
 name = "scalar"
 harness = false
 
-# NOTE: these are the only lints we explicitly want to configure for p256
+# NOTE: these are the only lints we explicitly want to configure for p384
 [lints.rust.unexpected_cfgs]
 level = "warn"
 check-cfg = [
