@@ -27,6 +27,7 @@ pub(crate) mod backend {
     use primeorder::MulBackend;
 
     /// Backend based on precomputed tables.
+    #[derive(Clone, Copy, Debug)]
     pub struct PrecomputedTables;
 
     impl MulBackend<NistP521> for PrecomputedTables {

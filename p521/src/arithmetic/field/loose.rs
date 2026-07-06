@@ -1,9 +1,10 @@
 use super::{FieldElement, field_impl::*};
-use core::ops::Mul;
+use core::{fmt, ops::Mul};
 use elliptic_curve::bigint::cpubits;
 
 /// "Loose" field element: unreduced and intended to be followed by an
 /// additional operation which will perform a reduction.
+#[derive(Clone, Copy)]
 pub struct LooseFieldElement(pub(super) fiat_p521_loose_field_element);
 
 impl LooseFieldElement {
@@ -89,5 +90,11 @@ impl Mul<&LooseFieldElement> for &LooseFieldElement {
     #[inline]
     fn mul(self, rhs: &LooseFieldElement) -> FieldElement {
         LooseFieldElement::multiply(self, rhs)
+    }
+}
+
+impl fmt::Debug for LooseFieldElement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("LooseFieldElement").field(&self.0.0).finish()
     }
 }

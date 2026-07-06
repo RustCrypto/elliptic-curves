@@ -33,15 +33,27 @@ use primefield::{FieldExt, PrimeFieldExt};
 // TODO(tarcieri): remove `allow(dead_code)` when we can use `const _` to silence warnings
 cpubits! {
     32 => {
-        #[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
-        #[allow(dead_code)]
+        #[allow(dead_code, missing_debug_implementations, trivial_numeric_casts)]
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            clippy::cast_sign_loss,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast
+        )]
         #[rustfmt::skip]
         #[path = "field/p521_32.rs"]
         mod field_impl;
     }
     64 => {
-        #[allow(clippy::needless_lifetimes, clippy::unnecessary_cast)]
-        #[allow(dead_code)]
+        #[allow(dead_code, missing_debug_implementations, trivial_numeric_casts)]
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_possible_wrap,
+            clippy::cast_sign_loss,
+            clippy::needless_lifetimes,
+            clippy::unnecessary_cast
+        )]
         #[rustfmt::skip]
         #[path = "field/p521_64.rs"]
         mod field_impl;
@@ -191,7 +203,7 @@ impl FieldElement {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        Choice::from(self.0[0] as u8 & 1)
+        Choice::from((self.0[0] & 1) as u8)
     }
 
     /// Determine if this [`FieldElement`] is even in the SEC1 sense: `self mod 2 == 0`.
@@ -394,7 +406,7 @@ impl FieldElement {
         let mut i = 0;
         while i < field_bytes.0.len() {
             uint_bytes[i + offset] = field_bytes.0[i];
-            i += 1
+            i += 1;
         }
 
         Uint::from_be_slice(&uint_bytes)
