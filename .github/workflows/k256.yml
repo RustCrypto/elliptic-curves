@@ -52,7 +52,6 @@ jobs:
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features schnorr
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features serde
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features sha256
-      - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features ecdsa,sha256
       - run: cargo build --target thumbv7em-none-eabi --release --no-default-features --features critical-section,ecdh,ecdsa,group-digest,pem,pkcs8,schnorr,serde,sha256
 
