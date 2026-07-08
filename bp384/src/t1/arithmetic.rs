@@ -32,12 +32,10 @@ impl PrimeCurveArithmetic for BrainpoolP384t1 {
 }
 
 impl PrimeCurveParams for BrainpoolP384t1 {
-    type PointArithmetic = point_arithmetic::EquationAIsGeneric;
+    type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
     type Backend = mul_backend::VariableOnly;
 
-    const EQUATION_A: FieldElement = FieldElement::from_hex_vartime(
-        "8cb91e82a3386d280f5d6f7e50e641df152f7109ed5456b412b1da197fb71123acd3a729901d1a71874700133107ec50",
-    );
+    const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();
     const EQUATION_B: FieldElement = FieldElement::from_hex_vartime(
         "7f519eada7bda81bd826dba647910f8c4b9346ed8ccdc64e4b1abd11756dce1d2074aa263b88805ced70355a33b471ee",
     );

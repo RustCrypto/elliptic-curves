@@ -32,12 +32,10 @@ impl FieldArithmetic for BrainpoolP256t1 {
 }
 
 impl PrimeCurveParams for BrainpoolP256t1 {
-    type PointArithmetic = point_arithmetic::EquationAIsGeneric;
+    type PointArithmetic = point_arithmetic::EquationAIsMinusThree;
     type Backend = mul_backend::VariableOnly;
 
-    const EQUATION_A: FieldElement = FieldElement::from_hex_vartime(
-        "a9fb57dba1eea9bc3e660a909d838d726e3bf623d52620282013481d1f6e5374",
-    );
+    const EQUATION_A: FieldElement = FieldElement::from_u64(3).neg();
     const EQUATION_B: FieldElement = FieldElement::from_hex_vartime(
         "662c61c430d84ea4fe66a7733d0b76b7bf93ebc4af2f49256ae58101fee92b04",
     );
