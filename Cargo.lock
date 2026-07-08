@@ -701,7 +701,7 @@ dependencies = [
 
 [[package]]
 name = "k256"
-version = "0.14.0-rc.15"
+version = "0.14.0"
 dependencies = [
  "cpubits",
  "criterion",
