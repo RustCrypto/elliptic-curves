@@ -22,9 +22,11 @@ use signature::{
 
 #[cfg(feature = "serde")]
 use serdect::serde::{Deserialize, Serialize, de, ser};
-
 #[cfg(debug_assertions)]
 use signature::hazmat::PrehashVerifier;
+
+/// Number of bytes of auxiliary randomness.
+const AUX_RAND_BYTES: usize = 32;
 
 /// Taproot Schnorr signing key.
 #[derive(Clone)]
@@ -83,19 +85,16 @@ impl SigningKey {
 
     /// Compute Schnorr signature.
     ///
-    /// <div class="warning">
-    /// <b>Security Warning</b>
+    /// This is a low-level interface intended only for use cases that need to explicitly pass
+    /// `aux_rand` rather than deriving it from an RNG.
     ///
-    /// This is a low-level interface intended only for unusual use cases involving signing
-    /// pre-hashed messages, or "raw" messages where the message is not hashed at all prior to being
-    /// used to generate the Schnorr signature.
-    ///
-    /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
-    /// </div>
+    /// Prefer higher-level APIs like `Signer`, `RandomizedSigner`, or `(Randomized)PrehashSigner`
+    /// instead whenever possible.
     ///
     /// # Errors
-    /// Returns an error if the generated signature would be invalid.
-    pub fn sign_raw(&self, msg: &[u8], aux_rand: &[u8; 32]) -> Result<Signature> {
+    /// Returns an error if the generated signature would be invalid (i.e. if derived `k` were `0`).
+    #[doc(hidden)]
+    pub fn sign_raw(&self, msg: &[u8], aux_rand: &[u8; AUX_RAND_BYTES]) -> Result<Signature> {
         let mut t = tagged_hash(AUX_TAG).chain_update(aux_rand).finalize();
 
         for (a, b) in t.iter_mut().zip(self.secret_key.to_bytes().iter()) {
@@ -216,13 +215,24 @@ where
     fn try_sign_digest<F: Fn(&mut D) -> Result<()>>(&self, f: F) -> Result<Signature> {
         let mut digest = D::new();
         f(&mut digest)?;
-        self.sign_raw(&digest.finalize(), &Default::default())
+        self.sign_prehash(&digest.finalize())
     }
 }
 
 impl PrehashSigner<Signature> for SigningKey {
     fn sign_prehash(&self, prehash: &[u8]) -> Result<Signature> {
-        self.sign_raw(prehash, &Default::default())
+        // Handle `k = 0` by retrying signature with different `aux_rand`. The chances of this
+        // occurring are infinitesimal and a single retry should be sufficient.
+        for i in 0..=u8::MAX {
+            let mut aux_rand = [0u8; AUX_RAND_BYTES];
+            aux_rand[0] = i;
+
+            if let Ok(sig) = self.sign_raw(prehash, &aux_rand) {
+                return Ok(sig);
+            }
+        }
+
+        Err(Error::new())
     }
 }
 
@@ -238,7 +248,7 @@ where
         let mut digest = D::new();
         f(&mut digest)?;
 
-        let mut aux_rand = [0u8; 32];
+        let mut aux_rand = [0u8; AUX_RAND_BYTES];
         rng.try_fill_bytes(&mut aux_rand)
             .map_err(|_| Error::new())?;
         self.sign_raw(&digest.finalize(), &aux_rand)
@@ -274,7 +284,7 @@ impl RandomizedPrehashSigner<Signature> for SigningKey {
         rng: &mut R,
         prehash: &[u8],
     ) -> Result<Signature> {
-        let mut aux_rand = [0u8; 32];
+        let mut aux_rand = [0u8; AUX_RAND_BYTES];
         rng.try_fill_bytes(&mut aux_rand)
             .map_err(|_| Error::new())?;
 
