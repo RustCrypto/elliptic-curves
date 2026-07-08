@@ -1,9 +1,9 @@
 [package]
 name = "p521"
-version = "0.14.0-rc.15"
+version = "0.14.0"
 description = """
-Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve
-as defined in SP 800-186
+Pure Rust implementation of the NIST P-521 (a.k.a. secp521r1) elliptic curve as defined in
+SP 800-186, with support for ECDH, ECDSA signing/verification, and general purpose curve arithmetic
 """
 authors = ["RustCrypto Developers"]
 license = "Apache-2.0 OR MIT"
