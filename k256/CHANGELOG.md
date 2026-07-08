@@ -4,33 +4,83 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.14.0 (UNRELEASED)
+## 0.14.0 (2026-07-08)
 ### Added
 - Support for non-32-byte BIP340 signatures ([#1041])
+- Implement `From<NonZeroScalar>` for `Scalar` ([#1188])
+- Implement `From<NonIdentity>` for `Projective/AffinePoint` ([#1190])
+- Implement `MultipartSigner/Verifier` ([#1221])
+- Support `hash2curve` crate (#[1286])
+- Implement `FromUniformBytes<64>` for `Scalar` ([#1379])
+- Implement `CofactorGroup` for `ProjectivePoint` ([#1394])
+- Implement `AffineCoordinates::from_coordinates` ([#1405])
+- `getrandom` feature ([#1521])
+- Conversions to/from `U256` for field elements ([#1552])
+- Implement `crypto_common::Generate` trait ([#1586])
 
-### Fixed
-- Batch Normalization `normalizes_to_zero()` bug fix ([#1029])
-- Prevent panic when creating a Schnorr from slice ([#1056])
-
-### Removed
-- Implementation of `signature::PrehashSignature` on `schnorr::Signature` ([#1275])
-
-## Changed
-- Update to `elliptic-curve` v0.14 ([#1011])
-- Update to `ecdsa` v0.17 ([#1011])
-- Update to `secdect` v0.3 ([#1084])
-- Update to `rand_core` v0.9 ([#1125])
-- Update to `hybrid-array` v0.3 ([#1125])
+### Changed
 - Edition changed to 2024 and MSRV bumped to 1.85 ([#1125])
 - Relax MSRV policy and allow MSRV bumps in patch releases
+- Expose `AffineCoordinates::y` ([#1230])
+- Use rejection sampling for random point generation ([#1344])
+- Use new `Reduce` trait ([#1359])
+- Update `Curve::ORDER` to be `Odd` ([#1416])
+- Factor apart Schnorr `from_bytes`/`from_slice` methods ([#1429])
+- Use `crypto-bigint` to implement inversions ([#1554], [#1573])
+- Bump `sha2` dependency to v0.11 ([#1712])
+- Variable-time scalar multiplication support ([#1714], [#1715], [#1728], [#1730], [#1745], [#1812], [#1816], [#1819], [#1823], [#1884])
+- Bump `signature` dependency to v3 ([#1756])
+- Bump `elliptic-curve` dependency to v0.14 ([#1849])
+- Bump `ecdsa` to v0.17 ([#1883])
 
-[#1011]: https://github.com/RustCrypto/elliptic-curves/pull/1011
+### Removed
+- `bits` feature ([#1766])
+- `expose-field` feature in favor of `FieldArithmetic` trait ([#1834])
+
+### Fixed
+- Use `normalizes_to_zero` in batch normalization ([#1029])
+- Panics when parsing malformed Schnorr signatures ([#1056])
+- `BatchInvert` impl for `FieldElement` could compute non-normalized results ([#1862])
+- Have Schnorr signing reduce `k` mod `n` ([#1898])
+
 [#1029]: https://github.com/RustCrypto/elliptic-curves/pull/1029
 [#1041]: https://github.com/RustCrypto/elliptic-curves/pull/1041
 [#1056]: https://github.com/RustCrypto/elliptic-curves/pull/1056
-[#1084]: https://github.com/RustCrypto/elliptic-curves/pull/1084
 [#1125]: https://github.com/RustCrypto/elliptic-curves/pull/1125
-
+[#1188]: https://github.com/RustCrypto/elliptic-curves/pull/1188
+[#1190]: https://github.com/RustCrypto/elliptic-curves/pull/1190
+[#1221]: https://github.com/RustCrypto/elliptic-curves/pull/1221
+[#1230]: https://github.com/RustCrypto/elliptic-curves/pull/1230
+[#1344]: https://github.com/RustCrypto/elliptic-curves/pull/1344
+[#1359]: https://github.com/RustCrypto/elliptic-curves/pull/1359
+[#1379]: https://github.com/RustCrypto/elliptic-curves/pull/1379
+[#1394]: https://github.com/RustCrypto/elliptic-curves/pull/1394
+[#1405]: https://github.com/RustCrypto/elliptic-curves/pull/1405
+[#1416]: https://github.com/RustCrypto/elliptic-curves/pull/1416
+[#1429]: https://github.com/RustCrypto/elliptic-curves/pull/1429
+[#1521]: https://github.com/RustCrypto/elliptic-curves/pull/1521
+[#1552]: https://github.com/RustCrypto/elliptic-curves/pull/1552
+[#1554]: https://github.com/RustCrypto/elliptic-curves/pull/1554
+[#1573]: https://github.com/RustCrypto/elliptic-curves/pull/1573
+[#1586]: https://github.com/RustCrypto/elliptic-curves/pull/1586
+[#1712]: https://github.com/RustCrypto/elliptic-curves/pull/1712
+[#1714]: https://github.com/RustCrypto/elliptic-curves/pull/1714
+[#1715]: https://github.com/RustCrypto/elliptic-curves/pull/1715
+[#1728]: https://github.com/RustCrypto/elliptic-curves/pull/1728
+[#1730]: https://github.com/RustCrypto/elliptic-curves/pull/1730
+[#1745]: https://github.com/RustCrypto/elliptic-curves/pull/1745
+[#1756]: https://github.com/RustCrypto/elliptic-curves/pull/1756
+[#1766]: https://github.com/RustCrypto/elliptic-curves/pull/1766
+[#1812]: https://github.com/RustCrypto/elliptic-curves/pull/1812
+[#1816]: https://github.com/RustCrypto/elliptic-curves/pull/1816
+[#1819]: https://github.com/RustCrypto/elliptic-curves/pull/1819
+[#1823]: https://github.com/RustCrypto/elliptic-curves/pull/1823
+[#1834]: https://github.com/RustCrypto/elliptic-curves/pull/1834
+[#1849]: https://github.com/RustCrypto/elliptic-curves/pull/1849
+[#1862]: https://github.com/RustCrypto/elliptic-curves/pull/1862
+[#1883]: https://github.com/RustCrypto/elliptic-curves/pull/1883
+[#1884]: https://github.com/RustCrypto/elliptic-curves/pull/1884
+[#1898]: https://github.com/RustCrypto/elliptic-curves/pull/1898
 
 ## 0.13.3 (2024-01-08)
 ### Added
