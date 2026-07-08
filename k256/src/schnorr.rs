@@ -5,7 +5,7 @@
 //! [Schnorr signatures] are a simple group-based digital signature scheme with
 //! a number of desirable properties relating to security and composability:
 //!
-//! - Provably secure: strongly unforgable under chosen message attack (SUF-CMA).
+//! - Provably secure: strongly unforgeable under chosen message attack (SUF-CMA).
 //! - Non-malleable: signatures cannot be altered by an attacker and still verify.
 //! - Linear: multiple parties can collaborate to produce a valid signature
 //!   a.k.a. multisignatures.

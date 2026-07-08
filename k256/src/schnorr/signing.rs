@@ -71,11 +71,11 @@ impl SigningKey {
 
     /// Borrow the secret [`NonZeroScalar`] value for this key.
     ///
-    /// # ⚠️ Warning
+    /// <div class="warning">
+    /// <b>Security Warning<b>
     ///
-    /// This value is key material.
-    ///
-    /// Please treat it with the care it deserves!
+    /// This value is key material. Please treat it with the care it deserves!
+    /// </div>
     #[must_use]
     pub fn as_nonzero_scalar(&self) -> &NonZeroScalar {
         &self.secret_key
@@ -84,17 +84,17 @@ impl SigningKey {
     /// Compute Schnorr signature.
     ///
     /// <div class="warning">
-    /// This is a low-level interface intended only for unusual use cases
-    /// involving signing pre-hashed messages, or "raw" messages where the
-    /// message is not hashed at all prior to being used to generate the
-    /// Schnorr signature.
+    /// <b>Security Warning</b>
+    ///
+    /// This is a low-level interface intended only for unusual use cases involving signing
+    /// pre-hashed messages, or "raw" messages where the message is not hashed at all prior to being
+    /// used to generate the Schnorr signature.
     ///
     /// The preferred interfaces are the [`Signer`] or [`RandomizedSigner`] traits.
     /// </div>
     ///
     /// # Errors
     /// Returns an error if the generated signature would be invalid.
-    // TODO(tarcieri): deterministically handle errors internally to make this infallible?
     pub fn sign_raw(&self, msg: &[u8], aux_rand: &[u8; 32]) -> Result<Signature> {
         let mut t = tagged_hash(AUX_TAG).chain_update(aux_rand).finalize();
 
@@ -108,16 +108,18 @@ impl SigningKey {
             .chain_update(msg)
             .finalize();
 
-        let mut k = NonZeroScalar::try_from(&*rand).map_err(|_| Error::new())?;
+        let mut k = NonZeroScalar::new(Scalar::reduce(&rand))
+            .into_option()
+            .ok_or_else(Error::new)?;
 
-        // Compute R = k*G using precomputed tables, convert to affine once,
-        // and ensure R has even y (BIP340 requirement).
+        // Compute R = k*G using precomputed tables, convert to affine once, and ensure R has an
+        // even y-coordinate (BIP340 requirement).
         let R = ProjectivePoint::mul_by_generator(&k).to_affine();
         let odd = R.y.normalize().is_odd();
         k.conditional_assign(&-k, odd);
         let r = R.x.normalize();
 
-        let e = <Scalar as Reduce<FieldBytes>>::reduce(
+        let e = Scalar::reduce(
             &tagged_hash(CHALLENGE_TAG)
                 .chain_update(r.to_bytes())
                 .chain_update(self.verifying_key.to_bytes())
@@ -126,7 +128,7 @@ impl SigningKey {
         );
 
         let s = *k + e * *self.secret_key;
-        let s = Option::from(NonZeroScalar::new(s)).ok_or_else(Error::new)?;
+        let s = NonZeroScalar::new(s).into_option().ok_or_else(Error::new)?;
         let sig = Signature { r, s };
 
         #[cfg(debug_assertions)]
