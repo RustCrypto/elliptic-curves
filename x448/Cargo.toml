@@ -14,7 +14,7 @@ readme = "README.md"
 description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellman function"
 
 [dependencies]
-ed448-goldilocks = { version = "0.14.0-pre.15", default-features = false }
+ed448-goldilocks = { version = "0.14.0", default-features = false }
 zeroize = { version = "1", default-features = false, features = ["zeroize_derive"] }
 
 # optional dependencies
