@@ -1,32 +1,32 @@
 //! Bign256 secret key.
-// TODO(tarcieri): replace with `elliptic_curve::SecretKey`
 
+use core::fmt::{self, Debug};
+#[cfg(feature = "pem")]
 use core::str::FromStr;
+#[cfg(feature = "pkcs8")]
 use der::{SecretDocument, asn1::OctetStringRef};
 
 #[cfg(feature = "pkcs8")]
 use crate::ALGORITHM_OID;
-use crate::{PublicKey, ScalarValue};
+use crate::{BignP256, FieldBytes, NonZeroScalar, PublicKey, Result, ScalarValue};
+#[cfg(feature = "pem")]
+use elliptic_curve::Error;
 #[cfg(feature = "pkcs8")]
 use elliptic_curve::pkcs8::{
     self, AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
-use elliptic_curve::{Error, Generate, array::typenum::Unsigned, zeroize::Zeroizing};
+use elliptic_curve::{Generate, rand_core::TryCryptoRng, zeroize::ZeroizeOnDrop};
 
-#[cfg(feature = "arithmetic")]
-use crate::{BignP256, FieldBytes, NonZeroScalar, Result, elliptic_curve::rand_core::TryCryptoRng};
-
-/// Elliptic curve BignP256 Secret Key
-#[cfg(feature = "arithmetic")]
-#[derive(Copy, Clone, Debug)]
-pub struct SecretKey {
-    inner: ScalarValue,
-}
+/// Elliptic curve BignP256 Secret Key.
+///
+/// A wrapper around [`elliptic_curve::SecretKey`] which uses the PKCS#8
+/// encoding defined in STB 34.101.45 (the raw secret scalar as an octet
+/// string with the bign algorithm identifier) instead of SEC1.
+#[derive(Clone)]
+pub struct SecretKey(elliptic_curve::SecretKey<BignP256>);
 
 impl SecretKey {
-    const MIN_SIZE: usize = 24;
-
     /// Borrow the inner secret [`elliptic_curve::ScalarValue`] value.
     ///
     /// # ⚠️ Warning
@@ -34,8 +34,8 @@ impl SecretKey {
     /// This value is key material.
     ///
     /// Please treat it with the care it deserves!
-    pub fn as_scalar_primitive(&self) -> &ScalarValue {
-        &self.inner
+    pub fn as_scalar_value(&self) -> &ScalarValue {
+        self.0.as_scalar_value()
     }
 
     /// Get the secret [`elliptic_curve::NonZeroScalar`] value for this key.
@@ -45,26 +45,18 @@ impl SecretKey {
     /// This value is key material.
     ///
     /// Please treat it with the care it deserves!
-    #[cfg(feature = "arithmetic")]
     pub fn to_nonzero_scalar(&self) -> NonZeroScalar {
-        (*self).into()
+        self.0.to_nonzero_scalar()
     }
 
     /// Get the [`PublicKey`] which corresponds to this secret key
-    #[cfg(feature = "arithmetic")]
     pub fn public_key(&self) -> PublicKey {
-        PublicKey::from_secret_scalar(&self.to_nonzero_scalar())
+        self.0.public_key().into()
     }
 
     /// Deserialize secret key from an encoded secret scalar.
     pub fn from_bytes(bytes: &FieldBytes) -> Result<Self> {
-        let inner = ScalarValue::from_bytes(bytes).into_option().ok_or(Error)?;
-
-        if inner.is_zero().into() {
-            return Err(Error);
-        }
-
-        Ok(Self { inner })
+        elliptic_curve::SecretKey::from_bytes(bytes).map(Self)
     }
 
     /// Deserialize secret key from an encoded secret scalar passed as a byte slice.
@@ -77,24 +69,58 @@ impl SecretKey {
     /// NOTE: this function is variable-time with respect to the input length. To avoid a timing
     /// sidechannel, always ensure that the input has been pre-padded to `C::FieldBytesSize`.
     pub fn from_slice(slice: &[u8]) -> Result<Self> {
-        if slice.len() == <BignP256 as elliptic_curve::Curve>::FieldBytesSize::USIZE {
-            Self::from_bytes(&FieldBytes::try_from(slice).map_err(|_| Error)?)
-        } else if (Self::MIN_SIZE..<BignP256 as elliptic_curve::Curve>::FieldBytesSize::USIZE)
-            .contains(&slice.len())
-        {
-            let mut bytes = Zeroizing::new(FieldBytes::default());
-            let offset = <BignP256 as elliptic_curve::Curve>::FieldBytesSize::USIZE
-                .saturating_sub(slice.len());
-            bytes[offset..].copy_from_slice(slice);
-            Self::from_bytes(&bytes)
-        } else {
-            Err(Error)
-        }
+        elliptic_curve::SecretKey::from_slice(slice).map(Self)
     }
 
     /// Serialize raw secret scalar as a big endian integer.
     pub fn to_bytes(&self) -> FieldBytes {
-        self.inner.to_bytes()
+        self.0.to_bytes()
+    }
+}
+
+impl Debug for SecretKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl ZeroizeOnDrop for SecretKey {}
+
+impl From<SecretKey> for NonZeroScalar {
+    fn from(secret_key: SecretKey) -> NonZeroScalar {
+        secret_key.to_nonzero_scalar()
+    }
+}
+
+impl From<NonZeroScalar> for SecretKey {
+    fn from(scalar: NonZeroScalar) -> SecretKey {
+        Self(scalar.into())
+    }
+}
+
+impl From<&NonZeroScalar> for SecretKey {
+    fn from(scalar: &NonZeroScalar) -> SecretKey {
+        Self(scalar.into())
+    }
+}
+
+impl From<SecretKey> for elliptic_curve::SecretKey<BignP256> {
+    fn from(secret_key: SecretKey) -> Self {
+        secret_key.0
+    }
+}
+
+impl From<elliptic_curve::SecretKey<BignP256>> for SecretKey {
+    fn from(secret_key: elliptic_curve::SecretKey<BignP256>) -> Self {
+        Self(secret_key)
+    }
+}
+
+impl Generate for SecretKey {
+    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
+        rng: &mut R,
+    ) -> core::result::Result<Self, R::Error> {
+        elliptic_curve::SecretKey::try_generate_from_rng(rng).map(Self)
     }
 }
 
@@ -105,38 +131,6 @@ impl AssociatedAlgorithmIdentifier for SecretKey {
         oid: ALGORITHM_OID,
         parameters: Some(BignP256::OID),
     };
-}
-
-impl From<SecretKey> for NonZeroScalar {
-    fn from(secret_key: SecretKey) -> NonZeroScalar {
-        secret_key.to_nonzero_scalar()
-    }
-}
-
-#[cfg(feature = "arithmetic")]
-impl From<NonZeroScalar> for SecretKey {
-    fn from(scalar: NonZeroScalar) -> SecretKey {
-        SecretKey::from(&scalar)
-    }
-}
-
-#[cfg(feature = "arithmetic")]
-impl From<&NonZeroScalar> for SecretKey {
-    fn from(scalar: &NonZeroScalar) -> SecretKey {
-        SecretKey {
-            inner: scalar.into(),
-        }
-    }
-}
-
-impl Generate for SecretKey {
-    fn try_generate_from_rng<R: TryCryptoRng + ?Sized>(
-        rng: &mut R,
-    ) -> core::result::Result<Self, R::Error> {
-        Ok(Self {
-            inner: ScalarValue::try_generate_from_rng(rng)?,
-        })
-    }
 }
 
 #[cfg(feature = "pkcs8")]
