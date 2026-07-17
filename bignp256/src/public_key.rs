@@ -1,108 +1,79 @@
 //! Public key types and traits
-// TODO(tarcieri): replace with `elliptic_curve::PublicKey`
 
 #[cfg(feature = "pkcs8")]
 use crate::ALGORITHM_OID;
 use crate::{AffinePoint, BignP256, NonZeroScalar, ProjectivePoint, Sec1Point};
+#[cfg(feature = "pem")]
 use core::{fmt::Display, str::FromStr};
 #[cfg(feature = "pkcs8")]
 use elliptic_curve::pkcs8::{
     self, AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
-use elliptic_curve::{
-    CurveArithmetic, Error, Group,
-    array::Array,
-    point::NonIdentity,
-    sec1::{FromSec1Point, ToSec1Point},
-};
+use elliptic_curve::{Error, array::Array, point::NonIdentity, sec1::ToSec1Point};
 
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, fmt};
 
 /// Elliptic curve BignP256 public key.
-#[cfg(feature = "arithmetic")]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct PublicKey {
-    point: AffinePoint,
-}
+///
+/// A wrapper around [`elliptic_curve::PublicKey`] which uses the raw
+/// (untagged) point encoding and the PKCS#8 algorithm identifier defined in
+/// STB 34.101.45 instead of the SEC1/RFC 5480 ones.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct PublicKey(elliptic_curve::PublicKey<BignP256>);
 
 impl PublicKey {
     /// Convert an [`AffinePoint`] into a [`PublicKey`]
     pub fn from_affine(point: AffinePoint) -> Result<Self, Error> {
-        if ProjectivePoint::from(point).is_identity().into() {
-            Err(Error)
-        } else {
-            Ok(Self { point })
-        }
+        elliptic_curve::PublicKey::from_affine(point).map(Self)
     }
 
     /// Compute a [`PublicKey`] from a secret [`NonZeroScalar`] value
     /// (i.e. a secret key represented as a raw scalar value)
     pub fn from_secret_scalar(scalar: &NonZeroScalar) -> Self {
-        // `NonZeroScalar` ensures the resulting point is not the identity
-        #[allow(clippy::arithmetic_side_effects)]
-        Self {
-            point: (<BignP256 as CurveArithmetic>::ProjectivePoint::generator() * scalar.as_ref())
-                .to_affine(),
-        }
+        Self(elliptic_curve::PublicKey::from_secret_scalar(scalar))
     }
 
     /// Borrow the inner [`AffinePoint`] from this [`PublicKey`].
     ///
     /// In ECC, public keys are elliptic curve points.
     pub fn as_affine(&self) -> &AffinePoint {
-        &self.point
+        self.0.as_affine()
     }
 
     /// Convert this [`PublicKey`] to a [`ProjectivePoint`] for the given curve
     pub fn to_projective(&self) -> ProjectivePoint {
-        self.point.into()
+        self.0.to_projective()
     }
 
     /// Convert this [`PublicKey`] to a [`NonIdentity`] of the inner [`AffinePoint`]
     pub fn to_nonidentity(&self) -> NonIdentity<AffinePoint> {
-        NonIdentity::new(self.point).unwrap()
+        self.0.to_nonidentity()
     }
 
-    /// Get [`PublicKey`] from bytes
+    /// Parse a [`PublicKey`] from the raw (untagged) point encoding defined
+    /// in STB 34.101.45.
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         let bytes = Array::try_from(bytes).map_err(|_| Error)?;
-
-        let point = Sec1Point::from_untagged_bytes(&bytes);
-        let affine = AffinePoint::from_sec1_point(&point);
-        if affine.is_none().into() {
-            Err(Error)
-        } else {
-            Ok(Self {
-                point: affine.unwrap(),
-            })
-        }
+        Self::from_sec1_point(Sec1Point::from_untagged_bytes(&bytes))
     }
 
     /// Get [`PublicKey`] from encoded point
     pub fn from_sec1_point(point: Sec1Point) -> Result<Self, Error> {
-        let affine = AffinePoint::from_sec1_point(&point);
-        if affine.is_none().into() {
-            Err(Error)
-        } else {
-            Ok(Self {
-                point: affine.unwrap(),
-            })
-        }
+        elliptic_curve::PublicKey::try_from(&point).map(Self)
     }
 
+    /// Serialize this [`PublicKey`] using the raw (untagged) point encoding
+    /// defined in STB 34.101.45.
     #[cfg(feature = "alloc")]
-    /// Get bytes from [`PublicKey`]
     pub fn to_bytes(&self) -> Box<[u8]> {
-        let bytes = self.point.to_sec1_point(false).to_bytes();
-        bytes[1..].to_vec().into_boxed_slice()
+        self.to_sec1_point().to_bytes()[1..].into()
     }
 
-    #[cfg(feature = "alloc")]
     /// Get encoded point from [`PublicKey`]
     pub fn to_sec1_point(&self) -> Sec1Point {
-        self.point.to_sec1_point(false)
+        self.0.to_sec1_point(false)
     }
 }
 
@@ -111,37 +82,46 @@ impl AsRef<AffinePoint> for PublicKey {
         self.as_affine()
     }
 }
-impl Copy for PublicKey {}
+
 impl From<NonIdentity<AffinePoint>> for PublicKey {
     fn from(value: NonIdentity<AffinePoint>) -> Self {
-        Self::from(&value)
+        Self(value.into())
     }
 }
 
 impl From<&NonIdentity<AffinePoint>> for PublicKey {
     fn from(value: &NonIdentity<AffinePoint>) -> Self {
-        Self {
-            point: value.to_point(),
-        }
+        Self(value.into())
     }
 }
 
 impl From<PublicKey> for NonIdentity<AffinePoint> {
     fn from(value: PublicKey) -> Self {
-        Self::from(&value)
+        value.0.into()
     }
 }
 
 impl From<&PublicKey> for NonIdentity<AffinePoint> {
     fn from(value: &PublicKey) -> Self {
-        PublicKey::to_nonidentity(value)
+        value.0.into()
     }
 }
 
 impl From<PublicKey> for elliptic_curve::PublicKey<BignP256> {
     fn from(value: PublicKey) -> Self {
-        elliptic_curve::PublicKey::<BignP256>::from_affine(value.point)
-            .expect("should be non-identity")
+        value.0
+    }
+}
+
+impl From<elliptic_curve::PublicKey<BignP256>> for PublicKey {
+    fn from(value: elliptic_curve::PublicKey<BignP256>) -> Self {
+        Self(value)
+    }
+}
+
+impl From<PublicKey> for Sec1Point {
+    fn from(value: PublicKey) -> Self {
+        value.to_sec1_point()
     }
 }
 
@@ -191,12 +171,6 @@ impl EncodePublicKey for PublicKey {
             subject_public_key,
         }
         .try_into()
-    }
-}
-
-impl From<PublicKey> for Sec1Point {
-    fn from(value: PublicKey) -> Self {
-        value.point.to_sec1_point(false)
     }
 }
 
