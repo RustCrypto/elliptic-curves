@@ -20,7 +20,7 @@ edition = "2024"
 rust-version = "1.85"
 
 [dependencies]
-array = { version = "0.4.13", package = "hybrid-array" }
+array = { package = "hybrid-array", git = "https://github.com/RustCrypto/hybrid-array.git" } # TODO remove git link after provided update to version >= 0.4.15
 ff = { version = "0.14", default-features = false }
 group = { version = "0.14", default-features = false }
 
