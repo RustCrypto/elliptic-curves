@@ -7,6 +7,10 @@
 ![Rust Version][rustc-image]
 [![Project Chat][chat-image]][chat-link]
 
+THIS CODE HAS NOT BEEN AUDITED OR REVIEWED. USE AT YOUR OWN RISK.
+
+## About
+
 Brainpool P-512 (`brainpoolP512r1` and `brainpoolP512t1`) elliptic curve
 types implemented in terms of traits from the [`elliptic-curve`] crate.
 
