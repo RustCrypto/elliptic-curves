@@ -3,8 +3,8 @@
 #![allow(clippy::needless_range_loop, clippy::op_ref)]
 
 use crate::{
-    AffinePoint, ArraySize, Field, LookupTable, MulBackend, PrimeCurveParams, PrimeFieldExt,
-    Radix16Decomposition, Radix16Digits, point_arithmetic::PointArithmetic,
+    AffinePoint, ArraySize, Field, LookupTable, MulBackend, PrimeCurveParams, Radix16Decomposition,
+    Radix16Digits, point_arithmetic::PointArithmetic,
 };
 use core::{array, borrow::Borrow, iter::Sum, iter::zip};
 use elliptic_curve::{
@@ -43,11 +43,6 @@ pub(crate) type WnafBase<C> = wnaf::WnafBase<ProjectivePoint<C>, DefaultWnafWind
 
 /// `WnafScalar` generic around an elliptic curve `C` using default window size for this curve.
 pub(crate) type WnafScalar<C> = wnaf::WnafScalar<Scalar<C>, DefaultWnafWindowSize>;
-
-fn wnaf_scalar<C: PrimeCurveParams>(scalar: &Scalar<C>) -> WnafScalar<C> {
-    let repr = scalar.to_le_repr();
-    WnafScalar::<C>::from_le_bytes(repr.as_ref())
-}
 
 /// Point on a Weierstrass curve in projective coordinates.
 #[derive(Clone, Copy, Debug)]
@@ -145,7 +140,7 @@ where
     #[inline]
     #[must_use]
     pub fn mul_vartime(&self, k: &Scalar<C>) -> Self {
-        WnafBase::<C>::new(self) * wnaf_scalar::<C>(k)
+        WnafBase::<C>::new(self) * WnafScalar::<C>::new(k)
     }
 }
 
@@ -508,7 +503,7 @@ where
             .collect();
         let scalars: Vec<_> = points_and_scalars
             .iter()
-            .map(|(_, scalar)| wnaf_scalar::<C>(scalar))
+            .map(|(_, scalar)| WnafScalar::<C>::new(scalar))
             .collect();
 
         WnafBase::multiscalar_mul(bases.iter().zip(scalars.iter()))
@@ -529,7 +524,7 @@ where
 
     fn lincomb_vartime(points_and_scalars: &[(Self, Scalar<C>); N]) -> Self {
         let bases = points_and_scalars.map(|(point, _)| WnafBase::<C>::new(&point));
-        let scalars = points_and_scalars.map(|(_, scalar)| wnaf_scalar::<C>(&scalar));
+        let scalars = points_and_scalars.map(|(_, scalar)| WnafScalar::<C>::new(&scalar));
         WnafBase::multiscalar_mul(bases.iter().zip(scalars.iter()))
     }
 }
