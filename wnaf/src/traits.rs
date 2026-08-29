@@ -4,8 +4,8 @@ use array::{
     ArraySize,
     typenum::{U1, U2, U3, U4, U5, U6, U7, U8, U16, U32, U64, Unsigned},
 };
-use ff::PrimeField;
 use group::Group;
+use primefield::PrimeFieldExt;
 
 /// Allowed wNAF window size: we use this to precompute the window point sizes, because it's
 /// currently not possible to write bounds for them.
@@ -23,7 +23,7 @@ pub trait WnafGroup: Group {
 
 /// Size of the wNAF representation: this should be the type-level equivalent of
 /// `PrimeField::NUM_BITS + 1`, which includes an extra entry for any remaining carry.
-pub trait WnafSize: PrimeField {
+pub trait WnafSize: PrimeFieldExt {
     /// Number of digits in the wNAF representation.
     type StorageSize: ArraySize;
 }

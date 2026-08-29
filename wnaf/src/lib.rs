@@ -32,7 +32,7 @@ pub use group::Group;
 pub use crate::boxed::BoxedWnaf;
 
 use crate::limb_buffer::LimbBuffer;
-use ff::PrimeField;
+use primefield::PrimeFieldExt;
 
 /// Type used to represent wNAF digits.
 ///
@@ -194,9 +194,6 @@ where
 }
 
 /// Get the little endian representation of a field, namely a scalar.
-fn le_repr<F: PrimeField>(fe: &F) -> F::Repr {
-    let mut ret = fe.to_repr();
-    // TODO(tarcieri): determine endianness via `PrimeField` trait. See zkcrypto/rfcs#4
-    ret.as_mut().reverse();
-    ret
+fn le_repr<F: PrimeFieldExt>(fe: &F) -> F::Repr {
+    fe.to_le_repr()
 }
