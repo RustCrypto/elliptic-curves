@@ -17,6 +17,7 @@ and can be easily used for bare-metal or WebAssembly programming.
 | [`bignp256`] | bign-curve256v1  | [![crates.io](https://img.shields.io/crates/v/bignp256.svg)](https://crates.io/crates/bignp256) | [![Documentation](https://docs.rs/bignp256/badge.svg)](https://docs.rs/bignp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bignp256/badge.svg?branch=master&event=push) |
 | [`bp256`] | [brainpoolP256r1]/[brainpoolP256t1] | [![crates.io](https://img.shields.io/crates/v/bp256.svg)](https://crates.io/crates/bp256) | [![Documentation](https://docs.rs/bp256/badge.svg)](https://docs.rs/bp256) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp256/badge.svg?branch=master&event=push) |
 | [`bp384`] | [brainpoolP384r1]/[brainpoolP384t1] | [![crates.io](https://img.shields.io/crates/v/bp384.svg)](https://crates.io/crates/bp384) | [![Documentation](https://docs.rs/bp384/badge.svg)](https://docs.rs/bp384) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp384/badge.svg?branch=master&event=push) |
+| [`bp512`] | [brainpoolP512r1]/[brainpoolP512t1] | [![crates.io](https://img.shields.io/crates/v/bp512.svg)](https://crates.io/crates/bp512) | [![Documentation](https://docs.rs/bp512/badge.svg)](https://docs.rs/bp512) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/bp512/badge.svg?branch=master&event=push) |
 | [`ed448-goldilocks`] | [Ed448]/[Curve448] | [![crates.io](https://img.shields.io/crates/v/ed448-goldilocks.svg)](https://crates.io/crates/ed448-goldilocks) | [![Documentation](https://docs.rs/ed448-goldilocks/badge.svg)](https://docs.rs/ed448-goldilocks) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/ed448-goldilocks/badge.svg?branch=master&event=push) |
 | [`hash2curve`] |               | [![crates.io](https://img.shields.io/crates/v/hash2curve.svg)](https://crates.io/crates/hash2curve)   | [![Documentation](https://docs.rs/hash2curve/badge.svg)](https://docs.rs/hash2curve)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/hash2curve/badge.svg?branch=master&event=push)  |
 | [`k256`]  | [secp256k1]        | [![crates.io](https://img.shields.io/crates/v/k256.svg)](https://crates.io/crates/k256)   | [![Documentation](https://docs.rs/k256/badge.svg)](https://docs.rs/k256)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/k256/badge.svg?branch=master&event=push)  |
@@ -67,6 +68,7 @@ dual licensed as above, without any additional terms or conditions.
 [`bignp256`]: ./bignp256
 [`bp256`]: ./bp256
 [`bp384`]: ./bp384
+[`bp512`]: ./bp512
 [`ed448-goldilocks`]: ./ed448-goldilocks
 [`hash2curve`]: ./hash2curve
 [`k256`]: ./k256
@@ -96,6 +98,8 @@ dual licensed as above, without any additional terms or conditions.
 [brainpoolP384r1]: https://neuromancer.sk/std/brainpool/brainpoolP384r1
 [brainpoolP256t1]: https://neuromancer.sk/std/brainpool/brainpoolP256t1
 [brainpoolP384t1]: https://neuromancer.sk/std/brainpool/brainpoolP384t1
+[brainpoolP512r1]: https://www.rfc-editor.org/rfc/rfc5639.html#section-3.7
+[brainpoolP512t1]: https://www.rfc-editor.org/rfc/rfc5639.html#section-3.7
 
 [//]: # (links)
 
