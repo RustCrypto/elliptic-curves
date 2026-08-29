@@ -6,7 +6,17 @@ use crate::ByteOrder;
 /// field arithmetic like `primeorder`'s RCB implementation, and `primefield` can potentially
 /// automatically plug in optimized implementations when available.
 // TODO(tarcieri): add some methods to this trait, e.g. `add_and_mul`, `mul_and_add`
-pub trait FieldExt: ff::Field {}
+pub trait FieldExt: ff::Field {
+    /// Compute `(self + x) * y`
+    fn add_mul(&self, x: &Self, y: &Self) -> Self {
+        (*self + x) * y
+    }
+
+    /// Compute `(self - x) * y`
+    fn sub_mul(&self, x: &Self, y: &Self) -> Self {
+        (*self - x) * y
+    }
+}
 
 /// Extension trait for [`ff::PrimeField`] which enables specifying the endianness in which
 /// [`ff::PrimeField::Repr`] is encoded.
