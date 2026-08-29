@@ -1,6 +1,6 @@
 //! bign-curve256v1 `FieldElement` benchmarks
 
-use bignp256::arithmetic::FieldElement;
+use bignp256::FieldElement;
 use criterion::{criterion_group, criterion_main};
 
 const FE_A: FieldElement = FieldElement::from_hex_vartime(
