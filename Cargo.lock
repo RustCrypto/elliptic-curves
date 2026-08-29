@@ -71,8 +71,9 @@ dependencies = [
 
 [[package]]
 name = "bign-genk"
-version = "0.1.0-pre.0"
-source = "git+https://github.com/RustCrypto/signatures#a51becc840c9979a40da931c187cb38807514455"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03ceda19c76217951cab9f0556506694a2e1f09439a4c5ce800e1482417fde3b"
 dependencies = [
  "belt-hash",
  "cipher",
@@ -1592,3 +1593,8 @@ name = "zmij"
 version = "1.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8848ee67ecc8aedbaf3e4122217aff892639231befc6a1b58d29fff4c2cabaa"
+
+[[patch.unused]]
+name = "bign-genk"
+version = "0.1.0-pre.0"
+source = "git+https://github.com/RustCrypto/signatures#a51becc840c9979a40da931c187cb38807514455"
