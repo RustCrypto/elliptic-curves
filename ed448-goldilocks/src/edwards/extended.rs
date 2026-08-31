@@ -36,7 +36,7 @@ use subtle::{Choice, ConditionallySelectable, ConstantTimeEq, CtOption};
 #[cfg(feature = "alloc")]
 use alloc::{boxed::Box, vec::Vec};
 
-/// Represent points on the (untwisted) edwards curve using Extended Homogenous Projective Co-ordinates
+/// Represent points on the (untwisted) Edwards curve using extended homogeneous projective coordinates
 /// (x, y) -> (X/Z, Y/Z, Z, T)
 /// a = 1, d = -39081
 /// XXX: Make this more descriptive
