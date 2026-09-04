@@ -50,9 +50,10 @@ alloc = ["elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "elliptic-curve/std", "getrandom", "primeorder?/std"]
 
 arithmetic = ["dep:primefield", "dep:primeorder", "elliptic-curve/arithmetic"]
-ecdsa = ["arithmetic", "dep:signature", "dep:belt-hash", "dep:bign-genk", "dep:belt-block", "belt-block/cipher", "belt-hash/oid"]
+ecdsa = ["arithmetic", "dep:signature", "dep:belt-hash", "dep:bign-genk", "dep:belt-block", "dep:digest", "belt-block/cipher", "belt-hash/oid"]
 getrandom = ["elliptic-curve/getrandom"]
 pem = ["elliptic-curve/pem", "sec1/pem", "pkcs8"]
+precomputed-tables = ["arithmetic", "primeorder/basepoint-table"]
 pkcs8 = ["elliptic-curve/pkcs8"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh", "dep:digest", "dep:hkdf", "dep:hmac", "dep:belt-hash", "alloc"]
 serde = ["elliptic-curve/serde", "primeorder?/serde"]
@@ -61,7 +62,10 @@ swu = ["primeorder/hash2curve", "hash2curve", "belt-kwp"]
 
 [lints.rust.unexpected_cfgs]
 level = "warn"
-check-cfg = ['cfg(cpubits, values("16", "32", "64"))']
+check-cfg = [
+    'cfg(cpubits, values("16", "32", "64"))',
+    'cfg(bignp256_backend, values("bigint", "fiat"))' # default: "fiat"
+]
 
 [[bench]]
 name = "field"

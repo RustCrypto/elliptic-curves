@@ -15,13 +15,16 @@
 
 use crate::U256;
 use elliptic_curve::{
-    bigint::cpubits,
     ff::PrimeField,
     ops::BatchInvert,
     subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
+#[cfg(not(bignp256_backend = "bigint"))]
+use elliptic_curve::bigint::cpubits;
+
 // TODO(tarcieri): remove this when we can use `const _` to silence warnings
+#[cfg(not(bignp256_backend = "bigint"))]
 cpubits! {
     32 => {
         #[path = "field/bignp256_32.rs"]
@@ -53,6 +56,7 @@ cpubits! {
     }
 }
 
+#[cfg(not(bignp256_backend = "bigint"))]
 use self::field_impl::*;
 
 /// Constant representing the modulus: p = 2^{256} − 189
@@ -74,6 +78,14 @@ primefield::monty_field_element! {
     doc: "Element in the bign-curve256v1 finite field modulo p = 2^{256} − 189"
 }
 
+#[cfg(bignp256_backend = "bigint")]
+primefield::monty_field_arithmetic! {
+    name: FieldElement,
+    params: FieldParams,
+    uint: U256
+}
+
+#[cfg(not(bignp256_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: FieldElement,
     params: FieldParams,
@@ -98,12 +110,15 @@ impl BatchInvert for FieldElement {}
 #[cfg(test)]
 mod tests {
     use super::{FieldElement, U256};
+    #[cfg(not(bignp256_backend = "bigint"))]
     use super::{
         FieldParams, fiat_bignp256_montgomery_domain_field_element, fiat_bignp256_msat,
         fiat_bignp256_non_montgomery_domain_field_element, fiat_bignp256_to_montgomery,
     };
 
     primefield::test_primefield!(FieldElement, U256);
+
+    #[cfg(not(bignp256_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: FieldElement,
         params: FieldParams,
