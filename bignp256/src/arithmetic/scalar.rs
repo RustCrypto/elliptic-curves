@@ -5,7 +5,6 @@
 use crate::{BignP256, ORDER_HEX, U256};
 use elliptic_curve::{
     Curve as _,
-    bigint::cpubits,
     ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
@@ -13,6 +12,10 @@ use elliptic_curve::{
 use primefield::ByteOrder;
 use primeorder::wnaf;
 
+#[cfg(not(bignp256_backend = "bigint"))]
+use elliptic_curve::bigint::cpubits;
+
+#[cfg(not(bignp256_backend = "bigint"))]
 cpubits! {
     32 => {
         #[path = "scalar/bignp256_scalar_32.rs"]
@@ -44,6 +47,7 @@ cpubits! {
     }
 }
 
+#[cfg(not(bignp256_backend = "bigint"))]
 use self::scalar_impl::*;
 
 #[cfg(doc)]
@@ -65,6 +69,14 @@ primefield::monty_field_element! {
     doc: "Element in the bign-curve256v1 scalar field modulo n"
 }
 
+#[cfg(bignp256_backend = "bigint")]
+primefield::monty_field_arithmetic! {
+    name: Scalar,
+    params: ScalarParams,
+    uint: U256
+}
+
+#[cfg(not(bignp256_backend = "bigint"))]
 primefield::fiat_monty_field_arithmetic! {
     name: Scalar,
     params: ScalarParams,
@@ -118,6 +130,7 @@ impl IsHigh for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, U256};
+    #[cfg(not(bignp256_backend = "bigint"))]
     use super::{
         ScalarParams, fiat_bignp256_scalar_montgomery_domain_field_element,
         fiat_bignp256_scalar_msat, fiat_bignp256_scalar_non_montgomery_domain_field_element,
@@ -125,6 +138,8 @@ mod tests {
     };
 
     primefield::test_primefield!(Scalar, U256);
+
+    #[cfg(not(bignp256_backend = "bigint"))]
     primefield::test_fiat_monty_field_arithmetic!(
         name: Scalar,
         params: ScalarParams,
