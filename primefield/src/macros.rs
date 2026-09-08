@@ -202,9 +202,9 @@ macro_rules! monty_field_element {
                 Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_u64(w))
             }
 
-            /// Returns the big-endian encoding of this [`
+            /// Returns the canonical byte encoding of this [`
             #[doc = stringify!($fe)]
-            /// `].
+            /// `] using the field's configured byte order.
             pub fn to_bytes(self) -> $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
                 self.0.to_bytes()
             }
