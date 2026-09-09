@@ -18,5 +18,7 @@ type BasepointTable = primeorder::BasepointTable<ProjectivePoint, WINDOW_SIZE>;
 pub(super) static BASEPOINT_TABLE: BasepointTable = BasepointTable::new();
 
 impl PrimeCurveWithBasepointTable<WINDOW_SIZE> for Secp256k1 {
+    /// Workaround for rust-lang/rust#140653: hide from rustdoc const-eval (E0080) until MSRV 1.90
+    #[doc(hidden)]
     const BASEPOINT_TABLE: &'static BasepointTable = &BASEPOINT_TABLE;
 }
