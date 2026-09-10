@@ -543,7 +543,16 @@ impl Field for FieldElement {
     }
 }
 
-impl FieldExt for FieldElement {}
+impl FieldExt for FieldElement {
+    fn add_mul(&self, x: &Self, y: &Self) -> Self {
+        self.add_loose(x).multiply(&y.relax())
+    }
+
+    fn sub_mul(&self, x: &Self, y: &Self) -> Self {
+        self.sub_loose(x).multiply(&y.relax())
+    }
+}
+
 impl PrimeFieldExt for FieldElement {}
 
 impl Generate for FieldElement {
