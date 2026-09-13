@@ -114,12 +114,10 @@ impl PrehashSigner<Signature> for SigningKey {
         }
         let h_word: Array<u8, U32> = Array::try_from(prehash).map_err(|_| Error::new())?;
 
-        let h = Scalar::reduce(&h_word);
-
         // 2. Generate 𝑘 ← rand(1,..,𝑞-1)
         let mut kgen = bign_genk::KGenerator::<BeltBlock, U256>::new::<BeltHash>(
             &self.secret_scalar.to_repr(),
-            &h.to_bytes(),
+            &h_word,
             &[],
             &BignP256::ORDER,
         );
@@ -152,6 +150,7 @@ impl PrehashSigner<Signature> for SigningKey {
             .add(&Scalar::from_u64(2).pow([128, 0, 0, 0]))
             .multiply(&self.secret_scalar);
 
+        let h = Scalar::reduce(&h_word);
         // 5. Set 𝑆1 ← ⟨︀(𝑘 − 𝐻 − (𝑆0 + 2^𝑙)𝑑) mod 𝑞⟩︀_2𝑙.
         let s1 = k.sub(&h).sub(&right);
 
