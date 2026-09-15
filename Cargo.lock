@@ -165,6 +165,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bp512"
+version = "0.14.0-rc.15"
+dependencies = [
+ "criterion",
+ "ecdsa",
+ "elliptic-curve",
+ "hex-literal",
+ "primefield",
+ "primeorder",
+ "sha2",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -655,9 +668,9 @@ dependencies = [
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.13"
+version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "818356c5132c1fede50f837ca96afbe78ff42413047f4abb886217845e1b6c8c"
+checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
 dependencies = [
  "subtle",
  "typenum",
