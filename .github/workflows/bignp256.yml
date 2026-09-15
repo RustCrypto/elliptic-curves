@@ -54,6 +54,7 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
+      - run: cargo check --no-default-features --features swu
 
   test:
     runs-on: ubuntu-latest
@@ -88,6 +89,11 @@ jobs:
       - run: cargo test --release --target ${{ matrix.target }} --no-default-features
       - run: cargo test --release --target ${{ matrix.target }}
       - run: cargo test --release --target ${{ matrix.target }} --all-features
+      - env:
+          RUSTFLAGS: '--cfg bignp256_backend="bigint"'
+          RUSTDOCFLAGS: '--cfg bignp256_backend="bigint"'
+        run: cargo test --release --target ${{ matrix.target }} --all-features
+
 
   cross:
     strategy:

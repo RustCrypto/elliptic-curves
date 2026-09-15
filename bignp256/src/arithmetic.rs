@@ -7,13 +7,14 @@
 
 pub(crate) mod field;
 pub(crate) mod scalar;
+#[cfg(feature = "precomputed-tables")]
+pub(crate) mod tables;
 
 pub use self::{field::FieldElement, scalar::Scalar};
 pub use elliptic_curve::{CurveArithmetic, PrimeCurveArithmetic, hazmat::FieldArithmetic};
 pub use primeorder::{PrimeCurveParams, point_arithmetic};
 
 use crate::BignP256;
-use primeorder::mul_backend;
 
 /// Elliptic curve point in affine coordinates.
 pub type AffinePoint = primeorder::AffinePoint<BignP256>;
@@ -37,7 +38,10 @@ impl PrimeCurveArithmetic for BignP256 {
 
 impl PrimeCurveParams for BignP256 {
     type PointArithmetic = point_arithmetic::EquationAIsGeneric;
-    type Backend = mul_backend::VariableOnly;
+    #[cfg(not(feature = "precomputed-tables"))]
+    type Backend = primeorder::mul_backend::VariableOnly;
+    #[cfg(feature = "precomputed-tables")]
+    type Backend = tables::backend::PrecomputedTables;
 
     const EQUATION_A: Self::FieldElement = FieldElement::from_hex_vartime(
         "40FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",

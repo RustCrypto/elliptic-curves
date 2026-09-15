@@ -4,6 +4,7 @@ use crate::{Digit, WnafGroup, le_repr, wnaf_form, wnaf_multi_exp, wnaf_table};
 use alloc::vec::Vec;
 use ff::PrimeField;
 use group::Group;
+use primefield::PrimeFieldExt;
 
 #[cfg(doc)]
 use crate::{WnafBase, WnafScalar};
@@ -126,7 +127,10 @@ impl<G: WnafGroup> BoxedWnaf<(), Vec<G>, Vec<Digit>> {
     }
 
     /// Construct wNAF context for `scalar`.
-    pub fn scalar(&mut self, scalar: &G::Scalar) -> BoxedWnaf<usize, &mut Vec<G>, &[Digit]> {
+    pub fn scalar(&mut self, scalar: &G::Scalar) -> BoxedWnaf<usize, &mut Vec<G>, &[Digit]>
+    where
+        G::Scalar: PrimeFieldExt,
+    {
         let window_size = 4;
 
         let repr = le_repr(scalar);
@@ -187,6 +191,7 @@ impl<B, S: AsMut<Vec<Digit>>> BoxedWnaf<usize, B, S> {
     pub fn scalar<G: Group>(&mut self, scalar: &G::Scalar) -> G
     where
         B: AsRef<[G]>,
+        G::Scalar: PrimeFieldExt,
     {
         let repr = le_repr(scalar);
         let bit_len = init_storage::<G::Scalar>(self.scalar.as_mut(), repr);
