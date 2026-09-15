@@ -7,7 +7,7 @@ use elliptic_curve::{
     Field,
     array::Array,
     bigint::U384,
-    consts::{U32, U48, U128},
+    consts::{U16, U48},
     sec1::FromSec1Point,
     subtle::ConditionallySelectable,
 };
@@ -63,7 +63,7 @@ impl Expander for BeltKwpExpander {
     }
 }
 
-impl ExpandMsg<U32> for BeltKwpExpander {
+impl ExpandMsg<U16> for BeltKwpExpander {
     type Hash = ();
     type Expander<'dst> = Self;
     type Error = elliptic_curve::Error;
@@ -156,7 +156,7 @@ impl FieldElement {
 }
 
 impl MapToCurve for BignP256 {
-    type SecurityLevel = U128;
+    type SecurityLevel = U16;
     type FieldElement = FieldElement;
     type Length = U48;
 
@@ -209,4 +209,14 @@ fn test_expander() {
     expander.fill_bytes(&mut output).unwrap();
 
     assert_eq!(output, expected);
+}
+
+#[test]
+fn test_security_level_units() {
+    use elliptic_curve::array::typenum::Unsigned;
+
+    assert_eq!(<BignP256 as MapToCurve>::SecurityLevel::USIZE, 16);
+
+    fn assert_expand_msg_impl<T: ExpandMsg<U16>>() {}
+    assert_expand_msg_impl::<BeltKwpExpander>();
 }
