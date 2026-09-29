@@ -59,7 +59,7 @@ impl<G: Group, W: WindowSize> WnafBase<G, W> {
         G::Scalar: WnafSize,
         I: Clone + Iterator<Item = (&'a Self, &'a WnafScalar<G::Scalar, W>)>,
     {
-        wnaf_multi_exp(pairs.map(|(b, s)| (b.table.as_slice(), s.wnaf.as_slice(), s.digits)))
+        wnaf_multi_exp(pairs.map(|(b, s)| (b.table.as_slice(), &s.wnaf[..s.digits], s.digits)))
     }
 }
 
