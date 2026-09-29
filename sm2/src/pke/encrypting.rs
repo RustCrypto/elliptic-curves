@@ -87,7 +87,7 @@ impl EncryptingKey {
         D: Digest + FixedOutputReset,
     {
         let cipher = self.encrypt_cipher::<R, D>(rng, msg)?;
-        cipher.to_vec(self.mode, true)
+        cipher.to_vec(self.mode, false)
     }
 
     /// Encrypts a message using a specified digest algorithm and returns the result in ASN.1 format.
