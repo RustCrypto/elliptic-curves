@@ -117,13 +117,14 @@ fn wnaf_form<S: AsRef<[u8]>>(wnaf: &mut [Digit], c: S, bit_len: usize, window: u
             cursor += 1;
             pos += 1;
         } else {
-            wnaf[cursor] = digit(window_val);
-
             if window_val < width / 2 {
                 carry = 0;
+                wnaf[cursor] = digit(window_val);
             } else {
                 carry = 1;
-                wnaf[cursor] -= digit(width);
+                // `window_val` and `width` can exceed `Digit::MAX` for windows of 7 and 8, but
+                // their difference is always below `width / 2`
+                wnaf[cursor] = -digit(width - window_val);
             };
 
             cursor += 1;
@@ -196,4 +197,46 @@ where
 /// Get the little endian representation of a field, namely a scalar.
 fn le_repr<F: PrimeFieldExt>(fe: &F) -> F::Repr {
     fe.to_le_repr()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Digit, W_MAX, wnaf_form};
+
+    /// Evaluate a wNAF digit sequence back into an integer.
+    fn eval(wnaf: &[Digit]) -> i128 {
+        wnaf.iter()
+            .enumerate()
+            .map(|(i, &d)| i128::from(d) << i)
+            .sum()
+    }
+
+    #[test]
+    fn wnaf_form_all_windows() {
+        let mut inputs = [[0u8; 15]; 68];
+        inputs[1] = [0xff; 15];
+        inputs[2] = [0x55; 15];
+        inputs[3] = [0xaa; 15];
+        let mut state = 0x9e37_79b9_7f4a_7c15u64;
+        for bytes in &mut inputs[4..] {
+            for b in bytes.iter_mut() {
+                state = state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1_442_695_040_888_963_407);
+                *b = state.to_le_bytes()[7];
+            }
+        }
+
+        for window in 2..=W_MAX {
+            for bytes in &inputs {
+                let mut wnaf: [Digit; 122] = [0; 122];
+                let len = wnaf_form(&mut wnaf, bytes, 120, window);
+
+                let mut padded = [0u8; 16];
+                padded[..15].copy_from_slice(bytes);
+                let expected = i128::from_le_bytes(padded);
+                assert_eq!(eval(&wnaf[..len]), expected, "window {window}");
+            }
+        }
+    }
 }
