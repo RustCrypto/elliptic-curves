@@ -178,7 +178,8 @@ where
     C::AffinePoint: ToSec1Point<C>,
     C::FieldBytesSize: ModulusSize,
 {
-    if c2_out.len() < msg.len() {
+    // With an empty message `t` is empty and the all-zero check below could never pass
+    if msg.is_empty() || c2_out.len() < msg.len() {
         return Err(Error);
     }
     let c2_out = &mut c2_out[..msg.len()];
