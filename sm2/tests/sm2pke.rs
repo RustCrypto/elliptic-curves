@@ -45,6 +45,19 @@ fn decrypt_der_verify() {
 }
 
 #[test]
+fn encrypt_uses_uncompressed_c1() {
+    let dk = DecryptingKey::new(
+        NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8])
+            .unwrap()
+            .into(),
+    );
+    let cipher_bytes = dk.encrypting_key().encrypt(&mut SysRng, MSG).unwrap();
+    assert_eq!(cipher_bytes[0], 0x04);
+    assert_eq!(cipher_bytes.len(), CIPHER.len());
+    assert_eq!(dk.decrypt(&cipher_bytes).unwrap(), MSG);
+}
+
+#[test]
 fn encrypt_empty_message() {
     let dk = DecryptingKey::new(
         NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8])
