@@ -44,7 +44,6 @@ fn decrypt_der_verify() {
     assert_eq!(dk.decrypt_der(&ASN1_CIPHER).unwrap(), MSG);
 }
 
-
 #[test]
 fn encrypt_uses_uncompressed_c1() {
     let dk = DecryptingKey::new(
