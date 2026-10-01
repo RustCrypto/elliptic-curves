@@ -44,6 +44,16 @@ fn decrypt_der_verify() {
     assert_eq!(dk.decrypt_der(&ASN1_CIPHER).unwrap(), MSG);
 }
 
+#[test]
+fn encrypt_empty_message() {
+    let dk = DecryptingKey::new(
+        NonZeroScalar::<Sm2>::try_from(PRIVATE_KEY.as_ref() as &[u8])
+            .unwrap()
+            .into(),
+    );
+    assert!(dk.encrypting_key().encrypt(&mut SysRng, &[]).is_err());
+}
+
 prop_compose! {
     fn decrypting_key()(bytes in any::<[u8; 32]>()) -> DecryptingKey {
         loop {
