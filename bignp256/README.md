@@ -55,9 +55,12 @@ feature is enabled:
 - [`pkcs8::DecodePublicKey`]: decode public keys from SPKI
 - [`pkcs8::EncodePublicKey`]: encode public keys to SPKI
 
-For private keys, [`SecretKey::from_der`] and [`SecretKey::from_pem`] provide
-convenience methods which can decode PKCS#8 keys. Use the trait methods above
-when the input is expected to be specifically PKCS#8.
+For private keys,
+- [`SecretKey`]'s [`pkcs8::DecodePrivateKey::from_pkcs8_der`] and
+- [`SecretKey`]'s [`pkcs8::DecodePrivateKey::from_pkcs8_pem`]
+
+provide convenience methods which can decode PKCS#8 keys.
+Use the trait methods above when the input is expected to be specifically PKCS#8.
 
 ### Example
 
