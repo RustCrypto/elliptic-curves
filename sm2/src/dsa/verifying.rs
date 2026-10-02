@@ -157,8 +157,8 @@ impl PrehashVerifier<Signature> for VerifyingKey {
             return Err(Error::new());
         }
 
-        // B6: calculate the point (x1', y1')=[s']G + [t]PA, verification failed if it is the
-        // point at infinity
+        // B6: calculate the point (x1', y1')=[s']G + [t]PA
+        // We additionally reject the point at infinity.
         let point = ProjectivePoint::lincomb(&[
             (ProjectivePoint::generator(), *s),
             (ProjectivePoint::from(&self.public_key), t),
