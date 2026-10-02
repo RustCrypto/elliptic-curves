@@ -478,7 +478,10 @@ impl CompressedEdwardsY {
         75, 98, 199, 201, 86, 55, 32, 118, 136, 36, 188, 182, 110, 113, 70, 63, 105, 0,
     ]);
     /// The compressed identity point
-    pub const IDENTITY: Self = Self([0u8; 57]);
+    pub const IDENTITY: Self = Self([
+        1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ]);
 
     /// Attempt to decompress to an `AffinePoint`.
     ///
