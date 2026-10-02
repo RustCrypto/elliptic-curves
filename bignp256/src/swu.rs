@@ -167,7 +167,13 @@ impl MapToCurve for BignP256 {
 
 impl BignP256 {
     /// Implements the complete `bake-swu` map-to-curve flow specified in STB 34.101.66-2014, section 6.2
+    ///
+    /// `secret` must be exactly 32 bytes long (`2l` bits for `l = 128`).
     pub fn hash_secret_to_curve(secret: &[u8]) -> elliptic_curve::Result<ProjectivePoint> {
+        if secret.len() != 32 {
+            return Err(elliptic_curve::Error);
+        }
+
         // 1. H ← belt-keywrap(X, 0^128, 0^256)
         let mut expander = BeltKwpExpander::expand_message(
             &[secret],
