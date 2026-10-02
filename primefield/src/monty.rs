@@ -25,7 +25,7 @@ use subtle::{
 };
 
 /// Extension trait for defining additional field parameters beyond the ones provided by
-/// [`ConstMontyPrimeParams`].
+/// [`ConstPrimeMontyParams`].
 pub trait MontyFieldParams<const LIMBS: usize>: ConstPrimeMontyParams<LIMBS> {
     /// Size of a field element when serialized as bytes.
     type ByteSize: ArraySize;
