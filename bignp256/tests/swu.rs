@@ -24,3 +24,12 @@ fn test_bake_b4() {
 
     assert_eq!(encoded[1..], expected);
 }
+
+#[test]
+fn test_secret_length() {
+    let secret = [0x42u8; 33];
+    assert!(BignP256::hash_secret_to_curve(&secret[..32]).is_ok());
+    assert!(BignP256::hash_secret_to_curve(&secret).is_err());
+    assert!(BignP256::hash_secret_to_curve(&secret[..31]).is_err());
+    assert!(BignP256::hash_secret_to_curve(&[]).is_err());
+}
