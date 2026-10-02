@@ -33,6 +33,21 @@ fn verify_test_vector() {
     assert!(vk.verify(MSG, &sig).is_ok());
 }
 
+#[test]
+fn verify_rejects_point_at_infinity() {
+    use sm2::dsa::signature::hazmat::PrehashVerifier;
+
+    // With r = e and s = -r*d/(1+d) we get [s]G + [r+s]PA = O, whose x coordinate
+    // would otherwise satisfy B7 as r = e + 0
+    let d = Scalar::from(0x1234_5678_9abc_u64);
+    let sk = SigningKey::from_nonzero_scalar(IDENTITY, NonZeroScalar::new(d).unwrap()).unwrap();
+    let prehash = [7u8; 32];
+    let r = Scalar::reduce(&FieldBytes::from(prehash));
+    let s = -(r * d) * (d + Scalar::ONE).invert().unwrap();
+    let sig = Signature::from_scalars(r, s).unwrap();
+    assert!(sk.verifying_key().verify_prehash(&prehash, &sig).is_err());
+}
+
 const SIG_DER: [u8; 71] = hex!(
     "304502201d09df0f021b8c9aa7a437c713f11f9bc5ef49b5f053de912d6a3a8b68d49688022100c8acda282cb69bd4734b9c164925772f8f5cb23b273c222d69a4a49bb40a8701"
 );

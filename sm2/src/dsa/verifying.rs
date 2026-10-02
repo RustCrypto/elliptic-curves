@@ -158,12 +158,15 @@ impl PrehashVerifier<Signature> for VerifyingKey {
         }
 
         // B6: calculate the point (x1', y1')=[s']G + [t]PA
-        let x = ProjectivePoint::lincomb(&[
+        // We additionally reject the point at infinity.
+        let point = ProjectivePoint::lincomb(&[
             (ProjectivePoint::generator(), *s),
             (ProjectivePoint::from(&self.public_key), t),
-        ])
-        .to_affine()
-        .x();
+        ]);
+        if point.is_identity().into() {
+            return Err(Error::new());
+        }
+        let x = point.to_affine().x();
 
         // B7: calculate R=(e'+x1') modn, verification pass if yes, otherwise failed
         if *r == e + Scalar::reduce(&x) {
