@@ -62,7 +62,7 @@ impl VerifyingKey {
     /// Compute Schnorr signature.
     ///
     /// <div class="warning">
-    /// <b>Warning<b>
+    /// <b>Warning</b>
     ///
     /// This is a low-level interface intended only for unusual use cases involving verifying
     /// pre-hashed messages, or "raw" messages where the message is not hashed at all prior to being
