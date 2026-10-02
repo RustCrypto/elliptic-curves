@@ -74,7 +74,7 @@ impl SigningKey {
     /// Borrow the secret [`NonZeroScalar`] value for this key.
     ///
     /// <div class="warning">
-    /// <b>Security Warning<b>
+    /// <b>Security Warning</b>
     ///
     /// This value is key material. Please treat it with the care it deserves!
     /// </div>
