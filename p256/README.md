@@ -67,8 +67,6 @@ when the input is expected to be specifically PKCS#8.
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-# #[cfg(feature = "pem")]
-# {
 use p256::SecretKey;
 
 // WARNING: Do not hardcode private keys in your source code. This is for demonstration purposes only.
@@ -78,8 +76,8 @@ afKgVJJVjhoEhotqn4VKhmeIGI2hRANCAAQcrP+1Xy8s79idies3SyaBFSRSgC3u
 oJkWBoE32DnPf8SBpESSME1+9mrBF77+g6jQjxVfK1L59hjdRHApBI4P
 -----END PRIVATE KEY-----"#;
 let secret_key = SecretKey::from_pem(pem)?;
-# let _ = secret_key;
-# }
+
+let _ = secret_key.public_key();
 # Ok(())
 # }
 ```

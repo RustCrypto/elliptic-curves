@@ -63,8 +63,6 @@ when the input is expected to be specifically PKCS#8.
 
 ```rust
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
-# #[cfg(feature = "pem")]
-# {
 use bignp256::SecretKey;
 use bignp256::pkcs8::DecodePrivateKey;
 
@@ -74,8 +72,8 @@ MD8CAQAwGAYKKnAAAgAiZS0CAQYKKnAAAgAiZS0DAQQgAQEBAQEBAQEBAQEBAQEB
 AQEBAQEBAQEBAQEBAQEBAQE=
 -----END PRIVATE KEY-----"#;
 let secret_key = SecretKey::from_pkcs8_pem(pem)?;
-# let _ = secret_key;
-# }
+
+let _ = secret_key.public_key();
 # Ok(())
 # }
 ```
