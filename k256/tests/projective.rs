@@ -139,3 +139,24 @@ proptest! {
         assert_eq!(reference, test);
     }
 }
+
+#[test]
+fn wnaf_multiscalar_mul_reused_scalar() {
+    use wnaf::{WnafBase, WnafScalar, array::typenum::U5};
+
+    let g = ProjectivePoint::GENERATOR;
+    let h = g * Scalar::from(5u64);
+    let base_g = WnafBase::<ProjectivePoint, U5>::new(&g);
+    let base_h = WnafBase::<ProjectivePoint, U5>::new(&h);
+
+    // Reuse a scalar that previously held a full-width value
+    let mut a = WnafScalar::<Scalar, U5>::new(&-Scalar::from(12345u64));
+    a.init_from_le_bytes(&[3]);
+    let b = -Scalar::from(999u64);
+    let b_wnaf = WnafScalar::<Scalar, U5>::new(&b);
+
+    assert_eq!(
+        WnafBase::multiscalar_mul([(&base_g, &a), (&base_h, &b_wnaf)].into_iter()),
+        g * Scalar::from(3u64) + h * b
+    );
+}
