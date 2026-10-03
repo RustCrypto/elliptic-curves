@@ -13,7 +13,7 @@ use elliptic_curve::{
         Array, ArraySize,
         typenum::{Prod, Unsigned},
     },
-    bigint::{Limb, U448, U896, Word, modular::Retrieve},
+    bigint::{NonZero, U448, U896, Word, modular::Retrieve},
     consts::U2,
     ctutils::{self, CtSelect},
     ff::{Field, helpers},
@@ -63,7 +63,7 @@ const HALF_ORDER: U448 = ORDER.as_ref().shr_vartime(1);
 pub const WIDE_ORDER: U896 = U896::from_be_hex(
     "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3",
 );
-const WIDE_ORDER_MINUS_ONE: U896 = WIDE_ORDER.wrapping_sub(&U896::ONE);
+const ORDER_MINUS_ONE_NZ: NonZero<U448> = NonZero::<U448>::new_unwrap(ORDER_MINUS_ONE);
 
 /// The modulus of the scalar field as a sequence of 14 32-bit limbs
 pub const MODULUS_LIMBS: [u32; 14] = [
@@ -491,9 +491,7 @@ impl<C: CurveWithScalar> core::fmt::UpperHex for Scalar<C> {
 
 impl<C: CurveWithScalar> Reduce<U448> for Scalar<C> {
     fn reduce(bytes: &U448) -> Self {
-        let (r, underflow) = bytes.borrowing_sub(&ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::new(U448::conditional_select(bytes, &r, !underflow))
+        Self::new(bytes.rem(ORDER.as_nz_ref()))
     }
 }
 
@@ -505,17 +503,13 @@ impl<C: CurveWithScalar> Reduce<ScalarBytes<C>> for Scalar<C> {
 
 impl<C: CurveWithScalar> Reduce<U896> for Scalar<C> {
     fn reduce(bytes: &U896) -> Self {
-        let (r, underflow) = bytes.borrowing_sub(&WIDE_ORDER, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::new(U896::conditional_select(bytes, &r, !underflow).split().1)
+        Self::new(U448::rem_wide(bytes.split(), ORDER.as_nz_ref()))
     }
 }
 
 impl<C: CurveWithScalar> ReduceNonZero<U448> for Scalar<C> {
     fn reduce_nonzero(bytes: &U448) -> Self {
-        let (r, underflow) = bytes.borrowing_sub(&ORDER_MINUS_ONE, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-        Self::new(U448::conditional_select(bytes, &r, !underflow).wrapping_add(&U448::ONE))
+        Self::new(bytes.rem(&ORDER_MINUS_ONE_NZ).wrapping_add(&U448::ONE))
     }
 }
 
@@ -527,15 +521,7 @@ impl<C: CurveWithScalar> ReduceNonZero<ScalarBytes<C>> for Scalar<C> {
 
 impl<C: CurveWithScalar> ReduceNonZero<U896> for Scalar<C> {
     fn reduce_nonzero(bytes: &U896) -> Self {
-        let (r, underflow) = bytes.borrowing_sub(&WIDE_ORDER_MINUS_ONE, Limb::ZERO);
-        let underflow = Choice::from((underflow.0 >> (Limb::BITS - 1)) as u8);
-
-        Self::new(
-            U896::conditional_select(bytes, &r, !underflow)
-                .split()
-                .1
-                .wrapping_add(&U448::ONE),
-        )
+        Self::new(U448::rem_wide(bytes.split(), &ORDER_MINUS_ONE_NZ).wrapping_add(&U448::ONE))
     }
 }
 
