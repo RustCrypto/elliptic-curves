@@ -19,11 +19,13 @@ impl<'k, 'v, K> Context<'k, 'v, K> {
     pub const MAX_LENGTH: usize = 255;
 
     /// Borrow the key
+    #[must_use]
     pub fn key(&self) -> &'k K {
         self.key
     }
 
     /// Borrow the value
+    #[must_use]
     pub fn value(&self) -> &'v [u8] {
         self.value
     }

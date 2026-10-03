@@ -174,11 +174,13 @@ impl<'de> serdect::serde::Deserialize<'de> for VerifyingKey {
 
 impl VerifyingKey {
     /// Convert this verifying key into byte slice
+    #[must_use]
     pub fn to_bytes(&self) -> PointBytes {
         self.compressed.to_bytes()
     }
 
     /// View this public key as a byte slice.
+    #[must_use]
     pub fn as_bytes(&self) -> &PointBytes {
         self.compressed.as_bytes()
     }
@@ -198,6 +200,7 @@ impl VerifyingKey {
     }
 
     /// Create a context for this verifying key that can be used with [`signature::DigestVerifier`].
+    #[must_use]
     pub fn with_context<'k, 'v>(&'k self, context: &'v [u8]) -> Context<'k, 'v, Self> {
         Context {
             key: self,
@@ -206,6 +209,7 @@ impl VerifyingKey {
     }
 
     /// Return the verifying key in Edwards form.
+    #[must_use]
     pub fn to_edwards(self) -> EdwardsPoint {
         self.point
     }

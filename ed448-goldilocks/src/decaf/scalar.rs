@@ -42,6 +42,7 @@ pub type DecafScalar = Scalar<Decaf448>;
 impl DecafScalar {
     /// Construct a `Scalar` by reducing a 896-bit little-endian integer
     /// modulo the group order ℓ.
+    #[must_use]
     pub fn from_bytes_mod_order_wide(input: &WideDecafScalarBytes) -> DecafScalar {
         Decaf448::from_bytes_mod_order_wide(input)
     }
