@@ -4,6 +4,7 @@ members = [
     "bignp256",
     "bp256",
     "bp384",
+    "bp512",
     "ed448-goldilocks",
     "hash2curve",
     "k256",
