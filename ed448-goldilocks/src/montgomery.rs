@@ -127,6 +127,7 @@ impl MontgomeryPoint {
     ]);
 
     /// Convert this point to an [`EdwardsPoint`]
+    #[must_use]
     pub fn to_edwards(&self, _sign: u8) -> Option<EdwardsPoint> {
         // We use the 4-isogeny to map to the Ed448.
         // This is different to Curve25519, where we use a birational map.
@@ -134,16 +135,19 @@ impl MontgomeryPoint {
     }
 
     /// Returns true if the point is one of the low order points
+    #[must_use]
     pub fn is_low_order(&self) -> bool {
         (*self == Self::LOW_A) || (*self == Self::LOW_B) || (*self == Self::LOW_C)
     }
 
     /// View the point as a byte slice
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; 56] {
         &self.0
     }
 
     /// Convert the point to a ProjectiveMontgomeryPoint
+    #[must_use]
     pub fn to_projective(&self) -> ProjectiveMontgomeryPoint {
         ProjectiveMontgomeryPoint {
             U: FieldElement::from_bytes(&self.0),
@@ -205,6 +209,7 @@ fn differential_add_and_double(
 
 impl ProjectiveMontgomeryPoint {
     /// The identity element of the group: the point at infinity.
+    #[must_use]
     pub fn identity() -> ProjectiveMontgomeryPoint {
         ProjectiveMontgomeryPoint {
             U: FieldElement::ONE,
@@ -213,6 +218,7 @@ impl ProjectiveMontgomeryPoint {
     }
 
     /// Convert the point to affine form
+    #[must_use]
     pub fn to_affine(&self) -> MontgomeryPoint {
         let x = self.U * self.W.invert();
         MontgomeryPoint(x.to_bytes())
