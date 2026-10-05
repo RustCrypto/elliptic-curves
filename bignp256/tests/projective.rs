@@ -9,6 +9,7 @@ use bignp256::{
 use elliptic_curve::{
     group::{GroupEncoding, ff::PrimeField},
     ops::{LinearCombination, MulVartime},
+    point::AffineCoordinates,
     sec1::{self, ToSec1Point},
 };
 use primeorder::{Double, test_projective_arithmetic};
@@ -49,4 +50,21 @@ fn projective_vartime_linear_combination() {
         ProjectivePoint::lincomb_vartime(terms.as_slice()),
         generator.double()
     );
+}
+
+#[test]
+fn projective_compressed_roundtrip() {
+    let mut p = ProjectivePoint::GENERATOR;
+    for _ in 0..32 {
+        let affine = p.to_affine();
+        let encoded = affine.to_sec1_point(true);
+        let expected_tag = if bool::from(affine.y_is_odd()) {
+            sec1::Tag::CompressedOddY
+        } else {
+            sec1::Tag::CompressedEvenY
+        };
+        assert_eq!(encoded.tag(), expected_tag);
+        assert_eq!(ProjectivePoint::from_bytes(&p.to_bytes()).unwrap(), p);
+        p += ProjectivePoint::GENERATOR;
+    }
 }
