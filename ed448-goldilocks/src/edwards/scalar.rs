@@ -226,6 +226,41 @@ mod test {
     }
 
     #[test]
+    fn test_reduce_uint() {
+        use crate::ORDER;
+        use elliptic_curve::{
+            bigint::{U448, U896},
+            ops::{Reduce, ReduceNonZero},
+        };
+
+        let order = ORDER.as_ref();
+        let x = order
+            .wrapping_mul(&U448::from_u8(3))
+            .wrapping_add(&U448::from_u8(5));
+        assert_eq!(EdwardsScalar::reduce(&x), EdwardsScalar::from(5u8));
+        assert_eq!(EdwardsScalar::from(x), EdwardsScalar::from(5u8));
+
+        let (lo, hi) = order.widening_mul(order);
+        let x = lo.concat(&hi).wrapping_add(&U896::from_u8(7));
+        assert_eq!(EdwardsScalar::reduce(&x), EdwardsScalar::from(7u8));
+        assert_eq!(
+            EdwardsScalar::reduce(&U896::from_u8(5)),
+            EdwardsScalar::from(5u8)
+        );
+
+        let order_minus_one = order.wrapping_sub(&U448::ONE);
+        let x = order_minus_one
+            .wrapping_mul(&U448::from_u8(3))
+            .wrapping_add(&U448::from_u8(4));
+        assert_eq!(EdwardsScalar::reduce_nonzero(&x), EdwardsScalar::from(5u8));
+        let (lo, hi) = order_minus_one.widening_mul(&order_minus_one);
+        assert_eq!(
+            EdwardsScalar::reduce_nonzero(&lo.concat(&hi)),
+            EdwardsScalar::ONE
+        );
+    }
+
+    #[test]
     fn test_from_bytes_mod_order_wide() {
         // n should become 0
         let mut bytes = WideEdwardsScalarBytes::from(hex!(
