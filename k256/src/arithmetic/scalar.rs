@@ -426,8 +426,12 @@ impl Shr<usize> for Scalar {
     type Output = Self;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        #[allow(clippy::cast_possible_truncation)]
-        self.shr_vartime(rhs as u32)
+        // Shifts which don't fit in a `u32` are larger than the bit size of the scalar, so they
+        // saturate to zero rather than being silently truncated.
+        match u32::try_from(rhs) {
+            Ok(rhs) => self.shr_vartime(rhs),
+            Err(_) => Self::ZERO,
+        }
     }
 }
 
@@ -435,8 +439,10 @@ impl Shr<usize> for &Scalar {
     type Output = Scalar;
 
     fn shr(self, rhs: usize) -> Self::Output {
-        #[allow(clippy::cast_possible_truncation)]
-        self.shr_vartime(rhs as u32)
+        match u32::try_from(rhs) {
+            Ok(rhs) => self.shr_vartime(rhs),
+            Err(_) => Scalar::ZERO,
+        }
     }
 }
 
@@ -754,6 +760,7 @@ mod tests {
         FieldBytes, NonZeroScalar, ORDER, WideBytes,
         arithmetic::dev::{biguint_to_bytes, bytes_to_biguint},
     };
+    use core::ops::Shr;
     use elliptic_curve::{
         array::Array,
         bigint::{ArrayEncoding, U256, U512},
@@ -799,6 +806,28 @@ mod tests {
     #[test]
     fn two_inv_constant() {
         assert_eq!(Scalar::from(2u32) * Scalar::TWO_INV, Scalar::ONE);
+    }
+
+    /// Tests that `Shr<usize>` saturates to zero for shifts larger than the scalar's bit size.
+    #[test]
+    fn shr() {
+        let one = Scalar::ONE;
+        let two = one + one;
+
+        assert_eq!(two >> 1, one);
+        assert_eq!(two >> 2, Scalar::ZERO);
+        assert_eq!(one >> usize::MAX, Scalar::ZERO);
+
+        // same for the `&Scalar` impls
+        assert_eq!((&two).shr(1), one);
+        assert_eq!((&one).shr(usize::MAX), Scalar::ZERO);
+
+        // `1 << 32` truncates to zero when cast to `u32`, which would make this `>> 0`
+        #[cfg(target_pointer_width = "64")]
+        {
+            assert_eq!(one >> (1usize << 32), Scalar::ZERO);
+            assert_eq!((&one).shr(1usize << 32), Scalar::ZERO);
+        }
     }
 
     #[test]
