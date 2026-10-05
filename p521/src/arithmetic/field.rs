@@ -188,9 +188,7 @@ impl FieldElement {
         let mut i = 0;
         while i < (BYTES / 2) {
             let j = BYTES - i - 1;
-            let tmp = ret[i];
-            ret[i] = ret[j];
-            ret[j] = tmp;
+            ret.swap(i, j);
             i += 1;
         }
 
