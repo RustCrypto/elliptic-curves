@@ -201,7 +201,11 @@ impl FieldElement {
     ///
     /// If odd, return `Choice(1)`.  Otherwise, return `Choice(0)`.
     pub fn is_odd(&self) -> Choice {
-        Choice::from((self.0[0] & 1) as u8)
+        // The limbs aren't a unique representation (e.g. zero can be stored as `p`), so take the
+        // parity from the fully reduced encoding.
+        let mut le_bytes = [0u8; 66];
+        fiat_p521_to_bytes(&mut le_bytes, &self.0);
+        Choice::from(le_bytes[0] & 1)
     }
 
     /// Determine if this [`FieldElement`] is even in the SEC1 sense: `self mod 2 == 0`.
@@ -790,5 +794,14 @@ mod tests {
         assert_eq!(a.sqn(0), a);
         assert_eq!(a.sqn(1), a.square());
         assert_eq!(a.sqn(2), a.square().square());
+    }
+
+    #[test]
+    fn is_odd_non_canonical_zero() {
+        // `1 - 1` leaves the limbs of `p`
+        let zero = FieldElement::ONE - FieldElement::ONE;
+        assert_eq!(zero, FieldElement::ZERO);
+        assert!(bool::from(zero.is_even()));
+        assert!(bool::from((-FieldElement::ZERO).is_even()));
     }
 }
