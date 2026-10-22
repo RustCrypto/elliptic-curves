@@ -131,7 +131,15 @@ impl FieldElement {
         let den = BignP256::EQUATION_A * (t + t_squared);
 
         // Step 4: x₁ ← -b(1 + t + t²)(a(t + t²))^(-1) mod p
-        let x1 = -BignP256::EQUATION_B * num * den.invert().unwrap();
+        //
+        // The standard specifies the inverse as the exponentiation `(a(t + t²))^(p-2)`, which is
+        // defined for every input: it evaluates to zero when `t + t² ≡ 0 (mod p)`, i.e. for the
+        // exceptional inputs `s ∈ {0, 1, p-1}`. `invert` instead returns `None` there, so
+        // substitute zero to keep the two definitions in agreement and stay panic-free. The
+        // substitution is constant-time, and those inputs then map to the generator (whose
+        // x-coordinate is zero), so the result is always a valid curve point.
+        let den_inv = den.invert().unwrap_or(FieldElement::ZERO);
+        let x1 = -BignP256::EQUATION_B * num * den_inv;
 
         // Step 5: x₂ ← t·x₁ mod p
         let x2 = t * x1;
@@ -219,4 +227,18 @@ fn test_security_level_units() {
 
     fn assert_expand_msg_impl<T: ExpandMsg<U16>>() {}
     assert_expand_msg_impl::<BeltKwpExpander>();
+}
+
+#[test]
+fn test_exceptional_inputs() {
+    // `t + t² ≡ 0 (mod p)` holds exactly for `s ∈ {0, 1, p-1}`, which makes the step 4
+    // denominator `a(t + t²)` zero. Following the standard's `(a(t + t²))^(p-2)` these inputs
+    // yield `x₁ = 0`, and `g(0) = b` is a quadratic residue, so all three map to the generator.
+    for s in [
+        FieldElement::ZERO,
+        FieldElement::ONE,
+        FieldElement::ONE.neg(),
+    ] {
+        assert_eq!(BignP256::map_to_curve(s), ProjectivePoint::GENERATOR);
+    }
 }
