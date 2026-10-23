@@ -25,6 +25,8 @@ and can be easily used for bare-metal or WebAssembly programming.
 | [`p256`]  | [NIST P-256]       | [![crates.io](https://img.shields.io/crates/v/p256.svg)](https://crates.io/crates/p256)   | [![Documentation](https://docs.rs/p256/badge.svg)](https://docs.rs/p256)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p256/badge.svg?branch=master&event=push)  |
 | [`p384`]  | [NIST P-384]       | [![crates.io](https://img.shields.io/crates/v/p384.svg)](https://crates.io/crates/p384)   | [![Documentation](https://docs.rs/p384/badge.svg)](https://docs.rs/p384)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p384/badge.svg?branch=master&event=push)  |
 | [`p521`]  | [NIST P-521]       | [![crates.io](https://img.shields.io/crates/v/p521.svg)](https://crates.io/crates/p521)   | [![Documentation](https://docs.rs/p521/badge.svg)](https://docs.rs/p521)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/p521/badge.svg?branch=master&event=push)  |
+| [`primefield`] |                    | [![crates.io](https://img.shields.io/crates/v/primefield.svg)](https://crates.io/crates/primefield) | [![Documentation](https://docs.rs/primefield/badge.svg)](https://docs.rs/primefield) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/primefield/badge.svg?branch=master&event=push) |
+| [`primeorder`] |                    | [![crates.io](https://img.shields.io/crates/v/primeorder.svg)](https://crates.io/crates/primeorder) | [![Documentation](https://docs.rs/primeorder/badge.svg)](https://docs.rs/primeorder) | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/primeorder/badge.svg?branch=master&event=push) |
 | [`sm2`]   | [SM2]              | [![crates.io](https://img.shields.io/crates/v/sm2.svg)](https://crates.io/crates/sm2)   | [![Documentation](https://docs.rs/sm2/badge.svg)](https://docs.rs/sm2)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/sm2/badge.svg?branch=master&event=push)  |
 | [`wnaf`]  |                    | [![crates.io](https://img.shields.io/crates/v/wnaf.svg)](https://crates.io/crates/wnaf)   | [![Documentation](https://docs.rs/wnaf/badge.svg)](https://docs.rs/wnaf)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/wnaf/badge.svg?branch=master&event=push)  |
 | [`x448`]  | [X448]/[Curve448]  | [![crates.io](https://img.shields.io/crates/v/x448.svg)](https://crates.io/crates/x448)   | [![Documentation](https://docs.rs/x448/badge.svg)](https://docs.rs/x448)   | ![build](https://github.com/RustCrypto/elliptic-curves/workflows/x448/badge.svg?branch=master&event=push)  |
@@ -75,6 +77,8 @@ dual licensed as above, without any additional terms or conditions.
 [`p256`]: ./p256
 [`p384`]: ./p384
 [`p521`]: ./p521
+[`primefield`]: ./primefield
+[`primeorder`]: ./primeorder
 [`sm2`]: ./sm2
 [`wnaf`]: ./wnaf
 [`x448`]: ./x448
