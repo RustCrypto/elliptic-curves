@@ -67,3 +67,5 @@ hash2curve = { path = "hash2curve" }
 primefield = { path = "primefield" }
 primeorder = { path = "primeorder" }
 wnaf = { path = "wnaf" }
+
+crypto-bigint = { git = "https://github.com/RustCrypto/crypto-bigint" }
