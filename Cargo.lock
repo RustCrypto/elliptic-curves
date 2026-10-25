@@ -62,9 +62,9 @@ dependencies = [
 
 [[package]]
 name = "belt-kwp"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7406529f181a723adc1ed9ad43772b48298dc6162ef9e260430fd0127d037537"
+checksum = "b70daaa160b52d10151c57217ef559e7412b327dfbf0bcdfc7d8d856ec3c75ef"
 dependencies = [
  "belt-block",
 ]
