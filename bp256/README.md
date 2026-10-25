@@ -34,7 +34,7 @@ dual licensed as above, without any additional terms or conditions.
 [docs-image]: https://docs.rs/bp256/badge.svg
 [docs-link]: https://docs.rs/bp256/
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
-[rustc-image]: https://img.shields.io/badge/rustc-1.85+-blue.svg
+[rustc-image]: https://img.shields.io/badge/rustc-1.87+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
 [build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bp256.yml/badge.svg

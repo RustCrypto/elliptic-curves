@@ -1,6 +1,6 @@
 [package]
 name = "wnaf"
-version = "0.14.1"
+version = "0.14.3"
 description = """
 wNAF (w-ary non-adjacent form) variable-time scalar multiplication implemented generically
 over elliptic curve groups with full `no_alloc` support, including multiscalar multiplication using
@@ -17,7 +17,7 @@ readme = "README.md"
 categories = ["cryptography", "no-std"]
 keywords = ["crypto", "ecc", "multiscalar", "no_alloc"]
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.87"
 
 [dependencies]
 array = { version = "0.4.13", package = "hybrid-array" }

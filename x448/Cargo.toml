@@ -9,7 +9,7 @@ repository = "https://github.com/RustCrypto/elliptic-curves/tree/master/x448"
 documentation = "https://docs.rs/x448"
 license = "Apache-2.0 OR MIT"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.87"
 readme = "README.md"
 description = "Pure Rust implementation of X448, an elliptic curve Diffie-Hellman function"
 
