@@ -312,7 +312,7 @@ mod test {
         // If by chance, a low order point is generated, the clamping function will
         // remove it.
         let low_order = alice_pub.0.is_low_order() || bob_pub.0.is_low_order();
-        assert!(low_order == false);
+        assert!(!low_order);
 
         // Both Alice and Bob perform the DH key exchange.
         // As mentioned above, we unwrap because both Parties are using the API correctly.
