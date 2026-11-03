@@ -9,7 +9,7 @@ use core::{
 };
 use elliptic_curve::{
     Curve, Generate,
-    bigint::{ArrayEncoding, Limb, Odd, U256, Uint, cpubits, modular::Retrieve},
+    bigint::{ArrayEncoding, Limb, Odd, U256, U512, Uint, cpubits, modular::Retrieve},
     ctutils,
     group::ff::{self, Field, FromUniformBytes, PrimeField},
     ops::{Invert, Reduce, ReduceNonZero},
@@ -449,10 +449,7 @@ impl From<&Scalar> for U256 {
 
 impl FromUniformBytes<64> for Scalar {
     fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
-        Self(barrett_reduce(
-            U256::from_be_slice(&bytes[32..]),
-            U256::from_be_slice(&bytes[..32]),
-        ))
+        Self::reduce(&U512::from_le_slice(bytes))
     }
 }
 
@@ -595,6 +592,13 @@ impl Reduce<FieldBytes> for Scalar {
     }
 }
 
+impl Reduce<U512> for Scalar {
+    fn reduce(w: &U512) -> Self {
+        let (lo, hi) = w.split();
+        Self(barrett_reduce(lo, hi))
+    }
+}
+
 impl ReduceNonZero<U256> for Scalar {
     fn reduce_nonzero(w: &U256) -> Self {
         const ORDER_MINUS_ONE: U256 = NistP256::ORDER.as_ref().wrapping_sub(&U256::ONE);
@@ -689,9 +693,41 @@ impl<'de> Deserialize<'de> for Scalar {
 mod tests {
     use super::{Scalar, U256};
     use crate::{FieldBytes, NistP256, SecretKey};
-    use elliptic_curve::{Curve, array::Array, group::ff::PrimeField, ops::ReduceNonZero};
+    use elliptic_curve::{
+        Curve,
+        array::Array,
+        bigint::ArrayEncoding,
+        group::ff::{FromUniformBytes, PrimeField},
+        ops::ReduceNonZero,
+    };
 
     primefield::test_primefield!(Scalar, U256);
+
+    #[test]
+    fn from_uniform_bytes() {
+        for (value, expected) in [
+            (U256::ZERO, Scalar::ZERO),
+            (U256::ONE, Scalar::ONE),
+            (NistP256::ORDER.wrapping_sub(&U256::ONE), -Scalar::ONE),
+            (*NistP256::ORDER, Scalar::ZERO),
+            (NistP256::ORDER.wrapping_add(&U256::ONE), Scalar::ONE),
+        ] {
+            let mut bytes = [0u8; 64];
+            bytes[..32].copy_from_slice(&value.to_le_byte_array());
+            assert_eq!(Scalar::from_uniform_bytes(&bytes), expected);
+        }
+
+        // Exercise both halves with distinct bytes. Expected value computed as
+        // int.from_bytes(bytes(range(64)), "little") % n using Python integers.
+        let mut bytes = [0u8; 64];
+        for (byte, value) in bytes.iter_mut().zip(0u8..) {
+            *byte = value;
+        }
+        let expected = Scalar(U256::from_be_hex(
+            "77701ab12d24a1fc1557af76c170d466c2b9524fe87a1c46a098a8dc360d40ea",
+        ));
+        assert_eq!(Scalar::from_uniform_bytes(&bytes), expected);
+    }
 
     #[test]
     fn from_to_bytes_roundtrip() {
