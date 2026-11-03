@@ -135,7 +135,9 @@ impl MontgomeryPoint {
 
     /// Returns true if the point is one of the low order points
     pub fn is_low_order(&self) -> bool {
-        (*self == Self::LOW_A) || (*self == Self::LOW_B) || (*self == Self::LOW_C)
+        // `u` may be non-canonical (e.g. `p` or `p + 1`), so compare the reduced value
+        let u = Self(FieldElement::from_bytes(&self.0).to_bytes());
+        (u == Self::LOW_A) || (u == Self::LOW_B) || (u == Self::LOW_C)
     }
 
     /// View the point as a byte slice
