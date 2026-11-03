@@ -347,7 +347,7 @@ impl From<u128> for Scalar {
 
 impl FromUniformBytes<64> for Scalar {
     fn from_uniform_bytes(bytes: &[u8; 64]) -> Self {
-        WideScalar::from_bytes(bytes).reduce()
+        Self::reduce(&U512::from_le_slice(bytes))
     }
 }
 
@@ -757,7 +757,7 @@ mod tests {
     use elliptic_curve::{
         array::Array,
         bigint::{ArrayEncoding, U256, U512},
-        ff::{Field, PrimeField},
+        ff::{Field, FromUniformBytes, PrimeField},
         ops::Reduce,
         scalar::IsHigh,
     };
@@ -967,6 +967,32 @@ mod tests {
         let a = Scalar::try_generate_from_rng(&mut SysRng).unwrap();
         // just to make sure `a` is not optimized out by the compiler
         assert_eq!((a - a).is_zero().unwrap_u8(), 1);
+    }
+
+    #[test]
+    fn from_uniform_bytes() {
+        for (value, expected) in [
+            (U256::ZERO, Scalar::ZERO),
+            (U256::ONE, Scalar::ONE),
+            (ORDER.wrapping_sub(&U256::ONE), -Scalar::ONE),
+            (*ORDER, Scalar::ZERO),
+            (ORDER.wrapping_add(&U256::ONE), Scalar::ONE),
+        ] {
+            let mut bytes = [0u8; 64];
+            bytes[..32].copy_from_slice(&value.to_le_byte_array());
+            assert_eq!(Scalar::from_uniform_bytes(&bytes), expected);
+        }
+
+        // Exercise both halves with distinct bytes. Expected value computed as
+        // int.from_bytes(bytes(range(64)), "little") % n using Python integers.
+        let mut bytes = [0u8; 64];
+        for (byte, value) in bytes.iter_mut().zip(0u8..) {
+            *byte = value;
+        }
+        let expected = Scalar(U256::from_be_hex(
+            "b3733950bdba253f1b3d1e85a6476a3431e81e31226f77728672f7c5db744278",
+        ));
+        assert_eq!(Scalar::from_uniform_bytes(&bytes), expected);
     }
 
     #[test]
