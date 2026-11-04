@@ -39,6 +39,7 @@ impl PublicKey {
     /// Returns None if:
     /// -  The length of the slice is not 56
     /// -  The point is a low order point
+    #[must_use]
     pub fn from_bytes(bytes: &[u8]) -> Option<PublicKey> {
         let public_key = PublicKey::from_bytes_unchecked(bytes)?;
         if public_key.0.is_low_order() {
@@ -50,6 +51,7 @@ impl PublicKey {
     /// Converts a bytes slice into a Public key
     /// Returns None if:
     /// -  The length of the slice is not 56
+    #[must_use]
     pub fn from_bytes_unchecked(bytes: &[u8]) -> Option<PublicKey> {
         // First check if we have 56 bytes
         if bytes.len() != 56 {
@@ -64,6 +66,7 @@ impl PublicKey {
     }
 
     /// Converts a public key into a byte slice
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; 56] {
         self.0.as_bytes()
     }
@@ -77,6 +80,7 @@ pub struct SharedSecret(MontgomeryPoint);
 
 impl SharedSecret {
     /// Converts a shared secret into a byte slice
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; 56] {
         self.0.as_bytes()
     }
@@ -106,6 +110,7 @@ impl EphemeralSecret {
     }
 
     /// Performs a Diffie-hellman key exchange between the secret key and an external public key
+    #[must_use]
     pub fn diffie_hellman(&self, public_key: &PublicKey) -> SharedSecret {
         // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
         // created.
@@ -114,6 +119,7 @@ impl EphemeralSecret {
     }
 
     /// Converts a secret into a byte array
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; 56] {
         self.0.as_ref()
     }
@@ -149,6 +155,7 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
 /// we do not return a low order point.
 ///
 /// [1]: https://github.com/rust-lang/nomicon/issues/59
+#[must_use]
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
     let scalar = EphemeralSecret::clamp(scalar_bytes.into()).as_scalar();
@@ -156,6 +163,7 @@ pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
 }
 /// An unchecked version of the x448 function defined in RFC448
 /// No checks are made on the points.
+#[must_use]
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
     let point = MontgomeryPoint(point_bytes);
     let scalar = EphemeralSecret::clamp(scalar_bytes.into()).as_scalar();
@@ -212,6 +220,7 @@ impl StaticSecret {
 
     /// Perform a Diffie-Hellman key agreement between `self` and
     /// `their_public` key to produce a `SharedSecret`.
+    #[must_use]
     pub fn diffie_hellman(&self, their_public: &PublicKey) -> SharedSecret {
         // NOTE(security): it is assumed PublicKey is not a low_order. It should be checked when
         // created.
@@ -221,6 +230,7 @@ impl StaticSecret {
 
     /// View this key as a byte array.
     #[inline]
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8; 56] {
         self.0.as_ref()
     }
