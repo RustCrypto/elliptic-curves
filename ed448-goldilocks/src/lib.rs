@@ -142,6 +142,7 @@ impl Curve for Decaf448 {
     type Uint = U448;
 
     const ORDER: Odd<U448> = ORDER;
+    const FIELD_ENDIANNESS: ByteOrder = ByteOrder::LittleEndian;
 }
 
 impl PrimeCurve for Decaf448 {}

@@ -79,6 +79,14 @@ mod test {
     use shake::Shake256;
 
     #[test]
+    fn secret_key_from_bytes() {
+        let scalar = DecafScalar::from(0x0102030405060708u64);
+        let secret_key = elliptic_curve::SecretKey::<Decaf448>::from_bytes(&scalar.to_repr())
+            .expect("valid scalar");
+        assert_eq!(secret_key.to_nonzero_scalar().as_ref(), &scalar);
+    }
+
+    #[test]
     fn test_basic_add() {
         let five = DecafScalar::from(5u8);
         let six = DecafScalar::from(6u8);
