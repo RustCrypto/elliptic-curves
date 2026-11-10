@@ -400,11 +400,13 @@ impl<'de> serdect::serde::Deserialize<'de> for SigningKey {
 
 impl SigningKey {
     /// Serialize this [`SigningKey`] as bytes.
+    #[must_use]
     pub fn to_bytes(&self) -> SecretKey {
         self.secret.seed
     }
 
     /// Serialize this [`SigningKey`] as a byte reference.
+    #[must_use]
     pub fn as_bytes(&self) -> &SecretKey {
         &self.secret.seed
     }
@@ -413,17 +415,20 @@ impl SigningKey {
     ///
     /// This is the scalar that is actually used for signing.
     /// Be warned, this is secret material that should be handled with care.
+    #[must_use]
     pub fn to_scalar(&self) -> EdwardsScalar {
         self.secret.scalar
     }
 
     /// Get the [`VerifyingKey`] for this [`SigningKey`].
+    #[must_use]
     pub fn verifying_key(&self) -> VerifyingKey {
         self.secret.public_key
     }
 
     /// Create a signing context that can be used for Ed448ph with
     /// [`signature::DigestSigner`]
+    #[must_use]
     pub fn with_context<'k, 'v>(&'k self, context: &'v [u8]) -> Context<'k, 'v, Self> {
         Context {
             key: self,
@@ -433,6 +438,7 @@ impl SigningKey {
 
     /// Sign a `message` with this [`SigningKey`] using the Ed448 algorithm
     /// defined in [RFC8032 §5.2](https://datatracker.ietf.org/doc/html/rfc8032#section-5.2).
+    #[must_use]
     pub fn sign_raw(&self, message: &[u8]) -> Signature {
         let sig = self
             .secret

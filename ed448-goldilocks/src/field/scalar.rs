@@ -641,33 +641,39 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Compute `self` + `rhs` mod ℓ
+    #[must_use]
     pub const fn addition(&self, rhs: &Self) -> Self {
         Self::new(self.scalar.add_mod(&rhs.scalar, ORDER.as_nz_ref()))
     }
 
     /// Compute `self` + `self` mod ℓ
+    #[must_use]
     pub const fn double(&self) -> Self {
         Self::new(self.scalar.double_mod(ORDER.as_nz_ref()))
     }
 
     /// Compute `self` - `rhs` mod ℓ
+    #[must_use]
     pub const fn subtract(&self, rhs: &Self) -> Self {
         Self::new(self.scalar.sub_mod(&rhs.scalar, ORDER.as_nz_ref()))
     }
 
     /// Compute `self` * `rhs` mod ℓ
+    #[must_use]
     pub const fn multiply(&self, rhs: &Self) -> Self {
         let wide_value = self.scalar.widening_mul(&rhs.scalar);
         Self::new(U448::rem_wide_vartime(wide_value, ORDER.as_nz_ref()))
     }
 
     /// Square this scalar
+    #[must_use]
     pub const fn square(&self) -> Self {
         let value = self.scalar.widening_square();
         Self::new(U448::rem_wide_vartime(value, ORDER.as_nz_ref()))
     }
 
     /// Is this scalar equal to zero?
+    #[must_use]
     pub fn is_zero(&self) -> Choice {
         self.scalar.is_zero().into()
     }
@@ -708,6 +714,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     // XXX: Better if this method returns an array of 448 items
     /// Returns the bits of the scalar in little-endian order.
+    #[must_use]
     pub fn bits(&self) -> [bool; 448] {
         let mut bits = [false; 448];
         let mut i = 0;
@@ -726,11 +733,13 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Convert this `Scalar` to a little-endian byte array.
+    #[must_use]
     pub fn to_bytes(&self) -> [u8; 56] {
         self.scalar.to_le_byte_array().0
     }
 
     /// Invert this scalar
+    #[must_use]
     pub fn invert(&self) -> Self {
         Self::conditional_select(
             &self.exp_vartime(&[
@@ -749,6 +758,7 @@ impl<C: CurveWithScalar> Scalar<C> {
 
     /// Exponentiates `self` by `exp`, where `exp` is a little-endian order integer
     /// exponent.
+    #[must_use]
     pub const fn exp_vartime(&self, exp: &[u64]) -> Self {
         let mut res = Self::ONE;
 
@@ -771,6 +781,7 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Return the square root of this scalar, if it is a quadratic residue.
+    #[must_use]
     pub fn sqrt(&self) -> CtOption<Self> {
         let ss = self.pow([
             0x48de30a4aad6113d,
@@ -785,6 +796,7 @@ impl<C: CurveWithScalar> Scalar<C> {
     }
 
     /// Halves a Scalar modulo the prime
+    #[must_use]
     pub fn div_by_2(&self) -> Self {
         let is_odd = self.scalar.is_odd();
         let if_odd = self.scalar + *ORDER;

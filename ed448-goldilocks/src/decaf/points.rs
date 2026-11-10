@@ -31,21 +31,25 @@ impl DecafPoint {
     pub const IDENTITY: DecafPoint = DecafPoint(ExtendedPoint::IDENTITY);
 
     /// Check if the point is the identity
+    #[must_use]
     pub fn is_identity(&self) -> Choice {
         self.ct_eq(&DecafPoint::IDENTITY)
     }
 
     /// Add two points
+    #[must_use]
     pub fn add(&self, other: &DecafPoint) -> DecafPoint {
         DecafPoint(self.0.add_extended(&other.0).to_extended())
     }
 
     /// Subtract two points
+    #[must_use]
     pub fn sub(&self, other: &DecafPoint) -> DecafPoint {
         DecafPoint(self.0.sub_extended(&other.0).to_extended())
     }
 
     /// Compress this point
+    #[must_use]
     pub fn compress(&self) -> CompressedDecaf {
         let X = self.0.X;
         // let Y = self.0.Y;
@@ -76,6 +80,7 @@ impl DecafPoint {
     /// see <https://datatracker.ietf.org/doc/rfc9380/>
     /// section 5.3.4 by splitting the input into two 56-byte halves,
     /// then applies the decaf448_map to each, and adds the results.
+    #[must_use]
     pub fn from_uniform_bytes(bytes: &[u8; 112]) -> Self {
         let lo: [u8; 56] = (&bytes[..56])
             .try_into()
@@ -552,6 +557,7 @@ impl CompressedDecaf {
     pub const IDENTITY: Self = Self([0u8; 56]);
 
     /// Decompress a point if it is valid
+    #[must_use]
     pub fn decompress(&self) -> CtOption<DecafPoint> {
         let s = FieldElement::from_bytes(&self.0);
         //XX: Check for canonical encoding and sign,
@@ -593,6 +599,7 @@ impl CompressedDecaf {
     }
 
     /// Get the bytes of this compressed point
+    #[must_use]
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }

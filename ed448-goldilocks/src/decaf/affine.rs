@@ -22,16 +22,19 @@ impl AffinePoint {
     pub const IDENTITY: Self = Self(InnerAffinePoint::IDENTITY);
 
     /// Convert to DecafPoint
+    #[must_use]
     pub fn to_decaf(&self) -> DecafPoint {
         DecafPoint(self.0.to_extended())
     }
 
     /// The X coordinate
+    #[must_use]
     pub fn x(&self) -> [u8; 56] {
         self.0.x.to_bytes()
     }
 
     /// The Y coordinate
+    #[must_use]
     pub fn y(&self) -> [u8; 56] {
         self.0.y.to_bytes()
     }
