@@ -565,7 +565,7 @@ impl Add<&AffinePoint> for &EdwardsPoint {
     type Output = EdwardsPoint;
 
     fn add(self, other: &AffinePoint) -> EdwardsPoint {
-        *self + *other
+        *self + other.to_edwards()
     }
 }
 
@@ -573,7 +573,7 @@ impl Add<&EdwardsPoint> for &AffinePoint {
     type Output = EdwardsPoint;
 
     fn add(self, other: &EdwardsPoint) -> EdwardsPoint {
-        *other + *self
+        *other + self.to_edwards()
     }
 }
 
@@ -1172,5 +1172,17 @@ mod tests {
             point += T4;
             assert!(bool::from(!point.is_torsion_free()));
         }
+    }
+
+    #[test]
+    fn add_affine_point() {
+        let g = EdwardsPoint::GENERATOR;
+        let g_affine = g.to_affine();
+        let expected = g.double();
+
+        assert_eq!(g + g_affine, expected);
+        assert_eq!(&g + &g_affine, expected);
+        assert_eq!(g_affine + g, expected);
+        assert_eq!(&g_affine + &g, expected);
     }
 }
