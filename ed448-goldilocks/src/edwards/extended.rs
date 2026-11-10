@@ -190,7 +190,7 @@ impl CofactorGroup for EdwardsPoint {
     }
 
     fn into_subgroup(self) -> CtOption<Self::Subgroup> {
-        CtOption::new(self.clear_cofactor(), self.is_torsion_free())
+        CtOption::new(self, self.is_torsion_free())
     }
 
     fn is_torsion_free(&self) -> Choice {
@@ -1156,6 +1156,23 @@ mod tests {
         for (point, affine_point) in points.into_iter().zip(affine_points) {
             assert_eq!(affine_point, point.to_affine());
         }
+    }
+
+    #[test]
+    fn into_subgroup_returns_same_point() {
+        let g = EdwardsPoint::GENERATOR;
+        let p = g.double() + g;
+
+        let q = p.into_subgroup();
+
+        assert_eq!(q.unwrap(), p);
+
+        let t4 = CompressedEdwardsY([0u8; 57])
+            .decompress_unchecked()
+            .unwrap();
+        let mut m = g;
+        m += t4;
+        assert!(bool::from(m.into_subgroup().is_none()));
     }
 
     #[property_test]
