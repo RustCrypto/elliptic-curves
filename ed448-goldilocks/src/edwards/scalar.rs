@@ -31,7 +31,7 @@ impl CurveWithScalar for Ed448 {
 
     fn from_canonical_bytes(bytes: &ScalarBytes<Self>) -> subtle::CtOption<Scalar<Self>> {
         // Check that the 10 high bits are not set
-        let is_valid = bytes[56].ct_eq(&0) | (bytes[55] >> 6).ct_eq(&0);
+        let is_valid = bytes[56].ct_eq(&0) & (bytes[55] >> 6).ct_eq(&0);
         let bytes: [u8; 56] = core::array::from_fn(|i| bytes[i]);
         let candidate = Scalar::new(U448::from_le_slice(&bytes));
 
@@ -210,6 +210,13 @@ mod test {
             "003fffffffffffffffffffffffffffffffffffffffffffffffffffffff7cca23e9c44edb49aed63690216cc2728dc58f552378c292ab5844f3"
         ));
         bytes.reverse();
+        let s = EdwardsScalar::from_canonical_bytes(&bytes);
+        assert!(<Choice as Into<bool>>::into(s.is_none()));
+
+        // 1 with a non-zero 57th byte should fail
+        let mut bytes = EdwardsScalarBytes::default();
+        bytes[0] = 1;
+        bytes[56] = 1;
         let s = EdwardsScalar::from_canonical_bytes(&bytes);
         assert!(<Choice as Into<bool>>::into(s.is_none()));
 
