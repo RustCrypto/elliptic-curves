@@ -176,6 +176,9 @@ where
     /// If the modulus is 32-bits or smaller.
     #[inline]
     #[must_use]
+    // Allow the usage of deprecated `.bits()`;
+    // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
+    #[allow(deprecated)]
     pub const fn from_u32(w: u32) -> Self {
         assert!(
             MOD::PARAMS.modulus().as_ref().bits() > 32,
@@ -192,6 +195,9 @@ where
     /// If the modulus is 64-bits or smaller.
     #[inline]
     #[must_use]
+    // Allow the usage of deprecated `.bits()`;
+    // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
+    #[allow(deprecated)]
     pub const fn from_u64(w: u64) -> Self {
         assert!(
             MOD::PARAMS.modulus().as_ref().bits() > 64,
@@ -482,6 +488,9 @@ where
     type Repr = MontyFieldBytes<MOD, LIMBS>;
 
     const MODULUS: &'static str = MOD::MODULUS_HEX;
+    // Allow the usage of deprecated `.bits_vartime()`;
+    // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
+    #[allow(deprecated)]
     const NUM_BITS: u32 = MOD::PARAMS.modulus().as_ref().bits_vartime();
     const CAPACITY: u32 = Self::NUM_BITS - 1;
     const TWO_INV: Self = Self::from_u64(2).const_invert();

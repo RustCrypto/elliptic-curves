@@ -47,7 +47,7 @@ pub fn ed448(c: &mut Criterion) {
 
     group.bench_function("compress", |b| {
         b.iter_batched(
-            || EdwardsPoint::generate(),
+            EdwardsPoint::generate,
             |point| point.to_bytes(),
             BatchSize::SmallInput,
         )
@@ -105,7 +105,7 @@ pub fn decaf448(c: &mut Criterion) {
 
     group.bench_function("encode", |b| {
         b.iter_batched(
-            || DecafPoint::generate(),
+            DecafPoint::generate,
             |point| point.to_bytes(),
             BatchSize::SmallInput,
         )

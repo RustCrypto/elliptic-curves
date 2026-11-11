@@ -44,6 +44,9 @@ macro_rules! monty_field_params {
         );
 
         impl $crate::MontyFieldParams<{ <$uint>::LIMBS }> for $name {
+            // Allow the usage of deprecated `.bits()`;
+            // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
+            #[allow(deprecated)]
             type ByteSize = $crate::bigint::hybrid_array::typenum::U<
                 {
                     <$name as $crate::bigint::modular::ConstMontyParams<{ <$uint>::LIMBS }>>::PARAMS
