@@ -14,7 +14,6 @@ use crate::{ORDER_HEX, Sm2, U256};
 use elliptic_curve::{
     Curve as _,
     bigint::cpubits,
-    ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeGreater},
 };

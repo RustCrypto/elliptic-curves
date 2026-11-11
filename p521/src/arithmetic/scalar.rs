@@ -6,7 +6,6 @@ use crate::{FieldBytes, NistP521, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
     bigint::Limb,
-    ff::PrimeField,
     field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},

@@ -28,6 +28,12 @@ pub use crate::{
 pub use array;
 pub use group::Group;
 
+/// Items used by the exported macros. Not public API.
+#[doc(hidden)]
+pub mod __private {
+    pub use ff::PrimeField;
+}
+
 #[cfg(feature = "alloc")]
 pub use crate::boxed::BoxedWnaf;
 

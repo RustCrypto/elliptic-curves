@@ -5,7 +5,6 @@
 use crate::{BignP256, ORDER_HEX, U256};
 use elliptic_curve::{
     Curve as _,
-    ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
     subtle::{Choice, ConstantTimeGreater},
 };

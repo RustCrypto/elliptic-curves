@@ -14,7 +14,6 @@ use crate::{FieldBytes, NistP224, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
     bigint::{Limb, cpubits},
-    ff::PrimeField,
     field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
