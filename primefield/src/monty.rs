@@ -180,11 +180,6 @@ where
     // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
     #[allow(deprecated)]
     pub const fn from_u32(w: u32) -> Self {
-        assert!(
-            MOD::PARAMS.modulus().as_ref().bits() > 32,
-            "modulus is too small to ensure all u32s are in range"
-        );
-
         Self::from_uint_reduced(&Uint::from_u32(w))
     }
 
@@ -199,11 +194,6 @@ where
     // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
     #[allow(deprecated)]
     pub const fn from_u64(w: u64) -> Self {
-        assert!(
-            MOD::PARAMS.modulus().as_ref().bits() > 64,
-            "modulus is too small to ensure all u64s are in range"
-        );
-
         Self::from_uint_reduced(&Uint::from_u64(w))
     }
 
