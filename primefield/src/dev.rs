@@ -85,11 +85,9 @@ macro_rules! test_primefield {
 #[macro_export]
 macro_rules! test_primefield_constants {
     ($fe:tt, $uint:ident) => {
-        #[allow(unused_imports)]
-        use $crate::{bigint::Integer as _, bigint::modular::Retrieve as _, ff::PrimeField as _};
-
         // TODO(tarcieri): support for fields with little endian-encoded modulus
-        const MODULUS: $crate::bigint::Odd<$uint> = $crate::bigint::Odd::from_be_hex($fe::MODULUS);
+        const MODULUS: $crate::bigint::Odd<$uint> =
+            $crate::bigint::Odd::from_be_hex(<$fe as $crate::ff::PrimeField>::MODULUS);
         const T: $uint = $crate::compute_t(MODULUS.as_ref());
 
         fn aux_pow_vartime(base: &$fe, exp: &$uint) -> $fe {
@@ -119,7 +117,10 @@ macro_rules! test_primefield_constants {
         #[test]
         fn delta_constant() {
             // DELTA^{t} mod m == 1
-            assert_eq!(aux_pow_vartime(&$fe::DELTA, &T), $fe::ONE);
+            assert_eq!(
+                aux_pow_vartime(&<$fe as $crate::ff::PrimeField>::DELTA, &T),
+                $fe::ONE
+            );
         }
 
         // TODO(tarcieri): check generator has order `modulus - 1`
@@ -127,9 +128,10 @@ macro_rules! test_primefield_constants {
         fn multiplicative_generator_constant() {
             // Sanity-check that the generator is a quadratic non-residue
             assert_eq!(
-                $fe::MULTIPLICATIVE_GENERATOR
-                    .retrieve()
-                    .jacobi_symbol(&MODULUS),
+                $crate::bigint::modular::Retrieve::retrieve(
+                    &<$fe as $crate::ff::PrimeField>::MULTIPLICATIVE_GENERATOR
+                )
+                .jacobi_symbol(&MODULUS),
                 $crate::bigint::JacobiSymbol::MinusOne
             );
         }
@@ -138,25 +140,38 @@ macro_rules! test_primefield_constants {
         fn root_of_unity_constant() {
             // ROOT_OF_UNITY^{2^s} mod m == 1
             assert_eq!(
-                aux_sqn_vartime(&$fe::ROOT_OF_UNITY, $fe::S as usize),
+                aux_sqn_vartime(
+                    &<$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY,
+                    <$fe as $crate::ff::PrimeField>::S as usize
+                ),
                 $fe::ONE
             );
 
             // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
             assert_eq!(
-                aux_pow_vartime(&$fe::MULTIPLICATIVE_GENERATOR, &T),
-                $fe::ROOT_OF_UNITY
+                aux_pow_vartime(
+                    &<$fe as $crate::ff::PrimeField>::MULTIPLICATIVE_GENERATOR,
+                    &T
+                ),
+                <$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY
             )
         }
 
         #[test]
         fn root_of_unity_inv_constant() {
-            assert_eq!($fe::ROOT_OF_UNITY * $fe::ROOT_OF_UNITY_INV, $fe::ONE);
+            assert_eq!(
+                <$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY
+                    * <$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY_INV,
+                $fe::ONE
+            );
         }
 
         #[test]
         fn two_inv_constant() {
-            assert_eq!($fe::from(2u32) * $fe::TWO_INV, $fe::ONE);
+            assert_eq!(
+                $fe::from(2u32) * <$fe as $crate::ff::PrimeField>::TWO_INV,
+                $fe::ONE
+            );
         }
     };
 }

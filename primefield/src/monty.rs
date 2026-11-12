@@ -998,7 +998,7 @@ pub const fn compute_t<const LIMBS: usize>(modulus: &Uint<LIMBS>) -> Uint<LIMBS>
 #[cfg(test)]
 mod tests {
     use super::MontyFieldElement;
-    use crate::{ByteOrder, monty_field_params, test_primefield};
+    use crate::{ByteOrder, ff::PrimeField, monty_field_params, test_primefield};
     use bigint::U256;
 
     // Example modulus: P-256 base field.

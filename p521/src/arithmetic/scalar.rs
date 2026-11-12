@@ -107,6 +107,5 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, Uint};
-    use elliptic_curve::ff::PrimeField;
     primefield::test_primefield!(Scalar, Uint);
 }
