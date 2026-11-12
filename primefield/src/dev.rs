@@ -85,16 +85,40 @@ macro_rules! test_primefield {
 macro_rules! test_primefield_constants {
     ($fe:tt, $uint:ident) => {
         #[allow(unused_imports)]
-        use $crate::{bigint::modular::Retrieve as _, ff::PrimeField as _};
+        use $crate::{bigint::Integer as _, bigint::modular::Retrieve as _, ff::PrimeField as _};
 
         // TODO(tarcieri): support for fields with little endian-encoded modulus
         const MODULUS: $crate::bigint::Odd<$uint> = $crate::bigint::Odd::from_be_hex($fe::MODULUS);
         const T: $uint = $crate::compute_t(MODULUS.as_ref());
 
+        fn aux_pow_vartime(base: &$fe, exp: &$uint) -> $fe {
+            // Alternatively, one could fall back to `$crate::ff::Field::pow_vartime`,
+            // but the exponent would have to be converted to an `&[u64]` in the 32-bit case.
+            let mut res = $fe::ONE;
+
+            // Allow the deprecated `.bits()` to support `crypto-bigint` 0.7.9 and 0.7.10.
+            #[allow(deprecated)]
+            for i in (0..exp.bits()).rev() {
+                res = res * res;
+                if exp.bit_vartime(i) {
+                    res *= base;
+                }
+            }
+            res
+        }
+
+        fn aux_sqn_vartime(base: &$fe, n: usize) -> $fe {
+            let mut x = *base;
+            for _ in 0..n {
+                x = x * x;
+            }
+            x
+        }
+
         #[test]
         fn delta_constant() {
             // DELTA^{t} mod m == 1
-            assert_eq!($fe::DELTA.pow_vartime(&T), $fe::ONE);
+            assert_eq!(aux_pow_vartime(&$fe::DELTA, &T), $fe::ONE);
         }
 
         // TODO(tarcieri): check generator has order `modulus - 1`
@@ -112,11 +136,14 @@ macro_rules! test_primefield_constants {
         #[test]
         fn root_of_unity_constant() {
             // ROOT_OF_UNITY^{2^s} mod m == 1
-            assert_eq!($fe::ROOT_OF_UNITY.sqn_vartime($fe::S as usize), $fe::ONE);
+            assert_eq!(
+                aux_sqn_vartime(&$fe::ROOT_OF_UNITY, $fe::S as usize),
+                $fe::ONE
+            );
 
             // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
             assert_eq!(
-                $fe::MULTIPLICATIVE_GENERATOR.pow_vartime(&T),
+                aux_pow_vartime(&$fe::MULTIPLICATIVE_GENERATOR, &T),
                 $fe::ROOT_OF_UNITY
             )
         }
@@ -141,14 +168,14 @@ macro_rules! test_field_identity {
         fn zero_is_additive_identity() {
             let zero = $fe::ZERO;
             let one = $fe::ONE;
-            assert_eq!(zero.add(&zero), zero);
-            assert_eq!(one.add(&zero), one);
+            assert_eq!(zero + &zero, zero);
+            assert_eq!(one + &zero, one);
         }
 
         #[test]
         fn one_is_multiplicative_identity() {
             let one = $fe::ONE;
-            assert_eq!(one.multiply(&one), one);
+            assert_eq!(one * &one, one);
         }
     };
 }
