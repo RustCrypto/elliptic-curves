@@ -7,7 +7,7 @@ use elliptic_curve::{
     Curve as _,
     ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeGreater},
 };
 use primefield::ByteOrder;
 use primeorder::wnaf;

@@ -12,9 +12,7 @@
 
 use elliptic_curve::{
     bigint::{U384, cpubits},
-    ff::PrimeField,
     ops::BatchInvert,
-    subtle::{Choice, ConstantTimeEq, CtOption},
 };
 
 // Default backend: fiat-crypto

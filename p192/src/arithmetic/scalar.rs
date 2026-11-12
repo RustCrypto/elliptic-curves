@@ -16,7 +16,7 @@ use elliptic_curve::{
     bigint::cpubits,
     ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeGreater},
 };
 use primeorder::wnaf;
 

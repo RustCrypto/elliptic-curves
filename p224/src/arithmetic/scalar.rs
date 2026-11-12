@@ -18,7 +18,7 @@ use elliptic_curve::{
     field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeGreater},
 };
 use primeorder::wnaf;
 

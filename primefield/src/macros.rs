@@ -35,8 +35,6 @@ macro_rules! monty_field_params {
         multiplicative_generator: $multiplicative_generator:expr,
         doc: $doc:expr
     ) => {
-        use $crate::bigint::modular::ConstMontyParams;
-
         $crate::bigint::const_prime_monty_params!(
             $name,
             $uint,
@@ -47,11 +45,21 @@ macro_rules! monty_field_params {
 
         impl $crate::MontyFieldParams<{ <$uint>::LIMBS }> for $name {
             type ByteSize = $crate::bigint::hybrid_array::typenum::U<
-                { $name::PARAMS.modulus().as_ref().bits().div_ceil(8) as usize },
+                {
+                    <$name as $crate::bigint::modular::ConstMontyParams<{ <$uint>::LIMBS }>>::PARAMS
+                        .modulus()
+                        .as_ref()
+                        .bits()
+                        .div_ceil(8) as usize
+                },
             >;
             const BYTE_ORDER: $crate::ByteOrder = $byte_order;
             const MODULUS_HEX: &'static str = $modulus_hex;
-            const T: $uint = $crate::compute_t($name::PARAMS.modulus().as_ref());
+            const T: $uint = $crate::compute_t(
+                <$name as $crate::bigint::modular::ConstMontyParams<{ <$uint>::LIMBS }>>::PARAMS
+                    .modulus()
+                    .as_ref(),
+            );
         }
     };
 }
@@ -107,35 +115,32 @@ macro_rules! monty_field_element {
         doc: $doc:expr
     ) => {
         #[doc = $crate::monty_field_element_doc!($doc)]
-        #[derive(Clone, Copy, PartialOrd, Ord)]
-        pub struct $fe(
-            pub(super) $crate::MontyFieldElement<$params, { <$params>::LIMBS }>,
-        );
+        #[derive(
+            ::core::clone::Clone, ::core::marker::Copy, ::core::cmp::PartialOrd, ::core::cmp::Ord,
+        )]
+        pub struct $fe(pub(super) $crate::MontyFieldElement<$params, { <$uint>::LIMBS }>);
 
         impl $fe {
             /// Zero element.
-            pub const ZERO: Self =
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ZERO);
+            pub const ZERO: Self = Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::ZERO);
 
             /// Multiplicative identity.
-            pub const ONE: Self =
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ONE);
+            pub const ONE: Self = Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::ONE);
 
             /// Create a [`
             #[doc = stringify!($fe)]
             /// `] from a canonical byte representation using the field's configured byte order.
             pub fn from_bytes(
-                repr: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>,
+                repr: &$crate::MontyFieldBytes<$params, { <$uint>::LIMBS }>,
             ) -> $crate::subtle::CtOption<Self> {
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_bytes(repr).map(Self)
+                $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_bytes(repr).map(Self)
             }
 
             /// Decode [`
             #[doc = stringify!($fe)]
             /// `] from a byte slice using the field's configured byte order.
-            pub fn from_slice(slice: &[u8]) -> Option<Self> {
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_slice(slice)
-                    .map(Self)
+            pub fn from_slice(slice: &[u8]) -> ::core::option::Option<Self> {
+                $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_slice(slice).map(Self)
             }
 
             /// Decode a [`
@@ -152,17 +157,17 @@ macro_rules! monty_field_element {
             pub const fn from_hex_vartime(hex: &str) -> Self {
                 use $crate::array::typenum::Unsigned;
 
-                assert!(
-                    hex.len() == <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::ByteSize::USIZE * 2,
+                ::core::assert!(
+                    hex.len() == <$params as $crate::MontyFieldParams<{ <$uint>::LIMBS }>>::ByteSize::USIZE * 2,
                     "hex is the wrong length"
                 );
 
                 // Build a hex string of the expected size, regardless of the size of `Uint`
                 let mut hex_bytes = [b'0'; { <$uint>::BITS as usize / 4 }];
 
-                let offset = match <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::BYTE_ORDER {
+                let offset = match <$params as $crate::MontyFieldParams<{ <$uint>::LIMBS }>>::BYTE_ORDER {
                     $crate::ByteOrder::BigEndian => hex_bytes.len() - hex.len(),
-                    $crate::ByteOrder::LittleEndian => 0
+                    $crate::ByteOrder::LittleEndian => 0,
                 };
 
                 let mut i = 0;
@@ -171,14 +176,14 @@ macro_rules! monty_field_element {
                     i += 1;
                 }
 
-                match core::str::from_utf8(&hex_bytes) {
-                    Ok(padded_hex) => Self(
-                        $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_hex_vartime(padded_hex),
-                    ),
-                    Err(_) => panic!("invalid hex string"),
+                match ::core::str::from_utf8(&hex_bytes) {
+                    ::core::result::Result::Ok(padded_hex) => {
+                        Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_hex_vartime(
+                            padded_hex,
+                        ))
+                    }
+                    ::core::result::Result::Err(_) => ::core::panic!("invalid hex string"),
                 }
-
-
             }
 
             /// Decode [`
@@ -192,20 +197,20 @@ macro_rules! monty_field_element {
             /// w * R^2 * R^-1 mod p = wR mod p
             /// ```
             pub fn from_uint(uint: &$uint) -> $crate::subtle::CtOption<Self> {
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_uint(uint).map(Self)
+                $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_uint(uint).map(Self)
             }
 
             /// Convert a `u64` into a [`
             #[doc = stringify!($fe)]
             /// `].
             pub const fn from_u64(w: u64) -> Self {
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_u64(w))
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_u64(w))
             }
 
             /// Returns the canonical byte encoding of this [`
             #[doc = stringify!($fe)]
             /// `] using the field's configured byte order.
-            pub fn to_bytes(self) -> $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
+            pub fn to_bytes(self) -> $crate::MontyFieldBytes<$params, { <$uint>::LIMBS }> {
                 self.0.to_bytes()
             }
 
@@ -249,7 +254,7 @@ macro_rules! monty_field_element {
             /// If the exponent is fixed, this operation is constant time.
             pub const fn pow_vartime<const RHS_LIMBS: usize>(
                 &self,
-                exp: &$crate::bigint::Uint<RHS_LIMBS>
+                exp: &$crate::bigint::Uint<RHS_LIMBS>,
             ) -> Self {
                 Self(self.0.pow_vartime(exp))
             }
@@ -264,14 +269,16 @@ macro_rules! monty_field_element {
             }
         }
 
-        impl $crate::bigint::modular::ConstMontyParams<{ <$params>::LIMBS }> for $fe {
-            const LIMBS: usize = <$params>::LIMBS;
+        impl $crate::bigint::modular::ConstMontyParams<{ <$uint>::LIMBS }> for $fe {
+            const LIMBS: usize = <$uint>::LIMBS;
             const PARAMS: $crate::bigint::modular::FixedMontyParams<{ <$uint>::LIMBS }> =
-                <$params>::PARAMS;
+                <$params as $crate::bigint::modular::ConstMontyParams<{ <$uint>::LIMBS }>>::PARAMS;
         }
 
         impl $crate::common::Generate for $fe {
-            fn try_generate_from_rng<R: $crate::rand_core::TryCryptoRng + ?Sized>(
+            fn try_generate_from_rng<
+                R: $crate::rand_core::TryCryptoRng + ?::core::marker::Sized,
+            >(
                 rng: &mut R,
             ) -> ::core::result::Result<Self, R::Error> {
                 <Self as $crate::ff::Field>::try_random(rng)
@@ -282,14 +289,13 @@ macro_rules! monty_field_element {
             const ZERO: Self = Self::ZERO;
             const ONE: Self = Self::ONE;
 
-            fn try_random<R: $crate::rand_core::TryRng + ?Sized>(
+            fn try_random<R: $crate::rand_core::TryRng + ?::core::marker::Sized>(
                 rng: &mut R,
             ) -> ::core::result::Result<Self, R::Error> {
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::try_random(rng)
-                    .map(Self)
+                $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::try_random(rng).map(Self)
             }
 
-            fn is_zero(&self) -> Choice {
+            fn is_zero(&self) -> $crate::subtle::Choice {
                 self.0.is_zero()
             }
 
@@ -301,44 +307,38 @@ macro_rules! monty_field_element {
                 self.double()
             }
 
-            fn invert(&self) -> CtOption<Self> {
+            fn invert(&self) -> $crate::subtle::CtOption<Self> {
                 self.invert()
             }
 
-            fn sqrt(&self) -> CtOption<Self> {
+            fn sqrt(&self) -> $crate::subtle::CtOption<Self> {
                 self.0.sqrt().map(Self)
             }
 
-            fn sqrt_ratio(num: &Self, div: &Self) -> (Choice, Self) {
+            fn sqrt_ratio(num: &Self, div: &Self) -> ($crate::subtle::Choice, Self) {
                 $crate::ff::helpers::sqrt_ratio_generic(num, div)
             }
         }
 
         impl $crate::ff::PrimeField for $fe {
-            type Repr = $crate::MontyFieldBytes<$params, { <$params>::LIMBS }>;
+            type Repr = $crate::MontyFieldBytes<$params, { <$uint>::LIMBS }>;
 
-            const MODULUS: &'static str =
-                <$params as $crate::MontyFieldParams<{ <$uint>::LIMBS }>>::MODULUS_HEX;
-            const NUM_BITS: u32 =
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::NUM_BITS;
-            const CAPACITY: u32 =
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::CAPACITY;
-            const TWO_INV: Self =
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::TWO_INV);
-            const MULTIPLICATIVE_GENERATOR: Self = Self(
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::MULTIPLICATIVE_GENERATOR,
-            );
-            const S: u32 = $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::S;
+            const MODULUS: &'static str = <$params as $crate::MontyFieldParams<{ <$uint>::LIMBS }>>::MODULUS_HEX;
+            const NUM_BITS: u32 = $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::NUM_BITS;
+            const CAPACITY: u32 = $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::CAPACITY;
+            const TWO_INV: Self = Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::TWO_INV);
+            const MULTIPLICATIVE_GENERATOR: Self =
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::MULTIPLICATIVE_GENERATOR);
+            const S: u32 = $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::S;
             const ROOT_OF_UNITY: Self =
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ROOT_OF_UNITY);
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::ROOT_OF_UNITY);
             const ROOT_OF_UNITY_INV: Self =
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::ROOT_OF_UNITY_INV);
-            const DELTA: Self =
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::DELTA);
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::ROOT_OF_UNITY_INV);
+            const DELTA: Self = Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::DELTA);
 
             #[inline]
             fn from_repr(bytes: Self::Repr) -> $crate::subtle::CtOption<Self> {
-                $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::from_repr(bytes).map(Self)
+                $crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::from_repr(bytes).map(Self)
             }
 
             #[inline]
@@ -356,7 +356,7 @@ macro_rules! monty_field_element {
 
         impl $crate::PrimeFieldExt for $fe {
             const REPR_ENDIANNESS: $crate::ByteOrder =
-                <$params as $crate::MontyFieldParams<{ <$params>::LIMBS }>>::BYTE_ORDER;
+                <$params as $crate::MontyFieldParams<{ <$uint>::LIMBS }>>::BYTE_ORDER;
         }
 
         $crate::field_op!($fe, Add, add, add);
@@ -425,78 +425,78 @@ macro_rules! monty_field_element {
 
         impl ::core::fmt::Debug for $fe {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                write!(f, "{}(0x{:X})", stringify!($fe), &self.0)
+                ::core::write!(f, "{}(0x{:X})", ::core::stringify!($fe), &self.0)
             }
         }
 
-        impl Default for $fe {
+        impl ::core::default::Default for $fe {
             fn default() -> Self {
                 Self::ZERO
             }
         }
 
-        impl Eq for $fe {}
-        impl PartialEq for $fe {
+        impl ::core::cmp::Eq for $fe {}
+        impl ::core::cmp::PartialEq for $fe {
             fn eq(&self, rhs: &Self) -> bool {
-                self.0.ct_eq(&(rhs.0)).into()
+                ::core::convert::From::from($crate::subtle::ConstantTimeEq::ct_eq(&self.0, &rhs.0))
             }
         }
 
-        impl From<u32> for $fe {
+        impl ::core::convert::From<u32> for $fe {
             fn from(n: u32) -> $fe {
                 Self::from_uint_unchecked(<$uint>::from(n))
             }
         }
 
-        impl From<u64> for $fe {
+        impl ::core::convert::From<u64> for $fe {
             fn from(n: u64) -> $fe {
                 Self::from_uint_unchecked(<$uint>::from(n))
             }
         }
 
-        impl From<u128> for $fe {
+        impl ::core::convert::From<u128> for $fe {
             fn from(n: u128) -> $fe {
                 Self::from_uint_unchecked(<$uint>::from(n))
             }
         }
 
-        impl From<$fe> for $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
+        impl ::core::convert::From<$fe> for $crate::MontyFieldBytes<$params, { <$uint>::LIMBS }> {
             fn from(fe: $fe) -> Self {
-                $crate::MontyFieldBytes::<$params, { <$params>::LIMBS }>::from(&fe)
+                ::core::convert::From::from(&fe)
             }
         }
 
-        impl From<&$fe> for $crate::MontyFieldBytes<$params, { <$params>::LIMBS }> {
+        impl ::core::convert::From<&$fe> for $crate::MontyFieldBytes<$params, { <$uint>::LIMBS }> {
             fn from(fe: &$fe) -> Self {
-                fe.to_repr()
+                $crate::ff::PrimeField::to_repr(fe)
             }
         }
 
-        impl From<$crate::MontyFieldElement::<$params, { <$params>::LIMBS }>> for $fe {
-            fn from(fe: $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>) -> $fe {
+        impl ::core::convert::From<$crate::MontyFieldElement<$params, { <$uint>::LIMBS }>> for $fe {
+            fn from(fe: $crate::MontyFieldElement<$params, { <$uint>::LIMBS }>) -> $fe {
                 $fe(fe)
             }
         }
 
-        impl From<$fe> for $crate::MontyFieldElement<$params, { <$params>::LIMBS }> {
-            fn from(fe: $fe) -> $crate::MontyFieldElement<$params, { <$params>::LIMBS }> {
+        impl ::core::convert::From<$fe> for $crate::MontyFieldElement<$params, { <$uint>::LIMBS }> {
+            fn from(fe: $fe) -> $crate::MontyFieldElement<$params, { <$uint>::LIMBS }> {
                 fe.0
             }
         }
 
-        impl From<$fe> for $uint {
+        impl ::core::convert::From<$fe> for $uint {
             fn from(fe: $fe) -> $uint {
                 <$uint>::from(&fe)
             }
         }
 
-        impl From<&$fe> for $uint {
+        impl ::core::convert::From<&$fe> for $uint {
             fn from(fe: &$fe) -> $uint {
                 fe.to_canonical()
             }
         }
 
-        impl TryFrom<$uint> for $fe {
+        impl ::core::convert::TryFrom<$uint> for $fe {
             type Error = $crate::Error;
 
             fn try_from(w: $uint) -> $crate::Result<Self> {
@@ -504,7 +504,7 @@ macro_rules! monty_field_element {
             }
         }
 
-        impl TryFrom<&$uint> for $fe {
+        impl ::core::convert::TryFrom<&$uint> for $fe {
             type Error = $crate::Error;
 
             fn try_from(w: &$uint) -> $crate::Result<Self> {
@@ -513,39 +513,37 @@ macro_rules! monty_field_element {
         }
 
         impl ::core::iter::Sum for $fe {
-            #[allow(unused_qualifications)]
-            fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-                iter.reduce(core::ops::Add::add).unwrap_or(Self::ZERO)
+            fn sum<I: ::core::iter::Iterator<Item = Self>>(iter: I) -> Self {
+                ::core::iter::Iterator::fold(iter, Self::ZERO, ::core::ops::Add::add)
             }
         }
 
         impl<'a> ::core::iter::Sum<&'a $fe> for $fe {
-            fn sum<I: Iterator<Item = &'a $fe>>(iter: I) -> Self {
-                iter.copied().sum()
+            fn sum<I: ::core::iter::Iterator<Item = &'a $fe>>(iter: I) -> Self {
+                ::core::iter::Iterator::fold(iter, Self::ZERO, ::core::ops::Add::add)
             }
         }
 
         impl ::core::iter::Product for $fe {
-            #[allow(unused_qualifications)]
-            fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-                iter.reduce(core::ops::Mul::mul).unwrap_or(Self::ONE)
+            fn product<I: ::core::iter::Iterator<Item = Self>>(iter: I) -> Self {
+                ::core::iter::Iterator::fold(iter, Self::ONE, ::core::ops::Mul::mul)
             }
         }
 
         impl<'a> ::core::iter::Product<&'a $fe> for $fe {
-            fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-                iter.copied().product()
+            fn product<I: ::core::iter::Iterator<Item = &'a Self>>(iter: I) -> Self {
+                ::core::iter::Iterator::fold(iter, Self::ONE, ::core::ops::Mul::mul)
             }
         }
 
         impl $crate::bigint::Invert for $fe {
-            type Output = CtOption<Self>;
+            type Output = $crate::subtle::CtOption<Self>;
 
-            fn invert(&self) -> CtOption<Self> {
+            fn invert(&self) -> $crate::subtle::CtOption<Self> {
                 self.invert()
             }
 
-            fn invert_vartime(&self) -> CtOption<Self> {
+            fn invert_vartime(&self) -> $crate::subtle::CtOption<Self> {
                 self.0.invert_vartime().map(Self)
             }
         }
@@ -559,12 +557,10 @@ macro_rules! monty_field_element {
         }
 
         impl $crate::subtle::ConditionallySelectable for $fe {
-            fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-                Self(
-                    $crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::conditional_select(
-                        &a.0, &b.0, choice,
-                    ),
-                )
+            fn conditional_select(a: &Self, b: &Self, choice: $crate::subtle::Choice) -> Self {
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::conditional_select(
+                    &a.0, &b.0, choice,
+                ))
             }
         }
 
@@ -588,11 +584,9 @@ macro_rules! monty_field_element {
 
         impl $crate::bigint::ctutils::CtSelect for $fe {
             fn ct_select(&self, other: &Self, choice: $crate::bigint::ctutils::Choice) -> Self {
-                Self(
-                    $crate::bigint::ctutils::CtSelect::ct_select(
-                        &self.0, &other.0, choice,
-                    ),
-                )
+                Self($crate::bigint::ctutils::CtSelect::ct_select(
+                    &self.0, &other.0, choice,
+                ))
             }
         }
 
@@ -731,16 +725,14 @@ macro_rules! monty_field_reduce {
     ) => {
         impl $crate::bigint::Reduce<$uint> for $fe {
             fn reduce(w: &$uint) -> Self {
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(w))
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::reduce(w))
             }
         }
 
-        impl $crate::bigint::Reduce<$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>>
-            for $fe
-        {
+        impl $crate::bigint::Reduce<$crate::MontyFieldBytes<$params, { <$uint>::LIMBS }>> for $fe {
             #[inline]
-            fn reduce(bytes: &$crate::MontyFieldBytes<$params, { <$params>::LIMBS }>) -> Self {
-                Self($crate::MontyFieldElement::<$params, { <$params>::LIMBS }>::reduce(bytes))
+            fn reduce(bytes: &$crate::MontyFieldBytes<$params, { <$uint>::LIMBS }>) -> Self {
+                Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::reduce(bytes))
             }
         }
     };

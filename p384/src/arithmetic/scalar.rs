@@ -17,7 +17,7 @@ use elliptic_curve::{
     ff::PrimeField,
     ops::{Reduce, ReduceNonZero},
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeGreater},
 };
 use primeorder::wnaf;
 

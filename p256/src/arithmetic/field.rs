@@ -17,9 +17,8 @@ cpubits! {
 
 use core::ops::Mul;
 use elliptic_curve::{
-    bigint::U256,
-    ff::PrimeField,
-    subtle::{Choice, ConstantTimeEq, CtOption},
+    bigint::{U256, modular::ConstMontyParams},
+    subtle::{ConstantTimeEq, CtOption},
 };
 
 #[cfg(doc)]
@@ -154,10 +153,7 @@ impl FieldElement {
     /// Construct a field element from a [`U256`] in Montgomery form.
     #[inline]
     pub(crate) const fn from_montgomery(uint: U256) -> Self {
-        Self(primefield::MontyFieldElement::<
-            FieldParams,
-            { FieldParams::LIMBS },
-        >::from_montgomery(uint))
+        Self(primefield::MontyFieldElement::<FieldParams, { U256::LIMBS }>::from_montgomery(uint))
     }
 }
 
