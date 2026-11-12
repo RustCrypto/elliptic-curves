@@ -91,9 +91,11 @@ macro_rules! test_primefield_constants {
         const T: $uint = $crate::compute_t(MODULUS.as_ref());
 
         fn aux_pow_vartime(base: &$fe, exp: &$uint) -> $fe {
+            use $crate::ff::Field;
+
             // Alternatively, one could fall back to `$crate::ff::Field::pow_vartime`,
             // but the exponent would have to be converted to an `&[u64]` in the 32-bit case.
-            let mut res = $fe::ONE;
+            let mut res = <$fe as Field>::ONE;
 
             // Allow the deprecated `.bits()` to support `crypto-bigint` 0.7.9 and 0.7.10.
             #[allow(deprecated)]
@@ -119,7 +121,7 @@ macro_rules! test_primefield_constants {
             // DELTA^{t} mod m == 1
             assert_eq!(
                 aux_pow_vartime(&<$fe as $crate::ff::PrimeField>::DELTA, &T),
-                $fe::ONE
+                <$fe as $crate::ff::Field>::ONE
             );
         }
 
@@ -138,39 +140,41 @@ macro_rules! test_primefield_constants {
 
         #[test]
         fn root_of_unity_constant() {
+            use $crate::ff::{Field, PrimeField};
+
             // ROOT_OF_UNITY^{2^s} mod m == 1
             assert_eq!(
                 aux_sqn_vartime(
-                    &<$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY,
-                    <$fe as $crate::ff::PrimeField>::S as usize
+                    &<$fe as PrimeField>::ROOT_OF_UNITY,
+                    <$fe as PrimeField>::S as usize
                 ),
-                $fe::ONE
+                <$fe as Field>::ONE
             );
 
             // MULTIPLICATIVE_GENERATOR^{t} mod m == ROOT_OF_UNITY
             assert_eq!(
-                aux_pow_vartime(
-                    &<$fe as $crate::ff::PrimeField>::MULTIPLICATIVE_GENERATOR,
-                    &T
-                ),
-                <$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY
+                aux_pow_vartime(&<$fe as PrimeField>::MULTIPLICATIVE_GENERATOR, &T),
+                <$fe as PrimeField>::ROOT_OF_UNITY
             )
         }
 
         #[test]
         fn root_of_unity_inv_constant() {
+            use $crate::ff::{Field, PrimeField};
+
             assert_eq!(
-                <$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY
-                    * <$fe as $crate::ff::PrimeField>::ROOT_OF_UNITY_INV,
-                $fe::ONE
+                <$fe as PrimeField>::ROOT_OF_UNITY * <$fe as PrimeField>::ROOT_OF_UNITY_INV,
+                <$fe as Field>::ONE
             );
         }
 
         #[test]
         fn two_inv_constant() {
+            use $crate::ff::{Field, PrimeField};
+
             assert_eq!(
-                $fe::from(2u32) * <$fe as $crate::ff::PrimeField>::TWO_INV,
-                $fe::ONE
+                $fe::from(2u32) * <$fe as PrimeField>::TWO_INV,
+                <$fe as Field>::ONE
             );
         }
     };
@@ -182,15 +186,19 @@ macro_rules! test_field_identity {
     ($fe:tt) => {
         #[test]
         fn zero_is_additive_identity() {
-            let zero = $fe::ZERO;
-            let one = $fe::ONE;
+            use $crate::ff::Field;
+
+            let zero = <$fe as Field>::ZERO;
+            let one = <$fe as Field>::ONE;
             assert_eq!(zero + &zero, zero);
             assert_eq!(one + &zero, one);
         }
 
         #[test]
         fn one_is_multiplicative_identity() {
-            let one = $fe::ONE;
+            use $crate::ff::Field;
+
+            let one = <$fe as Field>::ONE;
             assert_eq!(one * &one, one);
         }
     };
@@ -202,9 +210,11 @@ macro_rules! test_field_ops {
     ($fe:tt) => {
         #[test]
         fn arithmetic_ops() {
-            let zero = $fe::ZERO;
-            let one = $fe::ONE;
-            let minus_one = -$fe::ONE;
+            use $crate::ff::Field;
+
+            let zero = <$fe as Field>::ZERO;
+            let one = <$fe as Field>::ONE;
+            let minus_one = -<$fe as Field>::ONE;
 
             assert_eq!(zero + one, one);
             assert_eq!(zero + &one, one);
@@ -221,7 +231,9 @@ macro_rules! test_field_ops {
 
         #[test]
         fn sum() {
-            let x = -$fe::ONE;
+            use $crate::ff::Field;
+
+            let x = -<$fe as Field>::ONE;
             let values = [x, x, x];
             assert_eq!(values.into_iter().sum::<$fe>(), x + x + x);
             assert_eq!(values.iter().sum::<$fe>(), x + x + x);
@@ -229,7 +241,9 @@ macro_rules! test_field_ops {
 
         #[test]
         fn product() {
-            let x = -$fe::ONE;
+            use $crate::ff::Field;
+
+            let x = -<$fe as Field>::ONE;
             let values = [x, x, x];
             assert_eq!(values.into_iter().product::<$fe>(), x * x * x);
             assert_eq!(values.iter().product::<$fe>(), x * x * x);
@@ -243,18 +257,20 @@ macro_rules! test_field_invert {
     ($fe:tt) => {
         #[test]
         fn invert() {
-            let zero = $fe::ZERO;
-            assert_eq!(zero.invert().is_none().unwrap_u8(), 1);
+            use $crate::ff::Field;
 
-            let one = $fe::ONE;
-            assert_eq!(one.invert().unwrap(), one);
+            let zero = <$fe as Field>::ZERO;
+            assert_eq!(Field::invert(&zero).is_none().unwrap_u8(), 1);
+
+            let one = <$fe as Field>::ONE;
+            assert_eq!(Field::invert(&one).unwrap(), one);
 
             let three = one + &one + &one;
-            let inv_three = three.invert().unwrap();
+            let inv_three = Field::invert(&three).unwrap();
             assert_eq!(three * &inv_three, one);
 
             let minus_three = -three;
-            let inv_minus_three = minus_three.invert().unwrap();
+            let inv_minus_three = Field::invert(&minus_three).unwrap();
             assert_eq!(inv_minus_three, -inv_three);
             assert_eq!(three * &inv_minus_three, -one);
         }
@@ -267,22 +283,29 @@ macro_rules! test_field_sqrt {
     ($fe:tt) => {
         #[test]
         fn sqrt() {
+            use $crate::ff::Field;
+
             for &n in &[1u64, 4, 9, 16, 25, 36, 49, 64] {
                 let fe = $fe::from(n);
-                let sqrt = $crate::ff::Field::sqrt(&fe).unwrap();
-                assert_eq!(sqrt.square(), fe);
+                let sqrt = Field::sqrt(&fe).unwrap();
+                assert_eq!(Field::square(&sqrt), fe);
             }
         }
 
         #[test]
         fn sqrt_ratio() {
-            let (c, res) = $crate::ff::Field::sqrt_ratio(&$fe::ZERO, &$fe::ONE);
-            assert_eq!(c.unwrap_u8(), 1);
-            assert_eq!(res, $fe::ZERO);
+            use $crate::ff::Field;
 
-            let (c, res) = $crate::ff::Field::sqrt_ratio(&$fe::ONE, &$fe::ZERO);
+            let zero = <$fe as Field>::ZERO;
+            let one = <$fe as Field>::ONE;
+
+            let (c, res) = Field::sqrt_ratio(&zero, &one);
+            assert_eq!(c.unwrap_u8(), 1);
+            assert_eq!(res, <$fe as Field>::ZERO);
+
+            let (c, res) = Field::sqrt_ratio(&one, &zero);
             assert_eq!(c.unwrap_u8(), 0);
-            assert_eq!(res, $fe::ZERO);
+            assert_eq!(res, zero);
 
             // There is no deterministic way to find a non-square for an arbitrary modulus
             // (to make sure all branches are covered), so we just test several small values.
@@ -290,14 +313,17 @@ macro_rules! test_field_sqrt {
                 for div in 1u64..8 {
                     let fe_num = $fe::from(num);
                     let fe_div = $fe::from(div);
-                    let (c, res) = $crate::ff::Field::sqrt_ratio(&fe_num, &fe_div);
+                    let (c, res) = Field::sqrt_ratio(&fe_num, &fe_div);
 
                     if c.unwrap_u8() == 1 {
-                        assert_eq!(res.square(), fe_num * fe_div.invert().unwrap());
+                        assert_eq!(
+                            Field::square(&res),
+                            fe_num * Field::invert(&fe_div).unwrap()
+                        );
                     } else {
-                        let gs =
-                            res.square() * (fe_num * fe_div.invert().unwrap()).invert().unwrap();
-                        assert_eq!($crate::ff::Field::sqrt(&gs).is_none().unwrap_u8(), 1);
+                        let gs = Field::square(&res)
+                            * Field::invert(&(fe_num * Field::invert(&fe_div).unwrap())).unwrap();
+                        assert_eq!(Field::sqrt(&gs).is_none().unwrap_u8(), 1);
                     }
                 }
             }
