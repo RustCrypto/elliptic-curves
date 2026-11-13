@@ -482,8 +482,10 @@ impl CompressedEdwardsY {
 
     /// Attempt to decompress to an `AffinePoint`.
     ///
-    /// Returns `None` if the input is not the \\(y\\)-coordinate of a
-    /// curve point.
+    /// Returns `None`:
+    /// - if bits 448 to 454 of the encoding are not zero.
+    /// - if the \\(y\\)-coordinate is not less than the field modulus.
+    /// - if the input is not the \\(y\\)-coordinate of a curve point.
     pub fn decompress_unchecked(&self) -> CtOption<AffinePoint> {
         // Safe to unwrap here as the underlying data structure is a slice
         let (sign, b) = self.0.split_last().expect("slice is non-empty");
@@ -491,8 +493,16 @@ impl CompressedEdwardsY {
         let mut y_bytes: [u8; 56] = [0; 56];
         y_bytes.copy_from_slice(b);
 
+        // RFC 8032 section 5.2.3, step 1: "The y-coordinate is recovered simply by
+        // clearing this bit.  If the resulting value is >= p, decoding fails."
+        //
+        // A set bit among 448-454 leaves y >= 2^448 > p, so both checks below are that rule.
+        let unused_bits_clear = (sign & 0x7f).ct_eq(&0);
+        let y_canonical = FieldElement::from_repr(&y_bytes);
+        let is_canonical = unused_bits_clear & y_canonical.is_some();
+
         // Recover x using y
-        let y = FieldElement::from_bytes(&y_bytes);
+        let y = y_canonical.unwrap_or(FieldElement::ZERO);
         let yy = y.square();
         let dyy = FieldElement::EDWARDS_D * yy;
         let numerator = FieldElement::ONE - yy;
@@ -505,12 +515,13 @@ impl CompressedEdwardsY {
         let is_negative = x.is_negative();
         x.conditional_negate(compressed_sign_bit ^ is_negative);
 
-        CtOption::new(AffinePoint { x, y }, is_res)
+        CtOption::new(AffinePoint { x, y }, is_res & is_canonical)
     }
 
     /// Attempt to decompress to an `AffinePoint`.
     ///
     /// Returns `None`:
+    /// - if the encoding is not canonical (see `decompress_unchecked`).
     /// - if the input is not the \\(y\\)-coordinate of a curve point.
     /// - if the input point is not on the curve.
     /// - if the input point has nonzero torsion component.
@@ -527,5 +538,43 @@ impl CompressedEdwardsY {
     /// Copy this `CompressedEdwardsY` to an array of bytes.
     pub const fn to_bytes(&self) -> PointBytes {
         self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decompress_accepts_canonical_encodings() {
+        assert!(bool::from(
+            CompressedEdwardsY::GENERATOR.decompress().is_some()
+        ));
+        // y = 1 is the identity
+        let mut bytes = [0u8; 57];
+        bytes[0] = 1;
+        assert!(bool::from(CompressedEdwardsY(bytes).decompress().is_some()));
+    }
+
+    #[test]
+    fn decompress_rejects_unused_bits() {
+        // Bits 448-454 are unused (RFC 8032 section 5.2.3).
+        for bit in 0..7 {
+            let mut bytes = CompressedEdwardsY::GENERATOR.to_bytes();
+            bytes[56] |= 1 << bit;
+            let compressed = CompressedEdwardsY(bytes);
+            assert!(bool::from(compressed.decompress_unchecked().is_none()));
+            assert!(bool::from(compressed.decompress().is_none()));
+        }
+    }
+
+    #[test]
+    fn decompress_rejects_y_not_below_p() {
+        // y = 1 + p = 2^448 - 2^224 is the identity written non-canonically
+        let mut bytes = [0u8; 57];
+        bytes[28..56].fill(0xff);
+        let compressed = CompressedEdwardsY(bytes);
+        assert!(bool::from(compressed.decompress_unchecked().is_none()));
+        assert!(bool::from(compressed.decompress().is_none()));
     }
 }
