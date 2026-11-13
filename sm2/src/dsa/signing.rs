@@ -269,7 +269,12 @@ impl SignatureAlgorithmIdentifier for SigningKey {
 /// to the bit length of `n` (curve order) if necessary, and then reducing it mod `n`.
 fn bytes2scalar(mut bytes: &[u8]) -> Scalar {
     // Compute number of bytes in `n` (curve order)
+
+    // Allow the usage of deprecated `.bits()`;
+    // needed as long as `crypto-bigint` 0.7.9 and .10 are supported.
+    #[allow(deprecated)]
     let n_bits = Sm2::ORDER.bits();
+
     let n_bytes = n_bits.div_ceil(8) as usize;
     if bytes.len() > n_bytes {
         bytes = &bytes[..n_bytes];

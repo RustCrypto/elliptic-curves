@@ -14,11 +14,10 @@ use crate::{FieldBytes, NistP224, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
     bigint::{Limb, cpubits},
-    ff::PrimeField,
     field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeGreater},
 };
 use primeorder::wnaf;
 

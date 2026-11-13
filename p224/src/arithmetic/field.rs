@@ -11,12 +11,7 @@
 //! users may pick which license to apply.
 
 use crate::Uint;
-use elliptic_curve::{
-    bigint::cpubits,
-    ff::PrimeField,
-    ops::BatchInvert,
-    subtle::{Choice, ConstantTimeEq, CtOption},
-};
+use elliptic_curve::{bigint::cpubits, ops::BatchInvert};
 
 // TODO(tarcieri): remove this when we can use `const _` to silence warnings
 cpubits! {

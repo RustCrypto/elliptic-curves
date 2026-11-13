@@ -47,7 +47,9 @@ impl_window_sizes!(U2 => U1, U3 => U2, U4 => U4, U5 => U8, U6 => U16, U7 => U32,
 macro_rules! impl_wnaf_size_for_scalar {
     ($fe:ty) => {
         impl $crate::WnafSize for $fe {
-            type StorageSize = $crate::array::typenum::U<{ (Self::NUM_BITS + 1) as usize }>;
+            type StorageSize = $crate::array::typenum::U<
+                { (<$fe as $crate::__private::PrimeField>::NUM_BITS + 1) as usize },
+            >;
         }
     };
 }

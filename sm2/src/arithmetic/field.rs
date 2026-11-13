@@ -11,12 +11,7 @@
 //! users may pick which license to apply.
 
 use crate::U256;
-use elliptic_curve::{
-    bigint::cpubits,
-    ff::PrimeField,
-    ops::BatchInvert,
-    subtle::{Choice, ConstantTimeEq, CtOption},
-};
+use elliptic_curve::{bigint::cpubits, ops::BatchInvert};
 
 // Default backend: fiat-crypto
 cpubits! {

@@ -13,9 +13,8 @@
 use crate::{BrainpoolP384r1, BrainpoolP384t1, ORDER, ORDER_HEX, U384};
 use elliptic_curve::{
     bigint::cpubits,
-    ff::PrimeField,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConstantTimeGreater},
 };
 use primeorder::wnaf;
 

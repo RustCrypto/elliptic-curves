@@ -14,11 +14,7 @@
 #![allow(clippy::arithmetic_side_effects)]
 
 use crate::U256;
-use elliptic_curve::{
-    ff::PrimeField,
-    ops::BatchInvert,
-    subtle::{Choice, ConstantTimeEq, CtOption},
-};
+use elliptic_curve::ops::BatchInvert;
 
 #[cfg(not(bignp256_backend = "bigint"))]
 use elliptic_curve::bigint::cpubits;

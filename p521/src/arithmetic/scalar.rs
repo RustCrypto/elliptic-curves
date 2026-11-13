@@ -6,11 +6,10 @@ use crate::{FieldBytes, NistP521, ORDER_HEX, Uint};
 use elliptic_curve::{
     Curve as _,
     bigint::Limb,
-    ff::PrimeField,
     field,
     ops::Reduce,
     scalar::{FromUintUnchecked, IsHigh},
-    subtle::{Choice, ConditionallySelectable, ConstantTimeEq, ConstantTimeGreater, CtOption},
+    subtle::{Choice, ConditionallySelectable, ConstantTimeGreater},
 };
 use primeorder::wnaf;
 
@@ -108,6 +107,5 @@ impl<'de> Deserialize<'de> for Scalar {
 #[cfg(test)]
 mod tests {
     use super::{Scalar, Uint};
-    use elliptic_curve::ff::PrimeField;
     primefield::test_primefield!(Scalar, Uint);
 }
