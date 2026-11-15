@@ -340,6 +340,7 @@ impl EdwardsPoint {
     };
 
     /// Convert this point to [`MontgomeryPoint`]
+    #[must_use]
     pub fn to_montgomery(&self) -> MontgomeryPoint {
         // u = y^2 * [(1-dy^2)/(1-y^2)]
 
@@ -354,6 +355,7 @@ impl EdwardsPoint {
     }
 
     /// Generic scalar multiplication to compute s*P
+    #[must_use]
     pub fn scalar_mul(&self, scalar: &EdwardsScalar) -> Self {
         // Compute floor(s/4)
         let scalar_div_four = scalar.div_by_2().div_by_2();
@@ -367,6 +369,7 @@ impl EdwardsPoint {
     /// Add two points
     //https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf (3.1)
     // These formulas are unified, so for now we can use it for doubling. Will refactor later for speed
+    #[must_use]
     pub fn add(&self, other: &EdwardsPoint) -> Self {
         let aXX = self.X * other.X; // aX1X2
         let dTT = FieldElement::EDWARDS_D * self.T * other.T; // dT1T2
@@ -398,11 +401,13 @@ impl EdwardsPoint {
     /// Double this point
     // XXX: See comment on addition, the formula is unified, so this will do for now
     //https://iacr.org/archive/asiacrypt2008/53500329/53500329.pdf (3.1)
+    #[must_use]
     pub fn double(&self) -> Self {
         self.add(self)
     }
 
     /// Check if this point is on the curve
+    #[must_use]
     pub fn is_on_curve(&self) -> Choice {
         let XY = self.X * self.Y;
         let ZT = self.Z * self.T;
@@ -420,6 +425,7 @@ impl EdwardsPoint {
     }
 
     /// Convert this point to an [`AffinePoint`].
+    #[must_use]
     pub fn to_affine(&self) -> AffinePoint {
         let INV_Z = self.Z.invert();
 
@@ -442,6 +448,7 @@ impl EdwardsPoint {
     }
 
     /// Compute the negation of this point's `x`-coordinate.
+    #[must_use]
     pub fn negate(&self) -> Self {
         EdwardsPoint {
             X: -self.X,
@@ -452,6 +459,7 @@ impl EdwardsPoint {
     }
 
     /// Compute the negation of this point's `y`-coordinate.
+    #[must_use]
     pub fn torque(&self) -> Self {
         EdwardsPoint {
             X: -self.X,
@@ -471,6 +479,7 @@ impl EdwardsPoint {
     /// * `false` if `self` has a nonzero torsion component and is not
     ///   in the prime-order subgroup.
     // See https://eprint.iacr.org/2022/1164.
+    #[must_use]
     pub fn is_torsion_free(&self) -> Choice {
         const A: FieldElement = FieldElement(ConstMontyType::new(&U448::from_be_hex(
             "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffffffffffffffffffffffffffffffffffffffffffffffffeceaf",
