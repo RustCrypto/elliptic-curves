@@ -54,6 +54,8 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features alloc
       - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features pkcs8
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,pkcs8
+      - run: cargo build --target ${{ matrix.target }} --release --no-default-features --features arithmetic,pem
       - run: cargo check --no-default-features --features swu
 
   test:

@@ -4,16 +4,23 @@
 use crate::ALGORITHM_OID;
 use crate::{AffinePoint, BignP256, NonZeroScalar, ProjectivePoint, Sec1Point};
 #[cfg(feature = "pem")]
-use core::{fmt::Display, str::FromStr};
+use core::{
+    fmt::{self, Display},
+    str::FromStr,
+};
+#[cfg(feature = "pem")]
+use elliptic_curve::pkcs8::DecodePublicKey;
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use elliptic_curve::pkcs8::EncodePublicKey;
 #[cfg(feature = "pkcs8")]
 use elliptic_curve::pkcs8::{
-    self, AssociatedOid, DecodePublicKey, EncodePublicKey, ObjectIdentifier,
+    self, AssociatedOid, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 use elliptic_curve::{Error, array::Array, point::NonIdentity, sec1::ToSec1Point};
 
 #[cfg(feature = "alloc")]
-use alloc::{boxed::Box, fmt};
+use alloc::boxed::Box;
 
 /// Elliptic curve BignP256 public key.
 ///
