@@ -119,8 +119,9 @@ proptest! {
     /// of them reach it.
     ///
     /// The size range is above the current dispatch threshold, so `lincomb_vartime` selects
-    /// Pippenger. With `bench-internals` it is also called directly, which keeps the coverage
-    /// honest if that threshold is later raised past this range.
+    /// Pippenger. The unit tests in `arithmetic::mul::pippenger` cover the threshold itself,
+    /// relative to the constant, so raising it cannot silently take this range back to w-NAF
+    /// without those failing.
     #[test]
     #[cfg(feature = "alloc")]
     fn lincomb_vartime_large(
@@ -132,9 +133,6 @@ proptest! {
 
         assert_eq!(reference, ProjectivePoint::lincomb_vartime(pairs.as_slice()));
         assert_eq!(reference, ProjectivePoint::lincomb(pairs.as_slice()));
-
-        #[cfg(feature = "bench-internals")]
-        assert_eq!(reference, ProjectivePoint::lincomb_vartime_pippenger(pairs.as_slice()));
     }
 
     #[test]
