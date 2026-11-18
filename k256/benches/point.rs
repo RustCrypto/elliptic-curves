@@ -58,8 +58,10 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
         b.iter(|| ProjectivePoint::lincomb_vartime(&[(p, s), (p, s)]));
     });
 
-    // Larger term counts, where `lincomb_vartime` switches from interleaved w-NAF to bucketed
-    // Pippenger. The 2-term cases above only ever exercise the w-NAF path.
+    // Larger term counts, which `lincomb_vartime` serves with bucketed Pippenger rather than
+    // interleaved w-NAF. The 2-term cases above only ever exercise the w-NAF path; the 32-term
+    // case below is still under the dispatch threshold, so it covers w-NAF at a size where the
+    // per-term cost is settled.
     //
     // Both the points and the scalars vary. Reusing one scalar across every term would be
     // unrepresentative: w-NAF's cost depends on each scalar's nonzero digit count, so a single
@@ -73,7 +75,7 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
         })
         .collect();
 
-    for n in [64usize, 128, 256, 1024] {
+    for n in [32usize, 64, 128, 256, 1024] {
         let terms = &pairs[..n];
 
         group.bench_function(format!("lincomb_vartime ({n}-term)"), |b| {

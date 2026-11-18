@@ -32,25 +32,29 @@ use primeorder::PrimeFieldExt;
 /// Term count at or above which Pippenger beats interleaved w-NAF.
 ///
 /// Relative cost of Pippenger against w-NAF over identical inputs, both strategies timed in the
-/// same run with dense full-width scalars:
+/// same run on an otherwise idle machine, with dense full-width scalars. Re-measuring this needs
+/// `THRESHOLD` raised out of range first: otherwise dispatch puts Pippenger on both sides of the
+/// comparison at every size above the current value, and those ratios all come out at 1.000.
 ///
-/// | pairs | 72    | 74    | 76    | 80    | 128   | 256   | 1024  | 4096  |
-/// |-------|-------|-------|-------|-------|-------|-------|-------|-------|
-/// | ratio | 1.008 | 1.001 | 0.993 | 0.976 | 0.868 | 0.759 | 0.558 | 0.436 |
+/// | pairs | 52    | 56    | 58    | 60    | 64    | 72    | 80    | 128   | 256   | 1024  |
+/// |-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|
+/// | ratio | 1.032 | 1.014 | 1.004 | 0.996 | 0.984 | 0.960 | 0.938 | 0.835 | 0.725 | 0.540 |
 ///
-/// 76 is the smallest size at which Pippenger wins with non-overlapping confidence intervals; at
-/// 74 the two are indistinguishable. Signed digits moved this down from 128, where the unsigned
-/// version crossed.
+/// 60 is the smallest size at which Pippenger wins with non-overlapping confidence intervals; at
+/// 58 w-NAF is still ahead, by 0.4%. Signed digits moved this down from 128, where the unsigned
+/// version crossed. The curve is shallow either side of the crossing, so the exact value does
+/// not matter much: anywhere in `56..=72` costs at most about 4% on the sizes in between.
 ///
-/// Note that [`window_width`] steps from 5 to 6 between 72 and 73 pairs, so the curve has a kink
-/// there and should not be interpolated across it. Measured, the step is small: 1.008 at width 5
-/// against 1.006 at width 6.
+/// Note that [`window_width`] steps from 5 to 6 between 72 and 73 pairs, so the ratio curve has a
+/// kink above the threshold and should not be interpolated across it.
 ///
-/// Scalar density matters when re-measuring: w-NAF's cost scales with each scalar's nonzero digit
-/// count whereas Pippenger pays per window regardless, so sparse scalars push the crossing
-/// higher. So does the balance between addition, inversion and allocation costs, which varies by
-/// machine.
-pub(super) const THRESHOLD: usize = 76;
+/// Conditions matter when re-measuring, and more than the table's precision suggests: an earlier
+/// revision of this comment put the crossing at 76, from a run that shared the machine with
+/// another benchmark and so biased every ratio 3-4% towards w-NAF. Scalar density matters too,
+/// because w-NAF's cost scales with each scalar's nonzero digit count whereas Pippenger pays per
+/// window regardless, so sparse scalars push the crossing higher. So does the balance between
+/// addition, inversion and allocation costs, which varies by machine.
+pub(super) const THRESHOLD: usize = 60;
 
 /// Bytes of each GLV half-scalar.
 ///
@@ -388,10 +392,15 @@ mod tests {
 
     /// Every window width, independently of the size-to-width mapping.
     ///
-    /// Without this, only the widths that `window_width` happens to select for the sizes used
-    /// above are ever executed -- widths 8 and up need thousands of pairs. Width 8 matters most:
-    /// it divides `HALF_SCALAR_BITS` exactly, so it is the only width with no partial top
-    /// window, and a bug confined to a full top window would otherwise go unseen.
+    /// Without this, only the widths that `window_width` selects for the sizes used above are
+    /// ever executed, and that misses widths 7 and 9 upwards: width 7 is selected from 171 pairs
+    /// and width 9 from 833, while the sizes above step straight from 100 to 512.
+    ///
+    /// The widths dividing `HALF_SCALAR_BITS` exactly -- 2, 4 and 8 -- are worth reaching
+    /// deliberately even though the sizes above do reach them, because no window of theirs
+    /// straddles the top of the half-scalar and the final window holds nothing but the carry.
+    /// That is a different shape from every other width, so a bug confined to it would be
+    /// invisible at the widths in between.
     #[test]
     fn every_window_width_matches_reference() {
         for n in [3usize, 20] {
