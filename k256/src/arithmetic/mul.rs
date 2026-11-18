@@ -35,6 +35,8 @@
 //! as outputs of the Extended Euclidean Algorithm on inputs 'order' and 'lambda').
 
 mod glv;
+#[cfg(feature = "alloc")]
+mod pippenger;
 
 use super::{ProjectivePoint, scalar::Scalar};
 use core::array;
@@ -99,6 +101,12 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
 
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
+        // Pippenger's per-element cost falls as the term count rises, whereas interleaved w-NAF
+        // is flat; they cross at roughly this size.
+        if points_and_scalars.len() >= pippenger::THRESHOLD {
+            return pippenger::lincomb_vartime(points_and_scalars);
+        }
+
         let decomposed: Vec<_> = points_and_scalars
             .iter()
             .map(|(x, k)| glv::decompose_wnaf(x, k))
@@ -172,6 +180,32 @@ fn lincomb_vartime_glv_wnaf(
         .flat_map(|(bases, scalars)| bases.iter().zip(scalars.iter()));
 
     WnafBase::multiscalar_mul(terms)
+}
+
+#[cfg(feature = "alloc")]
+impl ProjectivePoint {
+    /// Calculates `x1 * k1 + ... + xn * kn` in variable time using bucketed Pippenger with the
+    /// GLV endomorphism, with the window width chosen from the term count.
+    ///
+    /// Produces the same result as
+    /// [`lincomb`][`elliptic_curve::ops::LinearCombination::lincomb`].
+    /// [`lincomb_vartime`][`elliptic_curve::ops::LinearCombination::lincomb_vartime`] calls this
+    /// automatically for large inputs; it is exposed separately so the two strategies can be
+    /// compared directly at any size.
+    ///
+    /// <div class="warning">
+    /// <b>Security Warning</b>
+    ///
+    /// Variable-time operations should only be used on non-secret values, and may potentially leak
+    /// secret values!
+    ///
+    /// </div>
+    #[must_use]
+    pub fn lincomb_vartime_pippenger(
+        points_and_scalars: &[(ProjectivePoint, Scalar)],
+    ) -> ProjectivePoint {
+        pippenger::lincomb_vartime(points_and_scalars)
+    }
 }
 
 impl ProjectivePoint {
