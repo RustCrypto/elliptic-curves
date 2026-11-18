@@ -18,6 +18,10 @@
 //!   as [`glv::decompose_wnaf_into`] does.
 //! - All `2n` points are converted to affine with a single batch inversion, so bucket
 //!   accumulation uses mixed addition.
+//! - Window digits are signed rather than unsigned, which halves the bucket count from `2^c - 1`
+//!   to `2^(c-1)`: a digit's sign decides whether its point is added or subtracted, and point
+//!   negation is free. That halves the bucket-reduction term, which in turn makes a wider window
+//!   optimal at a given term count.
 
 use super::glv;
 use crate::{ProjectivePoint, Scalar};
@@ -28,18 +32,25 @@ use primeorder::PrimeFieldExt;
 /// Term count at or above which Pippenger beats interleaved w-NAF.
 ///
 /// Relative cost of Pippenger against w-NAF over identical inputs, both strategies timed in the
-/// same run with dense full-width scalars, confidence intervals non-overlapping throughout:
+/// same run with dense full-width scalars:
 ///
-/// | pairs | 64    | 96    | 112   | 128   | 256   | 1024  | 4096  |
-/// |-------|-------|-------|-------|-------|-------|-------|-------|
-/// | ratio | 1.183 | 1.048 | 1.011 | 0.980 | 0.836 | 0.582 | 0.470 |
+/// | pairs | 72    | 74    | 76    | 80    | 128   | 256   | 1024  | 4096  |
+/// |-------|-------|-------|-------|-------|-------|-------|-------|-------|
+/// | ratio | 1.008 | 1.001 | 0.993 | 0.976 | 0.868 | 0.759 | 0.558 | 0.436 |
 ///
-/// 128 is the smallest measured size at which Pippenger wins, and the margin at the crossing is
-/// only ~2%. Scalar density matters when re-measuring: w-NAF's cost scales with each scalar's
-/// nonzero digit count whereas Pippenger pays per window regardless, so sparse scalars push the
-/// crossing higher. So does the balance between addition, inversion and allocation costs, which
-/// varies by machine.
-pub(super) const THRESHOLD: usize = 128;
+/// 76 is the smallest size at which Pippenger wins with non-overlapping confidence intervals; at
+/// 74 the two are indistinguishable. Signed digits moved this down from 128, where the unsigned
+/// version crossed.
+///
+/// Note that [`window_width`] steps from 5 to 6 between 72 and 73 pairs, so the curve has a kink
+/// there and should not be interpolated across it. Measured, the step is small: 1.008 at width 5
+/// against 1.006 at width 6.
+///
+/// Scalar density matters when re-measuring: w-NAF's cost scales with each scalar's nonzero digit
+/// count whereas Pippenger pays per window regardless, so sparse scalars push the crossing
+/// higher. So does the balance between addition, inversion and allocation costs, which varies by
+/// machine.
+pub(super) const THRESHOLD: usize = 76;
 
 /// Bytes of each GLV half-scalar.
 ///
@@ -52,43 +63,94 @@ const HALF_SCALAR_BITS: usize = HALF_SCALAR_BYTES * 8;
 
 /// Smallest and largest window width considered.
 ///
-/// The upper bound caps the bucket array at `2^12 - 1` points. The model reaches width 11 beyond
-/// ~22500 half-terms and width 12 beyond ~41000, so the cap only binds on inputs far larger than
-/// anything this is expected to see.
+/// The upper bound caps the bucket array at `2^12` points. With signed digits the model reaches
+/// width 12 beyond ~20500 half-terms and width 13 beyond ~36900, so the cap only binds on inputs
+/// far larger than anything this is expected to see.
 const MIN_WINDOW: usize = 2;
-const MAX_WINDOW: usize = 12;
+const MAX_WINDOW: usize = 13;
 
 /// Window width in bits minimising the approximate addition count for a given term count.
 ///
-/// The cost is `ceil(HALF_SCALAR_BITS / c) * (terms + 2 * 2^c)`: one window pass per `c` bits,
-/// each costing one bucket addition per term plus two per bucket to reduce. This is minimised
-/// directly rather than via a hard-coded table, because a table silently drifts from the model
-/// it claims to follow -- and did, picking `c = 9`, which the ceiling makes optimal at no term
-/// count at all. A few dozen integer operations are free against an MSM of thousands of point
-/// additions.
+/// The cost is `window_count(c) * (terms + 2^c)`: one window pass per `c` bits, each costing one
+/// bucket addition per term plus two additions for each of the `2^(c-1)` buckets to reduce. This
+/// is minimised directly rather than via a hard-coded table, because a table silently drifts from
+/// the model it claims to follow -- and did, in an earlier revision of this file.
 ///
-/// The model weighs every addition equally, so it is only an approximation: mixed additions,
-/// full additions and doublings differ in cost. Worth revisiting against measurement.
+/// Signed digits halve the bucket term relative to unsigned ones, so the optimum sits about one
+/// bit wider than it otherwise would.
+///
+/// The model weighs every addition equally, so it is only an approximation: mixed additions, full
+/// additions and doublings differ in cost. Worth revisiting against measurement.
 fn window_width(terms: usize) -> usize {
     (MIN_WINDOW..=MAX_WINDOW)
-        .min_by_key(|&c| HALF_SCALAR_BITS.div_ceil(c) * (terms + (2 << c)))
+        .min_by_key(|&c| window_count(c) * (terms + (1 << c)))
         .unwrap_or(MIN_WINDOW)
+}
+
+/// Number of window passes for a given width.
+///
+/// One bit wider than the scalar, because signed-digit recoding carries: a scalar of all ones
+/// propagates a carry out of its top window, which needs a window of its own to land in.
+fn window_count(width: usize) -> usize {
+    (HALF_SCALAR_BITS + 1).div_ceil(width)
+}
+
+/// A signed window digit, held as magnitude plus sign.
+///
+/// Magnitude is at most `2^(MAX_WINDOW - 1)`, so `u16` holds it. Kept unsigned rather than as an
+/// `i16` so that nothing is ever converted from `usize`: `usize` is as narrow as 16 bits on some
+/// supported targets, where such a conversion could wrap.
+#[derive(Clone, Copy, Debug, Default)]
+struct SignedDigit {
+    magnitude: u16,
+    negative: bool,
+}
+
+/// Recode a little-endian scalar into `out.len()` signed digits of `width` bits.
+///
+/// Each digit's magnitude is at most `2^(width-1)`, so only magnitudes `1..=2^(width-1)` need a
+/// bucket and a negative digit subtracts its point. `out.len()` must be [`window_count`], which
+/// is wide enough for the carry to terminate.
+fn recode(bytes: &[u8; HALF_SCALAR_BYTES], width: usize, out: &mut [SignedDigit]) {
+    let half: u16 = 1 << (width - 1);
+    let full: u16 = 1 << width;
+    let mut carry: u16 = 0;
+
+    for (j, slot) in out.iter_mut().enumerate() {
+        let d = window(bytes, j * width, width) + carry;
+
+        // `d >= half` means this window sits closer to the next one up, so borrow: emit a
+        // negative digit and carry one upward. All arithmetic stays unsigned.
+        *slot = if d >= half {
+            carry = 1;
+            SignedDigit {
+                magnitude: full - d,
+                negative: true,
+            }
+        } else {
+            carry = 0;
+            SignedDigit {
+                magnitude: d,
+                negative: false,
+            }
+        };
+    }
 }
 
 /// Extract the `width`-bit window starting at `bit_offset` from a little-endian byte string.
 ///
 /// Bits past the end of `bytes` read as zero. Operates on bytes rather than machine words so that
 /// the result does not depend on word size or host endianness.
-fn window(bytes: &[u8; HALF_SCALAR_BYTES], bit_offset: usize, width: usize) -> usize {
-    let mut digit = 0usize;
+fn window(bytes: &[u8; HALF_SCALAR_BYTES], bit_offset: usize, width: usize) -> u16 {
+    let mut digit: u16 = 0;
     let mut filled = 0usize;
     let mut index = bit_offset / 8;
     let mut bit = bit_offset % 8;
 
     while filled < width && index < bytes.len() {
         let take = core::cmp::min(8 - bit, width - filled);
-        let mask = (1usize << take) - 1;
-        digit |= ((usize::from(bytes[index]) >> bit) & mask) << filled;
+        let mask: u16 = (1 << take) - 1;
+        digit |= ((u16::from(bytes[index]) >> bit) & mask) << filled;
         filled += take;
         index += 1;
         bit = 0;
@@ -150,10 +212,17 @@ fn lincomb_vartime_with_width(xks: &[(ProjectivePoint, Scalar)], width: usize) -
         points.as_slice(),
     );
 
-    let windows = HALF_SCALAR_BITS.div_ceil(width);
+    let windows = window_count(width);
 
-    // Digit zero contributes nothing, so it needs no bucket.
-    let mut buckets = vec![ProjectivePoint::IDENTITY; (1usize << width) - 1];
+    // Recode up front: the carry runs from the least significant window upward, while the
+    // accumulation below runs from the most significant downward.
+    let mut digits = vec![SignedDigit::default(); terms * windows];
+    for (bytes, slot) in scalars.iter().zip(digits.chunks_mut(windows)) {
+        recode(bytes, width, slot);
+    }
+
+    // Signed digits, so only magnitudes `1..=2^(width-1)` need a bucket.
+    let mut buckets = vec![ProjectivePoint::IDENTITY; 1usize << (width - 1)];
     let mut acc = ProjectivePoint::IDENTITY;
 
     for w in (0..windows).rev() {
@@ -166,10 +235,15 @@ fn lincomb_vartime_with_width(xks: &[(ProjectivePoint, Scalar)], width: usize) -
 
         buckets.fill(ProjectivePoint::IDENTITY);
 
-        for (bytes, point) in scalars.iter().zip(affine.iter()) {
-            let digit = window(bytes, w * width, width);
-            if digit != 0 {
-                buckets[digit - 1] += point;
+        for (chunk, point) in digits.chunks(windows).zip(affine.iter()) {
+            let digit = chunk[w];
+            if digit.magnitude != 0 {
+                let bucket = &mut buckets[usize::from(digit.magnitude) - 1];
+                if digit.negative {
+                    *bucket -= point;
+                } else {
+                    *bucket += point;
+                }
             }
         }
 
@@ -191,8 +265,8 @@ fn lincomb_vartime_with_width(xks: &[(ProjectivePoint, Scalar)], width: usize) -
 #[cfg(test)]
 mod tests {
     use super::{
-        MAX_WINDOW, MIN_WINDOW, THRESHOLD, lincomb_vartime, lincomb_vartime_with_width, window,
-        window_width,
+        MAX_WINDOW, MIN_WINDOW, SignedDigit, THRESHOLD, lincomb_vartime,
+        lincomb_vartime_with_width, recode, window, window_count, window_width,
     };
     use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::ops::LinearCombination;
@@ -334,6 +408,61 @@ mod tests {
                 (MIN_WINDOW..=MAX_WINDOW).contains(&w),
                 "window_width({terms}) = {w} out of range"
             );
+        }
+    }
+
+    /// The signed-digit recoding must represent the scalar exactly, at every width.
+    ///
+    /// Checked directly rather than only through the MSM, and with the all-ones scalar, which is
+    /// the case that forces a carry out of the top window -- the reason [`window_count`] covers
+    /// one bit more than the scalar.
+    #[test]
+    fn recoding_reconstructs_the_scalar() {
+        let values = [
+            0u128,
+            1,
+            2,
+            u128::from(u32::MAX),
+            u128::from(u64::MAX),
+            1 << 127,
+            (1 << 127) - 1,
+            u128::MAX,
+            0x5555_5555_5555_5555_5555_5555_5555_5555,
+            0xAAAA_AAAA_AAAA_AAAA_AAAA_AAAA_AAAA_AAAA,
+        ];
+
+        for width in MIN_WINDOW..=MAX_WINDOW {
+            let windows = window_count(width);
+            let mut digits = vec![SignedDigit::default(); windows];
+
+            for v in values {
+                recode(&v.to_le_bytes(), width, &mut digits);
+
+                // Horner from the top down, wrapping: the representation is exact and the value
+                // is below 2^128, so equality modulo 2^128 is equality.
+                let mut acc = 0u128;
+                for d in digits.iter().rev() {
+                    acc = acc.wrapping_mul(1u128 << width);
+                    let m = u128::from(d.magnitude);
+                    acc = if d.negative {
+                        acc.wrapping_sub(m)
+                    } else {
+                        acc.wrapping_add(m)
+                    };
+                }
+
+                assert_eq!(acc, v, "width {width} misrepresents {v:#x}");
+
+                // And every magnitude must be within the signed window range.
+                let half: u16 = 1 << (width - 1);
+                for d in digits.iter() {
+                    assert!(
+                        d.magnitude <= half,
+                        "width {width}: magnitude {} out of range for {v:#x}",
+                        d.magnitude
+                    );
+                }
+            }
         }
     }
 
