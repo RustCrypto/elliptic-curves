@@ -115,8 +115,12 @@ proptest! {
         assert_eq!(reference, test);
     }
 
-    /// Exercises the bucketed Pippenger path, which `lincomb_vartime` selects above an internal
-    /// size threshold. Every other lincomb test here is 3-term, so none of them reach it.
+    /// Exercises the bucketed Pippenger path. Every other lincomb test here is 3-term, so none
+    /// of them reach it.
+    ///
+    /// The size range is above the current dispatch threshold, so `lincomb_vartime` selects
+    /// Pippenger. With `bench-internals` it is also called directly, which keeps the coverage
+    /// honest if that threshold is later raised past this range.
     #[test]
     #[cfg(feature = "alloc")]
     fn lincomb_vartime_large(
@@ -128,6 +132,9 @@ proptest! {
 
         assert_eq!(reference, ProjectivePoint::lincomb_vartime(pairs.as_slice()));
         assert_eq!(reference, ProjectivePoint::lincomb(pairs.as_slice()));
+
+        #[cfg(feature = "bench-internals")]
+        assert_eq!(reference, ProjectivePoint::lincomb_vartime_pippenger(pairs.as_slice()));
     }
 
     #[test]

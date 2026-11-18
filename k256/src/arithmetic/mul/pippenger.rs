@@ -50,23 +50,28 @@ const HALF_SCALAR_BYTES: usize = 16;
 /// Bits of each GLV half-scalar.
 const HALF_SCALAR_BITS: usize = HALF_SCALAR_BYTES * 8;
 
-/// Window width in bits for a given term count.
+/// Smallest and largest window width considered.
 ///
-/// Chosen to minimize `(HALF_SCALAR_BITS / c) * (terms + 2 * 2^c)`, the approximate addition
-/// count. The optimum grows slowly with the term count because widening the window trades more
-/// bucket-reduction work for fewer window passes.
+/// The upper bound caps the bucket array at `2^12 - 1` points; the model only reaches it beyond
+/// ~20000 half-terms.
+const MIN_WINDOW: usize = 2;
+const MAX_WINDOW: usize = 12;
+
+/// Window width in bits minimising the approximate addition count for a given term count.
+///
+/// The cost is `ceil(HALF_SCALAR_BITS / c) * (terms + 2 * 2^c)`: one window pass per `c` bits,
+/// each costing one bucket addition per term plus two per bucket to reduce. This is minimised
+/// directly rather than via a hard-coded table, because a table silently drifts from the model
+/// it claims to follow -- and did, picking `c = 9`, which the ceiling makes optimal at no term
+/// count at all. A few dozen integer operations are free against an MSM of thousands of point
+/// additions.
+///
+/// The model weighs every addition equally, so it is only an approximation: mixed additions,
+/// full additions and doublings differ in cost. Worth revisiting against measurement.
 fn window_width(terms: usize) -> usize {
-    if terms <= 512 {
-        6
-    } else if terms <= 1536 {
-        7
-    } else if terms <= 5120 {
-        8
-    } else if terms <= 20480 {
-        9
-    } else {
-        10
-    }
+    (MIN_WINDOW..=MAX_WINDOW)
+        .min_by_key(|&c| HALF_SCALAR_BITS.div_ceil(c) * (terms + (2 << c)))
+        .unwrap_or(MIN_WINDOW)
 }
 
 /// Extract the `width`-bit window starting at `bit_offset` from a little-endian byte string.
@@ -95,6 +100,14 @@ fn window(bytes: &[u8; HALF_SCALAR_BYTES], bit_offset: usize, width: usize) -> u
 ///
 /// Produces the same result as [`elliptic_curve::ops::LinearCombination::lincomb`].
 pub(super) fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePoint {
+    lincomb_vartime_with_width(xks, window_width(xks.len() * 2))
+}
+
+/// As [`lincomb_vartime`], with the window width supplied rather than derived from the term
+/// count, so that each width can be tested independently of the size-to-width mapping.
+fn lincomb_vartime_with_width(xks: &[(ProjectivePoint, Scalar)], width: usize) -> ProjectivePoint {
+    debug_assert!((MIN_WINDOW..=MAX_WINDOW).contains(&width));
+
     if xks.is_empty() {
         return ProjectivePoint::IDENTITY;
     }
@@ -116,8 +129,17 @@ pub(super) fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePo
         points.push(if r2_neg { -beta } else { beta });
 
         for r in [r1, r2] {
+            let repr = r.to_le_repr();
+            // Exact rather than truncating, by the GLV bound proof in `glv`. Asserted so that a
+            // regression in `decompose_scalar` fails a test instead of silently computing the
+            // wrong linear combination.
+            debug_assert!(
+                repr[HALF_SCALAR_BYTES..].iter().all(|&b| b == 0),
+                "GLV half-scalar is not below 2^128"
+            );
+
             let mut bytes = [0u8; HALF_SCALAR_BYTES];
-            bytes.copy_from_slice(&r.to_le_repr()[..HALF_SCALAR_BYTES]);
+            bytes.copy_from_slice(&repr[..HALF_SCALAR_BYTES]);
             scalars.push(bytes);
         }
     }
@@ -127,7 +149,6 @@ pub(super) fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePo
         points.as_slice(),
     );
 
-    let width = window_width(terms);
     let windows = HALF_SCALAR_BITS.div_ceil(width);
 
     // Digit zero contributes nothing, so it needs no bucket.
@@ -168,7 +189,10 @@ pub(super) fn lincomb_vartime(xks: &[(ProjectivePoint, Scalar)]) -> ProjectivePo
 
 #[cfg(test)]
 mod tests {
-    use super::{THRESHOLD, lincomb_vartime, window};
+    use super::{
+        MAX_WINDOW, MIN_WINDOW, THRESHOLD, lincomb_vartime, lincomb_vartime_with_width, window,
+        window_width,
+    };
     use crate::arithmetic::{ProjectivePoint, Scalar};
     use elliptic_curve::ops::LinearCombination;
 
@@ -273,6 +297,40 @@ mod tests {
         let p = ProjectivePoint::mul_by_generator(&scalar(11));
         let xks: alloc::vec::Vec<_> = (0..THRESHOLD as u64).map(|i| (p, scalar(i))).collect();
         assert_matches_reference(&xks);
+    }
+
+    /// Every window width, independently of the size-to-width mapping.
+    ///
+    /// Without this, only the widths that `window_width` happens to select for the sizes used
+    /// above are ever executed -- widths 8 and up need thousands of pairs. Width 8 matters most:
+    /// it divides `HALF_SCALAR_BITS` exactly, so it is the only width with no partial top
+    /// window, and a bug confined to a full top window would otherwise go unseen.
+    #[test]
+    fn every_window_width_matches_reference() {
+        for n in [3usize, 20] {
+            let xks = pairs(n);
+            let expected = ProjectivePoint::lincomb(xks.as_slice());
+
+            for width in MIN_WINDOW..=MAX_WINDOW {
+                assert_eq!(
+                    lincomb_vartime_with_width(&xks, width),
+                    expected,
+                    "width {width} disagrees at n={n}"
+                );
+            }
+        }
+    }
+
+    /// `window_width` must stay inside the range the bucket array is sized for.
+    #[test]
+    fn window_width_is_in_range() {
+        for terms in [2usize, 256, 1024, 8192, 65536, usize::from(u16::MAX)] {
+            let w = window_width(terms);
+            assert!(
+                (MIN_WINDOW..=MAX_WINDOW).contains(&w),
+                "window_width({terms}) = {w} out of range"
+            );
+        }
     }
 
     #[test]

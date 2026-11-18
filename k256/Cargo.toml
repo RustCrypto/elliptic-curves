@@ -48,6 +48,9 @@ alloc = ["ecdsa-core?/alloc", "elliptic-curve/alloc", "primeorder?/alloc"]
 std = ["alloc", "ecdsa-core?/std", "elliptic-curve/std", "getrandom", "primeorder?/std"]
 
 arithmetic = ["elliptic-curve/arithmetic", "dep:primeorder"]
+# Exposes internal strategy selection for benchmarking. Not a supported API and not
+# covered by semver; exists so benchmarks can compare implementations directly.
+bench-internals = []
 critical-section = ["primeorder/critical-section", "precomputed-tables"]
 digest = ["ecdsa-core/digest"]
 ecdh = ["arithmetic", "elliptic-curve/ecdh"]

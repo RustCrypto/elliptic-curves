@@ -103,6 +103,10 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
         // Pippenger's per-element cost falls as the term count rises, whereas interleaved w-NAF
         // is flat; they cross at roughly this size.
+        //
+        // Only the slice impl dispatches. The fixed-size impl above would need a const-generic
+        // array of hundreds of pairs to reach the threshold, which is not a real use case, and
+        // it must keep building without `alloc`.
         if points_and_scalars.len() >= pippenger::THRESHOLD {
             return pippenger::lincomb_vartime(points_and_scalars);
         }
@@ -182,16 +186,19 @@ fn lincomb_vartime_glv_wnaf(
     WnafBase::multiscalar_mul(terms)
 }
 
-#[cfg(feature = "alloc")]
+#[cfg(all(feature = "alloc", feature = "bench-internals"))]
 impl ProjectivePoint {
     /// Calculates `x1 * k1 + ... + xn * kn` in variable time using bucketed Pippenger with the
     /// GLV endomorphism, with the window width chosen from the term count.
     ///
+    /// Requires the `bench-internals` feature. This is not a supported API and is not covered by
+    /// semver: it exists so that benchmarks can compare strategies directly at any size, rather
+    /// than only on whichever side of the dispatch threshold they fall.
+    ///
     /// Produces the same result as
     /// [`lincomb`][`elliptic_curve::ops::LinearCombination::lincomb`].
     /// [`lincomb_vartime`][`elliptic_curve::ops::LinearCombination::lincomb_vartime`] calls this
-    /// automatically for large inputs; it is exposed separately so the two strategies can be
-    /// compared directly at any size.
+    /// automatically for large inputs.
     ///
     /// <div class="warning">
     /// <b>Security Warning</b>
