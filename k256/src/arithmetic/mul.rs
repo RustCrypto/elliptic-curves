@@ -102,8 +102,8 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
         // Only the slice impl dispatches. The fixed-size impl above would need a const-generic
-        // array of hundreds of pairs to reach the threshold, which is not a real use case, and
-        // it must keep building without `alloc`.
+        // array of at least `THRESHOLD` pairs to reach it, which is not a real use case, and it
+        // must keep building without `alloc`.
         if points_and_scalars.len() >= pippenger::THRESHOLD {
             return pippenger::lincomb_vartime(points_and_scalars);
         }
