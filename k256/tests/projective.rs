@@ -115,6 +115,21 @@ proptest! {
         assert_eq!(reference, test);
     }
 
+    /// Exercises the bucketed Pippenger path, which `lincomb_vartime` selects above an internal
+    /// size threshold. Every other lincomb test here is 3-term, so none of them reach it.
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn lincomb_vartime_large(
+        pairs in proptest::collection::vec((projective(), scalar()), 140..150),
+    ) {
+        let reference = pairs
+            .iter()
+            .fold(ProjectivePoint::IDENTITY, |acc, (p, s)| acc + *p * *s);
+
+        assert_eq!(reference, ProjectivePoint::lincomb_vartime(pairs.as_slice()));
+        assert_eq!(reference, ProjectivePoint::lincomb(pairs.as_slice()));
+    }
+
     #[test]
     fn mul_by_generator(s1 in scalar()) {
         let reference = ProjectivePoint::GENERATOR * s1;

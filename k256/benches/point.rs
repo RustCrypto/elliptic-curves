@@ -57,6 +57,32 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     group.bench_function("lincomb_vartime (2-term)", |b| {
         b.iter(|| ProjectivePoint::lincomb_vartime(&[(p, s), (p, s)]));
     });
+
+    // Larger term counts, where `lincomb_vartime` switches from interleaved w-NAF to bucketed
+    // Pippenger. The 2-term cases above only ever exercise the w-NAF path.
+    //
+    // Both the points and the scalars vary. Reusing one scalar across every term would be
+    // unrepresentative: w-NAF's cost depends on each scalar's nonzero digit count, so a single
+    // repeated scalar measures that one scalar's digit pattern rather than typical input.
+    // The scalars must also be full width. `Scalar::from(u64)` would give 64-bit values, whose
+    // GLV halves are ~32 bits, leaving most window digits zero and understating the work.
+    let pairs: Vec<_> = (0..256u64)
+        .map(|i| {
+            let k = s * Scalar::from(i + 1);
+            (ProjectivePoint::mul_by_generator(&Scalar::from(i + 1)), k)
+        })
+        .collect();
+
+    for n in [64usize, 128, 256] {
+        let terms = &pairs[..n];
+
+        group.bench_function(format!("lincomb_vartime ({n}-term)"), |b| {
+            b.iter(|| ProjectivePoint::lincomb_vartime(black_box(terms)));
+        });
+        group.bench_function(format!("lincomb_vartime_pippenger ({n}-term)"), |b| {
+            b.iter(|| ProjectivePoint::lincomb_vartime_pippenger(black_box(terms)));
+        });
+    }
 }
 
 fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {

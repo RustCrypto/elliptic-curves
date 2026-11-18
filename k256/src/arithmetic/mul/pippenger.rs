@@ -27,17 +27,19 @@ use primeorder::PrimeFieldExt;
 
 /// Term count at or above which Pippenger beats interleaved w-NAF.
 ///
-/// Both strategies were benchmarked over identical inputs; relative cost of Pippenger against
-/// w-NAF, with non-overlapping confidence intervals throughout:
+/// Relative cost of Pippenger against w-NAF over identical inputs, with full-width varied
+/// scalars (`benches/point.rs`), plus two sizes far past the threshold from a separate harness:
 ///
-/// | pairs | 128   | 136   | 144   | 152   | 192   | 1024  | 4096  |
-/// |-------|-------|-------|-------|-------|-------|-------|-------|
-/// | ratio | 1.005 | 0.983 | 0.968 | 0.952 | 0.889 | 0.601 | 0.484 |
+/// | pairs | 64    | 128   | 1024 | 4096 |
+/// |-------|-------|-------|------|------|
+/// | ratio | 1.278 | 0.975 | 0.60 | 0.48 |
 ///
-/// 136 is the smallest measured size at which Pippenger wins, so it is the threshold. The margin
-/// there is only ~2%, and the crossing point will move with the relative cost of addition,
-/// inversion and allocation, so this is worth re-measuring on a materially different machine.
-pub(super) const THRESHOLD: usize = 136;
+/// The crossing point moves with scalar density, because w-NAF's cost scales with each scalar's
+/// nonzero digit count whereas Pippenger pays per window regardless. On deliberately sparse
+/// scalars the two are level at 128 rather than Pippenger leading, so 128 is the smallest size
+/// that is no worse than w-NAF under either distribution. Worth re-measuring on a machine with
+/// a materially different balance between addition, inversion and allocation costs.
+pub(super) const THRESHOLD: usize = 128;
 
 /// Bytes of each GLV half-scalar.
 ///
@@ -171,8 +173,18 @@ mod tests {
     use elliptic_curve::ops::LinearCombination;
 
     /// Deterministic distinct scalars, avoiding a dependency on `getrandom` in these tests.
+    ///
+    /// Full width on purpose: a `Scalar::from(u64)` would decompose into ~32-bit GLV halves,
+    /// leaving most window digits -- including the partial top window -- permanently zero and so
+    /// untested.
     fn scalar(i: u64) -> Scalar {
-        Scalar::from(i.wrapping_mul(0x9E37_79B9_7F4A_7C15).wrapping_add(1))
+        // Below the group order, which begins 0xFFFFFFFF.
+        let base = Scalar::from_bytes_unchecked(&[
+            0x7e, 0x4b, 0x1c, 0xa9, 0x33, 0xd0, 0x62, 0x85, 0x19, 0xf7, 0x40, 0xbc, 0x2a, 0x6d,
+            0x8e, 0x51, 0xc3, 0x07, 0x9a, 0x44, 0xe2, 0x7b, 0x15, 0xf0, 0x68, 0xad, 0x39, 0x5c,
+            0x81, 0xd6, 0x22, 0x0f,
+        ]);
+        base * Scalar::from(i.wrapping_add(1))
     }
 
     fn pairs(n: usize) -> alloc::vec::Vec<(ProjectivePoint, Scalar)> {
