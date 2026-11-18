@@ -115,13 +115,9 @@ proptest! {
         assert_eq!(reference, test);
     }
 
-    /// Exercises the bucketed Pippenger path. Every other lincomb test here is 3-term, so none
-    /// of them reach it.
-    ///
-    /// The size range is above the current dispatch threshold, so `lincomb_vartime` selects
-    /// Pippenger. The unit tests in `arithmetic::mul::pippenger` cover the threshold itself,
-    /// relative to the constant, so raising it cannot silently take this range back to w-NAF
-    /// without those failing.
+    /// Exercises the bucketed Pippenger path, which every other lincomb test here is too small
+    /// to reach. The unit tests in `arithmetic::mul::pippenger` cover the threshold itself,
+    /// relative to the constant.
     #[test]
     #[cfg(feature = "alloc")]
     fn lincomb_vartime_large(

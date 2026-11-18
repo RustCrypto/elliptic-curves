@@ -101,9 +101,6 @@ impl LinearCombination<[(ProjectivePoint, Scalar)]> for ProjectivePoint {
 
     #[cfg(feature = "alloc")]
     fn lincomb_vartime(points_and_scalars: &[(ProjectivePoint, Scalar)]) -> Self {
-        // Pippenger's per-element cost falls as the term count rises, whereas interleaved w-NAF
-        // is flat; they cross at roughly this size.
-        //
         // Only the slice impl dispatches. The fixed-size impl above would need a const-generic
         // array of hundreds of pairs to reach the threshold, which is not a real use case, and
         // it must keep building without `alloc`.

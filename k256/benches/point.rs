@@ -59,15 +59,12 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     });
 
     // Larger term counts, which `lincomb_vartime` serves with bucketed Pippenger rather than
-    // interleaved w-NAF. The 2-term cases above only ever exercise the w-NAF path; the 32-term
-    // case below is still under the dispatch threshold, so it covers w-NAF at a size where the
-    // per-term cost is settled.
+    // interleaved w-NAF. The 32-term case stays under the dispatch threshold, so w-NAF is still
+    // covered at a size where its per-term cost has settled.
     //
-    // Both the points and the scalars vary. Reusing one scalar across every term would be
-    // unrepresentative: w-NAF's cost depends on each scalar's nonzero digit count, so a single
-    // repeated scalar measures that one scalar's digit pattern rather than typical input.
-    // The scalars must also be full width. `Scalar::from(u64)` would give 64-bit values, whose
-    // GLV halves are ~32 bits, leaving most window digits zero and understating the work.
+    // Both the points and the scalars vary, and the scalars are full width. One repeated scalar
+    // would measure its own digit pattern, since w-NAF's cost depends on the nonzero digit count,
+    // and `Scalar::from(u64)` would leave most window digits zero and understate the work.
     let pairs: Vec<_> = (0..1024u64)
         .map(|i| {
             let k = s * Scalar::from(i + 1);

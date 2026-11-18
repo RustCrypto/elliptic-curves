@@ -10,7 +10,7 @@
 //! Straus wins for small inputs, where bucket setup and reduction dominate, so
 //! [`THRESHOLD`] selects between them.
 //!
-//! Two details make this cheaper than a textbook implementation:
+//! Three details make this cheaper than a textbook implementation:
 //!
 //! - Scalars are GLV-decomposed first, via [`glv::decompose_scalar`]. That converts `n` terms of
 //!   256 bits into `2n` terms of 128 bits, halving the number of window passes and so halving
@@ -31,29 +31,14 @@ use primeorder::PrimeFieldExt;
 
 /// Term count at or above which Pippenger beats interleaved w-NAF.
 ///
-/// Relative cost of Pippenger against w-NAF over identical inputs, both strategies timed in the
-/// same run on an otherwise idle machine, with dense full-width scalars. Re-measuring this needs
-/// `THRESHOLD` raised out of range first: otherwise dispatch puts Pippenger on both sides of the
-/// comparison at every size above the current value, and those ratios all come out at 1.000.
+/// The smallest size at which Pippenger wins with non-overlapping confidence intervals, with
+/// both strategies timed in the same run over identical inputs on an idle machine. The curve is
+/// shallow either side, so anywhere in `56..=72` costs at most about 4% on the sizes in between.
 ///
-/// | pairs | 52    | 56    | 58    | 60    | 64    | 72    | 80    | 128   | 256   | 1024  |
-/// |-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|
-/// | ratio | 1.032 | 1.014 | 1.004 | 0.996 | 0.984 | 0.960 | 0.938 | 0.835 | 0.725 | 0.540 |
-///
-/// 60 is the smallest size at which Pippenger wins with non-overlapping confidence intervals; at
-/// 58 w-NAF is still ahead, by 0.4%. Signed digits moved this down from 128, where the unsigned
-/// version crossed. The curve is shallow either side of the crossing, so the exact value does
-/// not matter much: anywhere in `56..=72` costs at most about 4% on the sizes in between.
-///
-/// Note that [`window_width`] steps from 5 to 6 between 72 and 73 pairs, so the ratio curve has a
-/// kink above the threshold and should not be interpolated across it.
-///
-/// Conditions matter when re-measuring, and more than the table's precision suggests: an earlier
-/// revision of this comment put the crossing at 76, from a run that shared the machine with
-/// another benchmark and so biased every ratio 3-4% towards w-NAF. Scalar density matters too,
-/// because w-NAF's cost scales with each scalar's nonzero digit count whereas Pippenger pays per
-/// window regardless, so sparse scalars push the crossing higher. So does the balance between
-/// addition, inversion and allocation costs, which varies by machine.
+/// Re-measuring needs this raised out of range first, or dispatch serves Pippenger to both arms
+/// of the comparison. The crossing moves with scalar density, because w-NAF's cost scales with
+/// each scalar's nonzero digit count whereas Pippenger pays per window regardless, and with a
+/// machine's balance between addition, inversion and allocation cost.
 pub(super) const THRESHOLD: usize = 60;
 
 /// Bytes of each GLV half-scalar.
@@ -67,24 +52,20 @@ const HALF_SCALAR_BITS: usize = HALF_SCALAR_BYTES * 8;
 
 /// Smallest and largest window width considered.
 ///
-/// The upper bound caps the bucket array at `2^12` points. With signed digits the model reaches
-/// width 12 beyond ~20500 half-terms and width 13 beyond ~36900, so the cap only binds on inputs
-/// far larger than anything this is expected to see.
+/// The upper bound caps the bucket array at `2^12` points, which the model only reaches beyond
+/// ~20500 half-terms, far larger than anything this is expected to see.
 const MIN_WINDOW: usize = 2;
 const MAX_WINDOW: usize = 13;
 
 /// Window width in bits minimising the approximate addition count for a given term count.
 ///
 /// The cost is `window_count(c) * (terms + 2^c)`: one window pass per `c` bits, each costing one
-/// bucket addition per term plus two additions for each of the `2^(c-1)` buckets to reduce. This
-/// is minimised directly rather than via a hard-coded table, because a table silently drifts from
-/// the model it claims to follow -- and did, in an earlier revision of this file.
+/// bucket addition per term plus two additions for each of the `2^(c-1)` buckets to reduce.
+/// Minimised directly rather than read from a table, which cannot then drift from the model.
+/// Signed digits halve the bucket term, so the optimum sits about one bit wider than otherwise.
 ///
-/// Signed digits halve the bucket term relative to unsigned ones, so the optimum sits about one
-/// bit wider than it otherwise would.
-///
-/// The model weighs every addition equally, so it is only an approximation: mixed additions, full
-/// additions and doublings differ in cost. Worth revisiting against measurement.
+/// An approximation only, since it weighs every addition equally while mixed additions, full
+/// additions and doublings differ in cost.
 fn window_width(terms: usize) -> usize {
     (MIN_WINDOW..=MAX_WINDOW)
         .min_by_key(|&c| window_count(c) * (terms + (1 << c)))
@@ -94,15 +75,12 @@ fn window_width(terms: usize) -> usize {
 /// Number of window passes for a given width.
 ///
 /// Two bits wider than the scalar, not one. Signed-digit recoding carries, so the top window must
-/// both receive a carry and not emit one -- which needs it to stay strictly below `2^(width-1)`,
-/// not merely to exist. One bit of headroom leaves the top window holding `width - 1` real bits
-/// whenever `width` divides `HALF_SCALAR_BITS + 1`; it can then reach `2^(width-1) - 1`, and an
-/// incoming carry tips it to exactly `2^(width-1)`, which borrows and emits a carry with no
-/// window left to receive it. Within `MIN_WINDOW..=MAX_WINDOW` that is width 3 alone
-/// (`43 * 3 == 129`), where it loses `2^129` for about one input in seven.
-///
-/// Two bits caps the top window at `width - 2` real bits, so it cannot reach half. This changes
-/// the count only at width 3, from 43 windows to 44.
+/// receive a carry without emitting one, which needs it strictly below `2^(width-1)` rather than
+/// merely present. One bit leaves it holding `width - 1` real bits whenever `width` divides
+/// `HALF_SCALAR_BITS + 1`, where an incoming carry tips it to exactly `2^(width-1)` and it
+/// borrows with no window left to receive the result. Within `MIN_WINDOW..=MAX_WINDOW` that is
+/// width 3 alone (`43 * 3 == 129`). Two bits caps the top window at `width - 2` real bits
+/// instead, changing the count only at width 3, from 43 windows to 44.
 fn window_count(width: usize) -> usize {
     (HALF_SCALAR_BITS + 2).div_ceil(width)
 }
@@ -289,9 +267,8 @@ mod tests {
 
     /// Deterministic distinct scalars, avoiding a dependency on `getrandom` in these tests.
     ///
-    /// Full width on purpose: a `Scalar::from(u64)` would decompose into ~32-bit GLV halves,
-    /// leaving most window digits -- including the partial top window -- permanently zero and so
-    /// untested.
+    /// Full width on purpose: `Scalar::from(u64)` would decompose into ~32-bit GLV halves,
+    /// leaving most window digits permanently zero and so untested.
     fn scalar(i: u64) -> Scalar {
         // Below the group order, which begins 0xFFFFFFFF.
         let base = Scalar::from_bytes_unchecked(&[
@@ -392,15 +369,9 @@ mod tests {
 
     /// Every window width, independently of the size-to-width mapping.
     ///
-    /// Without this, only the widths that `window_width` selects for the sizes used above are
-    /// ever executed, and that misses widths 7 and 9 upwards: width 7 is selected from 171 pairs
-    /// and width 9 from 833, while the sizes above step straight from 100 to 512.
-    ///
-    /// The widths dividing `HALF_SCALAR_BITS` exactly -- 2, 4 and 8 -- are worth reaching
-    /// deliberately even though the sizes above do reach them, because no window of theirs
-    /// straddles the top of the half-scalar and the final window holds nothing but the carry.
-    /// That is a different shape from every other width, so a bug confined to it would be
-    /// invisible at the widths in between.
+    /// The sizes used above select only some widths, missing 7 and 9 upwards. The widths that
+    /// divide `HALF_SCALAR_BITS` exactly (2, 4 and 8) matter as well: no window of theirs
+    /// straddles the top of the half-scalar, so the final window holds nothing but the carry.
     #[test]
     fn every_window_width_matches_reference() {
         for n in [3usize, 20] {
@@ -417,10 +388,8 @@ mod tests {
         }
     }
 
-    /// Tripwire, not a property: while `window_width` is a search over
-    /// `MIN_WINDOW..=MAX_WINDOW` this holds by construction. It exists so that reintroducing a
-    /// hard-coded table -- the thing that went wrong before -- cannot silently return a width
-    /// the bucket array is not sized for.
+    /// Tripwire, not a property: while `window_width` is a search over `MIN_WINDOW..=MAX_WINDOW`
+    /// this holds by construction. It guards against a width the bucket array is not sized for.
     #[test]
     fn window_width_is_in_range() {
         for terms in [2usize, 256, 1024, 8192, 65536, usize::from(u16::MAX)] {
@@ -434,18 +403,10 @@ mod tests {
 
     /// The signed-digit recoding must represent the scalar exactly, at every width.
     ///
-    /// Reconstructed in `Scalar`, deliberately. An earlier version used `wrapping_*` on `u128`,
-    /// reasoning that the representation is exact and the value below `2^128`, so equality modulo
-    /// `2^128` was equality -- which assumed the very property under test. A lost carry is an
-    /// error of exactly `2^129`, which is `0` modulo `2^128`, so that version passed over
-    /// `u128::MAX` at width 3: the precise input this test names as its reason to exist.
-    ///
-    /// `u128` with checked arithmetic does not work either, and not because of the bug: a signed
-    /// representation's leading digits round *up* before the lower ones correct downward, so the
-    /// Horner multiply overflows just past `2^128` before the next (negative) digit brings it
-    /// back. A hair over is still over, and widening to `i128` is worse -- it cannot hold
-    /// `u128::MAX` at all. `Scalar` has the range, handles negative digits natively, and `2^129`
-    /// is not `0` modulo the group order, so a lost carry still shows up.
+    /// Reconstructed in `Scalar` out of necessity, not convenience. A lost carry is an error of
+    /// exactly `2^129`, so a wrapping `u128` Horner reconstruction cannot see it modulo `2^128`,
+    /// and a checked one overflows on correct representations, whose leading digits round up
+    /// before the lower ones correct downward. `2^129` is not `0` modulo the group order.
     #[test]
     fn recoding_reconstructs_the_scalar() {
         let values = [
