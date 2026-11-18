@@ -187,3 +187,67 @@ pub(super) fn decompose_wnaf_into(
     bases[0].init_from_base(&p1);
     bases[1].init_from_base(&p2);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{GLV_LE_BYTES, MINUS_LAMBDA, decompose_scalar};
+    use crate::{FieldBytes, arithmetic::Scalar};
+    use elliptic_curve::{ops::Reduce, scalar::IsHigh};
+    use primeorder::PrimeFieldExt;
+    use proptest::{prelude::any, prop_compose, proptest};
+
+    /// Assert both halves of `decompose_scalar`'s contract.
+    ///
+    /// Deliberately real `assert!`s rather than `debug_assert!`s at the use site: CI runs every
+    /// test with `--release`, where `debug_assertions` are off, so a use-site check would never
+    /// execute there. Every other reference the test suite compares against -- the constant-time
+    /// `lincomb`, `Mul`, and the Pippenger path -- goes through this same function, so nothing
+    /// else can catch a regression in it.
+    fn assert_decomposition(k: Scalar) {
+        let (r1, r2) = decompose_scalar(&k);
+
+        // Faithful: `k == r1 + r2 * lambda`, and `MINUS_LAMBDA == -lambda`.
+        assert_eq!(k, r1 - r2 * MINUS_LAMBDA, "decomposition is not faithful");
+
+        // Bounded: each half is below `2^128` once its sign is normalised. This is what permits
+        // callers to keep only the low `GLV_LE_BYTES` bytes, and it is the half of the contract
+        // that a wrong lattice constant would break while leaving faithfulness intact.
+        for r in [r1, r2] {
+            let small = if bool::from(r.is_high()) { -r } else { r };
+            assert!(
+                small.to_le_repr()[GLV_LE_BYTES..].iter().all(|&b| b == 0),
+                "GLV half-scalar is not below 2^128"
+            );
+        }
+    }
+
+    #[test]
+    fn decomposition_edge_cases() {
+        let lambda = -MINUS_LAMBDA;
+
+        for k in [
+            Scalar::ZERO,
+            Scalar::ONE,
+            -Scalar::ONE,
+            lambda,
+            lambda + Scalar::ONE,
+            lambda - Scalar::ONE,
+            MINUS_LAMBDA,
+        ] {
+            assert_decomposition(k);
+        }
+    }
+
+    prop_compose! {
+        fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
+            <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into())
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn fuzzy_decomposition(k in scalar()) {
+            assert_decomposition(k);
+        }
+    }
+}

@@ -52,8 +52,9 @@ const HALF_SCALAR_BITS: usize = HALF_SCALAR_BYTES * 8;
 
 /// Smallest and largest window width considered.
 ///
-/// The upper bound caps the bucket array at `2^12 - 1` points; the model only reaches it beyond
-/// ~20000 half-terms.
+/// The upper bound caps the bucket array at `2^12 - 1` points. The model reaches width 11 beyond
+/// ~22500 half-terms and width 12 beyond ~41000, so the cap only binds on inputs far larger than
+/// anything this is expected to see.
 const MIN_WINDOW: usize = 2;
 const MAX_WINDOW: usize = 12;
 
@@ -321,7 +322,10 @@ mod tests {
         }
     }
 
-    /// `window_width` must stay inside the range the bucket array is sized for.
+    /// Tripwire, not a property: while `window_width` is a search over
+    /// `MIN_WINDOW..=MAX_WINDOW` this holds by construction. It exists so that reintroducing a
+    /// hard-coded table -- the thing that went wrong before -- cannot silently return a width
+    /// the bucket array is not sized for.
     #[test]
     fn window_width_is_in_range() {
         for terms in [2usize, 256, 1024, 8192, 65536, usize::from(u16::MAX)] {
