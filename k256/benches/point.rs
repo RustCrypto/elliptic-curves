@@ -66,14 +66,14 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     // repeated scalar measures that one scalar's digit pattern rather than typical input.
     // The scalars must also be full width. `Scalar::from(u64)` would give 64-bit values, whose
     // GLV halves are ~32 bits, leaving most window digits zero and understating the work.
-    let pairs: Vec<_> = (0..256u64)
+    let pairs: Vec<_> = (0..1024u64)
         .map(|i| {
             let k = s * Scalar::from(i + 1);
             (ProjectivePoint::mul_by_generator(&Scalar::from(i + 1)), k)
         })
         .collect();
 
-    for n in [64usize, 128, 256] {
+    for n in [64usize, 128, 256, 1024] {
         let terms = &pairs[..n];
 
         group.bench_function(format!("lincomb_vartime ({n}-term)"), |b| {

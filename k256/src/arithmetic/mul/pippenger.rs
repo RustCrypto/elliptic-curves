@@ -27,18 +27,18 @@ use primeorder::PrimeFieldExt;
 
 /// Term count at or above which Pippenger beats interleaved w-NAF.
 ///
-/// Relative cost of Pippenger against w-NAF over identical inputs, with full-width varied
-/// scalars (`benches/point.rs`), plus two sizes far past the threshold from a separate harness:
+/// Relative cost of Pippenger against w-NAF over identical inputs, both strategies timed in the
+/// same run with dense full-width scalars, confidence intervals non-overlapping throughout:
 ///
-/// | pairs | 64    | 128   | 1024 | 4096 |
-/// |-------|-------|-------|------|------|
-/// | ratio | 1.278 | 0.975 | 0.60 | 0.48 |
+/// | pairs | 64    | 96    | 112   | 128   | 256   | 1024  | 4096  |
+/// |-------|-------|-------|-------|-------|-------|-------|-------|
+/// | ratio | 1.183 | 1.048 | 1.011 | 0.980 | 0.836 | 0.582 | 0.470 |
 ///
-/// The crossing point moves with scalar density, because w-NAF's cost scales with each scalar's
-/// nonzero digit count whereas Pippenger pays per window regardless. On deliberately sparse
-/// scalars the two are level at 128 rather than Pippenger leading, so 128 is the smallest size
-/// that is no worse than w-NAF under either distribution. Worth re-measuring on a machine with
-/// a materially different balance between addition, inversion and allocation costs.
+/// 128 is the smallest measured size at which Pippenger wins, and the margin at the crossing is
+/// only ~2%. Scalar density matters when re-measuring: w-NAF's cost scales with each scalar's
+/// nonzero digit count whereas Pippenger pays per window regardless, so sparse scalars push the
+/// crossing higher. So does the balance between addition, inversion and allocation costs, which
+/// varies by machine.
 pub(super) const THRESHOLD: usize = 128;
 
 /// Bytes of each GLV half-scalar.
