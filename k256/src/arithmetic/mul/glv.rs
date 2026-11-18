@@ -196,22 +196,22 @@ mod tests {
     use primeorder::PrimeFieldExt;
     use proptest::{prelude::any, prop_compose, proptest};
 
-    /// Assert both halves of `decompose_scalar`'s contract.
+    /// Assert that each half of a decomposition is below `2^128`.
     ///
-    /// Deliberately real `assert!`s rather than `debug_assert!`s at the use site: CI runs every
+    /// Deliberately a real `assert!` rather than a `debug_assert!` at the use site: CI runs every
     /// test with `--release`, where `debug_assertions` are off, so a use-site check would never
-    /// execute there. Every other reference the test suite compares against -- the constant-time
-    /// `lincomb`, `Mul`, and the Pippenger path -- goes through this same function, so nothing
-    /// else can catch a regression in it.
-    fn assert_decomposition(k: Scalar) {
+    /// execute there.
+    ///
+    /// Gross breakage of the lattice constants is already caught elsewhere -- it breaks the
+    /// constant-time path too, which the Wycheproof and BIP-340 vectors pin against outside
+    /// values. Nothing else checks *this* property directly, though, and only this names the
+    /// contract that was broken rather than leaving a known-answer failure to be read backwards.
+    /// It also makes the bound proof above executable.
+    fn assert_halves_are_bounded(k: Scalar) {
         let (r1, r2) = decompose_scalar(&k);
 
-        // Faithful: `k == r1 + r2 * lambda`, and `MINUS_LAMBDA == -lambda`.
-        assert_eq!(k, r1 - r2 * MINUS_LAMBDA, "decomposition is not faithful");
-
-        // Bounded: each half is below `2^128` once its sign is normalised. This is what permits
-        // callers to keep only the low `GLV_LE_BYTES` bytes, and it is the half of the contract
-        // that a wrong lattice constant would break while leaving faithfulness intact.
+        // After normalising the sign, the bytes above `GLV_LE_BYTES` must be zero. This is what
+        // permits callers to keep only the low `GLV_LE_BYTES` bytes.
         for r in [r1, r2] {
             let small = if bool::from(r.is_high()) { -r } else { r };
             assert!(
@@ -219,6 +219,25 @@ mod tests {
                 "GLV half-scalar is not below 2^128"
             );
         }
+    }
+
+    /// `MINUS_LAMBDA` must negate a primitive cube root of unity mod n, i.e.
+    /// `lambda^2 + lambda + 1 == 0`, which is what makes the endomorphism act as multiplication
+    /// by `lambda`.
+    ///
+    /// Asserting instead that a decomposition is "faithful" would be a tautology:
+    /// `decompose_scalar` *defines* `r1` as `k + r2 * MINUS_LAMBDA`, so `k == r1 - r2 *
+    /// MINUS_LAMBDA` holds for any `r2` and any value of the constant.
+    #[test]
+    fn lambda_is_a_primitive_cube_root_of_unity() {
+        let lambda = -MINUS_LAMBDA;
+
+        assert_eq!(
+            lambda * lambda + lambda + Scalar::ONE,
+            Scalar::ZERO,
+            "MINUS_LAMBDA does not negate a primitive cube root of unity"
+        );
+        assert_ne!(lambda, Scalar::ONE, "lambda is the trivial cube root");
     }
 
     #[test]
@@ -234,7 +253,7 @@ mod tests {
             lambda - Scalar::ONE,
             MINUS_LAMBDA,
         ] {
-            assert_decomposition(k);
+            assert_halves_are_bounded(k);
         }
     }
 
@@ -247,7 +266,7 @@ mod tests {
     proptest! {
         #[test]
         fn fuzzy_decomposition(k in scalar()) {
-            assert_decomposition(k);
+            assert_halves_are_bounded(k);
         }
     }
 }
