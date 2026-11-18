@@ -27,9 +27,17 @@ use primeorder::PrimeFieldExt;
 
 /// Term count at or above which Pippenger beats interleaved w-NAF.
 ///
-/// Measured against `secp256k1_ecmult_multi_var` and the w-NAF path: the two cross at roughly 200
-/// input pairs on the benchmarks used to develop this, so this is deliberately conservative.
-pub(super) const THRESHOLD: usize = 256;
+/// Both strategies were benchmarked over identical inputs; relative cost of Pippenger against
+/// w-NAF, with non-overlapping confidence intervals throughout:
+///
+/// | pairs | 128   | 136   | 144   | 152   | 192   | 1024  | 4096  |
+/// |-------|-------|-------|-------|-------|-------|-------|-------|
+/// | ratio | 1.005 | 0.983 | 0.968 | 0.952 | 0.889 | 0.601 | 0.484 |
+///
+/// 136 is the smallest measured size at which Pippenger wins, so it is the threshold. The margin
+/// there is only ~2%, and the crossing point will move with the relative cost of addition,
+/// inversion and allocation, so this is worth re-measuring on a materially different machine.
+pub(super) const THRESHOLD: usize = 136;
 
 /// Bytes of each GLV half-scalar.
 ///
