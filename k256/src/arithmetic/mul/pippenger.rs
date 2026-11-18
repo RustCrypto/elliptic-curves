@@ -89,10 +89,18 @@ fn window_width(terms: usize) -> usize {
 
 /// Number of window passes for a given width.
 ///
-/// One bit wider than the scalar, because signed-digit recoding carries: a scalar of all ones
-/// propagates a carry out of its top window, which needs a window of its own to land in.
+/// Two bits wider than the scalar, not one. Signed-digit recoding carries, so the top window must
+/// both receive a carry and not emit one -- which needs it to stay strictly below `2^(width-1)`,
+/// not merely to exist. One bit of headroom leaves the top window holding `width - 1` real bits
+/// whenever `width` divides `HALF_SCALAR_BITS + 1`; it can then reach `2^(width-1) - 1`, and an
+/// incoming carry tips it to exactly `2^(width-1)`, which borrows and emits a carry with no
+/// window left to receive it. Within `MIN_WINDOW..=MAX_WINDOW` that is width 3 alone
+/// (`43 * 3 == 129`), where it loses `2^129` for about one input in seven.
+///
+/// Two bits caps the top window at `width - 2` real bits, so it cannot reach half. This changes
+/// the count only at width 3, from 43 windows to 44.
 fn window_count(width: usize) -> usize {
-    (HALF_SCALAR_BITS + 1).div_ceil(width)
+    (HALF_SCALAR_BITS + 2).div_ceil(width)
 }
 
 /// A signed window digit, held as magnitude plus sign.
@@ -105,6 +113,10 @@ struct SignedDigit {
     magnitude: u16,
     negative: bool,
 }
+
+/// `recode` computes `1 << width` as a `u16`, which wraps from width 16. Nothing reaches that
+/// today, but only [`MAX_WINDOW`]'s value prevents it, so make the coupling explicit.
+const _: () = assert!(MAX_WINDOW < 16);
 
 /// Recode a little-endian scalar into `out.len()` signed digits of `width` bits.
 ///
@@ -413,9 +425,18 @@ mod tests {
 
     /// The signed-digit recoding must represent the scalar exactly, at every width.
     ///
-    /// Checked directly rather than only through the MSM, and with the all-ones scalar, which is
-    /// the case that forces a carry out of the top window -- the reason [`window_count`] covers
-    /// one bit more than the scalar.
+    /// Reconstructed in `Scalar`, deliberately. An earlier version used `wrapping_*` on `u128`,
+    /// reasoning that the representation is exact and the value below `2^128`, so equality modulo
+    /// `2^128` was equality -- which assumed the very property under test. A lost carry is an
+    /// error of exactly `2^129`, which is `0` modulo `2^128`, so that version passed over
+    /// `u128::MAX` at width 3: the precise input this test names as its reason to exist.
+    ///
+    /// `u128` with checked arithmetic does not work either, and not because of the bug: a signed
+    /// representation's leading digits round *up* before the lower ones correct downward, so the
+    /// Horner multiply overflows just past `2^128` before the next (negative) digit brings it
+    /// back. A hair over is still over, and widening to `i128` is worse -- it cannot hold
+    /// `u128::MAX` at all. `Scalar` has the range, handles negative digits natively, and `2^129`
+    /// is not `0` modulo the group order, so a lost carry still shows up.
     #[test]
     fn recoding_reconstructs_the_scalar() {
         let values = [
@@ -438,20 +459,20 @@ mod tests {
             for v in values {
                 recode(&v.to_le_bytes(), width, &mut digits);
 
-                // Horner from the top down, wrapping: the representation is exact and the value
-                // is below 2^128, so equality modulo 2^128 is equality.
-                let mut acc = 0u128;
+                // Horner from the top down, in the scalar field.
+                let radix = Scalar::from(1u64 << width);
+                let mut acc = Scalar::ZERO;
                 for d in digits.iter().rev() {
-                    acc = acc.wrapping_mul(1u128 << width);
-                    let m = u128::from(d.magnitude);
-                    acc = if d.negative {
-                        acc.wrapping_sub(m)
-                    } else {
-                        acc.wrapping_add(m)
-                    };
+                    let m = Scalar::from(u64::from(d.magnitude));
+                    acc *= radix;
+                    acc = if d.negative { acc - m } else { acc + m };
                 }
 
-                assert_eq!(acc, v, "width {width} misrepresents {v:#x}");
+                let mut be = [0u8; 32];
+                be[16..].copy_from_slice(&v.to_be_bytes());
+                let expected = Scalar::from_bytes_unchecked(&be);
+
+                assert_eq!(acc, expected, "width {width} misrepresents {v:#x}");
 
                 // And every magnitude must be within the signed window range.
                 let half: u16 = 1 << (width - 1);
