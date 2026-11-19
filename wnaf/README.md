@@ -64,7 +64,7 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/wnaf
 [docs-image]: https://docs.rs/wnaf/badge.svg
 [docs-link]: https://docs.rs/wnaf/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/wnaf.yml/badge.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/wnaf.yml/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/wnaf.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.87+-blue.svg

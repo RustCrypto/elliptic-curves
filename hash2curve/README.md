@@ -32,7 +32,7 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/hash2curve
 [docs-image]: https://docs.rs/hash2curve/badge.svg
 [docs-link]: https://docs.rs/hash2curve/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/hash2curve.yml/badge.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/hash2curve.yml/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/hash2curve.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.81+-blue.svg

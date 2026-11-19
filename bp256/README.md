@@ -37,7 +37,7 @@ dual licensed as above, without any additional terms or conditions.
 [rustc-image]: https://img.shields.io/badge/rustc-1.87+-blue.svg
 [chat-image]: https://img.shields.io/badge/zulip-join_chat-blue.svg
 [chat-link]: https://rustcrypto.zulipchat.com/#narrow/stream/260040-elliptic-curves
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bp256.yml/badge.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bp256.yml/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/bp256.yml
 
 [//]: # (links)

@@ -63,7 +63,7 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/p256
 [docs-image]: https://docs.rs/p256/badge.svg
 [docs-link]: https://docs.rs/p256/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p256.yml/badge.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p256.yml/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/p256.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.87+-blue.svg
