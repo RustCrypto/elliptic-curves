@@ -5,6 +5,7 @@ on:
       "bignp256/v**",
       "bp256/v**",
       "bp384/v**",
+      "bp512/v**",
       "ed448-goldilocks/v**",
       "hash2curve/v**",
       "k256/v**",
