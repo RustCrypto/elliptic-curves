@@ -34,7 +34,7 @@ if you are interested in curves beyond the ones listed here.
 
 ## Minimum Supported Rust Version
 
-All crates in this repository support Rust **1.85** or higher.
+All crates in this repository support Rust **1.87** or higher.
 
 Minimum supported Rust version can be changed in the future, but it will be
 done with a minor version bump.
