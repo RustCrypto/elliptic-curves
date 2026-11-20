@@ -323,6 +323,20 @@ mod test {
     }
 
     #[test]
+    fn test_non_canonical_low_order() {
+        // p = 2^448 - 2^224 - 1 and p + 1 are non-canonical encodings of 0 and 1
+        let mut p = [0xff; 56];
+        p[28] = 0xfe;
+        let mut p_plus_one = [0xff; 56];
+        p_plus_one[..28].fill(0);
+
+        for u in [p, p_plus_one] {
+            assert!(PublicKey::from_bytes(&u).is_none());
+            assert!(x448([0x42; 56], u).is_none());
+        }
+    }
+
+    #[test]
     fn test_rfc_test_vectors_alice_bob() {
         let alice_priv = EphemeralSecret::from([
             0x9a, 0x8f, 0x49, 0x25, 0xd1, 0x51, 0x9f, 0x57, 0x75, 0xcf, 0x46, 0xb0, 0x4b, 0x58,
