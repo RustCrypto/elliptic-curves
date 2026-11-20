@@ -90,7 +90,7 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/k256
 [docs-image]: https://docs.rs/k256/badge.svg
 [docs-link]: https://docs.rs/k256/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/k256.yml/badge.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/k256.yml/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/k256.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.87+-blue.svg

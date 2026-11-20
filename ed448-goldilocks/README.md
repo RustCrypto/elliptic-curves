@@ -136,7 +136,7 @@ dual licensed as above, without any additional terms or conditions.
 [crate-link]: https://crates.io/crates/ed448-goldilocks
 [docs-image]: https://docs.rs/ed448-goldilocks/badge.svg
 [docs-link]: https://docs.rs/ed448-goldilocks/
-[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml/badge.svg
+[build-image]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml/badge.svg?branch=master&event=push
 [build-link]: https://github.com/RustCrypto/elliptic-curves/actions/workflows/ed448-goldilocks.yml
 [license-image]: https://img.shields.io/badge/license-Apache2.0/MIT-blue.svg
 [rustc-image]: https://img.shields.io/badge/rustc-1.87+-blue.svg
