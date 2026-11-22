@@ -183,35 +183,6 @@ fn lincomb_vartime_glv_wnaf(
     WnafBase::multiscalar_mul(terms)
 }
 
-#[cfg(all(feature = "alloc", feature = "bench-internals"))]
-impl ProjectivePoint {
-    /// Calculates `x1 * k1 + ... + xn * kn` in variable time using bucketed Pippenger with the
-    /// GLV endomorphism, with the window width chosen from the term count.
-    ///
-    /// Requires the `bench-internals` feature. This is not a supported API and is not covered by
-    /// semver: it exists so that benchmarks can compare strategies directly at any size, rather
-    /// than only on whichever side of the dispatch threshold they fall.
-    ///
-    /// Produces the same result as
-    /// [`lincomb`][`elliptic_curve::ops::LinearCombination::lincomb`].
-    /// [`lincomb_vartime`][`elliptic_curve::ops::LinearCombination::lincomb_vartime`] calls this
-    /// automatically for large inputs.
-    ///
-    /// <div class="warning">
-    /// <b>Security Warning</b>
-    ///
-    /// Variable-time operations should only be used on non-secret values, and may potentially leak
-    /// secret values!
-    ///
-    /// </div>
-    #[must_use]
-    pub fn lincomb_vartime_pippenger(
-        points_and_scalars: &[(ProjectivePoint, Scalar)],
-    ) -> ProjectivePoint {
-        pippenger::lincomb_vartime(points_and_scalars)
-    }
-}
-
 impl ProjectivePoint {
     /// Calculates `k * G`, where `G` is the generator.
     #[must_use]

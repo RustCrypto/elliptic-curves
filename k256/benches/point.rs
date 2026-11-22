@@ -78,12 +78,6 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
         group.bench_function(format!("lincomb_vartime ({n}-term)"), |b| {
             b.iter(|| ProjectivePoint::lincomb_vartime(black_box(terms)));
         });
-        // Only with `bench-internals`; gated per-statement rather than via the bench target's
-        // required-features, so a default `cargo bench` still runs every other point benchmark.
-        #[cfg(feature = "bench-internals")]
-        group.bench_function(format!("lincomb_vartime_pippenger ({n}-term)"), |b| {
-            b.iter(|| ProjectivePoint::lincomb_vartime_pippenger(black_box(terms)));
-        });
     }
 }
 
