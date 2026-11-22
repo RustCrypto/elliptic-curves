@@ -53,7 +53,7 @@ const HALF_SCALAR_BITS: usize = HALF_SCALAR_BYTES * 8;
 /// Smallest and largest window width considered.
 ///
 /// The upper bound caps the bucket array at `2^12` points, which the model only reaches beyond
-/// ~20500 half-terms, far larger than anything this is expected to see.
+/// ~36900 half-terms, far larger than anything this is expected to see.
 const MIN_WINDOW: usize = 2;
 const MAX_WINDOW: usize = 13;
 
@@ -369,9 +369,10 @@ mod tests {
 
     /// Every window width, independently of the size-to-width mapping.
     ///
-    /// The sizes used above select only some widths, missing 7 and 9 upwards. The widths that
-    /// divide `HALF_SCALAR_BITS` exactly (2, 4 and 8) matter as well: no window of theirs
-    /// straddles the top of the half-scalar, so the final window holds nothing but the carry.
+    /// The sizes used above select only some widths, missing 7 and 9 upwards. Widths 2, 3, 4 and
+    /// 8 matter as well: for those, `width * (window_count - 1) >= HALF_SCALAR_BITS`, so no
+    /// window straddles the top of the half-scalar and the last one holds nothing but the carry.
+    /// That is a different shape from every other width.
     #[test]
     fn every_window_width_matches_reference() {
         for n in [3usize, 20] {
