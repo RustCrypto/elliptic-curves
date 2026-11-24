@@ -2,7 +2,7 @@
 
 #![allow(clippy::op_ref)]
 
-use crate::{PrimeCurveParams, ProjectivePoint};
+use crate::{PrimeCurveParams, PrimeFieldExt, ProjectivePoint};
 use core::borrow::Borrow;
 use elliptic_curve::{
     Error, FieldBytes, Generate, PublicKey, Result, Scalar,
@@ -389,12 +389,16 @@ where
     C: PrimeCurveParams,
 {
     fn to_sec1_point(&self, compress: bool) -> Sec1Point<C> {
+        // SEC1 derives the compressed tag from the last byte of `y`, which is only its least
+        // significant byte when `y` is big endian
+        let y = if compress {
+            self.y.to_be_repr()
+        } else {
+            self.y.to_repr()
+        };
+
         Sec1Point::<C>::ct_select(
-            &Sec1Point::<C>::from_affine_coordinates(
-                &self.x.to_repr(),
-                &self.y.to_repr(),
-                compress,
-            ),
+            &Sec1Point::<C>::from_affine_coordinates(&self.x.to_repr(), &y, compress),
             &Sec1Point::<C>::identity(),
             self.is_identity().into(),
         )
