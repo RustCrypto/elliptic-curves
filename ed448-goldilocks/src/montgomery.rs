@@ -105,6 +105,7 @@ impl Mul<&EdwardsScalar> for &MontgomeryPoint {
             swap = bit;
         }
 
+        ProjectiveMontgomeryPoint::conditional_swap(&mut x0, &mut x1, Choice::from(swap));
         x0.to_affine()
     }
 }
@@ -236,5 +237,19 @@ mod tests {
         // Goldilocks scalar mul
         let goldilocks_point = bp.scalar_mul(&scalar);
         assert_eq!(goldilocks_point.to_montgomery(), montgomery_res);
+    }
+
+    #[test]
+    fn test_montgomery_ladder_odd_scalars() {
+        use crate::GOLDILOCKS_BASE_POINT as bp;
+        let montgomery_bp = bp.to_montgomery();
+        for k in 1u32..=16 {
+            let scalar = EdwardsScalar::from(k);
+            assert_eq!(
+                bp.scalar_mul(&scalar).to_montgomery(),
+                &montgomery_bp * &scalar,
+                "k = {k}"
+            );
+        }
     }
 }
