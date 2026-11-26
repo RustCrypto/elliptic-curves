@@ -143,19 +143,18 @@ fn slice_to_array(bytes: &[u8]) -> [u8; 56] {
     array
 }
 
-/// A safe version of the x448 function defined in RFC448.
-/// Currently, the only reason I can think of for using the raw function is FFI.
-/// Option is FFI safe[1]. So we can still maintain that the invariant that
-/// we do not return a low order point.
+/// A checked version of the X448 function defined in RFC 7748.
+/// Returns `None` if the input point is low-order.
 ///
-/// [1]: https://github.com/rust-lang/nomicon/issues/59
+/// `Option<[u8; 56]>` does not have a guaranteed C ABI. Code exposing this
+/// function over FFI should use an explicitly C-compatible wrapper.
 pub fn x448(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> Option<[u8; 56]> {
     let point = PublicKey::from_bytes(&point_bytes)?;
     let scalar = EphemeralSecret::clamp(scalar_bytes.into()).as_scalar();
     Some((&point.0 * &scalar).0)
 }
-/// An unchecked version of the x448 function defined in RFC448
-/// No checks are made on the points.
+/// An unchecked version of the X448 function defined in RFC 7748.
+/// No checks are made on the input point.
 pub fn x448_unchecked(scalar_bytes: [u8; 56], point_bytes: [u8; 56]) -> [u8; 56] {
     let point = MontgomeryPoint(point_bytes);
     let scalar = EphemeralSecret::clamp(scalar_bytes.into()).as_scalar();
