@@ -115,6 +115,22 @@ proptest! {
         assert_eq!(reference, test);
     }
 
+    /// Exercises the bucketed Pippenger path, which every other lincomb test here is too small
+    /// to reach. The unit tests in `arithmetic::mul::pippenger` cover the threshold itself,
+    /// relative to the constant.
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn lincomb_vartime_large(
+        pairs in proptest::collection::vec((projective(), scalar()), 140..150),
+    ) {
+        let reference = pairs
+            .iter()
+            .fold(ProjectivePoint::IDENTITY, |acc, (p, s)| acc + *p * *s);
+
+        assert_eq!(reference, ProjectivePoint::lincomb_vartime(pairs.as_slice()));
+        assert_eq!(reference, ProjectivePoint::lincomb(pairs.as_slice()));
+    }
+
     #[test]
     fn mul_by_generator(s1 in scalar()) {
         let reference = ProjectivePoint::GENERATOR * s1;

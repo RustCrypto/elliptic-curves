@@ -57,6 +57,28 @@ fn bench_point_lincomb<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {
     group.bench_function("lincomb_vartime (2-term)", |b| {
         b.iter(|| ProjectivePoint::lincomb_vartime(&[(p, s), (p, s)]));
     });
+
+    // Larger term counts, which `lincomb_vartime` serves with bucketed Pippenger rather than
+    // interleaved w-NAF. The 32-term case stays under the dispatch threshold, so w-NAF is still
+    // covered at a size where its per-term cost has settled.
+    //
+    // Both the points and the scalars vary, and the scalars are full width. One repeated scalar
+    // would measure its own digit pattern, since w-NAF's cost depends on the nonzero digit count,
+    // and `Scalar::from(u64)` would leave most window digits zero and understate the work.
+    let pairs: Vec<_> = (0..1024u64)
+        .map(|i| {
+            let k = s * Scalar::from(i + 1);
+            (ProjectivePoint::mul_by_generator(&Scalar::from(i + 1)), k)
+        })
+        .collect();
+
+    for n in [32usize, 64, 128, 256, 1024] {
+        let terms = &pairs[..n];
+
+        group.bench_function(format!("lincomb_vartime ({n}-term)"), |b| {
+            b.iter(|| ProjectivePoint::lincomb_vartime(black_box(terms)));
+        });
+    }
 }
 
 fn bench_point_mul<M: Measurement>(group: &mut BenchmarkGroup<'_, M>) {

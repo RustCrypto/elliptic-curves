@@ -187,3 +187,78 @@ pub(super) fn decompose_wnaf_into(
     bases[0].init_from_base(&p1);
     bases[1].init_from_base(&p2);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{GLV_LE_BYTES, MINUS_LAMBDA, decompose_scalar};
+    use crate::{FieldBytes, arithmetic::Scalar};
+    use elliptic_curve::{ops::Reduce, scalar::IsHigh};
+    use primeorder::PrimeFieldExt;
+    use proptest::{prelude::any, prop_compose, proptest};
+
+    /// Assert that each half of a decomposition is below `2^128`.
+    ///
+    /// A real `assert!` rather than a `debug_assert!` at the use site: CI runs every test with
+    /// `--release`, where `debug_assertions` are off, so a use-site check would never execute
+    /// there. Nothing else checks this property directly, and it makes the bound proof above
+    /// executable.
+    fn assert_halves_are_bounded(k: Scalar) {
+        let (r1, r2) = decompose_scalar(&k);
+
+        // After normalising the sign, the bytes above `GLV_LE_BYTES` must be zero. This is what
+        // permits callers to keep only the low `GLV_LE_BYTES` bytes.
+        for r in [r1, r2] {
+            let small = if bool::from(r.is_high()) { -r } else { r };
+            assert!(
+                small.to_le_repr()[GLV_LE_BYTES..].iter().all(|&b| b == 0),
+                "GLV half-scalar is not below 2^128"
+            );
+        }
+    }
+
+    /// `MINUS_LAMBDA` must negate a primitive cube root of unity mod n, i.e.
+    /// `lambda^2 + lambda + 1 == 0`, which is what makes the endomorphism act as multiplication
+    /// by `lambda`. Asserting that a decomposition is "faithful" instead would be a tautology,
+    /// since `decompose_scalar` defines `r1` as `k + r2 * MINUS_LAMBDA`.
+    #[test]
+    fn lambda_is_a_primitive_cube_root_of_unity() {
+        let lambda = -MINUS_LAMBDA;
+
+        assert_eq!(
+            lambda * lambda + lambda + Scalar::ONE,
+            Scalar::ZERO,
+            "MINUS_LAMBDA does not negate a primitive cube root of unity"
+        );
+        assert_ne!(lambda, Scalar::ONE, "lambda is the trivial cube root");
+    }
+
+    #[test]
+    fn decomposition_edge_cases() {
+        let lambda = -MINUS_LAMBDA;
+
+        for k in [
+            Scalar::ZERO,
+            Scalar::ONE,
+            -Scalar::ONE,
+            lambda,
+            lambda + Scalar::ONE,
+            lambda - Scalar::ONE,
+            MINUS_LAMBDA,
+        ] {
+            assert_halves_are_bounded(k);
+        }
+    }
+
+    prop_compose! {
+        fn scalar()(bytes in any::<[u8; 32]>()) -> Scalar {
+            <Scalar as Reduce<FieldBytes>>::reduce(&bytes.into())
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn fuzzy_decomposition(k in scalar()) {
+            assert_halves_are_bounded(k);
+        }
+    }
+}
