@@ -560,6 +560,7 @@ macro_rules! monty_field_element {
         }
 
         impl $crate::subtle::ConditionallySelectable for $fe {
+            #[inline]
             fn conditional_select(a: &Self, b: &Self, choice: $crate::subtle::Choice) -> Self {
                 Self($crate::MontyFieldElement::<$params, { <$uint>::LIMBS }>::conditional_select(
                     &a.0, &b.0, choice,
@@ -586,6 +587,7 @@ macro_rules! monty_field_element {
         }
 
         impl $crate::bigint::ctutils::CtSelect for $fe {
+            #[inline]
             fn ct_select(&self, other: &Self, choice: $crate::bigint::ctutils::Choice) -> Self {
                 Self($crate::bigint::ctutils::CtSelect::ct_select(
                     &self.0, &other.0, choice,
