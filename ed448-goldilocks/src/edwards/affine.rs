@@ -26,6 +26,7 @@ impl AffinePoint {
     };
 
     /// Standard compression; store Y and sign of X
+    #[must_use]
     pub fn compress(&self) -> CompressedEdwardsY {
         let affine_x = self.x;
         let affine_y = self.y;
@@ -41,6 +42,7 @@ impl AffinePoint {
     }
 
     /// Check if this point is on the curve
+    #[must_use]
     pub fn is_on_curve(&self) -> Choice {
         // X^2 + Y^2 == 1 + D * X^2 * Y^2
 
@@ -53,6 +55,7 @@ impl AffinePoint {
     }
 
     /// Convert to edwards extended point
+    #[must_use]
     pub fn to_edwards(&self) -> EdwardsPoint {
         EdwardsPoint {
             X: self.x,
@@ -63,11 +66,13 @@ impl AffinePoint {
     }
 
     /// The X coordinate
+    #[must_use]
     pub fn x(&self) -> [u8; 56] {
         self.x.to_bytes()
     }
 
     /// The Y coordinate
+    #[must_use]
     pub fn y(&self) -> [u8; 56] {
         self.y.to_bytes()
     }
@@ -484,6 +489,7 @@ impl CompressedEdwardsY {
     ///
     /// Returns `None` if the input is not the \\(y\\)-coordinate of a
     /// curve point.
+    #[must_use]
     pub fn decompress_unchecked(&self) -> CtOption<AffinePoint> {
         // Safe to unwrap here as the underlying data structure is a slice
         let (sign, b) = self.0.split_last().expect("slice is non-empty");
@@ -514,17 +520,20 @@ impl CompressedEdwardsY {
     /// - if the input is not the \\(y\\)-coordinate of a curve point.
     /// - if the input point is not on the curve.
     /// - if the input point has nonzero torsion component.
+    #[must_use]
     pub fn decompress(&self) -> CtOption<AffinePoint> {
         self.decompress_unchecked()
             .and_then(|pt| CtOption::new(pt, pt.is_on_curve() & pt.to_edwards().is_torsion_free()))
     }
 
     /// View this `CompressedEdwardsY` as an array of bytes.
+    #[must_use]
     pub const fn as_bytes(&self) -> &PointBytes {
         &self.0
     }
 
     /// Copy this `CompressedEdwardsY` to an array of bytes.
+    #[must_use]
     pub const fn to_bytes(&self) -> PointBytes {
         self.0
     }

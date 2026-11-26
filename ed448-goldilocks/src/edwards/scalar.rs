@@ -52,6 +52,7 @@ pub type EdwardsScalar = Scalar<Ed448>;
 impl EdwardsScalar {
     /// Serialize the scalar into 57 bytes, per RFC 8032.
     /// Byte 56 will always be zero.
+    #[must_use]
     pub fn to_bytes_rfc_8032(&self) -> EdwardsScalarBytes {
         let mut bytes = EdwardsScalarBytes::default();
         bytes[..56].copy_from_slice(&self.to_bytes());
@@ -60,6 +61,7 @@ impl EdwardsScalar {
 
     /// Construct a `Scalar` by reducing a 912-bit little-endian integer
     /// modulo the group order ℓ.
+    #[must_use]
     pub fn from_bytes_mod_order_wide(input: &WideEdwardsScalarBytes) -> EdwardsScalar {
         Ed448::from_bytes_mod_order_wide(input)
     }
