@@ -3,7 +3,7 @@
 use core::fmt::{self, Debug};
 #[cfg(feature = "pem")]
 use core::str::FromStr;
-#[cfg(feature = "pkcs8")]
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 use der::{SecretDocument, asn1::OctetStringRef};
 
 #[cfg(feature = "pkcs8")]
@@ -11,9 +11,13 @@ use crate::ALGORITHM_OID;
 use crate::{BignP256, FieldBytes, NonZeroScalar, PublicKey, Result, ScalarValue};
 #[cfg(feature = "pem")]
 use elliptic_curve::Error;
+#[cfg(feature = "pem")]
+use elliptic_curve::pkcs8::DecodePrivateKey;
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
+use elliptic_curve::pkcs8::EncodePrivateKey;
 #[cfg(feature = "pkcs8")]
 use elliptic_curve::pkcs8::{
-    self, AssociatedOid, DecodePrivateKey, EncodePrivateKey, ObjectIdentifier,
+    self, AssociatedOid, ObjectIdentifier,
     spki::{AlgorithmIdentifier, AssociatedAlgorithmIdentifier},
 };
 use elliptic_curve::{Generate, rand_core::TryCryptoRng, zeroize::ZeroizeOnDrop};
@@ -155,7 +159,7 @@ impl FromStr for SecretKey {
     }
 }
 
-#[cfg(feature = "pkcs8")]
+#[cfg(all(feature = "alloc", feature = "pkcs8"))]
 impl EncodePrivateKey for SecretKey {
     fn to_pkcs8_der(&self) -> pkcs8::Result<SecretDocument> {
         let algorithm_identifier = pkcs8::AlgorithmIdentifierRef {
