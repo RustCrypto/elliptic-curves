@@ -891,6 +891,13 @@ mod tests {
     }
 
     #[test]
+    fn test_compressed_identity() {
+        let identity = EdwardsPoint::IDENTITY.to_affine();
+        assert_eq!(identity.compress(), CompressedEdwardsY::IDENTITY);
+        assert_eq!(CompressedEdwardsY::IDENTITY.decompress().unwrap(), identity);
+    }
+
+    #[test]
     fn test_is_on_curve() {
         let x = hex_to_field(
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa955555555555555555555555555555555555555555555555555555555",
